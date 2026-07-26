@@ -1,0 +1,41 @@
+// ============================================================
+// API ENDPOINTS
+// Single source of truth for every endpoint path in the app.
+// Usage: ApiEndpoints.login, ApiEndpoints.getMember(1), etc.
+// ============================================================
+
+class ApiEndpoints {
+  ApiEndpoints._(); // no instances
+
+  // ── Auth ──────────────────────────────────────────────────
+  static const String login = '/login/mobile/authenticate';
+
+  // ── Member ────────────────────────────────────────────────
+  static String getMember(String memberId) => '/member/getmember/$memberId';
+  static const String addMember = '/member/addmember';
+
+  static String updateMember(String memberId) => 'member/mobile/$memberId';
+  static String changeProfileImage(String memberId) => '/member/$memberId/profile-photo';
+
+
+  // ── Plans ─────────────────────────────────────────────────
+  static String getPlans(String gymId) => '/planmaster/plan/$gymId/active';
+
+  // ── Attendance ────────────────────────────────────────────
+  static const String markAttendance = '/attendance/mark';
+
+  // ── Member Workouts ───────────────────────────────────────
+  static String getMemberWorkouts(String gymId, String memberId,String date) =>
+      '/member-workouts/get-by-gymid/$gymId/$memberId/$date';
+
+  static const String dashboard = '/dashboard/mobiledashboard';
+
+  // ── Diet Log ──────────────────────────────────────────────
+  static String getWeeklyDietCompliance(String memberId, String weekNumber) =>
+      '/member-diet-log/weekly-compliance/$memberId/$weekNumber';
+
+
+// ── Trainer ──────────────────────────────────────────────
+  static String getTrainer(String memberId,String gymId) => '/trainer/gettrainer/$gymId/$memberId';
+
+}

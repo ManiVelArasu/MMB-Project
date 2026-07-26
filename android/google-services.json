@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "535590563995",
+    "project_id": "mmb-app-fe0f8",
+    "storage_bucket": "mmb-app-fe0f8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:535590563995:android:3b9d88da451c9b08cd563e",
+        "android_client_info": {
+          "package_name": "com.mobile.mmb.project_mmb"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPbtNN__Vc6hi0eF33puV_XFhACPttYks"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
