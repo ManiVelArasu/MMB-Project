@@ -44,7 +44,6 @@ class LocaleProvider extends ChangeNotifier with MyNotifier {
   }
 
   Future<bool> _checkSession() async {
-    // Session check logic (Token exists logic)
     return false;
   }
 

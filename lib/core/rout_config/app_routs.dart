@@ -1,6 +1,3 @@
-
-
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -51,9 +48,6 @@ enum AppRoutes {
   const AppRoutes(this.path);
 }
 
-// -------------------------------------------------------------
-// 2. APP ROUTER CLASS
-// -------------------------------------------------------------
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     print('Navigating to >>>> ${settings.name}');
@@ -132,4 +126,3 @@ class AppRouter {
     return MaterialPageRoute(builder: (_) => child, settings: settings);
   }
 }
-

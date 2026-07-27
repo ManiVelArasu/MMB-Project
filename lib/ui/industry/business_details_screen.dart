@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/network/provider/business_provider.dart';
 import 'package:project_mmb/network/provider/custom_theme_provider.dart';
 import 'package:project_mmb/ui/industry/choose_image_sheet.dart';
@@ -82,7 +83,7 @@ class BusinessDetailsScreen extends StatelessWidget {
                                                   "assets/icons/upload_logo_ic.svg",
                                                 ),
                                                 height8,
-                                                Text(
+                                                AppText(
                                                   "Upload logo",
                                                   style: theme.bodyMedium!
                                                       .copyWith(
@@ -100,7 +101,7 @@ class BusinessDetailsScreen extends StatelessWidget {
                                           padding: EdgeInsets.symmetric(
                                             horizontal: 12.0.h,
                                           ),
-                                          child: Text(
+                                          child: AppText(
                                             "OR",
                                             style: theme.bodyMedium!.copyWith(
                                               color: customColor.blackColor,
@@ -130,7 +131,7 @@ class BusinessDetailsScreen extends StatelessWidget {
                                                 "assets/icons/create_logo_ic.svg",
                                               ),
                                               height8,
-                                              Text(
+                                              AppText(
                                                 "Create logo",
                                                 style: theme.bodyMedium!
                                                     .copyWith(
@@ -151,7 +152,7 @@ class BusinessDetailsScreen extends StatelessWidget {
                                           top: 6.h,
                                           left: 4.w,
                                         ),
-                                        child: Text(
+                                        child: AppText(
                                           businessProvider.imageError!,
                                           style: TextStyle(
                                             color: Colors.red,
@@ -330,7 +331,7 @@ class BusinessDetailsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              AppText(
                 title,
                 style: theme.bodySmall!.copyWith(
                   fontWeight: FontWeight.w600,
@@ -362,7 +363,7 @@ class BusinessDetailsScreen extends StatelessWidget {
         if (errorMessage != null)
           Padding(
             padding: EdgeInsets.only(top: 4.h, left: 4.w),
-            child: Text(
+            child: AppText(
               errorMessage,
               style: TextStyle(color: Colors.red, fontSize: 12.sp),
             ),

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -16,7 +15,7 @@ class _NearMeScreenState extends State<NearMeScreen> {
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center                                         ,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Lottie.asset('assets/lottie/Coming Soon Dark Background.json'),
           ],
