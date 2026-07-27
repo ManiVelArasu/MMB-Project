@@ -1,19 +1,56 @@
 import 'package:flutter/cupertino.dart';
-/*import 'package:provider_base/core/rout_config/app_routs.dart' hide AppRouter;*/
+import 'package:project_mmb/network/provider/business_provider.dart';
+import 'package:project_mmb/network/provider/industry_provider.dart';
+
 import '../rout_config/app_navigator.dart';
-import '../rout_config/app_routs.dart';
+import '../rout_config/app_routs.dart' hide AppRouter;
 import 'my_notifier.dart';
 
+import 'package:flutter/material.dart';
+
+import 'package:project_mmb/network/provider/auth_provider.dart';
 
 class LocaleProvider extends ChangeNotifier with MyNotifier {
+  late final AuthProvider authProvider = AuthProvider();
+  late final BusinessProvider businessProvider = BusinessProvider();
+  late final IndustryProvider industryProvider = IndustryProvider();
 
-  LocaleProvider(){
+  bool _isLoading = true;
+  bool get isLoading => _isLoading;
+
+  LocaleProvider() {
     init();
   }
-  
-  Future<void> init()async{
-  await Future.delayed(Duration(seconds: 1));
-  //AppRouter.pushReplacement(AppRoutes.bottomNav);
+
+  Future<void> init() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await Future.delayed(const Duration(seconds: 2));
+      final bool isLoggedIn = await _checkSession();
+
+      if (isLoggedIn) {
+        AppRouter.pushReplacement(AppRoutes.customBottomNav);
+      } else {
+        AppRouter.pushReplacement(AppRoutes.login);
+      }
+    } catch (e) {
+      AppRouter.pushReplacement(AppRoutes.login);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
+  Future<bool> _checkSession() async {
+    // Session check logic (Token exists logic)
+    return false;
+  }
+
+  @override
+  void dispose() {
+    authProvider.dispose(); // Auto dispose AuthProvider resources
+    super.dispose();
+  }
 }

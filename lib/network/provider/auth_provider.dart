@@ -1,7 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:project_mmb/core/app_provider/my_notifier.dart';
 
-class AuthProvider extends ChangeNotifier {
+class AuthProvider extends ChangeNotifier with MyNotifier{
   //final FirebaseAuth _auth = FirebaseAuth.instance;
   String _mobileNumber = "";
   String? mobileError;

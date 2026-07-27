@@ -9,6 +9,8 @@ import 'package:project_mmb/utils/height_measure.dart';
 import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
 
+import '../../network/provider/industry_provider.dart';
+
 class BusinessCategoryChooseScreen extends StatefulWidget {
   const BusinessCategoryChooseScreen({super.key});
 
@@ -163,6 +165,8 @@ class _BusinessCategoryChooseScreenState
   }
 
   void searchCategorySheet(BuildContext context) {
+    context.read<IndustryProvider>().fetchAssetCategories();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -174,7 +178,7 @@ class _BusinessCategoryChooseScreenState
             Positioned.fill(
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
-                child: Container(),
+                child: Container(color: Colors.black.withOpacity(0.2)),
               ),
             ),
             Align(
@@ -185,7 +189,9 @@ class _BusinessCategoryChooseScreenState
                 minChildSize: 0.7,
                 maxChildSize: 1.0,
                 builder: (context, scrollController) {
-                  return SearchBottomSheet(scrollController: scrollController);
+                  return SearchBottomSheet(
+                    scrollController: scrollController,
+                  );
                 },
               ),
             ),

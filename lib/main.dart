@@ -2,15 +2,21 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:project_mmb/core/api/api_endpoints.dart';
 import 'package:project_mmb/network/provider/business_provider.dart';
 import 'package:project_mmb/network/provider/auth_provider.dart';
 import 'package:project_mmb/network/provider/custom_theme_provider.dart';
 import 'package:project_mmb/network/provider/home_screen_provider.dart';
+import 'package:project_mmb/network/provider/industry_provider.dart';
 import 'package:project_mmb/theme/app_theme.dart';
 import 'package:project_mmb/utils/routes.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/api/api_handler.dart';
+import 'core/api/api_interceptor.dart';
+import 'core/api/enums/api_content_type.dart';
+import 'core/api/enums/toast_position.dart';
 import 'network/provider/bottom_provider.dart';
 import 'network/provider/businessprofile_provider.dart';
 import 'network/provider/custom_screen_provider.dart';
@@ -21,17 +27,26 @@ import 'network/provider/theme_screen_provider.dart';
 import 'network/provider/you_screen_provider.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  //await Firebase.initializeApp();
-    SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.light,
-    ),
-  );
+  _initializeApp();
   runApp(const MyApp());
+}
+
+Future<void> _initializeApp() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await _initApi();
+}
+
+Future<void> _initApi() async {
+  ApiHandler.init(
+    baseUrl: ApiEndpoints.baseUrl,
+    defaultContentType: ApiContentType.json,
+    connectTimeoutMs: 30000,
+    receiveTimeoutMs: 30000,
+    rethrowExceptions: false,
+    showToastOnError: true,
+    defaultToastPosition: ApiToastPosition.bottom,
+    interceptor: ApiLoggerInterceptor(),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -65,6 +80,7 @@ class _MyAppState extends State<MyApp> {
             ChangeNotifierProvider(create: (_) => BusinessProfileProvider()),
             ChangeNotifierProvider(create: (_) => MyDownloadsProvider()),
             ChangeNotifierProvider(create: (_) => SmCalendarProvider()),
+            ChangeNotifierProvider(create: (_) => IndustryProvider()),
           ],
           child: Consumer<CustomThemeProvider>(
             builder: (context, themeProvider, child) {

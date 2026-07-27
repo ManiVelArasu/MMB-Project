@@ -103,7 +103,7 @@ class ApiHandler {
     bool showToastOnError = true,
     ApiToastPosition defaultToastPosition = ApiToastPosition.bottom,
     Map<String, String> extraDefaultHeaders = const {},
-    Interceptor? interceptor
+    Interceptor? interceptor,
   }) {
     _instance = ApiHandler._();
     _instance!._defaultContentType = defaultContentType;
@@ -114,7 +114,6 @@ class ApiHandler {
     _instance!.defaultToastPosition = defaultToastPosition;
 
     _instance!._dio = Dio(
-
       BaseOptions(
         baseUrl: baseUrl,
         connectTimeout: Duration(milliseconds: connectTimeoutMs),
@@ -136,10 +135,9 @@ class ApiHandler {
         ),
       );
     }
-    if(interceptor!=null){
+    if (interceptor != null) {
       _instance!._dio.interceptors.add(interceptor);
     }
-
   }
 
   // ── base url management ─────────────────────────────────────────────────────
@@ -183,8 +181,7 @@ class ApiHandler {
     required ApiRequestConfig config,
     T Function(dynamic json)? fromJson,
   }) async {
-    final shouldRethrow =
-        config.rethrowException ?? rethrowExceptions;
+    final shouldRethrow = config.rethrowException ?? rethrowExceptions;
     final shouldToast = config.showToastOnError ?? showToastOnError;
     final toastPos = config.toastPosition ?? defaultToastPosition;
 
@@ -292,10 +289,7 @@ class ApiHandler {
     }
   }
 
-  Future<dynamic> _buildBody(
-    dynamic body,
-    ApiContentType contentType,
-  ) async {
+  Future<dynamic> _buildBody(dynamic body, ApiContentType contentType) async {
     if (body == null) return null;
 
     switch (contentType) {
@@ -310,8 +304,9 @@ class ApiHandler {
         final formData = <String, dynamic>{};
         for (final entry in body.entries) {
           if (entry.value is MultipartFileEntry) {
-            formData[entry.key] =
-                await _toMultipartFile(entry.value as MultipartFileEntry);
+            formData[entry.key] = await _toMultipartFile(
+              entry.value as MultipartFileEntry,
+            );
           } else if (entry.value is List) {
             // Support list of files or plain values
             final list = <dynamic>[];
@@ -379,8 +374,8 @@ class ApiHandler {
     // Non-2xx treated as server error
     final err = ApiError(
       type: ApiErrorType.serverError,
-      message: _extractServerMessage(response.data) ??
-          'Server error ($statusCode)',
+      message:
+          _extractServerMessage(response.data) ?? 'Server error ($statusCode)',
       statusCode: statusCode,
       serverData: response.data,
     );
@@ -417,7 +412,8 @@ class ApiHandler {
         final statusCode = e.response?.statusCode;
         return ApiError(
           type: ApiErrorType.serverError,
-          message: _extractServerMessage(e.response?.data) ??
+          message:
+              _extractServerMessage(e.response?.data) ??
               'Server error (${statusCode ?? 'unknown'})',
           statusCode: statusCode,
           serverData: e.response?.data,
@@ -437,13 +433,13 @@ class ApiHandler {
           statusCode: e.response?.statusCode,
           serverData: e.response?.data,
         );
-      case DioExceptionType.transformTimeout:
+      /* case DioExceptionType.transformTimeout:
         return ApiError(
           type: ApiErrorType.unknown,
           message: e.message ?? 'An unexpected error occurred.',
           statusCode: e.response?.statusCode,
           serverData: e.response?.data,
-        );
+        );*/
     }
   }
 

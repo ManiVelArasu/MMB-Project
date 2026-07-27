@@ -7,6 +7,14 @@
 class ApiEndpoints {
   ApiEndpoints._(); // no instances
 
+  // ── Base URL Config ────────────────────────────────────────
+  static const String baseUrl = 'https://lightslategray-llama-976293.hostingersite.com/api/v1';
+
+  // ── Asset Categories ──────────────────────────────────────
+  static const String assetCategories = '/asset-categories';
+
+
+  static const String industries = '/industries';
   // ── Auth ──────────────────────────────────────────────────
   static const String login = '/login/mobile/authenticate';
 
@@ -14,9 +22,8 @@ class ApiEndpoints {
   static String getMember(String memberId) => '/member/getmember/$memberId';
   static const String addMember = '/member/addmember';
 
-  static String updateMember(String memberId) => 'member/mobile/$memberId';
+  static String updateMember(String memberId) => '/member/mobile/$memberId';
   static String changeProfileImage(String memberId) => '/member/$memberId/profile-photo';
-
 
   // ── Plans ─────────────────────────────────────────────────
   static String getPlans(String gymId) => '/planmaster/plan/$gymId/active';
@@ -25,7 +32,7 @@ class ApiEndpoints {
   static const String markAttendance = '/attendance/mark';
 
   // ── Member Workouts ───────────────────────────────────────
-  static String getMemberWorkouts(String gymId, String memberId,String date) =>
+  static String getMemberWorkouts(String gymId, String memberId, String date) =>
       '/member-workouts/get-by-gymid/$gymId/$memberId/$date';
 
   static const String dashboard = '/dashboard/mobiledashboard';
@@ -34,8 +41,6 @@ class ApiEndpoints {
   static String getWeeklyDietCompliance(String memberId, String weekNumber) =>
       '/member-diet-log/weekly-compliance/$memberId/$weekNumber';
 
-
-// ── Trainer ──────────────────────────────────────────────
-  static String getTrainer(String memberId,String gymId) => '/trainer/gettrainer/$gymId/$memberId';
-
+  // ── Trainer ──────────────────────────────────────────────
+  static String getTrainer(String memberId, String gymId) => '/trainer/gettrainer/$gymId/$memberId';
 }
