@@ -1,8 +1,100 @@
 import 'package:flutter/material.dart';
+import '../../Api Model/templatecategories.dart';
+import '../../Repository/home_repository.dart';
 import '../../model/my_space_model.dart';
 
+import 'package:flutter/material.dart';
+
 class HomeScreenProvider extends ChangeNotifier {
-  // 1. My Space List
+  // 🚀 CONSTRUCTOR: Screen-la initState illama, Provider initialize aagum podhe API call nadakkum
+  HomeScreenProvider() {
+    fetchTemplateCategories();
+  }
+
+  // 1. Template Categories List
+  List<TemplateCategories> _templateCategories = [];
+  bool _isLoadingCategories = false;
+  String? _categoryErrorMessage;
+
+  List<TemplateCategories> get templateCategories => _templateCategories;
+  bool get isLoadingCategories => _isLoadingCategories;
+  String? get categoryErrorMessage => _categoryErrorMessage;
+
+  int selectedCategoryIndex = 0;
+
+  // 2. Category Posts / Images List State
+  List<dynamic> _categoryPostsList = [];
+  bool _isLoadingPosts = false;
+
+  List<dynamic> get categoryPostsList => _categoryPostsList;
+  bool get isLoadingPosts => _isLoadingPosts;
+
+  // 🚀 Fetch Categories API
+  Future<void> fetchTemplateCategories() async {
+    _isLoadingCategories = true;
+    _categoryErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await HomeRepository.instance.templateCategory();
+
+      if (result.isSuccess && result.data != null) {
+        final response = result.data!;
+        if (response.success == true) {
+          _templateCategories = response.data ?? [];
+          _categoryErrorMessage = null;
+
+          // Category load aana udane 1st Category Posts fetch aagum
+          if (_templateCategories.isNotEmpty) {
+            fetchPostsByCategory(_templateCategories[0].slug ?? "");
+          }
+        } else {
+          _categoryErrorMessage = "Failed to load categories";
+        }
+      } else if (result.isFailure) {
+        _categoryErrorMessage =
+            result.error?.message ?? "Network Error Occurred";
+      }
+    } catch (e) {
+      _categoryErrorMessage = e.toString();
+    } finally {
+      _isLoadingCategories = false;
+      notifyListeners();
+    }
+  }
+
+  // 🚀 Category Change Handler
+  void onCategorySelected(int index) {
+    if (selectedCategoryIndex == index) return;
+
+    selectedCategoryIndex = index;
+    notifyListeners();
+
+    if (_templateCategories.isNotEmpty) {
+      final selectedSlug = _templateCategories[index].slug ?? "";
+      fetchPostsByCategory(selectedSlug);
+    }
+  }
+
+  // 🚀 Category Wise Posts API Call
+  Future<void> fetchPostsByCategory(String categorySlug) async {
+    _isLoadingPosts = true;
+    notifyListeners();
+
+    try {
+      // Unga Repository Call Inga Irungkanum:
+      // final result = await HomeRepository.instance.getPostsByCategory(categorySlug);
+      // _categoryPostsList = result.data ?? [];
+      await Future.delayed(const Duration(milliseconds: 300));
+    } catch (e) {
+      debugPrint("Error fetching category posts: $e");
+    } finally {
+      _isLoadingPosts = false;
+      notifyListeners();
+    }
+  }
+
+  // Existing Lists & Controllers
   final List<MySpaceModel> _mySpaceList = [
     MySpaceModel(
       title: "MY OWN\nPOST",
@@ -26,7 +118,6 @@ class HomeScreenProvider extends ChangeNotifier {
     ),
   ];
 
-  // 2. Special Days List
   final List<Map<String, String>> mySpecialDaysList = [
     {"icon": "assets/images/specialday1.png", "dayCount": "5"},
     {"icon": "assets/images/specialdays2.png", "dayCount": "5"},
@@ -34,7 +125,6 @@ class HomeScreenProvider extends ChangeNotifier {
     {"icon": "assets/images/specialdays2.png", "dayCount": "7"},
   ];
 
-  // 3. Zone Banners & Controllers
   final List<String> myZoneBanners = [
     "assets/images/bakedcaks.png",
     "assets/images/bakedcaks.png",
@@ -46,32 +136,23 @@ class HomeScreenProvider extends ChangeNotifier {
   final PageController zonePageController = PageController();
   int currentZoneIndex = 0;
 
-  // 4. Lead Banners & Controllers
   final List<Map<String, String>> leadBanners = [
     {
       "title": "Make My Lead",
       "subTitle":
-          "Go Premium and list your business for free on our platform to boost your leads.",
+      "Go Premium and list your business for free on our platform to boost your leads.",
       "btnText": "BOOST MY BUSINESS",
     },
     {
       "title": "Grow Your Business",
       "subTitle":
-          "Get verified badge and double your client engagement effortlessly.",
+      "Get verified badge and double your client engagement effortlessly.",
       "btnText": "UPGRADE NOW",
     },
   ];
 
   final PageController leadPageController = PageController();
   int currentLeadBannerIndex = 0;
-
-  // 5. Category Filter Chips
-  final List<String> categories = [
-    "Bakery and Cake",
-    "Reviews",
-    "Offers",
-    "New Arrivals",
-  ];
 
   final List<MyCelebrateModel> _myCelebrateList = [
     MyCelebrateModel(
@@ -96,15 +177,8 @@ class HomeScreenProvider extends ChangeNotifier {
     ),
   ];
 
-  int selectedCategoryIndex = 0;
-
-  // Getters
   List<MySpaceModel> get mySpaceList => _mySpaceList;
   List<MyCelebrateModel> get myCelebrateList => _myCelebrateList;
-
-  // -------------------------------------------------------------
-  // STATE MANAGEMENT METHODS (Replaces setState)
-  // -------------------------------------------------------------
 
   void updateZoneIndex(int index) {
     currentZoneIndex = index;
@@ -113,21 +187,6 @@ class HomeScreenProvider extends ChangeNotifier {
 
   void updateLeadBannerIndex(int index) {
     currentLeadBannerIndex = index;
-    notifyListeners();
-  }
-
-  void updateCategoryIndex(int index) {
-    selectedCategoryIndex = index;
-    notifyListeners();
-  }
-
-  void addMySpaceItem(MySpaceModel newItem) {
-    _mySpaceList.add(newItem);
-    notifyListeners();
-  }
-
-  void addMyCelebrateItem(MyCelebrateModel newItem) {
-    _myCelebrateList.add(newItem);
     notifyListeners();
   }
 
@@ -144,25 +203,24 @@ class HomeScreenProvider extends ChangeNotifier {
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+      "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+      "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+      "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+      "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
   ];
-
 
   final List<Map<String, dynamic>> whatsappStatusList = [
     {"image": "assets/images/whatsapp1.png", "isVideo": true},
@@ -184,6 +242,7 @@ class HomeScreenProvider extends ChangeNotifier {
     "assets/images/corporate2.png",
     "assets/images/corporate2.png",
   ];
+
   void updateVideoCategoryIndex(int index) {
     selectedVideoCategoryIndex = index;
     notifyListeners();

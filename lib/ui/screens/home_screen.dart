@@ -10,9 +10,9 @@ import 'package:project_mmb/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:project_mmb/network/provider/business_provider.dart';
 
+import '../../Api Model/templatecategories.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/home_appbar.dart';
-
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -21,15 +21,13 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
 
-    return Consumer2<HomeScreenProvider, BusinessProvider>(
-      builder: (context, homeProvider, businessProvider, child) {
-        return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: const SystemUiOverlayStyle(
-            statusBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.dark, // Dark status bar icons
-            statusBarBrightness: Brightness.light,
-          ),
-          child: Scaffold(
+    final businessProvider = context.watch<BusinessProvider>();
+
+    return ChangeNotifierProvider(
+      create: (_) => HomeScreenProvider(),
+      builder: (context, provider) => Consumer<HomeScreenProvider>(
+        builder: (context, homeScreenProvider, child) {
+          return Scaffold(
             backgroundColor: Colors.white,
             appBar: HomeCustomAppBar(
               businessName: businessProvider.businessName.isEmpty
@@ -59,21 +57,23 @@ class HomeScreen extends StatelessWidget {
 
                       SizedBox(height: 20.h),
 
-                      // 2. MY SPACE SECTION
                       _buildSectionHeader(
                         title: "My Space",
                         iconAsset: "assets/images/myspace.png",
                         hasViewAll: true,
                       ),
                       SizedBox(height: 12.h),
-                      _buildMySpaceList(homeProvider),
+                      _buildMySpaceList(homeScreenProvider),
 
                       SizedBox(height: 20.h),
 
-                      // 3. SPECIAL DAYS SECTION
                       Row(
                         children: [
-                          Image.asset("assets/images/special_days.png", height: 32.h, width: 32.w),
+                          Image.asset(
+                            "assets/images/special_days.png",
+                            height: 32.h,
+                            width: 32.w,
+                          ),
                           SizedBox(width: 8.w),
                           AppText(
                             "Special Days",
@@ -84,43 +84,49 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           const Spacer(),
-                          Image.asset("assets/images/calendar.png", height: 32.h, width: 32.w),
+                          Image.asset(
+                            "assets/images/calendar.png",
+                            height: 32.h,
+                            width: 32.w,
+                          ),
                         ],
                       ),
                       SizedBox(height: 12.h),
-                      _buildSpecialDaysList(homeProvider),
+                      _buildSpecialDaysList(homeScreenProvider),
 
                       SizedBox(height: 20.h),
 
-                      // 4. MY ZONE SECTION (SLIDER)
+                      // MY ZONE SECTION
                       _buildSectionHeader(
                         title: "My Zone",
                         iconAsset: "assets/images/my_zone.png",
                       ),
                       SizedBox(height: 12.h),
-                      _buildMyZoneSlider(homeProvider),
+                      _buildMyZoneSlider(homeScreenProvider),
 
                       SizedBox(height: 24.h),
 
                       _buildMyFrameHeader(),
 
                       SizedBox(height: 16.h),
-                      _buildLeadBannerSlider(homeProvider),
+                      _buildLeadBannerSlider(homeScreenProvider),
 
                       SizedBox(height: 20.h),
 
+                      // MY BRAND POSTS (DYNAMIC API CATEGORIES)
                       _buildSectionHeader(
                         title: "My Brand Posts",
                         iconAsset: "assets/images/my_brand_posts.png",
                         hasViewAll: true,
                       ),
                       SizedBox(height: 12.h),
-                      _buildCategoryChips(homeProvider),
+                      _buildCategoryChips(homeScreenProvider),
 
                       SizedBox(height: 16.h),
-                      _buildBrandPostsGrid(),
+                      _buildBrandPostsGrid(homeScreenProvider),
                       SizedBox(height: 12.h),
-                      // ------------------------------------------------------------
+
+                      // MY BRAND VIDEO POSTS
                       _buildSectionHeader(
                         title: "My Brand Video Posts",
                         iconAsset: "assets/images/my_brand_posts.png",
@@ -133,28 +139,40 @@ class HomeScreen extends StatelessWidget {
                         height: 38.h,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: homeProvider.videoCategories.length,
+                          itemCount: homeScreenProvider.videoCategories.length,
                           physics: const BouncingScrollPhysics(),
                           itemBuilder: (context, index) {
-                            bool isSelected = homeProvider.selectedVideoCategoryIndex == index;
+                            bool isSelected =
+                                homeScreenProvider.selectedVideoCategoryIndex ==
+                                index;
                             return GestureDetector(
-                              onTap: () => homeProvider.updateVideoCategoryIndex(index),
+                              onTap: () => homeScreenProvider
+                                  .updateVideoCategoryIndex(index),
                               child: Container(
                                 margin: EdgeInsets.only(right: 10.w),
-                                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 16.w,
+                                  vertical: 8.h,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? const Color(0xFF555555) : Colors.white,
+                                  color: isSelected
+                                      ? const Color(0xFF555555)
+                                      : Colors.white,
                                   borderRadius: BorderRadius.circular(20.r),
                                   border: Border.all(
-                                    color: isSelected ? Colors.transparent : Colors.grey.shade400,
+                                    color: isSelected
+                                        ? Colors.transparent
+                                        : Colors.grey.shade400,
                                     width: 1.2,
                                   ),
                                 ),
                                 child: Center(
                                   child: Text(
-                                    homeProvider.videoCategories[index],
+                                    homeScreenProvider.videoCategories[index],
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.grey.shade800,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.grey.shade800,
                                       fontSize: 12.sp,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -170,15 +188,17 @@ class HomeScreen extends StatelessWidget {
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: homeProvider.brandVideoPostsList.length,
+                        itemCount:
+                            homeScreenProvider.brandVideoPostsList.length,
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 12.w,
                           mainAxisSpacing: 12.h,
-                          childAspectRatio: 1.0, // Square Grid
+                          childAspectRatio: 1.0,
                         ),
                         itemBuilder: (context, index) {
-                          final videoData = homeProvider.brandVideoPostsList[index];
+                          final videoData =
+                              homeScreenProvider.brandVideoPostsList[index];
                           return BrandVideoCard(
                             thumbnailUrl: videoData["thumbnail"]!,
                             videoUrl: videoData["videoUrl"]!,
@@ -192,7 +212,7 @@ class HomeScreen extends StatelessWidget {
                         hasViewAll: true,
                       ),
                       SizedBox(height: 12.h),
-                      _buildMyCelebrateList(homeProvider),
+                      _buildMyCelebrateList(homeScreenProvider),
                       SizedBox(height: 16.h),
                       _buildSectionHeader(
                         title: "Youtube Thumbnail",
@@ -214,9 +234,11 @@ class HomeScreen extends StatelessWidget {
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
-                          itemCount: homeProvider.whatsappStatusList.length,
+                          itemCount:
+                              homeScreenProvider.whatsappStatusList.length,
                           itemBuilder: (context, index) {
-                            final item = homeProvider.whatsappStatusList[index];
+                            final item =
+                                homeScreenProvider.whatsappStatusList[index];
                             return Container(
                               width: 115.w,
                               margin: EdgeInsets.only(right: 12.w),
@@ -228,18 +250,20 @@ class HomeScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(16.r),
                                 child: Stack(
                                   children: [
-                                    // Image Banner
                                     Positioned.fill(
                                       child: Image.asset(
                                         item["image"],
                                         fit: BoxFit.cover,
                                         errorBuilder: (_, __, ___) => Container(
                                           color: Colors.grey.shade300,
-                                          child: Icon(Icons.image, size: 30.sp, color: Colors.grey),
+                                          child: Icon(
+                                            Icons.image,
+                                            size: 30.sp,
+                                            color: Colors.grey,
+                                          ),
                                         ),
                                       ),
                                     ),
-
                                     if (item["isVideo"] == true)
                                       Positioned(
                                         bottom: 10.h,
@@ -247,7 +271,9 @@ class HomeScreen extends StatelessWidget {
                                         child: Container(
                                           padding: EdgeInsets.all(4.r),
                                           decoration: BoxDecoration(
-                                            color: Colors.black.withValues(alpha: 0.5),
+                                            color: Colors.black.withValues(
+                                              alpha: 0.5,
+                                            ),
                                             shape: BoxShape.circle,
                                           ),
                                           child: Icon(
@@ -279,16 +305,20 @@ class HomeScreen extends StatelessWidget {
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
-                          itemCount: homeProvider.devotionalList.length,
+                          itemCount: homeScreenProvider.devotionalList.length,
                           itemBuilder: (context, index) {
-                            final item = homeProvider.devotionalList[index];
+                            final item =
+                                homeScreenProvider.devotionalList[index];
                             return Container(
                               width: 110.w,
                               margin: EdgeInsets.only(right: 12.w),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(16.r),
                                 color: Colors.white,
-                                border: Border.all(color: Colors.grey.shade200, width: 1.2),
+                                border: Border.all(
+                                  color: Colors.grey.shade200,
+                                  width: 1.2,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withValues(alpha: 0.03),
@@ -299,32 +329,40 @@ class HomeScreen extends StatelessWidget {
                               ),
                               child: Column(
                                 children: [
-                                  // Top Image
                                   Expanded(
                                     child: ClipRRect(
-                                      borderRadius: BorderRadius.vertical(top: Radius.circular(15.r)),
+                                      borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(15.r),
+                                      ),
                                       child: Image.asset(
-                                        item["image"]??'',
+                                        item["image"] ?? '',
                                         width: double.infinity,
                                         fit: BoxFit.cover,
                                         errorBuilder: (_, __, ___) => Container(
                                           color: Colors.grey.shade200,
-                                          child: Icon(Icons.auto_awesome, size: 30.sp, color: Colors.orange),
+                                          child: Icon(
+                                            Icons.auto_awesome,
+                                            size: 30.sp,
+                                            color: Colors.orange,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-
-                                  // Bottom White Title Container
                                   Container(
                                     width: double.infinity,
-                                    padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 4.w),
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: 8.h,
+                                      horizontal: 4.w,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius: BorderRadius.vertical(bottom: Radius.circular(15.r)),
+                                      borderRadius: BorderRadius.vertical(
+                                        bottom: Radius.circular(15.r),
+                                      ),
                                     ),
                                     child: Text(
-                                      item["title"]??"",
+                                      item["title"] ?? "",
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: Colors.black,
@@ -356,7 +394,8 @@ class HomeScreen extends StatelessWidget {
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
-                          itemCount: homeProvider.corporateNeedsList.length,
+                          itemCount:
+                              homeScreenProvider.corporateNeedsList.length,
                           itemBuilder: (context, index) {
                             return Container(
                               width: 105.w,
@@ -364,11 +403,15 @@ class HomeScreen extends StatelessWidget {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(14.r),
                                 child: Image.asset(
-                                  homeProvider.corporateNeedsList[index],
+                                  homeScreenProvider.corporateNeedsList[index],
                                   fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) => Container(
                                     color: Colors.grey.shade200,
-                                    child: Icon(Icons.business_center, size: 30.sp, color: Colors.grey),
+                                    child: Icon(
+                                      Icons.business_center,
+                                      size: 30.sp,
+                                      color: Colors.grey,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -382,9 +425,9 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -406,7 +449,11 @@ class HomeScreen extends StatelessWidget {
               color: Color(0xFFFFECEE),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.flash_on, color: const Color(0xFFE53935), size: 18.sp),
+            child: Icon(
+              Icons.flash_on,
+              color: const Color(0xFFE53935),
+              size: 18.sp,
+            ),
           ),
         ),
         SizedBox(width: 8.w),
@@ -432,16 +479,15 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // My Space List
-  Widget _buildMySpaceList(HomeScreenProvider homeProvider) {
+  Widget _buildMySpaceList(HomeScreenProvider homeScreenProvider) {
     return SizedBox(
       height: 90.h,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: homeProvider.mySpaceList.length,
+        itemCount: homeScreenProvider.mySpaceList.length,
         physics: const BouncingScrollPhysics(),
         itemBuilder: (context, index) {
-          final item = homeProvider.mySpaceList[index];
+          final item = homeScreenProvider.mySpaceList[index];
           return Container(
             width: 100.w,
             margin: EdgeInsets.only(right: 12.w),
@@ -459,12 +505,22 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset(item.icon, height: 36.h, width: 36.w, fit: BoxFit.contain),
+                Image.asset(
+                  item.icon,
+                  height: 36.h,
+                  width: 36.w,
+                  fit: BoxFit.contain,
+                ),
                 SizedBox(height: 6.h),
                 Text(
                   item.title,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.black, fontSize: 10.sp, fontWeight: FontWeight.w900, height: 1.1),
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w900,
+                    height: 1.1,
+                  ),
                   maxLines: 2,
                 ),
               ],
@@ -475,16 +531,15 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Special Days List
-  Widget _buildSpecialDaysList(HomeScreenProvider homeProvider) {
+  Widget _buildSpecialDaysList(HomeScreenProvider homeScreenProvider) {
     return SizedBox(
       height: 160.h,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: homeProvider.mySpecialDaysList.length,
+        itemCount: homeScreenProvider.mySpecialDaysList.length,
         physics: const BouncingScrollPhysics(),
         itemBuilder: (context, index) {
-          final item = homeProvider.mySpecialDaysList[index];
+          final item = homeScreenProvider.mySpecialDaysList[index];
           return Container(
             width: 150.w,
             margin: EdgeInsets.only(right: 12.w),
@@ -503,14 +558,21 @@ class HomeScreen extends StatelessWidget {
                     bottom: 10.h,
                     left: 10.w,
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10.w,
+                        vertical: 4.h,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFEEB04B),
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Text(
                         item["dayCount"] ?? "${index + 5}",
-                        style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w900),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
                   ),
@@ -523,16 +585,15 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // My Zone Slider
-  Widget _buildMyZoneSlider(HomeScreenProvider homeProvider) {
+  Widget _buildMyZoneSlider(HomeScreenProvider homeScreenProvider) {
     return Column(
       children: [
         SizedBox(
           height: 360.h,
           child: PageView.builder(
-            controller: homeProvider.zonePageController,
-            itemCount: homeProvider.myZoneBanners.length,
-            onPageChanged: (index) => homeProvider.updateZoneIndex(index),
+            controller: homeScreenProvider.zonePageController,
+            itemCount: homeScreenProvider.myZoneBanners.length,
+            onPageChanged: (index) => homeScreenProvider.updateZoneIndex(index),
             itemBuilder: (context, index) {
               return Container(
                 margin: EdgeInsets.symmetric(horizontal: 25.w),
@@ -543,7 +604,7 @@ class HomeScreen extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16.r),
                   child: Image.asset(
-                    homeProvider.myZoneBanners[index],
+                    homeScreenProvider.myZoneBanners[index],
                     fit: BoxFit.cover,
                     width: double.infinity,
                   ),
@@ -556,14 +617,14 @@ class HomeScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
-            homeProvider.myZoneBanners.length,
-                (index) => AnimatedContainer(
+            homeScreenProvider.myZoneBanners.length,
+            (index) => AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               margin: EdgeInsets.symmetric(horizontal: 3.w),
               height: 6.h,
-              width: homeProvider.currentZoneIndex == index ? 22.w : 6.w,
+              width: homeScreenProvider.currentZoneIndex == index ? 22.w : 6.w,
               decoration: BoxDecoration(
-                color: homeProvider.currentZoneIndex == index
+                color: homeScreenProvider.currentZoneIndex == index
                     ? const Color(0xFFE53935)
                     : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(10.r),
@@ -575,48 +636,72 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // My Frame Header
   Widget _buildMyFrameHeader() {
     return Row(
       children: [
         Text(
           "MY FRAME - 1",
-          style: TextStyle(color: AppColors.darkBlack, fontSize: 18.sp, fontWeight: FontWeight.w800),
+          style: TextStyle(
+            color: AppColors.darkBlack,
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         SizedBox(width: 6.w),
         Container(
           padding: EdgeInsets.all(4.r),
-          decoration: const BoxDecoration(color: Color(0xFFFFECEE), shape: BoxShape.circle),
-          child: Icon(Icons.more_vert_rounded, color: const Color(0xFFE53935), size: 16.sp),
+          decoration: const BoxDecoration(
+            color: Color(0xFFFFECEE),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.more_vert_rounded,
+            color: const Color(0xFFE53935),
+            size: 16.sp,
+          ),
         ),
         const Spacer(),
         Container(
           padding: EdgeInsets.all(8.r),
-          decoration: const BoxDecoration(color: Color(0xFFFFECEE), shape: BoxShape.circle),
-          child: Icon(Icons.edit_outlined, color: const Color(0xFFE53935), size: 18.sp),
+          decoration: const BoxDecoration(
+            color: Color(0xFFFFECEE),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.edit_outlined,
+            color: const Color(0xFFE53935),
+            size: 18.sp,
+          ),
         ),
         SizedBox(width: 8.w),
         Container(
           padding: EdgeInsets.all(8.r),
-          decoration: const BoxDecoration(color: Color(0xFFFFECEE), shape: BoxShape.circle),
-          child: Icon(Icons.file_download_outlined, color: const Color(0xFFE53935), size: 18.sp),
+          decoration: const BoxDecoration(
+            color: Color(0xFFFFECEE),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.file_download_outlined,
+            color: const Color(0xFFE53935),
+            size: 18.sp,
+          ),
         ),
       ],
     );
   }
 
-  // Lead Banner Slider
-  Widget _buildLeadBannerSlider(HomeScreenProvider homeProvider) {
+  Widget _buildLeadBannerSlider(HomeScreenProvider homeScreenProvider) {
     return Column(
       children: [
         SizedBox(
           height: 140.h,
           child: PageView.builder(
-            controller: homeProvider.leadPageController,
-            itemCount: homeProvider.leadBanners.length,
-            onPageChanged: (index) => homeProvider.updateLeadBannerIndex(index), // Provider Call
+            controller: homeScreenProvider.leadPageController,
+            itemCount: homeScreenProvider.leadBanners.length,
+            onPageChanged: (index) =>
+                homeScreenProvider.updateLeadBannerIndex(index),
             itemBuilder: (context, index) {
-              final banner = homeProvider.leadBanners[index];
+              final banner = homeScreenProvider.leadBanners[index];
               return Container(
                 padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
@@ -629,18 +714,34 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Text(
                       banner["title"]!,
-                      style: TextStyle(color: const Color(0xFF7C4DFF), fontSize: 20.sp, fontWeight: FontWeight.w900),
+                      style: TextStyle(
+                        color: const Color(0xFF7C4DFF),
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     SizedBox(height: 6.h),
-                    Text(banner["subTitle"]!, style: TextStyle(color: Colors.black87, fontSize: 12.sp)),
+                    Text(
+                      banner["subTitle"]!,
+                      style: TextStyle(color: Colors.black87, fontSize: 12.sp),
+                    ),
                     SizedBox(height: 5.h),
                     ElevatedButton(
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF9172FF),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
                       ),
-                      child: Text(banner["btnText"]!, style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w800)),
+                      child: Text(
+                        banner["btnText"]!,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -652,14 +753,16 @@ class HomeScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
-            homeProvider.leadBanners.length,
-                (index) => AnimatedContainer(
+            homeScreenProvider.leadBanners.length,
+            (index) => AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               margin: EdgeInsets.symmetric(horizontal: 3.w),
               height: 6.h,
-              width: homeProvider.currentLeadBannerIndex == index ? 22.w : 6.w,
+              width: homeScreenProvider.currentLeadBannerIndex == index
+                  ? 22.w
+                  : 6.w,
               decoration: BoxDecoration(
-                color: homeProvider.currentLeadBannerIndex == index
+                color: homeScreenProvider.currentLeadBannerIndex == index
                     ? const Color(0xFF2C3860)
                     : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(10.r),
@@ -671,18 +774,38 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Category Filter Chips
-  Widget _buildCategoryChips(HomeScreenProvider homeProvider) {
+  // Dynamic Category Filter Chips Widget
+  Widget _buildCategoryChips(HomeScreenProvider homeScreenProvider) {
+    if (homeScreenProvider.isLoadingCategories) {
+      return SizedBox(
+        height: 38.h,
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+
+    final categories = homeScreenProvider.templateCategories;
+
+    if (categories.isEmpty) {
+      return Text(
+        "No categories found",
+        style: TextStyle(color: Colors.grey, fontSize: 12.sp),
+      );
+    }
+
     return SizedBox(
       height: 38.h,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: homeProvider.categories.length,
+        itemCount: categories.length,
         physics: const BouncingScrollPhysics(),
         itemBuilder: (context, index) {
-          bool isSelected = homeProvider.selectedCategoryIndex == index;
+          final TemplateCategories item = categories[index];
+          bool isSelected = homeScreenProvider.selectedCategoryIndex == index;
+
           return GestureDetector(
-            onTap: () => homeProvider.updateCategoryIndex(index), // Provider Call
+            onTap: () {
+              homeScreenProvider.onCategorySelected(index);
+            },
             child: Container(
               margin: EdgeInsets.only(right: 10.w),
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
@@ -696,7 +819,7 @@ class HomeScreen extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  homeProvider.categories[index],
+                  item.name ?? "",
                   style: TextStyle(
                     color: isSelected ? Colors.white : Colors.grey.shade800,
                     fontSize: 12.sp,
@@ -711,12 +834,34 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Brand Posts Grid
-  Widget _buildBrandPostsGrid() {
+  // Dynamic Images Grid Widget
+  Widget _buildBrandPostsGrid(HomeScreenProvider homeScreenProvider) {
+    if (homeScreenProvider.isLoadingPosts ||
+        homeScreenProvider.isLoadingCategories) {
+      return SizedBox(
+        height: 150.h,
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    final categories = homeScreenProvider.templateCategories;
+
+    if (categories.isEmpty) {
+      return SizedBox(
+        height: 100.h,
+        child: Center(
+          child: Text(
+            "No post images found",
+            style: TextStyle(color: Colors.grey, fontSize: 12.sp),
+          ),
+        ),
+      );
+    }
+    const String s3BaseUrl = "https://your-s3-bucket-url.amazonaws.com/";
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: 4,
+      itemCount: categories.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12.w,
@@ -724,6 +869,14 @@ class HomeScreen extends StatelessWidget {
         childAspectRatio: 1.0,
       ),
       itemBuilder: (context, index) {
+        final post = categories[index];
+
+        final String? rawKey = post.thumbnailS3Key ?? post.iconS3Key;
+
+        final String fullImageUrl = (rawKey != null && rawKey.isNotEmpty)
+            ? (rawKey.startsWith("http") ? rawKey : "$s3BaseUrl$rawKey")
+            : "";
+
         return Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16.r),
@@ -731,12 +884,45 @@ class HomeScreen extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16.r),
-            child: Image.asset("assets/images/bakedcaks.png", fit: BoxFit.cover),
+            child: fullImageUrl.isNotEmpty
+                ? Image.network(
+                    fullImageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey.shade200,
+                      child: Icon(
+                        Icons.image_not_supported_rounded,
+                        color: Colors.grey.shade400,
+                        size: 32.sp,
+                      ),
+                    ),
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    color: Colors.grey.shade200,
+                    child: Icon(
+                      Icons.image_outlined,
+                      color: Colors.grey.shade400,
+                      size: 32.sp,
+                    ),
+                  ),
           ),
         );
       },
     );
   }
+
   Widget _buildYoutubePostsGrid() {
     return SizedBox(
       height: 180.h,
@@ -783,15 +969,16 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-  Widget _buildMyCelebrateList(HomeScreenProvider homeProvider) {
+
+  Widget _buildMyCelebrateList(HomeScreenProvider homeScreenProvider) {
     return SizedBox(
       height: 90.h,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: homeProvider.myCelebrateList.length,
+        itemCount: homeScreenProvider.myCelebrateList.length,
         physics: const BouncingScrollPhysics(),
         itemBuilder: (context, index) {
-          final item = homeProvider.myCelebrateList[index];
+          final item = homeScreenProvider.myCelebrateList[index];
           return Container(
             width: 100.w,
             margin: EdgeInsets.only(right: 12.w),
@@ -809,12 +996,22 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset(item.icon, height: 36.h, width: 36.w, fit: BoxFit.contain),
+                Image.asset(
+                  item.icon,
+                  height: 36.h,
+                  width: 36.w,
+                  fit: BoxFit.contain,
+                ),
                 SizedBox(height: 6.h),
                 Text(
                   item.title,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.black, fontSize: 10.sp, fontWeight: FontWeight.w900, height: 1.1),
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w900,
+                    height: 1.1,
+                  ),
                   maxLines: 2,
                 ),
               ],

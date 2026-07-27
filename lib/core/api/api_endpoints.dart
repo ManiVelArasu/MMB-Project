@@ -8,13 +8,15 @@ class ApiEndpoints {
   ApiEndpoints._(); // no instances
 
   // ── Base URL Config ────────────────────────────────────────
-  static const String baseUrl = 'https://lightslategray-llama-976293.hostingersite.com/api/v1';
+  static const String baseUrl =
+      'https://lightslategray-llama-976293.hostingersite.com/api/v1';
 
   // ── Asset Categories ──────────────────────────────────────
   static const String assetCategories = '/asset-categories';
 
-
   static const String industries = '/industries';
+
+  static const String templateCategory = '/template-categories';
   // ── Auth ──────────────────────────────────────────────────
   static const String login = '/login/mobile/authenticate';
 
@@ -23,7 +25,8 @@ class ApiEndpoints {
   static const String addMember = '/member/addmember';
 
   static String updateMember(String memberId) => '/member/mobile/$memberId';
-  static String changeProfileImage(String memberId) => '/member/$memberId/profile-photo';
+  static String changeProfileImage(String memberId) =>
+      '/member/$memberId/profile-photo';
 
   // ── Plans ─────────────────────────────────────────────────
   static String getPlans(String gymId) => '/planmaster/plan/$gymId/active';
@@ -42,5 +45,6 @@ class ApiEndpoints {
       '/member-diet-log/weekly-compliance/$memberId/$weekNumber';
 
   // ── Trainer ──────────────────────────────────────────────
-  static String getTrainer(String memberId, String gymId) => '/trainer/gettrainer/$gymId/$memberId';
+  static String getTrainer(String memberId, String gymId) =>
+      '/trainer/gettrainer/$gymId/$memberId';
 }
