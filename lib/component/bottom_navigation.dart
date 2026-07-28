@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:project_mmb/network/provider/business_provider.dart';
+import 'package:project_mmb/network/provider/home_screen_provider.dart';
+import 'package:project_mmb/network/provider/theme_screen_provider.dart';
 import '../network/provider/bottom_provider.dart';
 import 'package:provider/provider.dart';
+import '../network/provider/custom_screen_provider.dart';
+import '../network/provider/you_screen_provider.dart';
 import '../ui/screens/custom_screen.dart';
 import '../ui/screens/home_screen.dart';
 import '../ui/screens/nearme_screen.dart';
@@ -10,6 +15,26 @@ import '../ui/screens/theme_screen.dart';
 
 class CustomBottomNavScreen extends StatelessWidget {
   const CustomBottomNavScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => BottomNavProvider()),
+        ChangeNotifierProvider(create: (_) => BusinessProvider()),
+        ChangeNotifierProvider(create: (_) => HomeScreenProvider()),
+        ChangeNotifierProvider(create: (_) => ThemesScreenProvider()),
+        ChangeNotifierProvider(create: (_) => CustomScreenProvider()),
+
+        ChangeNotifierProvider(create: (_) => ProfileScreenProvider()),
+      ],
+      child: const CustomBottomNavView(),
+    );
+  }
+}
+
+class CustomBottomNavView extends StatelessWidget {
+  const CustomBottomNavView({super.key});
 
   final List<Widget> _screens = const [
     Center(child: CustomCreateScreen()),

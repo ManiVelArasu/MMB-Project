@@ -1,13 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:project_mmb/network/provider/business_provider.dart';
-import 'package:project_mmb/network/provider/custom_theme_provider.dart';
-import 'package:project_mmb/utils/height_measure.dart';
-import 'package:project_mmb/widgets/button_widget.dart';
-import 'package:project_mmb/widgets/title_value_widget.dart';
-import 'package:provider/provider.dart';
-
 class AccountTypeScreen extends StatelessWidget {
   const AccountTypeScreen({super.key});
 
@@ -58,34 +48,27 @@ class AccountTypeScreen extends StatelessWidget {
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     border: Border.all(
-                                      color:
-                                          accountTypeProvider.currentIndex ==
-                                              index
+                                      color: accountTypeProvider.currentIndex == index
                                           ? customColor.redColor
                                           : customColor.borderColor,
                                     ),
                                     borderRadius: BorderRadius.circular(16),
-                                    color:
-                                        accountTypeProvider.currentIndex ==
-                                            index
+                                    color: accountTypeProvider.currentIndex == index
                                         ? customColor.redColor.withAlpha(10)
                                         : customColor.whiteColor,
                                   ),
                                   child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       SvgPicture.asset(
-                                        accountTypeProvider.currentIndex ==
-                                                index
+                                        accountTypeProvider.currentIndex == index
                                             ? 'assets/icons/pref_filled.svg'
                                             : 'assets/icons/pref_outlined.svg',
                                       ),
                                       width8,
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               accountTypeProvider
@@ -120,10 +103,7 @@ class AccountTypeScreen extends StatelessWidget {
                       ButtonWidget(
                         buttonPress: () {
                           // Valid → Continue
-                          Navigator.pushNamed(
-                            context,
-                            "/BusinessCategoryChooseScreen",
-                          );
+                          Navigator.pushNamed(context, "/BusinessCategoryChooseScreen");
                         },
                         title: "CONTINUE",
                         textStyle: theme.titleLarge!.copyWith(
@@ -146,16 +126,4 @@ class AccountTypeScreen extends StatelessWidget {
       },
     );
   }
-}
-
-class SelectableItem {
-  final String title;
-  final String description;
-  final String iconPath;
-
-  SelectableItem({
-    required this.title,
-    required this.description,
-    required this.iconPath,
-  });
 }

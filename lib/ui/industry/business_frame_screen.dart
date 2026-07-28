@@ -9,14 +9,25 @@ import 'package:project_mmb/network/provider/custom_theme_provider.dart';
 
 import '../../network/provider/business_provider.dart';
 
-class BusinessFramesScreen extends StatefulWidget {
+class BusinessFramesScreen extends StatelessWidget {
   const BusinessFramesScreen({super.key});
 
   @override
-  State<BusinessFramesScreen> createState() => _BusinessFramesScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => BusinessProvider(),
+      child: const BusinessFramesView(),
+    );
+  }
+}
+class BusinessFramesView extends StatefulWidget {
+  const BusinessFramesView({super.key});
+
+  @override
+  State<BusinessFramesView> createState() => _BusinessFramesViewState();
 }
 
-class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
+class _BusinessFramesViewState extends State<BusinessFramesView> {
   int selectedTab = 0;
   int selectedCategory = 0;
 
@@ -94,8 +105,7 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
                                     left: 16.w,
                                     child: Image.asset(
                                       "assets/images/abslogo.png",
-                                      height: 40
-                                          .h, // Explicit height for clean fit over background
+                                      height: 40.h,
                                     ),
                                   ),
 
@@ -117,7 +127,7 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
                                       ),
                                       child: Row(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
+                                        MainAxisAlignment.spaceEvenly,
                                         children: [
                                           // Phone Number
                                           Row(
@@ -130,11 +140,11 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
                                               SizedBox(width: 4.w),
                                               Text(
                                                 businessProvider
-                                                        .mobileNumber
-                                                        .isEmpty
+                                                    .mobileNumber
+                                                    .isEmpty
                                                     ? "+91 9876543210"
                                                     : businessProvider
-                                                          .mobileNumber,
+                                                    .mobileNumber,
                                                 style: TextStyle(
                                                   color: Colors.white,
                                                   fontSize: 10.sp,
@@ -208,7 +218,7 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
                                     vertical: 8.h,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFFFECEE), // Pink tint
+                                    color: const Color(0xFFFFECEE),
                                     borderRadius: BorderRadius.circular(8.r),
                                   ),
                                   child: Text(
@@ -236,9 +246,7 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
                                     vertical: 8.h,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFF1E293B,
-                                    ), // Dark Blue/Navy
+                                    color: const Color(0xFF1E293B),
                                     borderRadius: BorderRadius.circular(8.r),
                                   ),
                                   child: Text(
@@ -281,27 +289,23 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
 
                           // 5. BOTTOM FRAMES LIST / GRID
                           SizedBox(
-                            height: 140
-                                .h, // Text details fit aaguranum adhanala height-a 140.h-a increase pannirukoom
+                            height: 140.h,
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
                               itemCount: 3,
                               itemBuilder: (context, index) {
                                 final savedImageFile =
                                     businessProvider.selectedImage ??
-                                    businessProvider.originalImage;
-                                bool isSolidBanner =
-                                    index % 2 !=
-                                    0; // Toggle style for demo (Left: Outline, Right: Solid)
+                                        businessProvider.originalImage;
+                                bool isSolidBanner = index % 2 != 0;
 
                                 return Container(
                                   width: 110.w,
                                   margin: EdgeInsets.only(right: 12.w),
                                   child: Column(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    CrossAxisAlignment.start,
                                     children: [
-                                      // 1. FRAME CARD PREVIEW
                                       Expanded(
                                         child: Container(
                                           decoration: BoxDecoration(
@@ -320,7 +324,6 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
                                             ),
                                             child: Stack(
                                               children: [
-                                                // Background Saved Image
                                                 if (savedImageFile != null)
                                                   Positioned.fill(
                                                     child: Image.file(
@@ -334,11 +337,9 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
                                                   Positioned.fill(
                                                     child: Container(
                                                       color:
-                                                          Colors.grey.shade50,
+                                                      Colors.grey.shade50,
                                                     ),
                                                   ),
-
-                                                // Top Logo
                                                 Positioned(
                                                   top: 8.h,
                                                   left: 0,
@@ -350,29 +351,24 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
                                                     ),
                                                   ),
                                                 ),
-
-                                                // Bottom Dynamic Footer Banner (Outline or Solid)
                                                 Positioned(
                                                   bottom: 4.h,
                                                   left: 4.w,
                                                   right: 4.w,
                                                   child: isSolidBanner
                                                       ? _buildSolidBanner(
-                                                          businessProvider,
-                                                        )
+                                                    businessProvider,
+                                                  )
                                                       : _buildOutlineBanner(
-                                                          businessProvider,
-                                                        ),
+                                                    businessProvider,
+                                                  ),
                                                 ),
                                               ],
                                             ),
                                           ),
                                         ),
                                       ),
-
                                       SizedBox(height: 6.h),
-
-                                      // 2. CARD PRICE / LABEL TEXT
                                       Text(
                                         index == 0
                                             ? "Free"
@@ -431,7 +427,6 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // Social Media Pill Border Icons
           Container(
             padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
             decoration: BoxDecoration(
@@ -459,7 +454,7 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 3.h),
       decoration: BoxDecoration(
-        color: const Color(0xFF0066FF), // Blue Fill
+        color: const Color(0xFF0066FF),
         borderRadius: BorderRadius.circular(4.r),
       ),
       child: Row(
@@ -480,7 +475,6 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // Social Pill
           Container(
             padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
             decoration: BoxDecoration(
@@ -525,7 +519,7 @@ class _BusinessFramesScreenState extends State<BusinessFramesScreen> {
               height: 3.h,
               width: 60.w,
               decoration: BoxDecoration(
-                color: const Color(0xFFE53935), // Red underline
+                color: const Color(0xFFE53935),
                 borderRadius: BorderRadius.circular(2.r),
               ),
             ),

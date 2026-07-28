@@ -4,9 +4,20 @@ import 'package:project_mmb/ui/screens/video_widget/video_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/mydownload_provider.dart';
-
 class MyDownloadsScreen extends StatelessWidget {
   const MyDownloadsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => MyDownloadsProvider(),
+      child: const MyDownloadsView(),
+    );
+  }
+}
+
+class MyDownloadsView extends StatelessWidget {
+  const MyDownloadsView({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -7,8 +7,11 @@ import 'package:project_mmb/ui/login/login_screen.dart';
 import 'package:project_mmb/ui/onboarding/onboarding_screen.dart';
 import 'package:project_mmb/ui/splash/splash_screen.dart';
 import 'package:project_mmb/ui/verification/otp_screen.dart';
+import 'package:provider/provider.dart';
 
 import '../component/bottom_navigation.dart';
+import '../network/provider/auth_provider.dart';
+import '../network/provider/business_provider.dart';
 import '../ui/industry/business_frame_screen.dart';
 import '../ui/screens/business_profile_screen.dart';
 import '../ui/screens/download_screen.dart';
@@ -34,7 +37,12 @@ class RouteGenerator {
           builder: (context) => const OnboardingScreen(),
         );
       case "/OtpScreen":
-        return MaterialPageRoute(builder: (context) => const OtpScreen());
+        return MaterialPageRoute(
+          builder: (context) => ChangeNotifierProvider(
+            create: (_) => AuthProvider(),
+            child: const OtpScreen(),
+          ),
+        );
       case "/AccountTypeScreen":
         return MaterialPageRoute(
           builder: (context) => const AccountTypeScreen(),
@@ -48,7 +56,13 @@ class RouteGenerator {
           builder: (context) => const BusinessDetailsScreen(),
         );
       case "/EditPhotoScreen":
-        return MaterialPageRoute(builder: (context) => const EditPhotoScreen());
+        final businessProvider = settings.arguments as BusinessProvider;
+        return MaterialPageRoute(
+          builder: (context) => ChangeNotifierProvider.value(
+            value: businessProvider, // 👈 Passing the exact same instance
+            child: const EditPhotoScreen(),
+          ),
+        );
       case "/BusinessFrameScreen":
         return MaterialPageRoute(
           builder: (context) => const BusinessFramesScreen(),
@@ -82,23 +96,15 @@ class RouteGenerator {
       case "/MyDownloadsScreen":
         return MaterialPageRoute(
           builder: (context) => const MyDownloadsScreen(),
-        );case "/SmCalendarScreen":
+        );
+      case "/SmCalendarScreen":
         return MaterialPageRoute(
           builder: (context) => const SmCalendarScreen(),
         );
-        case "/EditProfileScreen":
+      case "/EditProfileScreen":
         return MaterialPageRoute(
           builder: (context) => const EditProfileScreen(),
         );
-
-      // case '/IvrReports':
-      //   if (args is List) {
-      //     return MaterialPageRoute(
-      //       builder: (_) => IvrReports(navigateTo: args[0]),
-      //     );
-      //   } else {
-      //     return MaterialPageRoute(builder: (_) => const ErrorScreen());
-      //   }
     }
     return null;
   }

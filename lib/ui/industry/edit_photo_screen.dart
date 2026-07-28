@@ -10,7 +10,6 @@ import 'package:project_mmb/widgets/custom_sized_box.dart';
 import 'package:provider/provider.dart';
 import 'package:project_mmb/network/provider/business_provider.dart';
 import 'package:project_mmb/network/provider/custom_theme_provider.dart';
-
 class EditPhotoScreen extends StatefulWidget {
   const EditPhotoScreen({super.key});
 
@@ -70,10 +69,10 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
                     ),
                   ),
                 ),
-            
+
                 // TOOL-SPECIFIC CONTROLS
                 _buildToolControls(businessProvider, customColor, theme),
-            
+
                 // BOTTOM TOOLBAR
                 _buildBottomToolbar(
                   context,
@@ -91,7 +90,6 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
 
   Widget _buildImagePreview(BusinessProvider provider) {
     try {
-      // Apply transformations based on selected tool
       Widget imageWidget = ExtendedImage.file(
         provider.selectedImage!,
         fit: BoxFit.contain,
@@ -120,7 +118,6 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
         },
       );
 
-      // Apply scale transformation
       if (provider.selectedTool == "Scale") {
         imageWidget = Transform.scale(
           scale: provider.scaleValue,
@@ -128,7 +125,6 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
         );
       }
 
-      // Apply rotation transformation
       if (provider.selectedTool == "Rotate") {
         imageWidget = Transform.rotate(
           angle: provider.rotationAngle * (3.14159265359 / 180.0),
@@ -218,7 +214,6 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
       ),
       child: Row(
         children: [
-          // Reset button
           GestureDetector(
             onTap: () => provider.resetRotation(),
             child: Container(
@@ -237,8 +232,6 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
             ),
           ),
           const SizedBox(width: 12),
-
-          // Slider
           Expanded(
             child: Column(
               children: [
@@ -258,8 +251,6 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
             ),
           ),
           const SizedBox(width: 12),
-
-          // 90° rotation button
           GestureDetector(
             onTap: () {
               double newAngle = provider.rotationAngle + 90;
@@ -369,7 +360,6 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Cancel button
           TextButton(
             onPressed: _isProcessing ? null : () => Navigator.pop(context),
             child: Text(
@@ -380,8 +370,6 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
               ),
             ),
           ),
-
-          // Tool selector
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
@@ -394,9 +382,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
                   icon: "assets/icons/crop.svg",
                   label: "Crop",
                   isActive: provider.selectedTool == "Crop",
-                  onTap: _isProcessing
-                      ? () {}
-                      : () => provider.setSelectedTool("Crop"),
+                  onTap: _isProcessing ? () {} : () => provider.setSelectedTool("Crop"),
                   theme: theme,
                 ),
                 const SizedBox(width: 24),
@@ -404,9 +390,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
                   icon: "assets/icons/rotate.svg",
                   label: "Rotate",
                   isActive: provider.selectedTool == "Rotate",
-                  onTap: _isProcessing
-                      ? () {}
-                      : () => provider.setSelectedTool("Rotate"),
+                  onTap: _isProcessing ? () {} : () => provider.setSelectedTool("Rotate"),
                   theme: theme,
                 ),
                 const SizedBox(width: 24),
@@ -414,16 +398,12 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
                   icon: "assets/icons/scale.svg",
                   label: "Scale",
                   isActive: provider.selectedTool == "Scale",
-                  onTap: _isProcessing
-                      ? () {}
-                      : () => provider.setSelectedTool("Scale"),
+                  onTap: _isProcessing ? () {} : () => provider.setSelectedTool("Scale"),
                   theme: theme,
                 ),
               ],
             ),
           ),
-
-          // Apply/Save button
           TextButton(
             onPressed: _isProcessing ? null : () => _handleApply(context, provider),
             child: _isProcessing
@@ -452,7 +432,6 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
 
     try {
       if (provider.hasChanges) {
-        // Apply the current tool transformation
         switch (provider.selectedTool) {
           case "Crop":
             await provider.applyCrop();
@@ -469,12 +448,11 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text("${provider.selectedTool} applied!"),
-              duration: Duration(seconds: 1),
+              duration: const Duration(seconds: 1),
             ),
           );
         }
       } else {
-        // Save even when no changes
         if (context.mounted) {
           Navigator.pop(context);
           provider.bgRemoveSheet(context);
@@ -511,7 +489,10 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
         children: [
           SvgPicture.asset(
             icon,
-            color: isActive ? Colors.blue : Colors.white,
+            colorFilter: ColorFilter.mode(
+              isActive ? Colors.blue : Colors.white,
+              BlendMode.srcIn,
+            ),
             width: 24,
             height: 24,
           ),

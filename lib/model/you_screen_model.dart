@@ -8,7 +8,7 @@ class QuickActionModel {
   final String title;
   final String iconPath;
   final Color backgroundColor;
-  final Function(BuildContext context) onTap; // 👈 BuildContext parameter add panniyirukkom
+  final Function(BuildContext context) onTap;
 
   QuickActionModel({
     required this.title,

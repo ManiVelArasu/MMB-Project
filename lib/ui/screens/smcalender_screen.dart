@@ -10,6 +10,19 @@ class SmCalendarScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 🚀 FIX: Wrap with ChangeNotifierProvider so SmCalendarProvider is locally available for this route
+    return ChangeNotifierProvider(
+      create: (_) => SmCalendarProvider(),
+      child: const SmCalendarView(),
+    );
+  }
+}
+
+class SmCalendarView extends StatelessWidget {
+  const SmCalendarView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return Consumer<SmCalendarProvider>(
       builder: (context, provider, child) {
         return Scaffold(

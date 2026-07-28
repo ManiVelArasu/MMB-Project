@@ -12,6 +12,18 @@ class ThemeDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => ThemeDetailProvider(),
+      child: const ThemeDetailView(),
+    );
+  }
+}
+
+class ThemeDetailView extends StatelessWidget {
+  const ThemeDetailView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return Consumer<ThemeDetailProvider>(
       builder: (context, provider, child) {
         return Scaffold(
@@ -120,9 +132,7 @@ class ThemeDetailScreen extends StatelessWidget {
                             vertical: 6.h,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(
-                              0xFFFFF0F2,
-                            ),
+                            color: const Color(0xFFFFF0F2),
                             borderRadius: BorderRadius.circular(6.r),
                           ),
                           child: AppText(
@@ -342,7 +352,7 @@ class ThemeDetailScreen extends StatelessWidget {
           width: 32.w,
           errorBuilder: (_, __, ___) => Container(
             height: 32.h,
-            width: 32.w,
+            width: 32.h,
             decoration: const BoxDecoration(
               color: Color(0xFFFFECEE),
               shape: BoxShape.circle,

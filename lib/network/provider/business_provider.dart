@@ -12,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project_mmb/ui/industry/widgets/bg_remove_sheet.dart';
+import 'package:provider/provider.dart';
 
 class BusinessProvider extends ChangeNotifier {
   BusinessProvider() {
@@ -231,7 +232,7 @@ bool _isImageSelected =false;
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
-        imageQuality: 90, // Optional: Good quality photo capture
+        imageQuality: 90,
       );
 
       if (image != null) {
@@ -239,12 +240,16 @@ bool _isImageSelected =false;
         notifyListeners();
 
         if (context.mounted) {
-          Navigator.pop(context);
-
-          await Future.delayed(const Duration(milliseconds: 200));
+          Navigator.pop(context); // Close bottom sheet
+          await Future.delayed(const Duration(milliseconds: 100));
 
           if (context.mounted) {
-            Navigator.pushNamed(context, "/EditPhotoScreen");
+            // 🚀 Pass `this` (the current provider instance) via arguments!
+            Navigator.pushNamed(
+              context,
+              "/EditPhotoScreen",
+              arguments: this,
+            );
           }
         }
       }
@@ -523,24 +528,17 @@ bool _isImageSelected =false;
   }
 
   void bgRemoveSheet(BuildContext context) {
-    if (_selectedImage == null) {
-      debugPrint("No image selected for background removal");
-      return;
-    }
+    // Capture current provider reference
+    final businessProvider = this;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return Container(
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(30),
-              topRight: Radius.circular(30),
-            ),
-          ),
-          child: BgRemoveSheet(),
+      builder: (modalContext) {
+        return ChangeNotifierProvider.value(
+          value: businessProvider,
+          child: const BgRemoveSheet(),
         );
       },
     );

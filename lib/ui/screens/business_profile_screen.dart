@@ -4,9 +4,21 @@ import 'package:project_mmb/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 import '../../network/provider/businessprofile_provider.dart';
 
-
 class BusinessProfileScreen extends StatelessWidget {
   const BusinessProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // 🚀 FIX: Wrap with ChangeNotifierProvider so BusinessProfileProvider is locally available for this route
+    return ChangeNotifierProvider(
+      create: (_) => BusinessProfileProvider(),
+      child: const BusinessProfileView(),
+    );
+  }
+}
+
+class BusinessProfileView extends StatelessWidget {
+  const BusinessProfileView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +83,7 @@ class BusinessProfileScreen extends StatelessWidget {
                             color: Color(0xFFE53935),
                             shape: BoxShape.circle,
                           ),
-                          child: Image.asset("assets/images/BName.png")
+                          child: Image.asset("assets/images/BName.png"),
                         ),
 
                         SizedBox(height: 10.h),
@@ -110,8 +122,11 @@ class BusinessProfileScreen extends StatelessWidget {
                             ),
                             SizedBox(width: 4.w),
                             InkWell(
-                              onTap: (){
-                                Navigator.pushNamed(context, "/EditProfileScreen");
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  "/EditProfileScreen",
+                                );
                               },
                               child: Icon(
                                 Icons.edit_note_rounded,
@@ -153,7 +168,9 @@ class BusinessProfileScreen extends StatelessWidget {
                   SizedBox(height: 16.h),
 
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: size.width * 0.04),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: size.width * 0.04,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -177,7 +194,9 @@ class BusinessProfileScreen extends StatelessWidget {
                                 AppText(
                                   "My Frames",
                                   style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSurface,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
                                     fontSize: 18.sp,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -201,7 +220,6 @@ class BusinessProfileScreen extends StatelessWidget {
                         ),
 
                         SizedBox(height: 12.h),
-
 
                         Row(
                           children: [
@@ -255,7 +273,7 @@ class BusinessProfileScreen extends StatelessWidget {
 
                         // Frames Horizontal ListView
                         SizedBox(
-                          height: 145.h, // Card + Text exact-a fit aaguradhukku 145.h
+                          height: 145.h,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
@@ -269,29 +287,29 @@ class BusinessProfileScreen extends StatelessWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // 1. FRAME CARD PREVIEW (NO SAVED IMAGE FILE)
                                     Expanded(
                                       child: Container(
                                         decoration: BoxDecoration(
                                           color: Colors.white,
-                                          borderRadius: BorderRadius.circular(12.r),
+                                          borderRadius: BorderRadius.circular(
+                                            12.r,
+                                          ),
                                           border: Border.all(
                                             color: Colors.grey.shade300,
                                             width: 1.2,
                                           ),
                                         ),
                                         child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(10.r),
+                                          borderRadius: BorderRadius.circular(
+                                            10.r,
+                                          ),
                                           child: Stack(
                                             children: [
-                                              // Clean Frame Canvas Box Background
                                               Positioned.fill(
                                                 child: Container(
-                                                  color: Colors.white, // Clean White Background
+                                                  color: Colors.white,
                                                 ),
                                               ),
-
-                                              // Top Logo
                                               Positioned(
                                                 top: 8.h,
                                                 left: 0,
@@ -300,35 +318,40 @@ class BusinessProfileScreen extends StatelessWidget {
                                                   child: Image.asset(
                                                     "assets/images/abslogo.png",
                                                     height: 18.h,
-                                                    errorBuilder: (_, __, ___) => Icon(
-                                                      Icons.auto_awesome,
-                                                      size: 16.sp,
-                                                      color: const Color(0xFFE53935),
-                                                    ),
+                                                    errorBuilder:
+                                                        (_, __, ___) => Icon(
+                                                          Icons.auto_awesome,
+                                                          size: 16.sp,
+                                                          color: const Color(
+                                                            0xFFE53935,
+                                                          ),
+                                                        ),
                                                   ),
                                                 ),
                                               ),
-
-                                              // Bottom Dynamic Footer Banner (Outline or Solid)
                                               Positioned(
                                                 bottom: 4.h,
                                                 left: 4.w,
                                                 right: 4.w,
-                                                child:provider. isSolidBanner
-                                                    ? _buildSolidBanner(provider)
-                                                    : _buildOutlineBanner(provider),
+                                                child: provider.isSolidBanner
+                                                    ? _buildSolidBanner(
+                                                        provider,
+                                                      )
+                                                    : _buildOutlineBanner(
+                                                        provider,
+                                                      ),
                                               ),
                                             ],
                                           ),
                                         ),
                                       ),
                                     ),
-
                                     SizedBox(height: 6.h),
-
-                                    // 2. CARD PRICE / LABEL TEXT
                                     AppText(
-                                      frame["price"] ?? (index == 0 ? "Free" : "Rs.0 (Rs.100 Unlocked)"),
+                                      frame["price"] ??
+                                          (index == 0
+                                              ? "Free"
+                                              : "Rs.0 (Rs.100 Unlocked)"),
                                       style: TextStyle(
                                         fontSize: 11.sp,
                                         fontWeight: FontWeight.w700,
@@ -351,9 +374,10 @@ class BusinessProfileScreen extends StatelessWidget {
                   Divider(height: 1, color: Colors.grey.shade200),
                   SizedBox(height: 16.h),
 
-
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: size.width * 0.04),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: size.width * 0.04,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -382,7 +406,6 @@ class BusinessProfileScreen extends StatelessWidget {
 
                         SizedBox(height: 12.h),
 
-                        // Keywords Chips (Wrap Layout)
                         Wrap(
                           spacing: 8.w,
                           runSpacing: 8.h,
@@ -420,7 +443,9 @@ class BusinessProfileScreen extends StatelessWidget {
                   SizedBox(height: 16.h),
 
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: size.width * 0.04),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: size.width * 0.04,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -441,7 +466,7 @@ class BusinessProfileScreen extends StatelessWidget {
                               child: _buildPresenceTile(
                                 title: "Business Profile",
                                 iconAsset: "assets/images/b_profile.png",
-                                bgColor: const Color(0xFFFFECEE), // Soft Pink
+                                bgColor: const Color(0xFFFFECEE),
                               ),
                             ),
                             SizedBox(width: 12.w),
@@ -449,7 +474,7 @@ class BusinessProfileScreen extends StatelessWidget {
                               child: _buildPresenceTile(
                                 title: "Business Card",
                                 iconAsset: "assets/images/b_card.png",
-                                bgColor: const Color(0xFFE3F2FD), // Soft Blue
+                                bgColor: const Color(0xFFE3F2FD),
                               ),
                             ),
                           ],
@@ -467,6 +492,7 @@ class BusinessProfileScreen extends StatelessWidget {
       },
     );
   }
+
   Widget _buildOutlineBanner(BusinessProfileProvider businessProvider) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
@@ -493,7 +519,6 @@ class BusinessProfileScreen extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // Social Media Pill Border Icons
           Container(
             padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
             decoration: BoxDecoration(
@@ -521,7 +546,7 @@ class BusinessProfileScreen extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 3.h),
       decoration: BoxDecoration(
-        color: const Color(0xFF0066FF), // Blue Fill
+        color: const Color(0xFF0066FF),
         borderRadius: BorderRadius.circular(4.r),
       ),
       child: Row(
@@ -542,7 +567,6 @@ class BusinessProfileScreen extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // Social Pill
           Container(
             padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
             decoration: BoxDecoration(
@@ -561,6 +585,7 @@ class BusinessProfileScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildActionCard({
     required String title,
     required String iconAsset,
@@ -603,7 +628,6 @@ class BusinessProfileScreen extends StatelessWidget {
     );
   }
 
-  // Online Presence Tile Helper
   Widget _buildPresenceTile({
     required String title,
     required String iconAsset,
