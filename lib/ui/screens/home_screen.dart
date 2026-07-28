@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -13,6 +15,7 @@ import 'package:project_mmb/network/provider/business_provider.dart';
 import '../../Api Model/templatecategories.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/home_appbar.dart';
+import '../../global/image_picker.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -552,7 +555,13 @@ class HomeScreen extends StatelessWidget {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: Image.asset(item["icon"]!, fit: BoxFit.cover),
+                    child: InkWell(
+                      onTap: () async {
+                        final file = await assetToFile(item["icon"]!);
+                        await openEditor(context, file);
+                      },
+                      child: Image.asset(item["icon"]!, fit: BoxFit.cover),
+                    ),
                   ),
                   Positioned(
                     bottom: 10.h,

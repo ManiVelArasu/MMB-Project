@@ -15,6 +15,7 @@ class ThemesScreenProvider extends ChangeNotifier {
   String? get plansErrorMessage => _plansErrorMessage;
 
   final ThemeRepository _repository = ThemeRepository.instance;
+
   Future<void> fetchPlans() async {
     _isLoadingPlans = true;
     _plansErrorMessage = null;
@@ -37,52 +38,4 @@ class ThemesScreenProvider extends ChangeNotifier {
   List<ThemeGroup> get groups {
     return _plansData?.data ?? [];
   }
-
-  final List<ThemeCardModel> midnightRebelList = [
-    ThemeCardModel(
-      title: "MIDNIGHT R..",
-      templateCount: "8 Templates",
-      likesCount: "1.2k",
-      imagePath: "assets/images/midnight_reel1.png",
-      isPremium: true,
-    ),
-    ThemeCardModel(
-      title: "MIDNIGHT R..",
-      templateCount: "8 Templates",
-      likesCount: "1.2k",
-      imagePath: "assets/images/midnight_reel2.png",
-      isPremium: true,
-    ),
-    ThemeCardModel(
-      title: "MIDNIGHT R..",
-      templateCount: "8 Templates",
-      likesCount: "1.2k",
-      imagePath: "assets/images/midnight_reel1.png",
-      isPremium: true,
-    ),
-  ];
-
-  final List<ThemeCardModel> lemonBuzzList = [
-    ThemeCardModel(
-      title: "MIDNIGHT R..",
-      templateCount: "8 Templates",
-      likesCount: "1.2k",
-      imagePath: "assets/images/midnight_reel1.png",
-      isPremium: true,
-    ),
-    ThemeCardModel(
-      title: "MIDNIGHT R..",
-      templateCount: "8 Templates",
-      likesCount: "1.2k",
-      imagePath: "assets/images/midnight_reel2.png",
-      isPremium: true,
-    ),
-    ThemeCardModel(
-      title: "MIDNIGHT R..",
-      templateCount: "8 Templates",
-      likesCount: "1.2k",
-      imagePath: "assets/images/midnight_reel1.png",
-      isPremium: true,
-    ),
-  ];
 }
