@@ -16,6 +16,11 @@ class ApiEndpoints {
 
   static const String industries = '/industries';
 
+  static const String plan = '/plans';
+
+  static const String templateSize = '/template-sizes';
+  static const String themes = '/theme-groups';
+
   static const String templateCategory = '/template-categories';
   // ── Auth ──────────────────────────────────────────────────
   static const String login = '/login/mobile/authenticate';

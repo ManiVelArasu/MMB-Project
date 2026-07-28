@@ -6,12 +6,12 @@ import '../../model/my_space_model.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreenProvider extends ChangeNotifier {
-  // 🚀 CONSTRUCTOR: Screen-la initState illama, Provider initialize aagum podhe API call nadakkum
+
   HomeScreenProvider() {
     fetchTemplateCategories();
   }
 
-  // 1. Template Categories List
+
   List<TemplateCategories> _templateCategories = [];
   bool _isLoadingCategories = false;
   String? _categoryErrorMessage;
@@ -22,14 +22,12 @@ class HomeScreenProvider extends ChangeNotifier {
 
   int selectedCategoryIndex = 0;
 
-  // 2. Category Posts / Images List State
   List<dynamic> _categoryPostsList = [];
   bool _isLoadingPosts = false;
 
   List<dynamic> get categoryPostsList => _categoryPostsList;
   bool get isLoadingPosts => _isLoadingPosts;
 
-  // 🚀 Fetch Categories API
   Future<void> fetchTemplateCategories() async {
     _isLoadingCategories = true;
     _categoryErrorMessage = null;
@@ -44,7 +42,6 @@ class HomeScreenProvider extends ChangeNotifier {
           _templateCategories = response.data ?? [];
           _categoryErrorMessage = null;
 
-          // Category load aana udane 1st Category Posts fetch aagum
           if (_templateCategories.isNotEmpty) {
             fetchPostsByCategory(_templateCategories[0].slug ?? "");
           }
