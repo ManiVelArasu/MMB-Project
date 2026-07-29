@@ -7,8 +7,8 @@ class RotationSlider extends StatefulWidget {
   const RotationSlider({
     required this.value,
     required this.onChanged,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   _RotationSliderState createState() => _RotationSliderState();

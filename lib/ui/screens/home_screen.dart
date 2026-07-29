@@ -557,8 +557,9 @@ class HomeScreen extends StatelessWidget {
                   Positioned.fill(
                     child: InkWell(
                       onTap: () async {
-                        final file = await assetToFile(item["icon"]!);
-                        await openEditor(context, file);
+                        Navigator.pushNamed(context, "/EditorScreen");
+                        /*final file = await assetToFile(item["icon"]!);
+                        await openEditor(context, file);*/
                       },
                       child: Image.asset(item["icon"]!, fit: BoxFit.cover),
                     ),
