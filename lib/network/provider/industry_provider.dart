@@ -20,7 +20,7 @@ class IndustryProvider extends ChangeNotifier with MyNotifier {
 
   String _searchQuery = "";
   String get searchQuery => _searchQuery;
-
+  bool get isSearching => _searchQuery.trim().isNotEmpty;
   Future<void> fetchAssetCategories() async {
     _isLoading = true;
     _errorMessage = null;
@@ -35,9 +35,12 @@ class IndustryProvider extends ChangeNotifier with MyNotifier {
         if (response.success == true) {
           _allCategories = response.data;
           _filteredCategories = List.from(_allCategories);
-          _errorMessage = null;
-        } else {
-          _errorMessage = "No categories found";
+
+          if (_allCategories.isEmpty) {
+            _errorMessage = "No Data Found";
+          } else {
+            _errorMessage = null;
+          }
         }
       } else if (result.isFailure) {
         _errorMessage = result.error?.message ?? "Network Error Occurred";

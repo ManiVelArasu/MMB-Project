@@ -171,15 +171,23 @@ class ThemeDetailView extends StatelessWidget {
                               children: [
                                 // Poster Asset Image
                                 Positioned.fill(
-                                  child: Image.asset(
-                                    provider.templatesList[index],
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      color: Colors.grey.shade300,
-                                      child: Icon(
-                                        Icons.image_outlined,
-                                        size: 40.sp,
-                                        color: Colors.grey,
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        "/TemplateDetailScreen",
+                                      );
+                                    },
+                                    child: Image.asset(
+                                      provider.templatesList[index],
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: Colors.grey.shade300,
+                                        child: Icon(
+                                          Icons.image_outlined,
+                                          size: 40.sp,
+                                          color: Colors.grey,
+                                        ),
                                       ),
                                     ),
                                   ),

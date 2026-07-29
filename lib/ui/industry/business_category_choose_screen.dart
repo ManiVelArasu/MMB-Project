@@ -16,11 +16,9 @@ class BusinessCategoryChooseScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => BusinessProvider()),
-        ChangeNotifierProvider(create: (_) => IndustryProvider()),
-      ],
+    // 🚀 FIX: Removed local BusinessProvider since it's now global in main.dart
+    return ChangeNotifierProvider(
+      create: (_) => IndustryProvider(),
       child: const BusinessCategoryChooseView(),
     );
   }
@@ -34,36 +32,37 @@ class BusinessCategoryChooseView extends StatefulWidget {
       _BusinessCategoryChooseViewState();
 }
 
-class _BusinessCategoryChooseViewState
-    extends State<BusinessCategoryChooseView>
+class _BusinessCategoryChooseViewState extends State<BusinessCategoryChooseView>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final accountProvider = context.read<BusinessProvider>();
+    final accountProvider = context.read<BusinessProvider>();
 
-      _tabController = TabController(
-        length: 2,
-        vsync: this,
-        initialIndex: accountProvider.currentIndex,
-      );
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: accountProvider.currentIndex,
+    );
 
-      _tabController.addListener(() {
-        if (_tabController.indexIsChanging) {
-          accountProvider.setCurrentIndex(_tabController.index);
-        }
-      });
-      setState(() {});
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        accountProvider.setCurrentIndex(_tabController.index);
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final customColor = context.watch<CustomThemeProvider>().colors;
-    final accountProvider = context.watch<BusinessProvider>();
     final theme = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -77,47 +76,45 @@ class _BusinessCategoryChooseViewState
                 subTitle: "What brings you here?",
               ),
 
-              if (_tabController != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: customColor.borderColor),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicator: BoxDecoration(
-                      color: customColor.baseColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    labelColor: customColor.whiteColor,
-                    unselectedLabelColor: customColor.textColor,
-                    labelStyle: theme.bodyLarge!.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                    unselectedLabelStyle: theme.bodyLarge!.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                    indicatorPadding: EdgeInsets.zero,
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    dividerColor: Colors.transparent,
-                    tabs: [
-                      Tab(
-                        text: _tabController.index == 0
-                            ? "For My Business"
-                            : "Switch to My Business",
-                      ),
-                      Tab(
-                        text: _tabController.index == 1
-                            ? "Personal Use"
-                            : "Switch to Personal",
-                      ),
-                    ],
-                  ),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: customColor.borderColor),
                 ),
-              ],
+                child: TabBar(
+                  controller: _tabController,
+                  indicator: BoxDecoration(
+                    color: customColor.baseColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  labelColor: customColor.whiteColor,
+                  unselectedLabelColor: customColor.textColor,
+                  labelStyle: theme.bodyLarge!.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  unselectedLabelStyle: theme.bodyLarge!.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                  indicatorPadding: EdgeInsets.zero,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
+                  tabs: [
+                    Tab(
+                      text: _tabController.index == 0
+                          ? "For My Business"
+                          : "Switch to My Business",
+                    ),
+                    Tab(
+                      text: _tabController.index == 1
+                          ? "Personal Use"
+                          : "Switch to Personal",
+                    ),
+                  ],
+                ),
+              ),
 
               height20,
               Text(
@@ -180,24 +177,16 @@ class _BusinessCategoryChooseViewState
     );
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
   void searchCategorySheet(BuildContext context) {
-    // Parent context-la irundha provider-a fetch pannikrom
     final industryProvider = context.read<IndustryProvider>();
     industryProvider.fetchAssetCategories();
-
+    final DraggableScrollableController _sheetController =
+    DraggableScrollableController();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      useSafeArea: true,
-      builder: (modalContext) {
-        // 🚀 FIX: Wrap with ChangeNotifierProvider.value so SearchBottomSheet has access to IndustryProvider
+      builder: (_) {
         return ChangeNotifierProvider.value(
           value: industryProvider,
           child: Stack(
@@ -208,19 +197,18 @@ class _BusinessCategoryChooseViewState
                   child: Container(color: Colors.black.withOpacity(0.2)),
                 ),
               ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: DraggableScrollableSheet(
-                  expand: false,
-                  initialChildSize: 0.7,
-                  minChildSize: 0.7,
-                  maxChildSize: 1.0,
-                  builder: (context, scrollController) {
-                    return SearchBottomSheet(
-                      scrollController: scrollController,
-                    );
-                  },
-                ),
+              DraggableScrollableSheet(
+                controller: _sheetController,
+                expand: false,
+                initialChildSize: 0.75,
+                minChildSize: 0.5,
+                maxChildSize: 0.95,
+                builder: (context, scrollController) {
+                  return SearchBottomSheet(
+                    scrollController: scrollController,
+                    sheetController: _sheetController,
+                  );
+                },
               ),
             ],
           ),

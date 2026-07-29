@@ -11,6 +11,7 @@ import 'core/api/api_handler.dart';
 import 'core/api/api_interceptor.dart';
 import 'core/api/enums/api_content_type.dart';
 import 'core/api/enums/toast_position.dart';
+import 'network/provider/business_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +56,7 @@ class _MyAppState extends State<MyApp> {
         return MultiProvider(
           providers: [
             ChangeNotifierProvider(create: (_) => CustomThemeProvider()),
+            ChangeNotifierProvider(create: (_) => BusinessProvider()),
           ],
           child: Consumer<CustomThemeProvider>(
             builder: (context, themeProvider, child) {

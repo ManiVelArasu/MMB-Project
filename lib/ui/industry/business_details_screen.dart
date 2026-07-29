@@ -15,303 +15,276 @@ class BusinessDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🚀 FIX: Wrap with ChangeNotifierProvider so BusinessProvider is locally available for this route
-    return ChangeNotifierProvider(
-      create: (_) => BusinessProvider(),
-      builder: (context, child) {
-        final customColor = Provider.of<CustomThemeProvider>(context).colors;
-        final theme = Theme.of(context).textTheme;
+    final customColor = context.watch<CustomThemeProvider>().colors;
+    final theme = Theme.of(context).textTheme;
+    final businessProvider = context
+        .watch<BusinessProvider>(); // 🚀 Global provider watch
 
-        return Consumer<BusinessProvider>(
-          builder: (context, businessProvider, child) {
-            return Scaffold(
-              appBar: AppBar(
-                leading: IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: SvgPicture.asset("assets/icons/back_icon.svg"),
-                ),
-                backgroundColor: customColor.whiteColor,
-                surfaceTintColor: customColor.whiteColor,
-              ),
-              body: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: SvgPicture.asset("assets/icons/back_icon.svg"),
+        ),
+        backgroundColor: customColor.whiteColor,
+        surfaceTintColor: customColor.whiteColor,
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const TitleValueWidget(
-                                title: "Business Details",
-                                subTitle:
-                                "Please provide your business details to help us personalize your experience.",
-                              ),
+                      const TitleValueWidget(
+                        title: "Business Details",
+                        subTitle:
+                            "Please provide your business details to help us personalize your experience.",
+                      ),
 
-                              // LOGO UPLOAD AREA
-                              businessProvider.selectedImage == null &&
-                                  businessProvider.originalImage == null
-                                  ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.start,
-                                    children: [
-                                      InkWell(
-                                        onTap: () =>
-                                            uploadImageSheet(context, businessProvider),
-                                        child: Container(
-                                          height: 120.h,
-                                          width: 120.w,
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                            BorderRadius.circular(16),
-                                            color: customColor.redColor
-                                                .withAlpha(25),
-                                            border: Border.all(
-                                              color:
-                                              businessProvider
-                                                  .imageError !=
-                                                  null
-                                                  ? Colors.red
-                                                  : customColor.redColor,
-                                            ),
-                                          ),
-                                          child: Column(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                            children: [
-                                              SvgPicture.asset(
-                                                "assets/icons/upload_logo_ic.svg",
-                                              ),
-                                              height8,
-                                              AppText(
-                                                "Upload logo",
-                                                style: theme.bodyMedium!
-                                                    .copyWith(
-                                                  color: customColor
-                                                      .blackColor,
-                                                  fontWeight:
-                                                  FontWeight.w700,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                      // LOGO UPLOAD AREA
+                      businessProvider.selectedImage == null &&
+                              businessProvider.originalImage == null
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    InkWell(
+                                      onTap: () => uploadImageSheet(
+                                        context,
+                                        businessProvider,
                                       ),
-                                      Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 12.0.h,
-                                        ),
-                                        child: AppText(
-                                          "OR",
-                                          style: theme.bodyMedium!.copyWith(
-                                            color: customColor.blackColor,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
+                                      child: Container(
                                         height: 120.h,
                                         width: 120.w,
-                                        padding: const EdgeInsets.all(16),
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(
                                             16,
                                           ),
-                                          color: customColor.redColor
-                                              .withAlpha(25),
+                                          color: customColor.redColor.withAlpha(
+                                            25,
+                                          ),
                                           border: Border.all(
-                                            color: customColor.redColor,
+                                            color:
+                                                businessProvider.imageError !=
+                                                    null
+                                                ? Colors.red
+                                                : customColor.redColor,
                                           ),
                                         ),
                                         child: Column(
                                           mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                              MainAxisAlignment.center,
                                           children: [
                                             SvgPicture.asset(
-                                              "assets/icons/create_logo_ic.svg",
+                                              "assets/icons/upload_logo_ic.svg",
                                             ),
                                             height8,
                                             AppText(
-                                              "Create logo",
-                                              style: theme.bodyMedium!
-                                                  .copyWith(
-                                                color: customColor
-                                                    .blackColor,
-                                                fontWeight:
-                                                FontWeight.w700,
+                                              "Upload logo",
+                                              style: theme.bodyMedium!.copyWith(
+                                                color: customColor.blackColor,
+                                                fontWeight: FontWeight.w700,
                                               ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  if (businessProvider.imageError != null)
+                                    ),
                                     Padding(
-                                      padding: EdgeInsets.only(
-                                        top: 6.h,
-                                        left: 4.w,
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 12.0.h,
                                       ),
                                       child: AppText(
-                                        businessProvider.imageError!,
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                          fontSize: 12.sp,
+                                        "OR",
+                                        style: theme.bodyMedium!.copyWith(
+                                          color: customColor.blackColor,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                     ),
-                                ],
-                              )
-                                  : Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  Container(
-                                    height: 100.h,
-                                    width: 100.w,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color:
-                                        businessProvider
-                                            .isImageSelected ==
-                                            false
-                                            ? customColor.redColor
-                                            : customColor.greyColor.withAlpha(
-                                          50,
+                                    Container(
+                                      height: 120.h,
+                                      width: 120.w,
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        color: customColor.redColor.withAlpha(
+                                          25,
                                         ),
-                                        width: 2.w,
+                                        border: Border.all(
+                                          color: customColor.redColor,
+                                        ),
                                       ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.1,
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          SvgPicture.asset(
+                                            "assets/icons/create_logo_ic.svg",
                                           ),
-                                          blurRadius: 8.r,
-                                          offset: Offset(0, 2.h),
-                                        ),
-                                      ],
+                                          height8,
+                                          AppText(
+                                            "Create logo",
+                                            style: theme.bodyMedium!.copyWith(
+                                              color: customColor.blackColor,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Builder(
-                                        builder: (context) {
-                                          final imageFile =
-                                              businessProvider
-                                                  .selectedImage ??
-                                                  businessProvider.originalImage;
-
-                                          if (imageFile != null) {
-                                            return Image.file(
-                                              imageFile,
-                                              fit: BoxFit.cover,
-                                              width: double.infinity,
-                                              height: double.infinity,
-                                            );
-                                          } else {
-                                            return const Center(
-                                              child: Icon(
-                                                Icons.image_not_supported,
-                                                color: Colors.grey,
-                                              ),
-                                            );
-                                          }
-                                        },
+                                  ],
+                                ),
+                                if (businessProvider.imageError != null)
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      top: 6.h,
+                                      left: 4.w,
+                                    ),
+                                    child: AppText(
+                                      businessProvider.imageError!,
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 12.sp,
                                       ),
                                     ),
                                   ),
-                                  Positioned(
-                                    top: -8,
-                                    right: -8,
-                                    child: InkWell(
-                                      onTap: () =>
-                                          businessProvider.clearImage(),
-                                      child: SvgPicture.asset(
-                                        "assets/icons/remove_ic.svg",
-                                        height: 30,
-                                        width: 30,
-                                      ),
+                              ],
+                            )
+                          : Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  height: 100.h,
+                                  width: 100.w,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color:
+                                          businessProvider.isImageSelected ==
+                                              false
+                                          ? customColor.redColor
+                                          : customColor.greyColor.withAlpha(50),
+                                      width: 2.w,
                                     ),
                                   ),
-                                ],
-                              ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Builder(
+                                      builder: (context) {
+                                        final imageFile =
+                                            businessProvider.selectedImage ??
+                                            businessProvider.originalImage;
+                                        if (imageFile != null) {
+                                          return Image.file(
+                                            imageFile,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                          );
+                                        } else {
+                                          return const Center(
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.grey,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: -8,
+                                  right: -8,
+                                  child: InkWell(
+                                    onTap: () => businessProvider.clearImage(),
+                                    child: SvgPicture.asset(
+                                      "assets/icons/remove_ic.svg",
+                                      height: 30,
+                                      width: 30,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
 
-                              height12,
+                      height12,
 
-                              // 1. BUSINESS NAME FIELD
-                              _buildCustomInputField(
-                                title: "Business Name",
-                                hintText: "Enter business name",
-                                customColor: customColor,
-                                theme: theme,
-                                onChanged: businessProvider.setBusinessName,
-                                errorMessage: businessProvider.nameError,
-                              ),
-
-                              height12,
-
-                              // 2. EMAIL ID FIELD
-                              _buildCustomInputField(
-                                title: "Email Id",
-                                hintText: "Enter email id",
-                                keyboardType: TextInputType.emailAddress,
-                                customColor: customColor,
-                                theme: theme,
-                                onChanged: businessProvider.setEmail,
-                                errorMessage: businessProvider.emailError,
-                              ),
-
-                              height12,
-
-                              // 3. CONTACT NUMBER FIELD
-                              _buildCustomInputField(
-                                title: "Contact Number",
-                                hintText: "Enter contact number",
-                                keyboardType: TextInputType.phone,
-                                customColor: customColor,
-                                theme: theme,
-                                onChanged: businessProvider.setMobileNumber,
-                                errorMessage: businessProvider.mobileError,
-                              ),
-                            ],
-                          ),
-                        ),
+                      // 1. BUSINESS NAME FIELD
+                      _buildCustomInputField(
+                        title: "Business Name",
+                        hintText: "Enter business name",
+                        customColor: customColor,
+                        theme: theme,
+                        onChanged: businessProvider.setBusinessName,
+                        errorMessage: businessProvider.nameError,
                       ),
 
-                      // CONTINUE BUTTON
-                      ButtonWidget(
-                        buttonPress: () {
-                          // FORM VALIDATION CHECK
-                          if (businessProvider.validateForm()) {
-                            Navigator.pushNamed(context, "/BusinessFrameScreen");
-                          }
-                        },
-                        title: "CONTINUE",
-                        textStyle: theme.titleLarge!.copyWith(
-                          color: customColor.whiteColor,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: customColor.redColor,
-                        ),
-                        height: 54.h,
+                      height12,
+
+                      // 2. EMAIL ID FIELD
+                      _buildCustomInputField(
+                        title: "Email Id",
+                        hintText: "Enter email id",
+                        keyboardType: TextInputType.emailAddress,
+                        customColor: customColor,
+                        theme: theme,
+                        onChanged: businessProvider.setEmail,
+                        errorMessage: businessProvider.emailError,
+                      ),
+
+                      height12,
+
+                      // 3. CONTACT NUMBER FIELD
+                      _buildCustomInputField(
+                        title: "Contact Number",
+                        hintText: "Enter contact number",
+                        keyboardType: TextInputType.phone,
+                        customColor: customColor,
+                        theme: theme,
+                        onChanged: businessProvider.setMobileNumber,
+                        errorMessage: businessProvider.mobileError,
                       ),
                     ],
                   ),
                 ),
               ),
-            );
-          },
-        );
-      },
+              SizedBox(height: 15),
+              // CONTINUE BUTTON
+              ButtonWidget(
+                buttonPress: () {
+                  // FORM VALIDATION CHECK
+                  if (businessProvider.validateForm()) {
+                    // 🚀 Since BusinessProvider is global, the saved image, name, email & mobile
+                    // can now be accessed in any other screen (like /BusinessFrameScreen) using context.watch<BusinessProvider>()
+                    Navigator.pushNamed(context, "/BusinessFrameScreen");
+                  }
+                },
+                title: "CONTINUE",
+                textStyle: theme.titleLarge!.copyWith(
+                  color: customColor.whiteColor,
+                  fontWeight: FontWeight.w700,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: customColor.redColor,
+                ),
+                height: 54.h,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  // Reusable TextField Component with Dynamic Error Red Border
   Widget _buildCustomInputField({
     required String title,
     required String hintText,
@@ -383,7 +356,6 @@ void uploadImageSheet(BuildContext context, BusinessProvider businessProvider) {
   showModalBottomSheet(
     context: context,
     builder: (BuildContext context) {
-      // 🚀 FIX: Wrap bottom sheet with ChangeNotifierProvider.value to retain provider scope
       return ChangeNotifierProvider.value(
         value: businessProvider,
         child: Container(

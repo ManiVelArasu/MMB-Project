@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class ButtonWidget extends StatefulWidget {
-  final VoidCallback buttonPress;
+  final VoidCallback? buttonPress;
   final double? width;
   final double? height;
   final Decoration? decoration;
@@ -73,7 +73,7 @@ class _ButtonWidgetState extends State<ButtonWidget>
           ? null
           : (details) {
               _onTapUp(details);
-              widget.buttonPress();
+              widget.buttonPress?.call();
             },
       onTapCancel: widget.isLoading ? null : _onTapCancel,
       child: AnimatedScale(

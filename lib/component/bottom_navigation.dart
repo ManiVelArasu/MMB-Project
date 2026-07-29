@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:project_mmb/network/provider/business_provider.dart';
 import 'package:project_mmb/network/provider/home_screen_provider.dart';
@@ -21,7 +22,6 @@ class CustomBottomNavScreen extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => BottomNavProvider()),
-        ChangeNotifierProvider(create: (_) => BusinessProvider()),
         ChangeNotifierProvider(create: (_) => HomeScreenProvider()),
         ChangeNotifierProvider(create: (_) => ThemesScreenProvider()),
         ChangeNotifierProvider(create: (_) => CustomScreenProvider()),
@@ -50,103 +50,110 @@ class CustomBottomNavView extends StatelessWidget {
 
     return Consumer<BottomNavProvider>(
       builder: (context, navProvider, child) {
-        return Scaffold(
-          resizeToAvoidBottomInset: false,
-          backgroundColor: Colors.white,
-          body: _screens[navProvider.selectedIndex],
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
-          floatingActionButton: isKeyboardOpen
-              ? null
-              : Container(
-                  height: 72.h,
-                  width: 72.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFFFECEE),
-                      width: 4.w,
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) async {
+            if (didPop) return;
+            SystemNavigator.pop();
+          },
+          child: Scaffold(
+            resizeToAvoidBottomInset: false,
+            backgroundColor: Colors.white,
+            body: _screens[navProvider.selectedIndex],
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.centerDocked,
+            floatingActionButton: isKeyboardOpen
+                ? null
+                : Container(
+                    height: 72.h,
+                    width: 72.w,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFFFECEE),
+                        width: 4.w,
+                      ),
                     ),
-                  ),
-                  child: FloatingActionButton(
-                    onPressed: () {
-                      navProvider.updateIndex(2);
-                    },
-                    backgroundColor: const Color(0xFFE53935),
-                    elevation: 4,
-                    shape: const CircleBorder(),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          "assets/images/my_pagelogo.png",
-                          height: 20.h,
-                          width: 20.w,
-                          color: Colors.white,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            Icons.grid_view_rounded,
+                    child: FloatingActionButton(
+                      onPressed: () {
+                        navProvider.updateIndex(2);
+                      },
+                      backgroundColor: const Color(0xFFE53935),
+                      elevation: 4,
+                      shape: const CircleBorder(),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            "assets/images/my_pagelogo.png",
+                            height: 20.h,
+                            width: 20.w,
                             color: Colors.white,
-                            size: 20.sp,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.grid_view_rounded,
+                              color: Colors.white,
+                              size: 20.sp,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          "MY\nPAGE",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.w900,
-                            height: 0.9,
+                          SizedBox(height: 2.h),
+                          Text(
+                            "MY\nPAGE",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.w900,
+                              height: 0.9,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-          bottomNavigationBar: isKeyboardOpen
-              ? const SizedBox.shrink()
-              : BottomAppBar(
-                  color: const Color(0xFF1E2B58),
-                  shape: const CircularNotchedRectangle(),
-                  notchMargin: 6.r,
-                  padding: EdgeInsets.zero,
-                  child: SizedBox(
-                    height: 65.h,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildNavItem(
-                          context: context,
-                          imagePath: "assets/images/edit.png",
-                          label: "CUSTOM",
-                          index: 0,
-                        ),
-                        _buildNavItem(
-                          context: context,
-                          imagePath: "assets/images/themes.png",
-                          label: "THEMES",
-                          index: 1,
-                        ),
+            bottomNavigationBar: isKeyboardOpen
+                ? const SizedBox.shrink()
+                : BottomAppBar(
+                    color: const Color(0xFF1E2B58),
+                    shape: const CircularNotchedRectangle(),
+                    notchMargin: 6.r,
+                    padding: EdgeInsets.zero,
+                    child: SizedBox(
+                      height: 65.h,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildNavItem(
+                            context: context,
+                            imagePath: "assets/images/edit.png",
+                            label: "CUSTOM",
+                            index: 0,
+                          ),
+                          _buildNavItem(
+                            context: context,
+                            imagePath: "assets/images/themes.png",
+                            label: "THEMES",
+                            index: 1,
+                          ),
 
-                        SizedBox(width: 48.w),
+                          SizedBox(width: 48.w),
 
-                        _buildNavItem(
-                          context: context,
-                          imagePath: "assets/images/nearme.png",
-                          label: "NEAR ME",
-                          index: 3,
-                        ),
-                        _buildNavItem(
-                          context: context,
-                          imagePath: "assets/images/you.png",
-                          label: "YOU",
-                          index: 4,
-                        ),
-                      ],
+                          _buildNavItem(
+                            context: context,
+                            imagePath: "assets/images/nearme.png",
+                            label: "NEAR ME",
+                            index: 3,
+                          ),
+                          _buildNavItem(
+                            context: context,
+                            imagePath: "assets/images/you.png",
+                            label: "YOU",
+                            index: 4,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+          ),
         );
       },
     );

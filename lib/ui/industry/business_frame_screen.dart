@@ -14,12 +14,11 @@ class BusinessFramesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => BusinessProvider(),
-      child: const BusinessFramesView(),
-    );
+    // 🚀 FIX: Removed local ChangeNotifierProvider so it reads from the global BusinessProvider properly
+    return const BusinessFramesView();
   }
 }
+
 class BusinessFramesView extends StatefulWidget {
   const BusinessFramesView({super.key});
 
@@ -61,6 +60,7 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
                         children: [
                           SizedBox(height: 12.h),
 
+                          // 1. MAIN PREVIEW BANNER
                           Container(
                             height: 340.h,
                             width: double.infinity,
@@ -294,9 +294,6 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
                               scrollDirection: Axis.horizontal,
                               itemCount: 3,
                               itemBuilder: (context, index) {
-                                final savedImageFile =
-                                    businessProvider.selectedImage ??
-                                        businessProvider.originalImage;
                                 bool isSolidBanner = index % 2 != 0;
 
                                 return Container(
@@ -404,8 +401,8 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
   Widget _buildOutlineBanner(BusinessProvider businessProvider) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-      decoration: BoxDecoration(
-        border: const Border(
+      decoration: const BoxDecoration(
+        border: Border(
           top: BorderSide(color: Color(0xFF0066FF), width: 1.5),
         ),
       ),

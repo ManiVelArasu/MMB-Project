@@ -18,6 +18,7 @@ import '../ui/screens/download_screen.dart';
 import '../ui/screens/edit_profile_screen.dart';
 import '../ui/screens/profile_screen.dart';
 import '../ui/screens/smcalender_screen.dart';
+import '../ui/screens/template_detail_screen.dart';
 import '../ui/screens/theme_detail_screen.dart';
 import '../ui/subscription/basic_plan.dart';
 import '../ui/subscription/elit_plan.dart';
@@ -59,7 +60,7 @@ class RouteGenerator {
         final businessProvider = settings.arguments as BusinessProvider;
         return MaterialPageRoute(
           builder: (context) => ChangeNotifierProvider.value(
-            value: businessProvider, // 👈 Passing the exact same instance
+            value: businessProvider,
             child: const EditPhotoScreen(),
           ),
         );
@@ -104,6 +105,10 @@ class RouteGenerator {
       case "/EditProfileScreen":
         return MaterialPageRoute(
           builder: (context) => const EditProfileScreen(),
+        );
+      case "/TemplateDetailScreen":
+        return MaterialPageRoute(
+          builder: (context) => const TemplateDetailScreen(),
         );
     }
     return null;
