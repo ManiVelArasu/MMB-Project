@@ -557,7 +557,7 @@ class HomeScreen extends StatelessWidget {
                   Positioned.fill(
                     child: InkWell(
                       onTap: () async {
-                        Navigator.pushNamed(context, "/EditorScreen");
+
                         /*final file = await assetToFile(item["icon"]!);
                         await openEditor(context, file);*/
                       },

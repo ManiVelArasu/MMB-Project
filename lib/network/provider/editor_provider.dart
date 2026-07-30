@@ -31,17 +31,18 @@ class EditorProvider extends ChangeNotifier {
   void loadItemsFromJson(List<Map<String, dynamic>> jsonList) {
     _items.clear();
     for (var json in jsonList) {
-      _items.add(EditorItem(
-        id: json['id'],
-        type: json['type'],
-        contentUrl: json['content_url'],
-        text: json['text'],
-        position: Offset(json['position_x'] ?? 50.0, json['position_y'] ?? 50.0),
-        width: json['width'] ?? 200.0,
-        height: json['height'] ?? 200.0,
-        fontSize: json['font_size'] ?? 24.0,
-        color: json['color'] != null ? Color(int.parse(json['color'].replaceFirst('#', '0xFF'))) : Colors.black87,
-      ));
+      // 🚀 Using your new EditorItem.fromJson factory constructor
+      EditorItem item = EditorItem.fromJson(json);
+
+      // Optional: Handle color parsing if color exists in json
+      if (json['color'] != null) {
+        try {
+          Color parsedColor = Color(int.parse(json['color'].replaceFirst('#', '0xFF')));
+          item = item.copyWith(color: parsedColor);
+        } catch (_) {}
+      }
+
+      _items.add(item);
     }
     _saveState();
     notifyListeners();
@@ -114,7 +115,14 @@ class EditorProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
+  void updateTextContent(String id, String newText) {
+    int index = _items.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      _saveState();
+      _items[index] = _items[index].copyWith(text: newText);
+      notifyListeners();
+    }
+  }
   void setImageFilter(String id, String filterName) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -135,7 +143,26 @@ class EditorProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  void regenerateImageWithAi(String id, String prompt) {
+    int index = _items.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      _saveState();
+      String encodedPrompt = Uri.encodeComponent(prompt);
+      int seed = DateTime.now().millisecondsSinceEpoch % 10000;
+      String aiImageUrl = "https://image.pollinations.ai/prompt/$encodedPrompt?seed=$seed&nologo=true";
 
+      _items[index] = _items[index].copyWith(contentUrl: aiImageUrl, isLocal: false);
+      notifyListeners();
+    }
+  }
+  void updateTextColor(String id, Color newColor) {
+    int index = _items.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      _saveState();
+      _items[index] = _items[index].copyWith(color: newColor);
+      notifyListeners();
+    }
+  }
   void setImageShape(String id, String shape, {double radius = 16.0}) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
