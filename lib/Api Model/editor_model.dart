@@ -27,6 +27,10 @@ class EditorItem {
   // 🚀 New Pro Features: Outline, Brightness/Tint
   final double outlineWidth;
   final Color outlineColor;
+  final String filterType;
+  final double brightness; // -1.0 to 1.0
+  final double contrast;   // 0.0 to 2.0
+  final double saturation; // 0.0 to 2.0
 
   EditorItem({
     required this.id,
@@ -46,6 +50,10 @@ class EditorItem {
     this.fontFamily = 'Roboto',
     this.outlineWidth = 0.0,
     this.outlineColor = Colors.transparent,
+    this.filterType = 'normal',
+    this.brightness = 0.0,
+    this.contrast = 1.0,
+    this.saturation = 1.0,
   });
 
   EditorItem copyWith({
@@ -65,6 +73,10 @@ class EditorItem {
     String? fontFamily,
     double? outlineWidth,
     Color? outlineColor,
+    String? filterType,
+    double? brightness,
+    double? contrast,
+    double? saturation,
   }) {
     return EditorItem(
       id: id ?? this.id,
@@ -84,6 +96,10 @@ class EditorItem {
       fontFamily: fontFamily ?? this.fontFamily,
       outlineWidth: outlineWidth ?? this.outlineWidth,
       outlineColor: outlineColor ?? this.outlineColor,
+      filterType: filterType ?? this.filterType,
+      brightness: brightness ?? this.brightness,
+      contrast: contrast ?? this.contrast,
+      saturation: saturation ?? this.saturation,
     );
   }
 
@@ -104,6 +120,7 @@ class EditorItem {
     'opacity': opacity,
     'font_family': fontFamily,
     'outline_width': outlineWidth,
+    'filter_type': filterType,
   };
 
   factory EditorItem.fromJson(Map<String, dynamic> json) {
@@ -126,6 +143,7 @@ class EditorItem {
       opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
       fontFamily: json['font_family'] ?? 'Roboto',
       outlineWidth: (json['outline_width'] as num?)?.toDouble() ?? 0.0,
+      filterType: json['filter_type'] ?? 'normal',
     );
   }
 }

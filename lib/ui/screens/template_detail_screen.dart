@@ -137,7 +137,9 @@ class _TemplateDetailBody extends StatelessWidget {
                         SizedBox(width: 12.w),
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.pushNamed(context, "/TemplateEditScreen");
+                            },
                             icon: const Icon(
                               Icons.edit,
                               color: Colors.red,

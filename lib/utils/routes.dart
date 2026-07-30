@@ -20,6 +20,7 @@ import '../ui/screens/editor_screen.dart';
 import '../ui/screens/profile_screen.dart';
 import '../ui/screens/smcalender_screen.dart';
 import '../ui/screens/template_detail_screen.dart';
+import '../ui/screens/template_edit.dart';
 import '../ui/screens/theme_detail_screen.dart';
 import '../ui/subscription/basic_plan.dart';
 import '../ui/subscription/elit_plan.dart';
@@ -112,9 +113,13 @@ class RouteGenerator {
           builder: (context) => const TemplateDetailScreen(),
         );
 
-      case "/EditorScreen":
+      /* case "/EditorScreen":
         return MaterialPageRoute(
           builder: (context) => const EditorScreen(),
+        ); */
+      case "/TemplateEditScreen":
+        return MaterialPageRoute(
+          builder: (context) => const TemplateEditScreen(),
         );
     }
     return null;
