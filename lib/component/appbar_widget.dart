@@ -7,22 +7,44 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
+
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showTitle;
+
+  /// Right Icon
   final bool showRightIcon;
-  final VoidCallback? onBackPressed;
   final VoidCallback? onRightIconTap;
   final String? badgeCount;
+
+  /// Action Text
+  final bool showActionText;
+  final String actionText;
+  final VoidCallback? onActionTextTap;
+
+  /// Back Button
+  final VoidCallback? onBackPressed;
 
   const CustomAppBar({
     super.key,
     this.title = "Business Frames",
     this.showTitle = true,
-    this.showRightIcon = true,
+
+    // Back
     this.onBackPressed,
+
+    // Right Icon
+    this.showRightIcon = true,
     this.onRightIconTap,
     this.badgeCount = "2",
+
+    // Action Text
+    this.showActionText = false,
+    this.actionText = "",
+    this.onActionTextTap,
   });
 
   @override
@@ -38,7 +60,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       titleSpacing: 16.w,
       title: Row(
         children: [
-          // Back Button
+          /// Back Button
           InkWell(
             onTap: onBackPressed ?? () => Navigator.pop(context),
             borderRadius: BorderRadius.circular(24.r),
@@ -60,72 +82,99 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           SizedBox(width: 12.w),
 
-          // Title Text
+          /// Title
           if (showTitle)
             Expanded(
               child: Text(
                 title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: theme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                   fontSize: 20.sp,
                   color: customColor.blackColor,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
         ],
       ),
-      // Right Actions Section (Renders only if showRightIcon is TRUE)
-      actions: showRightIcon
-          ? [
-        Padding(
-          padding: EdgeInsets.only(right: 16.w),
-          child: InkWell(
-            onTap: onRightIconTap,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  padding: EdgeInsets.all(6.r),
-                  child: Icon(
-                    Icons.layers_rounded,
-                    color: const Color(0xFFE53935),
-                    size: 30.sp,
+
+      /// Right Side
+      actions: [
+        /// Action Text
+        if (showActionText)
+          Padding(
+            padding: EdgeInsets.only(right: 12.w),
+            child: InkWell(
+              onTap: onActionTextTap,
+              borderRadius: BorderRadius.circular(8.r),
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4.w),
+                  child: Text(
+                    actionText,
+                    style: theme.titleMedium?.copyWith(
+                      color: const Color(0xFFE53935),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15.sp,
+                    ),
                   ),
                 ),
-                if (badgeCount != null)
-                  Positioned(
-                    top: 2,
-                    left: 2,
-                    child: Container(
-                      padding: EdgeInsets.all(4.r),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF1E293B),
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: BoxConstraints(
-                        minWidth: 18.w,
-                        minHeight: 18.h,
-                      ),
-                      child: Center(
-                        child: Text(
-                          badgeCount!,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
+        /// Right Icon
+        if (showRightIcon)
+          Padding(
+            padding: EdgeInsets.only(right: 16.w),
+            child: InkWell(
+              onTap: onRightIconTap,
+              borderRadius: BorderRadius.circular(24.r),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(6.r),
+                    child: Icon(
+                      Icons.layers_rounded,
+                      color: const Color(0xFFE53935),
+                      size: 30.sp,
+                    ),
+                  ),
+
+                  /// Badge
+                  if (badgeCount != null)
+                    Positioned(
+                      top: 2,
+                      left: 2,
+                      child: Container(
+                        padding: EdgeInsets.all(4.r),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF1E293B),
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: BoxConstraints(
+                          minWidth: 18.w,
+                          minHeight: 18.h,
+                        ),
+                        child: Center(
+                          child: Text(
+                            badgeCount!,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ]
-          : null, // 👈 Returns null if showRightIcon is false
+      ],
     );
   }
 

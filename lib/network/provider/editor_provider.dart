@@ -19,13 +19,12 @@ class EditorProvider extends ChangeNotifier {
   List<EditorItem> _items = [];
   List<EditorItem> get items => _items;
 
-  // 🚀 Undo & Redo History Stacks
   final List<List<EditorItem>> _history = [];
   final List<List<EditorItem>> _redoStack = [];
 
   void _saveState() {
     _history.add(List.from(_items.map((e) => e.copyWith())));
-    _redoStack.clear(); // Clear redo on new action
+    _redoStack.clear();
   }
 
   void undo() {
@@ -74,7 +73,7 @@ class EditorProvider extends ChangeNotifier {
       width: 180,
       height: 180,
       borderRadius: 16.0,
-      text: 'rounded', // default shape style for image masking
+      text: 'rounded',
     ));
     notifyListeners();
   }
@@ -91,6 +90,20 @@ class EditorProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void duplicateItem(String id) {
+    _saveState();
+    int index = _items.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      final item = _items[index];
+      final duplicated = item.copyWith(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        position: item.position + const Offset(20, 20),
+      );
+      _items.add(duplicated);
+      notifyListeners();
+    }
+  }
+
   void updatePosition(String id, Offset offset) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -99,21 +112,57 @@ class EditorProvider extends ChangeNotifier {
     }
   }
 
-  // 🚀 Image-kulla irukkura Shapes-a change panra method (circle, rounded, heart, star, hexagon, square)
+  // 🚀 Rotation Feature
+  void updateRotation(String id, double angle) {
+    int index = _items.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      _items[index] = _items[index].copyWith(rotation: angle);
+      notifyListeners();
+    }
+  }
+
+  // 🚀 Zoom / Scale Feature
+  void updateScale(String id, double scale) {
+    int index = _items.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      _items[index] = _items[index].copyWith(scale: scale);
+      notifyListeners();
+    }
+  }
+
+  // 🚀 Alignment Features (Center Horizontal / Vertical)
+  void alignItem(String id, String alignmentType) {
+    _saveState();
+    int index = _items.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      final item = _items[index];
+      Offset newPos = item.position;
+      // Assuming canvas reference width ~ 400, height ~ 600 (Approx center)
+      if (alignmentType == 'center_h') {
+        newPos = Offset(200 - (item.width / 2), item.position.dy);
+      } else if (alignmentType == 'center_v') {
+        newPos = Offset(item.position.dx, 300 - (item.height / 2));
+      }
+      _items[index] = item.copyWith(position: newPos);
+      notifyListeners();
+    }
+  }
+
+  // 🚀 Outline / Border Feature
+  void updateOutline(String id, double width, Color color) {
+    _saveState();
+    int index = _items.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      _items[index] = _items[index].copyWith(outlineWidth: width, outlineColor: color);
+      notifyListeners();
+    }
+  }
+
   void setImageShape(String id, String shapeName, {double radius = 0.0}) {
     _saveState();
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _items[index] = _items[index].copyWith(text: shapeName, borderRadius: radius);
-      notifyListeners();
-    }
-  }
-
-  void updateText(String id, String newText) {
-    _saveState();
-    int index = _items.indexWhere((e) => e.id == id);
-    if (index != -1) {
-      _items[index] = _items[index].copyWith(text: newText);
       notifyListeners();
     }
   }
@@ -135,7 +184,6 @@ class EditorProvider extends ChangeNotifier {
     }
   }
 
-  // 🚀 Layers Manager: Bring to front / Send to back
   void bringToFront(String id) {
     _saveState();
     int index = _items.indexWhere((e) => e.id == id);

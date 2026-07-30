@@ -9,7 +9,7 @@ enum EditorItemType {
 
 
 class EditorItem {
-  final String id;
+  final String? id;
   final String type; // 'text', 'image', 'shape'
   final Offset position;
   final String? text;
@@ -24,6 +24,9 @@ class EditorItem {
   final double fontSize;
   final double opacity;
   final String fontFamily;
+  // 🚀 New Pro Features: Outline, Brightness/Tint
+  final double outlineWidth;
+  final Color outlineColor;
 
   EditorItem({
     required this.id,
@@ -41,9 +44,12 @@ class EditorItem {
     this.fontSize = 24.0,
     this.opacity = 1.0,
     this.fontFamily = 'Roboto',
+    this.outlineWidth = 0.0,
+    this.outlineColor = Colors.transparent,
   });
 
   EditorItem copyWith({
+    String? id,
     Offset? position,
     String? text,
     String? contentUrl,
@@ -57,9 +63,11 @@ class EditorItem {
     double? fontSize,
     double? opacity,
     String? fontFamily,
+    double? outlineWidth,
+    Color? outlineColor,
   }) {
     return EditorItem(
-      id: id,
+      id: id ?? this.id,
       type: type,
       position: position ?? this.position,
       text: text ?? this.text,
@@ -74,6 +82,8 @@ class EditorItem {
       fontSize: fontSize ?? this.fontSize,
       opacity: opacity ?? this.opacity,
       fontFamily: fontFamily ?? this.fontFamily,
+      outlineWidth: outlineWidth ?? this.outlineWidth,
+      outlineColor: outlineColor ?? this.outlineColor,
     );
   }
 
@@ -93,20 +103,10 @@ class EditorItem {
     'font_size': fontSize,
     'opacity': opacity,
     'font_family': fontFamily,
+    'outline_width': outlineWidth,
   };
 
   factory EditorItem.fromJson(Map<String, dynamic> json) {
-    Color? parsedColor;
-    if (json['color'] != null) {
-      try {
-        String hexColor = json['color'].replaceAll('#', '');
-        if (hexColor.length == 6) hexColor = 'FF$hexColor';
-        parsedColor = Color(int.parse(hexColor, radix: 16));
-      } catch (e) {
-        parsedColor = Colors.white;
-      }
-    }
-
     return EditorItem(
       id: json['id'] ?? '',
       type: json['type'] ?? 'text',
@@ -115,7 +115,7 @@ class EditorItem {
         (json['position_y'] as num?)?.toDouble() ?? 50.0,
       ),
       text: json['text'],
-      contentUrl: json['content_url'],
+      contentUrl: json['content_url'] ?? json['image_url'],
       isLocal: json['is_local'] ?? false,
       width: (json['width'] as num?)?.toDouble() ?? 150.0,
       height: (json['height'] as num?)?.toDouble() ?? 150.0,
@@ -125,7 +125,7 @@ class EditorItem {
       fontSize: (json['font_size'] as num?)?.toDouble() ?? 24.0,
       opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
       fontFamily: json['font_family'] ?? 'Roboto',
-      color: parsedColor,
+      outlineWidth: (json['outline_width'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

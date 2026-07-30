@@ -46,6 +46,9 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
             title: "Business Frames",
             showTitle: true,
             badgeCount: "2",
+            showRightIcon: true,
+            actionText: "njnnjj",
+            showActionText: false,
           ),
           body: SafeArea(
             child: Column(
