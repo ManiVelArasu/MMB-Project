@@ -122,7 +122,9 @@ class ProfileScreen extends StatelessWidget {
                       _buildSettingsTile(
                         title: "Help & Support",
                         iconAsset: "assets/images/help_icon.png",
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.pushNamed(context, "/HelpSupportScreen");
+                        },
                       ),
                       _buildSettingsTile(
                         title: "FAQs",
