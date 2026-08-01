@@ -20,7 +20,9 @@ import '../ui/screens/download_screen.dart';
 import '../ui/screens/edit_profile_screen.dart';
 import '../ui/screens/editor_screen.dart';
 import '../ui/screens/notification_screen.dart';
+import '../ui/screens/help_support_screen.dart';
 import '../ui/screens/profile_screen.dart';
+import '../ui/screens/notification_screen.dart';
 import '../ui/screens/smcalender_form_sceen.dart';
 import '../ui/screens/smcalender_screen.dart';
 import '../ui/screens/social_calender_result_screen.dart';
@@ -31,6 +33,7 @@ import '../ui/subscription/basic_plan.dart';
 import '../ui/subscription/elit_plan.dart';
 import '../ui/subscription/premium_plan.dart';
 import '../ui/subscription/subscription_screen.dart';
+import '../ui/screens/feedback_screen.dart';
 
 class RouteGenerator {
   Route<dynamic>? generateRoute(RouteSettings settings) {
@@ -95,6 +98,18 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (context) => const ThemeDetailScreen(),
         );
+      case "/NotificationScreen":
+        return MaterialPageRoute(
+          builder: (context) => const NotificationScreen(),
+        );
+      case "/HelpSupportScreen":
+        return MaterialPageRoute(
+          builder: (context) => const HelpSupportScreen(),
+        );
+     /* case "/FeedbackScreen":
+        return MaterialPageRoute(
+          builder: (context) => const FeedbackScreen(),
+        );*/
       case "/ProfileScreen":
         return MaterialPageRoute(builder: (context) => const ProfileScreen());
       case "/BusinessProfileScreen":
@@ -143,6 +158,10 @@ class RouteGenerator {
       case "/BusinessCategoryChooseView":
         return MaterialPageRoute(
           builder: (context) => const BusinessCategoryChooseView(),
+        );
+      case "/FeedbackScreen":
+        return MaterialPageRoute(
+          builder: (context) => const FeedbackScreen(),
         );
     }
     return null;
