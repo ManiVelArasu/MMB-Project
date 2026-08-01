@@ -34,6 +34,18 @@ class NotificationModel {
       avatarUrl: map['avatarUrl'],
       dateTime: DateTime.parse(map['dateTime']),
       isRead: map['isRead'] ?? false,
+
+
+
+
+
+
+
+
+
+
+
+      
     );
   }
 
