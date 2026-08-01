@@ -108,7 +108,9 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
             // 4. NOTIFICATION BELL ICON WITH RED BADGE
             InkWell(
-              onTap: onNotificationTap,
+              onTap: (){
+                Navigator.pushNamed(context, "/NotificationScreen");
+              },
               borderRadius: BorderRadius.circular(24.r),
               child: Stack(
                 clipBehavior: Clip.none,

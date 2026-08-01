@@ -17,6 +17,7 @@ import '../ui/screens/business_profile_screen.dart';
 import '../ui/screens/download_screen.dart';
 import '../ui/screens/edit_profile_screen.dart';
 import '../ui/screens/editor_screen.dart';
+import '../ui/screens/notification_screen.dart';
 import '../ui/screens/profile_screen.dart';
 import '../ui/screens/smcalender_screen.dart';
 import '../ui/screens/template_detail_screen.dart';
@@ -115,6 +116,9 @@ class RouteGenerator {
       case "/EditorScreen":
         return MaterialPageRoute(
           builder: (context) => const EditorScreen(),
+        );  case "/NotificationScreen":
+        return MaterialPageRoute(
+          builder: (context) => const NotificationScreen(),
         );
     }
     return null;

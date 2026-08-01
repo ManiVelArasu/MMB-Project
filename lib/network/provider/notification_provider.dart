@@ -6,37 +6,46 @@ class NotificationProvider extends ChangeNotifier {
   final List<NotificationModel> _notifications = [
 
     NotificationModel(
-      title: "THEMES",
-      description: "New themes are available now.",
+      title: "New theme added to the library.",
+      description: "Check now and design your SM posts",
+      category: "THEMES",
+      avatarUrl: "https://picsum.photos/seed/theme1/44",
       dateTime: DateTime.now().subtract(const Duration(hours: 1)),
       isRead: false,
     ),
 
-
     NotificationModel(
-      title: "POSTS",
-      description: "Your post received 10 likes.",
+      title: "Your post received 10 likes.",
+      description: "Great engagement on your latest post",
+      category: "POSTS",
+      avatarUrl: "https://picsum.photos/seed/post1/44",
       dateTime: DateTime.now().subtract(const Duration(hours: 2)),
       isRead: false,
     ),
 
     NotificationModel(
-      title: "NEAR BY",
-      description: "A new shop opened near your location.",
+      title: "A new shop opened near you.",
+      description: "Visit and explore new offers nearby",
+      category: "NEAR BY",
+      avatarUrl: "https://picsum.photos/seed/near1/44",
       dateTime: DateTime.now().subtract(const Duration(days: 1)),
       isRead: false,
     ),
 
     NotificationModel(
-      title: "POSTS",
-      description: "Your post has new comments.",
+      title: "Your post has new comments.",
+      description: "Check what people are saying",
+      category: "POSTS",
+      avatarUrl: "https://picsum.photos/seed/post2/44",
       dateTime: DateTime.now().subtract(const Duration(days: 2)),
       isRead: true,
     ),
 
     NotificationModel(
-      title: "POSTS",
-      description: "Weekly report is ready.",
+      title: "Weekly report is ready.",
+      description: "View your weekly performance summary",
+      category: "POSTS",
+      avatarUrl: "https://picsum.photos/seed/post3/44",
       dateTime: DateTime.now().subtract(const Duration(days: 5)),
       isRead: true,
     ),
@@ -45,17 +54,16 @@ class NotificationProvider extends ChangeNotifier {
   List<NotificationModel> get notifications => _notifications;
 
   List<NotificationModel> get todayNotifications {
+    final now = DateTime.now();
     return _notifications.where((item) {
-      return item.dateTime.day == DateTime.now().day &&
-          item.dateTime.month == DateTime.now().month &&
-          item.dateTime.year == DateTime.now().year;
+      return item.dateTime.day == now.day &&
+          item.dateTime.month == now.month &&
+          item.dateTime.year == now.year;
     }).toList();
   }
 
   List<NotificationModel> get yesterdayNotifications {
-    DateTime yesterday =
-    DateTime.now().subtract(const Duration(days: 1));
-
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
     return _notifications.where((item) {
       return item.dateTime.day == yesterday.day &&
           item.dateTime.month == yesterday.month &&
@@ -64,25 +72,16 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   List<NotificationModel> get oldNotifications {
-    DateTime today = DateTime.now();
-
-    DateTime yesterday =
-    DateTime.now().subtract(const Duration(days: 1));
-
+    final now = DateTime.now();
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
     return _notifications.where((item) {
-
-      bool isToday =
-          item.dateTime.day == today.day &&
-              item.dateTime.month == today.month &&
-              item.dateTime.year == today.year;
-
-      bool isYesterday =
-          item.dateTime.day == yesterday.day &&
-              item.dateTime.month == yesterday.month &&
-              item.dateTime.year == yesterday.year;
-
+      final isToday = item.dateTime.day == now.day &&
+          item.dateTime.month == now.month &&
+          item.dateTime.year == now.year;
+      final isYesterday = item.dateTime.day == yesterday.day &&
+          item.dateTime.month == yesterday.month &&
+          item.dateTime.year == yesterday.year;
       return !isToday && !isYesterday;
-
     }).toList();
   }
 

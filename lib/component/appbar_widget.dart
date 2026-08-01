@@ -114,7 +114,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   child: Text(
                     actionText,
                     style: theme.titleMedium?.copyWith(
-                      color: const Color(0xFFE53935),
+                      color: const Color(0xFF1E2E5F),
                       fontWeight: FontWeight.w600,
                       fontSize: 15.sp,
                     ),
