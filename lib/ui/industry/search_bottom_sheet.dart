@@ -203,7 +203,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
                     Navigator.pop(context);
                     Navigator.pushNamed(
                       context,
-                      "/BusinessDetailsScreen",
+                      "/BusinessCategoryChooseView",
                     );
                   },
                   title: "CONTINUE",

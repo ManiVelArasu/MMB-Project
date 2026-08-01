@@ -69,7 +69,7 @@ class AppRouter {
         return _page(const AccountTypeScreen(), settings: settings);
 
       case '/BusinessCategoryChooseScreen':
-        return _page(const BusinessCategoryChooseScreen(), settings: settings);
+        return _page(const BusinessCategoryChooseView(), settings: settings);
 
       case '/BusinessDetailsScreen':
         return _page(const BusinessDetailsScreen(), settings: settings);

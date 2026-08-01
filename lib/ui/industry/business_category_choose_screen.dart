@@ -16,7 +16,6 @@ class BusinessCategoryChooseScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🚀 FIX: Removed local BusinessProvider since it's now global in main.dart
     return ChangeNotifierProvider(
       create: (_) => IndustryProvider(),
       child: const BusinessCategoryChooseView(),
@@ -24,111 +23,82 @@ class BusinessCategoryChooseScreen extends StatelessWidget {
   }
 }
 
-class BusinessCategoryChooseView extends StatefulWidget {
+class BusinessCategoryChooseView extends StatelessWidget {
   const BusinessCategoryChooseView({super.key});
-
-  @override
-  State<BusinessCategoryChooseView> createState() =>
-      _BusinessCategoryChooseViewState();
-}
-
-class _BusinessCategoryChooseViewState extends State<BusinessCategoryChooseView>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    final accountProvider = context.read<BusinessProvider>();
-
-    _tabController = TabController(
-      length: 2,
-      vsync: this,
-      initialIndex: accountProvider.currentIndex,
-    );
-
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
-        accountProvider.setCurrentIndex(_tabController.index);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final customColor = context.watch<CustomThemeProvider>().colors;
     final theme = Theme.of(context).textTheme;
+    final accountProvider = context.watch<BusinessProvider>();
+
+    bool isBusiness = accountProvider.currentIndex == 0;
 
     return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.red),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.grey.shade300),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed: () {
+                int newIndex = isBusiness ? 1 : 0;
+                accountProvider.setCurrentIndex(newIndex);
+              },
+              child: Text(
+                isBusiness ? "SWITCH TO PERSONAL" : "SWITCH TO BUSINESS",
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const TitleValueWidget(
-                title: "Choose your Preferences",
-                subTitle: "What brings you here?",
-              ),
-
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: customColor.borderColor),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicator: BoxDecoration(
-                    color: customColor.baseColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  labelColor: customColor.whiteColor,
-                  unselectedLabelColor: customColor.textColor,
-                  labelStyle: theme.bodyLarge!.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                  unselectedLabelStyle: theme.bodyLarge!.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                  indicatorPadding: EdgeInsets.zero,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: Colors.transparent,
-                  tabs: [
-                    Tab(
-                      text: _tabController.index == 0
-                          ? "For My Business"
-                          : "Switch to My Business",
-                    ),
-                    Tab(
-                      text: _tabController.index == 1
-                          ? "Personal Use"
-                          : "Switch to Personal",
-                    ),
-                  ],
+              const Text(
+                "Select Your Business Category",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
               ),
-
-              height20,
+              const SizedBox(height: 8),
               Text(
-                "Find business category that matches your Products/Services",
-                style: theme.titleMedium!.copyWith(
-                  color: customColor.textColor,
+                "Find the category that best matches your Products/Services",
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
                 ),
               ),
 
-              height12,
+              const SizedBox(height: 24),
 
+              // Search Industry Input Field
               TextFormField(
                 readOnly: true,
                 onTap: () {
+                  // 🚀 Pass current inner context which has access to IndustryProvider
                   searchCategorySheet(context);
                 },
                 decoration: InputDecoration(
@@ -137,32 +107,32 @@ class _BusinessCategoryChooseViewState extends State<BusinessCategoryChooseView>
                     color: customColor.greyColor.withAlpha(50),
                   ),
                   prefixIcon: Padding(
-                    padding: const EdgeInsets.all(10.0),
+                    padding: const EdgeInsets.all(12.0),
                     child: SvgPicture.asset(
                       "assets/icons/search.svg",
-                      width: 24,
-                      height: 24,
+                      width: 22,
+                      height: 22,
                     ),
                   ),
                   suffixIcon: Padding(
-                    padding: const EdgeInsets.all(10.0),
+                    padding: const EdgeInsets.all(12.0),
                     child: SvgPicture.asset(
                       "assets/icons/mic.svg",
-                      width: 24,
-                      height: 24,
+                      width: 22,
+                      height: 22,
                     ),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
-                    vertical: 24,
+                    vertical: 20,
                     horizontal: 12,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.grey.shade400),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.grey.shade400),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -178,10 +148,12 @@ class _BusinessCategoryChooseViewState extends State<BusinessCategoryChooseView>
   }
 
   void searchCategorySheet(BuildContext context) {
+    // 🚀 Now context has direct access to IndustryProvider because it's called from build method's context
     final industryProvider = context.read<IndustryProvider>();
     industryProvider.fetchAssetCategories();
     final DraggableScrollableController _sheetController =
     DraggableScrollableController();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

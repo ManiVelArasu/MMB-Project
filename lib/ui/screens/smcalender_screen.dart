@@ -10,6 +10,7 @@ class SmCalendarScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return ChangeNotifierProvider(
       create: (_) => SmCalendarProvider(),
       child: const SmCalendarView(),
@@ -79,9 +80,9 @@ class SmCalendarView extends StatelessWidget {
                               ),
                             ],
                           ),
-          
+
                           SizedBox(height: 20.h),
-          
+
                           AppText(
                             "Plan your content with ease using our AI-powered calendar. Get ready-to-use post ideas and matching content tailored for your brand. All in just a few taps!",
                             style: TextStyle(
@@ -95,9 +96,9 @@ class SmCalendarView extends StatelessWidget {
                         ],
                       ),
                     ),
-          
+
                     SizedBox(height: 24.h),
-          
+
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20.w),
                       child: Column(
@@ -111,9 +112,9 @@ class SmCalendarView extends StatelessWidget {
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-          
+
                           SizedBox(height: 16.h),
-          
+
                           // CALENDARS LIST
                           ListView.builder(
                             shrinkWrap: true,
@@ -121,7 +122,7 @@ class SmCalendarView extends StatelessWidget {
                             itemCount: provider.calendars.length,
                             itemBuilder: (context, index) {
                               final item = provider.calendars[index];
-          
+
                               return Container(
                                 width: double.infinity,
                                 margin: EdgeInsets.only(bottom: 14.h),
@@ -152,9 +153,9 @@ class SmCalendarView extends StatelessWidget {
                                         fontWeight: FontWeight.w800,
                                       ),
                                     ),
-          
+
                                     SizedBox(height: 4.h),
-          
+
                                     AppText(
                                       item.frequency,
                                       style: TextStyle(
@@ -163,7 +164,7 @@ class SmCalendarView extends StatelessWidget {
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
-          
+
                                     SizedBox(height: 10.h),
                                     AppText(
                                       item.platformAndPosts,
@@ -181,7 +182,7 @@ class SmCalendarView extends StatelessWidget {
                         ],
                       ),
                     ),
-          
+
                     SizedBox(
                       width: double.infinity,
                       height: 50,

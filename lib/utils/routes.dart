@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_mmb/ui/industry/account_type_screen.dart';
-import 'package:project_mmb/ui/industry/business_category_choose_screen.dart';
+import 'package:project_mmb/ui/industry/business_category_choose_screen.dart' hide BusinessCategoryChooseView;
 import 'package:project_mmb/ui/industry/business_details_screen.dart';
 import 'package:project_mmb/ui/industry/edit_photo_screen.dart';
 import 'package:project_mmb/ui/login/login_screen.dart';
@@ -13,11 +13,13 @@ import '../component/bottom_navigation.dart';
 import '../network/provider/auth_provider.dart';
 import '../network/provider/business_provider.dart';
 import '../network/provider/smcalender_form_provider.dart';
+import '../ui/industry/business_category_choose_view.dart';
 import '../ui/industry/business_frame_screen.dart';
 import '../ui/screens/business_profile_screen.dart';
 import '../ui/screens/download_screen.dart';
 import '../ui/screens/edit_profile_screen.dart';
 import '../ui/screens/editor_screen.dart';
+import '../ui/screens/notification_screen.dart';
 import '../ui/screens/profile_screen.dart';
 import '../ui/screens/smcalender_form_sceen.dart';
 import '../ui/screens/smcalender_screen.dart';
@@ -133,6 +135,14 @@ class RouteGenerator {
         final provider = settings.arguments as SocialCalendarProvider;
         return MaterialPageRoute(
           builder: (context) => SocialCalendarResultScreen(provider: provider),
+        );
+      case "/NotificationScreen":
+        return MaterialPageRoute(
+          builder: (context) => const NotificationScreen(),
+        );
+      case "/BusinessCategoryChooseView":
+        return MaterialPageRoute(
+          builder: (context) => const BusinessCategoryChooseView(),
         );
     }
     return null;

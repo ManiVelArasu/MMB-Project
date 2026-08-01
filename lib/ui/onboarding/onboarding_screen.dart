@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/helper/shared_preference.dart';
 import 'package:project_mmb/network/provider/custom_theme_provider.dart';
+import 'package:project_mmb/utils/theme/app.fonts.dart';
 import 'package:project_mmb/widgets/custom_sized_box.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,33 +44,37 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-
+                          Column(
                             children: [
-                              Text(
-                                "Templates",
-                                style: theme.headlineLarge!.copyWith(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w900,
-                                  color: customColor.redColor,
-                                ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                              
+                                children: [
+                                  Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: "Create",
+                                          style: theme.headlineLarge!.copyWith(
+                                            fontSize: AppFontSize.fontSize22,
+                                            fontWeight: FontWeight.w900,
+                                            color: customColor.blackColor,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: " Professional",
+                                          style: theme.headlineLarge!.copyWith(
+                                            fontSize: AppFontSize.fontSize22,                                            fontWeight: FontWeight.w900,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                ],
                               ),
-                              Text(
-                                " for ",
-                                style: theme.headlineLarge!.copyWith(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
+                              AppText("Social Media Post",style: TextStyle(  fontSize: AppFontSize.fontSize22,)),
                             ],
-                          ),
-                          Text(
-                            "Success",
-                            style: theme.headlineLarge!.copyWith(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w900,
-                            ),
                           ),
                         ],
                       ),
@@ -76,7 +82,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 24),
                         child: Text(
-                          "Choose from thousands of professionally designed templates to create stunning visuals.",
+                          "Choose from thousands of ready-made templates designed for every business and every occasion.",
                           textAlign: TextAlign.center,
                           style: theme.titleMedium!.copyWith(
                             color: customColor.textColor,
@@ -95,42 +101,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            "Magically ",
-                            style: theme.headlineLarge!.copyWith(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
 
-                            children: [
-                              Text(
-                                "Edit",
-                                style: theme.headlineLarge!.copyWith(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w900,
-                                  color: customColor.redColor,
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: "Create Faster with ",
+                                  style: theme.headlineLarge!.copyWith(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w900,
+                                    color: customColor.blackColor,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                " Your Designs",
-                                style: theme.headlineLarge!.copyWith(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w900,
-                                  color: customColor.blackColor,
+                                TextSpan(
+                                  text: "AI",
+                                  style: theme.headlineLarge!.copyWith(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.red,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
+                          )
                         ],
                       ),
                       const SizedBox(height: 12),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 24),
                         child: Text(
-                          "Editing social media designs is now effortless. Dive into thousands of images and elements.",
+                          "Generate images, captions, logos, product backgrounds, and more with powerful AI tools built for your business.",
                           textAlign: TextAlign.center,
                           style: theme.titleMedium!.copyWith(
                             color: customColor.textColor,
@@ -152,30 +152,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
 
                             children: [
-                              Text(
-                                "Unlock ",
-                                style: theme.headlineLarge!.copyWith(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w900,
-                                  color: customColor.blackColor,
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: "Build Your ",
+                                      style: theme.headlineLarge!.copyWith(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w900,
+                                        color: customColor.blackColor,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: "Brand & Grow",
+                                      style: theme.headlineLarge!.copyWith(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              Text(
-                                "Social Media",
-                                style: theme.headlineLarge!.copyWith(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w900,
-                                  color: customColor.redColor,
-                                ),
-                              ),
+                              )
+
                             ],
-                          ),
-                          Text(
-                            "Superpowers",
-                            style: theme.headlineLarge!.copyWith(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w900,
-                            ),
                           ),
                         ],
                       ),
@@ -192,21 +192,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             children: [
                               TextSpan(
                                 text:
-                                    "Create and post directly to all your social media platforms, right from the ",
-                                style: theme.titleMedium!.copyWith(
-                                  color: customColor.textColor,
-                                ),
-                              ),
-                              TextSpan(
-                                text: "MMB editor",
-                                style: theme.titleMedium!.copyWith(
-                                  color: customColor.redColor,
-                                  // Set red color
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              TextSpan(
-                                text: ". Complete control, effortlessly.",
+                                    "Customize, publish, and maintain a consistent brand across every social media platform with Make My Brand.",
                                 style: theme.titleMedium!.copyWith(
                                   color: customColor.textColor,
                                 ),

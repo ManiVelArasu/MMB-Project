@@ -119,11 +119,21 @@ class AccountTypeScreen extends StatelessWidget {
                       ),
                       ButtonWidget(
                         buttonPress: () {
-                          // Valid → Continue
-                          Navigator.pushNamed(
-                            context,
-                            "/BusinessCategoryChooseScreen",
-                          );
+                          final selectedTitle = accountTypeProvider
+                              .accountTypeList[accountTypeProvider.currentIndex]
+                              .title;
+
+                          if (selectedTitle == "Personal Use") {
+                            Navigator.pushNamed(
+                              context,
+                              "/CustomBottomNavScreen",
+                            );
+                          } else {
+                            Navigator.pushNamed(
+                              context,
+                              "/BusinessCategoryChooseScreen",
+                            );
+                          }
                         },
                         title: "CONTINUE",
                         textStyle: theme.titleLarge!.copyWith(
