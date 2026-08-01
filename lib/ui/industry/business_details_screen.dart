@@ -264,7 +264,7 @@ class BusinessDetailsScreen extends StatelessWidget {
                   if (businessProvider.validateForm()) {
                     // 🚀 Since BusinessProvider is global, the saved image, name, email & mobile
                     // can now be accessed in any other screen (like /BusinessFrameScreen) using context.watch<BusinessProvider>()
-                    Navigator.pushNamed(context, "/BusinessFrameScreen");
+                    Navigator.pushNamed(context, "/CustomBottomNavScreen");
                   }
                 },
                 title: "CONTINUE",

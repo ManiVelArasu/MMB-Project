@@ -12,15 +12,18 @@ import 'package:provider/provider.dart';
 import '../component/bottom_navigation.dart';
 import '../network/provider/auth_provider.dart';
 import '../network/provider/business_provider.dart';
+import '../network/provider/smcalender_form_provider.dart';
 import '../ui/industry/business_frame_screen.dart';
 import '../ui/screens/business_profile_screen.dart';
 import '../ui/screens/download_screen.dart';
 import '../ui/screens/edit_profile_screen.dart';
 import '../ui/screens/editor_screen.dart';
-import '../ui/screens/notification_screen.dart';
 import '../ui/screens/profile_screen.dart';
+import '../ui/screens/smcalender_form_sceen.dart';
 import '../ui/screens/smcalender_screen.dart';
+import '../ui/screens/social_calender_result_screen.dart';
 import '../ui/screens/template_detail_screen.dart';
+import '../ui/screens/template_edit.dart';
 import '../ui/screens/theme_detail_screen.dart';
 import '../ui/subscription/basic_plan.dart';
 import '../ui/subscription/elit_plan.dart';
@@ -113,12 +116,23 @@ class RouteGenerator {
           builder: (context) => const TemplateDetailScreen(),
         );
 
-      case "/EditorScreen":
+      /* case "/EditorScreen":
         return MaterialPageRoute(
           builder: (context) => const EditorScreen(),
-        );  case "/NotificationScreen":
+        ); */
+      case "/TemplateEditScreen":
         return MaterialPageRoute(
-          builder: (context) => const NotificationScreen(),
+          builder: (context) => const TemplateEditScreen(),
+        );
+      case "/SocialCalendarFormScreen":
+        return MaterialPageRoute(
+          builder: (context) => const SocialCalendarFormScreen(),
+        );
+
+      case "/SocialCalendarResultScreen":
+        final provider = settings.arguments as SocialCalendarProvider;
+        return MaterialPageRoute(
+          builder: (context) => SocialCalendarResultScreen(provider: provider),
         );
     }
     return null;
