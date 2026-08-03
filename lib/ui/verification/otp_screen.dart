@@ -10,6 +10,7 @@ import 'package:project_mmb/utils/height_measure.dart';
 import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OtpScreen extends StatelessWidget {
   const OtpScreen({super.key});
@@ -256,9 +257,11 @@ class OtpScreen extends StatelessWidget {
                         Column(
                           children: [
                             ButtonWidget(
-                              buttonPress: () {
+                              buttonPress: () async {
                                 // if (authProvider.submitLogin()) {
                                 // Valid → Continue
+                                final prefs = await SharedPreferences.getInstance();
+                                await prefs.setBool('is_logged_in', true);
                                 Navigator.pushNamed(
                                     context, "/PlansAndPricingScreen");
                                 // }

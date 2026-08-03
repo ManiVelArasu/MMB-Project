@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:project_mmb/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/feedback_provider.dart';
@@ -50,7 +51,7 @@ class FeedbackScreen extends StatelessWidget {
                 children: [
                   SizedBox(height: 20.h),
 
-                  Text(
+                  AppText(
                     "How was your experience?",
                     style: TextStyle(
                       fontSize: 20.sp,
@@ -60,7 +61,7 @@ class FeedbackScreen extends StatelessWidget {
 
                   SizedBox(height: 10.h),
 
-                  Text(
+                  AppText(
                     "Your feedback helps us improve our app.",
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -98,7 +99,7 @@ class FeedbackScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                       ),
-                      child: Text(
+                      child: AppText(
                         "Submit",
                         style: TextStyle(
                           fontSize: 16.sp,

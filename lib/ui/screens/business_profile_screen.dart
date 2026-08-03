@@ -88,7 +88,7 @@ class BusinessProfileView extends StatelessWidget {
 
                         SizedBox(height: 10.h),
 
-                        Text(
+                        AppText(
                           "Steve & Sarah Bakeshop",
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface,
@@ -97,7 +97,7 @@ class BusinessProfileView extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 4.h),
-                        Text(
+                        AppText(
                           "Pastry Kitchen",
                           style: TextStyle(
                             color: Colors.grey.shade600,

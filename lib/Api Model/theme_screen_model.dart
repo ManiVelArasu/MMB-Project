@@ -1,67 +1,135 @@
-class ThemeGroupResponse {
-  final bool? success;
-  final List<ThemeGroup>? data;
+import 'dart:convert';
 
-  ThemeGroupResponse({this.success, this.data});
+class ThemeApiResponse {
+  final bool success;
+  final List<ThemeItem> data;
 
-  factory ThemeGroupResponse.fromJson(Map<String, dynamic> json) {
-    return ThemeGroupResponse(
-      success: json["success"],
-      data: json["data"] == null
-          ? []
-          : List<ThemeGroup>.from(
-              json["data"].map((x) => ThemeGroup.fromJson(x)),
-            ),
+  ThemeApiResponse({
+    required this.success,
+    required this.data,
+  });
+
+  factory ThemeApiResponse.fromJson(Map<String, dynamic> json) {
+    return ThemeApiResponse(
+      success: json['success'] ?? false,
+      data: (json['data'] as List<dynamic>?)
+          ?.map((item) => ThemeItem.fromJson(item))
+          .toList() ??
+          [],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'success': success,
+    'data': data.map((item) => item.toJson()).toList(),
+  };
 }
 
-class ThemeGroup {
+class ThemeItem {
   final String? id;
   final String? uid;
   final String? name;
   final String? slug;
+  final String? iconS3Key;
+  final String? caption;
+  final String? description;
   final String? displayOrder;
   final String? isActive;
   final String? createdAt;
   final String? updatedAt;
-  final List<ThemeModel>? themes;
+  final List<dynamic> stylePersonalities;
+  final List<dynamic> tags;
+  final List<dynamic> colors;
+  final String? variantsCount;
+  final String? templatesCount;
+  final String? unlockedVariantsCount;
+  final bool isLocked;
+  final List<Variant> variants;
 
-  ThemeGroup({
-    this.id,
-    this.uid,
-    this.name,
-    this.slug,
-    this.displayOrder,
-    this.isActive,
-    this.createdAt,
-    this.updatedAt,
-    this.themes,
+  ThemeItem({
+    required this.id,
+    required this.uid,
+    required this.name,
+    required this.slug,
+    this.iconS3Key,
+    this.caption,
+    this.description,
+    required this.displayOrder,
+    required this.isActive,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.stylePersonalities,
+    required this.tags,
+    required this.colors,
+    required this.variantsCount,
+    required this.templatesCount,
+    required this.unlockedVariantsCount,
+    required this.isLocked,
+    required this.variants,
   });
 
-  factory ThemeGroup.fromJson(Map<String, dynamic> json) {
-    return ThemeGroup(
-      id: json["id"]?.toString(),
-      uid: json["uid"]?.toString(),
-      name: json["name"]?.toString(),
-      slug: json["slug"]?.toString(),
-      displayOrder: json["display_order"]?.toString(),
-      isActive: json["is_active"]?.toString(),
-      createdAt: json["created_at"]?.toString(),
-      updatedAt: json["updated_at"]?.toString(),
-      themes: json["Themes"] == null
+  factory ThemeItem.fromJson(Map<String, dynamic> json) {
+    return ThemeItem(
+      id: json['id']?.toString(),
+      uid: json['uid']?.toString(),
+      name: json['name'] ?.toString(),
+      slug: json['slug'] ?.toString(),
+      iconS3Key: json['icon_s3_key']?.toString(),
+      caption: json['caption']?.toString(),
+      description: json['description']?.toString(),
+      displayOrder: json['display_order'] ?.toString(),
+      isActive: json['is_active']?.toString(),
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at'] ?.toString(),
+      stylePersonalities: json["stylePersonalities"] == null
           ? []
-          : List<ThemeModel>.from(
-              json["Themes"].map((x) => ThemeModel.fromJson(x)),
-            ),
+          : List<dynamic>.from(json["stylePersonalities"]),
+      tags: json["tags"] == null
+          ? []
+          : List<dynamic>.from(json["tags"]),
+      colors: json["colors"] == null
+          ? []
+          : List<dynamic>.from(json["colors"]),
+
+      variantsCount: json['variants_count']?.toString(),
+      templatesCount: json['templates_count'] ?.toString(),
+      unlockedVariantsCount: json['unlocked_variants_count']?.toString(),
+      isLocked: json['is_locked'] ?? false,
+      variants: (json['Variants'] as List<dynamic>?)
+          ?.map((v) => Variant.fromJson(v))
+          .toList() ??
+          [],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'uid': uid,
+    'name': name,
+    'slug': slug,
+    'icon_s3_key': iconS3Key,
+    'caption': caption,
+    'description': description,
+    'display_order': displayOrder,
+    'is_active': isActive,
+    'created_at': createdAt,
+    'updated_at': updatedAt,
+    'StylePersonalities': stylePersonalities,
+    'Tags': tags,
+    'Colors': colors,
+    'variants_count': variantsCount,
+    'templates_count': templatesCount,
+    'unlocked_variants_count': unlockedVariantsCount,
+    'is_locked': isLocked,
+    'Variants': variants.map((v) => v.toJson()).toList(),
+  };
 }
 
-class ThemeModel {
+class Variant {
   final String? id;
   final String? uid;
-  final String? groupId;
+  final String? seriesId;
+  final String? badgeId;
   final String? name;
   final String? description;
   final String? thumbnailS3Key;
@@ -70,45 +138,73 @@ class ThemeModel {
   final String? isActive;
   final String? createdAt;
   final String? updatedAt;
-  final List<BusinessCategory>? businessCategories;
+  final String? variantBadge;
+  final List<BusinessCategory> businessCategories;
+  final String? templatesCount;
+  final bool isLocked;
 
-  ThemeModel({
-    this.id,
-    this.uid,
-    this.groupId,
-    this.name,
+  Variant({
+    required this.id,
+    required this.uid,
+    required this.seriesId,
+    this.badgeId,
+    required this.name,
     this.description,
     this.thumbnailS3Key,
-    this.likesCount,
-    this.displayOrder,
-    this.isActive,
-    this.createdAt,
-    this.updatedAt,
-    this.businessCategories,
+    required this.likesCount,
+    required this.displayOrder,
+    required this.isActive,
+    required this.createdAt,
+    required this.updatedAt,
+    this.variantBadge,
+    required this.businessCategories,
+    required this.templatesCount,
+    required this.isLocked,
   });
 
-  factory ThemeModel.fromJson(Map<String, dynamic> json) {
-    return ThemeModel(
-      id: json["id"]?.toString(),
-      uid: json["uid"]?.toString(),
-      groupId: json["group_id"]?.toString(),
-      name: json["name"]?.toString(),
-      description: json["description"]?.toString(),
-      thumbnailS3Key: json["thumbnail_s3_key"]?.toString(),
-      likesCount: json["likes_count"]?.toString(),
-      displayOrder: json["display_order"]?.toString(),
-      isActive: json["is_active"]?.toString(),
-      createdAt: json["created_at"]?.toString(),
-      updatedAt: json["updated_at"]?.toString(),
-      businessCategories: json["BusinessCategories"] == null
-          ? []
-          : List<BusinessCategory>.from(
-              json["BusinessCategories"].map(
-                (x) => BusinessCategory.fromJson(x),
-              ),
-            ),
+  factory Variant.fromJson(Map<String, dynamic> json) {
+    return Variant(
+      id: json['id']?.toString(),
+      uid: json['uid']?.toString(),
+      seriesId: json['series_id'] ?.toString(),
+      badgeId: json['badge_id']?.toString(),
+      name: json['name'] ?.toString(),
+      description: json['description']?.toString(),
+      thumbnailS3Key: json['thumbnail_s3_key']?.toString(),
+      likesCount: json['likes_count']?.toString(),
+      displayOrder: json['display_order']?.toString(),
+      isActive: json['is_active'] ?.toString(),
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at'] ?.toString(),
+      variantBadge: json['VariantBadge']?.toString(),
+      businessCategories: (json['BusinessCategories'] as List<dynamic>?)
+          ?.map((bc) => BusinessCategory.fromJson(bc))
+          .toList() ??
+          [],
+      templatesCount: json['templates_count']?.toString(),
+      isLocked: json['is_locked'] ?? false,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'uid': uid,
+    'series_id': seriesId,
+    'badge_id': badgeId,
+    'name': name,
+    'description': description,
+    'thumbnail_s3_key': thumbnailS3Key,
+    'likes_count': likesCount,
+    'display_order': displayOrder,
+    'is_active': isActive,
+    'created_at': createdAt,
+    'updated_at': updatedAt,
+    'VariantBadge': variantBadge,
+    'BusinessCategories':
+    businessCategories.map((bc) => bc.toJson()).toList(),
+    'templates_count': templatesCount,
+    'is_locked': isLocked,
+  };
 }
 
 class BusinessCategory {
@@ -117,14 +213,26 @@ class BusinessCategory {
   final String? slug;
   final String? name;
 
-  BusinessCategory({this.id, this.uid, this.slug, this.name});
+  BusinessCategory({
+    required this.id,
+    required this.uid,
+    required this.slug,
+    required this.name,
+  });
 
   factory BusinessCategory.fromJson(Map<String, dynamic> json) {
     return BusinessCategory(
-      id: json["id"]?.toString(),
-      uid: json["uid"]?.toString(),
-      slug: json["slug"]?.toString(),
-      name: json["name"]?.toString(),
+      id: json['id'] ?.toString(),
+      uid: json['uid'] ?.toString(),
+      slug: json['slug'] ?.toString(),
+      name: json['name'] ?.toString(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'uid': uid,
+    'slug': slug,
+    'name': name,
+  };
 }

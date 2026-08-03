@@ -4,7 +4,7 @@ import '../../network/provider/auth_provider.dart';
 import 'otp_verification_screen.dart';
 
 class PhoneInputScreen extends StatefulWidget {
-  const PhoneInputScreen({Key? key}) : super(key: key);
+  const PhoneInputScreen({super.key});
 
   @override
   State<PhoneInputScreen> createState() => _PhoneInputScreenState();

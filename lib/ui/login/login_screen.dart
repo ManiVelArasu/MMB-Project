@@ -8,6 +8,7 @@ import 'package:project_mmb/utils/height_measure.dart';
 import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -153,9 +154,9 @@ class LoginScreen extends StatelessWidget {
 
                         // REQUEST OTP (uses provider validation)
                         ButtonWidget(
-                          buttonPress: () {
-                            // if (authProvider.submitLogin()) {
-                            // Valid → Continue
+                          buttonPress: () async {
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setBool('is_logged_in', true);
                             Navigator.pushNamed(context, "/OtpScreen");
                             // }
                           },

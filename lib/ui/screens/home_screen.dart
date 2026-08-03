@@ -1,9 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:project_mmb/component/custom_widget.dart';
+import 'package:project_mmb/core/api/api_endpoints.dart';
 import 'package:project_mmb/network/provider/home_screen_provider.dart';
 
 import 'package:project_mmb/ui/screens/video_widget/video_widget.dart';
@@ -15,7 +13,6 @@ import 'package:project_mmb/network/provider/business_provider.dart';
 import '../../Api Model/templatecategories.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/home_appbar.dart';
-import '../../global/image_picker.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -30,6 +27,16 @@ class HomeScreen extends StatelessWidget {
       create: (_) => HomeScreenProvider(),
       builder: (context, provider) => Consumer<HomeScreenProvider>(
         builder: (context, homeScreenProvider, child) {
+          if (homeScreenProvider.templateCategories.isEmpty) {
+            return Scaffold(
+              backgroundColor: Colors.white,
+              body: Center(
+                child: CircularProgressIndicator(
+                  color: const Color(0xFFE53935),
+                ),
+              ),
+            );
+          }
           return Scaffold(
             backgroundColor: Colors.white,
             appBar: HomeCustomAppBar(
@@ -123,10 +130,78 @@ class HomeScreen extends StatelessWidget {
                         hasViewAll: true,
                       ),
                       SizedBox(height: 12.h),
-                      _buildCategoryChips(homeScreenProvider),
+                      SizedBox(
+                        height: 38.h,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: homeScreenProvider.videoCategories.length,
+                          physics: const BouncingScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            bool isSelected =
+                                homeScreenProvider.selectedVideoCategoryIndex ==
+                                index;
+                            return GestureDetector(
+                              onTap: () => homeScreenProvider
+                                  .updateVideoCategoryIndex(index),
+                              child: Container(
+                                margin: EdgeInsets.only(right: 10.w),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 16.w,
+                                  vertical: 8.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF555555)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(20.r),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? Colors.transparent
+                                        : Colors.grey.shade400,
+                                    width: 1.2,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    homeScreenProvider.videoCategories[index],
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.grey.shade800,
+                                      fontSize: 12.sp,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
 
                       SizedBox(height: 16.h),
-                      _buildBrandPostsGrid(homeScreenProvider),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount:
+                            homeScreenProvider.myZoneBanners.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12.w,
+                          mainAxisSpacing: 12.h,
+                          childAspectRatio: 1.0,
+                        ),
+                        itemBuilder: (context, index) {
+                          final videoData =
+                              homeScreenProvider.myZoneBanners[index];
+                          return InkWell(
+                            onTap: (){
+                              Navigator.pushNamed(context, "/TemplateDetailScreen");
+                            },
+                            child: Image.asset(videoData)
+                          );
+                        },
+                      ),
                       SizedBox(height: 12.h),
 
                       // MY BRAND VIDEO POSTS
@@ -209,220 +284,247 @@ class HomeScreen extends StatelessWidget {
                         },
                       ),
                       SizedBox(height: 16.h),
-                      _buildSectionHeader(
-                        title: "Celebrate Moment",
-                        iconAsset: "assets/images/special_days.png",
-                        hasViewAll: true,
-                      ),
-                      SizedBox(height: 12.h),
-                      _buildMyCelebrateList(homeScreenProvider),
-                      SizedBox(height: 16.h),
-                      _buildSectionHeader(
-                        title: "Youtube Thumbnail",
-                        iconAsset: "assets/images/special_days.png",
-                        hasViewAll: true,
-                      ),
-                      SizedBox(height: 12.h),
-                      _buildYoutubePostsGrid(),
-                      SizedBox(height: 12.h),
-                      _buildSectionHeader(
-                        title: "WhatsApp Status",
-                        iconAsset: "assets/images/whatsapp_status.png",
-                        hasViewAll: true,
-                      ),
-                      SizedBox(height: 12.h),
+                      if (homeScreenProvider.templateCategories.isNotEmpty) ...[
+                        SizedBox(height: 16.h),
+                        _buildSectionHeader(
+                          title:
+                              homeScreenProvider.templateCategories[0].name ??
+                              '',
+                          iconAsset:
+                              "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[0].iconS3Key ?? ''}",
+                          hasViewAll: true,
+                        ),
+                        SizedBox(height: 12.h),
+                        _buildMyCelebrateList(homeScreenProvider),
+                      ],
 
-                      SizedBox(
-                        height: 200.h,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          itemCount:
-                              homeScreenProvider.whatsappStatusList.length,
-                          itemBuilder: (context, index) {
-                            final item =
-                                homeScreenProvider.whatsappStatusList[index];
-                            return Container(
-                              width: 115.w,
-                              margin: EdgeInsets.only(right: 12.w),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16.r),
-                                color: Colors.grey.shade200,
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(16.r),
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: Image.asset(
-                                        item["image"],
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
-                                          color: Colors.grey.shade300,
-                                          child: Icon(
-                                            Icons.image,
-                                            size: 30.sp,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    if (item["isVideo"] == true)
-                                      Positioned(
-                                        bottom: 10.h,
-                                        left: 10.w,
-                                        child: Container(
-                                          padding: EdgeInsets.all(4.r),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.5,
+                      if (homeScreenProvider.templateCategories.length > 1) ...[
+                        SizedBox(height: 16.h),
+                        _buildSectionHeader(
+                          title:
+                              homeScreenProvider.templateCategories[1].name ??
+                              "",
+                          iconAsset:
+                              "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[1].iconS3Key ?? ''}",
+                          hasViewAll: true,
+                        ),
+                        SizedBox(height: 12.h),
+                        _buildYoutubePostsGrid(),
+                      ],
+
+
+                      if (homeScreenProvider.templateCategories.length > 2) ...[
+                        SizedBox(height: 12.h),
+                        _buildSectionHeader(
+                          title:
+                              homeScreenProvider.templateCategories[2].name ??
+                              "",
+                          iconAsset:
+                              "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[2].iconS3Key ?? ''}",
+                          hasViewAll: true,
+                        ),
+                        SizedBox(height: 12.h),
+                        SizedBox(
+                          height: 200.h,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            itemCount:
+                                homeScreenProvider.whatsappStatusList.length,
+                            itemBuilder: (context, index) {
+                              final item =
+                                  homeScreenProvider.whatsappStatusList[index];
+                              return Container(
+                                width: 115.w,
+                                margin: EdgeInsets.only(right: 12.w),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16.r),
+                                  color: Colors.grey.shade200,
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16.r),
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: Image.asset(
+                                          item["image"],
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, _, _) => Container(
+                                            color: Colors.grey.shade300,
+                                            child: Icon(
+                                              Icons.image,
+                                              size: 30.sp,
+                                              color: Colors.grey,
                                             ),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            Icons.play_arrow_rounded,
-                                            color: Colors.white,
-                                            size: 18.sp,
                                           ),
                                         ),
                                       ),
+                                      if (item["isVideo"] == true)
+                                        Positioned(
+                                          bottom: 10.h,
+                                          left: 10.w,
+                                          child: Container(
+                                            padding: EdgeInsets.all(4.r),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.5,
+                                              ),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(
+                                              Icons.play_arrow_rounded,
+                                              color: Colors.white,
+                                              size: 18.sp,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+
+                      if (homeScreenProvider.templateCategories.length > 3) ...[
+                        SizedBox(height: 24.h),
+                        _buildSectionHeader(
+                          title:
+                              homeScreenProvider.templateCategories[3].name ??
+                              "",
+                          iconAsset:
+                              "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[3].iconS3Key ?? ''}",
+                          hasViewAll: true,
+                        ),
+                        SizedBox(height: 12.h),
+                        SizedBox(
+                          height: 165.h,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: homeScreenProvider.devotionalList.length,
+                            itemBuilder: (context, index) {
+                              final item =
+                                  homeScreenProvider.devotionalList[index];
+                              return Container(
+                                width: 110.w,
+                                margin: EdgeInsets.only(right: 12.w),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16.r),
+                                  color: Colors.white,
+                                  border: Border.all(
+                                    color: Colors.grey.shade200,
+                                    width: 1.2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.03,
+                                      ),
+                                      blurRadius: 6.r,
+                                      offset: Offset(0, 2.h),
+                                    ),
                                   ],
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                      SizedBox(height: 24.h),
-
-                      _buildSectionHeader(
-                        title: "Devotional",
-                        iconAsset: "assets/images/devotional.png",
-                        hasViewAll: true,
-                      ),
-                      SizedBox(height: 12.h),
-
-                      SizedBox(
-                        height: 165.h,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: homeScreenProvider.devotionalList.length,
-                          itemBuilder: (context, index) {
-                            final item =
-                                homeScreenProvider.devotionalList[index];
-                            return Container(
-                              width: 110.w,
-                              margin: EdgeInsets.only(right: 12.w),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16.r),
-                                color: Colors.white,
-                                border: Border.all(
-                                  color: Colors.grey.shade200,
-                                  width: 1.2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.03),
-                                    blurRadius: 6.r,
-                                    offset: Offset(0, 2.h),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                children: [
-                                  Expanded(
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.vertical(
-                                        top: Radius.circular(15.r),
-                                      ),
-                                      child: Image.asset(
-                                        item["image"] ?? '',
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
-                                          color: Colors.grey.shade200,
-                                          child: Icon(
-                                            Icons.auto_awesome,
-                                            size: 30.sp,
-                                            color: Colors.orange,
+                                child: Column(
+                                  children: [
+                                    Expanded(
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.vertical(
+                                          top: Radius.circular(15.r),
+                                        ),
+                                        child: Image.asset(
+                                          item["image"] ?? '',
+                                          width: double.infinity,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, _, _) => Container(
+                                            color: Colors.grey.shade200,
+                                            child: Icon(
+                                              Icons.auto_awesome,
+                                              size: 30.sp,
+                                              color: Colors.orange,
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  Container(
-                                    width: double.infinity,
-                                    padding: EdgeInsets.symmetric(
-                                      vertical: 8.h,
-                                      horizontal: 4.w,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.vertical(
-                                        bottom: Radius.circular(15.r),
+                                    Container(
+                                      width: double.infinity,
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 8.h,
+                                        horizontal: 4.w,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.vertical(
+                                          bottom: Radius.circular(15.r),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        item["title"] ?? "",
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 10.sp,
+                                          fontWeight: FontWeight.w900,
+                                          height: 1.1,
+                                        ),
+                                        maxLines: 2,
                                       ),
                                     ),
-                                    child: Text(
-                                      item["title"] ?? "",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 10.sp,
-                                        fontWeight: FontWeight.w900,
-                                        height: 1.1,
-                                      ),
-                                      maxLines: 2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-
-                      SizedBox(height: 24.h),
-
-                      _buildSectionHeader(
-                        title: "Corporate Needs",
-                        iconAsset: "assets/images/corporate_icon.png",
-                        hasViewAll: true,
-                      ),
-                      SizedBox(height: 12.h),
-
-                      SizedBox(
-                        height: 100.h,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          itemCount:
-                              homeScreenProvider.corporateNeedsList.length,
-                          itemBuilder: (context, index) {
-                            return Container(
-                              width: 105.w,
-                              margin: EdgeInsets.only(right: 12.w),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(14.r),
-                                child: Image.asset(
-                                  homeScreenProvider.corporateNeedsList[index],
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    color: Colors.grey.shade200,
-                                    child: Icon(
-                                      Icons.business_center,
-                                      size: 30.sp,
-                                      color: Colors.grey,
+                      ],
+                      if (homeScreenProvider.templateCategories.length > 4) ...[
+                        SizedBox(height: 24.h),
+                        _buildSectionHeader(
+                          title:
+                              homeScreenProvider.templateCategories[4].name ??
+                              "",
+                          iconAsset:
+                              "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[4].iconS3Key ?? ''}",
+                          hasViewAll: true,
+                        ),
+                        SizedBox(height: 12.h),
+                        SizedBox(
+                          height: 100.h,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            itemCount:
+                                homeScreenProvider.corporateNeedsList.length,
+                            itemBuilder: (context, index) {
+                              return Container(
+                                width: 105.w,
+                                margin: EdgeInsets.only(right: 12.w),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(14.r),
+                                  child: Image.asset(
+                                    homeScreenProvider
+                                        .corporateNeedsList[index],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => Container(
+                                      color: Colors.grey.shade200,
+                                      child: Icon(
+                                        Icons.business_center,
+                                        size: 30.sp,
+                                        color: Colors.grey,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 20.h),
+                      ],
+                      SizedBox(height: 24.h),
+
                     ],
                   ),
                 ),
@@ -441,11 +543,11 @@ class HomeScreen extends StatelessWidget {
   }) {
     return Row(
       children: [
-        Image.asset(
+        Image.network(
           iconAsset,
           height: 32.h,
           width: 32.w,
-          errorBuilder: (_, __, ___) => Container(
+          errorBuilder: (_, _, _) => Container(
             height: 32.h,
             width: 32.w,
             decoration: const BoxDecoration(
@@ -557,7 +659,6 @@ class HomeScreen extends StatelessWidget {
                   Positioned.fill(
                     child: InkWell(
                       onTap: () async {
-
                         /*final file = await assetToFile(item["icon"]!);
                         await openEditor(context, file);*/
                       },
@@ -898,7 +999,7 @@ class HomeScreen extends StatelessWidget {
                 ? Image.network(
                     fullImageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    errorBuilder: (_, _, _) => Container(
                       color: Colors.grey.shade200,
                       child: Icon(
                         Icons.image_not_supported_rounded,

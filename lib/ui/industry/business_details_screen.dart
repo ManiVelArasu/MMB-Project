@@ -18,7 +18,7 @@ class BusinessDetailsScreen extends StatelessWidget {
     final customColor = context.watch<CustomThemeProvider>().colors;
     final theme = Theme.of(context).textTheme;
     final businessProvider = context
-        .watch<BusinessProvider>(); // 🚀 Global provider watch
+        .watch<BusinessProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -45,7 +45,6 @@ class BusinessDetailsScreen extends StatelessWidget {
                             "Please provide your business details to help us personalize your experience.",
                       ),
 
-                      // LOGO UPLOAD AREA
                       businessProvider.selectedImage == null &&
                               businessProvider.originalImage == null
                           ? Column(

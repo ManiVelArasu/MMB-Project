@@ -22,13 +22,19 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final prefs = await SharedPreferences.getInstance();
     final bool isOnboarded = prefs.getBool('isOnboarded') ?? false;
+    final bool isLoggedIn = prefs.getBool('is_logged_in') ?? false;
 
     if (!mounted) return;
 
-    if (isOnboarded) {
-      Navigator.pushReplacementNamed(context, '/LoginScreen');
-    } else {
+    if (!isOnboarded) {
+
       Navigator.pushReplacementNamed(context, '/OnboardingScreen');
+    } else if (isLoggedIn) {
+
+      Navigator.pushReplacementNamed(context, '/PlansAndPricingScreen');
+    } else {
+
+      Navigator.pushReplacementNamed(context, '/LoginScreen');
     }
   }
 
