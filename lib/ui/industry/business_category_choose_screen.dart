@@ -86,10 +86,7 @@ class BusinessCategoryChooseView extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 "Find the category that best matches your Products/Services",
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
               ),
 
               const SizedBox(height: 24),
@@ -152,7 +149,7 @@ class BusinessCategoryChooseView extends StatelessWidget {
     final industryProvider = context.read<IndustryProvider>();
     industryProvider.fetchAssetCategories();
     final DraggableScrollableController _sheetController =
-    DraggableScrollableController();
+        DraggableScrollableController();
 
     showModalBottomSheet(
       context: context,
