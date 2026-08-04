@@ -1,27 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:project_mmb/network/provider/custom_theme_provider.dart';
 import 'package:project_mmb/utils/height_measure.dart';
+import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:provider/provider.dart';
 
 class TitleValueWidget extends StatelessWidget {
   final String title;
   final String subTitle;
-  const TitleValueWidget({super.key, required this.title, required this.subTitle});
+  final Color? titleColor;    // 👈 Optional Title Color
+  final Color? subTitleColor; // 👈 Optional Subtitle Color
+
+  const TitleValueWidget({
+    super.key,
+    required this.title,
+    required this.subTitle,
+    this.titleColor,
+    this.subTitleColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     final customColor = context.watch<CustomThemeProvider>().colors;
     final theme = Theme.of(context).textTheme;
-    return  Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
           style: theme.headlineLarge!.copyWith(
-            fontSize: 26,
+            fontSize: 26.sp,
             fontWeight: FontWeight.w900,
-            color: customColor.blackColor,
+            color: titleColor ?? customColor.blackColor,
           ),
         ),
         height12,
@@ -29,10 +40,11 @@ class TitleValueWidget extends StatelessWidget {
         // Subtitle
         Text(
           subTitle,
-          style: theme.titleMedium!.copyWith(color: customColor.textColor),
+          style: theme.titleMedium!.copyWith(
+            color: subTitleColor ?? customColor.textColor,
+          ),
         ),
         height12,
-
       ],
     );
   }

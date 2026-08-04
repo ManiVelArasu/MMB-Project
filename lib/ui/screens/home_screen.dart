@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:project_mmb/component/custom_widget.dart';
@@ -40,10 +42,10 @@ class HomeScreen extends StatelessWidget {
           return Scaffold(
             backgroundColor: Colors.white,
             appBar: HomeCustomAppBar(
-              businessName: businessProvider.businessName.isEmpty
+              businessName:  "Business Name",
+              businessCategory:  businessProvider.businessName.isEmpty
                   ? "Business Name"
                   : businessProvider.businessName,
-              businessCategory: "Cake and Sweets",
               notificationCount: "2",
             ),
             body: SafeArea(
@@ -112,7 +114,7 @@ class HomeScreen extends StatelessWidget {
                         iconAsset: "assets/images/my_zone.png",
                       ),
                       SizedBox(height: 12.h),
-                      _buildMyZoneSlider(homeScreenProvider),
+                      _buildMyZoneSlider(homeScreenProvider, businessProvider),
 
                       SizedBox(height: 24.h),
 
@@ -123,15 +125,15 @@ class HomeScreen extends StatelessWidget {
 
                       SizedBox(height: 20.h),
 
-                      // MY BRAND POSTS (DYNAMIC API CATEGORIES)
                       _buildSectionHeader(
                         title: "My Brand Posts",
                         iconAsset: "assets/images/my_brand_posts.png",
                         hasViewAll: true,
                       ),
                       SizedBox(height: 12.h),
+
                       SizedBox(
-                        height: 38.h,
+                        height: 45.h,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: homeScreenProvider.videoCategories.length,
@@ -146,19 +148,19 @@ class HomeScreen extends StatelessWidget {
                               child: Container(
                                 margin: EdgeInsets.only(right: 10.w),
                                 padding: EdgeInsets.symmetric(
-                                  horizontal: 16.w,
-                                  vertical: 8.h,
+                                  horizontal: 22.w,
+                                  vertical: 10.h,
                                 ),
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? const Color(0xFF555555)
                                       : Colors.white,
-                                  borderRadius: BorderRadius.circular(20.r),
+                                  borderRadius: BorderRadius.circular(30.r),
                                   border: Border.all(
                                     color: isSelected
                                         ? Colors.transparent
                                         : Colors.grey.shade400,
-                                    width: 1.2,
+                                    width: 1.5,
                                   ),
                                 ),
                                 child: Center(
@@ -168,8 +170,8 @@ class HomeScreen extends StatelessWidget {
                                       color: isSelected
                                           ? Colors.white
                                           : Colors.grey.shade800,
-                                      fontSize: 12.sp,
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
@@ -180,25 +182,93 @@ class HomeScreen extends StatelessWidget {
                       ),
 
                       SizedBox(height: 16.h),
+
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount:
-                            homeScreenProvider.myZoneBanners.length,
+                            homeScreenProvider.brandVideoPostsList.isNotEmpty
+                            ? homeScreenProvider.brandVideoPostsList.length
+                            : 4, // Fallback count
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 12.w,
                           mainAxisSpacing: 12.h,
-                          childAspectRatio: 1.0,
+                          childAspectRatio:
+                              1.0, // Square cards matching screenshot
                         ),
                         itemBuilder: (context, index) {
-                          final videoData =
-                              homeScreenProvider.myZoneBanners[index];
-                          return InkWell(
-                            onTap: (){
-                              Navigator.pushNamed(context, "/TemplateDetailScreen");
-                            },
-                            child: Image.asset(videoData)
+                          return Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20.r),
+                              color: Colors.grey.shade100,
+                              border: Border.all(
+                                color: Colors.grey.shade300,
+                                width: 1.2,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20.r),
+                              child: Stack(
+                                children: [
+                                  // 🚀 Background Image / Thumbnail
+                                  Positioned.fill(
+                                    child: Image.asset(
+                                      "assets/images/thumbnail1.png", // Ungaloda image path
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: Colors.grey.shade200,
+                                        child: Icon(
+                                          Icons.image_outlined,
+                                          size: 40.sp,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                  // 🚀 Top-Left Crown Icon
+                                  Positioned(
+                                    top: 10.h,
+                                    left: 10.w,
+                                    child: Container(
+                                      padding: EdgeInsets.all(6.r),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Image.asset(
+                                        "assets/images/crown.png",
+                                        width: 14.w,
+                                        height: 14.h,
+                                      ),
+                                    ),
+                                  ),
+
+                                  // 🚀 Top-Right More/Options Icon (3 dots)
+                                  Positioned(
+                                    top: 10.h,
+                                    right: 10.w,
+                                    child: Container(
+                                      padding: EdgeInsets.all(6.r),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.more_horiz,
+                                        color: Colors.white,
+                                        size: 16.sp,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           );
                         },
                       ),
@@ -311,7 +381,6 @@ class HomeScreen extends StatelessWidget {
                         SizedBox(height: 12.h),
                         _buildYoutubePostsGrid(),
                       ],
-
 
                       if (homeScreenProvider.templateCategories.length > 2) ...[
                         SizedBox(height: 12.h),
@@ -524,7 +593,6 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ],
                       SizedBox(height: 24.h),
-
                     ],
                   ),
                 ),
@@ -696,7 +764,10 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMyZoneSlider(HomeScreenProvider homeScreenProvider) {
+  Widget _buildMyZoneSlider(
+    HomeScreenProvider homeScreenProvider,
+    BusinessProvider provider,
+  ) {
     return Column(
       children: [
         SizedBox(
@@ -714,11 +785,27 @@ class HomeScreen extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16.r),
-                  child: Image.asset(
-                    homeScreenProvider.myZoneBanners[index],
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                  ),
+                  child: provider.selectedImage != null
+                      ? Image.file(
+                          provider.selectedImage!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        )
+                      : Image.asset(
+                          homeScreenProvider.myZoneBanners[index],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Colors.grey.shade200,
+                            child: Icon(
+                              Icons.image_outlined,
+                              size: 50.sp,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                        ),
                 ),
               );
             },

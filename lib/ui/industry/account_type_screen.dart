@@ -38,7 +38,7 @@ class AccountTypeScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       const TitleValueWidget(
-                        title: "Choose your Preferences",
+                        title: "Let's personalize your experience",
                         subTitle: "What brings you here?",
                       ),
 

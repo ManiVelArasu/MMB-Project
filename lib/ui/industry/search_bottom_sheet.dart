@@ -4,6 +4,7 @@ import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
 
 import 'package:project_mmb/network/provider/industry_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SearchBottomSheet extends StatefulWidget {
   final ScrollController scrollController;
@@ -199,7 +200,16 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
                   decoration: BoxDecoration(color: AppColors.appRed,borderRadius: BorderRadius.all(Radius.circular(15))),
                   buttonPress: provider.selectedCategory == null
                       ? null
-                      : () {
+                      : () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    final selectedCat = provider.selectedCategory;
+
+                    if (selectedCat != null) {
+                      await prefs.setString('saved_category_id', selectedCat.id.toString());
+                      await prefs.setString('saved_category_name', selectedCat.name ?? "");
+                    }
+
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                     Navigator.pushNamed(
                       context,

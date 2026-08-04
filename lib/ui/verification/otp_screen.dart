@@ -18,7 +18,7 @@ class OtpScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-        create: (_) => AuthProvider(),
+        create: (_) => AuthProvider()..loadSavedMobileNumber(),
         builder: (context, child) {
           final customColor = Provider
               .of<CustomThemeProvider>(context)

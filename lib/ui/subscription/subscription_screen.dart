@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../Api Model/plans_type.dart';
 import '../../model/pricing_model.dart';
 import '../../network/provider/plan_provider.dart';
@@ -35,8 +36,14 @@ class PlansAndPricingScreen extends StatelessWidget {
                       ),
                     ),
                     InkWell(
-                      onTap: () =>
-                          Navigator.pushNamed(context, "/AccountTypeScreen"),
+                      onTap: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('has_seen_plans', true);
+
+                        if (!context.mounted) return;
+                        Navigator.pushNamed(context, "/AccountTypeScreen");
+                      },
+
                       child: AppText(
                         "SKIP",
                         style: TextStyle(

@@ -145,7 +145,6 @@ class BusinessCategoryChooseView extends StatelessWidget {
   }
 
   void searchCategorySheet(BuildContext context) {
-    // 🚀 Now context has direct access to IndustryProvider because it's called from build method's context
     final industryProvider = context.read<IndustryProvider>();
     industryProvider.fetchAssetCategories();
     final DraggableScrollableController _sheetController =
@@ -163,7 +162,7 @@ class BusinessCategoryChooseView extends StatelessWidget {
               Positioned.fill(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
-                  child: Container(color: Colors.black.withOpacity(0.2)),
+                  child: Container(color: Colors.black.withValues(alpha: 0.2)),
                 ),
               ),
               DraggableScrollableSheet(

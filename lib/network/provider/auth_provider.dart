@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:project_mmb/core/app_provider/my_notifier.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier with MyNotifier{
   //final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -186,7 +187,14 @@ class AuthProvider extends ChangeNotifier with MyNotifier{
     notifyListeners();
     return isValid;
   }
-
+  Future<void> loadSavedMobileNumber() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedNumber = prefs.getString('saved_mobile_number');
+    if (savedNumber != null && savedNumber.isNotEmpty) {
+      _mobileNumber = savedNumber;
+      notifyListeners();
+    }
+  }
   @override
   void dispose() {
     super.dispose();

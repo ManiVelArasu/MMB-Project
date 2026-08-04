@@ -9,7 +9,7 @@ class BusinessProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🚀 FIX: Wrap with ChangeNotifierProvider so BusinessProfileProvider is locally available for this route
+
     return ChangeNotifierProvider(
       create: (_) => BusinessProfileProvider(),
       child: const BusinessProfileView(),
@@ -89,7 +89,7 @@ class BusinessProfileView extends StatelessWidget {
                         SizedBox(height: 10.h),
 
                         AppText(
-                          "Steve & Sarah Bakeshop",
+                          provider.businessName.isEmpty ? "Business Name" : provider.businessName,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface,
                             fontSize: 20.sp,

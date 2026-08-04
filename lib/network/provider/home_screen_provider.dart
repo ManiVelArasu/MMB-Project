@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../Api Model/templatecategories.dart';
 import '../../Repository/home_repository.dart';
 import '../../model/my_space_model.dart';
@@ -6,11 +7,30 @@ import '../../model/my_space_model.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreenProvider extends ChangeNotifier {
-
   HomeScreenProvider() {
     fetchTemplateCategories();
+    loadSavedBusinessData();
   }
 
+  String _businessName = "";
+  String get businessName => _businessName;
+
+  Future<void> loadSavedBusinessData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      String? name = prefs.getString('saved_business_name');
+      if (name == null || name.isEmpty) {
+        name = prefs.getString('business_name');
+      }
+
+      _businessName = name ?? "";
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error loading business name: $e");
+    }
+  }
 
   List<TemplateCategories> _templateCategories = [];
   bool _isLoadingCategories = false;
@@ -137,13 +157,13 @@ class HomeScreenProvider extends ChangeNotifier {
     {
       "title": "Make My Lead",
       "subTitle":
-      "Go Premium and list your business for free on our platform to boost your leads.",
+          "Go Premium and list your business for free on our platform to boost your leads.",
       "btnText": "BOOST MY BUSINESS",
     },
     {
       "title": "Grow Your Business",
       "subTitle":
-      "Get verified badge and double your client engagement effortlessly.",
+          "Get verified badge and double your client engagement effortlessly.",
       "btnText": "UPGRADE NOW",
     },
   ];
@@ -200,22 +220,22 @@ class HomeScreenProvider extends ChangeNotifier {
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-      "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-      "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-      "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-      "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
   ];
 

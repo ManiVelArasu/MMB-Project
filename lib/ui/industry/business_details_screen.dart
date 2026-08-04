@@ -9,6 +9,7 @@ import 'package:project_mmb/utils/height_measure.dart';
 import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BusinessDetailsScreen extends StatelessWidget {
   const BusinessDetailsScreen({super.key});
@@ -17,8 +18,7 @@ class BusinessDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final customColor = context.watch<CustomThemeProvider>().colors;
     final theme = Theme.of(context).textTheme;
-    final businessProvider = context
-        .watch<BusinessProvider>();
+    final businessProvider = context.watch<BusinessProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -258,11 +258,33 @@ class BusinessDetailsScreen extends StatelessWidget {
               SizedBox(height: 15),
               // CONTINUE BUTTON
               ButtonWidget(
-                buttonPress: () {
+                buttonPress: () async {
                   // FORM VALIDATION CHECK
                   if (businessProvider.validateForm()) {
-                    // 🚀 Since BusinessProvider is global, the saved image, name, email & mobile
-                    // can now be accessed in any other screen (like /BusinessFrameScreen) using context.watch<BusinessProvider>()
+                    final prefs = await SharedPreferences.getInstance();
+                    final imageFile =
+                        businessProvider.selectedImage ??
+                        businessProvider.originalImage;
+
+                    if (imageFile != null) {
+                      await prefs.setString(
+                        'saved_business_image_path',
+                        imageFile.path,
+                      );
+                    }
+                    await prefs.setString(
+                      'saved_business_name',
+                      businessProvider.businessName,
+                    );
+                    await prefs.setString(
+                      'saved_email',
+                      businessProvider.email,
+                    );
+                    await prefs.setString(
+                      'saved_mobile_number',
+                      businessProvider.mobileNumber,
+                    );
+                    // Navigator push
                     Navigator.pushNamed(context, "/CustomBottomNavScreen");
                   }
                 },
