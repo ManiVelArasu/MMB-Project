@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BusinessProfileProvider extends ChangeNotifier {
+  BusinessProfileProvider() {
+    loadSavedBusinessName();
+  }
+
   String _mobileNumber = "+91 9876543210";
   String get mobileNumber => _mobileNumber;
 
@@ -20,6 +25,19 @@ class BusinessProfileProvider extends ChangeNotifier {
   int _selectedFrameTab = 0;
   int get selectedFrameTab => _selectedFrameTab;
 
+  String _businessName = "";
+
+  String get businessName => _businessName;
+
+  Future<void> loadSavedBusinessName() async {
+    final prefs = await SharedPreferences.getInstance();
+    _businessName = prefs.getString('saved_business_name') ?? "";
+    notifyListeners();
+  }
+  void setBusinessName(String name) {
+    _businessName = name;
+    notifyListeners();
+  }
   void updateFrameTab(int index) {
     _selectedFrameTab = index;
     notifyListeners();

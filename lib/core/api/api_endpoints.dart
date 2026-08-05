@@ -19,9 +19,14 @@ class ApiEndpoints {
   static const String plan = '/plans';
 
   static const String templateSize = '/template-sizes';
-  static const String themes = '/theme-groups';
+  static const String themes = '/brand-series?preview_variants=4';
+  static String themesDetail(String varientId) => '/variants/$varientId';
 
   static const String templateCategory = '/template-categories';
+
+  static const String cdnImageUrl =
+      'https://temp-m2b-assets.s3.ap-south-1.amazonaws.com';
+
   // ── Auth ──────────────────────────────────────────────────
   static const String login = '/login/mobile/authenticate';
 

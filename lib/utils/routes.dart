@@ -5,11 +5,11 @@ import 'package:project_mmb/ui/industry/business_details_screen.dart';
 import 'package:project_mmb/ui/industry/edit_photo_screen.dart';
 import 'package:project_mmb/ui/login/login_screen.dart';
 import 'package:project_mmb/ui/onboarding/onboarding_screen.dart';
-import 'package:project_mmb/ui/screens/faq_screen.dart';
 import 'package:project_mmb/ui/splash/splash_screen.dart';
 import 'package:project_mmb/ui/verification/otp_screen.dart';
 import 'package:provider/provider.dart';
 
+import '../Api Model/theme_screen_model.dart';
 import '../component/bottom_navigation.dart';
 import '../network/provider/auth_provider.dart';
 import '../network/provider/business_provider.dart';
@@ -30,6 +30,7 @@ import '../ui/screens/social_calender_result_screen.dart';
 import '../ui/screens/template_detail_screen.dart';
 import '../ui/screens/template_edit.dart';
 import '../ui/screens/theme_detail_screen.dart';
+import '../ui/screens/theme_single_item_view_screen.dart';
 import '../ui/subscription/basic_plan.dart';
 import '../ui/subscription/elit_plan.dart';
 import '../ui/subscription/premium_plan.dart';
@@ -95,9 +96,10 @@ class RouteGenerator {
         );
       case "/ElitePlan":
         return MaterialPageRoute(builder: (context) => const ElitePlanScreen());
-      case "/ThemeDetailScreen":
+      case '/ThemeDetailScreen':
+        final args = settings.arguments;
         return MaterialPageRoute(
-          builder: (context) => const ThemeDetailScreen(),
+          builder: (context) => ThemeDetailScreen(themeItem: args is ThemeItem ? args : null),
         );
       case "/NotificationScreen":
         return MaterialPageRoute(
@@ -164,9 +166,10 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (context) => const FeedbackScreen(),
         );
-      case "/FaqScreen":
+      case "/ThemeSingleitemViewScreen":
+        final String variantId = settings.arguments as String? ?? '';
         return MaterialPageRoute(
-          builder: (context) => const FaqScreen(),
+          builder: (context) => ThemeSingleitemViewScreen(variantId: variantId),
         );
     }
     return null;

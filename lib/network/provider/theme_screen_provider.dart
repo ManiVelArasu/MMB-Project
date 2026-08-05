@@ -8,8 +8,8 @@ class ThemesScreenProvider extends ChangeNotifier {
   bool _isLoadingPlans = false;
   bool get isLoadingPlans => _isLoadingPlans;
 
-  ThemeGroupResponse? _plansData;
-  ThemeGroupResponse? get plansData => _plansData;
+  ThemeApiResponse? _plansData;
+  ThemeApiResponse? get plansData => _plansData;
 
   String? _plansErrorMessage;
   String? get plansErrorMessage => _plansErrorMessage;
@@ -35,7 +35,7 @@ class ThemesScreenProvider extends ChangeNotifier {
     }
   }
 
-  List<ThemeGroup> get groups {
+  List<ThemeItem> get groups {
     return _plansData?.data ?? [];
   }
 }

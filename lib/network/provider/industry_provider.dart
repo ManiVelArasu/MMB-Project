@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:project_mmb/Repository/industry_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Api Model/industries.dart';
 import '../../core/app_provider/my_notifier.dart';
@@ -77,6 +78,14 @@ class IndustryProvider extends ChangeNotifier with MyNotifier {
 
   void selectCategory(Industries category) {
     _selectedCategory = category;
+    notifyListeners();
+  }
+  String _savedCategoryName = "";
+  String get savedCategoryName => _savedCategoryName;
+
+  Future<void> loadSavedCategory() async {
+    final prefs = await SharedPreferences.getInstance();
+    _savedCategoryName = prefs.getString('saved_category_name') ?? "";
     notifyListeners();
   }
 }

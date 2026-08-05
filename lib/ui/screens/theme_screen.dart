@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:project_mmb/core/api/api_endpoints.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/theme_screen_model.dart';
@@ -32,12 +33,14 @@ class _ThemesScreenState extends State<ThemesScreen> {
       builder: (context, provider, child) {
         if (provider.isLoadingPlans) {
           return const Scaffold(
+            backgroundColor: Colors.white,
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
         if (provider.plansErrorMessage != null) {
           return Scaffold(
+            backgroundColor: Colors.white,
             body: Center(child: Text(provider.plansErrorMessage!)),
           );
         }
@@ -48,7 +51,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
           backgroundColor: Colors.white,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
-            child: HomeCustomAppBar(
+            child: const HomeCustomAppBar(
               businessName: "Business Name",
               businessCategory: "Cake and Sweets",
               notificationCount: "2",
@@ -115,15 +118,6 @@ class _ThemesScreenState extends State<ThemesScreen> {
                               ),
                             ],
                           ),
-
-                          /*Positioned(
-                            right: -10,
-                            bottom: -10,
-                            child: Image.asset(
-                              "assets/images/theme_banner_illustration.png",
-                              height: 110.h,
-                            ),
-                          ),*/
                         ],
                       ),
                     ),
@@ -137,7 +131,6 @@ class _ThemesScreenState extends State<ThemesScreen> {
                       itemCount: groups.length,
                       itemBuilder: (context, index) {
                         final group = groups[index];
-
                         return ThemeGroupSection(group: group);
                       },
                     ),
@@ -153,12 +146,14 @@ class _ThemesScreenState extends State<ThemesScreen> {
 }
 
 class ThemeGroupSection extends StatelessWidget {
-  final ThemeGroup group;
+  final ThemeItem group;
 
   const ThemeGroupSection({super.key, required this.group});
 
   @override
   Widget build(BuildContext context) {
+    String? iconUrl = group.iconS3Key;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -171,7 +166,20 @@ class ThemeGroupSection extends StatelessWidget {
                 color: const Color(0xFF00E676),
                 borderRadius: BorderRadius.circular(8.r),
               ),
-              child: Image.asset("assets/images/rebel.png"),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8.r),
+                child: Image.network(
+                  "${ApiEndpoints.cdnImageUrl}/${iconUrl ?? ''}",
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.category,
+                      size: 16,
+                      color: Colors.white,
+                    );
+                  },
+                ),
+              ),
             ),
 
             SizedBox(width: 8.w),
@@ -189,9 +197,10 @@ class ThemeGroupSection extends StatelessWidget {
 
             GestureDetector(
               onTap: () {
+                print(group);
                 Navigator.pushNamed(
                   context,
-                  "/ThemeGroupScreen",
+                  "/ThemeDetailScreen",
                   arguments: group,
                 );
               },
@@ -214,9 +223,9 @@ class ThemeGroupSection extends StatelessWidget {
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            itemCount: group.themes?.length ?? 0,
+            itemCount: group.variants.length,
             itemBuilder: (context, index) {
-              return ThemeCard(theme: group.themes![index]);
+              return ThemeCard(theme: group.variants[index]);
             },
           ),
         ),
@@ -228,7 +237,7 @@ class ThemeGroupSection extends StatelessWidget {
 }
 
 class ThemeCard extends StatelessWidget {
-  final ThemeModel theme;
+  final Variant theme;
 
   const ThemeCard({super.key, required this.theme});
 
@@ -242,11 +251,7 @@ class ThemeCard extends StatelessWidget {
         children: [
           InkWell(
             onTap: () {
-              Navigator.pushNamed(
-                context,
-                "/ThemeDetailScreen",
-                arguments: theme,
-              );
+
             },
             child: Container(
               height: 160.h,
@@ -272,7 +277,8 @@ class ThemeCard extends StatelessWidget {
                               ),
                             )
                           : Image.network(
-                              theme.thumbnailS3Key ?? "",
+                              "${ApiEndpoints.cdnImageUrl}${theme.thumbnailS3Key ?? ''}",
+
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) {
                                 return Container(
@@ -331,7 +337,7 @@ class ThemeCard extends StatelessWidget {
           SizedBox(height: 2.h),
 
           Text(
-            "${theme.businessCategories?.length ?? 0} Templates",
+            "${theme.businessCategories.length} Templates",
             style: TextStyle(
               color: Colors.grey,
               fontSize: 10.sp,

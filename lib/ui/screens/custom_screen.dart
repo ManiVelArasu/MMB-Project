@@ -39,7 +39,6 @@ class _CustomCreateBody extends StatelessWidget {
           );
         }
         final templateSizes = provider.plansData?.data ?? [];
-        print(templateSizes.length);
         return Scaffold(
           backgroundColor: Colors.white,
           appBar: PreferredSize(
@@ -111,7 +110,7 @@ class _CustomCreateBody extends StatelessWidget {
 
                                 SizedBox(height: 8.h),
 
-                                Text(
+                                AppText(
                                   item.name ?? "",
                                   textAlign: TextAlign.center,
                                   maxLines: 2,
@@ -123,7 +122,7 @@ class _CustomCreateBody extends StatelessWidget {
 
                                 SizedBox(height: 2.h),
 
-                                Text(
+                                AppText(
                                   "${item.width} × ${item.height}",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
@@ -198,7 +197,7 @@ class _CustomCreateBody extends StatelessWidget {
                               SizedBox(height: 10.h),
 
                               // 2. TOOL TITLE
-                              Text(
+                              AppText(
                                 tool.title,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -213,7 +212,7 @@ class _CustomCreateBody extends StatelessWidget {
                               SizedBox(height: 4.h),
 
                               // 3. TOOL SUBTITLE
-                              Text(
+                              AppText(
                                 tool.subtitle,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(

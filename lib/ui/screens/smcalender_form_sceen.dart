@@ -9,7 +9,6 @@ class SocialCalendarFormScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🚀 Provider is wrapped right inside the first screen wrapper (Not in main)
     return ChangeNotifierProvider(
       create: (_) => SocialCalendarProvider(),
       child: Builder(
@@ -28,7 +27,10 @@ class SocialCalendarFormScreen extends StatelessWidget {
                 ),
               ),
               body: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -51,11 +53,14 @@ class SocialCalendarFormScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-            
+
                     // Select Month
                     const Text(
                       "Select Month",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -81,11 +86,14 @@ class SocialCalendarFormScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-            
+
                     // Posts per Week
                     const Text(
                       "Posts per Week",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     SingleChildScrollView(
@@ -124,11 +132,14 @@ class SocialCalendarFormScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-            
+
                     // Social Media Platforms
                     const Text(
                       "Social Media Platforms",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -157,11 +168,14 @@ class SocialCalendarFormScreen extends StatelessWidget {
                       }).toList(),
                     ),
                     const SizedBox(height: 20),
-            
+
                     // Select Your Tone
                     const Text(
                       "Select Your Tone",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -188,7 +202,7 @@ class SocialCalendarFormScreen extends StatelessWidget {
                       }).toList(),
                     ),
                     const SizedBox(height: 30),
-            
+
                     // Generate Button -> Navigates to Screen 2 with Provider passed
                     SizedBox(
                       width: double.infinity,

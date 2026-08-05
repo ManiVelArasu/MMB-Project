@@ -651,7 +651,6 @@ class _ResizeOptionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🚀 Safe and scoped watch using StatelessWidget context inside provider boundary
     final provider = context.watch<TemplateDetailProvider>();
     final isSelected = provider.selectedResizeSize == title;
 

@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/network/provider/auth_provider.dart';
 import 'package:project_mmb/network/provider/custom_theme_provider.dart';
 import 'package:project_mmb/ui/verification/otp_screen.dart';
@@ -8,13 +9,13 @@ import 'package:project_mmb/utils/height_measure.dart';
 import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 🚀 FIX: Wrap with ChangeNotifierProvider using builder so `context` has access to AuthProvider locally
     return ChangeNotifierProvider(
       create: (_) => AuthProvider(),
       builder: (context, child) {
@@ -22,17 +23,20 @@ class LoginScreen extends StatelessWidget {
         final authProvider = context.watch<AuthProvider>();
         final theme = Theme.of(context).textTheme;
 
-        return Scaffold(
-          body: SafeArea(
-            top: false,
-            child: SingleChildScrollView(
+        return SafeArea(
+          child: Scaffold(
+            body: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.asset(
-                    "assets/images/login_img_temp.png",
+                  SizedBox(
+                    height: 180.h,
                     width: double.infinity,
-                    fit: BoxFit.cover,
+                    child: Image.asset(
+                      "assets/images/login.png",
+                      fit: BoxFit.fitWidth,
+                      alignment: Alignment.topCenter,
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(12.0),
@@ -42,8 +46,11 @@ class LoginScreen extends StatelessWidget {
                         const TitleValueWidget(
                           title: "Create your Account",
                           subTitle:
-                              "Login with Google or Mobile Number. Enter your country code to create account with mobile number",
+                              "Join thousands of businesses creating professional designs with MMB.",
+
                         ),
+                        AppText("Create your account using your mobile number or continue with Google."),
+                        SizedBox(height: 10,),
                         // Title
 
                         // MOBILE NUMBER FIELD
@@ -114,7 +121,7 @@ class LoginScreen extends StatelessWidget {
                                 horizontal: 8.0,
                               ),
                               child: Text(
-                                "OR Sign In with",
+                                "or continue with".toUpperCase(),
                                 style: theme.bodyLarge!.copyWith(
                                   color: customColor.borderColor,
                                 ),
@@ -151,15 +158,22 @@ class LoginScreen extends StatelessWidget {
 
                         height12,
 
-                        // REQUEST OTP (uses provider validation)
                         ButtonWidget(
-                          buttonPress: () {
-                            // if (authProvider.submitLogin()) {
-                            // Valid → Continue
-                            Navigator.pushNamed(context, "/OtpScreen");
-                            // }
+                          buttonPress: () async {
+                            if (authProvider.submitLogin()) {
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.setString(
+                                'saved_mobile_number',
+                                authProvider.mobileNumber,
+                              );
+                              await prefs.setBool('is_logged_in', true);
+
+                              if (!context.mounted) return;
+                              Navigator.pushNamed(context, "/OtpScreen");
+                            }
                           },
-                          title: "REQUEST OTP",
+                          title: "GET OTP",
                           textStyle: theme.titleLarge!.copyWith(
                             color: customColor.whiteColor,
                             fontWeight: FontWeight.w700,

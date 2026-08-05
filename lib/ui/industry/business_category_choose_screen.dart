@@ -86,10 +86,7 @@ class BusinessCategoryChooseView extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 "Find the category that best matches your Products/Services",
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
               ),
 
               const SizedBox(height: 24),
@@ -148,11 +145,10 @@ class BusinessCategoryChooseView extends StatelessWidget {
   }
 
   void searchCategorySheet(BuildContext context) {
-    // 🚀 Now context has direct access to IndustryProvider because it's called from build method's context
     final industryProvider = context.read<IndustryProvider>();
     industryProvider.fetchAssetCategories();
     final DraggableScrollableController _sheetController =
-    DraggableScrollableController();
+        DraggableScrollableController();
 
     showModalBottomSheet(
       context: context,
@@ -166,7 +162,7 @@ class BusinessCategoryChooseView extends StatelessWidget {
               Positioned.fill(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
-                  child: Container(color: Colors.black.withOpacity(0.2)),
+                  child: Container(color: Colors.black.withValues(alpha: 0.2)),
                 ),
               ),
               DraggableScrollableSheet(

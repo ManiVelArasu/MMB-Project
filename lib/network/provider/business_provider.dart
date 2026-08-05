@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project_mmb/ui/industry/widgets/bg_remove_sheet.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BusinessProvider extends ChangeNotifier {
   BusinessProvider() {
@@ -647,9 +648,17 @@ bool _isImageSelected =false;
       debugPrint("Failed to apply processed image: $e");
       return false;
     }
+
   }
+  Future<void> loadSavedBusinessImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? imagePath = prefs.getString('saved_business_image_path');
 
-
+    if (imagePath != null && imagePath.isNotEmpty) {
+      _originalImage = File(imagePath);
+      notifyListeners();
+    }
+  }
 
 }
 

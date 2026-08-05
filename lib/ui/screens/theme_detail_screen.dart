@@ -3,90 +3,80 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:project_mmb/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 
+import '../../Api Model/theme_screen_model.dart';
+import '../../component/home_appbar.dart';
 import '../../network/provider/theme_detail_screen_provider.dart';
+import '../../network/provider/theme_screen_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
+
 class ThemeDetailScreen extends StatelessWidget {
-  const ThemeDetailScreen({super.key});
+  final ThemeItem? themeItem;
+
+  const ThemeDetailScreen({super.key, this.themeItem});
 
   @override
   Widget build(BuildContext context) {
+    final ThemeItem? item =
+        themeItem ?? (ModalRoute.of(context)?.settings.arguments as ThemeItem?);
+
     return ChangeNotifierProvider(
-      create: (_) => ThemeDetailProvider(),
-      child: const ThemeDetailView(),
+      create: (_) => ThemesScreenProvider(),
+      child: Builder(
+        builder: (context) {
+          return ThemeDetailView(themeItem: item);
+        },
+      ),
     );
   }
 }
 
 class ThemeDetailView extends StatelessWidget {
-  const ThemeDetailView({super.key});
+  final ThemeItem? themeItem;
+  const ThemeDetailView({super.key, this.themeItem});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeDetailProvider>(
+    return Consumer<ThemesScreenProvider>(
       builder: (context, provider, child) {
+        final String title = themeItem?.name ?? "";
+        final String caption =
+            themeItem?.caption ?? "Bright ideas deserve bright branding";
+        final String description =
+            themeItem?.description ??
+            "Fresh, vibrant, energetic visuals for businesses that want to grab attention instantly, while keeping every single post consistent, lively, and unmistakably you.";
+
+        final List<dynamic> tags = themeItem?.tags.isNotEmpty == true
+            ? themeItem!.tags
+            : ["Fresh", "Bright", "Energetic", "Modern", "Friendly"];
+
+        final List<Variant> variants = themeItem?.variants ?? [];
+
         return Scaffold(
           backgroundColor: Colors.white,
+          appBar: PreferredSize(
+            preferredSize: Size.fromHeight(70.h),
+            child: const HomeCustomAppBar(
+              businessName: "Business Name",
+              businessCategory: "Cake and Sweets",
+              notificationCount: "2",
+            ),
+          ),
           body: SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Back Arrow Circle Button
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            height: 40.h,
-                            width: 40.w,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFFECEE),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.arrow_back_rounded,
-                              color: const Color(0xFFE53935),
-                              size: 20.sp,
-                            ),
-                          ),
-                        ),
-
-                        // Favorite Heart Circle Button
-                        GestureDetector(
-                          onTap: () => provider.toggleFavorite(),
-                          child: Container(
-                            height: 40.h,
-                            width: 40.w,
-                            decoration: BoxDecoration(
-                              color: provider.isFavorite
-                                  ? const Color(0xFFFFECEE)
-                                  : Colors.grey.shade100,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              provider.isFavorite
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_outline_rounded,
-                              color: provider.isFavorite
-                                  ? const Color(0xFFE53935)
-                                  : Colors.grey.shade400,
-                              size: 20.sp,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 20.h),
-
-                    AppText(
-                      provider.themeTitle,
+                    // Theme Title
+                    Text(
+                      themeItem?.name ?? "",
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 24.sp,
@@ -95,50 +85,55 @@ class ThemeDetailView extends StatelessWidget {
                       ),
                     ),
 
-                    SizedBox(height: 12.h),
+                    SizedBox(height: 6.h),
 
-                    // 3. DESCRIPTIONS
-                    AppText(
-                      provider.description1,
+                    // Caption / Subtitle
+                    Text(
+                      caption,
                       style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 13.5.sp,
-                        fontWeight: FontWeight.w500,
-                        height: 1.35,
+                        color: const Color(0xFFE53935),
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w700,
                       ),
+                      textAlign: TextAlign.center,
                     ),
 
-                    SizedBox(height: 14.h),
+                    SizedBox(height: 10.h),
 
-                    AppText(
-                      provider.description2,
+                    // Description
+                    Text(
+                      description,
                       style: TextStyle(
                         color: Colors.black87,
-                        fontSize: 13.5.sp,
-                        fontWeight: FontWeight.w600,
-                        height: 1.35,
+                        fontSize: 12.5.sp,
+                        fontWeight: FontWeight.w400,
+                        height: 1.4,
                       ),
+                      textAlign: TextAlign.center,
                     ),
 
                     SizedBox(height: 16.h),
 
+                    // Tags Wrap (Centered)
                     Wrap(
                       spacing: 8.w,
                       runSpacing: 8.h,
-                      children: provider.tags.map((tag) {
+                      alignment: WrapAlignment.center,
+                      children: tags.map((tag) {
                         return Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: 10.w,
+                            horizontal: 12.w,
                             vertical: 6.h,
                           ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFF0F2),
-                            borderRadius: BorderRadius.circular(6.r),
+                            borderRadius: BorderRadius.circular(20.r),
+                            border: Border.all(color: Colors.red.shade100),
                           ),
-                          child: AppText(
-                            tag,
+                          child: Text(
+                            tag.toString(),
                             style: TextStyle(
-                              color: Colors.black87,
+                              color: const Color(0xFFE53935),
                               fontSize: 11.5.sp,
                               fontWeight: FontWeight.w600,
                             ),
@@ -147,110 +142,102 @@ class ThemeDetailView extends StatelessWidget {
                       }).toList(),
                     ),
 
+                    SizedBox(height: 20.h),
+
+                    // Unlock Button matching screenshot
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48.h,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE53935),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Theme Unlocked Successfully!"),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "Unlock $title →",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
                     SizedBox(height: 24.h),
 
+                    // Variants / Templates Grid
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: provider.templatesList.length,
+                      itemCount: variants.isNotEmpty ? variants.length : 4,
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 12.w,
                         mainAxisSpacing: 12.h,
-                        childAspectRatio: 1.0, // Square Posters
+                        childAspectRatio: 0.85,
                       ),
                       itemBuilder: (context, index) {
+                        final variant = variants.isNotEmpty
+                            ? variants[index]
+                            : null;
+                        final thumbnail = variant?.thumbnailS3Key;
+                        final variantName = variant?.name ?? "$title-0$index";
+
                         return Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16.r),
-                            color: Colors.grey.shade200,
+                            color: Colors.grey.shade100,
+                            border: Border.all(color: Colors.grey.shade200),
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16.r),
-                            child: Stack(
-                              children: [
-                                // Poster Asset Image
-                                Positioned.fill(
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        "/TemplateDetailScreen",
-                                      );
-                                    },
-                                    child: Image.asset(
-                                      provider.templatesList[index],
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: Colors.grey.shade300,
-                                        child: Icon(
-                                          Icons.image_outlined,
-                                          size: 40.sp,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(16.r),
                                   ),
-                                ),
-
-                                Positioned(
-                                  top: 10.h,
-                                  left: 10.w,
-                                  child: Image.asset(
-                                    "assets/images/crown.png",
-                                    width: 15,
-                                    height: 15,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-
-                    SizedBox(height: 20.h),
-
-                    _buildSectionHeader(
-                      title: "More Themes",
-                      iconAsset: "assets/images/myspace.png",
-                      hasViewAll: true,
-                    ),
-                    SizedBox(height: 15.h),
-                    SizedBox(
-                      height: 160.h,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: provider.midnightRebelList.length,
-                        itemBuilder: (context, index) {
-                          final item = provider.midnightRebelList[index];
-
-                          return Container(
-                            width: 150.w,
-                            margin: EdgeInsets.only(right: 14.w),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Theme Preview Image Card
-                                Container(
-                                  height: 120.h,
-                                  width: 150.w,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16.r),
-                                    color: Colors.grey.shade200,
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16.r),
-                                    child: Stack(
-                                      children: [
-                                        // Poster Image
-                                        Positioned.fill(
-                                          child: Image.asset(
-                                            item.imagePath,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) =>
-                                                Container(
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: InkWell(
+                                          onTap: () {
+                                            Navigator.pushNamed(
+                                              context,
+                                              "/ThemeSingleitemViewScreen",
+                                              arguments: variant?.uid,
+                                            );
+                                          },
+                                          child:
+                                              thumbnail != null &&
+                                                  thumbnail.isNotEmpty
+                                              ? Image.network(
+                                                  thumbnail,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      Container(
+                                                        color: Colors
+                                                            .grey
+                                                            .shade300,
+                                                        child: Icon(
+                                                          Icons.image_outlined,
+                                                          size: 40.sp,
+                                                          color: Colors.grey,
+                                                        ),
+                                                      ),
+                                                )
+                                              : Container(
                                                   color: Colors.grey.shade300,
                                                   child: Icon(
                                                     Icons.image_outlined,
@@ -258,85 +245,160 @@ class ThemeDetailView extends StatelessWidget {
                                                     color: Colors.grey,
                                                   ),
                                                 ),
-                                          ),
                                         ),
-
-                                        // Crown Badge (Top-Left)
-                                        if (item.isPremium)
-                                          Positioned(
-                                            top: 10.h,
-                                            left: 10.w,
-                                            child: Image.asset(
-                                              "assets/images/crown.png",
-                                              width: 15,
-                                              height: 15,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
+                                      ),
+                                      Positioned(
+                                        top: 8.h,
+                                        left: 8.w,
+                                        child: Image.asset(
+                                          "assets/images/crown.png",
+                                          width: 14,
+                                          height: 14,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-
-                                SizedBox(height: 8.h),
-
-                                // Title & Likes Counter Row
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(10.r),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(
-                                      child: AppText(
-                                        item.title,
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 12.sp,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-
-                                    // Heart Likes Badge
                                     Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Icon(
-                                          Icons.favorite_rounded,
-                                          color: const Color(0xFFE53935),
-                                          size: 14.sp,
+                                        Expanded(
+                                          child: Text(
+                                            variantName,
+                                            style: TextStyle(
+                                              fontSize: 11.sp,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ),
-                                        SizedBox(width: 3.w),
-                                        AppText(
-                                          item.likesCount,
-                                          style: TextStyle(
-                                            color: Colors.black87,
-                                            fontSize: 11.sp,
-                                            fontWeight: FontWeight.w700,
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 4.w,
+                                            vertical: 2.h,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.shade50,
+                                            borderRadius: BorderRadius.circular(
+                                              4.r,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            "POPULAR",
+                                            style: TextStyle(
+                                              fontSize: 7.sp,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.red,
+                                            ),
                                           ),
                                         ),
                                       ],
+                                    ),
+                                    SizedBox(height: 2.h),
+                                    Text(
+                                      "8 Ready-to-Use Templates",
+                                      style: TextStyle(
+                                        fontSize: 10.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    SizedBox(height: 1.h),
+                                    Text(
+                                      "Perfect for Cafes, Bakeries & Organic Brands.",
+                                      style: TextStyle(
+                                        fontSize: 9.sp,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
 
-                                SizedBox(height: 2.h),
+                    SizedBox(height: 30.h),
 
-                                // Subtitle: Template Count
-                                AppText(
-                                  item.templateCount,
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
+                    Center(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 4.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        child: Text(
+                          "Also works great for",
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 8.h),
+                    Text(
+                      "Beyond the obvious",
+                      style: TextStyle(
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.black,
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+
+                    // Business Category Chips
+                    Wrap(
+                      spacing: 8.w,
+                      runSpacing: 8.h,
+                      alignment: WrapAlignment.center,
+                      children:
+                          [
+                            "Cafe",
+                            "Juice Shop",
+                            "Organic Store",
+                            "Bakery",
+                            "Dessert Shop",
+                            "Smoothie Bar",
+                          ].map((category) {
+                            return Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16.w,
+                                vertical: 10.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE53935),
+                                borderRadius: BorderRadius.circular(10.r),
+                              ),
+                              child: Text(
+                                category,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                    ),
+
+                    SizedBox(height: 30.h),
                   ],
                 ),
               ),
@@ -344,54 +406,6 @@ class ThemeDetailView extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildSectionHeader({
-    required String title,
-    required String iconAsset,
-    bool hasViewAll = false,
-  }) {
-    return Row(
-      children: [
-        Image.asset(
-          iconAsset,
-          height: 32.h,
-          width: 32.w,
-          errorBuilder: (_, __, ___) => Container(
-            height: 32.h,
-            width: 32.h,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFECEE),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.flash_on,
-              color: const Color(0xFFE53935),
-              size: 18.sp,
-            ),
-          ),
-        ),
-        SizedBox(width: 8.w),
-        AppText(
-          title,
-          style: TextStyle(
-            color: AppColors.darkBlack,
-            fontSize: AppFontSize.fontSize18,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const Spacer(),
-        if (hasViewAll)
-          Text(
-            "VIEW ALL",
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-      ],
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:project_mmb/ui/screens/video_widget/video_widget.dart';
 import 'package:provider/provider.dart';
 
+import '../../component/custom_widget.dart';
 import '../../network/provider/mydownload_provider.dart';
 class MyDownloadsScreen extends StatelessWidget {
   const MyDownloadsScreen({super.key});
@@ -55,7 +56,7 @@ class MyDownloadsView extends StatelessWidget {
                             ),
                           ),
                           SizedBox(width: 14.w),
-                          Text(
+                          AppText(
                             "My Downloads",
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onSurface,
@@ -215,7 +216,7 @@ class MyDownloadsView extends StatelessWidget {
               size: 20.sp,
             ),
             SizedBox(height: 2.h),
-            Text(
+            AppText(
               title,
               style: TextStyle(
                 color: isSelected ? Colors.white : Colors.grey.shade400,

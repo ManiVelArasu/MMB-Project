@@ -14,7 +14,7 @@ class BusinessCategoryChooseView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => IndustryProvider(),
+      create: (_) => IndustryProvider()..loadSavedCategory(),
       child: const BusinessCategoryView(),
     );
   }
@@ -105,7 +105,6 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
               ),
               const SizedBox(height: 16),
 
-              // Business Category Box
               const Text(
                 "Business Category",
                 style: TextStyle(
@@ -127,7 +126,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                   border: Border.all(color: Colors.red.shade200),
                 ),
                 child: Text(
-                  industryProvider.selectedCategory?.name ?? 'Gym & Fitness',
+                  industryProvider.savedCategoryName,
                   style: const TextStyle(
                     color: Colors.red,
                     fontSize: 16,
@@ -137,7 +136,6 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
               ),
               const SizedBox(height: 20),
 
-              // Choose Specialization Header
               const Text(
                 "Choose a specialization",
                 style: TextStyle(
