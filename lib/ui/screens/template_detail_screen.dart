@@ -1,9 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:project_mmb/network/provider/business_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../network/provider/businessprofile_provider.dart';
 import '../../network/provider/template_detail_provider.dart';
 import '../../utils/theme/app.colors.dart';
 
@@ -68,7 +73,7 @@ class _TemplateDetailBody extends StatelessWidget {
                 child: Column(
                   children: [
                     SizedBox(height: 10.h),
-                    _buildTopBanner(provider.selectedResizeSize),
+                    _buildTopBanner(context, provider.selectedResizeSize),
 
                     SizedBox(height: 12.h),
 
@@ -138,7 +143,10 @@ class _TemplateDetailBody extends StatelessWidget {
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              Navigator.pushNamed(context, "/TemplateEditScreen");
+                              Navigator.pushNamed(
+                                context,
+                                "/TemplateEditScreen",
+                              );
                             },
                             icon: const Icon(
                               Icons.edit,
@@ -639,15 +647,11 @@ void showResizeBottomSheet(BuildContext context) {
   );
 }
 
-
 class _ResizeOptionItem extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _ResizeOptionItem({
-    required this.title,
-    required this.subtitle,
-  });
+  const _ResizeOptionItem({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -668,11 +672,7 @@ class _ResizeOptionItem extends StatelessWidget {
         subtitle,
         style: TextStyle(fontSize: 12.sp, color: Colors.grey),
       ),
-      trailing: Icon(
-        Icons.info_outline,
-        size: 18.sp,
-        color: Colors.grey,
-      ),
+      trailing: Icon(Icons.info_outline, size: 18.sp, color: Colors.grey),
       onTap: () {
         provider.setResizeSize(title);
         Navigator.pop(context);
@@ -681,8 +681,10 @@ class _ResizeOptionItem extends StatelessWidget {
   }
 }
 
+Widget _buildTopBanner(BuildContext context, String resizeSize) {
+  final provider = context.watch<TemplateDetailProvider>();
+  final String? savedImagePath = provider.savedImagePath;
 
-Widget _buildTopBanner(String resizeSize) {
   double bannerHeight = 320.h; // Default Square (1:1)
 
   if (resizeSize.contains("4:5")) {
@@ -699,17 +701,25 @@ Widget _buildTopBanner(String resizeSize) {
     width: double.infinity,
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(16.r),
-      color: Colors.blue.shade700,
+      color: Colors.grey.shade200,
+      image: savedImagePath != null && savedImagePath.isNotEmpty
+          ? DecorationImage(
+        image: FileImage(File(savedImagePath)),
+        fit: BoxFit.cover,
+      )
+          : null,
     ),
-    child: Center(
+    child: savedImagePath == null || savedImagePath.isEmpty
+        ? Center(
       child: Text(
         resizeSize,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
+        style: TextStyle(
+          color: Colors.black54,
+          fontSize: 16.sp,
           fontWeight: FontWeight.bold,
         ),
       ),
-    ),
+    )
+        : null,
   );
 }

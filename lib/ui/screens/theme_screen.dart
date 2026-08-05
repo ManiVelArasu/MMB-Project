@@ -52,7 +52,6 @@ class _ThemesScreenState extends State<ThemesScreen> {
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(
-              businessName: "Business Name",
               businessCategory: "Cake and Sweets",
               notificationCount: "2",
             ),
@@ -250,9 +249,7 @@ class ThemeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () {
-
-            },
+            onTap: () {},
             child: Container(
               height: 160.h,
               width: 150.w,

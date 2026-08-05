@@ -42,177 +42,177 @@ class BusinessDetailsScreen extends StatelessWidget {
                       const TitleValueWidget(
                         title: "Business Details",
                         subTitle:
-                            "Please provide your business details to help us personalize your experience.",
+                        "Please provide your business details to help us personalize your experience.",
                       ),
 
                       businessProvider.selectedImage == null &&
-                              businessProvider.originalImage == null
+                          businessProvider.originalImage == null
                           ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    InkWell(
-                                      onTap: () => uploadImageSheet(
-                                        context,
-                                        businessProvider,
-                                      ),
-                                      child: Container(
-                                        height: 120.h,
-                                        width: 120.w,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                          color: customColor.redColor.withAlpha(
-                                            25,
-                                          ),
-                                          border: Border.all(
-                                            color:
-                                                businessProvider.imageError !=
-                                                    null
-                                                ? Colors.red
-                                                : customColor.redColor,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            SvgPicture.asset(
-                                              "assets/icons/upload_logo_ic.svg",
-                                            ),
-                                            height8,
-                                            AppText(
-                                              "Upload logo",
-                                              style: theme.bodyMedium!.copyWith(
-                                                color: customColor.blackColor,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              InkWell(
+                                onTap: () => uploadImageSheet(
+                                  context,
+                                  businessProvider,
+                                ),
+                                child: Container(
+                                  height: 120.h,
+                                  width: 120.w,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      16,
                                     ),
-                                    Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 12.0.h,
+                                    color: customColor.redColor.withAlpha(
+                                      25,
+                                    ),
+                                    border: Border.all(
+                                      color:
+                                      businessProvider.imageError !=
+                                          null
+                                          ? Colors.red
+                                          : customColor.redColor,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment:
+                                    MainAxisAlignment.center,
+                                    children: [
+                                      SvgPicture.asset(
+                                        "assets/icons/upload_logo_ic.svg",
                                       ),
-                                      child: AppText(
-                                        "OR",
+                                      height8,
+                                      AppText(
+                                        "Upload logo",
                                         style: theme.bodyMedium!.copyWith(
                                           color: customColor.blackColor,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 12.0.h,
+                                ),
+                                child: AppText(
+                                  "OR",
+                                  style: theme.bodyMedium!.copyWith(
+                                    color: customColor.blackColor,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                height: 120.h,
+                                width: 120.w,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: customColor.redColor.withAlpha(
+                                    25,
+                                  ),
+                                  border: Border.all(
+                                    color: customColor.redColor,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                                  children: [
+                                    SvgPicture.asset(
+                                      "assets/icons/create_logo_ic.svg",
                                     ),
-                                    Container(
-                                      height: 120.h,
-                                      width: 120.w,
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                        color: customColor.redColor.withAlpha(
-                                          25,
-                                        ),
-                                        border: Border.all(
-                                          color: customColor.redColor,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          SvgPicture.asset(
-                                            "assets/icons/create_logo_ic.svg",
-                                          ),
-                                          height8,
-                                          AppText(
-                                            "Create logo",
-                                            style: theme.bodyMedium!.copyWith(
-                                              color: customColor.blackColor,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ],
+                                    height8,
+                                    AppText(
+                                      "Create logo",
+                                      style: theme.bodyMedium!.copyWith(
+                                        color: customColor.blackColor,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                   ],
                                 ),
-                                if (businessProvider.imageError != null)
-                                  Padding(
-                                    padding: EdgeInsets.only(
-                                      top: 6.h,
-                                      left: 4.w,
-                                    ),
-                                    child: AppText(
-                                      businessProvider.imageError!,
-                                      style: TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 12.sp,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            )
-                          : Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Container(
-                                  height: 100.h,
-                                  width: 100.w,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color:
-                                          businessProvider.isImageSelected ==
-                                              false
-                                          ? customColor.redColor
-                                          : customColor.greyColor.withAlpha(50),
-                                      width: 2.w,
-                                    ),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Builder(
-                                      builder: (context) {
-                                        final imageFile =
-                                            businessProvider.selectedImage ??
-                                            businessProvider.originalImage;
-                                        if (imageFile != null) {
-                                          return Image.file(
-                                            imageFile,
-                                            fit: BoxFit.cover,
-                                            width: double.infinity,
-                                            height: double.infinity,
-                                          );
-                                        } else {
-                                          return const Center(
-                                            child: Icon(
-                                              Icons.image_not_supported,
-                                              color: Colors.grey,
-                                            ),
-                                          );
-                                        }
-                                      },
-                                    ),
-                                  ),
+                              ),
+                            ],
+                          ),
+                          if (businessProvider.imageError != null)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: 6.h,
+                                left: 4.w,
+                              ),
+                              child: AppText(
+                                businessProvider.imageError!,
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12.sp,
                                 ),
-                                Positioned(
-                                  top: -8,
-                                  right: -8,
-                                  child: InkWell(
-                                    onTap: () => businessProvider.clearImage(),
-                                    child: SvgPicture.asset(
-                                      "assets/icons/remove_ic.svg",
-                                      height: 30,
-                                      width: 30,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
+                        ],
+                      )
+                          : Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            height: 100.h,
+                            width: 100.w,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color:
+                                businessProvider.isImageSelected ==
+                                    false
+                                    ? customColor.redColor
+                                    : customColor.greyColor.withAlpha(50),
+                                width: 2.w,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Builder(
+                                builder: (context) {
+                                  final imageFile =
+                                      businessProvider.selectedImage ??
+                                          businessProvider.originalImage;
+                                  if (imageFile != null) {
+                                    return Image.file(
+                                      imageFile,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                    );
+                                  } else {
+                                    return const Center(
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        color: Colors.grey,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: -8,
+                            right: -8,
+                            child: InkWell(
+                              onTap: () => businessProvider.clearImage(),
+                              child: SvgPicture.asset(
+                                "assets/icons/remove_ic.svg",
+                                height: 30,
+                                width: 30,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
 
                       height12,
 
@@ -259,46 +259,25 @@ class BusinessDetailsScreen extends StatelessWidget {
               // CONTINUE BUTTON
               ButtonWidget(
                 buttonPress: () async {
-                  // FORM VALIDATION CHECK
                   if (businessProvider.validateForm()) {
                     final prefs = await SharedPreferences.getInstance();
-                    final imageFile =
-                        businessProvider.selectedImage ??
-                        businessProvider.originalImage;
+
+                    final imageFile = businessProvider.selectedImage ?? businessProvider.originalImage;
 
                     if (imageFile != null) {
-                      await prefs.setString(
-                        'saved_business_image_path',
-                        imageFile.path,
-                      );
+                      await prefs.setString('saved_business_image_path', imageFile.path);
                     }
-                    await prefs.setString(
-                      'saved_business_name',
-                      businessProvider.businessName,
-                    );
-                    await prefs.setString(
-                      'saved_email',
-                      businessProvider.email,
-                    );
-                    await prefs.setString(
-                      'saved_mobile_number',
-                      businessProvider.mobileNumber,
-                    );
-                    // Navigator push
+
+                    await prefs.setString('saved_business_name', businessProvider.businessName);
+                    await prefs.setString('saved_email', businessProvider.email);
+                    await prefs.setString('saved_mobile_number', businessProvider.mobileNumber);
+
                     Navigator.pushNamed(context, "/CustomBottomNavScreen");
                   }
                 },
                 title: "CONTINUE",
-                textStyle: theme.titleLarge!.copyWith(
-                  color: customColor.whiteColor,
-                  fontWeight: FontWeight.w700,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: customColor.redColor,
-                ),
-                height: 54.h,
-              ),
+                // ... rest of the button properties
+              )
             ],
           ),
         ),

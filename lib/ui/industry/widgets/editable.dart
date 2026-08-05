@@ -15,29 +15,25 @@ class EditableItemWidget extends StatelessWidget {
     final provider = context.watch<EditorProvider>();
     final currentItem = provider.items.firstWhere((e) => e.id == item.id, orElse: () => item);
 
-    return Positioned(
-      left: currentItem.position.dx,
-      top: currentItem.position.dy,
-      child: GestureDetector(
-        onPanUpdate: (details) {
-          provider.updatePosition(currentItem.id??"", currentItem.position + details.delta);
-        },
-        onTap: () {
-          onItemSelected(currentItem.type, currentItem.id??"");
-          if (currentItem.type == 'text') {
-            _showTextEditorDialog(context, provider, currentItem.id??"", currentItem.text ?? "");
-          } else {
-            _showProActionSheet(context, provider, currentItem);
-          }
-        },
-        child: Opacity(
-          opacity: currentItem.opacity,
-          child: Transform.scale(
-            scale: currentItem.scale,
-            child: Transform.rotate(
-              angle: currentItem.rotation,
-              child: _buildItemContent(currentItem),
-            ),
+    return GestureDetector(
+      onPanUpdate: (details) {
+        provider.updatePosition(currentItem.id ?? "", currentItem.position + details.delta);
+      },
+      onTap: () {
+        onItemSelected(currentItem.type, currentItem.id ?? "");
+        if (currentItem.type == 'text') {
+          _showTextEditorDialog(context, provider, currentItem.id ?? "", currentItem.text ?? "");
+        } else {
+          _showProActionSheet(context, provider, currentItem);
+        }
+      },
+      child: Opacity(
+        opacity: currentItem.opacity,
+        child: Transform.scale(
+          scale: currentItem.scale,
+          child: Transform.rotate(
+            angle: currentItem.rotation,
+            child: _buildItemContent(currentItem),
           ),
         ),
       ),
@@ -132,43 +128,11 @@ class EditableItemWidget extends StatelessWidget {
         width: item.width,
         height: item.height,
         fit: BoxFit.cover,
-        // 🚀 Modern AI Magic Glowing Loader Animation
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0.2, end: 1.0),
-            duration: const Duration(milliseconds: 900),
-            builder: (context, value, childWidget) {
-              return Container(
-                width: item.width,
-                height: item.height,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E2C).withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(item.borderRadius > 0 ? item.borderRadius : 16.0),
-                  border: Border.all(color: Colors.amberAccent.withOpacity(value), width: 2.5),
-                  boxShadow: [BoxShadow(color: Colors.purpleAccent.withOpacity(value * 0.5), blurRadius: 15, spreadRadius: 2)],
-                ),
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 36),
-                      SizedBox(height: 10),
-                      Text("AI Magic Generating...", style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                      SizedBox(height: 4),
-                      SizedBox(width: 50, child: LinearProgressIndicator(backgroundColor: Colors.white24, valueColor: AlwaysStoppedAnimation<Color>(Colors.amberAccent), minHeight: 2)),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
         errorBuilder: (c, e, s) => Container(
           width: item.width,
           height: item.height,
-          decoration: BoxDecoration(color: Colors.grey.shade900, borderRadius: BorderRadius.circular(16)),
-          child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.wifi_off, color: Colors.amber, size: 28), SizedBox(height: 6), Text("Failed\nTry again", textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 10))]),
+          color: Colors.grey.shade900,
+          child: const Icon(Icons.wifi_off, color: Colors.amber),
         ),
       );
 
@@ -176,12 +140,6 @@ class EditableItemWidget extends StatelessWidget {
       Widget maskedImage;
       if (shape == 'circle') {
         maskedImage = ClipOval(child: imageWidget);
-      } else if (shape == 'heart') {
-        maskedImage = ClipPath(clipper: HeartClipper(), child: imageWidget);
-      } else if (shape == 'star') {
-        maskedImage = ClipPath(clipper: StarClipper(), child: imageWidget);
-      } else if (shape == 'hexagon') {
-        maskedImage = ClipPath(clipper: HexagonClipper(), child: imageWidget);
       } else {
         maskedImage = ClipRRect(borderRadius: BorderRadius.circular(item.borderRadius > 0 ? item.borderRadius : 16.0), child: imageWidget);
       }
@@ -191,18 +149,28 @@ class EditableItemWidget extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(item.borderRadius > 0 ? item.borderRadius : 16.0),
           border: item.outlineWidth > 0 ? Border.all(color: item.outlineColor, width: item.outlineWidth) : null,
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 5))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 5))],
         ),
         child: filteredImage,
       );
     } else {
-      return Text(item.text ?? "", style: TextStyle(fontSize: item.fontSize, color: item.color ?? Colors.white, fontWeight: FontWeight.bold));
+      return SizedBox(
+        width: item.width ?? 450,
+        child: Text(
+          item.text ?? "",
+          style: TextStyle(
+            fontSize: item.fontSize,
+            color: item.color ?? Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+          softWrap: true,
+        ),
+      );
     }
   }
 
+  // 🚀 Pro Action Sheet with Font Size adjustment for Text, and Filters/Layers for Images
   void _showProActionSheet(BuildContext context, EditorProvider provider, EditorItem item) {
-    final TextEditingController aiPromptController = TextEditingController();
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -218,7 +186,7 @@ class EditableItemWidget extends StatelessWidget {
               return Padding(
                 padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
                 child: SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.65,
+                  height: MediaQuery.of(context).size.height * 0.55,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -227,11 +195,31 @@ class EditableItemWidget extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text("Pro Editing Tools", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text(currentItem.type == 'text' ? "Text Size & Tools" : "Pro Editing Tools", style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                           Row(
                             children: [
-                              IconButton(icon: const Icon(Icons.copy, color: Colors.blueAccent), onPressed: () { provider.duplicateItem(currentItem.id??""); Navigator.pop(modalContext); }),
-                              IconButton(icon: const Icon(Icons.delete, color: Colors.redAccent), onPressed: () { provider.removeItem(currentItem.id??""); Navigator.pop(modalContext); }),
+                              IconButton(
+                                tooltip: "Bring to Front",
+                                icon: const Icon(Icons.flip_to_front, color: Colors.amberAccent),
+                                onPressed: () {
+                                  provider.bringToFront(currentItem.id ?? "");
+                                },
+                              ),
+                              IconButton(
+                                tooltip: "Send to Back",
+                                icon: const Icon(Icons.flip_to_back, color: Colors.blueAccent),
+                                onPressed: () {
+                                  provider.sendToBack(currentItem.id ?? "");
+                                },
+                              ),
+                              IconButton(
+                                tooltip: "Delete",
+                                icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                onPressed: () {
+                                  provider.removeItem(currentItem.id ?? "");
+                                  Navigator.pop(modalContext);
+                                },
+                              ),
                             ],
                           )
                         ],
@@ -240,36 +228,27 @@ class EditableItemWidget extends StatelessWidget {
                       Expanded(
                         child: ListView(
                           children: [
-                            if (currentItem.type == 'image') ...[
-                              const Text("Regenerate Image with AI", style: TextStyle(color: Colors.amberAccent, fontSize: 13)),
-                              const SizedBox(height: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                decoration: BoxDecoration(color: const Color(0xFF2A2A3D), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white24)),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextField(
-                                        controller: aiPromptController,
-                                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                                        decoration: const InputDecoration(hintText: "Enter prompt (e.g., cartoon tiger)...", hintStyle: TextStyle(color: Colors.white54, fontSize: 12), border: InputBorder.none),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.auto_awesome, color: Colors.amberAccent),
-                                      onPressed: () {
-                                        if (aiPromptController.text.isNotEmpty) {
-                                          provider.regenerateImageWithAi(currentItem.id??"", aiPromptController.text);
-                                          Navigator.pop(modalContext);
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
+                            // 🚀 Text Size Slider (Only visible when text is selected)
+                            if (currentItem.type == 'text') ...[
+                              const Text("Font Size", style: TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                              Slider(
+                                value: currentItem.fontSize,
+                                min: 10.0,
+                                max: 100.0,
+                                activeColor: Colors.amberAccent,
+                                onChanged: (v) => setModalState(() {
+                                  // Update font size method in provider or directly using copyWith
+                                  int index = provider.items.indexWhere((e) => e.id == currentItem.id);
+                                  if (index != -1) {
+                                    provider.items[index] = provider.items[index].copyWith(fontSize: v);
+                                    provider.notifyListeners();
+                                  }
+                                }),
                               ),
-                              const SizedBox(height: 12),
                               const Divider(color: Colors.white24),
-                              const Text("Photo Filters", style: TextStyle(color: Colors.amberAccent, fontSize: 13)),
+                            ],
+                            if (currentItem.type == 'image') ...[
+                              const Text("Photo Filters", style: TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 6),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -281,32 +260,31 @@ class EditableItemWidget extends StatelessWidget {
                                 ],
                               ),
                               const Divider(color: Colors.white24),
-                              const Text("Brightness", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                              Slider(value: currentItem.brightness, min: -0.5, max: 0.5, activeColor: Colors.blueAccent, onChanged: (v) => setModalState(() => provider.updateImageColorAdjustments(currentItem.id??"", brightness: v))),
-                              const Text("Contrast", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                              Slider(value: currentItem.contrast, min: 0.5, max: 1.5, activeColor: Colors.greenAccent, onChanged: (v) => setModalState(() => provider.updateImageColorAdjustments(currentItem.id??"", contrast: v))),
-                              const Text("Saturation", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                              Slider(value: currentItem.saturation, min: 0.0, max: 2.0, activeColor: Colors.purpleAccent, onChanged: (v) => setModalState(() => provider.updateImageColorAdjustments(currentItem.id??"", saturation: v))),
-                              const Divider(color: Colors.white24),
-                              const Text("Image Mask / Shape", style: TextStyle(color: Colors.amberAccent, fontSize: 13)),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                children: [
-                                  IconButton(icon: const Icon(Icons.circle, color: Colors.white), onPressed: () => provider.setImageShape(currentItem.id??"", 'circle')),
-                                  IconButton(icon: const Icon(Icons.crop_square, color: Colors.white), onPressed: () => provider.setImageShape(currentItem.id??"", 'rounded', radius: 24.0)),
-                                  IconButton(icon: const Icon(Icons.favorite, color: Colors.redAccent), onPressed: () => provider.setImageShape(currentItem.id??"", 'heart')),
-                                  IconButton(icon: const Icon(Icons.star, color: Colors.amber), onPressed: () => provider.setImageShape(currentItem.id??"", 'star')),
-                                  IconButton(icon: const Icon(Icons.hexagon, color: Colors.purpleAccent), onPressed: () => provider.setImageShape(currentItem.id??"", 'hexagon')),
-                                ],
-                              ),
-                              const Divider(color: Colors.white24),
                             ],
-                            const Text("Rotation", style: TextStyle(color: Colors.white70)),
-                            Slider(value: currentItem.rotation, min: 0.0, max: 6.28, activeColor: Colors.blueAccent, onChanged: (v) => setModalState(() => provider.updateRotation(currentItem.id??"", v))),
-                            const Text("Zoom / Scale", style: TextStyle(color: Colors.white70)),
-                            Slider(value: currentItem.scale, min: 0.5, max: 3.0, activeColor: Colors.greenAccent, onChanged: (v) => setModalState(() => provider.updateScale(currentItem.id??"", v))),
-                            const Text("Opacity", style: TextStyle(color: Colors.white70)),
-                            Slider(value: currentItem.opacity, min: 0.0, max: 1.0, activeColor: Colors.purpleAccent, onChanged: (v) => setModalState(() => provider.updateOpacity(currentItem.id??"", v))),
+                            const Text("Rotation", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                            Slider(
+                              value: currentItem.rotation,
+                              min: 0.0,
+                              max: 6.28,
+                              activeColor: Colors.blueAccent,
+                              onChanged: (v) => setModalState(() => provider.updateRotation(currentItem.id ?? "", v)),
+                            ),
+                            const Text("Zoom / Scale", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                            Slider(
+                              value: currentItem.scale,
+                              min: 0.5,
+                              max: 3.0,
+                              activeColor: Colors.greenAccent,
+                              onChanged: (v) => setModalState(() => provider.updateScale(currentItem.id ?? "", v)),
+                            ),
+                            const Text("Opacity", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                            Slider(
+                              value: currentItem.opacity,
+                              min: 0.0,
+                              max: 1.0,
+                              activeColor: Colors.purpleAccent,
+                              onChanged: (v) => setModalState(() => provider.updateOpacity(currentItem.id ?? "", v)),
+                            ),
                           ],
                         ),
                       ),
@@ -323,13 +301,12 @@ class EditableItemWidget extends StatelessWidget {
 
   Widget _filterButton(EditorProvider provider, EditorItem item, String label, String type, StateSetter setModalState) {
     return TextButton(
-      onPressed: () => setModalState(() => provider.setImageFilter(item.id??"", type)),
+      onPressed: () => setModalState(() => provider.setImageFilter(item.id ?? "", type)),
       child: Text(label, style: TextStyle(color: item.filterType == type ? Colors.amber : Colors.white70)),
     );
   }
 }
 
-// ==================== 5. SHAPE CLIPPERS ====================
 class HeartClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

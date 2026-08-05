@@ -64,7 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             appBar: PreferredSize(
               preferredSize: Size.fromHeight(70.h),
               child: HomeCustomAppBar(
-                businessName: "Business Name",
+
                 businessCategory: "Cake and Sweets",
                 notificationCount: "2",
               ),
@@ -103,7 +103,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Text(
                                 "Create your business profile to unlock industry-specific templates and AI tools.",
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 11.sp, color: Colors.black87),
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  color: Colors.black87,
+                                ),
                               ),
                               SizedBox(height: 12.h),
                               ElevatedButton(
@@ -116,7 +119,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 onPressed: () {},
                                 child: Text(
                                   "Set Up My Business →",
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12.sp,
+                                  ),
                                 ),
                               ),
                             ],
@@ -134,11 +141,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 child: Column(
                                   children: [
-                                    const Icon(Icons.badge_outlined, color: Colors.blue, size: 28),
+                                    const Icon(
+                                      Icons.badge_outlined,
+                                      color: Colors.blue,
+                                      size: 28,
+                                    ),
                                     SizedBox(height: 8.h),
                                     Text(
                                       "Personal Profile",
-                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12.sp,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -154,11 +168,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 child: Column(
                                   children: [
-                                    const Icon(Icons.download, color: Colors.deepPurple, size: 28),
+                                    const Icon(
+                                      Icons.download,
+                                      color: Colors.deepPurple,
+                                      size: 28,
+                                    ),
                                     SizedBox(height: 8.h),
                                     Text(
                                       "My Downloads",
-                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12.sp,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -224,7 +245,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               context: context,
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
-                              builder: (context) => const LanguagesBottomSheet(),
+                              builder: (context) =>
+                                  const LanguagesBottomSheet(),
                             );
                           },
                         ),
@@ -369,13 +391,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       SizedBox(height: 20.h),
 
-                      // 🚀 Logout & App Version at the bottom matching the screenshot
                       Center(
                         child: TextButton(
-                          onPressed: () {},
+                          onPressed: () async {
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.clear();
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              "/LoginScreen",
+                                  (route) => false,
+                            );
+                          },
                           child: Text(
                             "Logout",
-                            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16.sp),
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.sp,
+                            ),
                           ),
                         ),
                       ),
@@ -440,16 +473,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         subtitle: subtitle != null
             ? Text(
-          subtitle,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 11.sp,
-            fontWeight: FontWeight.w500,
-          ),
-        )
+                subtitle,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+              )
             : null,
         trailing:
-        trailingWidget ??
+            trailingWidget ??
             Icon(
               Icons.chevron_right_rounded,
               color: Colors.black87,

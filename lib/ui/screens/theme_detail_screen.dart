@@ -61,7 +61,7 @@ class ThemeDetailView extends StatelessWidget {
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(
-              businessName: "Business Name",
+
               businessCategory: "Cake and Sweets",
               notificationCount: "2",
             ),
@@ -75,7 +75,7 @@ class ThemeDetailView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Theme Title
-                    Text(
+                    AppText(
                       themeItem?.name ?? "",
                       style: TextStyle(
                         color: Colors.black,
@@ -88,7 +88,7 @@ class ThemeDetailView extends StatelessWidget {
                     SizedBox(height: 6.h),
 
                     // Caption / Subtitle
-                    Text(
+                    AppText(
                       caption,
                       style: TextStyle(
                         color: const Color(0xFFE53935),
@@ -101,7 +101,7 @@ class ThemeDetailView extends StatelessWidget {
                     SizedBox(height: 10.h),
 
                     // Description
-                    Text(
+                    AppText(
                       description,
                       style: TextStyle(
                         color: Colors.black87,
@@ -130,7 +130,7 @@ class ThemeDetailView extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20.r),
                             border: Border.all(color: Colors.red.shade100),
                           ),
-                          child: Text(
+                          child: AppText(
                             tag.toString(),
                             style: TextStyle(
                               color: const Color(0xFFE53935),
@@ -159,11 +159,11 @@ class ThemeDetailView extends StatelessWidget {
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text("Theme Unlocked Successfully!"),
+                              content: AppText("Theme Unlocked Successfully!"),
                             ),
                           );
                         },
-                        child: Text(
+                        child: AppText(
                           "Unlock $title →",
                           style: TextStyle(
                             color: Colors.white,
@@ -270,7 +270,7 @@ class ThemeDetailView extends StatelessWidget {
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Expanded(
-                                          child: Text(
+                                          child: AppText(
                                             variantName,
                                             style: TextStyle(
                                               fontSize: 11.sp,
@@ -291,7 +291,7 @@ class ThemeDetailView extends StatelessWidget {
                                               4.r,
                                             ),
                                           ),
-                                          child: Text(
+                                          child: AppText(
                                             "POPULAR",
                                             style: TextStyle(
                                               fontSize: 7.sp,
@@ -303,7 +303,7 @@ class ThemeDetailView extends StatelessWidget {
                                       ],
                                     ),
                                     SizedBox(height: 2.h),
-                                    Text(
+                                    AppText(
                                       "8 Ready-to-Use Templates",
                                       style: TextStyle(
                                         fontSize: 10.sp,
@@ -312,7 +312,7 @@ class ThemeDetailView extends StatelessWidget {
                                       ),
                                     ),
                                     SizedBox(height: 1.h),
-                                    Text(
+                                    AppText(
                                       "Perfect for Cafes, Bakeries & Organic Brands.",
                                       style: TextStyle(
                                         fontSize: 9.sp,
@@ -342,7 +342,7 @@ class ThemeDetailView extends StatelessWidget {
                           color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(12.r),
                         ),
-                        child: Text(
+                        child: AppText(
                           "Also works great for",
                           style: TextStyle(
                             fontSize: 11.sp,
@@ -353,7 +353,7 @@ class ThemeDetailView extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 8.h),
-                    Text(
+                    AppText(
                       "Beyond the obvious",
                       style: TextStyle(
                         fontSize: 20.sp,
@@ -386,7 +386,7 @@ class ThemeDetailView extends StatelessWidget {
                                 color: const Color(0xFFE53935),
                                 borderRadius: BorderRadius.circular(10.r),
                               ),
-                              child: Text(
+                              child: AppText(
                                 category,
                                 style: TextStyle(
                                   color: Colors.white,

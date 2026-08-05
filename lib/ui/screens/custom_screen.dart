@@ -44,7 +44,6 @@ class _CustomCreateBody extends StatelessWidget {
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: HomeCustomAppBar(
-              businessName: "Business Name",
               businessCategory: "Cake and Sweets",
               notificationCount: "2",
             ),
@@ -155,7 +154,7 @@ class _CustomCreateBody extends StatelessWidget {
                         crossAxisSpacing: 12.w,
                         mainAxisSpacing: 12.h,
                         childAspectRatio:
-                            0.82, // Card proportion-a exact-a match பண்ணும்
+                            0.82,
                       ),
                       itemBuilder: (context, index) {
                         final tool = provider.aiToolsList[index];
@@ -262,7 +261,7 @@ class _CustomCreateBody extends StatelessWidget {
   }
   String buildTemplateImage(int width, int height) {
     if (width == 1080 && height == 1080) {
-      return "assets/images/post_square.png";
+      return "assets/images/post_566.png";
     } else if (width == 1080 && height == 1350) {
       return "assets/images/post_portrait.png";
     } else if (width == 1080 && height == 1920) {
