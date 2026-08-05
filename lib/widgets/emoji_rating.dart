@@ -18,6 +18,7 @@ class EmojiRating extends StatelessWidget {
       "🤩",
     ];
 
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: List.generate(

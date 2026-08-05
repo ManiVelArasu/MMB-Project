@@ -6,6 +6,7 @@ import 'package:project_mmb/ui/industry/business_details_screen.dart';
 import 'package:project_mmb/ui/industry/edit_photo_screen.dart';
 import 'package:project_mmb/ui/login/login_screen.dart';
 import 'package:project_mmb/ui/onboarding/onboarding_screen.dart';
+import 'package:project_mmb/ui/screens/faq_screen.dart';
 import 'package:project_mmb/ui/splash/splash_screen.dart';
 import 'package:project_mmb/ui/verification/otp_screen.dart';
 import 'package:provider/provider.dart';
@@ -175,6 +176,10 @@ class RouteGenerator {
         final String variantId = settings.arguments as String? ?? '';
         return MaterialPageRoute(
           builder: (context) => ThemeSingleitemViewScreen(variantId: variantId),
+        );
+      case "/FaqScreen":
+        return MaterialPageRoute(
+          builder: (context) => const FaqScreen(),
         );
     }
     return null;

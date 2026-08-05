@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:project_mmb/widgets/support_ticket_card.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
+import '../../component/custom_widget.dart';
 import '../../network/provider/support_provider.dart';
 
 class HelpSupportScreen extends StatelessWidget {
@@ -30,7 +32,7 @@ class HelpSupportScreen extends StatelessWidget {
 
                   /// Support Text
                   const Center(
-                    child: Text(
+                    child: AppText(
                       "Our support team is available Monday to Saturday,\n10 AM – 7 PM to assist you with any queries.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -49,6 +51,7 @@ class HelpSupportScreen extends StatelessWidget {
                     onTap:() {
                       Navigator.pushNamed(context, "/FeedbackScreen");
                     },
+
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -139,82 +142,7 @@ class HelpSupportScreen extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final ticket = provider.tickets[index];
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8F8F8),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  ticket.ticketId,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: ticket.status == "Open"
-                                        ? const Color(0xFFFFE4E6)
-                                        : const Color(0xFFE8F5E9),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    ticket.status,
-                                    style: TextStyle(
-                                      color: ticket.status == "Open"
-                                          ? Colors.red
-                                          : Colors.green,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-
-                                const Spacer(),
-
-                                Text(
-                                  "${ticket.dateTime.day}/${ticket.dateTime.month}/${ticket.dateTime.year}",
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            Text(
-                              ticket.title,
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-
-                            const SizedBox(height: 6),
-
-                            Text(
-                              ticket.description,
-                              style: const TextStyle(
-                                color: Colors.black54,
-                                height: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
+                      return SupportTicketCard(ticket: ticket,);
                     },
                   ),
                 ],

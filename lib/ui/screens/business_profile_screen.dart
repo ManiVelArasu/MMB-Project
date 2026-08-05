@@ -127,6 +127,7 @@ class BusinessProfileView extends StatelessWidget {
                                   context,
                                   "/EditProfileScreen",
                                 );
+
                               },
                               child: Icon(
                                 Icons.edit_note_rounded,

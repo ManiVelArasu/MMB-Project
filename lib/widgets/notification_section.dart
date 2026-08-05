@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../component/status_widget.dart';
 import '../model/notification_model.dart';
 
 class NotificationSection extends StatelessWidget {
@@ -92,12 +93,12 @@ class _NotificationItem extends StatelessWidget {
               child: ClipOval(
                 child: notification.avatarUrl != null
                     ? Image.network(
-                        notification.avatarUrl!,
-                        width: 44,
-                        height: 44,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _defaultAvatar(),
-                      )
+                  notification.avatarUrl!,
+                  width: 44,
+                  height: 44,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _defaultAvatar(),
+                )
                     : _defaultAvatar(),
               ),
             ),
@@ -145,22 +146,12 @@ class _NotificationItem extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Container(
-                    height: 24,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE6EAFE),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Center(
-                      child: Text(
-                        notification.category,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1F2937),
-                        ),
-                      ),
+                  StatusWidget(
+                    status: notification.category,
+                    backgroundColor: const Color(0xFFE6EAFE),
+                    textStyle: const TextStyle(
+                      color: Color(0xFF1F2937),
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(width: 8),
