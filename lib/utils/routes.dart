@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_mmb/ui/industry/account_type_screen.dart';
-import 'package:project_mmb/ui/industry/business_category_choose_screen.dart' hide BusinessCategoryChooseView;
+import 'package:project_mmb/ui/industry/business_category_choose_screen.dart'
+    hide BusinessCategoryChooseView;
 import 'package:project_mmb/ui/industry/business_details_screen.dart';
 import 'package:project_mmb/ui/industry/edit_photo_screen.dart';
 import 'package:project_mmb/ui/login/login_screen.dart';
@@ -22,6 +23,7 @@ import '../ui/screens/edit_profile_screen.dart';
 import '../ui/screens/editor_screen.dart';
 import '../ui/screens/notification_screen.dart';
 import '../ui/screens/help_support_screen.dart';
+import '../ui/screens/personal_use_profile.dart';
 import '../ui/screens/profile_screen.dart';
 import '../ui/screens/notification_screen.dart';
 import '../ui/screens/smcalender_form_sceen.dart';
@@ -99,7 +101,8 @@ class RouteGenerator {
       case '/ThemeDetailScreen':
         final args = settings.arguments;
         return MaterialPageRoute(
-          builder: (context) => ThemeDetailScreen(themeItem: args is ThemeItem ? args : null),
+          builder: (context) =>
+              ThemeDetailScreen(themeItem: args is ThemeItem ? args : null),
         );
       case "/NotificationScreen":
         return MaterialPageRoute(
@@ -109,7 +112,7 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (context) => const HelpSupportScreen(),
         );
-     /* case "/FeedbackScreen":
+      /* case "/FeedbackScreen":
         return MaterialPageRoute(
           builder: (context) => const FeedbackScreen(),
         );*/
@@ -163,8 +166,10 @@ class RouteGenerator {
           builder: (context) => const BusinessCategoryChooseView(),
         );
       case "/FeedbackScreen":
+        return MaterialPageRoute(builder: (context) => const FeedbackScreen());
+      case "/PersonalProfileScreen":
         return MaterialPageRoute(
-          builder: (context) => const FeedbackScreen(),
+          builder: (context) => const PersonalProfileScreen(),
         );
       case "/ThemeSingleitemViewScreen":
         final String variantId = settings.arguments as String? ?? '';

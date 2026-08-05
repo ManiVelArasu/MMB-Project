@@ -198,75 +198,80 @@ class HomeScreen extends StatelessWidget {
                               1.0, // Square cards matching screenshot
                         ),
                         itemBuilder: (context, index) {
-                          return Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20.r),
-                              color: Colors.grey.shade100,
-                              border: Border.all(
-                                color: Colors.grey.shade300,
-                                width: 1.2,
+                          return InkWell(
+                            onTap: (){
+                              Navigator.pushNamed(context,"/TemplateDetailScreen");
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20.r),
+                                color: Colors.grey.shade100,
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 1.2,
+                                ),
                               ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(20.r),
-                              child: Stack(
-                                children: [
-                                  // 🚀 Background Image / Thumbnail
-                                  Positioned.fill(
-                                    child: Image.asset(
-                                      "assets/images/thumbnail1.png", // Ungaloda image path
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: Colors.grey.shade200,
-                                        child: Icon(
-                                          Icons.image_outlined,
-                                          size: 40.sp,
-                                          color: Colors.grey.shade400,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-                                  // 🚀 Top-Left Crown Icon
-                                  Positioned(
-                                    top: 10.h,
-                                    left: 10.w,
-                                    child: Container(
-                                      padding: EdgeInsets.all(6.r),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.4,
-                                        ),
-                                        shape: BoxShape.circle,
-                                      ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20.r),
+                                child: Stack(
+                                  children: [
+                                    // 🚀 Background Image / Thumbnail
+                                    Positioned.fill(
                                       child: Image.asset(
-                                        "assets/images/crown.png",
-                                        width: 14.w,
-                                        height: 14.h,
-                                      ),
-                                    ),
-                                  ),
-
-                                  // 🚀 Top-Right More/Options Icon (3 dots)
-                                  Positioned(
-                                    top: 10.h,
-                                    right: 10.w,
-                                    child: Container(
-                                      padding: EdgeInsets.all(6.r),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.4,
+                                        "assets/images/thumbnail1.png", // Ungaloda image path
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          color: Colors.grey.shade200,
+                                          child: Icon(
+                                            Icons.image_outlined,
+                                            size: 40.sp,
+                                            color: Colors.grey.shade400,
+                                          ),
                                         ),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Icons.more_horiz,
-                                        color: Colors.white,
-                                        size: 16.sp,
                                       ),
                                     ),
-                                  ),
-                                ],
+
+                                    // 🚀 Top-Left Crown Icon
+                                    Positioned(
+                                      top: 10.h,
+                                      left: 10.w,
+                                      child: Container(
+                                        padding: EdgeInsets.all(6.r),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.4,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Image.asset(
+                                          "assets/images/crown.png",
+                                          width: 14.w,
+                                          height: 14.h,
+                                        ),
+                                      ),
+                                    ),
+
+                                    // 🚀 Top-Right More/Options Icon (3 dots)
+                                    Positioned(
+                                      top: 10.h,
+                                      right: 10.w,
+                                      child: Container(
+                                        padding: EdgeInsets.all(6.r),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.4,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.more_horiz,
+                                          color: Colors.white,
+                                          size: 16.sp,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );

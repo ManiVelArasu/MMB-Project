@@ -26,20 +26,28 @@ class _SplashScreenState extends State<SplashScreen> {
     final prefs = await SharedPreferences.getInstance();
     final bool isOnboarded = prefs.getBool('isOnboarded') ?? false;
     final bool isLoggedIn = prefs.getBool('is_logged_in') ?? false;
-    final bool hasSeenPlans = prefs.getBool('has_seen_plans') ?? false; // 👈 Check here
+    final bool hasSeenPlans = prefs.getBool('has_seen_plans') ?? false;
 
     if (!mounted) return;
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final businessProvider = Provider.of<BusinessProvider>(
+      context,
+      listen: false,
+    );
 
     if (!isOnboarded) {
+      print('d123');
       Navigator.pushReplacementNamed(context, '/OnboardingScreen');
     } else if (businessProvider.selectedImage != null) {
+      print('ee123');
       Navigator.pushReplacementNamed(context, '/CustomBottomNavScreen');
     } else if (isLoggedIn && !hasSeenPlans) {
+      print('2123');
       Navigator.pushReplacementNamed(context, '/PlansAndPricingScreen');
     } else if (isLoggedIn && hasSeenPlans) {
+      print('bbb123');
       Navigator.pushReplacementNamed(context, '/CustomBottomNavScreen');
     } else {
+      print('bbb1235555');
       Navigator.pushReplacementNamed(context, '/LoginScreen');
     }
   }

@@ -83,8 +83,8 @@ class AppRouter {
       case '/PlansAndPricingScreen':
         return _page(const PlansAndPricingScreen(), settings: settings);
 
-      case '/CustomBottomNavScreen':
-        return _page(const CustomBottomNavScreen(), settings: settings);
+     /* case '/CustomBottomNavScreen':
+        return _page(const CustomBottomNavScreen(), settings: settings);*/
 
       case '/BasicPlan':
         return _page(const BasicPlanScreen(), settings: settings);

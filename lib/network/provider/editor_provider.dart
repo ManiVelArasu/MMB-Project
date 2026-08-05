@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+import '../../Repository/freeoic.dart';
+
 class EditorProvider extends ChangeNotifier {
   final List<EditorItem> _items = [];
   List<EditorItem> get items => _items;
@@ -37,7 +39,9 @@ class EditorProvider extends ChangeNotifier {
       // Optional: Handle color parsing if color exists in json
       if (json['color'] != null) {
         try {
-          Color parsedColor = Color(int.parse(json['color'].replaceFirst('#', '0xFF')));
+          Color parsedColor = Color(
+            int.parse(json['color'].replaceFirst('#', '0xFF')),
+          );
           item = item.copyWith(color: parsedColor);
         } catch (_) {}
       }
@@ -50,13 +54,15 @@ class EditorProvider extends ChangeNotifier {
 
   void addText({String initialText = "New Text"}) {
     _saveState();
-    _items.add(EditorItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      type: 'text',
-      text: initialText,
-      position: const Offset(120, 200),
-      color: Colors.black87,
-    ));
+    _items.add(
+      EditorItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: 'text',
+        text: initialText,
+        position: const Offset(120, 200),
+        color: Colors.black87,
+      ),
+    );
     _saveState();
     notifyListeners();
   }
@@ -67,16 +73,18 @@ class EditorProvider extends ChangeNotifier {
 
   void addImage(String url, {bool isLocal = false}) {
     _saveState();
-    _items.add(EditorItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      type: 'image',
-      contentUrl: url,
-      position: const Offset(100, 150),
-      width: 220,
-      height: 220,
-      isLocal: isLocal,
-      text: 'rounded',
-    ));
+    _items.add(
+      EditorItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: 'image',
+        contentUrl: url,
+        position: const Offset(100, 150),
+        width: 220,
+        height: 220,
+        isLocal: isLocal,
+        text: 'rounded',
+      ),
+    );
     _saveState();
     notifyListeners();
   }
@@ -115,6 +123,7 @@ class EditorProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void updateTextContent(String id, String newText) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -123,6 +132,7 @@ class EditorProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void setImageFilter(String id, String filterName) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -132,7 +142,12 @@ class EditorProvider extends ChangeNotifier {
     }
   }
 
-  void updateImageColorAdjustments(String id, {double? brightness, double? contrast, double? saturation}) {
+  void updateImageColorAdjustments(
+    String id, {
+    double? brightness,
+    double? contrast,
+    double? saturation,
+  }) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _items[index] = _items[index].copyWith(
@@ -143,18 +158,24 @@ class EditorProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void regenerateImageWithAi(String id, String prompt) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _saveState();
       String encodedPrompt = Uri.encodeComponent(prompt);
       int seed = DateTime.now().millisecondsSinceEpoch % 10000;
-      String aiImageUrl = "https://image.pollinations.ai/prompt/$encodedPrompt?seed=$seed&nologo=true";
+      String aiImageUrl =
+          "https://image.pollinations.ai/prompt/$encodedPrompt?seed=$seed&nologo=true";
 
-      _items[index] = _items[index].copyWith(contentUrl: aiImageUrl, isLocal: false);
+      _items[index] = _items[index].copyWith(
+        contentUrl: aiImageUrl,
+        isLocal: false,
+      );
       notifyListeners();
     }
   }
+
   void updateTextColor(String id, Color newColor) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -163,6 +184,7 @@ class EditorProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void setImageShape(String id, String shape, {double radius = 16.0}) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -176,7 +198,10 @@ class EditorProvider extends ChangeNotifier {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _saveState();
-      _items[index] = _items[index].copyWith(outlineWidth: width, outlineColor: color);
+      _items[index] = _items[index].copyWith(
+        outlineWidth: width,
+        outlineColor: color,
+      );
       notifyListeners();
     }
   }
@@ -234,6 +259,44 @@ class EditorProvider extends ChangeNotifier {
       _historyIndex++;
       _items.clear();
       _items.addAll(_history[_historyIndex].map((e) => e.copyWith()));
+      notifyListeners();
+    }
+  }
+
+  List<String> freepikAssets = [];
+  bool isFreepikLoading = false;
+
+  Future<void> fetchFreepikAssets(String query) async {
+    isFreepikLoading = true;
+    notifyListeners();
+
+    try {
+      freepikAssets = await FreepikService.searchAssets(query);
+    } catch (e) {
+      debugPrint("Error fetching assets: $e");
+      freepikAssets = [];
+    } finally {
+      isFreepikLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Inside EditorProvider class:
+  List<String> freepikStickers = [];
+  bool isStickersLoading = false;
+
+  Future<void> fetchFreepikStickers(String query) async {
+    isStickersLoading = true;
+    notifyListeners();
+
+    try {
+      // Freepik API moolama stickers search panrom
+      freepikStickers = await FreepikService.searchAssets("$query stickers");
+    } catch (e) {
+      debugPrint("Error fetching stickers: $e");
+      freepikStickers = [];
+    } finally {
+      isStickersLoading = false;
       notifyListeners();
     }
   }

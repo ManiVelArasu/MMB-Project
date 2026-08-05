@@ -8,11 +8,47 @@ import '../../component/language_bottom_sheet.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/you_screen_provider.dart';
 
-class ProfileScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool isPersonalUse = false;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAccountType();
+  }
+
+  Future<void> _checkAccountType() async {
+    final prefs = await SharedPreferences.getInstance();
+    final accountType = prefs.getString('selected_account_type') ?? "";
+    setState(() {
+      isPersonalUse = (accountType == "Personal Use");
+      isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator(color: Colors.red)),
+      );
+    }
+
     final Size size = MediaQuery.of(context).size;
 
     return Consumer<ProfileScreenProvider>(
@@ -20,7 +56,7 @@ class ProfileScreen extends StatelessWidget {
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: const SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.dark, // Dark status bar icons
+            statusBarIconBrightness: Brightness.dark,
             statusBarBrightness: Brightness.light,
           ),
           child: Scaffold(
@@ -44,78 +80,165 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: provider.quickActions.map((item) {
-                          return Expanded(
-                            child: GestureDetector(
-                              onTap: () => item.onTap(context),
+                      // 🚀 Personal Use-ah iruntha "Start Your Business Journey" Banner & 2 Cards varum
+                      if (isPersonalUse) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(16.r),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFECEE),
+                            borderRadius: BorderRadius.circular(16.r),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                "Start Your Business Journey",
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              SizedBox(height: 6.h),
+                              Text(
+                                "Create your business profile to unlock industry-specific templates and AI tools.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 11.sp, color: Colors.black87),
+                              ),
+                              SizedBox(height: 12.h),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                  ),
+                                ),
+                                onPressed: () {},
+                                child: Text(
+                                  "Set Up My Business →",
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 16.h),
+                        Row(
+                          children: [
+                            Expanded(
                               child: Container(
-                                margin: EdgeInsets.symmetric(horizontal: 4.w),
-                                padding: EdgeInsets.symmetric(vertical: 16.h),
+                                padding: EdgeInsets.all(16.r),
                                 decoration: BoxDecoration(
-                                  color: item.backgroundColor,
+                                  color: const Color(0xFFE3F2FD),
                                   borderRadius: BorderRadius.circular(16.r),
                                 ),
                                 child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Image.asset(
-                                      item.iconPath,
-                                      height: 32.h,
-                                      width: 32.w,
-                                      errorBuilder: (_, __, ___) => Icon(
-                                        Icons.badge_outlined,
-                                        size: 28.sp,
-                                        color: Colors.blueGrey,
-                                      ),
-                                    ),
+                                    const Icon(Icons.badge_outlined, color: Colors.blue, size: 28),
                                     SizedBox(height: 8.h),
                                     Text(
-                                      item.title,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 12.sp,
-                                        fontWeight: FontWeight.w800,
-                                        height: 1.1,
-                                      ),
+                                      "Personal Profile",
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-                          );
-                        }).toList(),
-                      ),
-
-                      SizedBox(height: 24.h),
-
-                      _buildSectionHeader("My Business Settings"),
-                      SizedBox(height: 10.h),
-                      _buildSettingsTile(
-                        title: "Preferred Languages",
-                        subtitle: "English, தமிழ், हिंदी",
-                        iconAsset: "assets/images/lang_icon.png",
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (context) => const LanguagesBottomSheet(),
-                          );
-                        },
-                      ),
-                      _buildSettingsTile(
-                        title: "Add Watermark",
-                        iconAsset: "assets/images/watermark_icon.png",
-                        trailingWidget: Switch(
-                          value: provider.isWatermarkEnabled,
-                          onChanged: (val) => provider.toggleWatermark(val),
-                          activeThumbColor: const Color(0xFFE53935),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Container(
+                                padding: EdgeInsets.all(16.r),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEDE7F6),
+                                  borderRadius: BorderRadius.circular(16.r),
+                                ),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.download, color: Colors.deepPurple, size: 28),
+                                    SizedBox(height: 8.h),
+                                    Text(
+                                      "My Downloads",
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-
-                      SizedBox(height: 20.h),
+                        SizedBox(height: 24.h),
+                      ] else ...[
+                        // Regular Quick Actions for Business Account
+                        Row(
+                          children: provider.quickActions.map((item) {
+                            return Expanded(
+                              child: GestureDetector(
+                                onTap: () => item.onTap(context),
+                                child: Container(
+                                  margin: EdgeInsets.symmetric(horizontal: 4.w),
+                                  padding: EdgeInsets.symmetric(vertical: 16.h),
+                                  decoration: BoxDecoration(
+                                    color: item.backgroundColor,
+                                    borderRadius: BorderRadius.circular(16.r),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Image.asset(
+                                        item.iconPath,
+                                        height: 32.h,
+                                        width: 32.w,
+                                        errorBuilder: (_, __, ___) => Icon(
+                                          Icons.badge_outlined,
+                                          size: 28.sp,
+                                          color: Colors.blueGrey,
+                                        ),
+                                      ),
+                                      SizedBox(height: 8.h),
+                                      Text(
+                                        item.title,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w800,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        SizedBox(height: 24.h),
+                        _buildSectionHeader("My Business Settings"),
+                        SizedBox(height: 10.h),
+                        _buildSettingsTile(
+                          title: "Preferred Languages",
+                          subtitle: "English, தமிழ், हिंदी",
+                          iconAsset: "assets/images/lang_icon.png",
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => const LanguagesBottomSheet(),
+                            );
+                          },
+                        ),
+                        _buildSettingsTile(
+                          title: "Add Watermark",
+                          iconAsset: "assets/images/watermark_icon.png",
+                          trailingWidget: Switch(
+                            value: provider.isWatermarkEnabled,
+                            onChanged: (val) => provider.toggleWatermark(val),
+                            activeThumbColor: const Color(0xFFE53935),
+                          ),
+                        ),
+                        SizedBox(height: 20.h),
+                      ],
 
                       _buildSectionHeader("Help & Support"),
                       SizedBox(height: 10.h),
@@ -186,9 +309,7 @@ class ProfileScreen extends StatelessWidget {
                         iconAsset: "assets/images/follow_icon.png",
                         onTap: () {},
                       ),
-
                       SizedBox(height: 10.h),
-
                       _buildSettingsTile(
                         title: "Delete my Account",
                         iconAsset: "assets/images/delete_icon.png",
@@ -245,6 +366,24 @@ class ProfileScreen extends StatelessWidget {
                       ),
 
                       SizedBox(height: 20.h),
+
+                      // 🚀 Logout & App Version at the bottom matching the screenshot
+                      Center(
+                        child: TextButton(
+                          onPressed: () {},
+                          child: Text(
+                            "Logout",
+                            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16.sp),
+                          ),
+                        ),
+                      ),
+                      Center(
+                        child: Text(
+                          "App Version 1.2",
+                          style: TextStyle(color: Colors.grey, fontSize: 12.sp),
+                        ),
+                      ),
+                      SizedBox(height: 20.h),
                     ],
                   ),
                 ),
@@ -299,16 +438,16 @@ class ProfileScreen extends StatelessWidget {
         ),
         subtitle: subtitle != null
             ? Text(
-                subtitle,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w500,
-                ),
-              )
+          subtitle,
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 11.sp,
+            fontWeight: FontWeight.w500,
+          ),
+        )
             : null,
         trailing:
-            trailingWidget ??
+        trailingWidget ??
             Icon(
               Icons.chevron_right_rounded,
               color: Colors.black87,
