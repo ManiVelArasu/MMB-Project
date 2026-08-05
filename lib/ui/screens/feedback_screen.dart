@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
+import '../../component/appbar_widget.dart';
 import '../../network/provider/feedback_provider.dart';
 import '../../widgets/emoji_rating.dart';
 import '../../widgets/feedback_textfield.dart';
@@ -18,32 +19,16 @@ class FeedbackScreen extends StatelessWidget {
           return Scaffold(
             backgroundColor: Colors.white,
 
-            appBar: AppBar(
-              backgroundColor: Colors.white,
-              elevation: 0,
-              centerTitle: true,
-              leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_ios,
-                  color: Colors.black,
-                ),
+            appBar:CustomAppBar(
+            showTitle: true,
+              title:"Feedback",
+              showRightIcon: false,
 
-                onPressed: () {
-
-                  Navigator.pop(context);
-                },
-              ),
-              title: Text(
-                "Feedback",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 22.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ),
 
-            body: SingleChildScrollView(
+
+
+                body: SingleChildScrollView(
               padding: EdgeInsets.all(20.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -51,7 +36,7 @@ class FeedbackScreen extends StatelessWidget {
                   SizedBox(height: 20.h),
 
                   Text(
-                    "How was your experience?",
+                    "Our support Team will available Monday to Saturday,10 AM-7 PM to assist you with any queries",
                     style: TextStyle(
                       fontSize: 20.sp,
                       fontWeight: FontWeight.w700,
@@ -60,14 +45,7 @@ class FeedbackScreen extends StatelessWidget {
 
                   SizedBox(height: 10.h),
 
-                  Text(
-                    "Your feedback helps us improve our app.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.grey,
-                    ),
-                  ),
+
 
                   SizedBox(height: 30.h),
 
@@ -75,9 +53,19 @@ class FeedbackScreen extends StatelessWidget {
 
                   SizedBox(height: 30.h),
 
+                  Text(
+                    "Do you have any thoughts you'd like to share:",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
                   const FeedbackTextField(),
 
+
                   SizedBox(height: 40.h),
+
 
                   SizedBox(
                     width: double.infinity,
@@ -98,6 +86,8 @@ class FeedbackScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                       ),
+
+
                       child: Text(
                         "Submit",
                         style: TextStyle(

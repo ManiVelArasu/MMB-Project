@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../component/status_widget.dart';
 import '../model/support_ticket_model.dart';
 
 class SupportTicketCard extends StatelessWidget {
@@ -35,26 +36,12 @@ class SupportTicketCard extends StatelessWidget {
 
               const SizedBox(width: 8),
 
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: ticket.status == "Open"
-                      ? const Color(0xFFFFE4E6)
-                      : const Color(0xFFE8F5E9),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  ticket.status,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: ticket.status == "Open"
-                        ? Colors.red
-                        : Colors.green,
-                  ),
+              StatusWidget(
+                status:ticket.status,
+                backgroundColor: const Color(0xFFE6EAFE),
+                textStyle: const TextStyle(
+                  color: Color(0xFF1F2937),
+                  fontWeight: FontWeight.w700,
                 ),
               ),
 

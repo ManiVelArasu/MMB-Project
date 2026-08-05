@@ -129,7 +129,9 @@ class ProfileScreen extends StatelessWidget {
                       _buildSettingsTile(
                         title: "FAQs",
                         iconAsset: "assets/images/faq_icon.png",
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.pushNamed(context, "/FaqScreen");
+                        },
                       ),
 
                       SizedBox(height: 20.h),
