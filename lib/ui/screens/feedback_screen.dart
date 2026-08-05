@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:project_mmb/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
@@ -21,7 +20,7 @@ class FeedbackScreen extends StatelessWidget {
             backgroundColor: Colors.white,
 
             appBar:CustomAppBar(
-            showTitle: true,
+              showTitle: true,
               title:"Feedback",
               showRightIcon: false,
 
@@ -29,20 +28,15 @@ class FeedbackScreen extends StatelessWidget {
 
 
 
-                body: SingleChildScrollView(
+            body: SingleChildScrollView(
               padding: EdgeInsets.all(20.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(height: 20.h),
 
-<<<<<<< HEAD
-                  AppText(
-                    "How was your experience?",
-=======
                   Text(
                     "Our support Team will available Monday to Saturday,10 AM-7 PM to assist you with any queries",
->>>>>>> notification
                     style: TextStyle(
                       fontSize: 20.sp,
                       fontWeight: FontWeight.w700,
@@ -51,18 +45,7 @@ class FeedbackScreen extends StatelessWidget {
 
                   SizedBox(height: 10.h),
 
-<<<<<<< HEAD
-                  AppText(
-                    "Your feedback helps us improve our app.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.grey,
-                    ),
-                  ),
-=======
 
->>>>>>> notification
 
                   SizedBox(height: 30.h),
 
@@ -103,13 +86,9 @@ class FeedbackScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                       ),
-<<<<<<< HEAD
-                      child: AppText(
-=======
 
 
                       child: Text(
->>>>>>> notification
                         "Submit",
                         style: TextStyle(
                           fontSize: 16.sp,
