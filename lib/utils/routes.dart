@@ -145,7 +145,9 @@ class RouteGenerator {
           builder: (context) => const EditorScreen(),
         ); */
       case "/TemplateEditScreen":
+        final String resizeSize = settings.arguments as String? ?? "Post Square (1:1)";
         return MaterialPageRoute(
+          settings: settings,
           builder: (context) => const TemplateEditScreen(),
         );
       case "/SocialCalendarFormScreen":

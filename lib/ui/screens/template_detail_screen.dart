@@ -146,6 +146,7 @@ class _TemplateDetailBody extends StatelessWidget {
                               Navigator.pushNamed(
                                 context,
                                 "/TemplateEditScreen",
+                                arguments: provider.selectedResizeSize,
                               );
                             },
                             icon: const Icon(
@@ -704,22 +705,22 @@ Widget _buildTopBanner(BuildContext context, String resizeSize) {
       color: Colors.grey.shade200,
       image: savedImagePath != null && savedImagePath.isNotEmpty
           ? DecorationImage(
-        image: FileImage(File(savedImagePath)),
-        fit: BoxFit.cover,
-      )
+              image: FileImage(File(savedImagePath)),
+              fit: BoxFit.cover,
+            )
           : null,
     ),
     child: savedImagePath == null || savedImagePath.isEmpty
         ? Center(
-      child: Text(
-        resizeSize,
-        style: TextStyle(
-          color: Colors.black54,
-          fontSize: 16.sp,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    )
+            child: Text(
+              resizeSize,
+              style: TextStyle(
+                color: Colors.black54,
+                fontSize: 16.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          )
         : null,
   );
 }
