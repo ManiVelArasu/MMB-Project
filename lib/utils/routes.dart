@@ -10,7 +10,6 @@ import 'package:project_mmb/ui/screens/faq_screen.dart';
 import 'package:project_mmb/ui/splash/splash_screen.dart';
 import 'package:project_mmb/ui/verification/otp_screen.dart';
 import 'package:provider/provider.dart';
-
 import '../Api Model/theme_screen_model.dart';
 import '../component/bottom_navigation.dart';
 import '../network/provider/auth_provider.dart';
@@ -21,12 +20,9 @@ import '../ui/industry/business_frame_screen.dart';
 import '../ui/screens/business_profile_screen.dart';
 import '../ui/screens/download_screen.dart';
 import '../ui/screens/edit_profile_screen.dart';
-import '../ui/screens/editor_screen.dart';
 import '../ui/screens/notification_screen.dart';
 import '../ui/screens/help_support_screen.dart';
-import '../ui/screens/personal_use_profile.dart';
 import '../ui/screens/profile_screen.dart';
-import '../ui/screens/notification_screen.dart';
 import '../ui/screens/smcalender_form_sceen.dart';
 import '../ui/screens/smcalender_screen.dart';
 import '../ui/screens/social_calender_result_screen.dart';
@@ -170,10 +166,6 @@ class RouteGenerator {
         );
       case "/FeedbackScreen":
         return MaterialPageRoute(builder: (context) => const FeedbackScreen());
-      case "/PersonalProfileScreen":
-        return MaterialPageRoute(
-          builder: (context) => const PersonalProfileScreen(),
-        );
       case "/ThemeSingleitemViewScreen":
         final String variantId = settings.arguments as String? ?? '';
         return MaterialPageRoute(

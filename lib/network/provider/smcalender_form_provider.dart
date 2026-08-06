@@ -1,9 +1,10 @@
 import 'package:flutter/cupertino.dart';
+import 'package:project_mmb/core/app_provider/my_notifier.dart';
 
-class SocialCalendarProvider extends ChangeNotifier {
+class SocialCalendarProvider extends ChangeNotifier with MyNotifier {
   String selectedMonth = 'August';
   int postsPerWeek = 4;
-
+  bool isCalendarGridVisible = false;
   final Set<String> selectedPlatforms = {'Instagram'};
   String selectedTone = 'Professional';
   int selectedWeekTab = 2;

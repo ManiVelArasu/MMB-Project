@@ -7,6 +7,9 @@ import '../../core/api/api_endpoints.dart';
 
 import '../../network/provider/theme_single_provider.dart';
 
+import 'package:project_mmb/network/provider/custom_theme_provider.dart';
+
+
 class ThemeSingleitemViewScreen extends StatelessWidget {
   final String variantId;
 
@@ -57,19 +60,22 @@ class ThemeDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<CustomThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
+
     return Consumer<ThemeSingleItemProvider>(
       builder: (context, provider, child) {
         if (provider.isLoadingPlans) {
           return Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(
-              child: CircularProgressIndicator(color: const Color(0xFFE53935)),
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: const Center(
+              child: CircularProgressIndicator(color: Color(0xFFE53935)),
             ),
           );
         }
         if (provider.plansErrorMessage != null) {
           return Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: Center(
               child: Padding(
                 padding: EdgeInsets.all(16.w),
@@ -101,11 +107,10 @@ class ThemeDetailView extends StatelessWidget {
             ? brandSeries.tags
             : ["Fresh", "Bright", "Energetic", "Modern", "Friendly"];
 
-        final String? thumbnail = data?.thumbnailS3Key;
         final businessCategories = data?.businessCategories ?? [];
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
@@ -123,8 +128,8 @@ class ThemeDetailView extends StatelessWidget {
                           child: Container(
                             height: 40.h,
                             width: 40.w,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFFECEE),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -141,8 +146,8 @@ class ThemeDetailView extends StatelessWidget {
                             width: 40.w,
                             decoration: BoxDecoration(
                               color: provider.isFavorite
-                                  ? const Color(0xFFFFECEE)
-                                  : Colors.grey.shade100,
+                                  ? (isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE))
+                                  : (isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -151,7 +156,7 @@ class ThemeDetailView extends StatelessWidget {
                                   : Icons.favorite_outline_rounded,
                               color: provider.isFavorite
                                   ? const Color(0xFFE53935)
-                                  : Colors.grey.shade400,
+                                  : (isDark ? Colors.grey.shade500 : Colors.grey.shade400),
                               size: 20.sp,
                             ),
                           ),
@@ -171,7 +176,7 @@ class ThemeDetailView extends StatelessWidget {
                             vertical: 3.h,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.red.shade50,
+                            color: isDark ? const Color(0xFF2A1A1C) : Colors.red.shade50,
                             borderRadius: BorderRadius.circular(4.r),
                           ),
                           child: Row(
@@ -199,7 +204,7 @@ class ThemeDetailView extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                         fontSize: 22.sp,
                         fontWeight: FontWeight.w900,
                       ),
@@ -225,7 +230,7 @@ class ThemeDetailView extends StatelessWidget {
                     Text(
                       description,
                       style: TextStyle(
-                        color: Colors.black87,
+                        color: isDark ? Colors.grey.shade300 : Colors.black87,
                         fontSize: 12.sp,
                         height: 1.4,
                       ),
@@ -246,9 +251,11 @@ class ThemeDetailView extends StatelessWidget {
                             vertical: 6.h,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFF0F2),
+                            color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFF0F2),
                             borderRadius: BorderRadius.circular(20.r),
-                            border: Border.all(color: Colors.red.shade100),
+                            border: Border.all(
+                              color: isDark ? Colors.red.shade900 : Colors.red.shade100,
+                            ),
                           ),
                           child: Text(
                             tag.toString(),
@@ -296,7 +303,7 @@ class ThemeDetailView extends StatelessWidget {
 
                     SizedBox(height: 20.h),
 
-                    MockupSliderWidget(templates: data?.templates ?? []),
+                    MockupSliderWidget(templates: data?.templates ?? [], isDark: isDark),
 
                     SizedBox(height: 30.h),
 
@@ -306,7 +313,7 @@ class ThemeDetailView extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20.sp,
                         fontWeight: FontWeight.w900,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                     SizedBox(height: 14.h),
@@ -315,11 +322,8 @@ class ThemeDetailView extends StatelessWidget {
                       spacing: 8.w,
                       runSpacing: 8.h,
                       alignment: WrapAlignment.center,
-                      children:
-                      (businessCategories.isNotEmpty
-                          ? businessCategories
-                          .map((bc) => bc.name)
-                          .toList()
+                      children: (businessCategories.isNotEmpty
+                          ? businessCategories.map((bc) => bc.name).toList()
                           : [
                         "Education & Coaching",
                         "Startups & Tech",
@@ -339,10 +343,10 @@ class ThemeDetailView extends StatelessWidget {
                             vertical: 8.h,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFF0F2),
+                            color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFF0F2),
                             borderRadius: BorderRadius.circular(20.r),
                             border: Border.all(
-                              color: Colors.red.shade100,
+                              color: isDark ? Colors.red.shade900 : Colors.red.shade100,
                             ),
                           ),
                           child: Text(
@@ -354,8 +358,7 @@ class ThemeDetailView extends StatelessWidget {
                             ),
                           ),
                         );
-                      })
-                          .toList(),
+                      }).toList(),
                     ),
 
                     SizedBox(height: 30.h),
@@ -368,24 +371,13 @@ class ThemeDetailView extends StatelessWidget {
       },
     );
   }
-
-  Widget _buildPlaceholderImage() {
-    return Container(
-      color: Colors.grey.shade200,
-      child: Center(
-        child: Icon(
-          Icons.phone_iphone_rounded,
-          size: 80.sp,
-          color: Colors.grey.shade400,
-        ),
-      ),
-    );
-  }
 }
-class MockupSliderWidget extends StatefulWidget {
-  final List<dynamic> templates; // or list of images/thumbnails
 
-  const MockupSliderWidget({super.key, required this.templates});
+class MockupSliderWidget extends StatefulWidget {
+  final List<dynamic> templates;
+  final bool isDark;
+
+  const MockupSliderWidget({super.key, required this.templates, required this.isDark});
 
   @override
   State<MockupSliderWidget> createState() => _MockupSliderWidgetState();
@@ -405,18 +397,19 @@ class _MockupSliderWidgetState extends State<MockupSliderWidget> {
   Widget build(BuildContext context) {
     final images = widget.templates.isNotEmpty
         ? widget.templates
-        : [null, null, null, null]; // Fallback placeholder items
+        : [null, null, null, null];
 
     return Column(
       children: [
-        // 🚀 Slider View (PageView)
         Container(
           width: double.infinity,
           height: 380.h,
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: widget.isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(20.r),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(
+              color: widget.isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+            ),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20.r),
@@ -430,7 +423,8 @@ class _MockupSliderWidgetState extends State<MockupSliderWidget> {
               },
               itemBuilder: (context, index) {
                 final item = images[index];
-                final String? thumbnail = item is Template ? item.thumbnailS3Key : item?.toString();
+                final String? thumbnail =
+                item is Template ? item.thumbnailS3Key : item?.toString();
 
                 return thumbnail != null && thumbnail.isNotEmpty
                     ? Image.network(
@@ -446,7 +440,6 @@ class _MockupSliderWidgetState extends State<MockupSliderWidget> {
 
         SizedBox(height: 15.h),
 
-        // 🚀 Dynamic Page Indicator Dots matching current index
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(images.length, (index) {
@@ -457,7 +450,7 @@ class _MockupSliderWidgetState extends State<MockupSliderWidget> {
               width: isActive ? 16.w : 6.w,
               height: 6.h,
               decoration: BoxDecoration(
-                color: isActive ? Colors.red : Colors.grey.shade300,
+                color: isActive ? Colors.red : (widget.isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                 borderRadius: BorderRadius.circular(3.r),
               ),
             );
@@ -469,12 +462,12 @@ class _MockupSliderWidgetState extends State<MockupSliderWidget> {
 
   Widget _buildPlaceholderImage() {
     return Container(
-      color: Colors.grey.shade200,
+      color: widget.isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200,
       child: Center(
         child: Icon(
           Icons.phone_iphone_rounded,
           size: 80.sp,
-          color: Colors.grey.shade400,
+          color: widget.isDark ? Colors.grey.shade500 : Colors.grey.shade400,
         ),
       ),
     );

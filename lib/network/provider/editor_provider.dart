@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:project_mmb/core/app_provider/my_notifier.dart';
 import '../../Api Model/editor_model.dart';
 import '../../Repository/freeoic.dart';
 
-class EditorProvider extends ChangeNotifier {
+
+class EditorProvider extends ChangeNotifier with MyNotifier{
   final List<EditorItem> _items = [];
   List<EditorItem> get items => _items;
 
@@ -17,8 +19,26 @@ class EditorProvider extends ChangeNotifier {
     _history.add(_items.map((e) => e.copyWith()).toList());
     _historyIndex = _history.length - 1;
   }
+  String? selectedItemType;
+  String? selectedItemId;
+  String? selectedFrameUrl;
 
-  // 🚀 Fabric.js JSON Safe Parser & Loader
+  void setSelectedItem(String? type, String? id) {
+    selectedItemType = type;
+    selectedItemId = id;
+    notifyListeners();
+  }
+
+  void setSelectedFrame(String frameUrl) {
+    selectedFrameUrl = frameUrl;
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    selectedItemType = null;
+    selectedItemId = null;
+    notifyListeners();
+  }
   void loadItemsFromJson(List<Map<String, dynamic>> jsonList) {
     try {
       _items.clear();
@@ -36,8 +56,7 @@ class EditorProvider extends ChangeNotifier {
 
           _items.add(
             EditorItem(
-              id:
-                  "${DateTime.now().millisecondsSinceEpoch}_$left",
+              id: "${DateTime.now().millisecondsSinceEpoch}_$left",
               type: 'text',
               text: json['text'] ?? '',
               position: Offset(left, top),
@@ -52,8 +71,7 @@ class EditorProvider extends ChangeNotifier {
           if (imageUrl.isNotEmpty) {
             _items.add(
               EditorItem(
-                id:
-                    "${DateTime.now().millisecondsSinceEpoch}_$left",
+                id: "${DateTime.now().millisecondsSinceEpoch}_$left",
                 type: 'image',
                 contentUrl: imageUrl,
                 position: Offset(left, top),
@@ -64,11 +82,9 @@ class EditorProvider extends ChangeNotifier {
             );
           }
         } else if (type == 'rect' || type == 'circle') {
-          // Background / Shapes
           _items.add(
             EditorItem(
-              id:
-                  "${DateTime.now().millisecondsSinceEpoch}_$left",
+              id: "${DateTime.now().millisecondsSinceEpoch}_$left",
               type: 'shape',
               position: Offset(left, top),
               width: width * scaleX,
@@ -170,6 +186,16 @@ class EditorProvider extends ChangeNotifier {
     }
   }
 
+  // 🚀 ADDED: Update Font Size Method
+  void updateFontSize(String id, double newSize) {
+    int index = _items.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      _saveState();
+      _items[index] = _items[index].copyWith(fontSize: newSize);
+      notifyListeners();
+    }
+  }
+
   void updateOpacity(String id, double op) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -198,11 +224,11 @@ class EditorProvider extends ChangeNotifier {
   }
 
   void updateImageColorAdjustments(
-    String id, {
-    double? brightness,
-    double? contrast,
-    double? saturation,
-  }) {
+      String id, {
+        double? brightness,
+        double? contrast,
+        double? saturation,
+      }) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _items[index] = _items[index].copyWith(
@@ -320,36 +346,56 @@ class EditorProvider extends ChangeNotifier {
 
   List<String> freepikAssets = [];
   bool isFreepikLoading = false;
+  List<String> freepikStickers = [];
+  bool isStickersLoading = false;
 
   Future<void> fetchFreepikAssets(String query) async {
+    if (isFreepikLoading) return;
     isFreepikLoading = true;
-    notifyListeners();
+    notifyListeners(); // 🚀 Loading start
 
     try {
-      freepikAssets = await FreepikService.searchAssets(query);
+      freepikAssets = await FreepikService.searchAssets(query).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => [],
+      );
     } catch (e) {
       debugPrint("Error fetching assets: $e");
       freepikAssets = [];
     } finally {
       isFreepikLoading = false;
-      notifyListeners();
+      Future.microtask(() => notifyListeners());
     }
   }
 
-  List<String> freepikStickers = [];
-  bool isStickersLoading = false;
-
   Future<void> fetchFreepikStickers(String query) async {
+    if (isStickersLoading) return;
     isStickersLoading = true;
-    notifyListeners();
+    notifyListeners(); // 🚀 Loading start
 
     try {
-      freepikStickers = await FreepikService.searchAssets("$query stickers");
+      freepikStickers = await FreepikService.searchAssets("$query stickers").timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => [],
+      );
     } catch (e) {
       debugPrint("Error fetching stickers: $e");
       freepikStickers = [];
     } finally {
       isStickersLoading = false;
+      // 🚀 UI-kku odane update anuppa Future.microtask use panrom
+      Future.microtask(() => notifyListeners());
+    }
+  }
+
+  void updateImageContent(String id, String newUrl) {
+    int index = _items.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      _saveState();
+      _items[index] = _items[index].copyWith(
+        contentUrl: newUrl,
+        isLocal: !newUrl.startsWith('http'),
+      );
       notifyListeners();
     }
   }

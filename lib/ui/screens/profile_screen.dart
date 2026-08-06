@@ -7,12 +7,8 @@ import '../../component/home_appbar.dart';
 import '../../component/language_bottom_sheet.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/you_screen_provider.dart';
-
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -42,10 +38,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<CustomThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
+
     if (isLoading) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(child: CircularProgressIndicator(color: Colors.red)),
+      return Scaffold(
+        backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
+        body: const Center(child: CircularProgressIndicator(color: Colors.red)),
       );
     }
 
@@ -54,17 +53,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Consumer<ProfileScreenProvider>(
       builder: (context, provider, child) {
         return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: const SystemUiOverlayStyle(
+          value: SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.dark,
-            statusBarBrightness: Brightness.light,
+            statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+            statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
           ),
           child: Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             appBar: PreferredSize(
               preferredSize: Size.fromHeight(70.h),
               child: HomeCustomAppBar(
-
                 businessCategory: "Cake and Sweets",
                 notificationCount: "2",
               ),
@@ -80,13 +78,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 🚀 Personal Use-ah iruntha "Start Your Business Journey" Banner & 2 Cards varum
+                      // 🚀 Personal Use Banner & Cards
                       if (isPersonalUse) ...[
                         Container(
                           width: double.infinity,
                           padding: EdgeInsets.all(16.r),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFECEE),
+                            color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
                             borderRadius: BorderRadius.circular(16.r),
                           ),
                           child: Column(
@@ -96,7 +94,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 style: TextStyle(
                                   fontSize: 16.sp,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                                  color: isDark ? Colors.white : Colors.black,
                                 ),
                               ),
                               SizedBox(height: 6.h),
@@ -105,7 +103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 11.sp,
-                                  color: Colors.black87,
+                                  color: isDark ? Colors.white70 : Colors.black87,
                                 ),
                               ),
                               SizedBox(height: 12.h),
@@ -136,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Container(
                                 padding: EdgeInsets.all(16.r),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFE3F2FD),
+                                  color: isDark ? const Color(0xFF1B2A38) : const Color(0xFFE3F2FD),
                                   borderRadius: BorderRadius.circular(16.r),
                                 ),
                                 child: Column(
@@ -152,6 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12.sp,
+                                        color: isDark ? Colors.white : Colors.black,
                                       ),
                                     ),
                                   ],
@@ -163,14 +162,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Container(
                                 padding: EdgeInsets.all(16.r),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEDE7F6),
+                                  color: isDark ? const Color(0xFF231B38) : const Color(0xFFEDE7F6),
                                   borderRadius: BorderRadius.circular(16.r),
                                 ),
                                 child: Column(
                                   children: [
                                     const Icon(
                                       Icons.download,
-                                      color: Colors.deepPurple,
+                                      color: Colors.deepPurpleAccent,
                                       size: 28,
                                     ),
                                     SizedBox(height: 8.h),
@@ -179,6 +178,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12.sp,
+                                        color: isDark ? Colors.white : Colors.black,
                                       ),
                                     ),
                                   ],
@@ -189,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         SizedBox(height: 24.h),
                       ] else ...[
-                        // Regular Quick Actions for Business Account
+                        // Quick Actions for Business Account
                         Row(
                           children: provider.quickActions.map((item) {
                             return Expanded(
@@ -199,7 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   margin: EdgeInsets.symmetric(horizontal: 4.w),
                                   padding: EdgeInsets.symmetric(vertical: 16.h),
                                   decoration: BoxDecoration(
-                                    color: item.backgroundColor,
+                                    color: isDark ? const Color(0xFF1E1E1E) : item.backgroundColor,
                                     borderRadius: BorderRadius.circular(16.r),
                                   ),
                                   child: Column(
@@ -220,7 +220,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         item.title,
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
-                                          color: Colors.black,
+                                          color: isDark ? Colors.white : Colors.black,
                                           fontSize: 12.sp,
                                           fontWeight: FontWeight.w800,
                                           height: 1.1,
@@ -234,25 +234,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           }).toList(),
                         ),
                         SizedBox(height: 24.h),
-                        _buildSectionHeader("My Business Settings"),
+                        _buildSectionHeader("My Business Settings", isDark),
                         SizedBox(height: 10.h),
                         _buildSettingsTile(
                           title: "Preferred Languages",
                           subtitle: "English, தமிழ், हिंदी",
                           iconAsset: "assets/images/lang_icon.png",
+                          isDark: isDark,
                           onTap: () {
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
-                              builder: (context) =>
-                                  const LanguagesBottomSheet(),
+                              builder: (context) => const LanguagesBottomSheet(),
                             );
                           },
                         ),
                         _buildSettingsTile(
                           title: "Add Watermark",
                           iconAsset: "assets/images/watermark_icon.png",
+                          isDark: isDark,
                           trailingWidget: Switch(
                             value: provider.isWatermarkEnabled,
                             onChanged: (val) => provider.toggleWatermark(val),
@@ -262,11 +263,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         SizedBox(height: 20.h),
                       ],
 
-                      _buildSectionHeader("Help & Support"),
+                      _buildSectionHeader("Help & Support", isDark),
                       SizedBox(height: 10.h),
                       _buildSettingsTile(
                         title: "Help & Support",
                         iconAsset: "assets/images/help_icon.png",
+                        isDark: isDark,
                         onTap: () {
                           Navigator.pushNamed(context, "/HelpSupportScreen");
                         },
@@ -274,6 +276,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _buildSettingsTile(
                         title: "FAQs",
                         iconAsset: "assets/images/faq_icon.png",
+                        isDark: isDark,
                         onTap: () {
                           Navigator.pushNamed(context, "/FaqScreen");
                         },
@@ -281,36 +284,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       SizedBox(height: 20.h),
 
-                      _buildSectionHeader("App Settings"),
+                      _buildSectionHeader("App Settings", isDark),
                       SizedBox(height: 10.h),
-                      Consumer<CustomThemeProvider>(
-                        builder: (context, themeProvider, child) {
-                          return _buildSettingsTile(
-                            title: "Dark Mode",
-                            iconAsset: "assets/images/dark_mode_icon.png",
-                            trailingWidget: Switch(
-                              value: themeProvider.isDarkMode,
-                              activeThumbColor: const Color(0xFFE53935),
-                              onChanged: (bool value) {
-                                themeProvider.toggleTheme(value);
-                              },
-                            ),
-                          );
-                        },
+                      _buildSettingsTile(
+                        title: "Dark Mode",
+                        iconAsset: "assets/images/dark_mode_icon.png",
+                        isDark: isDark,
+                        trailingWidget: Switch(
+                          value: isDark,
+                          activeThumbColor: const Color(0xFFE53935),
+                          onChanged: (bool value) {
+                            themeProvider.toggleTheme(value);
+                          },
+                        ),
                       ),
                       _buildSettingsTile(
                         title: "Notifications",
                         iconAsset: "assets/images/notification_icon.png",
+                        isDark: isDark,
                         onTap: () {},
                       ),
 
                       SizedBox(height: 20.h),
 
-                      _buildSectionHeader("About App"),
+                      _buildSectionHeader("About App", isDark),
                       SizedBox(height: 10.h),
                       _buildSettingsTile(
                         title: "Feedback",
                         iconAsset: "assets/images/feedback_icon.png",
+                        isDark: isDark,
                         onTap: () {
                           Navigator.pushNamed(context, "/FeedbackScreen");
                         },
@@ -318,27 +320,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _buildSettingsTile(
                         title: "Privacy Policy",
                         iconAsset: "assets/images/privacy_icon.png",
+                        isDark: isDark,
                         onTap: () {},
                       ),
                       _buildSettingsTile(
                         title: "Terms & Conditions",
                         iconAsset: "assets/images/terms_icon.png",
+                        isDark: isDark,
                         onTap: () {},
                       ),
                       _buildSettingsTile(
                         title: "Refund Policy",
                         iconAsset: "assets/images/refund_icon.png",
+                        isDark: isDark,
                         onTap: () {},
                       ),
                       _buildSettingsTile(
                         title: "Follow Us",
                         iconAsset: "assets/images/follow_icon.png",
+                        isDark: isDark,
                         onTap: () {},
                       ),
                       SizedBox(height: 10.h),
                       _buildSettingsTile(
                         title: "Delete my Account",
                         iconAsset: "assets/images/delete_icon.png",
+                        isDark: isDark,
                         onTap: () {},
                       ),
 
@@ -432,11 +439,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, bool isDark) {
     return Text(
       title,
       style: TextStyle(
-        color: Colors.black,
+        color: isDark ? Colors.white : Colors.black,
         fontSize: 16.sp,
         fontWeight: FontWeight.w800,
       ),
@@ -447,12 +454,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String title,
     String? subtitle,
     required String iconAsset,
+    required bool isDark,
     VoidCallback? onTap,
     Widget? trailingWidget,
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
-      color: const Color(0xFFF9F9FB),
+      color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF9F9FB),
       child: ListTile(
         contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 2.h),
         leading: Image.asset(
@@ -468,26 +476,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text(
           title,
           style: TextStyle(
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
             fontSize: 13.5.sp,
             fontWeight: FontWeight.w700,
           ),
         ),
         subtitle: subtitle != null
             ? Text(
-                subtitle,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w500,
-                ),
-              )
+          subtitle,
+          style: TextStyle(
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+            fontSize: 11.sp,
+            fontWeight: FontWeight.w500,
+          ),
+        )
             : null,
         trailing:
-            trailingWidget ??
+        trailingWidget ??
             Icon(
               Icons.chevron_right_rounded,
-              color: Colors.black87,
+              color: isDark ? Colors.white70 : Colors.black87,
               size: 20.sp,
             ),
         onTap: onTap,

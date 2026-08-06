@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 import 'package:project_mmb/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
 import '../../network/provider/faq_provider.dart';
+
+import '../../network/provider/custom_theme_provider.dart';
+
 
 class FaqScreen extends StatelessWidget {
   const FaqScreen({super.key});
@@ -13,16 +16,16 @@ class FaqScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => FaqProvider(),
-      child: Consumer<FaqProvider>(
-        builder: (context, provider, child) {
-          return Scaffold(
-            backgroundColor: Colors.white,
+      child: Consumer2<FaqProvider, CustomThemeProvider>(
+        builder: (context, provider, themeProvider, child) {
+          final isDark = themeProvider.isDarkMode;
 
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             appBar: const CustomAppBar(
               title: "FAQs",
               showRightIcon: false,
             ),
-
             body: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -30,14 +33,14 @@ class FaqScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: 10),
 
-                  const Center(
+                  Center(
                     child: AppText(
                       "Got questions? We've got answers!",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize:20,
+                        fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: isDark ? Colors.white70 : Colors.black87,
                       ),
                     ),
                   ),
@@ -48,8 +51,10 @@ class FaqScreen extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: provider.faqList.length,
-                    separatorBuilder: (_, _ ,) =>
-                    const Divider(height: 30),
+                    separatorBuilder: (_, __) => Divider(
+                      height: 30,
+                      color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                    ),
                     itemBuilder: (context, index) {
                       final faq = provider.faqList[index];
 
@@ -61,33 +66,29 @@ class FaqScreen extends StatelessWidget {
                               provider.toggleExpansion(index);
                             },
                             child: Row(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
                                   child: Text(
                                     faq.question,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.black,
+                                      color: isDark ? Colors.white : Colors.black,
                                     ),
                                   ),
                                 ),
-
                                 Container(
                                   width: 28,
                                   height: 28,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE5E7EB),
-                                    borderRadius:
-                                    BorderRadius.circular(8),
+                                    color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(
-                                    faq.isExpanded
-                                        ? Icons.remove
-                                        : Icons.add,
+                                    faq.isExpanded ? Icons.remove : Icons.add,
                                     size: 18,
+                                    color: isDark ? Colors.white70 : Colors.black87,
                                   ),
                                 ),
                               ],
@@ -99,10 +100,10 @@ class FaqScreen extends StatelessWidget {
 
                             Text(
                               faq.answer,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 17,
                                 height: 1.6,
-                                color: Color(0xFF4B5563),
+                                color: isDark ? Colors.grey.shade400 : const Color(0xFF4B5563),
                               ),
                             ),
                           ],

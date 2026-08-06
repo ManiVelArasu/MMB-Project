@@ -3,6 +3,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../component/status_widget.dart';
 import '../model/notification_model.dart';
 
+import 'package:provider/provider.dart';
+
+import '../../network/provider/custom_theme_provider.dart';
+
 class NotificationSection extends StatelessWidget {
   final String title;
   final List<NotificationModel> notifications;
@@ -46,6 +50,8 @@ class NotificationSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (notifications.isEmpty) return const SizedBox.shrink();
 
+    final isDark = context.select<CustomThemeProvider, bool>((p) => p.isDarkMode);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -54,7 +60,7 @@ class NotificationSection extends StatelessWidget {
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF6B7280),
+            color: isDark ? Colors.grey.shade400 : const Color(0xFF6B7280),
           ),
         ),
         const SizedBox(height: 16),
@@ -82,6 +88,8 @@ class _NotificationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.select<CustomThemeProvider, bool>((p) => p.isDarkMode);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -89,7 +97,7 @@ class _NotificationItem extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 22,
-              backgroundColor: const Color(0xFFE6EAFE),
+              backgroundColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE6EAFE),
               child: ClipOval(
                 child: notification.avatarUrl != null
                     ? Image.network(
@@ -97,9 +105,9 @@ class _NotificationItem extends StatelessWidget {
                   width: 44,
                   height: 44,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => _defaultAvatar(),
+                  errorBuilder: (_, _, _) => _defaultAvatar(isDark),
                 )
-                    : _defaultAvatar(),
+                    : _defaultAvatar(isDark),
               ),
             ),
             if (!notification.isRead)
@@ -127,7 +135,7 @@ class _NotificationItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 17.sp,
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xFF222222),
+                  color: isDark ? Colors.white : const Color(0xFF222222),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -138,7 +146,7 @@ class _NotificationItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15.sp,
                   fontWeight: FontWeight.w400,
-                  color: const Color(0xFF333333),
+                  color: isDark ? Colors.grey.shade300 : const Color(0xFF333333),
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -148,9 +156,9 @@ class _NotificationItem extends StatelessWidget {
                 children: [
                   StatusWidget(
                     status: notification.category,
-                    backgroundColor: const Color(0xFFE6EAFE),
-                    textStyle: const TextStyle(
-                      color: Color(0xFF1F2937),
+                    backgroundColor: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE6EAFE),
+                    textStyle: TextStyle(
+                      color: isDark ? Colors.white70 : const Color(0xFF1F2937),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -160,7 +168,7 @@ class _NotificationItem extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w400,
-                      color: const Color(0xFF6B7280),
+                      color: isDark ? Colors.grey.shade500 : const Color(0xFF6B7280),
                     ),
                   ),
                 ],
@@ -172,12 +180,12 @@ class _NotificationItem extends StatelessWidget {
     );
   }
 
-  Widget _defaultAvatar() {
+  Widget _defaultAvatar(bool isDark) {
     return Container(
       width: 44,
       height: 44,
-      decoration: const BoxDecoration(
-        color: Color(0xFFE6EAFE),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE6EAFE),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -188,7 +196,7 @@ class _NotificationItem extends StatelessWidget {
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF1F2937),
+            color: isDark ? Colors.white70 : const Color(0xFF1F2937),
           ),
         ),
       ),

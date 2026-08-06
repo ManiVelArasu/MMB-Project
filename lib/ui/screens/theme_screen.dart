@@ -8,6 +8,11 @@ import '../../component/custom_searchbar.dart';
 import '../../component/home_appbar.dart';
 import '../../network/provider/theme_screen_provider.dart';
 
+import 'package:flutter/material.dart';
+
+import 'package:project_mmb/network/provider/custom_theme_provider.dart';
+
+
 class ThemesScreen extends StatefulWidget {
   const ThemesScreen({super.key});
 
@@ -28,27 +33,34 @@ class _ThemesScreenState extends State<ThemesScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final themeProvider = context.watch<CustomThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
 
     return Consumer<ThemesScreenProvider>(
       builder: (context, provider, child) {
         if (provider.isLoadingPlans) {
-          return const Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
 
         if (provider.plansErrorMessage != null) {
           return Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(child: Text(provider.plansErrorMessage!)),
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: Center(
+              child: Text(
+                provider.plansErrorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              ),
+            ),
           );
         }
 
         final groups = provider.groups;
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(
@@ -84,8 +96,10 @@ class _ThemesScreenState extends State<ThemesScreen> {
                       padding: EdgeInsets.all(18.r),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20.r),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFE8EAF6), Color(0xFFD1C4E9)],
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? [const Color(0xFF1E1E2C), const Color(0xFF2D2B42)]
+                              : [const Color(0xFFE8EAF6), const Color(0xFFD1C4E9)],
                         ),
                       ),
                       child: Stack(
@@ -98,7 +112,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
                                 style: TextStyle(
                                   fontSize: 20.sp,
                                   fontWeight: FontWeight.w900,
-                                  color: const Color(0xFF303F9F),
+                                  color: isDark ? const Color(0xFF9FA8DA) : const Color(0xFF303F9F),
                                 ),
                               ),
 
@@ -106,7 +120,10 @@ class _ThemesScreenState extends State<ThemesScreen> {
 
                               Text(
                                 "Select, Customize, and Publish.\nAll in One Place!",
-                                style: TextStyle(fontSize: 11.sp),
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  color: isDark ? Colors.white70 : Colors.black87,
+                                ),
                               ),
 
                               SizedBox(height: 14.h),
@@ -130,7 +147,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
                       itemCount: groups.length,
                       itemBuilder: (context, index) {
                         final group = groups[index];
-                        return ThemeGroupSection(group: group);
+                        return ThemeGroupSection(group: group, isDark: isDark);
                       },
                     ),
                   ],
@@ -146,8 +163,9 @@ class _ThemesScreenState extends State<ThemesScreen> {
 
 class ThemeGroupSection extends StatelessWidget {
   final ThemeItem group;
+  final bool isDark;
 
-  const ThemeGroupSection({super.key, required this.group});
+  const ThemeGroupSection({super.key, required this.group, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -187,7 +205,7 @@ class ThemeGroupSection extends StatelessWidget {
               child: Text(
                 group.name ?? "",
                 style: TextStyle(
-                  color: Colors.black,
+                  color: isDark ? Colors.white : Colors.black,
                   fontSize: 18.sp,
                   fontWeight: FontWeight.w800,
                 ),
@@ -196,7 +214,6 @@ class ThemeGroupSection extends StatelessWidget {
 
             GestureDetector(
               onTap: () {
-                print(group);
                 Navigator.pushNamed(
                   context,
                   "/ThemeDetailScreen",
@@ -206,7 +223,7 @@ class ThemeGroupSection extends StatelessWidget {
               child: Text(
                 "VIEW ALL",
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w700,
                 ),
@@ -224,7 +241,7 @@ class ThemeGroupSection extends StatelessWidget {
             physics: const BouncingScrollPhysics(),
             itemCount: group.variants.length,
             itemBuilder: (context, index) {
-              return ThemeCard(theme: group.variants[index]);
+              return ThemeCard(theme: group.variants[index], isDark: isDark);
             },
           ),
         ),
@@ -237,8 +254,9 @@ class ThemeGroupSection extends StatelessWidget {
 
 class ThemeCard extends StatelessWidget {
   final Variant theme;
+  final bool isDark;
 
-  const ThemeCard({super.key, required this.theme});
+  const ThemeCard({super.key, required this.theme, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -255,38 +273,37 @@ class ThemeCard extends StatelessWidget {
               width: 150.w,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16.r),
-                color: Colors.grey.shade200,
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade200,
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16.r),
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child:
-                          theme.thumbnailS3Key == null ||
-                              theme.thumbnailS3Key!.isEmpty
+                      child: theme.thumbnailS3Key == null ||
+                          theme.thumbnailS3Key!.isEmpty
                           ? Container(
-                              color: Colors.grey.shade300,
-                              child: Icon(
-                                Icons.image_outlined,
-                                size: 40.sp,
-                                color: Colors.grey,
-                              ),
-                            )
+                        color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade300,
+                        child: Icon(
+                          Icons.image_outlined,
+                          size: 40.sp,
+                          color: Colors.grey,
+                        ),
+                      )
                           : Image.network(
-                              "${ApiEndpoints.cdnImageUrl}${theme.thumbnailS3Key ?? ''}",
-
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) {
-                                return Container(
-                                  color: Colors.grey.shade300,
-                                  child: Icon(
-                                    Icons.image_outlined,
-                                    size: 40.sp,
-                                  ),
-                                );
-                              },
+                        "${ApiEndpoints.cdnImageUrl}${theme.thumbnailS3Key ?? ''}",
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) {
+                          return Container(
+                            color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade300,
+                            child: Icon(
+                              Icons.image_outlined,
+                              size: 40.sp,
+                              color: Colors.grey,
                             ),
+                          );
+                        },
+                      ),
                     ),
 
                     Positioned(
@@ -316,6 +333,7 @@ class ThemeCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : Colors.black,
                   ),
                 ),
               ),
@@ -326,7 +344,11 @@ class ThemeCard extends StatelessWidget {
 
               Text(
                 "${theme.likesCount ?? 0}",
-                style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white70 : Colors.black,
+                ),
               ),
             ],
           ),

@@ -11,6 +11,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
+
+import '../../network/provider/custom_theme_provider.dart'; // Ungaloda path-ku etha maadhiri import pannikonga
+
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showTitle;
@@ -49,7 +55,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final customColor = Provider.of<CustomThemeProvider>(context).colors;
+    final themeProvider = context.watch<CustomThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
     final theme = Theme.of(context).textTheme;
 
     return AppBar(
@@ -67,8 +74,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             child: Container(
               height: 42.h,
               width: 42.w,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFECEE),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
                 shape: BoxShape.circle,
               ),
               child: const Center(
@@ -92,7 +99,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 style: theme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                   fontSize: 20.sp,
-                  color: customColor.blackColor,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
             ),
@@ -114,7 +121,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   child: Text(
                     actionText,
                     style: theme.titleMedium?.copyWith(
-                      color: const Color(0xFF1E2E5F),
+                      color: isDark ? Colors.blueAccent : const Color(0xFF1E2E5F),
                       fontWeight: FontWeight.w600,
                       fontSize: 15.sp,
                     ),
@@ -150,8 +157,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       left: 2,
                       child: Container(
                         padding: EdgeInsets.all(4.r),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF1E293B),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.red.shade800 : const Color(0xFF1E293B),
                           shape: BoxShape.circle,
                         ),
                         constraints: BoxConstraints(

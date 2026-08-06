@@ -4,12 +4,15 @@ import 'package:project_mmb/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 import '../../network/provider/businessprofile_provider.dart';
 
+import '../../network/provider/custom_theme_provider.dart';
+
+
+
 class BusinessProfileScreen extends StatelessWidget {
   const BusinessProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-
     return ChangeNotifierProvider(
       create: (_) => BusinessProfileProvider(),
       child: const BusinessProfileView(),
@@ -23,6 +26,8 @@ class BusinessProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
+    final themeProvider = context.watch<CustomThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
 
     return Consumer<BusinessProfileProvider>(
       builder: (context, provider, child) {
@@ -43,8 +48,10 @@ class BusinessProfileView extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          const Color(0xFFFFECEE).withValues(alpha: 0.6),
-                          Colors.white,
+                          isDark
+                              ? const Color(0xFF2A1A1C)
+                              : const Color(0xFFFFECEE).withValues(alpha: 0.6),
+                          isDark ? const Color(0xFF121212) : Colors.white,
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -60,8 +67,8 @@ class BusinessProfileView extends StatelessWidget {
                             child: Container(
                               height: 38.h,
                               width: 38.w,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFFFECEE),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -100,7 +107,7 @@ class BusinessProfileView extends StatelessWidget {
                         AppText(
                           "Pastry Kitchen",
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                             fontSize: 13.sp,
                             fontWeight: FontWeight.w600,
                           ),
@@ -127,7 +134,6 @@ class BusinessProfileView extends StatelessWidget {
                                   context,
                                   "/EditProfileScreen",
                                 );
-
                               },
                               child: Icon(
                                 Icons.edit_note_rounded,
@@ -145,19 +151,22 @@ class BusinessProfileView extends StatelessWidget {
                             _buildActionCard(
                               title: "ABOUT",
                               iconAsset: "assets/images/about.png",
-                              bgColor: const Color(0xFFFFDBB9),
+                              bgColor: isDark ? const Color(0xFF332211) : const Color(0xFFFFDBB9),
+                              isDark: isDark,
                             ),
                             SizedBox(width: 10.w),
                             _buildActionCard(
                               title: "MY PRODUCTS",
                               iconAsset: "assets/images/product.png",
-                              bgColor: const Color(0xFF72E8F5),
+                              bgColor: isDark ? const Color(0xFF113338) : const Color(0xFF72E8F5),
+                              isDark: isDark,
                             ),
                             SizedBox(width: 10.w),
                             _buildActionCard(
                               title: "UPLOADS",
                               iconAsset: "assets/images/uploads.png",
-                              bgColor: const Color(0xFF9AE278),
+                              bgColor: isDark ? const Color(0xFF1D3315) : const Color(0xFF9AE278),
+                              isDark: isDark,
                             ),
                           ],
                         ),
@@ -165,7 +174,7 @@ class BusinessProfileView extends StatelessWidget {
                     ),
                   ),
 
-                  Divider(height: 1, color: Colors.grey.shade200),
+                  Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                   SizedBox(height: 16.h),
 
                   Padding(
@@ -195,9 +204,7 @@ class BusinessProfileView extends StatelessWidget {
                                 AppText(
                                   "My Frames",
                                   style: TextStyle(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     fontSize: 18.sp,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -207,8 +214,8 @@ class BusinessProfileView extends StatelessWidget {
                             Container(
                               height: 32.h,
                               width: 32.w,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFFFECEE),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -233,7 +240,7 @@ class BusinessProfileView extends StatelessWidget {
                                     "Static Frames",
                                     style: TextStyle(
                                       color: provider.selectedFrameTab == 0
-                                          ? Colors.black
+                                          ? (isDark ? Colors.white : Colors.black)
                                           : Colors.grey,
                                       fontSize: 14.sp,
                                       fontWeight: provider.selectedFrameTab == 0
@@ -258,7 +265,7 @@ class BusinessProfileView extends StatelessWidget {
                                 "Animated Frames",
                                 style: TextStyle(
                                   color: provider.selectedFrameTab == 1
-                                      ? Colors.black
+                                      ? (isDark ? Colors.white : Colors.black)
                                       : Colors.grey.shade400,
                                   fontSize: 14.sp,
                                   fontWeight: provider.selectedFrameTab == 1
@@ -291,12 +298,10 @@ class BusinessProfileView extends StatelessWidget {
                                     Expanded(
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            12.r,
-                                          ),
+                                          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                          borderRadius: BorderRadius.circular(12.r),
                                           border: Border.all(
-                                            color: Colors.grey.shade300,
+                                            color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
                                             width: 1.2,
                                           ),
                                         ),
@@ -308,7 +313,7 @@ class BusinessProfileView extends StatelessWidget {
                                             children: [
                                               Positioned.fill(
                                                 child: Container(
-                                                  color: Colors.white,
+                                                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                                                 ),
                                               ),
                                               Positioned(
@@ -321,12 +326,12 @@ class BusinessProfileView extends StatelessWidget {
                                                     height: 18.h,
                                                     errorBuilder:
                                                         (_, __, ___) => Icon(
-                                                          Icons.auto_awesome,
-                                                          size: 16.sp,
-                                                          color: const Color(
-                                                            0xFFE53935,
-                                                          ),
-                                                        ),
+                                                      Icons.auto_awesome,
+                                                      size: 16.sp,
+                                                      color: const Color(
+                                                        0xFFE53935,
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -335,12 +340,8 @@ class BusinessProfileView extends StatelessWidget {
                                                 left: 4.w,
                                                 right: 4.w,
                                                 child: provider.isSolidBanner
-                                                    ? _buildSolidBanner(
-                                                        provider,
-                                                      )
-                                                    : _buildOutlineBanner(
-                                                        provider,
-                                                      ),
+                                                    ? _buildSolidBanner(provider)
+                                                    : _buildOutlineBanner(provider),
                                               ),
                                             ],
                                           ),
@@ -356,7 +357,7 @@ class BusinessProfileView extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 11.sp,
                                         fontWeight: FontWeight.w700,
-                                        color: Colors.black87,
+                                        color: isDark ? Colors.white70 : Colors.black87,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -372,7 +373,7 @@ class BusinessProfileView extends StatelessWidget {
                   ),
 
                   SizedBox(height: 12.h),
-                  Divider(height: 1, color: Colors.grey.shade200),
+                  Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                   SizedBox(height: 16.h),
 
                   Padding(
@@ -396,7 +397,7 @@ class BusinessProfileView extends StatelessWidget {
                             AppText(
                               "MANAGE",
                               style: TextStyle(
-                                color: Colors.grey.shade600,
+                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                                 fontSize: 12.sp,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.5,
@@ -417,17 +418,17 @@ class BusinessProfileView extends StatelessWidget {
                                 vertical: 6.h,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                                 borderRadius: BorderRadius.circular(20.r),
                                 border: Border.all(
-                                  color: Colors.grey.shade300,
+                                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
                                   width: 1.2,
                                 ),
                               ),
                               child: AppText(
                                 keyword,
                                 style: TextStyle(
-                                  color: Colors.black87,
+                                  color: isDark ? Colors.white70 : Colors.black87,
                                   fontSize: 11.5.sp,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -440,7 +441,7 @@ class BusinessProfileView extends StatelessWidget {
                   ),
 
                   SizedBox(height: 16.h),
-                  Divider(height: 1, color: Colors.grey.shade200),
+                  Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                   SizedBox(height: 16.h),
 
                   Padding(
@@ -467,7 +468,8 @@ class BusinessProfileView extends StatelessWidget {
                               child: _buildPresenceTile(
                                 title: "Business Profile",
                                 iconAsset: "assets/images/b_profile.png",
-                                bgColor: const Color(0xFFFFECEE),
+                                bgColor: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
+                                isDark: isDark,
                               ),
                             ),
                             SizedBox(width: 12.w),
@@ -475,7 +477,8 @@ class BusinessProfileView extends StatelessWidget {
                               child: _buildPresenceTile(
                                 title: "Business Card",
                                 iconAsset: "assets/images/b_card.png",
-                                bgColor: const Color(0xFFE3F2FD),
+                                bgColor: isDark ? const Color(0xFF1B2A38) : const Color(0xFFE3F2FD),
+                                isDark: isDark,
                               ),
                             ),
                           ],
@@ -497,8 +500,8 @@ class BusinessProfileView extends StatelessWidget {
   Widget _buildOutlineBanner(BusinessProfileProvider businessProvider) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-      decoration: BoxDecoration(
-        border: const Border(
+      decoration: const BoxDecoration(
+        border: Border(
           top: BorderSide(color: Color(0xFF0066FF), width: 1.5),
         ),
       ),
@@ -591,6 +594,7 @@ class BusinessProfileView extends StatelessWidget {
     required String title,
     required String iconAsset,
     required Color bgColor,
+    required bool isDark,
   }) {
     return Expanded(
       child: Container(
@@ -610,7 +614,7 @@ class BusinessProfileView extends StatelessWidget {
               errorBuilder: (_, __, ___) => Icon(
                 Icons.folder_outlined,
                 size: 32.sp,
-                color: Colors.black54,
+                color: isDark ? Colors.white70 : Colors.black54,
               ),
             ),
             SizedBox(height: 8.h),
@@ -618,7 +622,7 @@ class BusinessProfileView extends StatelessWidget {
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.black,
+                color: isDark ? Colors.white : Colors.black,
                 fontSize: 10.5.sp,
                 fontWeight: FontWeight.w900,
               ),
@@ -633,6 +637,7 @@ class BusinessProfileView extends StatelessWidget {
     required String title,
     required String iconAsset,
     required Color bgColor,
+    required bool isDark,
   }) {
     return Container(
       height: 80.h,
@@ -659,7 +664,7 @@ class BusinessProfileView extends StatelessWidget {
             child: AppText(
               title,
               style: TextStyle(
-                color: Colors.black,
+                color: isDark ? Colors.white : Colors.black,
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w800,
               ),

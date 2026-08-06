@@ -5,14 +5,9 @@ import 'package:provider/provider.dart';
 
 import '../../Api Model/theme_screen_model.dart';
 import '../../component/home_appbar.dart';
-import '../../network/provider/theme_detail_screen_provider.dart';
 import '../../network/provider/theme_screen_provider.dart';
-import '../../utils/theme/app.colors.dart';
-import '../../utils/theme/app.fonts.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
+import '../../network/provider/custom_theme_provider.dart';
 
 class ThemeDetailScreen extends StatelessWidget {
   final ThemeItem? themeItem;
@@ -41,6 +36,9 @@ class ThemeDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<CustomThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
+
     return Consumer<ThemesScreenProvider>(
       builder: (context, provider, child) {
         final String title = themeItem?.name ?? "";
@@ -48,7 +46,7 @@ class ThemeDetailView extends StatelessWidget {
             themeItem?.caption ?? "Bright ideas deserve bright branding";
         final String description =
             themeItem?.description ??
-            "Fresh, vibrant, energetic visuals for businesses that want to grab attention instantly, while keeping every single post consistent, lively, and unmistakably you.";
+                "Fresh, vibrant, energetic visuals for businesses that want to grab attention instantly, while keeping every single post consistent, lively, and unmistakably you.";
 
         final List<dynamic> tags = themeItem?.tags.isNotEmpty == true
             ? themeItem!.tags
@@ -57,11 +55,10 @@ class ThemeDetailView extends StatelessWidget {
         final List<Variant> variants = themeItem?.variants ?? [];
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(
-
               businessCategory: "Cake and Sweets",
               notificationCount: "2",
             ),
@@ -78,7 +75,7 @@ class ThemeDetailView extends StatelessWidget {
                     AppText(
                       themeItem?.name ?? "",
                       style: TextStyle(
-                        color: Colors.black,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 24.sp,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.5,
@@ -104,7 +101,7 @@ class ThemeDetailView extends StatelessWidget {
                     AppText(
                       description,
                       style: TextStyle(
-                        color: Colors.black87,
+                        color: isDark ? Colors.grey.shade300 : Colors.black87,
                         fontSize: 12.5.sp,
                         fontWeight: FontWeight.w400,
                         height: 1.4,
@@ -126,9 +123,11 @@ class ThemeDetailView extends StatelessWidget {
                             vertical: 6.h,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFF0F2),
+                            color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFF0F2),
                             borderRadius: BorderRadius.circular(20.r),
-                            border: Border.all(color: Colors.red.shade100),
+                            border: Border.all(
+                              color: isDark ? Colors.red.shade900 : Colors.red.shade100,
+                            ),
                           ),
                           child: AppText(
                             tag.toString(),
@@ -197,8 +196,10 @@ class ThemeDetailView extends StatelessWidget {
                         return Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16.r),
-                            color: Colors.grey.shade100,
-                            border: Border.all(color: Colors.grey.shade200),
+                            color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
+                            border: Border.all(
+                              color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,32 +220,29 @@ class ThemeDetailView extends StatelessWidget {
                                               arguments: variant?.uid,
                                             );
                                           },
-                                          child:
-                                              thumbnail != null &&
-                                                  thumbnail.isNotEmpty
+                                          child: thumbnail != null &&
+                                              thumbnail.isNotEmpty
                                               ? Image.network(
-                                                  thumbnail,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (_, __, ___) =>
-                                                      Container(
-                                                        color: Colors
-                                                            .grey
-                                                            .shade300,
-                                                        child: Icon(
-                                                          Icons.image_outlined,
-                                                          size: 40.sp,
-                                                          color: Colors.grey,
-                                                        ),
-                                                      ),
-                                                )
-                                              : Container(
-                                                  color: Colors.grey.shade300,
+                                            thumbnail,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                Container(
+                                                  color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade300,
                                                   child: Icon(
                                                     Icons.image_outlined,
                                                     size: 40.sp,
                                                     color: Colors.grey,
                                                   ),
                                                 ),
+                                          )
+                                              : Container(
+                                            color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade300,
+                                            child: Icon(
+                                              Icons.image_outlined,
+                                              size: 40.sp,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                       Positioned(
@@ -267,7 +265,7 @@ class ThemeDetailView extends StatelessWidget {
                                   children: [
                                     Row(
                                       mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
+                                      MainAxisAlignment.spaceBetween,
                                       children: [
                                         Expanded(
                                           child: AppText(
@@ -275,6 +273,7 @@ class ThemeDetailView extends StatelessWidget {
                                             style: TextStyle(
                                               fontSize: 11.sp,
                                               fontWeight: FontWeight.w900,
+                                              color: isDark ? Colors.white : Colors.black,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -286,7 +285,7 @@ class ThemeDetailView extends StatelessWidget {
                                             vertical: 2.h,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Colors.red.shade50,
+                                            color: isDark ? const Color(0xFF2A1A1C) : Colors.red.shade50,
                                             borderRadius: BorderRadius.circular(
                                               4.r,
                                             ),
@@ -308,7 +307,7 @@ class ThemeDetailView extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 10.sp,
                                         fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
+                                        color: isDark ? Colors.white70 : Colors.black87,
                                       ),
                                     ),
                                     SizedBox(height: 1.h),
@@ -316,7 +315,7 @@ class ThemeDetailView extends StatelessWidget {
                                       "Perfect for Cafes, Bakeries & Organic Brands.",
                                       style: TextStyle(
                                         fontSize: 9.sp,
-                                        color: Colors.grey.shade600,
+                                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -339,14 +338,14 @@ class ThemeDetailView extends StatelessWidget {
                           vertical: 4.h,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
+                          color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                         child: AppText(
                           "Also works great for",
                           style: TextStyle(
                             fontSize: 11.sp,
-                            color: Colors.grey.shade600,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -358,7 +357,7 @@ class ThemeDetailView extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20.sp,
                         fontWeight: FontWeight.w900,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                     SizedBox(height: 16.h),
@@ -369,33 +368,33 @@ class ThemeDetailView extends StatelessWidget {
                       runSpacing: 8.h,
                       alignment: WrapAlignment.center,
                       children:
-                          [
-                            "Cafe",
-                            "Juice Shop",
-                            "Organic Store",
-                            "Bakery",
-                            "Dessert Shop",
-                            "Smoothie Bar",
-                          ].map((category) {
-                            return Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.w,
-                                vertical: 10.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE53935),
-                                borderRadius: BorderRadius.circular(10.r),
-                              ),
-                              child: AppText(
-                                category,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            );
-                          }).toList(),
+                      [
+                        "Cafe",
+                        "Juice Shop",
+                        "Organic Store",
+                        "Bakery",
+                        "Dessert Shop",
+                        "Smoothie Bar",
+                      ].map((category) {
+                        return Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 10.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE53935),
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          child: AppText(
+                            category,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
 
                     SizedBox(height: 30.h),

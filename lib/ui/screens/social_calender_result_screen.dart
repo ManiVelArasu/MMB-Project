@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 
 import '../../network/provider/smcalender_form_provider.dart';
 
+import '../../network/provider/custom_theme_provider.dart';
+
 class SocialCalendarResultScreen extends StatefulWidget {
   final SocialCalendarProvider provider;
   const SocialCalendarResultScreen({super.key, required this.provider});
@@ -16,8 +18,6 @@ class SocialCalendarResultScreen extends StatefulWidget {
 
 class _SocialCalendarResultScreenState
     extends State<SocialCalendarResultScreen> {
-  bool _isCalendarGridVisible = false;
-
   @override
   void initState() {
     widget.provider.resetTemplates();
@@ -28,11 +28,13 @@ class _SocialCalendarResultScreenState
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: widget.provider,
-      child: Consumer<SocialCalendarProvider>(
-        builder: (context, provider, child) {
+      child: Consumer2<SocialCalendarProvider, CustomThemeProvider>(
+        builder: (context, provider, themeProvider, child) {
+          final isDark = themeProvider.isDarkMode;
+
           return SafeArea(
             child: Scaffold(
-              backgroundColor: Colors.white,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               appBar: const CustomAppBar(
                 title: "SM Calendar",
                 showRightIcon: false,
@@ -40,7 +42,6 @@ class _SocialCalendarResultScreenState
               body: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -51,23 +52,25 @@ class _SocialCalendarResultScreenState
                       children: [
                         Text(
                           "Your SM Calendar for the month",
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
-                            color: Colors.black,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
-                        // 🚀 Tappable Calendar Icon to toggle Grid View
+
                         GestureDetector(
                           onTap: () {
-                            setState(() {
-                              _isCalendarGridVisible = !_isCalendarGridVisible;
-                            });
+                            provider.isCalendarGridVisible =
+                                !provider.isCalendarGridVisible;
+                            provider.notifyListeners();
                           },
                           child: Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: Colors.red.shade50,
+                              color: isDark
+                                  ? const Color(0xFF2A1A1C)
+                                  : Colors.red.shade50,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Image.asset(
@@ -81,7 +84,7 @@ class _SocialCalendarResultScreenState
                     ),
                   ),
 
-                  if (_isCalendarGridVisible) ...[
+                  if (provider.isCalendarGridVisible) ...[
                     Container(
                       margin: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -89,9 +92,15 @@ class _SocialCalendarResultScreenState
                       ),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
+                        color: isDark
+                            ? const Color(0xFF1E1E1E)
+                            : Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade200,
+                        ),
                       ),
                       child: Column(
                         children: [
@@ -109,7 +118,7 @@ class _SocialCalendarResultScreenState
                             ],
                           ),
                           const SizedBox(height: 8),
-                          // Dates Grid (31 Days mock matching your screenshot)
+                          // Dates Grid
                           GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -119,26 +128,28 @@ class _SocialCalendarResultScreenState
                                   mainAxisSpacing: 6,
                                   crossAxisSpacing: 6,
                                 ),
-                            itemCount: 35, // 4 blank offsets + 31 days
+                            itemCount: 35,
                             itemBuilder: (context, index) {
                               if (index < 5) {
-                                // Empty slots for month alignment
                                 return const SizedBox.shrink();
                               }
                               int dayNum = index - 4;
-                              bool isHighlighted =
-                                  (dayNum == 1 ||
-                                  dayNum ==
-                                      8);
+                              bool isHighlighted = (dayNum == 1 || dayNum == 8);
 
                               return Container(
                                 decoration: BoxDecoration(
                                   color: isHighlighted
-                                      ? Colors.grey.shade800
-                                      : Colors.white,
+                                      ? (isDark
+                                            ? Colors.grey.shade700
+                                            : Colors.grey.shade800)
+                                      : (isDark
+                                            ? const Color(0xFF2C2C2C)
+                                            : Colors.white),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: Colors.grey.shade300,
+                                    color: isDark
+                                        ? Colors.grey.shade800
+                                        : Colors.grey.shade300,
                                   ),
                                 ),
                                 child: Center(
@@ -149,7 +160,9 @@ class _SocialCalendarResultScreenState
                                       fontWeight: FontWeight.bold,
                                       color: isHighlighted
                                           ? Colors.white
-                                          : Colors.black87,
+                                          : (isDark
+                                                ? Colors.white70
+                                                : Colors.black87),
                                     ),
                                   ),
                                 ),
@@ -160,7 +173,6 @@ class _SocialCalendarResultScreenState
                       ),
                     ),
                   ],
-
 
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -179,11 +191,15 @@ class _SocialCalendarResultScreenState
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
-                              color: isSelected ? Colors.black : Colors.grey,
+                              color: isSelected
+                                  ? (isDark ? Colors.white : Colors.black)
+                                  : Colors.grey,
                               decoration: isSelected
                                   ? TextDecoration.underline
                                   : TextDecoration.none,
-                              decorationColor: Colors.black,
+                              decorationColor: isDark
+                                  ? Colors.white
+                                  : Colors.black,
                               decorationThickness: 2,
                             ),
                           ),
@@ -191,7 +207,10 @@ class _SocialCalendarResultScreenState
                       }),
                     ),
                   ),
-                  const Divider(height: 1),
+                  Divider(
+                    height: 1,
+                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                  ),
 
                   // Generated Posts List
                   Expanded(
@@ -208,6 +227,7 @@ class _SocialCalendarResultScreenState
                               "Ever wondered what goes on beyond the workout floor?\nMeet the trainers, the early risers, the playlist makers, and the hustle behind your favorite gym. We don't just build bodies, we build energy.",
                           cta: "👉 Book a trial session today.",
                           isGenerated: provider.isTemplatesGenerated,
+                          isDark: isDark,
                         ),
                         _buildPostCard(
                           postNumber: "Post 6",
@@ -219,12 +239,13 @@ class _SocialCalendarResultScreenState
                               "Ever wondered what goes on beyond the workout floor?\nMeet the trainers, the early risers, the playlist makers, and the hustle behind your favorite gym. We don't just build bodies, we build energy.",
                           cta: "👉 Book a trial session today.",
                           isGenerated: provider.isTemplatesGenerated,
+                          isDark: isDark,
                         ),
                       ],
                     ),
                   ),
 
-                  // Bottom Action Buttons (Download / Save vs Generate Templates)
+                  // Bottom Action Buttons
                   Container(
                     padding: const EdgeInsets.all(16),
                     child: provider.isTemplatesGenerated
@@ -342,6 +363,7 @@ class _SocialCalendarResultScreenState
     required String supportText,
     required String cta,
     required bool isGenerated,
+    required bool isDark,
   }) {
     final List<String> templateImages = [
       'https://picsum.photos/300/300?1',
@@ -353,12 +375,16 @@ class _SocialCalendarResultScreenState
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade100,
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.2)
+                : Colors.grey.shade100,
             blurRadius: 5,
             spreadRadius: 2,
             offset: const Offset(0, 2),
@@ -372,9 +398,10 @@ class _SocialCalendarResultScreenState
             children: [
               Text(
                 postNumber,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
               const SizedBox(width: 8),
@@ -384,7 +411,9 @@ class _SocialCalendarResultScreenState
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFECEE),
+                  color: isDark
+                      ? const Color(0xFF2A1A1C)
+                      : const Color(0xFFFFECEE),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -401,17 +430,17 @@ class _SocialCalendarResultScreenState
           const SizedBox(height: 10),
           Text(
             "Topic: $topic",
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 13,
-              color: Colors.black87,
+              color: isDark ? Colors.white70 : Colors.black87,
             ),
           ),
           const SizedBox(height: 6),
           RichText(
             text: TextSpan(
-              style: const TextStyle(
-                color: Colors.black,
+              style: TextStyle(
+                color: isDark ? Colors.grey.shade300 : Colors.black,
                 fontSize: 12,
                 height: 1.4,
               ),
@@ -453,7 +482,11 @@ class _SocialCalendarResultScreenState
                     margin: const EdgeInsets.only(right: 10),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade300,
+                      ),
                       image: DecorationImage(
                         image: NetworkImage(templateImages[index]),
                         fit: BoxFit.cover,
@@ -464,10 +497,10 @@ class _SocialCalendarResultScreenState
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               "VIEW ALL",
               style: TextStyle(
-                color: Colors.black,
+                color: isDark ? Colors.white : Colors.black,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
@@ -479,7 +512,6 @@ class _SocialCalendarResultScreenState
   }
 }
 
-// Helper widget for day header labels in calendar grid
 class _DayHeaderLabel extends StatelessWidget {
   final String label;
   const _DayHeaderLabel(this.label);

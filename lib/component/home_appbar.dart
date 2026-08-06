@@ -5,6 +5,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../network/provider/custom_theme_provider.dart';
 
 class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String businessCategory;
@@ -22,7 +29,9 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🚀 SharedPreferences-la irundhu saved Name & Image path-ai fetch panrom
+    final themeProvider = context.watch<CustomThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
+
     return FutureBuilder<SharedPreferences>(
       future: SharedPreferences.getInstance(),
       builder: (context, snapshot) {
@@ -31,12 +40,10 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
         if (snapshot.hasData) {
           final prefs = snapshot.data!;
-          // Save aana business name-ai eduthu varrom
           String? name = prefs.getString('saved_business_name');
           if (name != null && name.isNotEmpty) {
             businessName = name;
           }
-          // Save aana image path-ai eduthu varrom
           savedImagePath = prefs.getString('saved_business_image_path');
         }
 
@@ -49,7 +56,7 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             bottom: false,
             child: Row(
               children: [
-                // 1. BUSINESS LOGO (Circular Avatar - Supports File & Asset)
+                // 1. BUSINESS LOGO
                 Container(
                   height: 48.h,
                   width: 48.w,
@@ -81,16 +88,16 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
                 SizedBox(width: 12.w),
 
-                // 2. SAVED BUSINESS NAME & CATEGORY SUBTITLE
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        businessName, // 🚀 SharedPreferences-la irundhu vantha name
+                        businessName,
                         style: TextStyle(
-                          color: Colors.black,
+                          color: isDark ? Colors.white : Colors.black,
                           fontSize: 18.sp,
                           fontWeight: FontWeight.w800,
                         ),
@@ -101,7 +108,7 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       Text(
                         businessCategory,
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                           fontSize: 13.sp,
                           fontWeight: FontWeight.w500,
                         ),
@@ -120,8 +127,8 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     height: 40.h,
                     width: 40.w,
                     padding: EdgeInsets.all(8.r),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFFFECEE),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -149,8 +156,8 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                         height: 40.h,
                         width: 40.w,
                         padding: EdgeInsets.all(8.r),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFFECEE),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
                           shape: BoxShape.circle,
                         ),
                         child: Center(

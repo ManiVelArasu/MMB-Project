@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 
 import '../../network/provider/notification_provider.dart';
 import '../../widgets/notification_section.dart';
+import '../../network/provider/custom_theme_provider.dart';
+
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -13,11 +15,12 @@ class NotificationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => NotificationProvider(),
-      child: Consumer<NotificationProvider>(
-        builder: (context, provider, child) {
-          return Scaffold(
-            backgroundColor: const Color(0xFFFFFFFF),
+      child: Consumer2<NotificationProvider, CustomThemeProvider>(
+        builder: (context, provider, themeProvider, child) {
+          final isDark = themeProvider.isDarkMode;
 
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             appBar: PreferredSize(
               preferredSize: const Size.fromHeight(72),
               child: SafeArea(
@@ -33,8 +36,8 @@ class NotificationScreen extends StatelessWidget {
                           child: Container(
                             width: 40,
                             height: 40,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFFF1F2),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFF1F2),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -51,9 +54,9 @@ class NotificationScreen extends StatelessWidget {
                             child: AppText(
                               'Notifications',
                               style: TextStyle(
-                                fontSize:20,
+                                fontSize: 20,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.black87,
+                                color: isDark ? Colors.white : Colors.black87,
                               ),
                             ),
                           ),
@@ -66,7 +69,7 @@ class NotificationScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 15.sp,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF1E3A8A),
+                              color: isDark ? Colors.blueAccent : const Color(0xFF1E3A8A),
                             ),
                           ),
                         ),
@@ -76,7 +79,6 @@ class NotificationScreen extends StatelessWidget {
                 ),
               ),
             ),
-
             body: SafeArea(
               top: false,
               child: SingleChildScrollView(

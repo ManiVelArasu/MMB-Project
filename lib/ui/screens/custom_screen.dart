@@ -9,8 +9,11 @@ import '../../network/provider/custom_screen_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
 
+import '../../network/provider/custom_theme_provider.dart';
+
 class CustomCreateScreen extends StatelessWidget {
   const CustomCreateScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -22,33 +25,43 @@ class CustomCreateScreen extends StatelessWidget {
 
 class _CustomCreateBody extends StatelessWidget {
   const _CustomCreateBody();
+
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
+    final themeProvider = context.watch<CustomThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
 
     return Consumer<CustomScreenProvider>(
       builder: (context, provider, child) {
         if (provider.isLoadingPlans) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
         if (provider.plansErrorMessage != null) {
           return Scaffold(
-            body: Center(child: Text(provider.plansErrorMessage!)),
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: Center(
+              child: Text(
+                provider.plansErrorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              ),
+            ),
           );
         }
         final templateSizes = provider.plansData?.data ?? [];
+
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
-            child: HomeCustomAppBar(
+            child: const HomeCustomAppBar(
               businessCategory: "Cake and Sweets",
               notificationCount: "2",
             ),
           ),
-
           body: SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
@@ -73,6 +86,7 @@ class _CustomCreateBody extends StatelessWidget {
                     _buildHeader(
                       title: "Create your Own",
                       iconAsset: "assets/images/myspace.png",
+                      isDark: isDark,
                     ),
 
                     SizedBox(height: 16.h),
@@ -93,7 +107,6 @@ class _CustomCreateBody extends StatelessWidget {
                             margin: EdgeInsets.only(right: 12.w),
                             child: Column(
                               children: [
-
                                 /// Fixed Preview Area
                                 SizedBox(
                                   height: 130.h,
@@ -116,6 +129,7 @@ class _CustomCreateBody extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 11.sp,
                                     fontWeight: FontWeight.w700,
+                                    color: isDark ? Colors.white : Colors.black,
                                   ),
                                 ),
 
@@ -141,6 +155,7 @@ class _CustomCreateBody extends StatelessWidget {
                     _buildHeader(
                       title: "Generate with AI",
                       iconAsset: "assets/images/special_days.png",
+                      isDark: isDark,
                     ),
 
                     SizedBox(height: 16.h),
@@ -153,8 +168,7 @@ class _CustomCreateBody extends StatelessWidget {
                         crossAxisCount: 2,
                         crossAxisSpacing: 12.w,
                         mainAxisSpacing: 12.h,
-                        childAspectRatio:
-                            0.82,
+                        childAspectRatio: 0.82,
                       ),
                       itemBuilder: (context, index) {
                         final tool = provider.aiToolsList[index];
@@ -162,15 +176,15 @@ class _CustomCreateBody extends StatelessWidget {
                         return Container(
                           padding: EdgeInsets.all(12.r),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                             borderRadius: BorderRadius.circular(16.r),
                             border: Border.all(
-                              color: const Color(0xFFE8EEF5),
+                              color: isDark ? Colors.grey.shade800 : const Color(0xFFE8EEF5),
                               width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.02),
+                                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
                                 blurRadius: 8.r,
                                 offset: Offset(0, 2.h),
                               ),
@@ -184,12 +198,11 @@ class _CustomCreateBody extends StatelessWidget {
                                 width: 52.w,
                                 child: tool.imagePath.trim().isNotEmpty
                                     ? Image.asset(
-                                        tool.imagePath,
-                                        fit: BoxFit.contain,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                _buildFallbackIcon(),
-                                      )
+                                  tool.imagePath,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      _buildFallbackIcon(),
+                                )
                                     : _buildFallbackIcon(),
                               ),
 
@@ -200,7 +213,7 @@ class _CustomCreateBody extends StatelessWidget {
                                 tool.title,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: Colors.black,
+                                  color: isDark ? Colors.white : Colors.black,
                                   fontSize: 13.sp,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -215,7 +228,7 @@ class _CustomCreateBody extends StatelessWidget {
                                 tool.subtitle,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                                   fontSize: 9.5.sp,
                                   fontWeight: FontWeight.w500,
                                   height: 1.2,
@@ -229,7 +242,6 @@ class _CustomCreateBody extends StatelessWidget {
                       },
                     ),
 
-                    // Helper Widget for Empty / Error Images
                     SizedBox(height: 20.h),
                   ],
                 ),
@@ -240,25 +252,23 @@ class _CustomCreateBody extends StatelessWidget {
       },
     );
   }
+
   double getImageHeight(int width, int height) {
     if (width == 1080 && height == 1080) {
       return 70;
     }
-
     if (width == 1080 && height == 1440) {
       return 95;
     }
-
     if (width == 1080 && height == 1920) {
       return 120;
     }
-
     if (width == 1080 && height == 566) {
       return 45;
     }
-
     return 80;
   }
+
   String buildTemplateImage(int width, int height) {
     if (width == 1080 && height == 1080) {
       return "assets/images/post_566.png";
@@ -287,7 +297,7 @@ class _CustomCreateBody extends StatelessWidget {
   }
 
   // Section Header Helper
-  Widget _buildHeader({required String title, required String iconAsset}) {
+  Widget _buildHeader({required String title, required String iconAsset, required bool isDark}) {
     return Row(
       children: [
         Image.asset(
@@ -312,7 +322,7 @@ class _CustomCreateBody extends StatelessWidget {
         AppText(
           title,
           style: TextStyle(
-            color: AppColors.darkBlack,
+            color: isDark ? Colors.white : AppColors.darkBlack,
             fontSize: AppFontSize.fontSize18,
             fontWeight: FontWeight.w800,
           ),

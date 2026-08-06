@@ -12,10 +12,9 @@ import 'package:project_mmb/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:project_mmb/network/provider/business_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../Api Model/templatecategories.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/home_appbar.dart';
+import '../../network/provider/custom_theme_provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -23,8 +22,9 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
-
     final businessProvider = context.watch<BusinessProvider>();
+    final themeProvider = context.watch<CustomThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
 
     return ChangeNotifierProvider(
       create: (_) => HomeScreenProvider(),
@@ -32,17 +32,15 @@ class HomeScreen extends StatelessWidget {
         builder: (context, homeScreenProvider, child) {
           if (homeScreenProvider.templateCategories.isEmpty) {
             return Scaffold(
-              backgroundColor: Colors.white,
-              body: Center(
-                child: CircularProgressIndicator(
-                  color: const Color(0xFFE53935),
-                ),
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              body: const Center(
+                child: CircularProgressIndicator(color: Color(0xFFE53935)),
               ),
             );
           }
           return Scaffold(
-            backgroundColor: Colors.white,
-            appBar: HomeCustomAppBar(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            appBar: const HomeCustomAppBar(
               businessCategory: "Cake and Sweets",
               notificationCount: "2",
             ),
@@ -71,9 +69,10 @@ class HomeScreen extends StatelessWidget {
                         title: "My Space",
                         iconAsset: "assets/images/myspace.png",
                         hasViewAll: true,
+                        isDark: isDark,
                       ),
                       SizedBox(height: 12.h),
-                      _buildMySpaceList(homeScreenProvider),
+                      _buildMySpaceList(homeScreenProvider, isDark),
 
                       SizedBox(height: 20.h),
 
@@ -88,7 +87,9 @@ class HomeScreen extends StatelessWidget {
                           AppText(
                             "Special Days",
                             style: TextStyle(
-                              color: AppColors.darkBlack,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.darkBlack,
                               fontSize: AppFontSize.fontSize18,
                               fontWeight: FontWeight.w800,
                             ),
@@ -102,7 +103,7 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                       SizedBox(height: 12.h),
-                      _buildSpecialDaysList(homeScreenProvider),
+                      _buildSpecialDaysList(homeScreenProvider, isDark),
 
                       SizedBox(height: 20.h),
 
@@ -110,16 +111,17 @@ class HomeScreen extends StatelessWidget {
                       _buildSectionHeader(
                         title: "My Zone",
                         iconAsset: "assets/images/my_zone.png",
+                        isDark: isDark,
                       ),
                       SizedBox(height: 12.h),
-                      _buildMyZoneSlider(homeScreenProvider),
+                      _buildMyZoneSlider(homeScreenProvider, isDark),
 
                       SizedBox(height: 24.h),
 
-                      _buildMyFrameHeader(),
+                      _buildMyFrameHeader(isDark),
 
                       SizedBox(height: 16.h),
-                      _buildLeadBannerSlider(homeScreenProvider),
+                      _buildLeadBannerSlider(homeScreenProvider, isDark),
 
                       SizedBox(height: 20.h),
 
@@ -127,6 +129,7 @@ class HomeScreen extends StatelessWidget {
                         title: "My Brand Posts",
                         iconAsset: "assets/images/my_brand_posts.png",
                         hasViewAll: true,
+                        isDark: isDark,
                       ),
                       SizedBox(height: 12.h),
 
@@ -152,12 +155,16 @@ class HomeScreen extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? const Color(0xFF555555)
-                                      : Colors.white,
+                                      : (isDark
+                                            ? const Color(0xFF1E1E1E)
+                                            : Colors.white),
                                   borderRadius: BorderRadius.circular(30.r),
                                   border: Border.all(
                                     color: isSelected
                                         ? Colors.transparent
-                                        : Colors.grey.shade400,
+                                        : (isDark
+                                              ? Colors.grey.shade700
+                                              : Colors.grey.shade400),
                                     width: 1.5,
                                   ),
                                 ),
@@ -167,7 +174,9 @@ class HomeScreen extends StatelessWidget {
                                     style: TextStyle(
                                       color: isSelected
                                           ? Colors.white
-                                          : Colors.grey.shade800,
+                                          : (isDark
+                                                ? Colors.white70
+                                                : Colors.grey.shade800),
                                       fontSize: 14.sp,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -187,13 +196,12 @@ class HomeScreen extends StatelessWidget {
                         itemCount:
                             homeScreenProvider.brandVideoPostsList.isNotEmpty
                             ? homeScreenProvider.brandVideoPostsList.length
-                            : 4, // Fallback count
+                            : 4,
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 12.w,
                           mainAxisSpacing: 12.h,
-                          childAspectRatio:
-                              1.0, // Square cards matching screenshot
+                          childAspectRatio: 1.0,
                         ),
                         itemBuilder: (context, index) {
                           return InkWell(
@@ -206,9 +214,13 @@ class HomeScreen extends StatelessWidget {
                             child: Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(20.r),
-                                color: Colors.grey.shade100,
+                                color: isDark
+                                    ? const Color(0xFF1E1E1E)
+                                    : Colors.grey.shade100,
                                 border: Border.all(
-                                  color: Colors.grey.shade300,
+                                  color: isDark
+                                      ? Colors.grey.shade800
+                                      : Colors.grey.shade300,
                                   width: 1.2,
                                 ),
                               ),
@@ -216,13 +228,14 @@ class HomeScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(20.r),
                                 child: Stack(
                                   children: [
-                                    // 🚀 Background Image / Thumbnail
                                     Positioned.fill(
                                       child: Image.asset(
                                         "assets/images/thumbnail1.png",
                                         fit: BoxFit.cover,
                                         errorBuilder: (_, __, ___) => Container(
-                                          color: Colors.grey.shade200,
+                                          color: isDark
+                                              ? const Color(0xFF2C2C2C)
+                                              : Colors.grey.shade200,
                                           child: Icon(
                                             Icons.image_outlined,
                                             size: 40.sp,
@@ -231,8 +244,6 @@ class HomeScreen extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-
-                                    // 🚀 Top-Left Crown Icon
                                     Positioned(
                                       top: 10.h,
                                       left: 10.w,
@@ -251,8 +262,6 @@ class HomeScreen extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-
-                                    // 🚀 Top-Right More/Options Icon (3 dots)
                                     Positioned(
                                       top: 10.h,
                                       right: 10.w,
@@ -285,6 +294,7 @@ class HomeScreen extends StatelessWidget {
                         title: "My Brand Video Posts",
                         iconAsset: "assets/images/my_brand_posts.png",
                         hasViewAll: true,
+                        isDark: isDark,
                       ),
 
                       SizedBox(height: 12.h),
@@ -311,12 +321,16 @@ class HomeScreen extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? const Color(0xFF555555)
-                                      : Colors.white,
+                                      : (isDark
+                                            ? const Color(0xFF1E1E1E)
+                                            : Colors.white),
                                   borderRadius: BorderRadius.circular(20.r),
                                   border: Border.all(
                                     color: isSelected
                                         ? Colors.transparent
-                                        : Colors.grey.shade400,
+                                        : (isDark
+                                              ? Colors.grey.shade700
+                                              : Colors.grey.shade400),
                                     width: 1.2,
                                   ),
                                 ),
@@ -326,7 +340,9 @@ class HomeScreen extends StatelessWidget {
                                     style: TextStyle(
                                       color: isSelected
                                           ? Colors.white
-                                          : Colors.grey.shade800,
+                                          : (isDark
+                                                ? Colors.white70
+                                                : Colors.grey.shade800),
                                       fontSize: 12.sp,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -369,9 +385,10 @@ class HomeScreen extends StatelessWidget {
                           iconAsset:
                               "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[0].iconS3Key ?? ''}",
                           hasViewAll: true,
+                          isDark: isDark,
                         ),
                         SizedBox(height: 12.h),
-                        _buildMyCelebrateList(homeScreenProvider),
+                        _buildMyCelebrateList(homeScreenProvider, isDark),
                       ],
 
                       if (homeScreenProvider.templateCategories.length > 1) ...[
@@ -383,9 +400,10 @@ class HomeScreen extends StatelessWidget {
                           iconAsset:
                               "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[1].iconS3Key ?? ''}",
                           hasViewAll: true,
+                          isDark: isDark,
                         ),
                         SizedBox(height: 12.h),
-                        _buildYoutubePostsGrid(),
+                        _buildYoutubePostsGrid(isDark),
                       ],
 
                       if (homeScreenProvider.templateCategories.length > 2) ...[
@@ -397,6 +415,7 @@ class HomeScreen extends StatelessWidget {
                           iconAsset:
                               "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[2].iconS3Key ?? ''}",
                           hasViewAll: true,
+                          isDark: isDark,
                         ),
                         SizedBox(height: 12.h),
                         SizedBox(
@@ -414,7 +433,9 @@ class HomeScreen extends StatelessWidget {
                                 margin: EdgeInsets.only(right: 12.w),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16.r),
-                                  color: Colors.grey.shade200,
+                                  color: isDark
+                                      ? const Color(0xFF1E1E1E)
+                                      : Colors.grey.shade200,
                                 ),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(16.r),
@@ -425,7 +446,9 @@ class HomeScreen extends StatelessWidget {
                                           item["image"],
                                           fit: BoxFit.cover,
                                           errorBuilder: (_, _, _) => Container(
-                                            color: Colors.grey.shade300,
+                                            color: isDark
+                                                ? const Color(0xFF2C2C2C)
+                                                : Colors.grey.shade300,
                                             child: Icon(
                                               Icons.image,
                                               size: 30.sp,
@@ -471,6 +494,7 @@ class HomeScreen extends StatelessWidget {
                           iconAsset:
                               "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[3].iconS3Key ?? ''}",
                           hasViewAll: true,
+                          isDark: isDark,
                         ),
                         SizedBox(height: 12.h),
                         SizedBox(
@@ -487,9 +511,13 @@ class HomeScreen extends StatelessWidget {
                                 margin: EdgeInsets.only(right: 12.w),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16.r),
-                                  color: Colors.white,
+                                  color: isDark
+                                      ? const Color(0xFF1E1E1E)
+                                      : Colors.white,
                                   border: Border.all(
-                                    color: Colors.grey.shade200,
+                                    color: isDark
+                                        ? Colors.grey.shade800
+                                        : Colors.grey.shade200,
                                     width: 1.2,
                                   ),
                                   boxShadow: [
@@ -514,7 +542,9 @@ class HomeScreen extends StatelessWidget {
                                           width: double.infinity,
                                           fit: BoxFit.cover,
                                           errorBuilder: (_, _, _) => Container(
-                                            color: Colors.grey.shade200,
+                                            color: isDark
+                                                ? const Color(0xFF2C2C2C)
+                                                : Colors.grey.shade200,
                                             child: Icon(
                                               Icons.auto_awesome,
                                               size: 30.sp,
@@ -531,7 +561,9 @@ class HomeScreen extends StatelessWidget {
                                         horizontal: 4.w,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
+                                        color: isDark
+                                            ? const Color(0xFF1E1E1E)
+                                            : Colors.white,
                                         borderRadius: BorderRadius.vertical(
                                           bottom: Radius.circular(15.r),
                                         ),
@@ -540,7 +572,9 @@ class HomeScreen extends StatelessWidget {
                                         item["title"] ?? "",
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
-                                          color: Colors.black,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black,
                                           fontSize: 10.sp,
                                           fontWeight: FontWeight.w900,
                                           height: 1.1,
@@ -564,6 +598,7 @@ class HomeScreen extends StatelessWidget {
                           iconAsset:
                               "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[4].iconS3Key ?? ''}",
                           hasViewAll: true,
+                          isDark: isDark,
                         ),
                         SizedBox(height: 12.h),
                         SizedBox(
@@ -584,7 +619,9 @@ class HomeScreen extends StatelessWidget {
                                         .corporateNeedsList[index],
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, _, _) => Container(
-                                      color: Colors.grey.shade200,
+                                      color: isDark
+                                          ? const Color(0xFF2C2C2C)
+                                          : Colors.grey.shade200,
                                       child: Icon(
                                         Icons.business_center,
                                         size: 30.sp,
@@ -614,6 +651,7 @@ class HomeScreen extends StatelessWidget {
     required String title,
     required String iconAsset,
     bool hasViewAll = false,
+    required bool isDark,
   }) {
     return Row(
       children: [
@@ -624,8 +662,8 @@ class HomeScreen extends StatelessWidget {
           errorBuilder: (_, _, _) => Container(
             height: 32.h,
             width: 32.w,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFECEE),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -639,7 +677,7 @@ class HomeScreen extends StatelessWidget {
         AppText(
           title,
           style: TextStyle(
-            color: AppColors.darkBlack,
+            color: isDark ? Colors.white : AppColors.darkBlack,
             fontSize: AppFontSize.fontSize18,
             fontWeight: FontWeight.w800,
           ),
@@ -649,7 +687,7 @@ class HomeScreen extends StatelessWidget {
           Text(
             "VIEW ALL",
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               fontSize: 12.sp,
               fontWeight: FontWeight.w700,
             ),
@@ -658,7 +696,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMySpaceList(HomeScreenProvider homeScreenProvider) {
+  Widget _buildMySpaceList(HomeScreenProvider homeScreenProvider, bool isDark) {
     return SizedBox(
       height: 90.h,
       child: ListView.builder(
@@ -675,7 +713,9 @@ class HomeScreen extends StatelessWidget {
               gradient: LinearGradient(
                 colors: item.gradientColors.isNotEmpty
                     ? item.gradientColors
-                    : [Colors.white, Colors.grey.shade200],
+                    : (isDark
+                          ? [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)]
+                          : [Colors.white, Colors.grey.shade200]),
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -695,7 +735,7 @@ class HomeScreen extends StatelessWidget {
                   item.title,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.black,
+                    color: isDark ? Colors.white : Colors.black,
                     fontSize: 10.sp,
                     fontWeight: FontWeight.w900,
                     height: 1.1,
@@ -710,7 +750,10 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSpecialDaysList(HomeScreenProvider homeScreenProvider) {
+  Widget _buildSpecialDaysList(
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+  ) {
     return SizedBox(
       height: 160.h,
       child: ListView.builder(
@@ -724,7 +767,7 @@ class HomeScreen extends StatelessWidget {
             margin: EdgeInsets.only(right: 12.w),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16.r),
-              color: Colors.grey.shade100,
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16.r),
@@ -732,10 +775,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Positioned.fill(
                     child: InkWell(
-                      onTap: () async {
-                        /*final file = await assetToFile(item["icon"]!);
-                        await openEditor(context, file);*/
-                      },
+                      onTap: () async {},
                       child: Image.asset(item["icon"]!, fit: BoxFit.cover),
                     ),
                   ),
@@ -770,7 +810,10 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMyZoneSlider(HomeScreenProvider homeScreenProvider) {
+  Widget _buildMyZoneSlider(
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+  ) {
     return FutureBuilder<SharedPreferences>(
       future: SharedPreferences.getInstance(),
       builder: (context, snapshot) {
@@ -795,11 +838,12 @@ class HomeScreen extends StatelessWidget {
                     margin: EdgeInsets.symmetric(horizontal: 25.w),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16.r),
-                      color: Colors.grey.shade100,
+                      color: isDark
+                          ? const Color(0xFF1E1E1E)
+                          : Colors.grey.shade100,
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16.r),
-                      // 🚀 SharedPreferences-la save aana image path iruntha athai direct-ah file-ah load panrom
                       child: savedImagePath != null && savedImagePath.isNotEmpty
                           ? Image.file(
                               File(savedImagePath),
@@ -813,7 +857,9 @@ class HomeScreen extends StatelessWidget {
                               width: double.infinity,
                               height: double.infinity,
                               errorBuilder: (_, __, ___) => Container(
-                                color: Colors.grey.shade200,
+                                color: isDark
+                                    ? const Color(0xFF2C2C2C)
+                                    : Colors.grey.shade200,
                                 child: Icon(
                                   Icons.image_outlined,
                                   size: 50.sp,
@@ -841,7 +887,9 @@ class HomeScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: homeScreenProvider.currentZoneIndex == index
                         ? const Color(0xFFE53935)
-                        : Colors.grey.shade300,
+                        : (isDark
+                              ? Colors.grey.shade700
+                              : Colors.grey.shade300),
                     borderRadius: BorderRadius.circular(10.r),
                   ),
                 ),
@@ -853,13 +901,13 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMyFrameHeader() {
+  Widget _buildMyFrameHeader(bool isDark) {
     return Row(
       children: [
         Text(
           "MY FRAME - 1",
           style: TextStyle(
-            color: AppColors.darkBlack,
+            color: isDark ? Colors.white : AppColors.darkBlack,
             fontSize: 18.sp,
             fontWeight: FontWeight.w800,
           ),
@@ -867,8 +915,8 @@ class HomeScreen extends StatelessWidget {
         SizedBox(width: 6.w),
         Container(
           padding: EdgeInsets.all(4.r),
-          decoration: const BoxDecoration(
-            color: Color(0xFFFFECEE),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -880,8 +928,8 @@ class HomeScreen extends StatelessWidget {
         const Spacer(),
         Container(
           padding: EdgeInsets.all(8.r),
-          decoration: const BoxDecoration(
-            color: Color(0xFFFFECEE),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -893,8 +941,8 @@ class HomeScreen extends StatelessWidget {
         SizedBox(width: 8.w),
         Container(
           padding: EdgeInsets.all(8.r),
-          decoration: const BoxDecoration(
-            color: Color(0xFFFFECEE),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -907,7 +955,10 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLeadBannerSlider(HomeScreenProvider homeScreenProvider) {
+  Widget _buildLeadBannerSlider(
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+  ) {
     return Column(
       children: [
         SizedBox(
@@ -922,7 +973,9 @@ class HomeScreen extends StatelessWidget {
               return Container(
                 padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3EFEF),
+                  color: isDark
+                      ? const Color(0xFF1E1E2C)
+                      : const Color(0xFFF3EFEF),
                   borderRadius: BorderRadius.circular(16.r),
                 ),
                 child: Column(
@@ -932,7 +985,9 @@ class HomeScreen extends StatelessWidget {
                     Text(
                       banner["title"]!,
                       style: TextStyle(
-                        color: const Color(0xFF7C4DFF),
+                        color: isDark
+                            ? const Color(0xFF9FA8DA)
+                            : const Color(0xFF7C4DFF),
                         fontSize: 20.sp,
                         fontWeight: FontWeight.w900,
                       ),
@@ -940,7 +995,10 @@ class HomeScreen extends StatelessWidget {
                     SizedBox(height: 6.h),
                     Text(
                       banner["subTitle"]!,
-                      style: TextStyle(color: Colors.black87, fontSize: 12.sp),
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black87,
+                        fontSize: 12.sp,
+                      ),
                     ),
                     SizedBox(height: 5.h),
                     ElevatedButton(
@@ -980,8 +1038,8 @@ class HomeScreen extends StatelessWidget {
                   : 6.w,
               decoration: BoxDecoration(
                 color: homeScreenProvider.currentLeadBannerIndex == index
-                    ? const Color(0xFF2C3860)
-                    : Colors.grey.shade300,
+                    ? (isDark ? Colors.blueAccent : const Color(0xFF2C3860))
+                    : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                 borderRadius: BorderRadius.circular(10.r),
               ),
             ),
@@ -991,156 +1049,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Dynamic Category Filter Chips Widget
-  Widget _buildCategoryChips(HomeScreenProvider homeScreenProvider) {
-    if (homeScreenProvider.isLoadingCategories) {
-      return SizedBox(
-        height: 38.h,
-        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      );
-    }
-
-    final categories = homeScreenProvider.templateCategories;
-
-    if (categories.isEmpty) {
-      return Text(
-        "No categories found",
-        style: TextStyle(color: Colors.grey, fontSize: 12.sp),
-      );
-    }
-
-    return SizedBox(
-      height: 38.h,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        physics: const BouncingScrollPhysics(),
-        itemBuilder: (context, index) {
-          final TemplateCategories item = categories[index];
-          bool isSelected = homeScreenProvider.selectedCategoryIndex == index;
-
-          return GestureDetector(
-            onTap: () {
-              homeScreenProvider.onCategorySelected(index);
-            },
-            child: Container(
-              margin: EdgeInsets.only(right: 10.w),
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF555555) : Colors.white,
-                borderRadius: BorderRadius.circular(20.r),
-                border: Border.all(
-                  color: isSelected ? Colors.transparent : Colors.grey.shade400,
-                  width: 1.2,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  item.name ?? "",
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey.shade800,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // Dynamic Images Grid Widget
-  Widget _buildBrandPostsGrid(HomeScreenProvider homeScreenProvider) {
-    if (homeScreenProvider.isLoadingPosts ||
-        homeScreenProvider.isLoadingCategories) {
-      return SizedBox(
-        height: 150.h,
-        child: const Center(child: CircularProgressIndicator()),
-      );
-    }
-    final categories = homeScreenProvider.templateCategories;
-
-    if (categories.isEmpty) {
-      return SizedBox(
-        height: 100.h,
-        child: Center(
-          child: Text(
-            "No post images found",
-            style: TextStyle(color: Colors.grey, fontSize: 12.sp),
-          ),
-        ),
-      );
-    }
-    const String s3BaseUrl = "https://your-s3-bucket-url.amazonaws.com/";
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: categories.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12.w,
-        mainAxisSpacing: 12.h,
-        childAspectRatio: 1.0,
-      ),
-      itemBuilder: (context, index) {
-        final post = categories[index];
-
-        final String? rawKey = post.thumbnailS3Key ?? post.iconS3Key;
-
-        final String fullImageUrl = (rawKey != null && rawKey.isNotEmpty)
-            ? (rawKey.startsWith("http") ? rawKey : "$s3BaseUrl$rawKey")
-            : "";
-
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16.r),
-            color: Colors.grey.shade200,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16.r),
-            child: fullImageUrl.isNotEmpty
-                ? Image.network(
-                    fullImageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                      color: Colors.grey.shade200,
-                      child: Icon(
-                        Icons.image_not_supported_rounded,
-                        color: Colors.grey.shade400,
-                        size: 32.sp,
-                      ),
-                    ),
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                              : null,
-                        ),
-                      );
-                    },
-                  )
-                : Container(
-                    color: Colors.grey.shade200,
-                    child: Icon(
-                      Icons.image_outlined,
-                      color: Colors.grey.shade400,
-                      size: 32.sp,
-                    ),
-                  ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildYoutubePostsGrid() {
+  Widget _buildYoutubePostsGrid(bool isDark) {
     return SizedBox(
       height: 180.h,
       child: GridView.builder(
@@ -1157,7 +1066,7 @@ class HomeScreen extends StatelessWidget {
           return Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16.r),
-              color: Colors.grey.shade200,
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade200,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.04),
@@ -1172,7 +1081,9 @@ class HomeScreen extends StatelessWidget {
                 "assets/images/thumbnail1.png",
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey.shade200,
+                  color: isDark
+                      ? const Color(0xFF2C2C2C)
+                      : Colors.grey.shade200,
                   child: Icon(
                     Icons.smart_display_rounded,
                     size: 40.sp,
@@ -1187,7 +1098,10 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMyCelebrateList(HomeScreenProvider homeScreenProvider) {
+  Widget _buildMyCelebrateList(
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+  ) {
     return SizedBox(
       height: 90.h,
       child: ListView.builder(
@@ -1204,7 +1118,9 @@ class HomeScreen extends StatelessWidget {
               gradient: LinearGradient(
                 colors: item.gradientColors.isNotEmpty
                     ? item.gradientColors
-                    : [Colors.white, Colors.grey.shade200],
+                    : (isDark
+                          ? [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)]
+                          : [Colors.white, Colors.grey.shade200]),
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -1224,7 +1140,7 @@ class HomeScreen extends StatelessWidget {
                   item.title,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.black,
+                    color: isDark ? Colors.white : Colors.black,
                     fontSize: 10.sp,
                     fontWeight: FontWeight.w900,
                     height: 1.1,

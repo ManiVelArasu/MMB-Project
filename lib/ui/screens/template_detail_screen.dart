@@ -1,16 +1,14 @@
 import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:project_mmb/network/provider/business_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../network/provider/businessprofile_provider.dart';
 import '../../network/provider/template_detail_provider.dart';
 import '../../utils/theme/app.colors.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../../network/provider/custom_theme_provider.dart';
+
 
 class TemplateDetailScreen extends StatelessWidget {
   const TemplateDetailScreen({super.key});
@@ -30,35 +28,43 @@ class _TemplateDetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TemplateDetailProvider>();
+    final themeProvider = context.watch<CustomThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           "Brownies",
           style: TextStyle(
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
             fontSize: 18.sp,
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           IconButton(
-            icon: SvgPicture.asset("assets/icons/translate.svg"),
+            icon: SvgPicture.asset(
+              "assets/icons/translate.svg",
+              colorFilter: ColorFilter.mode(
+                isDark ? Colors.white70 : Colors.black87,
+                BlendMode.srcIn,
+              ),
+            ),
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.black),
+            icon: Icon(Icons.search, color: isDark ? Colors.white : Colors.black),
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.download, color: Colors.black),
+            icon: Icon(Icons.download, color: isDark ? Colors.white : Colors.black),
             onPressed: () {},
           ),
         ],
@@ -73,7 +79,7 @@ class _TemplateDetailBody extends StatelessWidget {
                 child: Column(
                   children: [
                     SizedBox(height: 10.h),
-                    _buildTopBanner(context, provider.selectedResizeSize),
+                    _buildTopBanner(context, provider.selectedResizeSize, isDark),
 
                     SizedBox(height: 12.h),
 
@@ -92,12 +98,12 @@ class _TemplateDetailBody extends StatelessWidget {
                         SizedBox(width: 6.w),
                         ...List.generate(
                           3,
-                          (index) => Container(
+                              (index) => Container(
                             margin: EdgeInsets.symmetric(horizontal: 3.w),
                             width: 6.w,
                             height: 6.h,
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
+                              color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -110,12 +116,9 @@ class _TemplateDetailBody extends StatelessWidget {
                     // Resize & Edit Action Buttons Row
                     Row(
                       children: [
-                        // RESIZE Button onTap
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () => showResizeBottomSheet(
-                              context,
-                            ), // 🚀 Call Bottom Sheet here
+                            onPressed: () => showResizeBottomSheet(context, isDark),
                             icon: const Icon(
                               Icons.aspect_ratio,
                               color: Colors.red,
@@ -130,7 +133,7 @@ class _TemplateDetailBody extends StatelessWidget {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFECEE),
+                              backgroundColor: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12.r),
@@ -163,7 +166,7 @@ class _TemplateDetailBody extends StatelessWidget {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFECEE),
+                              backgroundColor: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12.r),
@@ -177,8 +180,8 @@ class _TemplateDetailBody extends StatelessWidget {
 
                     SizedBox(height: 16.h),
 
-                    // 2. 🚀 DYNAMIC BOTTOM LIST / GRID BUILDER (Changes based on selection)
-                    _buildDynamicBottomContent(provider.selectedIndex),
+                    // 2. DYNAMIC BOTTOM CONTENT
+                    _buildDynamicBottomContent(provider.selectedIndex, isDark),
 
                     SizedBox(height: 20.h),
                   ],
@@ -190,16 +193,14 @@ class _TemplateDetailBody extends StatelessWidget {
             Container(
               padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
               decoration: BoxDecoration(
-                color: Colors.black,
+                color: isDark ? const Color(0xFF1A1A1A) : Colors.black,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   InkWell(
-                    onTap: () => context
-                        .read<TemplateDetailProvider>()
-                        .setSelectedIndex(0),
+                    onTap: () => context.read<TemplateDetailProvider>().setSelectedIndex(0),
                     child: _buildBottomNavItem(
                       Icons.image,
                       "IMAGE",
@@ -207,9 +208,7 @@ class _TemplateDetailBody extends StatelessWidget {
                     ),
                   ),
                   InkWell(
-                    onTap: () => context
-                        .read<TemplateDetailProvider>()
-                        .setSelectedIndex(1),
+                    onTap: () => context.read<TemplateDetailProvider>().setSelectedIndex(1),
                     child: _buildBottomNavItem(
                       Icons.videocam,
                       "VIDEO",
@@ -217,9 +216,7 @@ class _TemplateDetailBody extends StatelessWidget {
                     ),
                   ),
                   InkWell(
-                    onTap: () => context
-                        .read<TemplateDetailProvider>()
-                        .setSelectedIndex(2),
+                    onTap: () => context.read<TemplateDetailProvider>().setSelectedIndex(2),
                     child: _buildBottomNavItem(
                       Icons.aspect_ratio,
                       "POST SIZE",
@@ -228,10 +225,8 @@ class _TemplateDetailBody extends StatelessWidget {
                   ),
                   InkWell(
                     onTap: () {
-                      context.read<TemplateDetailProvider>().setSelectedIndex(
-                        3,
-                      );
-                      showCategoriesBottomSheet(context);
+                      context.read<TemplateDetailProvider>().setSelectedIndex(3);
+                      showCategoriesBottomSheet(context, isDark);
                     },
                     child: _buildBottomNavItem(
                       Icons.category,
@@ -248,10 +243,8 @@ class _TemplateDetailBody extends StatelessWidget {
     );
   }
 
-  // 🚀 Switcher function that changes ONLY the bottom list based on click
-  Widget _buildDynamicBottomContent(int selectedIndex) {
+  Widget _buildDynamicBottomContent(int selectedIndex, bool isDark) {
     if (selectedIndex == 0) {
-      // IMAGE LIST (Only Image Templates)
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -260,7 +253,7 @@ class _TemplateDetailBody extends StatelessWidget {
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+              color: isDark ? Colors.grey.shade400 : Colors.grey[800],
             ),
           ),
           SizedBox(height: 10.h),
@@ -277,16 +270,16 @@ class _TemplateDetailBody extends StatelessWidget {
             itemBuilder: (context, index) {
               return Container(
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: isDark ? const Color(0xFF1B2A38) : Colors.blue.shade50,
                   borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(color: Colors.blue.shade200),
+                  border: Border.all(color: isDark ? Colors.blue.shade900 : Colors.blue.shade200),
                 ),
                 child: Center(
                   child: Text(
                     "Image Post ${index + 1}",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade800,
+                      color: isDark ? Colors.blue.shade200 : Colors.blue.shade800,
                     ),
                   ),
                 ),
@@ -296,7 +289,6 @@ class _TemplateDetailBody extends StatelessWidget {
         ],
       );
     } else if (selectedIndex == 1) {
-      // VIDEO LIST (Only Video Templates)
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -305,7 +297,7 @@ class _TemplateDetailBody extends StatelessWidget {
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+              color: isDark ? Colors.grey.shade400 : Colors.grey[800],
             ),
           ),
           SizedBox(height: 10.h),
@@ -322,9 +314,9 @@ class _TemplateDetailBody extends StatelessWidget {
             itemBuilder: (context, index) {
               return Container(
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
+                  color: isDark ? const Color(0xFF2A1A1C) : Colors.red.shade50,
                   borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(color: Colors.red.shade200),
+                  border: Border.all(color: isDark ? Colors.red.shade900 : Colors.red.shade200),
                 ),
                 child: Center(
                   child: Row(
@@ -335,7 +327,7 @@ class _TemplateDetailBody extends StatelessWidget {
                         "Video ${index + 1}",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.red.shade800,
+                          color: isDark ? Colors.red.shade200 : Colors.red.shade800,
                         ),
                       ),
                     ],
@@ -347,7 +339,6 @@ class _TemplateDetailBody extends StatelessWidget {
         ],
       );
     } else {
-      // POST SIZE LIST (Image + Video combination list items)
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -356,7 +347,7 @@ class _TemplateDetailBody extends StatelessWidget {
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+              color: isDark ? Colors.grey.shade400 : Colors.grey[800],
             ),
           ),
           SizedBox(height: 10.h),
@@ -375,13 +366,13 @@ class _TemplateDetailBody extends StatelessWidget {
               return Container(
                 decoration: BoxDecoration(
                   color: isVideo
-                      ? Colors.purple.shade50
-                      : Colors.orange.shade50,
+                      ? (isDark ? const Color(0xFF231B38) : Colors.purple.shade50)
+                      : (isDark ? const Color(0xFF332211) : Colors.orange.shade50),
                   borderRadius: BorderRadius.circular(12.r),
                   border: Border.all(
                     color: isVideo
-                        ? Colors.purple.shade200
-                        : Colors.orange.shade200,
+                        ? (isDark ? Colors.purple.shade900 : Colors.purple.shade200)
+                        : (isDark ? Colors.orange.shade900 : Colors.orange.shade200),
                   ),
                 ),
                 child: Center(
@@ -390,7 +381,7 @@ class _TemplateDetailBody extends StatelessWidget {
                     children: [
                       Icon(
                         isVideo ? Icons.videocam : Icons.image,
-                        color: isVideo ? Colors.purple : Colors.orange,
+                        color: isVideo ? Colors.purpleAccent : Colors.orangeAccent,
                       ),
                       SizedBox(height: 4.h),
                       Text(
@@ -399,7 +390,7 @@ class _TemplateDetailBody extends StatelessWidget {
                             : "Image Post ${index + 1}",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
                     ],
@@ -413,7 +404,7 @@ class _TemplateDetailBody extends StatelessWidget {
     }
   }
 
-  void showCategoriesBottomSheet(BuildContext context) {
+  void showCategoriesBottomSheet(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -422,7 +413,7 @@ class _TemplateDetailBody extends StatelessWidget {
         return Container(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
           ),
           child: SafeArea(
@@ -430,20 +421,17 @@ class _TemplateDetailBody extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Drag Handle
                 Center(
                   child: Container(
                     height: 4.h,
                     width: 50.w,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                 ),
                 SizedBox(height: 16.h),
-
-                // Title & Close Button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -452,7 +440,7 @@ class _TemplateDetailBody extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20.sp,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                     InkWell(
@@ -460,7 +448,7 @@ class _TemplateDetailBody extends StatelessWidget {
                       child: Container(
                         padding: EdgeInsets.all(6.r),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade50,
+                          color: isDark ? const Color(0xFF2A1A1C) : Colors.red.shade50,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -473,36 +461,17 @@ class _TemplateDetailBody extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: 20.h),
-
-                // Categories Chips using Wrap
                 Flexible(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: Wrap(
                       spacing: 10.w,
                       runSpacing: 12.h,
-                      children:
-                          [
-                                "Cakes",
-                                "Cookies",
-                                "Smoothie",
-                                "Brownies",
-                                "Cupcakes",
-                                "Muffins",
-                                "Birthday Special",
-                                "Sweets",
-                                "Today Special",
-                                "Wedding Special",
-                                "Deal of the Day",
-                                "Offers",
-                                "Cupcakes",
-                                "Muffins",
-                                "Birthday Special",
-                                "Sweets",
-                                "Today Special",
-                              ]
-                              .map((category) => _buildCategoryChip(category))
-                              .toList(),
+                      children: [
+                        "Cakes", "Cookies", "Smoothie", "Brownies", "Cupcakes",
+                        "Muffins", "Birthday Special", "Sweets", "Today Special",
+                        "Wedding Special", "Deal of the Day", "Offers"
+                      ].map((category) => _buildCategoryChip(category, isDark)).toList(),
                     ),
                   ),
                 ),
@@ -515,21 +484,20 @@ class _TemplateDetailBody extends StatelessWidget {
     );
   }
 
-  // Chip Widget Builder
-  Widget _buildCategoryChip(String title) {
+  Widget _buildCategoryChip(String title, bool isDark) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 10.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
         borderRadius: BorderRadius.circular(30.r),
-        border: Border.all(color: Colors.grey.shade300, width: 1.2),
+        border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade300, width: 1.2),
       ),
       child: Text(
         title,
         style: TextStyle(
           fontSize: 14.sp,
           fontWeight: FontWeight.w600,
-          color: Colors.black87,
+          color: isDark ? Colors.white : Colors.black87,
         ),
       ),
     );
@@ -554,8 +522,7 @@ class _TemplateDetailBody extends StatelessWidget {
   }
 }
 
-void showResizeBottomSheet(BuildContext context) {
-  // 1. Parent context-la irundha provider-a fetch pannikrom
+void showResizeBottomSheet(BuildContext context, bool isDark) {
   final templateProvider = context.read<TemplateDetailProvider>();
 
   showModalBottomSheet(
@@ -563,13 +530,12 @@ void showResizeBottomSheet(BuildContext context) {
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (modalContext) {
-      // 🚀 2. Wrap with ChangeNotifierProvider.value so BottomSheet has access to TemplateDetailProvider
       return ChangeNotifierProvider.value(
         value: templateProvider,
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
           ),
           child: SafeArea(
@@ -577,20 +543,17 @@ void showResizeBottomSheet(BuildContext context) {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Drag Handle
                 Center(
                   child: Container(
                     height: 4.h,
                     width: 50.w,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                 ),
                 SizedBox(height: 16.h),
-
-                // Title & Close Button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -599,7 +562,7 @@ void showResizeBottomSheet(BuildContext context) {
                       style: TextStyle(
                         fontSize: 18.sp,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                     InkWell(
@@ -607,7 +570,7 @@ void showResizeBottomSheet(BuildContext context) {
                       child: Container(
                         padding: EdgeInsets.all(6.r),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade50,
+                          color: isDark ? const Color(0xFF2A1A1C) : Colors.red.shade50,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -621,22 +584,10 @@ void showResizeBottomSheet(BuildContext context) {
                 ),
                 SizedBox(height: 16.h),
 
-                const _ResizeOptionItem(
-                  title: "Post Square (1:1)",
-                  subtitle: "1080 x 1080 px",
-                ),
-                const _ResizeOptionItem(
-                  title: "Post Portrait (4:5)",
-                  subtitle: "1080 x 1350 px",
-                ),
-                const _ResizeOptionItem(
-                  title: "Story / Reel (9:16)",
-                  subtitle: "1080 x 1920 px",
-                ),
-                const _ResizeOptionItem(
-                  title: "Post Horizontal",
-                  subtitle: "1200 x 628 px",
-                ),
+                _ResizeOptionItem(title: "Post Square (1:1)", subtitle: "1080 x 1080 px", isDark: isDark),
+                _ResizeOptionItem(title: "Post Portrait (4:5)", subtitle: "1080 x 1350 px", isDark: isDark),
+                _ResizeOptionItem(title: "Story / Reel (9:16)", subtitle: "1080 x 1920 px", isDark: isDark),
+                _ResizeOptionItem(title: "Post Horizontal", subtitle: "1200 x 628 px", isDark: isDark),
 
                 SizedBox(height: 20.h),
               ],
@@ -651,8 +602,9 @@ void showResizeBottomSheet(BuildContext context) {
 class _ResizeOptionItem extends StatelessWidget {
   final String title;
   final String subtitle;
+  final bool isDark;
 
-  const _ResizeOptionItem({required this.title, required this.subtitle});
+  const _ResizeOptionItem({required this.title, required this.subtitle, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -666,7 +618,7 @@ class _ResizeOptionItem extends StatelessWidget {
         style: TextStyle(
           fontSize: 14.sp,
           fontWeight: FontWeight.w600,
-          color: isSelected ? Colors.red : Colors.black87,
+          color: isSelected ? Colors.red : (isDark ? Colors.white70 : Colors.black87),
         ),
       ),
       subtitle: Text(
@@ -682,18 +634,18 @@ class _ResizeOptionItem extends StatelessWidget {
   }
 }
 
-Widget _buildTopBanner(BuildContext context, String resizeSize) {
+Widget _buildTopBanner(BuildContext context, String resizeSize, bool isDark) {
   final provider = context.watch<TemplateDetailProvider>();
   final String? savedImagePath = provider.savedImagePath;
 
-  double bannerHeight = 320.h; // Default Square (1:1)
+  double bannerHeight = 320.h;
 
   if (resizeSize.contains("4:5")) {
-    bannerHeight = 380.h; // Portrait
+    bannerHeight = 380.h;
   } else if (resizeSize.contains("9:16")) {
-    bannerHeight = 450.h; // Story / Reel
+    bannerHeight = 450.h;
   } else if (resizeSize.contains("Horizontal")) {
-    bannerHeight = 220.h; // Horizontal
+    bannerHeight = 220.h;
   }
 
   return AnimatedContainer(
@@ -702,25 +654,25 @@ Widget _buildTopBanner(BuildContext context, String resizeSize) {
     width: double.infinity,
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(16.r),
-      color: Colors.grey.shade200,
+      color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade200,
       image: savedImagePath != null && savedImagePath.isNotEmpty
           ? DecorationImage(
-              image: FileImage(File(savedImagePath)),
-              fit: BoxFit.cover,
-            )
+        image: FileImage(File(savedImagePath)),
+        fit: BoxFit.cover,
+      )
           : null,
     ),
     child: savedImagePath == null || savedImagePath.isEmpty
         ? Center(
-            child: Text(
-              resizeSize,
-              style: TextStyle(
-                color: Colors.black54,
-                fontSize: 16.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          )
+      child: Text(
+        resizeSize,
+        style: TextStyle(
+          color: isDark ? Colors.white54 : Colors.black54,
+          fontSize: 16.sp,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    )
         : null,
   );
 }
