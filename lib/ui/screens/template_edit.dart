@@ -1,30 +1,45 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:pro_image_editor/plugins/emoji_picker_flutter/src/config.dart';
-import 'package:pro_image_editor/plugins/emoji_picker_flutter/src/emoji_picker.dart';
 import 'package:provider/provider.dart';
-
 import '../../network/provider/editor_provider.dart';
 import '../industry/widgets/editable.dart';
-
-
-class TemplateEditScreen extends StatelessWidget {
+class TemplateEditScreen extends StatefulWidget {
   const TemplateEditScreen({super.key});
+
+  @override
+  State<TemplateEditScreen> createState() => _TemplateEditScreenState();
+}
+
+class _TemplateEditScreenState extends State<TemplateEditScreen> {
+  String resizeSize = "Post Square (1:1)";
+  bool _isInit = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isInit) {
+      final Object? args = ModalRoute.of(context)?.settings.arguments;
+      if (args is String && args.isNotEmpty) {
+        resizeSize = args;
+      }
+      _isInit = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: ChangeNotifierProvider(
         create: (_) => EditorProvider(),
-        child: const EditorView(),
+        child: EditorView(resizeSize: resizeSize),
       ),
     );
   }
 }
 
 class EditorView extends StatefulWidget {
-  const EditorView({super.key});
+  final String resizeSize;
+  const EditorView({super.key, required this.resizeSize});
 
   @override
   State<EditorView> createState() => _EditorViewState();
@@ -34,25 +49,136 @@ class _EditorViewState extends State<EditorView> {
   int _bottomNavIndex = 0;
   String? _selectedItemType;
   String? _selectedItemId;
+  String? _selectedFrameUrl;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of<EditorProvider>(context, listen: false);
-      provider.loadItemsFromJson([
-        {
-          "id": "1",
-          "type": "image",
-          "content_url": "https://picsum.photos/400/400",
-          "position_x": 50.0,
-          "position_y": 100.0,
-          "width": 300.0,
-          "height": 300.0,
-          "text": "rounded",
-        },
-      ]);
+      _loadTemplateJsonAndInitEditor();
     });
+  }
+
+  Future<void> _loadTemplateJsonAndInitEditor() async {
+    final provider = Provider.of<EditorProvider>(context, listen: false);
+
+    provider.loadItemsFromJson([
+      {
+        "version": "5.3.0",
+        "type": "rect",
+        "left": 0,
+        "top": 0,
+        "width": 1080,
+        "height": 1080,
+        "fill": "white",
+        "name": "clip",
+      },
+      {
+        "version": "5.3.0",
+        "type": "image",
+        "left": 0,
+        "top": 0,
+        "width": 1080,
+        "height": 1080,
+        "src": "https://picsum.photos/1080/1080",
+      },
+      {
+        "version": "5.3.0",
+        "type": "circle",
+        "left": -121.11,
+        "top": -115.24,
+        "width": 373.95,
+        "height": 373.95,
+        "stroke": "rgba(255,255,255,1)",
+        "strokeWidth": 40,
+        "radius": 186.97,
+      },
+      {
+        "version": "5.3.0",
+        "type": "image",
+        "left": 0,
+        "top": 0,
+        "width": 415,
+        "height": 415,
+        "scaleX": 0.80,
+        "scaleY": 0.80,
+        "angle": -180,
+        "src": "https://picsum.photos/415/415",
+      },
+      {
+        "version": "5.3.0",
+        "type": "textbox",
+        "left": 98.06,
+        "top": 399.07,
+        "width": 444.29,
+        "height": 95.35,
+        "fill": "rgba(0,0,0,1)",
+        "fontSize": 20,
+        "fontWeight": 700,
+        "text": "STAY COZY",
+      },
+      {
+        "version": "5.3.0",
+        "type": "textbox",
+        "left": 98.06,
+        "top": 481.09,
+        "width": 529.87,
+        "height": 95.35,
+        "fill": "rgba(255,255,255,1)",
+        "fontSize": 20,
+        "fontWeight": 700,
+        "text": "THIS SEASON",
+      },
+      {
+        "version": "5.3.0",
+        "type": "textbox",
+        "left": 98.06,
+        "top": 581.39,
+        "width": 479.98,
+        "height": 134.75,
+        "fill": "rgba(0,0,0,1)",
+        "fontSize": 25,
+        "fontWeight": 400,
+        "text": "Upgrade your home with stylish \nfurniture designed for comfort \nand everyday living.",
+      },
+      {
+        "version": "5.3.0",
+        "type": "rect",
+        "left": 98.95,
+        "top": 830.53,
+        "width": 355.50,
+        "height": 76.59,
+        "fill": "rgba(0,0,0,1)",
+        "rx": 38.3,
+        "ry": 38.3,
+      },
+      {
+        "version": "5.3.0",
+        "type": "textbox",
+        "left": 193.26,
+        "top": 850.39,
+        "width": 221.73,
+        "height": 47.67,
+        "fill": "rgba(255,255,255,1)",
+        "fontSize": 22,
+        "fontWeight": 700,
+        "text": "SHOP NOW",
+      },
+      {
+        "version": "5.3.0",
+        "type": "image",
+        "left": 583.80,
+        "top": 266.28,
+        "width": 360,
+        "height": 360,
+        "scaleX": 2.09,
+        "scaleY": 2.09,
+        "src": "https://picsum.photos/360/360",
+      },
+    ]);
+
+    provider.fetchFreepikAssets("furniture");
+    provider.fetchFreepikStickers("shapes");
   }
 
   void _showFramesBottomSheet(BuildContext context) {
@@ -69,47 +195,89 @@ class _EditorViewState extends State<EditorView> {
               bool isStaticSelected = true;
               return Container(
                 height: MediaQuery.of(context).size.height * 0.45,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Center(child: Container(height: 4, width: 50, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)))),
-                    const SizedBox(height: 12),
+                    Center(
+                      child: Container(
+                        height: 4,
+                        width: 45,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("My Frames", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
-                        IconButton(icon: const Icon(Icons.close, color: Colors.red), onPressed: () => Navigator.pop(modalContext)),
+                        const Text("My Frames", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.black)),
+                        InkWell(
+                          onTap: () => Navigator.pop(modalContext),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
+                            child: const Icon(Icons.close, color: Colors.red, size: 18),
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         GestureDetector(
                           onTap: () => setModalState(() => isStaticSelected = true),
-                          child: Text("Static Frames", style: TextStyle(fontWeight: FontWeight.bold, color: isStaticSelected ? Colors.black : Colors.grey)),
+                          child: Column(
+                            children: [
+                              const Text("Static Frames", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
+                              const SizedBox(height: 4),
+                              if (isStaticSelected) Container(height: 2, width: 75, color: Colors.red)
+                            ],
+                          ),
                         ),
-                        const SizedBox(width: 20),
+                        const SizedBox(width: 24),
                         GestureDetector(
                           onTap: () => setModalState(() => isStaticSelected = false),
-                          child: Text("Animated Frames", style: TextStyle(fontWeight: FontWeight.bold, color: !isStaticSelected ? Colors.black : Colors.grey)),
+                          child: Column(
+                            children: [
+                              const Text("Animated Frames", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+                              const SizedBox(height: 4),
+                              if (!isStaticSelected) Container(height: 2, width: 95, color: Colors.red)
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                    const Divider(),
+                    const Divider(height: 20, thickness: 1),
                     Expanded(
                       child: GridView.builder(
                         scrollDirection: Axis.horizontal,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 1, mainAxisSpacing: 12),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 1, mainAxisSpacing: 14),
                         itemCount: 4,
                         itemBuilder: (context, index) {
-                          return Container(
-                            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
-                            child: const Center(child: Icon(Icons.image, size: 40, color: Colors.blue)),
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedFrameUrl = "assets/images/thumbnail1.png";
+                              });
+                              Navigator.pop(modalContext);
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                color: Colors.grey.shade50,
+                                border: Border.all(color: Colors.grey.shade200, width: 1.5),
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.image_rounded, size: 40, color: Colors.blueAccent),
+                              ),
+                            ),
                           );
                         },
                       ),
@@ -124,19 +292,161 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  void _showEmojiPicker(BuildContext context, EditorProvider provider) {
+  void _showMyBrandBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E2C),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (modalContext) {
-        return SizedBox(
-          height: 300,
-          child: EmojiPicker(
-            onEmojiSelected: (category, emoji) {
-              provider.addEmoji(emoji.emoji);
-              Navigator.pop(modalContext);
-            },
-            config: const Config(height: 256),
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  height: 4,
+                  width: 45,
+                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Upload Image", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.black)),
+                  InkWell(
+                    onTap: () => Navigator.pop(modalContext),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
+                      child: const Icon(Icons.close, color: Colors.red, size: 18),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    onPressed: () {},
+                    child: const Text("LOGO", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 12),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: BorderSide(color: Colors.grey.shade300),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    onPressed: () {},
+                    child: const Text("MOBILE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 12),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: BorderSide(color: Colors.grey.shade300),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    onPressed: () {},
+                    child: const Text("WEBSITE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 25),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showTextStylesBottomSheet(BuildContext context, EditorProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  height: 4,
+                  width: 45,
+                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Add Text", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.black)),
+                  InkWell(
+                    onTap: () => Navigator.pop(modalContext),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
+                      child: const Icon(Icons.close, color: Colors.red, size: 18),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      title: const Text("My Heading", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                      onTap: () {
+                        provider.addText(initialText: "My Heading");
+                        Navigator.pop(modalContext);
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      title: const Text("My Subheading", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      onTap: () {
+                        provider.addText(initialText: "My Subheading");
+                        Navigator.pop(modalContext);
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      title: const Text("My Paragraph", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                      onTap: () {
+                        provider.addText(initialText: "My Paragraph");
+                        Navigator.pop(modalContext);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
           ),
         );
       },
@@ -145,138 +455,394 @@ class _EditorViewState extends State<EditorView> {
 
   void _showMediaBottomSheet(BuildContext context) {
     final parentProvider = context.read<EditorProvider>();
+    parentProvider.fetchFreepikAssets("furniture");
+    parentProvider.fetchFreepikStickers("shapes");
+    int selectedTab = 0;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        return SafeArea(
-          child: StatefulBuilder(
-            builder: (context, setModalState) {
-              int selectedTab = 0;
-              return Container(
-                height: MediaQuery.of(context).size.height * 0.25,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(child: Container(height: 4, width: 40, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)))),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (modalContext) {
+        final keyboardHeight = MediaQuery.of(modalContext).viewInsets.bottom;
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: keyboardHeight),
+          child: SafeArea(
+            child: ChangeNotifierProvider.value(
+              value: parentProvider,
+              child: StatefulBuilder(
+                builder: (context, setModalState) {
+                  final provider = context.watch<EditorProvider>();
+
+                  return Container(
+                    height: MediaQuery.of(context).size.height * 0.45,
+                    padding: const EdgeInsets.all(20),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Media", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
-                        InkWell(
-                          onTap: () => Navigator.pop(context),
+                        Center(
                           child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
-                            child: const Icon(Icons.close, color: Colors.red, size: 18),
+                            height: 4,
+                            width: 45,
+                            decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Media & Shapes", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.black)),
+                            InkWell(
+                              onTap: () => Navigator.pop(modalContext),
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
+                                child: const Icon(Icons.close, color: Colors.red, size: 18),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () => setModalState(() => selectedTab = 0),
+                              child: Text("Uploads", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: selectedTab == 0 ? Colors.black : Colors.grey)),
+                            ),
+                            const SizedBox(width: 24),
+                            GestureDetector(
+                              onTap: () => setModalState(() => selectedTab = 1),
+                              child: Text("Photos", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: selectedTab == 1 ? Colors.black : Colors.grey)),
+                            ),
+                            const SizedBox(width: 24),
+                            GestureDetector(
+                              onTap: () => setModalState(() => selectedTab = 2),
+                              child: Text("Shapes", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: selectedTab == 2 ? Colors.black : Colors.grey)),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 20, thickness: 1),
+                        Expanded(
+                          child: selectedTab == 0
+                              ? ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: [
+                              GestureDetector(
+                                onTap: () async {
+                                  Navigator.pop(modalContext);
+                                  final picker = ImagePicker();
+                                  final image = await picker.pickImage(source: ImageSource.camera);
+                                  if (image != null) provider.addImage(image.path, isLocal: true);
+                                },
+                                child: Container(
+                                  width: 100,
+                                  margin: const EdgeInsets.only(right: 12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFECEE),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.camera_alt_rounded, color: Colors.red, size: 28),
+                                      SizedBox(height: 8),
+                                      Text("CAMERA", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 10)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () async {
+                                  Navigator.pop(modalContext);
+                                  final picker = ImagePicker();
+                                  final image = await picker.pickImage(source: ImageSource.gallery);
+                                  if (image != null) provider.addImage(image.path, isLocal: true);
+                                },
+                                child: Container(
+                                  width: 100,
+                                  margin: const EdgeInsets.only(right: 12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFECEE),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.photo_library_rounded, color: Colors.red, size: 28),
+                                      SizedBox(height: 8),
+                                      Text("GALLERY", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 10)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                              : ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: (selectedTab == 1 ? provider.freepikAssets : provider.freepikStickers)
+                                .map((url) => _buildAssetCard(provider, url, modalContext))
+                                .toList(),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => setModalState(() => selectedTab = 0),
-                          child: Text("Uploads", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: selectedTab == 0 ? Colors.black : Colors.grey)),
-                        ),
-                        const SizedBox(width: 20),
-                        GestureDetector(
-                          onTap: () => setModalState(() => selectedTab = 1),
-                          child: Text("Elements", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: selectedTab == 1 ? Colors.black : Colors.grey)),
-                        ),
-                        const SizedBox(width: 20),
-                        GestureDetector(
-                          onTap: () {
-                            setModalState(() => selectedTab = 2);
-                            _showEmojiPicker(context, parentProvider);
-                          },
-                          child: Text("Stickers", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: selectedTab == 2 ? Colors.black : Colors.grey)),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 1, thickness: 1, color: Colors.black12),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          GestureDetector(
-                            onTap: () async {
-                              Navigator.pop(context);
-                              final ImagePicker picker = ImagePicker();
-                              final XFile? image = await picker.pickImage(source: ImageSource.camera);
-                              if (image != null) parentProvider.addImage(image.path, isLocal: true);
-                            },
-                            child: Container(
-                              width: 90,
-                              margin: const EdgeInsets.only(right: 10),
-                              decoration: BoxDecoration(color: const Color(0xFFFFECEE), borderRadius: BorderRadius.circular(14)),
-                              child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.camera_alt, color: Colors.red, size: 26), SizedBox(height: 6), Text("CAMERA", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 10))]),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () async {
-                              Navigator.pop(context);
-                              final ImagePicker picker = ImagePicker();
-                              final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-                              if (image != null) parentProvider.addImage(image.path, isLocal: true);
-                            },
-                            child: Container(
-                              width: 90,
-                              margin: const EdgeInsets.only(right: 10),
-                              decoration: BoxDecoration(color: const Color(0xFFFFECEE), borderRadius: BorderRadius.circular(14)),
-                              child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.photo_library, color: Colors.red, size: 26), SizedBox(height: 6), Text("GALLERY", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 10))]),
-                            ),
-                          ),
-                          _buildAssetCard(parentProvider, 'https://picsum.photos/300/300', context),
-                          _buildAssetCard(parentProvider, 'https://picsum.photos/310/310', context),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+                  );
+                },
+              ),
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildAssetCard(EditorProvider provider, String imageUrl, BuildContext sheetContext) {
-    return GestureDetector(
-      onTap: () {
-        provider.addImage(imageUrl, isLocal: false);
-        Navigator.pop(sheetContext);
+  void _showBackgroundBottomSheet(BuildContext context) {
+    final parentProvider = context.read<EditorProvider>();
+    int selectedTab = 0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return SafeArea(
+          child: ChangeNotifierProvider.value(
+            value: parentProvider,
+            child: StatefulBuilder(
+              builder: (context, setModalState) {
+                final provider = context.watch<EditorProvider>();
+
+                return Container(
+                  height: MediaQuery.of(context).size.height * 0.45,
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          height: 4,
+                          width: 45,
+                          decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Background", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.black)),
+                          InkWell(
+                            onTap: () => Navigator.pop(modalContext),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
+                              child: const Icon(Icons.close, color: Colors.red, size: 18),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () => setModalState(() => selectedTab = 0),
+                            child: Text("Uploads", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: selectedTab == 0 ? Colors.black : Colors.grey)),
+                          ),
+                          const SizedBox(width: 24),
+                          GestureDetector(
+                            onTap: () => setModalState(() => selectedTab = 1),
+                            child: Text("Photos", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: selectedTab == 1 ? Colors.black : Colors.grey)),
+                          ),
+                          const SizedBox(width: 24),
+                          GestureDetector(
+                            onTap: () => setModalState(() => selectedTab = 2),
+                            child: Text("Colors", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: selectedTab == 2 ? Colors.black : Colors.grey)),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 20, thickness: 1),
+                      Expanded(
+                        child: selectedTab == 0
+                            ? ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            GestureDetector(
+                              onTap: () async {
+                                Navigator.pop(modalContext);
+                                final picker = ImagePicker();
+                                final image = await picker.pickImage(source: ImageSource.gallery);
+                                if (image != null) provider.addImage(image.path, isLocal: true);
+                              },
+                              child: Container(
+                                width: 100,
+                                margin: const EdgeInsets.only(right: 12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFECEE),
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.photo_library_rounded, color: Colors.red, size: 28),
+                                    SizedBox(height: 8),
+                                    Text("GALLERY", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 10)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                            : ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: provider.freepikAssets.map((url) => _buildAssetCard(provider, url, modalContext)).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
       },
-      child: Container(
-        width: 90,
-        margin: const EdgeInsets.only(right: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade300),
-          image: DecorationImage(image: NetworkImage(imageUrl), fit: BoxFit.cover),
-        ),
-      ),
+    );
+  }
+
+  void _showFontStyleBottomSheet(BuildContext context, EditorProvider provider, String itemId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return Container(
+          height: MediaQuery.of(modalContext).size.height * 0.40,
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Font Style", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.black)),
+                  InkWell(
+                    onTap: () => Navigator.pop(modalContext),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
+                      child: const Icon(Icons.close, color: Colors.red, size: 18),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView(
+                  children: [
+                    ListTile(
+                      title: const Text("Roboto", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      onTap: () => Navigator.pop(modalContext),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      title: const Text("Poppins", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      onTap: () => Navigator.pop(modalContext),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showFontColorPicker(BuildContext context, EditorProvider provider, String itemId) {
+    final List<Color> presetColors = [
+      Colors.orange, Colors.red, Colors.blue, Colors.teal, Colors.lime, Colors.purple, Colors.pink, Colors.redAccent,
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return Container(
+          height: MediaQuery.of(modalContext).size.height * 0.38,
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Font Color", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.black)),
+                  InkWell(
+                    onTap: () => Navigator.pop(modalContext),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
+                      child: const Icon(Icons.close, color: Colors.red, size: 18),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, mainAxisSpacing: 14, crossAxisSpacing: 14),
+                  itemCount: presetColors.length,
+                  itemBuilder: (context, index) {
+                    Color color = presetColors[index];
+                    return GestureDetector(
+                      onTap: () {
+                        provider.updateTextColor(itemId, color);
+                        Navigator.pop(modalContext);
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
   void _showTextEditorDialog(BuildContext context, EditorProvider provider, {String? itemId, String initialText = ""}) {
-    final TextEditingController textController = TextEditingController(text: initialText);
+    final textController = TextEditingController(text: initialText);
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF1E1E2C),
-          title: const Text("Edit Text", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text("Edit Text", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
           content: TextField(
             controller: textController,
             autofocus: true,
@@ -291,7 +857,10 @@ class _EditorViewState extends State<EditorView> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel", style: TextStyle(color: Colors.grey))),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.amberAccent),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amberAccent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
               onPressed: () {
                 if (textController.text.isNotEmpty) {
                   if (itemId == null) {
@@ -310,254 +879,226 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
+  Widget _buildAssetCard(EditorProvider provider, String imageUrl, BuildContext sheetContext) {
+    return GestureDetector(
+      onTap: () {
+        provider.addImage(imageUrl, isLocal: false);
+        Navigator.pop(sheetContext);
+      },
+      child: Container(
+        width: 90,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200, width: 1.5),
+          image: DecorationImage(image: NetworkImage(imageUrl), fit: BoxFit.cover),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EditorProvider>();
+
+    double aspectRatio = 1 / 1; // Default Square
+    if (widget.resizeSize.contains("4:5")) {
+      aspectRatio = 4 / 5;
+    } else if (widget.resizeSize.contains("9:16")) {
+      aspectRatio = 9 / 16;
+    } else if (widget.resizeSize.contains("Horizontal")) {
+      aspectRatio = 1200 / 628;
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F2F5),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.red), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.red),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          widget.resizeSize, // 🚀 Exact heading update aagum!
+          style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         actions: [
-          IconButton(icon: const Icon(Icons.undo, color: Colors.grey), onPressed: () => provider.undo()),
-          IconButton(icon: const Icon(Icons.redo, color: Colors.grey), onPressed: () => provider.redo()),
+          IconButton(icon: const Icon(Icons.undo_rounded, color: Colors.grey), onPressed: () => provider.undo()),
+          IconButton(icon: const Icon(Icons.redo_rounded, color: Colors.grey), onPressed: () => provider.redo()),
           IconButton(
-            icon: const Icon(Icons.save, color: Colors.red),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Design Saved!")));
-            },
+            icon: const Icon(Icons.save_rounded, color: Colors.red),
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Design Saved!"))),
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          Container(color: const Color(0xFFF0F2F5)),
-          ...provider.items.map((item) => EditableItemWidget(
-            item: item,
-            onItemSelected: (type, id) {
-              setState(() {
-                _selectedItemType = type;
-                _selectedItemId = id;
-              });
-            },
-          )),
-        ],
-      ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (_selectedItemType == 'text')
-            Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(color: const Color(0xFFFFECEE), borderRadius: BorderRadius.circular(20)),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 🚀 Color Picker Button
-                  IconButton(
-                    icon: const Icon(Icons.color_lens, color: Colors.red, size: 18),
-                    tooltip: "Font Color",
-                    onPressed: () {
-                      if (_selectedItemId != null) {
-                        _showFontColorPicker(context, provider, _selectedItemId!);
-                      }
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.red, size: 18),
-                    tooltip: "Edit Text",
-                    onPressed: () {
-                      if (_selectedItemId != null) {
-                        final item = provider.items.firstWhere((e) => e.id == _selectedItemId);
-                        _showTextEditorDialog(context, provider, itemId: item.id, initialText: item.text ?? "");
-                      }
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.copy, color: Colors.red, size: 18),
-                    onPressed: () {
-                      if (_selectedItemId != null) provider.duplicateItem(_selectedItemId!);
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red, size: 18),
-                    onPressed: () {
-                      if (_selectedItemId != null) {
-                        provider.removeItem(_selectedItemId!);
-                        setState(() {
-                          _selectedItemType = null;
-                          _selectedItemId = null;
-                        });
-                      }
-                    },
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: AspectRatio(
+            aspectRatio: aspectRatio,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    spreadRadius: 2,
                   ),
                 ],
               ),
-            ),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: const BoxDecoration(color: Colors.black, borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                InkWell(
-                  onTap: () { setState(() => _bottomNavIndex = 0); _showFramesBottomSheet(context); },
-                  child: _buildBottomNavItem(Icons.layers, "FRAMES", _bottomNavIndex == 0),
-                ),
-                InkWell(
-                  onTap: () => setState(() => _bottomNavIndex = 1),
-                  child: _buildBottomNavItem(Icons.branding_watermark, "MY BRAND", _bottomNavIndex == 1),
-                ),
-                InkWell(
-                  onTap: () {
-                    setState(() => _bottomNavIndex = 2);
-                    _showTextEditorDialog(context, provider);
-                  },
-                  child: _buildBottomNavItem(Icons.text_fields, "TEXT", _bottomNavIndex == 2),
-                ),
-                InkWell(
-                  onTap: () { setState(() => _bottomNavIndex = 3); _showMediaBottomSheet(context); },
-                  child: _buildBottomNavItem(Icons.photo, "MEDIA", _bottomNavIndex == 3),
-                ),
-                InkWell(
-                  onTap: () => setState(() => _bottomNavIndex = 4),
-                  child: _buildBottomNavItem(Icons.wallpaper, "BACKGROUND", _bottomNavIndex == 4),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  void _showFontColorPicker(BuildContext context, EditorProvider provider, String itemId) {
-    // 🎨 Preset color circles list matching your design
-    final List<Color> presetColors = [
-      Colors.orange, Colors.red, Colors.blue, Colors.teal, Colors.lime, Colors.purple, Colors.pink,
-      Colors.redAccent, Colors.pinkAccent, Colors.purpleAccent, Colors.lightBlue, Colors.cyan,
-      Colors.greenAccent, Colors.limeAccent, Colors.orangeAccent,
-      Colors.green.shade200, Colors.lightGreen.shade200, Colors.teal.shade100, Colors.blue.shade100,
-      Colors.indigo.shade100, Colors.purple.shade100, Colors.pink.shade100, Colors.red.shade100, Colors.orange.shade200
-    ];
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  double scaleX = constraints.maxWidth / 1080;
+                  double scaleY = constraints.maxHeight / 1080;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.38,
-          padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top Drag Handle
-              Center(
-                child: Container(
-                  height: 4,
-                  width: 40,
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Header Title & Close Button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Font Color",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
-                  ),
-                  InkWell(
-                    onTap: () => Navigator.pop(modalContext),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
-                      child: const Icon(Icons.close, color: Colors.red, size: 18),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Color Grid Palette
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 8,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                  ),
-                  itemCount: presetColors.length + 2, // +2 for color wheel and custom adjustment icons
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      // Multi-color wheel button
-                      return GestureDetector(
-                        onTap: () {
-                          // Optional: Open advanced color picker here if needed
-                        },
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: SweepGradient(
-                              colors: [Colors.red, Colors.yellow, Colors.green, Colors.blue, Colors.purple, Colors.red],
+                  return Stack(
+                    clipBehavior: Clip.hardEdge,
+                    children: [
+                      ...provider.items.map((item) {
+                        return Positioned(
+                          left: item.position.dx * scaleX,
+                          top: item.position.dy * scaleY,
+                          child: Transform.scale(
+                            scale: scaleX,
+                            alignment: Alignment.topLeft,
+                            child: SizedBox(
+                              width: item.width ?? 200,
+                              child: EditableItemWidget(
+                                item: item,
+                                onItemSelected: (type, id) {
+                                  setState(() {
+                                    _selectedItemType = type;
+                                    _selectedItemId = id;
+                                  });
+                                },
+                              ),
                             ),
                           ),
-                          child: const Center(child: Icon(Icons.add, color: Colors.white, size: 16)),
+                        );
+                      }),
+                      if (_selectedFrameUrl != null)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: Image.asset(_selectedFrameUrl!, fit: BoxFit.cover),
+                          ),
                         ),
-                      );
-                    } else if (index == 1) {
-                      // Sliders/Adjustment icon button
-                      return Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.amber.shade100,
-                          border: Border.all(color: Colors.amber, width: 1.5),
-                        ),
-                        child: const Center(child: Icon(Icons.tune, color: Colors.brown, size: 16)),
-                      );
-                    }
-
-                    // Preset Color Circles
-                    Color color = presetColors[index - 2];
-                    return GestureDetector(
-                      onTap: () {
-                        provider.updateTextColor(itemId, color);
-                        Navigator.pop(modalContext);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey.shade300, width: 1),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                    ],
+                  );
+                },
               ),
-            ],
+            ),
           ),
-        );
-      },
+        ),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: const BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: _selectedItemType == 'text'
+            ? Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            InkWell(
+              onTap: () {
+                if (_selectedItemId != null) {
+                  final item = provider.items.firstWhere((e) => e.id == _selectedItemId);
+                  _showTextEditorDialog(context, provider, itemId: item.id, initialText: item.text ?? "");
+                }
+              },
+              child: _buildTextActionItem(Icons.edit_rounded, "EDIT"),
+            ),
+            InkWell(
+              onTap: () {
+                if (_selectedItemId != null) {
+                  _showFontStyleBottomSheet(context, provider, _selectedItemId!);
+                }
+              },
+              child: _buildTextActionItem(Icons.font_download_rounded, "FONT STYLE"),
+            ),
+            InkWell(
+              onTap: () {},
+              child: _buildTextActionItem(Icons.format_align_left_rounded, "FORMAT"),
+            ),
+            InkWell(
+              onTap: () {},
+              child: _buildTextActionItem(Icons.space_bar_rounded, "SPACING"),
+            ),
+            InkWell(
+              onTap: () {
+                if (_selectedItemId != null) {
+                  _showFontColorPicker(context, provider, _selectedItemId!);
+                }
+              },
+              child: _buildTextActionItem(Icons.color_lens_rounded, "COLOR"),
+            ),
+          ],
+        )
+            : Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            InkWell(
+              onTap: () {
+                setState(() => _bottomNavIndex = 0);
+                _showFramesBottomSheet(context);
+              },
+              child: _buildBottomNavItem(Icons.layers_rounded, "FRAMES", _bottomNavIndex == 0),
+            ),
+            InkWell(
+              onTap: () {
+                setState(() => _bottomNavIndex = 1);
+                _showMyBrandBottomSheet(context);
+              },
+              child: _buildBottomNavItem(Icons.branding_watermark_rounded, "MY BRAND", _bottomNavIndex == 1),
+            ),
+            InkWell(
+              onTap: () {
+                setState(() => _bottomNavIndex = 2);
+                _showTextStylesBottomSheet(context, provider);
+              },
+              child: _buildBottomNavItem(Icons.text_fields_rounded, "TEXT", _bottomNavIndex == 2),
+            ),
+            InkWell(
+              onTap: () {
+                setState(() => _bottomNavIndex = 3);
+                _showMediaBottomSheet(context);
+              },
+              child: _buildBottomNavItem(Icons.photo_library_rounded, "MEDIA", _bottomNavIndex == 3),
+            ),
+            InkWell(
+              onTap: () {
+                setState(() => _bottomNavIndex = 4);
+                _showBackgroundBottomSheet(context);
+              },
+              child: _buildBottomNavItem(Icons.wallpaper_rounded, "BACKGROUND", _bottomNavIndex == 4),
+            ),
+          ],
+        ),
+      ),
     );
   }
+
+  Widget _buildTextActionItem(IconData icon, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.white, size: 20),
+        const SizedBox(height: 5),
+        Text(label, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+      ],
+    );
+  }
+
   Widget _buildBottomNavItem(IconData icon, String label, bool isSelected) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: isSelected ? Colors.white : Colors.grey, size: 22),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.grey, fontSize: 10, fontWeight: FontWeight.w600)),
+        Icon(icon, color: isSelected ? Colors.white : Colors.grey.shade500, size: 22),
+        const SizedBox(height: 5),
+        Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.w700)),
       ],
     );
   }

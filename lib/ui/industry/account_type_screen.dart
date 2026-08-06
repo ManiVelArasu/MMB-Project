@@ -7,6 +7,7 @@ import 'package:project_mmb/utils/height_measure.dart';
 import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AccountTypeScreen extends StatelessWidget {
   const AccountTypeScreen({super.key});
@@ -118,10 +119,15 @@ class AccountTypeScreen extends StatelessWidget {
                         ),
                       ),
                       ButtonWidget(
-                        buttonPress: () {
+                        buttonPress: () async {
                           final selectedTitle = accountTypeProvider
                               .accountTypeList[accountTypeProvider.currentIndex]
                               .title;
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setString(
+                            'selected_account_type',
+                            selectedTitle,
+                          );
 
                           if (selectedTitle == "Personal Use") {
                             Navigator.pushNamed(

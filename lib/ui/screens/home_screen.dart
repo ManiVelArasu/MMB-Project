@@ -11,6 +11,7 @@ import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:project_mmb/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:project_mmb/network/provider/business_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Api Model/templatecategories.dart';
 import '../../component/custom_searchbar.dart';
@@ -42,10 +43,7 @@ class HomeScreen extends StatelessWidget {
           return Scaffold(
             backgroundColor: Colors.white,
             appBar: HomeCustomAppBar(
-              businessName:  "Business Name",
-              businessCategory:  businessProvider.businessName.isEmpty
-                  ? "Business Name"
-                  : businessProvider.businessName,
+              businessCategory: "Cake and Sweets",
               notificationCount: "2",
             ),
             body: SafeArea(
@@ -114,7 +112,7 @@ class HomeScreen extends StatelessWidget {
                         iconAsset: "assets/images/my_zone.png",
                       ),
                       SizedBox(height: 12.h),
-                      _buildMyZoneSlider(homeScreenProvider, businessProvider),
+                      _buildMyZoneSlider(homeScreenProvider),
 
                       SizedBox(height: 24.h),
 
@@ -198,75 +196,83 @@ class HomeScreen extends StatelessWidget {
                               1.0, // Square cards matching screenshot
                         ),
                         itemBuilder: (context, index) {
-                          return Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20.r),
-                              color: Colors.grey.shade100,
-                              border: Border.all(
-                                color: Colors.grey.shade300,
-                                width: 1.2,
+                          return InkWell(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                "/TemplateDetailScreen",
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20.r),
+                                color: Colors.grey.shade100,
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 1.2,
+                                ),
                               ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(20.r),
-                              child: Stack(
-                                children: [
-                                  // 🚀 Background Image / Thumbnail
-                                  Positioned.fill(
-                                    child: Image.asset(
-                                      "assets/images/thumbnail1.png", // Ungaloda image path
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: Colors.grey.shade200,
-                                        child: Icon(
-                                          Icons.image_outlined,
-                                          size: 40.sp,
-                                          color: Colors.grey.shade400,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-                                  // 🚀 Top-Left Crown Icon
-                                  Positioned(
-                                    top: 10.h,
-                                    left: 10.w,
-                                    child: Container(
-                                      padding: EdgeInsets.all(6.r),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.4,
-                                        ),
-                                        shape: BoxShape.circle,
-                                      ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20.r),
+                                child: Stack(
+                                  children: [
+                                    // 🚀 Background Image / Thumbnail
+                                    Positioned.fill(
                                       child: Image.asset(
-                                        "assets/images/crown.png",
-                                        width: 14.w,
-                                        height: 14.h,
-                                      ),
-                                    ),
-                                  ),
-
-                                  // 🚀 Top-Right More/Options Icon (3 dots)
-                                  Positioned(
-                                    top: 10.h,
-                                    right: 10.w,
-                                    child: Container(
-                                      padding: EdgeInsets.all(6.r),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.4,
+                                        "assets/images/thumbnail1.png",
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          color: Colors.grey.shade200,
+                                          child: Icon(
+                                            Icons.image_outlined,
+                                            size: 40.sp,
+                                            color: Colors.grey.shade400,
+                                          ),
                                         ),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Icons.more_horiz,
-                                        color: Colors.white,
-                                        size: 16.sp,
                                       ),
                                     ),
-                                  ),
-                                ],
+
+                                    // 🚀 Top-Left Crown Icon
+                                    Positioned(
+                                      top: 10.h,
+                                      left: 10.w,
+                                      child: Container(
+                                        padding: EdgeInsets.all(6.r),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.4,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Image.asset(
+                                          "assets/images/crown.png",
+                                          width: 14.w,
+                                          height: 14.h,
+                                        ),
+                                      ),
+                                    ),
+
+                                    // 🚀 Top-Right More/Options Icon (3 dots)
+                                    Positioned(
+                                      top: 10.h,
+                                      right: 10.w,
+                                      child: Container(
+                                        padding: EdgeInsets.all(6.r),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.4,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.more_horiz,
+                                          color: Colors.white,
+                                          size: 16.sp,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
@@ -764,73 +770,86 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMyZoneSlider(
-    HomeScreenProvider homeScreenProvider,
-    BusinessProvider provider,
-  ) {
-    return Column(
-      children: [
-        SizedBox(
-          height: 360.h,
-          child: PageView.builder(
-            controller: homeScreenProvider.zonePageController,
-            itemCount: homeScreenProvider.myZoneBanners.length,
-            onPageChanged: (index) => homeScreenProvider.updateZoneIndex(index),
-            itemBuilder: (context, index) {
-              return Container(
-                margin: EdgeInsets.symmetric(horizontal: 25.w),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16.r),
-                  color: Colors.grey.shade100,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16.r),
-                  child: provider.selectedImage != null
-                      ? Image.file(
-                          provider.selectedImage!,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                        )
-                      : Image.asset(
-                          homeScreenProvider.myZoneBanners[index],
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: Colors.grey.shade200,
-                            child: Icon(
-                              Icons.image_outlined,
-                              size: 50.sp,
-                              color: Colors.grey.shade400,
+  Widget _buildMyZoneSlider(HomeScreenProvider homeScreenProvider) {
+    return FutureBuilder<SharedPreferences>(
+      future: SharedPreferences.getInstance(),
+      builder: (context, snapshot) {
+        String? savedImagePath;
+        if (snapshot.hasData) {
+          savedImagePath = snapshot.data!.getString(
+            'saved_business_image_path',
+          );
+        }
+
+        return Column(
+          children: [
+            SizedBox(
+              height: 360.h,
+              child: PageView.builder(
+                controller: homeScreenProvider.zonePageController,
+                itemCount: homeScreenProvider.myZoneBanners.length,
+                onPageChanged: (index) =>
+                    homeScreenProvider.updateZoneIndex(index),
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: EdgeInsets.symmetric(horizontal: 25.w),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16.r),
+                      color: Colors.grey.shade100,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16.r),
+                      // 🚀 SharedPreferences-la save aana image path iruntha athai direct-ah file-ah load panrom
+                      child: savedImagePath != null && savedImagePath.isNotEmpty
+                          ? Image.file(
+                              File(savedImagePath),
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            )
+                          : Image.asset(
+                              homeScreenProvider.myZoneBanners[index],
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: Colors.grey.shade200,
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  size: 50.sp,
+                                  color: Colors.grey.shade400,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                ),
-              );
-            },
-          ),
-        ),
-        SizedBox(height: 12.h),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            homeScreenProvider.myZoneBanners.length,
-            (index) => AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              margin: EdgeInsets.symmetric(horizontal: 3.w),
-              height: 6.h,
-              width: homeScreenProvider.currentZoneIndex == index ? 22.w : 6.w,
-              decoration: BoxDecoration(
-                color: homeScreenProvider.currentZoneIndex == index
-                    ? const Color(0xFFE53935)
-                    : Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  );
+                },
               ),
             ),
-          ),
-        ),
-      ],
+            SizedBox(height: 12.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                homeScreenProvider.myZoneBanners.length,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: EdgeInsets.symmetric(horizontal: 3.w),
+                  height: 6.h,
+                  width: homeScreenProvider.currentZoneIndex == index
+                      ? 22.w
+                      : 6.w,
+                  decoration: BoxDecoration(
+                    color: homeScreenProvider.currentZoneIndex == index
+                        ? const Color(0xFFE53935)
+                        : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

@@ -1,17 +1,7 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import '../../Api Model/editor_model.dart';
-
-import 'dart:io';
-import 'package:flutter/material.dart';
-import '../../Api Model/editor_model.dart';
-
-import 'dart:io';
-import 'package:flutter/material.dart';
-
-import 'dart:io';
-import 'package:flutter/material.dart';
+import '../../Repository/freeoic.dart';
 
 class EditorProvider extends ChangeNotifier {
   final List<EditorItem> _items = [];
@@ -28,35 +18,106 @@ class EditorProvider extends ChangeNotifier {
     _historyIndex = _history.length - 1;
   }
 
+  // 🚀 Fabric.js JSON Safe Parser & Loader
   void loadItemsFromJson(List<Map<String, dynamic>> jsonList) {
-    _items.clear();
-    for (var json in jsonList) {
-      // 🚀 Using your new EditorItem.fromJson factory constructor
-      EditorItem item = EditorItem.fromJson(json);
+    try {
+      _items.clear();
+      for (var json in jsonList) {
+        String type = json['type'] ?? '';
+        double left = (json['left'] ?? 0.0).toDouble();
+        double top = (json['top'] ?? 0.0).toDouble();
+        double width = (json['width'] ?? 100.0).toDouble();
+        double height = (json['height'] ?? 100.0).toDouble();
+        double scaleX = (json['scaleX'] ?? 1.0).toDouble();
+        double scaleY = (json['scaleY'] ?? 1.0).toDouble();
 
-      // Optional: Handle color parsing if color exists in json
-      if (json['color'] != null) {
+        if (type == 'textbox') {
+          double originalFontSize = (json['fontSize'] ?? 36.0).toDouble();
+
+          _items.add(
+            EditorItem(
+              id:
+                  "${DateTime.now().millisecondsSinceEpoch}_$left",
+              type: 'text',
+              text: json['text'] ?? '',
+              position: Offset(left, top),
+              fontSize: originalFontSize > 50
+                  ? originalFontSize * 0.45
+                  : originalFontSize,
+              color: _parseColor(json['fill']),
+            ),
+          );
+        } else if (type == 'image') {
+          String imageUrl = json['src'] ?? '';
+          if (imageUrl.isNotEmpty) {
+            _items.add(
+              EditorItem(
+                id:
+                    "${DateTime.now().millisecondsSinceEpoch}_$left",
+                type: 'image',
+                contentUrl: imageUrl,
+                position: Offset(left, top),
+                width: width * scaleX,
+                height: height * scaleY,
+                isLocal: false,
+              ),
+            );
+          }
+        } else if (type == 'rect' || type == 'circle') {
+          // Background / Shapes
+          _items.add(
+            EditorItem(
+              id:
+                  "${DateTime.now().millisecondsSinceEpoch}_$left",
+              type: 'shape',
+              position: Offset(left, top),
+              width: width * scaleX,
+              height: height * scaleY,
+              color: _parseColor(json['fill']),
+            ),
+          );
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint("JSON Load Error: $e");
+    }
+  }
+
+  Color _parseColor(dynamic fillColor) {
+    if (fillColor is String) {
+      if (fillColor == 'white') return Colors.white;
+      if (fillColor == 'black') return Colors.black;
+      if (fillColor.startsWith('rgba')) {
         try {
-          Color parsedColor = Color(int.parse(json['color'].replaceFirst('#', '0xFF')));
-          item = item.copyWith(color: parsedColor);
+          final cleaned = fillColor.replaceAll(RegExp(r'rgba\(|\)'), '');
+          final parts = cleaned
+              .split(',')
+              .map((e) => double.parse(e.trim()))
+              .toList();
+          return Color.fromRGBO(
+            parts[0].toInt(),
+            parts[1].toInt(),
+            parts[2].toInt(),
+            parts[3],
+          );
         } catch (_) {}
       }
-
-      _items.add(item);
     }
-    _saveState();
-    notifyListeners();
+    return Colors.black;
   }
 
   void addText({String initialText = "New Text"}) {
     _saveState();
-    _items.add(EditorItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      type: 'text',
-      text: initialText,
-      position: const Offset(120, 200),
-      color: Colors.black87,
-    ));
+    _items.add(
+      EditorItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: 'text',
+        text: initialText,
+        position: const Offset(120, 200),
+        color: Colors.black87,
+      ),
+    );
     _saveState();
     notifyListeners();
   }
@@ -67,16 +128,18 @@ class EditorProvider extends ChangeNotifier {
 
   void addImage(String url, {bool isLocal = false}) {
     _saveState();
-    _items.add(EditorItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      type: 'image',
-      contentUrl: url,
-      position: const Offset(100, 150),
-      width: 220,
-      height: 220,
-      isLocal: isLocal,
-      text: 'rounded',
-    ));
+    _items.add(
+      EditorItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: 'image',
+        contentUrl: url,
+        position: const Offset(100, 150),
+        width: 220,
+        height: 220,
+        isLocal: isLocal,
+        text: 'rounded',
+      ),
+    );
     _saveState();
     notifyListeners();
   }
@@ -115,6 +178,7 @@ class EditorProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void updateTextContent(String id, String newText) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -123,6 +187,7 @@ class EditorProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void setImageFilter(String id, String filterName) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -132,7 +197,12 @@ class EditorProvider extends ChangeNotifier {
     }
   }
 
-  void updateImageColorAdjustments(String id, {double? brightness, double? contrast, double? saturation}) {
+  void updateImageColorAdjustments(
+    String id, {
+    double? brightness,
+    double? contrast,
+    double? saturation,
+  }) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _items[index] = _items[index].copyWith(
@@ -143,18 +213,24 @@ class EditorProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void regenerateImageWithAi(String id, String prompt) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _saveState();
       String encodedPrompt = Uri.encodeComponent(prompt);
       int seed = DateTime.now().millisecondsSinceEpoch % 10000;
-      String aiImageUrl = "https://image.pollinations.ai/prompt/$encodedPrompt?seed=$seed&nologo=true";
+      String aiImageUrl =
+          "https://image.pollinations.ai/prompt/$encodedPrompt?seed=$seed&nologo=true";
 
-      _items[index] = _items[index].copyWith(contentUrl: aiImageUrl, isLocal: false);
+      _items[index] = _items[index].copyWith(
+        contentUrl: aiImageUrl,
+        isLocal: false,
+      );
       notifyListeners();
     }
   }
+
   void updateTextColor(String id, Color newColor) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -163,6 +239,7 @@ class EditorProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void setImageShape(String id, String shape, {double radius = 16.0}) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -176,7 +253,10 @@ class EditorProvider extends ChangeNotifier {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _saveState();
-      _items[index] = _items[index].copyWith(outlineWidth: width, outlineColor: color);
+      _items[index] = _items[index].copyWith(
+        outlineWidth: width,
+        outlineColor: color,
+      );
       notifyListeners();
     }
   }
@@ -234,6 +314,42 @@ class EditorProvider extends ChangeNotifier {
       _historyIndex++;
       _items.clear();
       _items.addAll(_history[_historyIndex].map((e) => e.copyWith()));
+      notifyListeners();
+    }
+  }
+
+  List<String> freepikAssets = [];
+  bool isFreepikLoading = false;
+
+  Future<void> fetchFreepikAssets(String query) async {
+    isFreepikLoading = true;
+    notifyListeners();
+
+    try {
+      freepikAssets = await FreepikService.searchAssets(query);
+    } catch (e) {
+      debugPrint("Error fetching assets: $e");
+      freepikAssets = [];
+    } finally {
+      isFreepikLoading = false;
+      notifyListeners();
+    }
+  }
+
+  List<String> freepikStickers = [];
+  bool isStickersLoading = false;
+
+  Future<void> fetchFreepikStickers(String query) async {
+    isStickersLoading = true;
+    notifyListeners();
+
+    try {
+      freepikStickers = await FreepikService.searchAssets("$query stickers");
+    } catch (e) {
+      debugPrint("Error fetching stickers: $e");
+      freepikStickers = [];
+    } finally {
+      isStickersLoading = false;
       notifyListeners();
     }
   }

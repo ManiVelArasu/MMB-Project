@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:project_mmb/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
@@ -21,7 +20,7 @@ class FeedbackScreen extends StatelessWidget {
             backgroundColor: Colors.white,
 
             appBar:CustomAppBar(
-            showTitle: true,
+              showTitle: true,
               title:"Feedback",
               showRightIcon: false,
 
@@ -29,14 +28,16 @@ class FeedbackScreen extends StatelessWidget {
 
 
 
-                body: SingleChildScrollView(
+            body: SingleChildScrollView(
               padding: EdgeInsets.all(20.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(height: 20.h),
 
-                  AppText(
+                 AppText(
+
+
                     "Our support Team will available Monday to Saturday,10 AM-7 PM to assist you with any queries",
                     style: TextStyle(
                       fontSize: 20.sp,
@@ -89,7 +90,10 @@ class FeedbackScreen extends StatelessWidget {
                       ),
 
 
+
                       child: AppText(
+
+
                         "Submit",
                         style: TextStyle(
                           fontSize: 13,
