@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:project_mmb/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
@@ -29,13 +31,13 @@ class FaqScreen extends StatelessWidget {
                   const SizedBox(height: 10),
 
                   const Center(
-                    child: Text(
+                    child: AppText(
                       "Got questions? We've got answers!",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize:20,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1E3A8A),
+                        color: Colors.black87,
                       ),
                     ),
                   ),
