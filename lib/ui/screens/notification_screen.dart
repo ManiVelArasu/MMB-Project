@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:project_mmb/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/notification_provider.dart';
@@ -47,12 +48,12 @@ class NotificationScreen extends StatelessWidget {
 
                         Expanded(
                           child: Center(
-                            child: Text(
+                            child: AppText(
                               'Notifications',
                               style: TextStyle(
-                                fontSize: 24.sp,
+                                fontSize:20,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1F2937),
+                                color: Colors.black87,
                               ),
                             ),
                           ),

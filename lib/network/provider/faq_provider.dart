@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../model/faq_model.dart';
 
+
 class FaqProvider extends ChangeNotifier {
   final List<FaqModel> _faqList = [
     FaqModel(

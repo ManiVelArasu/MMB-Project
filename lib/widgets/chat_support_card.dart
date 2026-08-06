@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/ui/screens/feedback_screen.dart';
 
 class ChatSupportCard extends StatelessWidget {
@@ -44,7 +45,7 @@ class ChatSupportCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                const AppText(
                   "Chat Support",
                   style: TextStyle(
                     fontSize: 18,
@@ -55,7 +56,7 @@ class ChatSupportCard extends StatelessWidget {
 
                 const SizedBox(height: 6),
 
-                const Text(
+                const AppText(
                   "Get instant help through live chat. Our support team is ready to assist you with your queries.",
                   style: TextStyle(
                     fontSize: 14,

@@ -36,7 +36,8 @@ class HelpSupportScreen extends StatelessWidget {
                       "Our support team is available Monday to Saturday,\n10 AM – 7 PM to assist you with any queries.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w500,
                         color: Color(0xFF1F2937),
 
                         height: 1.5,
@@ -47,12 +48,7 @@ class HelpSupportScreen extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   /// Chat Support Card
-                  InkWell(
-                    onTap:() {
-                      Navigator.pushNamed(context, "/FeedbackScreen");
-                    },
-
-                    child: Container(
+                      Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFF1F2),
@@ -63,7 +59,7 @@ class HelpSupportScreen extends StatelessWidget {
                         children: [
                           const CircleAvatar(
                             radius: 24,
-                            backgroundColor: Color(0xFFEF4444),
+                            backgroundColor: Colors.black54,
                             child: Icon(
                               Icons.chat_bubble_outline,
                               color: Colors.white,
@@ -75,19 +71,21 @@ class HelpSupportScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                AppText(
                                   "Chat Support",
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1F2937),
                                   ),
                                 ),
+
                                 SizedBox(height: 6),
                                 Text(
                                   "Get instant help through live chat. Our support team is ready to assist you with your queries.",
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.black54,
+                                    color: Color(0xFF6B7280),
                                     height: 1.5,
                                   ),
                                 ),
@@ -97,25 +95,25 @@ class HelpSupportScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                  ),
+
 
                   const SizedBox(height: 24),
 
                   /// Email
-                  const Text(
+                  const AppText(
                     "Write to us",
                     style: TextStyle(
                       fontSize: 15,
-                      color: Colors.black54,
+                      color: Color(0xFF9CA3AF),
                     ),
                   ),
 
                   const SizedBox(height: 4),
 
-                  const Text(
+                  const AppText(
                     "support@makemybrand.com",
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF1E3A8A),
                     ),
@@ -124,11 +122,11 @@ class HelpSupportScreen extends StatelessWidget {
                   const SizedBox(height: 30),
 
                   /// Heading
-                  const Text(
+                  const AppText(
                     "Support Tickets",
                     style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
 
@@ -143,11 +141,14 @@ class HelpSupportScreen extends StatelessWidget {
                       final ticket = provider.tickets[index];
 
                       return SupportTicketCard(ticket: ticket,);
+
                     },
-                  ),
+
+                 ),
                 ],
               ),
-            ),
+
+          ),
           );
         },
       ),

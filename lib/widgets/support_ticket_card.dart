@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project_mmb/utils/theme/app.colors.dart';
 import '../component/status_widget.dart';
 import '../model/support_ticket_model.dart';
 
@@ -38,9 +39,9 @@ class SupportTicketCard extends StatelessWidget {
 
               StatusWidget(
                 status:ticket.status,
-                backgroundColor: const Color(0xFFE6EAFE),
-                textStyle: const TextStyle(
-                  color: Color(0xFF1F2937),
+                backgroundColor:ticket.status=="Open"? Color(0xFF1F2937):AppColors.lightGreen,
+                textStyle:  TextStyle(
+                  color: ticket.status=="Open"? AppColors.appRed:AppColors.lightRed,
                   fontWeight: FontWeight.w700,
                 ),
               ),

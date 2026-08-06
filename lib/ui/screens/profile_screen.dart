@@ -311,7 +311,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _buildSettingsTile(
                         title: "Feedback",
                         iconAsset: "assets/images/feedback_icon.png",
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.pushNamed(context, "/FeedbackScreen");
+                        },
                       ),
                       _buildSettingsTile(
                         title: "Privacy Policy",

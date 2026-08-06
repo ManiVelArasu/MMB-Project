@@ -183,6 +183,10 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (context) => const FaqScreen(),
         );
+      case "/Help&SupportScreen":
+        return MaterialPageRoute(
+          builder: (context) => const FaqScreen(),
+        );
     }
     return null;
   }
