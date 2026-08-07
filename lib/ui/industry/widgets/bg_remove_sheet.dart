@@ -61,13 +61,15 @@ class BgRemoveSheet extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // 1. Original Image Card
                       Stack(
                         clipBehavior: Clip.none,
-
                         children: [
                           InkWell(
                             onTap: () {
-                              businessProvider.setImageSelected(true);
+                              businessProvider.setImageSelected(
+                                true,
+                              ); // Original image-ஐத் தேர்ந்தெடுக்கிறது
                             },
                             child: Container(
                               height: 100.h,
@@ -75,7 +77,8 @@ class BgRemoveSheet extends StatelessWidget {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: businessProvider.isImageSelected == true
+                                  color:
+                                      businessProvider.isImageSelected == true
                                       ? customColor.redColor
                                       : customColor.greyColor.withAlpha(50),
                                   width: 2.w,
@@ -89,11 +92,10 @@ class BgRemoveSheet extends StatelessWidget {
                                 ],
                               ),
                               child: ClipRRect(
-                                // Clip image to container border
                                 borderRadius: BorderRadius.circular(10),
-                                // Slightly smaller than container
                                 child: Image.file(
-                                  businessProvider.originalImage!,
+                                  businessProvider
+                                      .originalImage!, // இங்கு Original Image தான் இருக்க வேண்டும்
                                   fit: BoxFit.cover,
                                   width: double.infinity,
                                   height: double.infinity,
@@ -115,13 +117,16 @@ class BgRemoveSheet extends StatelessWidget {
                         ],
                       ),
                       width12,
+                      // 2. Background Removed Image Card
                       Stack(
                         fit: StackFit.passthrough,
                         clipBehavior: Clip.none,
                         children: [
                           InkWell(
                             onTap: () {
-                              businessProvider.setImageSelected(false);
+                              businessProvider.setImageSelected(
+                                false,
+                              ); // BG Removed image-ஐத் தேர்ந்தெடுக்கிறது
                             },
                             child: Container(
                               height: 100.h,
@@ -129,7 +134,8 @@ class BgRemoveSheet extends StatelessWidget {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: businessProvider.isImageSelected == false
+                                  color:
+                                      businessProvider.isImageSelected == false
                                       ? customColor.redColor
                                       : customColor.greyColor.withAlpha(50),
                                   width: 2.w,
@@ -143,11 +149,10 @@ class BgRemoveSheet extends StatelessWidget {
                                 ],
                               ),
                               child: ClipRRect(
-                                // Clip image to container border
                                 borderRadius: BorderRadius.circular(10),
-                                // Slightly smaller than container
                                 child: Image.file(
-                                  businessProvider.selectedImage!,
+                                  businessProvider
+                                      .selectedImage!, // இங்கு BG Removed Image இருக்க வேண்டும்
                                   fit: BoxFit.cover,
                                   width: double.infinity,
                                   height: double.infinity,
@@ -155,7 +160,6 @@ class BgRemoveSheet extends StatelessWidget {
                               ),
                             ),
                           ),
-
                           businessProvider.isImageSelected == false
                               ? Positioned(
                                   top: -8,
@@ -185,7 +189,8 @@ class BgRemoveSheet extends StatelessWidget {
                           clipBehavior: Clip.hardEdge,
                           child: Image.file(
                             businessProvider.selectedImage!,
-                            fit: BoxFit.cover, // cover clips better than contain
+                            fit:
+                                BoxFit.cover, // cover clips better than contain
                             height: 100.h,
                             width: 100.w,
                           ),

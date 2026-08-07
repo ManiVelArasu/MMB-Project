@@ -23,14 +23,13 @@ class EditorItem {
   final Color? color;
   final double fontSize;
   final double opacity;
-  final String fontFamily;
-  // 🚀 New Pro Features: Outline, Brightness/Tint
+  String fontFamily;
   final double outlineWidth;
   final Color outlineColor;
   final String filterType;
-  final double brightness; // -1.0 to 1.0
-  final double contrast;   // 0.0 to 2.0
-  final double saturation; // 0.0 to 2.0
+  final double brightness;
+  final double contrast;
+  final double saturation;
 
   EditorItem({
     required this.id,

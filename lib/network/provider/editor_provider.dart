@@ -1,11 +1,10 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:project_mmb/core/app_provider/my_notifier.dart';
 import '../../Api Model/editor_model.dart';
 import '../../Repository/freeoic.dart';
 
-
-class EditorProvider extends ChangeNotifier with MyNotifier{
+class EditorProvider extends ChangeNotifier with MyNotifier {
   final List<EditorItem> _items = [];
   List<EditorItem> get items => _items;
 
@@ -19,9 +18,15 @@ class EditorProvider extends ChangeNotifier with MyNotifier{
     _history.add(_items.map((e) => e.copyWith()).toList());
     _historyIndex = _history.length - 1;
   }
+
   String? selectedItemType;
   String? selectedItemId;
   String? selectedFrameUrl;
+
+  List<String> freePikAssets = [];
+  bool isFreePikLoading = false;
+  List<String> freePikStickers = [];
+  bool isStickersLoading = false;
 
   void setSelectedItem(String? type, String? id) {
     selectedItemType = type;
@@ -39,6 +44,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier{
     selectedItemId = null;
     notifyListeners();
   }
+
   void loadItemsFromJson(List<Map<String, dynamic>> jsonList) {
     try {
       _items.clear();
@@ -224,11 +230,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier{
   }
 
   void updateImageColorAdjustments(
-      String id, {
-        double? brightness,
-        double? contrast,
-        double? saturation,
-      }) {
+    String id, {
+    double? brightness,
+    double? contrast,
+    double? saturation,
+  }) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _items[index] = _items[index].copyWith(
@@ -344,46 +350,40 @@ class EditorProvider extends ChangeNotifier with MyNotifier{
     }
   }
 
-  List<String> freepikAssets = [];
-  bool isFreepikLoading = false;
-  List<String> freepikStickers = [];
-  bool isStickersLoading = false;
 
-  Future<void> fetchFreepikAssets(String query) async {
-    if (isFreepikLoading) return;
-    isFreepikLoading = true;
+  Future<void> fetchFreePikAssets(String query) async {
+    if (isFreePikLoading) return;
+    isFreePikLoading = true;
     notifyListeners(); // 🚀 Loading start
 
     try {
-      freepikAssets = await FreepikService.searchAssets(query).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => [],
-      );
+      freePikAssets = await FreepikService.searchAssets(
+        query,
+      ).timeout(const Duration(seconds: 10), onTimeout: () => []);
     } catch (e) {
       debugPrint("Error fetching assets: $e");
-      freepikAssets = [];
+      freePikAssets = [];
     } finally {
-      isFreepikLoading = false;
+      isFreePikLoading = false;
       Future.microtask(() => notifyListeners());
     }
   }
 
-  Future<void> fetchFreepikStickers(String query) async {
+  Future<void> fetchFreePikStickers(String query) async {
     if (isStickersLoading) return;
     isStickersLoading = true;
     notifyListeners(); // 🚀 Loading start
 
     try {
-      freepikStickers = await FreepikService.searchAssets("$query stickers").timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => [],
-      );
+      freePikStickers = await FreepikService.searchAssets(
+        "$query stickers",
+      ).timeout(const Duration(seconds: 10), onTimeout: () => []);
     } catch (e) {
       debugPrint("Error fetching stickers: $e");
-      freepikStickers = [];
+      freePikStickers = [];
     } finally {
       isStickersLoading = false;
-      // 🚀 UI-kku odane update anuppa Future.microtask use panrom
+
       Future.microtask(() => notifyListeners());
     }
   }
@@ -396,6 +396,44 @@ class EditorProvider extends ChangeNotifier with MyNotifier{
         contentUrl: newUrl,
         isLocal: !newUrl.startsWith('http'),
       );
+      notifyListeners();
+    }
+  }
+
+  void updateFontFamily(String itemId, String fontFamily) {
+    final index = items.indexWhere((e) => e.id == itemId);
+    if (index != -1) {
+      items[index].fontFamily = fontFamily;
+      notifyListeners();
+    }
+  }
+  // EditorProvider-ல்:
+  void updateFilter(String itemId, String filterType) {
+    final index = items.indexWhere((e) => e.id == itemId);
+    if (index != -1) {
+      items[index] = items[index].copyWith(filterType: filterType);
+      notifyListeners();
+    }
+  }
+
+  void updateBrightness(String itemId, double value) {
+    final index = items.indexWhere((e) => e.id == itemId);
+    if (index != -1) {
+      items[index] = items[index].copyWith(brightness: value);
+      notifyListeners();
+    }
+  }
+  // EditorProvider-க்குள் இதைச் சேர்க்கவும்:
+
+  void updateBorderRadius(String itemId, double radius) {
+    // 'items' என்பது உங்கள் எடிட்டரில் உள்ள அனைத்து ஐட்டம்களின் லிஸ்ட்
+    final index = items.indexWhere((e) => e.id == itemId);
+
+    if (index != -1) {
+      // copyWith பயன்படுத்தி அதன் மதிப்பை மட்டும் அப்டேட் செய்கிறோம்
+      items[index] = items[index].copyWith(borderRadius: radius);
+
+      // UI-ஐ உடனுக்குடன் ரெஃப்ரேஷ் செய்ய
       notifyListeners();
     }
   }

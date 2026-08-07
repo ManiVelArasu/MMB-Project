@@ -10,7 +10,6 @@ import 'package:project_mmb/ui/screens/video_widget/video_widget.dart';
 import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:project_mmb/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:project_mmb/network/provider/business_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/home_appbar.dart';
@@ -22,8 +21,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
-    final businessProvider = context.watch<BusinessProvider>();
-    final themeProvider = context.watch<CustomThemeProvider>();
+      final themeProvider = context.watch<CustomThemeProvider>();
     final isDark = themeProvider.isDarkMode;
 
     return ChangeNotifierProvider(

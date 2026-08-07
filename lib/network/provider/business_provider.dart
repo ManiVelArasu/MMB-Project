@@ -18,8 +18,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 class BusinessProvider extends ChangeNotifier {
   BusinessProvider() {
     requestPermissionIfNeeded();
+    loadSavedData();
   }
-
+  String? _savedImagePath;
+  String? get savedImagePath => _savedImagePath;
   int _currentIndex = 0;
   String selectedCategory = "";
   String query = "";
@@ -34,11 +36,12 @@ class BusinessProvider extends ChangeNotifier {
   final editorKey = GlobalKey<ExtendedImageEditorState>();
   bool _hasChanges = false;
   bool _isApplied = false;
-  static const platform = MethodChannel('com.mobile.mmb.project_mmb/background_removal');
-bool _isImageSelected =false;
+  static const platform = MethodChannel(
+    'com.mobile.mmb.project_mmb/background_removal',
+  );
+  bool _isImageSelected = false;
   Uint8List? _processedImageBytes;
   bool _isProcessingBackground = false;
-
 
   // LIVE PREVIEW variables
   double _liveRotationAngle = 0.0;
@@ -47,7 +50,7 @@ bool _isImageSelected =false;
   ///get method
   int get currentIndex => _currentIndex;
   File? get selectedImage => _selectedImage;
-  File? get originalImage =>_originalImage;
+  File? get originalImage => _originalImage;
   String get businessName => _businessName;
   String get email => _email;
   String get mobileNumber => _mobileNumber;
@@ -57,8 +60,10 @@ bool _isImageSelected =false;
   double get scaleValue => _liveScaleValue;
   bool get isApplied => _isApplied;
   bool get hasChanges => _hasChanges;
-  Uint8List? get processedImageBytes => _processedImageBytes; // NEW: Getter for processed image
-  bool get isProcessingBackground => _isProcessingBackground; // NEW: Getter for processing state
+  Uint8List? get processedImageBytes =>
+      _processedImageBytes; // NEW: Getter for processed image
+  bool get isProcessingBackground =>
+      _isProcessingBackground; // NEW: Getter for processing state
   bool get isImageSelected => _isImageSelected;
 
   String? _nameError;
@@ -66,13 +71,45 @@ bool _isImageSelected =false;
   String? _mobileError;
   String? _imageError;
 
-// GETTERS FOR ERRORS
+  // GETTERS FOR ERRORS
   String? get nameError => _nameError;
   String? get emailError => _emailError;
   String? get mobileError => _mobileError;
   String? get imageError => _imageError;
+  final mobileController = TextEditingController();
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
 
-// UPDATED SETTERS WITH AUTO ERROR CLEARING
+  Future<void> loadSavedData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final savedNumber = prefs.getString('saved_mobile_number');
+    if (savedNumber != null && savedNumber.isNotEmpty) {
+      _mobileNumber = savedNumber;
+      mobileController.text = savedNumber;
+    }
+
+    // 🚀 இமேஜ் பாத் சரியாக எடுக்கப்படுகிறதா எனப் பார்க்கவும்:
+    _savedImagePath = prefs.getString('saved_business_image_path');
+
+    // Business Name
+    final savedName = prefs.getString('saved_business_name');
+    if (savedName != null && savedName.isNotEmpty) {
+      _businessName = savedName;
+      nameController.text = savedName;
+    }
+
+    // Email
+    final savedEmail = prefs.getString('saved_email');
+    if (savedEmail != null && savedEmail.isNotEmpty) {
+      _email = savedEmail;
+      emailController.text = savedEmail;
+    }
+
+    notifyListeners(); // 🚀 UI-ஐ உடனுக்குடன் ரெஃப்ரேஷ் செய்ய இது மிகவும் முக்கியம்
+  }
+
+  // UPDATED SETTERS WITH AUTO ERROR CLEARING
   void setBusinessName(String value) {
     _businessName = value;
     _nameError = null; // Error reset on typing
@@ -85,13 +122,16 @@ bool _isImageSelected =false;
     notifyListeners();
   }
 
-  void setMobileNumber(String value) {
-    _mobileNumber = value;
-    _mobileError = null; // Error reset on typing
-    notifyListeners();
+  Future<void> setMobileNumber(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedNumber = prefs.getString('saved_mobile_number');
+    if (savedNumber != null && savedNumber.isNotEmpty) {
+      _mobileNumber = savedNumber;
+      notifyListeners();
+    }
   }
 
-// FORM VALIDATION FUNCTION
+  // FORM VALIDATION FUNCTION
   bool validateForm() {
     bool isValid = true;
 
@@ -137,26 +177,25 @@ bool _isImageSelected =false;
     notifyListeners();
     return isValid;
   }
+
   /// set method
   void setCurrentIndex(int value) {
     _currentIndex = value;
     notifyListeners();
   }
 
-
-
   void setImageSelected(bool value) {
     _isImageSelected = value;
     notifyListeners();
   }
-
 
   set selectedImage(File? value) {
     _selectedImage = value;
     _resetLivePreview();
     _hasChanges = false;
     _isApplied = false;
-    _processedImageBytes = null; // NEW: Clear processed image when new image selected
+    _processedImageBytes =
+        null; // NEW: Clear processed image when new image selected
     _isProcessingBackground = false;
     notifyListeners();
   }
@@ -198,7 +237,7 @@ bool _isImageSelected =false;
     _resetLivePreview();
     _hasChanges = false;
     _isApplied = false;
-    _processedImageBytes = null; // NEW: Clear processed image
+    _processedImageBytes = null;
     _isProcessingBackground = false;
     notifyListeners();
   }
@@ -227,9 +266,9 @@ bool _isImageSelected =false;
   }
 
   Future<void> pickImage(
-      BuildContext context, {
-        ImageSource source = ImageSource.gallery,
-      }) async {
+    BuildContext context, {
+    ImageSource source = ImageSource.gallery,
+  }) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -241,16 +280,11 @@ bool _isImageSelected =false;
         notifyListeners();
 
         if (context.mounted) {
-          Navigator.pop(context); // Close bottom sheet
+          Navigator.pop(context);
           await Future.delayed(const Duration(milliseconds: 100));
 
           if (context.mounted) {
-            // 🚀 Pass `this` (the current provider instance) via arguments!
-            Navigator.pushNamed(
-              context,
-              "/EditPhotoScreen",
-              arguments: this,
-            );
+            Navigator.pushNamed(context, "/EditPhotoScreen", arguments: this);
           }
         }
       }
@@ -258,6 +292,7 @@ bool _isImageSelected =false;
       debugPrint("Error picking image: $e");
     }
   }
+
   List<AccTypeModel> accountTypeList = [
     AccTypeModel(
       title: "For my Business",
@@ -266,7 +301,7 @@ bool _isImageSelected =false;
     AccTypeModel(
       title: "Personal Use",
       description:
-      "Find Special Occasions, Daily Quotes, Funny Posts to build your social media face",
+          "Find Special Occasions, Daily Quotes, Funny Posts to build your social media face",
     ),
   ];
 
@@ -419,7 +454,6 @@ bool _isImageSelected =false;
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
 
-      // Move to center, rotate, then draw
       canvas.translate(newWidth / 2.0, newHeight / 2.0);
       canvas.rotate(angleInRadians);
       canvas.translate(-width / 2.0, -height / 2.0);
@@ -439,7 +473,6 @@ bool _isImageSelected =false;
         );
         await file.writeAsBytes(byteData.buffer.asUint8List());
 
-        // Clean up old image if it's in temp directory
         if (_selectedImage!.path.contains('temp')) {
           try {
             await _selectedImage!.delete();
@@ -449,7 +482,7 @@ bool _isImageSelected =false;
         }
 
         _selectedImage = file;
-        _resetLivePreview(); // Reset to 0° after applying
+        _resetLivePreview();
         _isApplied = true;
         _hasChanges = false;
         notifyListeners();
@@ -502,7 +535,6 @@ bool _isImageSelected =false;
         );
         await file.writeAsBytes(byteData.buffer.asUint8List());
 
-        // Clean up old image if it's in temp directory
         if (_selectedImage!.path.contains('temp')) {
           try {
             await _selectedImage!.delete();
@@ -512,7 +544,7 @@ bool _isImageSelected =false;
         }
 
         _selectedImage = file;
-        _resetLivePreview(); // IMPORTANT: Reset scale to 1.0 after applying
+        _resetLivePreview();
         _isApplied = true;
         _hasChanges = false;
         notifyListeners();
@@ -529,7 +561,6 @@ bool _isImageSelected =false;
   }
 
   void bgRemoveSheet(BuildContext context) {
-    // Capture current provider reference
     final businessProvider = this;
 
     showModalBottomSheet(
@@ -547,7 +578,6 @@ bool _isImageSelected =false;
 
   @override
   void dispose() {
-    // Clean up any temp files when provider is disposed
     _cleanupTempFiles();
     super.dispose();
   }
@@ -568,6 +598,7 @@ bool _isImageSelected =false;
       debugPrint("Error cleaning up temp files: $e");
     }
   }
+
   Future<bool> removeBackground() async {
     if (_selectedImage == null) {
       debugPrint("No image selected for background removal");
@@ -575,6 +606,7 @@ bool _isImageSelected =false;
     }
     _originalImage = _selectedImage;
     _isProcessingBackground = true;
+
     notifyListeners();
 
     try {
@@ -584,13 +616,12 @@ bool _isImageSelected =false;
       );
 
       if (result != null) {
-        // Convert bytes back to File and update _selectedImage
         final dir = await getTemporaryDirectory();
-        final fileName = 'bg_removed_${DateTime.now().millisecondsSinceEpoch}.png';
+        final fileName =
+            'bg_removed_${DateTime.now().millisecondsSinceEpoch}.png';
         final processedFile = File('${dir.path}/$fileName');
         await processedFile.writeAsBytes(result);
 
-        // Clean up old image if it's in temp directory
         if (_selectedImage!.path.contains('temp')) {
           try {
             await _selectedImage!.delete();
@@ -599,16 +630,21 @@ bool _isImageSelected =false;
           }
         }
 
-        // Update _selectedImage with processed image (as requested)
         _selectedImage = processedFile;
         _processedImageBytes = result;
         _resetLivePreview();
         _isApplied = true;
         _hasChanges = false;
         _isProcessingBackground = false;
+
+        // 🚀 இங்கு Background Remove முடிந்ததும் BG Removed இமேஜ் தான் செலக்ட் ஆக வேண்டும் என குறிப்பிடப்பட்டுள்ளது:
+        _isImageSelected = false;
+
         notifyListeners();
 
-        debugPrint("Background removed successfully and _selectedImage updated");
+        debugPrint(
+          "Background removed successfully and _selectedImage updated",
+        );
         return true;
       } else {
         _isProcessingBackground = false;
@@ -628,13 +664,13 @@ bool _isImageSelected =false;
     }
   }
 
-  // NEW: Method to apply processed image bytes directly to _selectedImage (alternative)
   Future<bool> applyProcessedImageToSelected() async {
     if (_processedImageBytes == null) return false;
 
     try {
       final dir = await getTemporaryDirectory();
-      final fileName = 'applied_bg_removed_${DateTime.now().millisecondsSinceEpoch}.png';
+      final fileName =
+          'applied_bg_removed_${DateTime.now().millisecondsSinceEpoch}.png';
       final processedFile = File('${dir.path}/$fileName');
       await processedFile.writeAsBytes(_processedImageBytes!);
 
@@ -648,8 +684,8 @@ bool _isImageSelected =false;
       debugPrint("Failed to apply processed image: $e");
       return false;
     }
-
   }
+
   Future<void> loadSavedBusinessImage() async {
     final prefs = await SharedPreferences.getInstance();
     final String? imagePath = prefs.getString('saved_business_image_path');
@@ -659,7 +695,10 @@ bool _isImageSelected =false;
       notifyListeners();
     }
   }
-
+  void updateSavedImagePath(String path) {
+    _savedImagePath = path;
+    notifyListeners();
+  }
 }
 
 class AccTypeModel {

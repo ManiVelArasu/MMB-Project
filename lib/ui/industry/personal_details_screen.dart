@@ -19,6 +19,16 @@ class PersonalDetailsScreen extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     return Consumer<BusinessProvider>(
       builder: (context, businessProvider, child) {
+        if (businessProvider.nameController.text.isEmpty && businessProvider.businessName.isNotEmpty) {
+          businessProvider.nameController.text = businessProvider.businessName;
+        }
+        if (businessProvider.emailController.text.isEmpty && businessProvider.email.isNotEmpty) {
+          businessProvider.emailController.text = businessProvider.email;
+        }
+        if (businessProvider.mobileController.text.isEmpty && businessProvider.mobileNumber.isNotEmpty) {
+          businessProvider.mobileController.text = businessProvider.mobileNumber;
+        }
+
         return Scaffold(
           appBar: AppBar(
             leading: IconButton(
@@ -50,7 +60,6 @@ class PersonalDetailsScreen extends StatelessWidget {
                               businessProvider.originalImage == null
                               ? Row(
                             mainAxisAlignment: MainAxisAlignment.start,
-
                             children: [
                               InkWell(
                                 onTap: () {
@@ -59,23 +68,16 @@ class PersonalDetailsScreen extends StatelessWidget {
                                 child: Container(
                                   height: 120.h,
                                   width: 120.w,
-                                  // padding: EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(
-                                      16,
-                                    ),
-                                    color: customColor.redColor.withAlpha(
-                                      25,
-                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    color: customColor.redColor.withAlpha(25),
                                     border: Border.all(
                                       color: customColor.redColor,
                                     ),
                                   ),
                                   child: Column(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.center,
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       SvgPicture.asset(
                                         "assets/icons/upload_logo_ic.svg",
@@ -107,29 +109,24 @@ class PersonalDetailsScreen extends StatelessWidget {
                               Container(
                                 height: 120.h,
                                 width: 120.w,
-
                                 padding: EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
-                                  color: customColor.redColor.withAlpha(
-                                    25,
-                                  ),
+                                  color: customColor.redColor.withAlpha(25),
                                   border: Border.all(
                                     color: customColor.redColor,
                                   ),
                                 ),
                                 child: Column(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.center,
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     SvgPicture.asset(
                                       "assets/icons/create_logo_ic.svg",
                                     ),
                                     height8,
                                     Text(
-                                      "Upload logo",
+                                      "Create logo", // "Upload logo" என்பதற்கு பதிலாக "Create logo" என மாற்றப்பட்டுள்ளது
                                       style: theme.bodyMedium!.copyWith(
                                         color: customColor.blackColor,
                                         fontWeight: FontWeight.w700,
@@ -147,40 +144,22 @@ class PersonalDetailsScreen extends StatelessWidget {
                                 height: 100.h,
                                 width: 100.w,
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color:
-                                    businessProvider
-                                        .isImageSelected ==
-                                        false
-                                        ? customColor.redColor
-                                        : customColor.greyColor.withAlpha(
-                                      50,
-                                    ),
-                                    width: 2.w,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(
-                                        0.1,
-                                      ),
-                                      blurRadius: 8.r,
-                                      offset: Offset(0, 2.h),
-                                    ),
-                                  ],
+                                  // ... existing decoration ...
                                 ),
                                 child: ClipRRect(
-                                  // Clip image to container border
                                   borderRadius: BorderRadius.circular(10),
-                                  // Slightly smaller than container
                                   child: Image.file(
-                                    businessProvider.isImageSelected ==
-                                        true
+                                    businessProvider.isImageSelected == true
                                         ? businessProvider.originalImage!
-                                        : businessProvider.selectedImage!,
+                                        : businessProvider.selectedImage ?? businessProvider.originalImage!,
+                                    // -----------------------------------
                                     fit: BoxFit.cover,
                                     width: double.infinity,
                                     height: double.infinity,
+                                    // Error handling for corrupted file
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Center(child: Icon(Icons.error));
+                                    },
                                   ),
                                 ),
                               ),
@@ -191,7 +170,6 @@ class PersonalDetailsScreen extends StatelessWidget {
                                   onTap: () {
                                     businessProvider.clearImage();
                                   },
-
                                   child: SvgPicture.asset(
                                     "assets/icons/remove_ic.svg",
                                     height: 30,
@@ -203,184 +181,39 @@ class PersonalDetailsScreen extends StatelessWidget {
                           ),
 
                           height12,
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                              horizontal: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: customColor.borderColor,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Business Name",
-                                  style: theme.bodySmall!.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: customColor.baseColor,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
 
-                                TextFormField(
-                                  keyboardType: TextInputType.text,
-                                  onChanged: businessProvider.setBusinessName,
-                                  decoration: InputDecoration(
-                                    hintText: "Enter business name",
-                                    hintStyle: theme.bodyMedium!.copyWith(
-                                      fontWeight: FontWeight.w400,
-                                      color: customColor.greyColor.withAlpha(
-                                        50,
-                                      ),
-                                    ),
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                  style: theme.bodyMedium!.copyWith(
-                                    fontWeight: FontWeight.w400,
-                                    color: customColor.baseColor,
-                                  ),
-                                ),
-
-                                // Validation error
-                                // if (authProvider.mobileError != null)
-                                //   Padding(
-                                //     padding: const EdgeInsets.only(top: 4),
-                                //     child: Text(
-                                //       authProvider.mobileError!,
-                                //       style: TextStyle(
-                                //         color: Colors.red,
-                                //         fontSize: 12.sp,
-                                //       ),
-                                //     ),
-                                //   ),
-                              ],
-                            ),
+                          // 1. BUSINESS NAME FIELD
+                          _buildInputField(
+                            title: "Business Name",
+                            hintText: "Enter business name",
+                            controller: businessProvider.nameController,
+                            onChanged: businessProvider.setBusinessName,
+                            customColor: customColor,
+                            theme: theme,
                           ),
                           height12,
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                              horizontal: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: customColor.borderColor,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Email Id",
-                                  style: theme.bodySmall!.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: customColor.baseColor,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
 
-                                TextFormField(
-                                  keyboardType: TextInputType.text,
-                                  onChanged: businessProvider.setEmail,
-                                  decoration: InputDecoration(
-                                    hintText: "Enter email id",
-                                    hintStyle: theme.bodyMedium!.copyWith(
-                                      fontWeight: FontWeight.w400,
-                                      color: customColor.greyColor.withAlpha(
-                                        50,
-                                      ),
-                                    ),
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                  style: theme.bodyMedium!.copyWith(
-                                    fontWeight: FontWeight.w400,
-                                    color: customColor.baseColor,
-                                  ),
-                                ),
-
-                                // Validation error
-                                // if (authProvider.mobileError != null)
-                                //   Padding(
-                                //     padding: const EdgeInsets.only(top: 4),
-                                //     child: Text(
-                                //       authProvider.mobileError!,
-                                //       style: TextStyle(
-                                //         color: Colors.red,
-                                //         fontSize: 12.sp,
-                                //       ),
-                                //     ),
-                                //   ),
-                              ],
-                            ),
+                          // 2. EMAIL ID FIELD
+                          _buildInputField(
+                            title: "Email Id",
+                            hintText: "Enter email id",
+                            controller: businessProvider.emailController,
+                            onChanged: businessProvider.setEmail,
+                            keyboardType: TextInputType.emailAddress,
+                            customColor: customColor,
+                            theme: theme,
                           ),
                           height12,
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                              horizontal: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: customColor.borderColor,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Contact Number",
-                                  style: theme.bodySmall!.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: customColor.baseColor,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
 
-                                TextFormField(
-                                  keyboardType: TextInputType.text,
-                                  onChanged: businessProvider.setMobileNumber,
-                                  decoration: InputDecoration(
-                                    hintText: "Enter contact number",
-                                    hintStyle: theme.bodyMedium!.copyWith(
-                                      fontWeight: FontWeight.w400,
-                                      color: customColor.greyColor.withAlpha(
-                                        50,
-                                      ),
-                                    ),
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                  style: theme.bodyMedium!.copyWith(
-                                    fontWeight: FontWeight.w400,
-                                    color: customColor.baseColor,
-                                  ),
-                                ),
-
-                                // Validation error
-                                // if (authProvider.mobileError != null)
-                                //   Padding(
-                                //     padding: const EdgeInsets.only(top: 4),
-                                //     child: Text(
-                                //       authProvider.mobileError!,
-                                //       style: TextStyle(
-                                //         color: Colors.red,
-                                //         fontSize: 12.sp,
-                                //       ),
-                                //     ),
-                                //   ),
-                              ],
-                            ),
+                          // 3. CONTACT NUMBER FIELD
+                          _buildInputField(
+                            title: "Contact Number",
+                            hintText: "Enter contact number",
+                            controller: businessProvider.mobileController,
+                            onChanged: businessProvider.setMobileNumber,
+                            keyboardType: TextInputType.phone,
+                            customColor: customColor,
+                            theme: theme,
                           ),
                         ],
                       ),
@@ -388,7 +221,7 @@ class PersonalDetailsScreen extends StatelessWidget {
                   ),
                   ButtonWidget(
                     buttonPress: () {
-
+                      // உங்கள் Continue பட்டன் லாஜிக் இங்கே
                     },
                     title: "CONTINUE",
                     textStyle: theme.titleLarge!.copyWith(
@@ -407,6 +240,57 @@ class PersonalDetailsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  // Helper widget to avoid code duplication for Input Fields
+  Widget _buildInputField({
+    required String title,
+    required String hintText,
+    required TextEditingController controller,
+    required Function(String) onChanged,
+    required dynamic customColor,
+    required TextTheme theme,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: customColor.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.bodySmall!.copyWith(
+              fontWeight: FontWeight.w600,
+              color: customColor.baseColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextFormField(
+            controller: controller, // கண்ட்ரோலர் இணைக்கப்பட்டுள்ளது
+            keyboardType: keyboardType,
+            onChanged: onChanged,
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: theme.bodyMedium!.copyWith(
+                fontWeight: FontWeight.w400,
+                color: customColor.greyColor.withAlpha(50),
+              ),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+            style: theme.bodyMedium!.copyWith(
+              fontWeight: FontWeight.w400,
+              color: customColor.baseColor,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

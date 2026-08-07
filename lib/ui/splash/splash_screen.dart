@@ -27,27 +27,18 @@ class _SplashScreenState extends State<SplashScreen> {
     final bool isOnboarded = prefs.getBool('isOnboarded') ?? false;
     final bool isLoggedIn = prefs.getBool('is_logged_in') ?? false;
     final bool hasSeenPlans = prefs.getBool('has_seen_plans') ?? false;
+    final bool isBusinessCompleted = prefs.getBool('is_business_completed') ?? false;
 
     if (!mounted) return;
-    final businessProvider = Provider.of<BusinessProvider>(
-      context,
-      listen: false,
-    );
 
     if (!isOnboarded) {
-      print('d123');
       Navigator.pushReplacementNamed(context, '/OnboardingScreen');
-    } else if (businessProvider.selectedImage != null) {
-      print('ee123');
-      Navigator.pushReplacementNamed(context, '/CustomBottomNavScreen');
     } else if (isLoggedIn && !hasSeenPlans) {
-      print('2123');
       Navigator.pushReplacementNamed(context, '/PlansAndPricingScreen');
-    } else if (isLoggedIn && hasSeenPlans) {
-      print('bbb123');
+    } else if (isLoggedIn && hasSeenPlans && isBusinessCompleted) {
+      // 🚀 பிசினஸ் டீட்டெயில்ஸ் முடிந்துவிட்டால் நேரடியாக ஹோம் ஸ்கிரீனுக்குச் செல்லும்
       Navigator.pushReplacementNamed(context, '/CustomBottomNavScreen');
     } else {
-      print('bbb1235555');
       Navigator.pushReplacementNamed(context, '/LoginScreen');
     }
   }

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../component/custom_widget.dart';
 import '../../network/provider/mydownload_provider.dart';
+
 class MyDownloadsScreen extends StatelessWidget {
   const MyDownloadsScreen({super.key});
 
@@ -75,7 +76,7 @@ class MyDownloadsView extends StatelessWidget {
                           left: 16.w,
                           right: 16.w,
                           top: 10.h,
-                          bottom: 100.h, // Bottom Floating Pill Padding
+                          bottom: 100.h,
                         ),
                         physics: const BouncingScrollPhysics(),
                         itemCount: provider.downloads.length,
@@ -96,7 +97,7 @@ class MyDownloadsView extends StatelessWidget {
                             );
                           }
 
-                          // B) PURE IMAGE CARD (WITH TAP TO FULL SCREEN)
+
                           return GestureDetector(
                             onTap: () => _showFullScreenImage(
                               context,
@@ -130,7 +131,6 @@ class MyDownloadsView extends StatelessWidget {
                   ],
                 ),
 
-                // FLOATING BOTTOM FILTER PILL BAR
                 Positioned(
                   bottom: 20.h,
                   left: 30.w,
@@ -158,21 +158,21 @@ class MyDownloadsView extends StatelessWidget {
                           title: "IMAGE",
                           icon: Icons.image_rounded,
                           isSelected:
-                          provider.selectedFilter == DownloadFilter.image,
+                              provider.selectedFilter == DownloadFilter.image,
                           onTap: () => provider.setFilter(DownloadFilter.image),
                         ),
                         _buildFilterButton(
                           title: "VIDEO",
                           icon: Icons.videocam_rounded,
                           isSelected:
-                          provider.selectedFilter == DownloadFilter.video,
+                              provider.selectedFilter == DownloadFilter.video,
                           onTap: () => provider.setFilter(DownloadFilter.video),
                         ),
                         _buildFilterButton(
                           title: "POST SIZE",
                           icon: Icons.aspect_ratio_rounded,
                           isSelected:
-                          provider.selectedFilter ==
+                              provider.selectedFilter ==
                               DownloadFilter.postSize,
                           onTap: () =>
                               provider.setFilter(DownloadFilter.postSize),
