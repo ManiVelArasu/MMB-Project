@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:project_mmb/core/app_provider/my_notifier.dart';
 import '../../Api Model/editor_model.dart';
@@ -44,6 +43,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     selectedItemId = null;
     notifyListeners();
   }
+
+  bool isTemplateLoaded = false;
 
   void loadItemsFromJson(List<Map<String, dynamic>> jsonList) {
     try {
@@ -100,6 +101,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           );
         }
       }
+      isTemplateLoaded = true;
       notifyListeners();
     } catch (e) {
       debugPrint("JSON Load Error: $e");
@@ -166,6 +168,29 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
+  void addVideo(String videoUrl, {bool isLocal = false}) {
+    if (videoUrl.trim().isEmpty) return;
+
+    _saveState();
+
+    final videoItem = EditorItem(
+      id: "video_${DateTime.now().millisecondsSinceEpoch}",
+      type: "video",
+      contentUrl: videoUrl,
+      position: const Offset(100, 100),
+      width: 600,
+      height: 400,
+      isLocal: isLocal,
+    );
+
+    _items.add(videoItem);
+
+    selectedItemType = "video";
+    selectedItemId = videoItem.id;
+
+    notifyListeners();
+  }
+
   void updatePosition(String id, Offset newPos) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -192,7 +217,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  // 🚀 ADDED: Update Font Size Method
   void updateFontSize(String id, double newSize) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -350,14 +374,13 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-
   Future<void> fetchFreePikAssets(String query) async {
     if (isFreePikLoading) return;
     isFreePikLoading = true;
     notifyListeners(); // 🚀 Loading start
 
     try {
-      freePikAssets = await FreepikService.searchAssets(
+      freePikAssets = await FreePikService.searchAssets(
         query,
       ).timeout(const Duration(seconds: 10), onTimeout: () => []);
     } catch (e) {
@@ -375,7 +398,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners(); // 🚀 Loading start
 
     try {
-      freePikStickers = await FreepikService.searchAssets(
+      freePikStickers = await FreePikService.searchAssets(
         "$query stickers",
       ).timeout(const Duration(seconds: 10), onTimeout: () => []);
     } catch (e) {
@@ -407,7 +430,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       notifyListeners();
     }
   }
-  // EditorProvider-ல்:
+
   void updateFilter(String itemId, String filterType) {
     final index = items.indexWhere((e) => e.id == itemId);
     if (index != -1) {
@@ -423,18 +446,144 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       notifyListeners();
     }
   }
-  // EditorProvider-க்குள் இதைச் சேர்க்கவும்:
 
   void updateBorderRadius(String itemId, double radius) {
-    // 'items' என்பது உங்கள் எடிட்டரில் உள்ள அனைத்து ஐட்டம்களின் லிஸ்ட்
     final index = items.indexWhere((e) => e.id == itemId);
 
     if (index != -1) {
-      // copyWith பயன்படுத்தி அதன் மதிப்பை மட்டும் அப்டேட் செய்கிறோம்
       items[index] = items[index].copyWith(borderRadius: radius);
-
-      // UI-ஐ உடனுக்குடன் ரெஃப்ரேஷ் செய்ய
       notifyListeners();
     }
+  }
+
+  void updateImageShape(String id, String shape) {
+    int index = items.indexWhere((e) => e.id == id);
+
+    if (index != -1) {
+      items[index] = items[index].copyWith(text: shape);
+      notifyListeners();
+    }
+  }
+
+  void updateSize(String id, double width, double height) {
+    int index = items.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      items[index] = items[index].copyWith(width: width, height: height);
+      notifyListeners();
+    }
+  }
+
+  void updateCroppedImage(String id, String newImagePath) {
+    int index = _items.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      _saveState();
+      _items[index] = _items[index].copyWith(
+        contentUrl: newImagePath,
+        isLocal: true,
+      );
+      notifyListeners();
+    }
+  }
+
+  List<String> _freePikVideos = [];
+  List<String> get freePikVideos => _freePikVideos;
+
+  bool _isVideoLoading = false;
+  bool get isVideoLoading => _isVideoLoading;
+
+  bool _isVideosLoading = false; // 🚀 லோடிங் ஸ்டேட் பெயர் தெளிவுக்காக
+  bool get isVideosLoading => _isVideosLoading;
+
+  Future<void> fetchFreePikVideos(String query) async {
+    if (_isVideosLoading) return;
+    _isVideosLoading = true;
+    notifyListeners();
+
+    try {
+      String searchQuery = query.isEmpty ? "background" : query;
+      _freePikVideos = await FreePikService.searchVideos(
+        searchQuery,
+      ).timeout(const Duration(seconds: 15), onTimeout: () => []);
+    } catch (e) {
+      debugPrint("Fetch Freepik Videos Error: $e");
+      _freePikVideos = [];
+    } finally {
+      _isVideosLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // 🚀 1. Background Image-ஐ முழு ஸ்கிரீனுக்கு செட் செய்ய
+  // 🚀 1. Background Image-ஐ முழு ஸ்கிரீனுக்கு செட் செய்ய
+  // 🚀 1. Background Image-ஐ முழு ஸ்கிரீனுக்கு செட் செய்ய
+  void setBackgroundImage(String imageUrl) {
+    _saveState(); // Undo/Redo க்காக
+
+    // 0,0 பொசிஷனில் உள்ள முதல் பேக்ரவுண்ட் லேயரைத் தேடுதல்
+    int bgIndex = _items.indexWhere(
+      (item) =>
+          item.position.dx == 0 &&
+          item.position.dy == 0 &&
+          (item.type == 'image' ||
+              item.type == 'shape' ||
+              item.type == 'video'),
+    );
+
+    if (bgIndex != -1) {
+      _items[bgIndex] = _items[bgIndex].copyWith(
+        type: 'image',
+        contentUrl: imageUrl,
+        isLocal: false,
+      );
+    } else {
+      _items.insert(
+        0,
+        EditorItem(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          type: 'image',
+          position: const Offset(0, 0),
+          width: 1080.0,
+          height: 1080.0,
+          contentUrl: imageUrl,
+          isLocal: false,
+        ),
+      );
+    }
+    notifyListeners();
+  }
+
+  void setBackgroundVideo(String videoUrl) {
+    _saveState(); // Undo/Redo க்காக
+
+    int bgIndex = _items.indexWhere(
+      (item) =>
+          item.position.dx == 0 &&
+          item.position.dy == 0 &&
+          (item.type == 'image' ||
+              item.type == 'shape' ||
+              item.type == 'video'),
+    );
+
+    if (bgIndex != -1) {
+      _items[bgIndex] = _items[bgIndex].copyWith(
+        type: 'video', // 🚀 named parameter சரியாகக் கொடுக்கப்பட்டுள்ளது
+        contentUrl: videoUrl,
+        isLocal: false,
+      );
+    } else {
+      _items.insert(
+        0,
+        EditorItem(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          type: 'video', // 🚀 named parameter சரியாகப் பயன்படுத்தப்பட்டுள்ளது
+          position: const Offset(0, 0),
+          width: 1080.0,
+          height: 1080.0,
+          contentUrl: videoUrl,
+          isLocal: false,
+        ),
+      );
+    }
+    notifyListeners();
   }
 }

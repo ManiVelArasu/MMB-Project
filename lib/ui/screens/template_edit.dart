@@ -7,37 +7,16 @@ import '../../network/provider/editor_provider.dart';
 import '../industry/widgets/editable.dart';
 import '../../network/provider/custom_theme_provider.dart';
 
-class TemplateEditScreen extends StatefulWidget {
-  const TemplateEditScreen({super.key});
-
-  @override
-  State<TemplateEditScreen> createState() => _TemplateEditScreenState();
-}
-
-class _TemplateEditScreenState extends State<TemplateEditScreen> {
-  String resizeSize = "Post Square (1:1)";
-  bool _isInit = true;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_isInit) {
-      final Object? args = ModalRoute.of(context)?.settings.arguments;
-      if (args is String && args.isNotEmpty) {
-        resizeSize = args;
-      }
-      _isInit = false;
-    }
-  }
+class TemplateEditScreen extends StatelessWidget {
+  final String resizeSize; // Argument-ஐ இங்கேயே வாங்கிக் கொள்ளலாம்
+  const TemplateEditScreen({super.key, this.resizeSize = "Post Square (1:1)"});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: ChangeNotifierProvider(
-          create: (_) => EditorProvider(),
-          child: EditorView(resizeSize: resizeSize),
-        ),
+    return ChangeNotifierProvider(
+      create: (_) => EditorProvider(),
+      child: Scaffold(
+        body: SafeArea(child: EditorView(resizeSize: resizeSize)),
       ),
     );
   }
@@ -53,13 +32,15 @@ class EditorView extends StatefulWidget {
 
 class _EditorViewState extends State<EditorView> {
   int _bottomNavIndex = 0;
+  bool _isInitialized = false; // 🚀 இதை மட்டும் சேர்த்தால் போதும்
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
       _loadTemplateJsonAndInitEditor();
-    });
+      _isInitialized = true;
+    }
   }
 
   Future<void> _loadTemplateJsonAndInitEditor() async {
@@ -104,12 +85,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showFontFamilyBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      bool isDark,
-      ) {
-
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+    bool isDark,
+  ) {
     final List<String> fontList = [
       "Inter",
       "Janda Manatee Solid",
@@ -119,7 +99,7 @@ class _EditorViewState extends State<EditorView> {
       "Poppins",
       "Pacifico",
       "Playfair Display",
-      "Montserrat"
+      "Montserrat",
     ];
 
     showModalBottomSheet(
@@ -128,7 +108,9 @@ class _EditorViewState extends State<EditorView> {
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
         return Container(
-          height: MediaQuery.of(context).size.height * 0.60, // கொஞ்சம் உயரம் அதிகரிப்பு
+          height:
+              MediaQuery.of(context).size.height *
+              0.60, // கொஞ்சம் உயரம் அதிகரிப்பு
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -140,7 +122,14 @@ class _EditorViewState extends State<EditorView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  AppText("Fonts", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black)),
+                  AppText(
+                    "Fonts",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
                   InkWell(
                     onTap: () {
                       provider.clearSelection();
@@ -148,8 +137,17 @@ class _EditorViewState extends State<EditorView> {
                     },
                     child: Container(
                       padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(color: isDark ? const Color(0xFF2A1A1C) : Colors.red.shade50, shape: BoxShape.circle),
-                      child: const Icon(Icons.close, color: Colors.red, size: 18),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF2A1A1C)
+                            : Colors.red.shade50,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.red,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ],
@@ -160,7 +158,8 @@ class _EditorViewState extends State<EditorView> {
               Expanded(
                 child: ListView.separated(
                   itemCount: fontList.length,
-                  separatorBuilder: (context, index) => Divider(color: Colors.grey.withOpacity(0.2)),
+                  separatorBuilder: (context, index) =>
+                      Divider(color: Colors.grey.withOpacity(0.2)),
                   itemBuilder: (context, index) {
                     final font = fontList[index];
                     return ListTile(
@@ -173,7 +172,11 @@ class _EditorViewState extends State<EditorView> {
                           color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
                       onTap: () {
                         provider.updateFontFamily(itemId, font);
                         Navigator.pop(modalContext);
@@ -189,8 +192,12 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-
-  void _showFontColorBottomSheet(BuildContext context, EditorProvider provider, String itemId, bool isDark) {
+  void _showFontColorBottomSheet(
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+    bool isDark,
+  ) {
     int selectedTab = 0;
     Color pickerColor = Colors.red;
 
@@ -206,7 +213,9 @@ class _EditorViewState extends State<EditorView> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
               ),
               child: Column(
                 children: [
@@ -214,7 +223,14 @@ class _EditorViewState extends State<EditorView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      AppText("Colors", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: isDark ? Colors.white : Colors.black)),
+                      AppText(
+                        "Colors",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.red),
                         onPressed: () {
@@ -228,9 +244,17 @@ class _EditorViewState extends State<EditorView> {
                   // Tab Selection
                   Row(
                     children: [
-                      _buildTab(selectedTab == 0, "Presets", () => setModalState(() => selectedTab = 0)),
+                      _buildTab(
+                        selectedTab == 0,
+                        "Presets",
+                        () => setModalState(() => selectedTab = 0),
+                      ),
                       const SizedBox(width: 20),
-                      _buildTab(selectedTab == 1, "Custom", () => setModalState(() => selectedTab = 1)),
+                      _buildTab(
+                        selectedTab == 1,
+                        "Custom",
+                        () => setModalState(() => selectedTab = 1),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -239,27 +263,40 @@ class _EditorViewState extends State<EditorView> {
                   Expanded(
                     child: selectedTab == 0
                         ? GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, mainAxisSpacing: 10, crossAxisSpacing: 10),
-                      itemCount: Colors.primaries.length,
-                      itemBuilder: (context, index) {
-                        return GestureDetector(
-                          onTap: () => provider.updateTextColor(itemId, Colors.primaries[index]),
-                          child: Container(decoration: BoxDecoration(color: Colors.primaries[index], shape: BoxShape.circle)),
-                        );
-                      },
-                    )
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 6,
+                                  mainAxisSpacing: 10,
+                                  crossAxisSpacing: 10,
+                                ),
+                            itemCount: Colors.primaries.length,
+                            itemBuilder: (context, index) {
+                              return GestureDetector(
+                                onTap: () => provider.updateTextColor(
+                                  itemId,
+                                  Colors.primaries[index],
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.primaries[index],
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              );
+                            },
+                          )
                         : SingleChildScrollView(
-                      child: ColorPicker(
-                        pickerColor: pickerColor,
-                        onColorChanged: (color) {
-                          setModalState(() => pickerColor = color);
-                          provider.updateTextColor(itemId, color);
-                        },
-                        enableAlpha: false,
-                        displayThumbColor: true,
-                        paletteType: PaletteType.hueWheel,
-                      ),
-                    ),
+                            child: ColorPicker(
+                              pickerColor: pickerColor,
+                              onColorChanged: (color) {
+                                setModalState(() => pickerColor = color);
+                                provider.updateTextColor(itemId, color);
+                              },
+                              enableAlpha: false,
+                              displayThumbColor: true,
+                              paletteType: PaletteType.hueWheel,
+                            ),
+                          ),
                   ),
                 ],
               ),
@@ -270,14 +307,26 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-// Helper Widget for Tabs
+  // Helper Widget for Tabs
   Widget _buildTab(bool isSelected, String title, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
-          AppText(title, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.red : Colors.grey)),
-          if (isSelected) Container(height: 2, width: 30, color: Colors.red, margin: const EdgeInsets.only(top: 4)),
+          AppText(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isSelected ? Colors.red : Colors.grey,
+            ),
+          ),
+          if (isSelected)
+            Container(
+              height: 2,
+              width: 30,
+              color: Colors.red,
+              margin: const EdgeInsets.only(top: 4),
+            ),
         ],
       ),
     );
@@ -551,9 +600,7 @@ class _EditorViewState extends State<EditorView> {
                         ),
                       ),
                       InkWell(
-                        onTap: () => Navigator.pop(
-                          modalContext,
-                        ),
+                        onTap: () => Navigator.pop(modalContext),
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
@@ -1322,22 +1369,25 @@ class _EditorViewState extends State<EditorView> {
     EditorProvider provider,
     bool isDark,
   ) {
+    int selectedBgTab = 0;
+    provider.fetchFreePikAssets("backgrounds");
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
-        return ChangeNotifierProvider.value(
-          value: provider,
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(modalContext).viewInsets.bottom,
-            ),
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(modalContext).viewInsets.bottom,
+          ),
+          child: ChangeNotifierProvider.value(
+            value: provider,
             child: StatefulBuilder(
               builder: (context, setModalState) {
                 final edProvider = context.watch<EditorProvider>();
                 return Container(
-                  height: MediaQuery.of(context).size.height * 0.50,
+                  height: MediaQuery.of(context).size.height * 0.55,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -1348,6 +1398,7 @@ class _EditorViewState extends State<EditorView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -1379,34 +1430,169 @@ class _EditorViewState extends State<EditorView> {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      Expanded(
-                        child: GridView.builder(
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 4,
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 10,
-                              ),
-                          itemCount: edProvider.freePikAssets.length,
-                          itemBuilder: (context, index) {
-                            final bgUrl = edProvider.freePikAssets[index];
-                            return GestureDetector(
-                              onTap: () {
-                                edProvider.addImage(bgUrl, isLocal: false);
-                                Navigator.pop(modalContext);
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  image: DecorationImage(
-                                    image: NetworkImage(bgUrl),
-                                    fit: BoxFit.cover,
+
+                      // 🚀 Images மற்றும் Videos க்கான Tab Selection
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setModalState(() => selectedBgTab = 0);
+                              edProvider.fetchFreePikAssets("backgrounds");
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AppText(
+                                  "Images",
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: selectedBgTab == 0
+                                        ? (isDark ? Colors.white : Colors.black)
+                                        : Colors.grey,
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
+                                const SizedBox(height: 4),
+                                if (selectedBgTab == 0)
+                                  Container(
+                                    height: 2,
+                                    width: 50,
+                                    color: Colors.red,
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+                          GestureDetector(
+                            onTap: () {
+                              setModalState(() => selectedBgTab = 1);
+                              // 🚀 Freepik-லிருந்து வீடியோக்களை ஃபெட்ச் செய்ய (உங்கள் Provider-ல் இந்த மெத்தட் இருக்க வேண்டும்)
+                              edProvider.fetchFreePikVideos("nature videos");
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AppText(
+                                  "Videos",
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: selectedBgTab == 1
+                                        ? (isDark ? Colors.white : Colors.black)
+                                        : Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                if (selectedBgTab == 1)
+                                  Container(
+                                    height: 2,
+                                    width: 45,
+                                    color: Colors.red,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      Divider(
+                        height: 20,
+                        thickness: 1,
+                        color: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade300,
+                      ),
+
+                      // Grid View for Images & Videos
+                      Expanded(
+                        child: selectedBgTab == 0
+                            ? (edProvider.isFreePikLoading
+                                  ? const Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.red,
+                                      ),
+                                    )
+                                  : GridView.builder(
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: 3,
+                                            crossAxisSpacing: 10,
+                                            mainAxisSpacing: 10,
+                                          ),
+                                      itemCount:
+                                          edProvider.freePikAssets.length,
+                                      itemBuilder: (context, index) {
+                                        final bgUrl =
+                                            edProvider.freePikAssets[index];
+                                        return GestureDetector(
+                                          onTap: () {
+                                            edProvider.addImage(
+                                              bgUrl,
+                                              isLocal: false,
+                                            );
+                                            Navigator.pop(modalContext);
+                                          },
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              image: DecorationImage(
+                                                image: NetworkImage(bgUrl),
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ))
+                            : (edProvider
+                                      .isFreePikLoading // (அல்லது edProvider.isVideoLoading)
+                                  ? const Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.red,
+                                      ),
+                                    )
+                                  : GridView.builder(
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: 3,
+                                            crossAxisSpacing: 10,
+                                            mainAxisSpacing: 10,
+                                          ),
+                                      itemCount: edProvider
+                                          .freePikVideos
+                                          .length, // 🚀 Videos List
+                                      itemBuilder: (context, index) {
+                                        final videoUrl =
+                                            edProvider.freePikVideos[index];
+                                        return GestureDetector(
+                                          onTap: () {
+                                            edProvider.setBackgroundVideo(
+                                              videoUrl,
+                                            );
+
+                                            Navigator.pop(modalContext);
+                                          },
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              color: Colors.grey.shade800,
+                                            ),
+                                            child: Stack(
+                                              alignment: Alignment.center,
+                                              children: [
+                                                const Icon(
+                                                  Icons
+                                                      .play_circle_fill_rounded,
+                                                  color: Colors.white,
+                                                  size: 36,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    )),
                       ),
                     ],
                   ),

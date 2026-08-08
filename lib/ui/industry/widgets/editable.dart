@@ -1,93 +1,145 @@
 import 'dart:io';
+
+import 'dart:typed_data';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
+import 'package:project_mmb/ui/screens/video_widget/video_widget.dart';
 import 'package:provider/provider.dart';
 import '../../../Api Model/editor_model.dart';
 import '../../../network/provider/editor_provider.dart';
+import 'package:image/image.dart' as img;
+
+import '../../screens/video_widget/editor_video.dart';
 
 class EditableItemWidget extends StatelessWidget {
   final EditorItem item;
   final Function(String type, String id) onItemSelected;
 
-  const EditableItemWidget({super.key, required this.item, required this.onItemSelected});
+  const EditableItemWidget({
+    super.key,
+    required this.item,
+    required this.onItemSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EditorProvider>();
-    final currentItem = provider.items.firstWhere((e) => e.id == item.id, orElse: () => item);
+    final currentItem = provider.items.firstWhere(
+      (e) => e.id == item.id,
+      orElse: () => item,
+    );
 
-    return GestureDetector(
-      onPanUpdate: (details) {
-        provider.updatePosition(currentItem.id ?? "", currentItem.position + details.delta);
-      },
-      onTap: () {
-        onItemSelected(currentItem.type, currentItem.id ?? "");
-        if (currentItem.type == 'text') {
-          _showTextEditorDialog(context, provider, currentItem.id ?? "", currentItem.text ?? "");
-        } else {
-          _showProActionSheet(context, provider, currentItem);
-        }
-      },
-      child: Opacity(
-        opacity: currentItem.opacity,
-        child: Transform.scale(
-          scale: currentItem.scale,
+    return KeyedSubtree(
+      key: ValueKey(
+        "${currentItem.id}_${currentItem.filterType}_${currentItem.rotation}_${currentItem.scale}",
+      ),
+      child: GestureDetector(
+        onPanUpdate: (details) => provider.updatePosition(
+          currentItem.id!,
+          currentItem.position + details.delta,
+        ),
+        onTap: () {
+          onItemSelected(currentItem.type ?? '', currentItem.id!);
+          if (currentItem.type == 'text' || currentItem.type == 'textbox') {
+            _showTextEditorDialog(
+              context,
+              provider,
+              currentItem.id ?? "",
+              currentItem.text ?? "",
+            );
+          } else {
+            _showProActionSheet(context, provider, currentItem);
+          }
+        },
+        child: Opacity(
+          opacity: currentItem.opacity,
           child: Transform.rotate(
             angle: currentItem.rotation,
-            child: _buildItemContent(currentItem),
+            child: Transform.scale(
+              scale: currentItem.scale,
+              child: _buildItemContent(currentItem),
+            ),
           ),
         ),
       ),
     );
   }
 
-  void _showTextEditorDialog(BuildContext context, EditorProvider provider, String itemId, String initialText) {
-    final TextEditingController textController = TextEditingController(text: initialText);
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1E1E2C),
-          title: const Text("Edit Text", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-          content: TextField(
-            controller: textController,
-            autofocus: true,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-            decoration: const InputDecoration(
-              hintText: "Type text here...",
-              hintStyle: TextStyle(color: Colors.white54),
-              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.amberAccent)),
-              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.amberAccent, width: 2)),
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel", style: TextStyle(color: Colors.grey))),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.amberAccent),
-              onPressed: () {
-                if (textController.text.isNotEmpty) {
-                  provider.updateTextContent(itemId, textController.text);
-                }
-                Navigator.pop(context);
-              },
-              child: const Text("Save", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
+  // 🚀 1. பழைய பில்டர் மேட்ரிக்ஸ் லாஜிக் (Color Change ஆக இதுதான் காரணம்)
   Widget _buildFilteredImage(EditorItem item, Widget imageWidget) {
     ColorFilter? colorFilter;
     switch (item.filterType) {
       case 'grayscale':
-        colorFilter = const ColorFilter.matrix(<double>[0.2126, 0.7152, 0.0722, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0, 0.2126, 0.7152, 0.0722, 0, 0, 0, 0, 0, 1, 0]);
+        colorFilter = const ColorFilter.matrix(<double>[
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+        ]);
         break;
       case 'sepia':
-        colorFilter = const ColorFilter.matrix(<double>[0.393, 0.769, 0.189, 0, 0, 0.349, 0.686, 0.168, 0, 0, 0.272, 0.534, 0.131, 0, 0, 0, 0, 0, 1, 0]);
+        colorFilter = const ColorFilter.matrix(<double>[
+          0.393,
+          0.769,
+          0.189,
+          0,
+          0,
+          0.349,
+          0.686,
+          0.168,
+          0,
+          0,
+          0.272,
+          0.534,
+          0.131,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+        ]);
         break;
       case 'vintage':
-        colorFilter = const ColorFilter.matrix(<double>[0.9, 0.5, 0.1, 0, 0, 0.3, 0.8, 0.2, 0, 0, 0.2, 0.3, 0.6, 0, 0, 0, 0, 0, 1, 0]);
+        colorFilter = const ColorFilter.matrix(<double>[
+          0.9,
+          0.5,
+          0.1,
+          0,
+          0,
+          0.3,
+          0.8,
+          0.2,
+          0,
+          0,
+          0.2,
+          0.3,
+          0.6,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+        ]);
         break;
       default:
         colorFilter = null;
@@ -96,60 +148,80 @@ class EditableItemWidget extends StatelessWidget {
     return ColorFiltered(colorFilter: colorFilter, child: imageWidget);
   }
 
-  Widget _buildProFilteredImage(EditorItem item, Widget imageWidget) {
-    double c = item.contrast;
-    double b = item.brightness;
-    double s = item.saturation;
-    const double rwgt = 0.3086, gwgt = 0.6094, bwgt = 0.0820;
-    double baseR = (1 - s) * rwgt + s, baseG = (1 - s) * gwgt, baseB = (1 - s) * bwgt;
-    List<double> matrix = <double>[
-      c * baseR, c * baseG, c * baseB, 0, b * 255,
-      c * baseG, c * baseR, c * baseG, 0, b * 255,
-      c * baseB, c * baseG, c * baseR, 0, b * 255,
-      0, 0, 0, 1, 0,
-    ];
-    Widget filtered = ColorFiltered(colorFilter: ColorFilter.matrix(matrix), child: imageWidget);
-    return _buildFilteredImage(item, filtered);
-  }
-
   Widget _buildItemContent(EditorItem item) {
     if (item.type == 'image') {
-      bool isLocalFile = item.isLocal || (item.contentUrl != null && (item.contentUrl!.startsWith('file://') || item.contentUrl!.startsWith('/data/')));
+      bool isLocalFile =
+          item.isLocal ||
+          (item.contentUrl != null &&
+              (item.contentUrl!.startsWith('file://') ||
+                  item.contentUrl!.startsWith('/data/')));
+
       Widget imageWidget = isLocalFile
           ? Image.file(
-        File(item.contentUrl!.replaceFirst('file://', '')),
-        width: item.width,
-        height: item.height,
-        fit: BoxFit.cover,
-        errorBuilder: (c, e, s) => Container(width: item.width, height: item.height, color: Colors.grey, child: const Icon(Icons.broken_image)),
-      )
+              File(item.contentUrl!.replaceFirst('file://', '')),
+              width: item.width,
+              height: item.height,
+              fit: BoxFit.cover,
+              errorBuilder: (c, e, s) => Container(
+                width: item.width,
+                height: item.height,
+                color: Colors.grey,
+                child: const Icon(Icons.broken_image),
+              ),
+            )
           : Image.network(
-        item.contentUrl ?? "",
-        width: item.width,
-        height: item.height,
-        fit: BoxFit.cover,
-        errorBuilder: (c, e, s) => Container(
-          width: item.width,
-          height: item.height,
-          color: Colors.grey.shade900,
-          child: const Icon(Icons.wifi_off, color: Colors.amber),
-        ),
-      );
+              item.contentUrl ?? "",
+              width: item.width,
+              height: item.height,
+              fit: BoxFit.cover,
+              errorBuilder: (c, e, s) => Container(
+                width: item.width,
+                height: item.height,
+                color: Colors.grey.shade900,
+                child: const Icon(Icons.wifi_off, color: Colors.amber),
+              ),
+            );
 
-      String shape = item.text ?? 'rounded';
+      // Shape Masking (Circle or Rounded Square)
       Widget maskedImage;
-      if (shape == 'circle') {
+      if (item.type == 'video') {
+        return BrandVideoCard(
+          videoUrl: item.contentUrl ?? '',
+          thumbnailUrl: '',
+        );
+      }
+      if (item.text == 'circle') {
         maskedImage = ClipOval(child: imageWidget);
       } else {
-        maskedImage = ClipRRect(borderRadius: BorderRadius.circular(item.borderRadius > 0 ? item.borderRadius : 16.0), child: imageWidget);
+        maskedImage = ClipRRect(
+          borderRadius: BorderRadius.circular(
+            item.borderRadius > 0 ? item.borderRadius : 16.0,
+          ),
+          child: imageWidget,
+        );
       }
 
-      Widget filteredImage = _buildProFilteredImage(item, maskedImage);
+      // 🚀 பில்டரை இமேஜுடன் இணைத்தல்
+      Widget filteredImage = _buildFilteredImage(item, maskedImage);
+
       return Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(item.borderRadius > 0 ? item.borderRadius : 16.0),
-          border: item.outlineWidth > 0 ? Border.all(color: item.outlineColor, width: item.outlineWidth) : null,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 5))],
+          borderRadius: item.text == 'circle'
+              ? null
+              : BorderRadius.circular(
+                  item.borderRadius > 0 ? item.borderRadius : 16.0,
+                ),
+          shape: item.text == 'circle' ? BoxShape.circle : BoxShape.rectangle,
+          border: item.outlineWidth > 0
+              ? Border.all(color: item.outlineColor, width: item.outlineWidth)
+              : null,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
         child: filteredImage,
       );
@@ -169,121 +241,330 @@ class EditableItemWidget extends StatelessWidget {
     }
   }
 
-  // 🚀 Pro Action Sheet with Font Size adjustment for Text, and Filters/Layers for Images
-  void _showProActionSheet(BuildContext context, EditorProvider provider, EditorItem item) {
+  void _showProActionSheet(
+    BuildContext context,
+    EditorProvider provider,
+    EditorItem item,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF1E1E2C),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (modalContext) {
         return ChangeNotifierProvider.value(
           value: provider,
           child: StatefulBuilder(
             builder: (context, setModalState) {
-              final currentItem = provider.items.firstWhere((e) => e.id == item.id, orElse: () => item);
+              final currentItem = provider.items.firstWhere(
+                (e) => e.id == item.id,
+                orElse: () => item,
+              );
 
               return Padding(
-                padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                ),
                 child: SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.55,
+                  height: MediaQuery.of(context).size.height * 0.60,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade600, borderRadius: BorderRadius.circular(10)))),
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade600,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+                      // Heading & Layers Row
+                      Column(
                         children: [
-                          Text(currentItem.type == 'text' ? "Text Size & Tools" : "Pro Editing Tools", style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              IconButton(
-                                tooltip: "Bring to Front",
-                                icon: const Icon(Icons.flip_to_front, color: Colors.amberAccent),
-                                onPressed: () {
-                                  provider.bringToFront(currentItem.id ?? "");
-                                },
+                              const Text(
+                                "Pro Editing Tools",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              IconButton(
-                                tooltip: "Send to Back",
-                                icon: const Icon(Icons.flip_to_back, color: Colors.blueAccent),
-                                onPressed: () {
-                                  provider.sendToBack(currentItem.id ?? "");
-                                },
-                              ),
-                              IconButton(
-                                tooltip: "Delete",
-                                icon: const Icon(Icons.delete, color: Colors.redAccent),
-                                onPressed: () {
-                                  provider.removeItem(currentItem.id ?? "");
-                                  Navigator.pop(modalContext);
-                                },
+                              Row(
+                                children: [
+                                  IconButton(
+                                    tooltip: "Bring to Front",
+                                    icon: const Icon(
+                                      Icons.flip_to_front,
+                                      color: Colors.amberAccent,
+                                    ),
+                                    onPressed: () => provider.bringToFront(
+                                      currentItem.id ?? "",
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: "Send to Back",
+                                    icon: const Icon(
+                                      Icons.flip_to_back,
+                                      color: Colors.blueAccent,
+                                    ),
+                                    onPressed: () => provider.sendToBack(
+                                      currentItem.id ?? "",
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: "Duplicate",
+                                    icon: const Icon(
+                                      Icons.copy,
+                                      color: Colors.greenAccent,
+                                    ),
+                                    onPressed: () => provider.duplicateItem(
+                                      currentItem.id ?? "",
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: "Delete",
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.redAccent,
+                                    ),
+                                    onPressed: () {
+                                      provider.removeItem(currentItem.id ?? "");
+                                      Navigator.pop(modalContext);
+                                    },
+                                  ),
+                                  const Text(
+                                    "Crop / Size",
+                                    style: TextStyle(
+                                      color: Colors.amberAccent,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+
+                                  const Divider(color: Colors.white24),
+                                ],
                               ),
                             ],
-                          )
+                          ),
                         ],
                       ),
                       const Divider(color: Colors.white24),
+
                       Expanded(
                         child: ListView(
                           children: [
-                            // 🚀 Text Size Slider (Only visible when text is selected)
-                            if (currentItem.type == 'text') ...[
-                              const Text("Font Size", style: TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold)),
-                              Slider(
-                                value: currentItem.fontSize,
-                                min: 10.0,
-                                max: 100.0,
-                                activeColor: Colors.amberAccent,
-                                onChanged: (v) => setModalState(() {
-                                  // Update font size method in provider or directly using copyWith
-                                  int index = provider.items.indexWhere((e) => e.id == currentItem.id);
-                                  if (index != -1) {
-                                    provider.items[index] = provider.items[index].copyWith(fontSize: v);
-                                    provider.notifyListeners();
-                                  }
-                                }),
-                              ),
-                              const Divider(color: Colors.white24),
-                            ],
                             if (currentItem.type == 'image') ...[
-                              const Text("Photo Filters", style: TextStyle(color: Colors.amberAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                              const Text(
+                                "Photo Filters",
+                                style: TextStyle(
+                                  color: Colors.amberAccent,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                               const SizedBox(height: 6),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              Wrap(
+                                spacing: 8.0,
+                                runSpacing: 8.0,
                                 children: [
-                                  _filterButton(provider, currentItem, 'Normal', 'normal', setModalState),
-                                  _filterButton(provider, currentItem, 'Gray', 'grayscale', setModalState),
-                                  _filterButton(provider, currentItem, 'Sepia', 'sepia', setModalState),
-                                  _filterButton(provider, currentItem, 'Vintage', 'vintage', setModalState),
+                                  _filterButton(
+                                    provider,
+                                    currentItem,
+                                    'Normal',
+                                    'normal',
+                                    setModalState,
+                                  ),
+                                  _filterButton(
+                                    provider,
+                                    currentItem,
+                                    'Gray',
+                                    'grayscale',
+                                    setModalState,
+                                  ),
+                                  _filterButton(
+                                    provider,
+                                    currentItem,
+                                    'Sepia',
+                                    'sepia',
+                                    setModalState,
+                                  ),
+                                  _filterButton(
+                                    provider,
+                                    currentItem,
+                                    'Vintage',
+                                    'vintage',
+                                    setModalState,
+                                  ),
                                 ],
                               ),
+                              const Text(
+                                "Manual Crop",
+                                style: TextStyle(
+                                  color: Colors.amberAccent,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.amberAccent,
+                                ),
+                                icon: const Icon(
+                                  Icons.crop,
+                                  color: Colors.black,
+                                ),
+                                label: const Text(
+                                  "Crop by Touch",
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.pop(
+                                    modalContext,
+                                  ); // Bottom sheet-ஐ க்ளோஸ் செய்துவிட்டு Crop Screen போகும்
+                                  _openCropScreen(
+                                    context,
+                                    provider,
+                                    currentItem,
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              const Text(
+                                "Shapes",
+                                style: TextStyle(
+                                  color: Colors.amberAccent,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.crop_square,
+                                      color: currentItem.text == 'square'
+                                          ? Colors.amber
+                                          : Colors.white,
+                                    ),
+                                    onPressed: () => setModalState(
+                                      () => provider.updateImageShape(
+                                        currentItem.id!,
+                                        'square',
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.circle,
+                                      color: currentItem.text == 'circle'
+                                          ? Colors.amber
+                                          : Colors.white,
+                                    ),
+                                    onPressed: () => setModalState(
+                                      () => provider.updateImageShape(
+                                        currentItem.id!,
+                                        'circle',
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Text(
+                                "Outline Width",
+                                style: TextStyle(
+                                  color: Colors.amberAccent,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Slider(
+                                value: currentItem.outlineWidth,
+                                min: 0.0,
+                                max: 20.0,
+                                activeColor: Colors.amberAccent,
+                                onChanged: (v) => setModalState(
+                                  () => provider.updateOutline(
+                                    currentItem.id!,
+                                    v,
+                                    Colors.white,
+                                  ),
+                                ),
+                              ),
                               const Divider(color: Colors.white24),
                             ],
-                            const Text("Rotation", style: TextStyle(color: Colors.white70, fontSize: 13)),
-                            Slider(
-                              value: currentItem.rotation,
-                              min: 0.0,
-                              max: 6.28,
-                              activeColor: Colors.blueAccent,
-                              onChanged: (v) => setModalState(() => provider.updateRotation(currentItem.id ?? "", v)),
+
+                            const Text(
+                              "Zoom / Scale",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
                             ),
-                            const Text("Zoom / Scale", style: TextStyle(color: Colors.white70, fontSize: 13)),
                             Slider(
                               value: currentItem.scale,
                               min: 0.5,
                               max: 3.0,
                               activeColor: Colors.greenAccent,
-                              onChanged: (v) => setModalState(() => provider.updateScale(currentItem.id ?? "", v)),
+                              onChanged: (v) => setModalState(
+                                () => provider.updateScale(
+                                  currentItem.id ?? "",
+                                  v,
+                                ),
+                              ),
                             ),
-                            const Text("Opacity", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                            const Text(
+                              "Rotation",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Slider(
+                              value: currentItem.rotation,
+                              min: 0.0,
+                              max: 6.28,
+                              activeColor: Colors.blueAccent,
+                              onChanged: (v) => setModalState(
+                                () => provider.updateRotation(
+                                  currentItem.id ?? "",
+                                  v,
+                                ),
+                              ),
+                            ),
+                            const Text(
+                              "Opacity",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            ),
                             Slider(
                               value: currentItem.opacity,
                               min: 0.0,
                               max: 1.0,
                               activeColor: Colors.purpleAccent,
-                              onChanged: (v) => setModalState(() => provider.updateOpacity(currentItem.id ?? "", v)),
+                              onChanged: (v) => setModalState(
+                                () => provider.updateOpacity(
+                                  currentItem.id ?? "",
+                                  v,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -299,12 +580,220 @@ class EditableItemWidget extends StatelessWidget {
     );
   }
 
-  Widget _filterButton(EditorProvider provider, EditorItem item, String label, String type, StateSetter setModalState) {
+  Widget _cropButton(
+    EditorProvider provider,
+    EditorItem item,
+    String label,
+    double w,
+    double h,
+  ) {
     return TextButton(
-      onPressed: () => setModalState(() => provider.setImageFilter(item.id ?? "", type)),
-      child: Text(label, style: TextStyle(color: item.filterType == type ? Colors.amber : Colors.white70)),
+      onPressed: () => provider.updateSize(item.id!, w, h),
+      child: Text(label, style: const TextStyle(color: Colors.white)),
     );
   }
+
+  Widget _filterButton(
+    EditorProvider provider,
+    EditorItem item,
+    String label,
+    String type,
+    StateSetter setModalState,
+  ) {
+    return TextButton(
+      onPressed: () =>
+          setModalState(() => provider.setImageFilter(item.id ?? "", type)),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: item.filterType == type ? Colors.amber : Colors.white70,
+        ),
+      ),
+    );
+  }
+
+  void _showTextEditorDialog(
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+    String initialText,
+  ) {
+    final TextEditingController textController = TextEditingController(
+      text: initialText,
+    );
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E1E2C),
+          title: const Text(
+            "Edit Text",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: TextField(
+            controller: textController,
+            autofocus: true,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+            decoration: const InputDecoration(
+              hintText: "Type text here...",
+              hintStyle: TextStyle(color: Colors.white54),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.amberAccent),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.amberAccent, width: 2),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amberAccent,
+              ),
+              onPressed: () {
+                if (textController.text.isNotEmpty) {
+                  provider.updateTextContent(itemId, textController.text);
+                }
+                Navigator.pop(context);
+              },
+              child: const Text(
+                "Save",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _openCropScreen(
+    BuildContext context,
+    EditorProvider provider,
+    EditorItem item,
+  ) async {
+    final GlobalKey<ExtendedImageEditorState> editorKey =
+        GlobalKey<ExtendedImageEditorState>();
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            title: const Text(
+              "Crop Image",
+              style: TextStyle(color: Colors.white),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(
+                  Icons.check,
+                  color: Colors.amberAccent,
+                  size: 28,
+                ),
+                onPressed: () async {
+                  final state = editorKey.currentState;
+                  if (state != null) {
+                    // 🚀 ராவ் டேட்டாவை (Raw Bytes) பாதுகாப்பாக எடுத்தல்
+                    final Uint8List? rawImage = state.rawImageData;
+                    final Rect? rect = state.getCropRect();
+
+                    if (rawImage != null && rect != null) {
+                      // இமேஜைக் கிராப் செய்யும் ஹெல்பர் மெத்தட்
+                      final croppedData = await _cropImageBytes(rawImage, rect);
+
+                      if (croppedData != null) {
+                        final tempDir = Directory.systemTemp;
+                        final file = File(
+                          '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg',
+                        );
+                        await file.writeAsBytes(croppedData);
+
+                        // Provider-ல் கிராப் செய்த புதிய ஃபைல் பாথ்சை அனுப்புதல்
+                        provider.updateCroppedImage(item.id!, file.path);
+                        Navigator.pop(context);
+                      }
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+          body: Center(
+            child:
+                (item.isLocal ||
+                    (item.contentUrl != null &&
+                        item.contentUrl!.startsWith('/')))
+                ? ExtendedImage.file(
+                    File(item.contentUrl!.replaceFirst('file://', '')),
+                    fit: BoxFit.contain,
+                    mode: ExtendedImageMode.editor,
+                    extendedImageEditorKey: editorKey,
+                    cacheRawData: true, // 🚀 லோக்கல் ஃபைலுக்கும் இது அவசியம்
+                  )
+                : ExtendedImage.network(
+                    item.contentUrl ?? "",
+                    fit: BoxFit.contain,
+                    mode: ExtendedImageMode.editor,
+                    extendedImageEditorKey: editorKey,
+                    cacheRawData: true, // 🚀 நெட்வொர்க் இமேஜிற்கு இது கட்டாயம்
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<Uint8List?> _cropImageBytes(Uint8List rawBytes, Rect rect) async {
+    try {
+      img.Image? src = img.decodeImage(rawBytes);
+      if (src == null) return null;
+
+      // சேஃப் ரெக்டாங்கிள் பவுண்டரி செக் (Index out of bounds வராமல் இருக்க)
+      int x = rect.left.toInt().clamp(0, src.width);
+      int y = rect.top.toInt().clamp(0, src.height);
+      int w = rect.width.toInt().clamp(1, src.width - x);
+      int h = rect.height.toInt().clamp(1, src.height - y);
+
+      img.Image cropped = img.copyCrop(src, x: x, y: y, width: w, height: h);
+      return Uint8List.fromList(img.encodeJpg(cropped));
+    } catch (e) {
+      debugPrint("Crop Error: $e");
+      return null;
+    }
+  }
+}
+
+// 🚀 Hexagon Clipper
+class HexagonClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    Path path = Path();
+    path.moveTo(size.width * 0.5, 0);
+    path.lineTo(size.width, size.height * 0.25);
+    path.lineTo(size.width, size.height * 0.75);
+    path.lineTo(size.width * 0.5, size.height);
+    path.lineTo(0, size.height * 0.75);
+    path.lineTo(0, size.height * 0.25);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
 class HeartClipper extends CustomClipper<Path> {
@@ -320,6 +809,7 @@ class HeartClipper extends CustomClipper<Path> {
     path.close();
     return path;
   }
+
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
@@ -342,24 +832,57 @@ class StarClipper extends CustomClipper<Path> {
     path.close();
     return path;
   }
+
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
-class HexagonClipper extends CustomClipper<Path> {
+class ShapeClipper extends CustomClipper<Path> {
+  final String shape;
+  ShapeClipper(this.shape);
+
   @override
   Path getClip(Size size) {
     Path path = Path();
-    double w = size.width, h = size.height;
-    path.moveTo(w * 0.25, 0);
-    path.lineTo(w * 0.75, 0);
-    path.lineTo(w, h * 0.5);
-    path.lineTo(w * 0.75, h);
-    path.lineTo(w * 0.25, h);
-    path.lineTo(0, h * 0.5);
-    path.close();
+    switch (shape) {
+      case 'circle':
+        path.addOval(Rect.fromLTWH(0, 0, size.width, size.height));
+        break;
+      case 'hexagon':
+        path.moveTo(size.width * 0.5, 0);
+        path.lineTo(size.width, size.height * 0.25);
+        path.lineTo(size.width, size.height * 0.75);
+        path.lineTo(size.width * 0.5, size.height);
+        path.lineTo(0, size.height * 0.75);
+        path.lineTo(0, size.height * 0.25);
+        path.close();
+        break;
+      case 'heart':
+        path.moveTo(size.width * 0.5, size.height * 0.8);
+        path.cubicTo(
+          0,
+          size.height * 0.2,
+          size.width * 0.3,
+          -size.height * 0.1,
+          size.width * 0.5,
+          size.height * 0.3,
+        );
+        path.cubicTo(
+          size.width * 0.7,
+          -size.height * 0.1,
+          size.width,
+          size.height * 0.2,
+          size.width * 0.5,
+          size.height * 0.8,
+        );
+        path.close();
+        break;
+      default: // Square / Rounded
+        path.addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    }
     return path;
   }
+
   @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+  bool shouldReclip(CustomClipper<Path> oldClipper) => true;
 }

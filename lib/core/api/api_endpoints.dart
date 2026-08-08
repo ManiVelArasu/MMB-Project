@@ -28,33 +28,7 @@ class ApiEndpoints {
       'https://temp-m2b-assets.s3.ap-south-1.amazonaws.com';
 
   // ── Auth ──────────────────────────────────────────────────
-  static const String login = '/login/mobile/authenticate';
+  static const String login = '/auth/send-otp';
 
-  // ── Member ────────────────────────────────────────────────
-  static String getMember(String memberId) => '/member/getmember/$memberId';
-  static const String addMember = '/member/addmember';
-
-  static String updateMember(String memberId) => '/member/mobile/$memberId';
-  static String changeProfileImage(String memberId) =>
-      '/member/$memberId/profile-photo';
-
-  // ── Plans ─────────────────────────────────────────────────
-  static String getPlans(String gymId) => '/planmaster/plan/$gymId/active';
-
-  // ── Attendance ────────────────────────────────────────────
-  static const String markAttendance = '/attendance/mark';
-
-  // ── Member Workouts ───────────────────────────────────────
-  static String getMemberWorkouts(String gymId, String memberId, String date) =>
-      '/member-workouts/get-by-gymid/$gymId/$memberId/$date';
-
-  static const String dashboard = '/dashboard/mobiledashboard';
-
-  // ── Diet Log ──────────────────────────────────────────────
-  static String getWeeklyDietCompliance(String memberId, String weekNumber) =>
-      '/member-diet-log/weekly-compliance/$memberId/$weekNumber';
-
-  // ── Trainer ──────────────────────────────────────────────
-  static String getTrainer(String memberId, String gymId) =>
-      '/trainer/gettrainer/$gymId/$memberId';
+  static const String verifyOtp = '/auth/verify-otp';
 }

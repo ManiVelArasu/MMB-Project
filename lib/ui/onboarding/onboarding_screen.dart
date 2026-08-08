@@ -48,7 +48,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             children: [
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                              
+
                                 children: [
                                   Text.rich(
                                     TextSpan(
@@ -64,16 +64,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                         TextSpan(
                                           text: " Professional",
                                           style: theme.headlineLarge!.copyWith(
-                                            fontSize: AppFontSize.fontSize22,                                            fontWeight: FontWeight.w900,
+                                            fontSize: AppFontSize.fontSize22,
+                                            fontWeight: FontWeight.w900,
                                             color: Colors.red,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  )
+                                  ),
                                 ],
                               ),
-                              AppText("Social Media Post",style: TextStyle(  fontSize: AppFontSize.fontSize22,)),
+                              AppText(
+                                "Social Media Post",
+                                style: TextStyle(
+                                  fontSize: AppFontSize.fontSize22,
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -86,7 +92,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           textAlign: TextAlign.center,
                           style: theme.titleMedium!.copyWith(
                             color: customColor.textColor,
-                            fontWeight: FontWeight.w400
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ),
@@ -101,7 +107,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-
                           Text.rich(
                             TextSpan(
                               children: [
@@ -123,7 +128,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 ),
                               ],
                             ),
-                          )
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -173,8 +178,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     ),
                                   ],
                                 ),
-                              )
-
+                              ),
                             ],
                           ),
                         ],
@@ -236,31 +240,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 // RIGHT BUTTON
                 _currentPage == 2
                     ? Padding(
-                  padding: const EdgeInsets.only(right: 12.0),
-                  child: InkWell(
-                    onTap: () async {
-
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setBool('isOnboarded', true);
-                      if (context.mounted) {
-                        Navigator.pushReplacementNamed(context, "/LoginScreen");
-                      }
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: customColor.baseColor,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                )
+                        padding: const EdgeInsets.only(right: 12.0),
+                        child: InkWell(
+                          onTap: () async {
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setBool('isOnboarded', true);
+                            if (context.mounted) {
+                              Navigator.pushReplacementNamed(
+                                context,
+                                "/LoginScreen",
+                              );
+                            }
+                          },
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: customColor.baseColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      )
                     : const CustomSizedBox(),
               ],
             ),

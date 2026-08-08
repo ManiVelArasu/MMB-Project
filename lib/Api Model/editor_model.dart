@@ -10,7 +10,7 @@ enum EditorItemType {
 
 class EditorItem {
   final String? id;
-  final String type; // 'text', 'image', 'shape'
+  final String? type; // 'text', 'image', 'shape'
   final Offset position;
   final String? text;
   final String? contentUrl;
@@ -57,6 +57,7 @@ class EditorItem {
 
   EditorItem copyWith({
     String? id,
+    String? type, // 🚀 இதை இங்கே சேர்க்கவும்
     Offset? position,
     String? text,
     String? contentUrl,
@@ -79,7 +80,7 @@ class EditorItem {
   }) {
     return EditorItem(
       id: id ?? this.id,
-      type: type,
+      type: type ?? this.type, // 🚀 இதை இங்கே அப்டேட் செய்யவும்
       position: position ?? this.position,
       text: text ?? this.text,
       contentUrl: contentUrl ?? this.contentUrl,
@@ -125,7 +126,7 @@ class EditorItem {
   factory EditorItem.fromJson(Map<String, dynamic> json) {
     return EditorItem(
       id: json['id'] ?? '',
-      type: json['type'] ?? 'text',
+      type: json['type'] ?? '',
       position: Offset(
         (json['position_x'] as num?)?.toDouble() ?? 50.0,
         (json['position_y'] as num?)?.toDouble() ?? 50.0,

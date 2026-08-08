@@ -60,6 +60,8 @@ dependencies:
   pro_image_editor: ^13.2.3
   emoji_picker_flutter: ^3.0.0
   flutter_colorpicker: ^1.1.0
+  dotted_border: ^2.1.0
+
 
 
   # The following adds the Cupertino Icons font to your application.

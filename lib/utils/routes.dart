@@ -50,10 +50,7 @@ class RouteGenerator {
         );
       case "/OtpScreen":
         return MaterialPageRoute(
-          builder: (context) => ChangeNotifierProvider(
-            create: (_) => AuthProvider(),
-            child: const OtpScreen(),
-          ),
+          builder: (context) => const OtpScreen(),
         );
       case "/AccountTypeScreen":
         return MaterialPageRoute(

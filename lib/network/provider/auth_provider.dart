@@ -3,17 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:project_mmb/core/app_provider/my_notifier.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class AuthProvider extends ChangeNotifier with MyNotifier{
+import '../../Repository/auth_repository.dart';
+import '../../core/api/api_repository.dart';
+
+class AuthProvider extends ChangeNotifier with MyNotifier {
   //final FirebaseAuth _auth = FirebaseAuth.instance;
   String _mobileNumber = "";
   String? mobileError;
   bool _isEditingMobile = false;
 
   final List<TextEditingController> _controllers = List.generate(
-    4,
+    6,
     (index) => TextEditingController(),
   );
-  final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
+  final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
 
   /// get
   String get mobileNumber => _mobileNumber;
@@ -26,7 +29,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier{
 
   /// set method
 
-
   bool _isLoading = false;
 
   bool get isLoading => _isLoading;
@@ -38,21 +40,19 @@ class AuthProvider extends ChangeNotifier with MyNotifier{
 
   bool isOtpComplete() {
     return _controllers.every(
-          (controller) => controller.text.trim().isNotEmpty,
+      (controller) => controller.text.trim().isNotEmpty,
     );
   }
+
   String getOtp() {
-    return _controllers
-        .map((controller) => controller.text)
-        .join();
+    return _controllers.map((controller) => controller.text).join();
   }
+
   void clearOtp() {
     for (var controller in _controllers) {
       controller.clear();
     }
   }
-
-
 
   Future<void> verifyOtp({
     required String verificationId,
@@ -63,8 +63,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier{
     try {
       setLoading(true);
 
-      PhoneAuthCredential credential =
-      PhoneAuthProvider.credential(
+      PhoneAuthCredential credential = PhoneAuthProvider.credential(
         verificationId: verificationId,
         smsCode: smsCode,
       );
@@ -79,6 +78,49 @@ class AuthProvider extends ChangeNotifier with MyNotifier{
       onError(e.message ?? "OTP verification failed");
     }
   }
+
+  Future<Map<String, dynamic>?> verifyOtpApi() async {
+    String enteredOtp = getOtp();
+
+    if (enteredOtp.length < 6) {
+      _errorMessage = "Please enter complete 6-digit OTP";
+      notifyListeners();
+      return null;
+    }
+
+    setLoading(true);
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await AuthRepository.instance.verifyOtp(
+        _mobileNumber,
+        "login",
+        enteredOtp,
+        "string",
+      );
+      print(result);
+      setLoading(false);
+
+      return result.when(
+        success: (data) {
+          notifyListeners();
+          return data;
+        },
+        failure: (error) {
+          _errorMessage = error.message ?? "Verification failed";
+          notifyListeners();
+          return null;
+        },
+      );
+    } catch (e) {
+      setLoading(false);
+      _errorMessage = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<void> resendOtp({
     required String phoneNumber,
     required Function(String) onCodeSent,
@@ -136,6 +178,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier{
       onError(e.toString());
     }
   }
+
   void setMobileNumber(String value) {
     _mobileNumber = value;
     notifyListeners();
@@ -174,8 +217,36 @@ class AuthProvider extends ChangeNotifier with MyNotifier{
     return true;
   }
 
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
+
+  Future<String?> apiSendOtp(String phone, String purpose) async {
+    setLoading(true);
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await AuthRepository.instance.sendOtp(phone, purpose);
+
+      setLoading(false);
+
+      return result.when(
+        success: (data) => data.otp,
+        failure: (error) {
+          _errorMessage = error.toString();
+          notifyListeners();
+          return null;
+        },
+      );
+    } catch (e) {
+      setLoading(false);
+      _errorMessage = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
   void toggleMobileEdit() {
-    // If user clicks check icon and validation fails, stop closing edit mode
     if (isEditingMobile && mobileError != null) return;
 
     setIsEditingMobile(!isEditingMobile);
@@ -187,6 +258,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier{
     notifyListeners();
     return isValid;
   }
+
   Future<void> loadSavedMobileNumber() async {
     final prefs = await SharedPreferences.getInstance();
     final savedNumber = prefs.getString('saved_mobile_number');
@@ -195,6 +267,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier{
       notifyListeners();
     }
   }
+
   @override
   void dispose() {
     super.dispose();

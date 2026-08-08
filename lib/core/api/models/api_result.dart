@@ -10,10 +10,7 @@ import 'api_error.dart';
 class ApiResult<T> {
   const ApiResult._({this.data, this.error});
 
-  /// Successful result carrying [data].
   const ApiResult.success(T data) : this._(data: data);
-
-  /// Failed result carrying [error].
   const ApiResult.failure(ApiError error) : this._(error: error);
 
   final T? data;
@@ -21,4 +18,14 @@ class ApiResult<T> {
 
   bool get isSuccess => data != null;
   bool get isFailure => error != null;
+  R when<R>({
+    required R Function(T data) success,
+    required R Function(ApiError error) failure,
+  }) {
+    if (isSuccess) {
+      return success(data as T);
+    } else {
+      return failure(error!);
+    }
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/network/provider/auth_provider.dart';
 import 'package:project_mmb/network/provider/custom_theme_provider.dart';
@@ -47,10 +48,11 @@ class LoginScreen extends StatelessWidget {
                           title: "Create your Account",
                           subTitle:
                               "Join thousands of businesses creating professional designs with MMB.",
-
                         ),
-                        AppText("Create your account using your mobile number or continue with Google."),
-                        SizedBox(height: 10,),
+                        AppText(
+                          "Create your account using your mobile number or continue with Google.",
+                        ),
+                        SizedBox(height: 10),
                         // Title
 
                         // MOBILE NUMBER FIELD
@@ -161,16 +163,40 @@ class LoginScreen extends StatelessWidget {
                         ButtonWidget(
                           buttonPress: () async {
                             if (authProvider.submitLogin()) {
-                              final prefs =
-                                  await SharedPreferences.getInstance();
-                              await prefs.setString(
-                                'saved_mobile_number',
+                              String? otp = await authProvider.apiSendOtp(
                                 authProvider.mobileNumber,
+                                "login",
                               );
-                              await prefs.setBool('is_logged_in', true);
 
-                              if (!context.mounted) return;
-                              Navigator.pushNamed(context, "/OtpScreen");
+                              if (otp != null && context.mounted) {
+                                Fluttertoast.showToast(
+                                  msg: "OTP: $otp",
+                                  toastLength: Toast.LENGTH_LONG,
+                                  gravity: ToastGravity.BOTTOM,
+                                  backgroundColor: Colors.black87,
+                                  textColor: Colors.white,
+                                  fontSize: 16.0,
+                                );
+
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                await prefs.setString(
+                                  'saved_mobile_number',
+                                  authProvider.mobileNumber,
+                                );
+
+
+                                Navigator.pushNamed(
+                                  context,
+                                  "/OtpScreen",
+                                  arguments: {
+                                    'otp': otp,
+                                    'phone': authProvider.mobileNumber,
+                                  },
+                                );
+                              } else {
+
+                              }
                             }
                           },
                           title: "GET OTP",
