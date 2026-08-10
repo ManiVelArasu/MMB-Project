@@ -287,7 +287,6 @@ class EditableItemWidget extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
 
-                      // Heading & Layers Row
                       Column(
                         children: [
                           Row(

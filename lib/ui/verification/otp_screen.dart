@@ -72,7 +72,7 @@ class OtpScreen extends StatelessWidget {
                             TitleValueWidget(
                               title: "OTP Verification",
                               subTitle:
-                                  "Please enter the 4-digit code received on your registered WhatsApp number",
+                                  "Please enter the 6-digit code received on your registered WhatsApp number",
                             ),
                             const SizedBox(height: 10),
                             if (receivedOtp.isNotEmpty)
@@ -165,8 +165,6 @@ class OtpScreen extends StatelessWidget {
                                             ),
                                           ),
                                   ),
-
-                                  // Edit Icon
                                   GestureDetector(
                                     onTap: authProvider.toggleMobileEdit,
                                     child: SvgPicture.asset(
@@ -177,86 +175,97 @@ class OtpScreen extends StatelessWidget {
                               ),
                             ),
                             height16,
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: List.generate(6, (index) {
-                                return Container(
-                                  width: 52.w,
-                                  height: 64.h,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xffF8F8F8),
-                                    borderRadius: BorderRadius.circular(16.r),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16.r),
-                                    child: Center(
-                                      child: TextFormField(
-                                        style: theme.bodyLarge!.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: customColor.blackColor,
+
+                            // 🚀 6 Display Boxes (Manual typing & Auto-fill display)
+                            Stack(
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: List.generate(6, (index) {
+                                    return Container(
+                                      width: 52.w,
+                                      height: 64.h,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xffF8F8F8),
+                                        borderRadius: BorderRadius.circular(
+                                          16.r,
                                         ),
-                                        autofocus: index == 0,
-                                        controller:
-                                            authProvider.controllers[index],
-                                        focusNode:
-                                            authProvider.focusNodes[index],
-                                        keyboardType: TextInputType.phone,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter
-                                              .digitsOnly,
-                                        ],
-                                        maxLength: 1,
-                                        textAlign: TextAlign.center,
-                                        textInputAction: TextInputAction.next,
-                                        decoration: const InputDecoration(
-                                          counterText: '',
-                                          border: InputBorder.none,
-                                          focusedBorder: InputBorder.none,
-                                          enabledBorder: InputBorder.none,
-                                          errorBorder: InputBorder.none,
-                                          disabledBorder: InputBorder.none,
-                                          filled: false,
-                                          contentPadding: EdgeInsets.only(
-                                            top: 10,
-                                            bottom: 10,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          authProvider.controllers[index].text,
+                                          style: theme.bodyLarge!.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: customColor.blackColor,
                                           ),
                                         ),
-                                        onChanged: (value) {
-                                          if (value.isNotEmpty) {
-                                            // 🚀 3-க்கு பதிலாக 5 (ஏனெனில் 0 முதல் 5 வரை மொத்தம் 6 ஃபீல்டுகள்)
-                                            if (index < 5) {
-                                              FocusScope.of(
-                                                context,
-                                              ).requestFocus(
-                                                authProvider.focusNodes[index +
-                                                    1],
-                                              );
-                                            } else {
-                                              authProvider.focusNodes[index]
-                                                  .unfocus();
-                                            }
-                                          } else if (value.isEmpty &&
-                                              index > 0) {
-                                            authProvider.controllers[index]
-                                                .clear();
-                                            FocusScope.of(context).requestFocus(
-                                              authProvider.focusNodes[index -
-                                                  1],
-                                            );
-                                          }
-                                        },
                                       ),
+                                    );
+                                  }),
+                                ),
+
+                                // 🚀 Invisible TextField for Keyboard Autofill & Manual Inputs
+                                Positioned.fill(
+                                  child: Opacity(
+                                    opacity: 0.0,
+                                    child: TextFormField(
+                                      keyboardType: TextInputType.number,
+                                      autofillHints: const [
+                                        AutofillHints.oneTimeCode,
+                                      ],
+                                      maxLength: 6,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      decoration: const InputDecoration(
+                                        counterText: '',
+                                        border: InputBorder.none,
+                                      ),
+                                      onChanged: (value) {
+                                        for (int i = 0; i < 6; i++) {
+                                          if (i < value.length) {
+                                            authProvider.controllers[i].text =
+                                                value[i];
+                                          } else {
+                                            authProvider.controllers[i].clear();
+                                          }
+                                        }
+                                        authProvider.notifyListeners();
+                                      },
                                     ),
                                   ),
-                                );
-                              }),
+                                ),
+                              ],
                             ),
+
                             height12,
                             Center(
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(12),
-                                onTap: () {
-                                  // Resend OTP logic
+                                onTap: () async {
+                                  /* // 🚀 Resend OTP Logic
+                                  String? newOtp = await authProvider
+                                      .resendOtpApi();
+                                  if (!context.mounted) return;
+
+                                  if (newOtp != null) {
+                                    Fluttertoast.showToast(
+                                      msg: "New OTP: $newOtp",
+                                      toastLength: Toast.LENGTH_LONG,
+                                      gravity: ToastGravity.BOTTOM,
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          authProvider.errorMessage ??
+                                              "Failed to resend OTP",
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }*/
                                 },
                                 child: Padding(
                                   padding: const EdgeInsets.all(12.0),
@@ -290,30 +299,35 @@ class OtpScreen extends StatelessWidget {
                       Column(
                         children: [
                           ButtonWidget(
+                            isLoading: authProvider.isVerifyLoading,
                             buttonPress: () async {
-
-                              final responseData = await authProvider.verifyOtpApi();
+                              final responseData = await authProvider
+                                  .verifyOtpApi();
 
                               if (!context.mounted) return;
 
                               if (responseData != null) {
-                                String message = responseData['message'] ?? "OTP Verified Successfully";
+                                String message =
+                                    responseData['message'] ??
+                                    "OTP Verified Successfully";
                                 Fluttertoast.showToast(msg: message);
-                                final prefs = await SharedPreferences.getInstance();
+                                final prefs =
+                                    await SharedPreferences.getInstance();
                                 await prefs.setBool('is_logged_in', true);
                                 await prefs.setBool('has_seen_plans', false);
 
                                 if (!context.mounted) return;
-
                                 Navigator.pushReplacementNamed(
                                   context,
                                   "/PlansAndPricingScreen",
                                 );
                               } else {
-                                // 5. தோல்வி அடைந்தால் எரர் காட்டுவது
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(authProvider.errorMessage ?? "Invalid OTP"),
+                                    content: Text(
+                                      authProvider.errorMessage ??
+                                          "Invalid OTP",
+                                    ),
                                     backgroundColor: Colors.red,
                                   ),
                                 );

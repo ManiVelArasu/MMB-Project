@@ -197,57 +197,56 @@ class PlanBillingOption {
 }
 
 class PlanFeature {
-  String? id;
-  String? planId;
-  String? featureTypeId;
-  String? value;
+  String? key;
+  String? label;
   String? displayLabel;
+  String? value;
+  String? dataType;
+  bool enabled;
+  bool unlimited;
   String? displayOrder;
-  String? showOnCard;
-  FeatureType? featureType;
 
   PlanFeature({
-    required this.id,
-    required this.planId,
-    required this.featureTypeId,
-    required this.value,
+    required this.key,
+    required this.label,
     required this.displayLabel,
+    required this.value,
+    required this.dataType,
+    required this.enabled,
+    required this.unlimited,
     required this.displayOrder,
-    required this.showOnCard,
-    required this.featureType,
   });
 
   factory PlanFeature.fromJson(Map<String, dynamic> json) => PlanFeature(
-    id: json["id"]?.toString(),
-    planId: json["planId"]?.toString(),
-    featureTypeId: json["featureTypeId"]?.toString(),
+    key: json["id"]?.toString(),
+    label: json["planId"]?.toString(),
+    dataType: json["featureTypeId"]?.toString(),
     value: json["value"]?.toString(),
     displayLabel: json["displayLabel"]?.toString(),
     displayOrder: json["displayOrder"]?.toString(),
-    showOnCard: json["showOnCard"]?.toString(),
-    featureType: json["featureType"] == null
-        ? null
-        : FeatureType.fromJson(json["featureType"]),
+    enabled: json["showOnCard"]??false,
+    unlimited: json["unlimited"]??false,
+
   );
 
   PlanFeature copyWith({
-    String? id,
-    String? planId,
-    String? featureTypeId,
-    String? value,
+    String? key,
+    String? label,
     String? displayLabel,
+    String? value,
+    String? dataType,
+    bool? enabled,
+    bool? unlimited,
     String? displayOrder,
-    String? showOnCard,
-    FeatureType? featureType,
   }) => PlanFeature(
-    id: id ?? this.id,
-    planId: planId ?? this.planId,
-    featureTypeId: featureTypeId ?? this.featureTypeId,
-    value: value ?? this.value,
+    key: key ?? this.key,
+    label: label ?? this.label,
     displayLabel: displayLabel ?? this.displayLabel,
+    value: value ?? this.value,
+    dataType: dataType ?? this.dataType,
+    enabled: enabled ?? this.enabled,
+    unlimited: unlimited ?? this.unlimited,
     displayOrder: displayOrder ?? this.displayOrder,
-    showOnCard: showOnCard ?? this.showOnCard,
-    featureType: featureType ?? this.featureType,
   );
 }
 

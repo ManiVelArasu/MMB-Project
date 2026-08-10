@@ -10,6 +10,7 @@ import 'package:project_mmb/ui/screens/faq_screen.dart';
 import 'package:project_mmb/ui/splash/splash_screen.dart';
 import 'package:project_mmb/ui/verification/otp_screen.dart';
 import 'package:provider/provider.dart';
+import '../Api Model/plans_type.dart';
 import '../Api Model/theme_screen_model.dart';
 import '../component/bottom_navigation.dart';
 import '../network/provider/auth_provider.dart';
@@ -32,6 +33,7 @@ import '../ui/screens/theme_detail_screen.dart';
 import '../ui/screens/theme_single_item_view_screen.dart';
 import '../ui/subscription/basic_plan.dart';
 import '../ui/subscription/elit_plan.dart';
+import '../ui/subscription/plan_detail_screen.dart';
 import '../ui/subscription/premium_plan.dart';
 import '../ui/subscription/subscription_screen.dart';
 import '../ui/screens/feedback_screen.dart';
@@ -49,9 +51,7 @@ class RouteGenerator {
           builder: (context) => const OnboardingScreen(),
         );
       case "/OtpScreen":
-        return MaterialPageRoute(
-          builder: (context) => const OtpScreen(),
-        );
+        return MaterialPageRoute(builder: (context) => const OtpScreen());
       case "/AccountTypeScreen":
         return MaterialPageRoute(
           builder: (context) => const AccountTypeScreen(),
@@ -138,7 +138,8 @@ class RouteGenerator {
           builder: (context) => const EditorScreen(),
         ); */
       case "/TemplateEditScreen":
-        final String resizeSize = settings.arguments as String? ?? "Post Square (1:1)";
+        final String resizeSize =
+            settings.arguments as String? ?? "Post Square (1:1)";
         return MaterialPageRoute(
           settings: settings,
           builder: (context) => const TemplateEditScreen(),
@@ -169,12 +170,13 @@ class RouteGenerator {
           builder: (context) => ThemeSingleitemViewScreen(variantId: variantId),
         );
       case "/FaqScreen":
-        return MaterialPageRoute(
-          builder: (context) => const FaqScreen(),
-        );
+        return MaterialPageRoute(builder: (context) => const FaqScreen());
       case "/Help&SupportScreen":
+        return MaterialPageRoute(builder: (context) => const FaqScreen());
+      case "/PlanDetailScreen":
+        final plan = settings.arguments as Plan;
         return MaterialPageRoute(
-          builder: (context) => const FaqScreen(),
+          builder: (context) => PlanDetailScreen(plan: plan),
         );
     }
     return null;

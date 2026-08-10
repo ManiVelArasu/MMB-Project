@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:project_mmb/component/custom_widget.dart';
+import 'package:project_mmb/ui/subscription/plan_detail_screen.dart';
 import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,7 +44,6 @@ class PlansAndPricingScreen extends StatelessWidget {
                         if (!context.mounted) return;
                         Navigator.pushNamed(context, "/AccountTypeScreen");
                       },
-
                       child: AppText(
                         "SKIP",
                         style: TextStyle(
@@ -71,7 +71,6 @@ class PlansAndPricingScreen extends StatelessWidget {
                       padding: EdgeInsets.symmetric(horizontal: 16.w),
                       child: Column(
                         children: [
-                          // 1. Top Banner Video/Image
                           SizedBox(
                             height: 170.h,
                             width: double.infinity,
@@ -80,10 +79,7 @@ class PlansAndPricingScreen extends StatelessWidget {
                               fit: BoxFit.cover,
                             ),
                           ),
-
                           SizedBox(height: 16.h),
-
-                          // 2. Trial Banner Image
                           SizedBox(
                             width: double.infinity,
                             child: Image.asset(
@@ -91,10 +87,9 @@ class PlansAndPricingScreen extends StatelessWidget {
                               fit: BoxFit.cover,
                             ),
                           ),
-
                           SizedBox(height: 16.h),
 
-                          // 3. Dynamic Plans List Builder matching screenshot design
+                          // Dynamic Plans List Builder
                           ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -159,17 +154,14 @@ class PlansAndPricingScreen extends StatelessWidget {
     Color buttonColor;
 
     if (index == 0) {
-
       cardBgColor = const Color(0xFFF9FFE6);
       borderColor = const Color(0xFFD4ED91);
       buttonColor = const Color(0xFF8BC34A);
     } else if (index == 1) {
-
       cardBgColor = const Color(0xFFFFECEE);
       borderColor = const Color(0xFFFFCDD2);
       buttonColor = const Color(0xFFF48FB1);
     } else {
-
       cardBgColor = const Color(0xFFF3E8FF);
       borderColor = const Color(0xFFD8B4FE);
       buttonColor = const Color(0xFFA78BFA);
@@ -190,7 +182,6 @@ class PlansAndPricingScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title & Price Section
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,11 +221,15 @@ class PlansAndPricingScreen extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // ACTIVATE NOW BUTTON
               ElevatedButton(
                 onPressed: () {
-                  // provider.selectPlan(plan.id);
+                  // 🚀 விவரங்களை அடுத்த ஸ்கிரீனுக்கு அனுப்புதல்
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PlanDetailScreen(plan: plan),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: buttonColor,
@@ -258,10 +253,7 @@ class PlansAndPricingScreen extends StatelessWidget {
               ),
             ],
           ),
-
           SizedBox(height: 10.h),
-
-          // Description Text
           AppText(
             plan.description ?? "",
             style: TextStyle(
@@ -271,13 +263,15 @@ class PlansAndPricingScreen extends StatelessWidget {
               height: 1.3,
             ),
           ),
-
           SizedBox(height: 8.h),
-
-          // PLAN DETAILS LINK
           InkWell(
             onTap: () {
-              // Handle Plan Details click
+              print(plan);
+              Navigator.pushNamed(
+                context,
+                '/PlanDetailScreen',
+                arguments: plan,
+              );
             },
             child: AppText(
               "PLAN DETAILS",

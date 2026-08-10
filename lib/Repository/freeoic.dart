@@ -5,9 +5,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:http/http.dart' as http;
 
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 class FreePikService {
   static const String baseUrl = "https://api.freepik.com/v1";
   static const String apiKey = "MSa1300387e1bf43988b4bb3db2f59a143";
+
   static Future<List<String>> searchAssets(String query) async {
     try {
       final response = await http.get(
@@ -52,30 +57,13 @@ class FreePikService {
   }
 
   static Future<List<String>> searchVideos(String query) async {
-    try {
-      final response = await http.get(
-        Uri.parse(
-          '$baseUrl/resources?term=$query&filters[content_type%5Bvids%5D]=1&limit=30',
-        ),
-        headers: {'x-freepik-api-key': apiKey, 'Accept': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        List items = data['data'] ?? [];
-
-        return items
-            .map<String>((item) {
-              return item['video']?['source']?['url'] ??
-                  item['image']?['source']?['url'] ??
-                  '';
-            })
-            .where((url) => url.isNotEmpty)
-            .toList();
-      }
-    } catch (e) {
-      debugPrint("Freepik Video Search Error: $e");
-    }
-    return [];
+    return [
+      "https://assets.mixkit.co/videos/preview/mixkit-waves-in-the-water-1164-large.mp4",
+      "https://assets.mixkit.co/videos/preview/mixkit-tree-branches-in-the-breeze-1195-large.mp4",
+      "https://assets.mixkit.co/videos/preview/mixkit-clouds-and-blue-sky-2408-large.mp4",
+      "https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-city-traffic-at-night-4167-large.mp4",
+      "https://assets.mixkit.co/videos/preview/mixkit-cosmos-of-the-milky-way-galaxy-4235-large.mp4",
+      "https://assets.mixkit.co/videos/preview/mixkit-hands-holding-a-smartphone-with-a-green-screen-42861-large.mp4",
+    ];
   }
 }

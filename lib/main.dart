@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -35,6 +36,8 @@ Future<void> _initializeApp() async {
 }
 
 Future<void> _initApi() async {
+  final Dio tempDio = Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl));
+
   ApiHandler.init(
     baseUrl: ApiEndpoints.baseUrl,
     defaultContentType: ApiContentType.json,
@@ -43,7 +46,8 @@ Future<void> _initApi() async {
     rethrowExceptions: false,
     showToastOnError: true,
     defaultToastPosition: ApiToastPosition.bottom,
-    interceptor: ApiLoggerInterceptor(),
+    // 🚀 இங்கே TokenRefreshInterceptor-ஐச் சேர்த்துவிடலாம்
+    interceptor: TokenRefreshInterceptor(tempDio),
   );
 }
 

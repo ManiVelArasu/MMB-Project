@@ -496,16 +496,33 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   Future<void> fetchFreePikVideos(String query) async {
     if (_isVideosLoading) return;
+
     _isVideosLoading = true;
     notifyListeners();
 
     try {
-      String searchQuery = query.isEmpty ? "background" : query;
+      final searchQuery =
+      query.trim().isEmpty ? "background" : query.trim();
+
+      debugPrint("Searching Freepik videos: $searchQuery");
+
       _freePikVideos = await FreePikService.searchVideos(
         searchQuery,
-      ).timeout(const Duration(seconds: 15), onTimeout: () => []);
-    } catch (e) {
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          debugPrint("Freepik video search timeout");
+          return [];
+        },
+      );
+
+      debugPrint(
+        "Freepik videos found: ${_freePikVideos.length}",
+      );
+    } catch (e, stackTrace) {
       debugPrint("Fetch Freepik Videos Error: $e");
+      debugPrint("$stackTrace");
+
       _freePikVideos = [];
     } finally {
       _isVideosLoading = false;
@@ -575,7 +592,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         0,
         EditorItem(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: 'video', // 🚀 named parameter சரியாகப் பயன்படுத்தப்பட்டுள்ளது
+          type: 'video',
           position: const Offset(0, 0),
           width: 1080.0,
           height: 1080.0,
@@ -585,5 +602,20 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       );
     }
     notifyListeners();
+  }
+  String? get backgroundImageUrl {
+    final bgItem = _items.firstWhere(
+          (item) => item.position.dx == 0 && item.position.dy == 0 && item.type == 'image',
+      orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
+    );
+    return bgItem.contentUrl;
+  }
+
+  String? get backgroundVideoUrl {
+    final bgItem = _items.firstWhere(
+          (item) => item.position.dx == 0 && item.position.dy == 0 && item.type == 'video',
+      orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
+    );
+    return bgItem.contentUrl;
   }
 }

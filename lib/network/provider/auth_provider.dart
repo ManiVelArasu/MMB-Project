@@ -7,7 +7,6 @@ import '../../Repository/auth_repository.dart';
 import '../../core/api/api_repository.dart';
 
 class AuthProvider extends ChangeNotifier with MyNotifier {
-  //final FirebaseAuth _auth = FirebaseAuth.instance;
   String _mobileNumber = "";
   String? mobileError;
   bool _isEditingMobile = false;
@@ -32,6 +31,11 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
   bool _isLoading = false;
 
   bool get isLoading => _isLoading;
+  bool _isLoginLoading = false;
+  bool get isLoginLoading => _isLoginLoading;
+
+  bool _isVerifyLoading = false;
+  bool get isVerifyLoading => _isVerifyLoading;
 
   void setLoading(bool value) {
     _isLoading = value;
@@ -79,6 +83,33 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
+
+  Future<String?> apiSendOtp(String phone, String purpose) async {
+    _isLoginLoading = true; // 🚀 Login loading start
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await AuthRepository.instance.sendOtp(phone, purpose);
+      _isLoginLoading = false; // 🚀 Login loading end
+      notifyListeners();
+
+      return result.when(
+        success: (data) => data.otp,
+        failure: (error) {
+          _errorMessage = error.toString();
+          notifyListeners();
+          return null;
+        },
+      );
+    } catch (e) {
+      _isLoginLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>?> verifyOtpApi() async {
     String enteredOtp = getOtp();
 
@@ -88,7 +119,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       return null;
     }
 
-    setLoading(true);
+    _isVerifyLoading = true; // 🚀 Verify loading start
     _errorMessage = null;
     notifyListeners();
 
@@ -97,10 +128,10 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
         _mobileNumber,
         "login",
         enteredOtp,
-        "string",
+        "android",
       );
-      print(result);
-      setLoading(false);
+      _isVerifyLoading = false; // 🚀 Verify loading end
+      notifyListeners();
 
       return result.when(
         success: (data) {
@@ -114,13 +145,12 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
         },
       );
     } catch (e) {
-      setLoading(false);
+      _isVerifyLoading = false;
       _errorMessage = e.toString();
       notifyListeners();
       return null;
     }
   }
-
   Future<void> resendOtp({
     required String phoneNumber,
     required Function(String) onCodeSent,
@@ -220,31 +250,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  Future<String?> apiSendOtp(String phone, String purpose) async {
-    setLoading(true);
-    _errorMessage = null;
-    notifyListeners();
 
-    try {
-      final result = await AuthRepository.instance.sendOtp(phone, purpose);
-
-      setLoading(false);
-
-      return result.when(
-        success: (data) => data.otp,
-        failure: (error) {
-          _errorMessage = error.toString();
-          notifyListeners();
-          return null;
-        },
-      );
-    } catch (e) {
-      setLoading(false);
-      _errorMessage = e.toString();
-      notifyListeners();
-      return null;
-    }
-  }
 
   void toggleMobileEdit() {
     if (isEditingMobile && mobileError != null) return;

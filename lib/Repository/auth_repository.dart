@@ -28,20 +28,20 @@ class AuthRepository {
   }
 
   Future<ApiResult<Map<String, dynamic>>> verifyOtp(
-      String phone,
-      String purpose,
-      String otp,
-      String client_mnemonic,
-      ) async {
+    String phone,
+    String purpose,
+    String otp,
+    String clientMnemonic,
+  ) async {
     final result = await ApiRepository.instance.request<Map<String, dynamic>>(
       config: ApiRequestConfig(
-        endpoint: ApiEndpoints.login,
+        endpoint: ApiEndpoints.verifyOtp,
         method: ApiMethod.post,
         body: {
           "phone": phone,
           "purpose": purpose,
           "otp": otp,
-          "client_mnemonic": client_mnemonic,
+          "client_mnemonic": clientMnemonic,
         },
       ),
       fromJson: (json) => json['data'] as Map<String, dynamic>,

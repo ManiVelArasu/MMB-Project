@@ -30,7 +30,6 @@ class BusinessCategoryView extends StatefulWidget {
 
 class _BusinessCategoryViewState extends State<BusinessCategoryView> {
   String selectedSpecialization = "Ladies Gym";
-  final TextEditingController _customTypeController = TextEditingController();
 
   final List<String> specializations = [
     "Ladies Gym",
@@ -46,11 +45,8 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
 
   @override
   Widget build(BuildContext context) {
-    final customColor = context.watch<CustomThemeProvider>().colors;
-    final theme = Theme.of(context).textTheme;
     final accountProvider = context.watch<BusinessProvider>();
-    final industryProvider = context
-        .watch<IndustryProvider>(); // 👈 Now this has safe access!
+    final industryProvider = context.watch<IndustryProvider>();
 
     bool isBusiness = accountProvider.currentIndex == 0;
 
@@ -150,8 +146,6 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 14),
-
-              // Specialization Chips Wrap
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -179,39 +173,44 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                       setState(() {
                         selectedSpecialization = spec;
                       });
+                      // 🚀 Provider-க்கும் அப்டேட் செய்து டெக்ஸ்ட் ஃபீல்டை இயக்க/மறைக்க உதவுகிறது
+                      industryProvider.setSelectedSpecialization(spec);
                     },
                   );
                 }).toList(),
               ),
               const SizedBox(height: 20),
 
-              // Custom input field
-              TextField(
-                controller: _customTypeController,
-                decoration: InputDecoration(
-                  hintText: "Please enter your business type",
-                  hintStyle: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 13,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.red),
+              // 🚀 "Other" என்பதைத் தேர்ந்தென்றால் மட்டுமே TextField தெரியும்
+              if (industryProvider.showOtherInput) ...[
+                TextField(
+                  controller: industryProvider.otherController,
+                  decoration: InputDecoration(
+                    hintText: "Please enter your business type",
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 13,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 20),
+              ],
 
               const SizedBox(height: 40),
 

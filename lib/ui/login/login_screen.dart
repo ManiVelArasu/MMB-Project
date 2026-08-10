@@ -161,6 +161,7 @@ class LoginScreen extends StatelessWidget {
                         height12,
 
                         ButtonWidget(
+                          isLoading: authProvider.isLoginLoading,
                           buttonPress: () async {
                             if (authProvider.submitLogin()) {
                               String? otp = await authProvider.apiSendOtp(
@@ -169,22 +170,12 @@ class LoginScreen extends StatelessWidget {
                               );
 
                               if (otp != null && context.mounted) {
-                                Fluttertoast.showToast(
-                                  msg: "OTP: $otp",
-                                  toastLength: Toast.LENGTH_LONG,
-                                  gravity: ToastGravity.BOTTOM,
-                                  backgroundColor: Colors.black87,
-                                  textColor: Colors.white,
-                                  fontSize: 16.0,
-                                );
-
                                 final prefs =
                                     await SharedPreferences.getInstance();
                                 await prefs.setString(
                                   'saved_mobile_number',
                                   authProvider.mobileNumber,
                                 );
-
 
                                 Navigator.pushNamed(
                                   context,
@@ -194,9 +185,7 @@ class LoginScreen extends StatelessWidget {
                                     'phone': authProvider.mobileNumber,
                                   },
                                 );
-                              } else {
-
-                              }
+                              } else {}
                             }
                           },
                           title: "GET OTP",

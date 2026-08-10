@@ -31,4 +31,7 @@ class ApiEndpoints {
   static const String login = '/auth/send-otp';
 
   static const String verifyOtp = '/auth/verify-otp';
+
+  ///refresh token
+  static const String refreshToken = '/auth/refresh';
 }

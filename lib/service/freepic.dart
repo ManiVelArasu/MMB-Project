@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-
 class PixabayService {
   // Pixabay-ல் இருந்து இலவசமாக கிடைக்கும் API Key
   final String apiKey = '56916218-d3f5cbb29ac2562600b88aa49';
@@ -18,10 +17,8 @@ class PixabayService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         List<String> imageUrls = [];
-
-        // Pixabay JSON-ல் 'hits' என்ற கீ-க்குள் தான் படங்கள் இருக்கும்
         for (var item in data['hits']) {
-          // 'webformatURL' என்பது நல்ல தரமான படத்தைக் கொடுக்கும்
+
           imageUrls.add(item['webformatURL']);
         }
         return imageUrls;
@@ -35,5 +32,3 @@ class PixabayService {
     }
   }
 }
-
-

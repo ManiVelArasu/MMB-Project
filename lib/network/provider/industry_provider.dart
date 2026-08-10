@@ -18,10 +18,19 @@ class IndustryProvider extends ChangeNotifier with MyNotifier {
   List<Industries> get categories => _filteredCategories;
   Industries? _selectedCategory;
   Industries? get selectedCategory => _selectedCategory;
-
+  TextEditingController otherController = TextEditingController();
   String _searchQuery = "";
   String get searchQuery => _searchQuery;
   bool get isSearching => _searchQuery.trim().isNotEmpty;
+
+  bool _showOtherInput = false;
+  bool get showOtherInput => _showOtherInput;
+
+  void setSelectedSpecialization(String spec) {
+    _showOtherInput = (spec == "Other");
+    notifyListeners();
+  }
+
   Future<void> fetchAssetCategories() async {
     _isLoading = true;
     _errorMessage = null;
@@ -80,6 +89,7 @@ class IndustryProvider extends ChangeNotifier with MyNotifier {
     _selectedCategory = category;
     notifyListeners();
   }
+
   String _savedCategoryName = "";
   String get savedCategoryName => _savedCategoryName;
 
