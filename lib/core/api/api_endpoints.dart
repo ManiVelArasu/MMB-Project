@@ -34,4 +34,6 @@ class ApiEndpoints {
 
   ///refresh token
   static const String refreshToken = '/auth/refresh';
+
+  static const String feedBack = '/feedback';
 }

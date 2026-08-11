@@ -26,22 +26,15 @@ class FeedbackTextField extends StatelessWidget {
         contentPadding: const EdgeInsets.all(16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFE5E7EB),
-          ),
+          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFE5E7EB),
-          ),
+          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFE53935),
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: Color(0xFFE53935), width: 2),
         ),
       ),
     );

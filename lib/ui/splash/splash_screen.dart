@@ -29,6 +29,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final bool hasSeenPlans = prefs.getBool('has_seen_plans') ?? false;
     final bool isBusinessCompleted =
         prefs.getBool('is_business_completed') ?? false;
+    final bool isPersonalUse = prefs.getBool('is_personal_use') ?? false;
 
     if (!mounted) return;
 
@@ -38,7 +39,10 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.pushReplacementNamed(context, '/PlansAndPricingScreen');
     } else if (isLoggedIn && hasSeenPlans && !isBusinessCompleted) {
       Navigator.pushReplacementNamed(context, '/BusinessDetailsScreen');
-    } else if (isLoggedIn && hasSeenPlans && isBusinessCompleted) {
+    } else if (isLoggedIn &&
+        hasSeenPlans &&
+        isBusinessCompleted &&
+        isPersonalUse) {
       Navigator.pushReplacementNamed(context, '/CustomBottomNavScreen');
     } else {
       Navigator.pushReplacementNamed(context, '/LoginScreen');

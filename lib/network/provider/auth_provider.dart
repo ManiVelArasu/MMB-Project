@@ -4,6 +4,7 @@ import 'package:project_mmb/core/app_provider/my_notifier.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Repository/auth_repository.dart';
+import '../../core/api/api_handler.dart';
 import '../../core/api/api_repository.dart';
 
 class AuthProvider extends ChangeNotifier with MyNotifier {
@@ -134,7 +135,16 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       notifyListeners();
 
       return result.when(
-        success: (data) {
+        success: (data) async {
+          final accessToken = data['access_token'];
+          final refreshToken = data['refresh_token'];
+          if (accessToken != null) {
+            await ApiHandler.instance.setTokens(
+              token: accessToken,
+              refreshToken: refreshToken,
+            );
+          }
+
           notifyListeners();
           return data;
         },

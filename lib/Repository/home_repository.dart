@@ -11,14 +11,15 @@ class HomeRepository {
   static final HomeRepository instance = HomeRepository._();
 
   Future<ApiResult<TemplateCategoriesModel>> templateCategory() async {
-    final result = await ApiRepository.instance.request<TemplateCategoriesModel>(
-      config: ApiRequestConfig(
-        endpoint: ApiEndpoints.templateCategory,
-        method: ApiMethod.get,
-      ),
-      fromJson: (json) =>
-          TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
-    );
+    final result = await ApiRepository.instance
+        .request<TemplateCategoriesModel>(
+          config: ApiRequestConfig(
+            endpoint: ApiEndpoints.templateCategory,
+            method: ApiMethod.get,
+          ),
+          fromJson: (json) =>
+              TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
+        );
     return result;
   }
 }

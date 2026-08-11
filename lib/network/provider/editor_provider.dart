@@ -9,6 +9,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   final List<List<EditorItem>> _history = [];
   int _historyIndex = -1;
+  Color _backgroundColor = Colors.white;
+  Color get backgroundColor => _backgroundColor;
 
   void _saveState() {
     if (_historyIndex < _history.length - 1) {
@@ -501,14 +503,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
 
     try {
-      final searchQuery =
-      query.trim().isEmpty ? "background" : query.trim();
+      final searchQuery = query.trim().isEmpty ? "background" : query.trim();
 
       debugPrint("Searching Freepik videos: $searchQuery");
 
-      _freePikVideos = await FreePikService.searchVideos(
-        searchQuery,
-      ).timeout(
+      _freePikVideos = await FreePikService.searchVideos(searchQuery).timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           debugPrint("Freepik video search timeout");
@@ -516,9 +515,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         },
       );
 
-      debugPrint(
-        "Freepik videos found: ${_freePikVideos.length}",
-      );
+      debugPrint("Freepik videos found: ${_freePikVideos.length}");
     } catch (e, stackTrace) {
       debugPrint("Fetch Freepik Videos Error: $e");
       debugPrint("$stackTrace");
@@ -530,82 +527,69 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  // 🚀 1. Background Image-ஐ முழு ஸ்கிரீனுக்கு செட் செய்ய
-  // 🚀 1. Background Image-ஐ முழு ஸ்கிரீனுக்கு செட் செய்ய
-  // 🚀 1. Background Image-ஐ முழு ஸ்கிரீனுக்கு செட் செய்ய
   void setBackgroundImage(String imageUrl) {
-    _saveState(); // Undo/Redo க்காக
+    _saveState();
 
-    // 0,0 பொசிஷனில் உள்ள முதல் பேக்ரவுண்ட் லேயரைத் தேடுதல்
-    int bgIndex = _items.indexWhere(
+    _items.removeWhere(
       (item) =>
           item.position.dx == 0 &&
           item.position.dy == 0 &&
           (item.type == 'image' ||
-              item.type == 'shape' ||
-              item.type == 'video'),
+              item.type == 'video' ||
+              item.type == 'shape'),
     );
 
-    if (bgIndex != -1) {
-      _items[bgIndex] = _items[bgIndex].copyWith(
+    // புதிய பேக்ரவுண்டை முதல் லேயராக (Index 0) சேர்ப்பது
+    _items.insert(
+      0,
+      EditorItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         type: 'image',
+        position: const Offset(0, 0),
+        width: 1080.0,
+        height: 1080.0,
         contentUrl: imageUrl,
-        isLocal: false,
-      );
-    } else {
-      _items.insert(
-        0,
-        EditorItem(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: 'image',
-          position: const Offset(0, 0),
-          width: 1080.0,
-          height: 1080.0,
-          contentUrl: imageUrl,
-          isLocal: false,
-        ),
-      );
-    }
+        isLocal: !imageUrl.startsWith('http'),
+      ),
+    );
     notifyListeners();
   }
 
   void setBackgroundVideo(String videoUrl) {
-    _saveState(); // Undo/Redo க்காக
+    _saveState();
 
-    int bgIndex = _items.indexWhere(
+    // ஏற்கனவே உள்ள பழைய பேக்ரவுண்டை நீக்குவது
+    _items.removeWhere(
       (item) =>
           item.position.dx == 0 &&
           item.position.dy == 0 &&
           (item.type == 'image' ||
-              item.type == 'shape' ||
-              item.type == 'video'),
+              item.type == 'video' ||
+              item.type == 'shape'),
     );
 
-    if (bgIndex != -1) {
-      _items[bgIndex] = _items[bgIndex].copyWith(
-        type: 'video', // 🚀 named parameter சரியாகக் கொடுக்கப்பட்டுள்ளது
+    // புதிய பேக்ரவுண்ட் வீடியோவை முதல் லேயராக சேர்ப்பது
+    _items.insert(
+      0,
+      EditorItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        type: 'video',
+        position: const Offset(0, 0),
+        width: 1080.0,
+        height: 1080.0,
         contentUrl: videoUrl,
-        isLocal: false,
-      );
-    } else {
-      _items.insert(
-        0,
-        EditorItem(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: 'video',
-          position: const Offset(0, 0),
-          width: 1080.0,
-          height: 1080.0,
-          contentUrl: videoUrl,
-          isLocal: false,
-        ),
-      );
-    }
+        isLocal: !videoUrl.startsWith('http'),
+      ),
+    );
     notifyListeners();
   }
+
   String? get backgroundImageUrl {
     final bgItem = _items.firstWhere(
-          (item) => item.position.dx == 0 && item.position.dy == 0 && item.type == 'image',
+      (item) =>
+          item.position.dx == 0 &&
+          item.position.dy == 0 &&
+          item.type == 'image',
       orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
     );
     return bgItem.contentUrl;
@@ -613,9 +597,76 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   String? get backgroundVideoUrl {
     final bgItem = _items.firstWhere(
-          (item) => item.position.dx == 0 && item.position.dy == 0 && item.type == 'video',
+      (item) =>
+          item.position.dx == 0 &&
+          item.position.dy == 0 &&
+          item.type == 'video',
       orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
     );
     return bgItem.contentUrl;
   }
+
+  // 🚀 ----------------------------------------------------
+  // 🚀 புதிய REPLACE BG வசதிக்காக மட்டும் சேர்க்கப்பட்ட பாதுகாப்பு மெத்தடுகள் (Existing code பாதிக்கப்படாது)
+  // 🚀 ----------------------------------------------------
+  void replaceBackgroundImage(String imageUrl, String selectedItemIdToRemove) {
+    _saveState();
+
+    // 1. ஏற்கனவே உள்ள பழைய பேக்ரவுண்ட் லேயர்களை முழுமையாக நீக்குதல்
+    _items.removeWhere(
+      (item) =>
+          item.position.dx == 0 &&
+          item.position.dy == 0 &&
+          (item.type == 'image' ||
+              item.type == 'video' ||
+              item.type == 'shape'),
+    );
+
+    // 2. கிளிக் செய்து செலக்ட் செய்த அந்த சின்ன இமேஜை நீக்குதல்
+    _items.removeWhere((item) => item.id == selectedItemIdToRemove);
+
+    // 3. புதிய இமேஜை முழு ஸ்கிரீன் பேக்ரவுண்டாக (Index 0 மற்றும் முழு அளவில்) சேர்ப்பது
+    _items.insert(
+      0,
+      EditorItem(
+        id: "bg_${DateTime.now().millisecondsSinceEpoch}",
+        type: 'image',
+        position: const Offset(0, 0),
+        width: 1080.0, // முழு கேன்வாஸ் அகலம்
+        height: 1080.0, // முழு கேன்வாஸ் உயரம்
+        contentUrl: imageUrl,
+        isLocal: !imageUrl.startsWith('http'),
+      ),
+    );
+
+    clearSelection();
+    notifyListeners();
+  }
+
+
+
+  bool _isBackgroundLayer(EditorItem item) {
+    return item.position.dx == 0 &&
+        item.position.dy == 0 &&
+        item.width != null &&
+        item.height != null &&
+        item.width! >= 1000 &&
+        item.height! >= 1000 &&
+        (item.type == 'image' ||
+            item.type == 'video' ||
+            item.type == 'shape');
+  }
+
+  void _removeBackgroundLayers() {
+    _items.removeWhere(_isBackgroundLayer);
+  }
+
+  void setBackgroundColor(Color color) {
+    _saveState();
+    _removeBackgroundLayers();
+    _backgroundColor = color;
+    clearSelection();
+    notifyListeners();
+  }
+
 }

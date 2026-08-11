@@ -123,11 +123,20 @@ class AccountTypeScreen extends StatelessWidget {
                           final selectedTitle = accountTypeProvider
                               .accountTypeList[accountTypeProvider.currentIndex]
                               .title;
+
                           final prefs = await SharedPreferences.getInstance();
+
                           await prefs.setString(
                             'selected_account_type',
                             selectedTitle,
                           );
+                          if (selectedTitle == "Personal Use") {
+                            await prefs.setBool('is_personal_use', true);
+                          } else {
+                            await prefs.setBool('is_personal_use', false);
+                          }
+
+                          if (!context.mounted) return;
 
                           if (selectedTitle == "Personal Use") {
                             Navigator.pushNamed(

@@ -9,9 +9,7 @@ import 'api_handler.dart';
 class TokenRefreshInterceptor extends Interceptor {
   final Dio dio;
   bool _isRefreshing = false;
-
   final List<void Function(String token)> _tokenSubscribers = [];
-
   static const String refreshTokenEndpoint = '/auth/refresh';
 
   TokenRefreshInterceptor(this.dio);
@@ -43,9 +41,7 @@ class TokenRefreshInterceptor extends Interceptor {
             handler.resolve(response);
           } catch (e) {
             handler.reject(
-              e is DioException
-                  ? e
-                  : DioException(requestOptions: err.requestOptions, error: e),
+              e is DioException ? e : DioException(requestOptions: err.requestOptions, error: e),
             );
           }
         });
@@ -58,16 +54,14 @@ class TokenRefreshInterceptor extends Interceptor {
         final response = await dio.post(
           refreshTokenEndpoint,
           data: {'refresh_token': currentRefreshToken},
-          options: Options(
-            headers: {},
-          ),
+          options: Options(headers: {}),
         );
 
         if (response.statusCode == 200 && response.data['success'] == true) {
           final newAccessToken = response.data['data']['access_token'];
           final newRefreshToken = response.data['data']['refresh_token'];
 
-          ApiHandler.instance.setTokens(
+          await ApiHandler.instance.setTokens(
             token: newAccessToken,
             refreshToken: newRefreshToken ?? currentRefreshToken,
           );
@@ -79,8 +73,7 @@ class TokenRefreshInterceptor extends Interceptor {
           }
           _tokenSubscribers.clear();
 
-          err.requestOptions.headers['Authorization'] =
-              'Bearer $newAccessToken';
+          err.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
           final retryResponse = await dio.fetch(err.requestOptions);
           return handler.resolve(retryResponse);
         } else {

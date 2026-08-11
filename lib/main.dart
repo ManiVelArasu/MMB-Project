@@ -7,6 +7,7 @@ import 'package:project_mmb/network/provider/custom_theme_provider.dart';
 import 'package:project_mmb/theme/app_theme.dart';
 import 'package:project_mmb/utils/routes.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/api/api_handler.dart';
 import 'core/api/api_interceptor.dart';
@@ -27,12 +28,26 @@ Future<void> main() async {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
+
   await _initializeApp();
   runApp(const MyApp());
 }
 
 Future<void> _initializeApp() async {
   await _initApi();
+  final prefs = await SharedPreferences.getInstance();
+  final savedToken = prefs.getString('auth_token');
+  final savedRefreshToken = prefs.getString('refresh_token');
+print('savedToken${savedToken}');
+  if (savedToken != null && savedToken.isNotEmpty) {
+    await ApiHandler.instance.setTokens(
+      token: savedToken,
+      refreshToken: savedRefreshToken,
+    );
+    debugPrint("✅ Restored Saved Token: $savedToken");
+  } else {
+    debugPrint("⚠️ No Saved Token Found (User not logged in or OTP not verified yet)");
+  }
 }
 
 Future<void> _initApi() async {
@@ -46,7 +61,6 @@ Future<void> _initApi() async {
     rethrowExceptions: false,
     showToastOnError: true,
     defaultToastPosition: ApiToastPosition.bottom,
-    // 🚀 இங்கே TokenRefreshInterceptor-ஐச் சேர்த்துவிடலாம்
     interceptor: TokenRefreshInterceptor(tempDio),
   );
 }

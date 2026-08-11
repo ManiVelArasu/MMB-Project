@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:project_mmb/utils/theme/app.colors.dart';
+import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
@@ -73,30 +76,43 @@ class FeedbackScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     height: 50.h,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        provider.submitFeedback();
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Feedback submitted successfully"),
-                          ),
+                    child: ButtonWidget(
+                      isLoading: provider.isVerifyLoading,
+                      decoration: BoxDecoration(
+                        color: AppColors.appRed,
+                        borderRadius: BorderRadius.all(Radius.circular(10.r)),
+                      ),
+                      buttonPress: () async {
+                        final response = await provider.submitFeedbackApi(
+                          appVersion: '2.4.1',
+                          platform: 'android',
                         );
+
+                        if (!context.mounted) return;
+
+                        if (response != null) {
+                          Fluttertoast.showToast(
+                            msg: "Feedback submitted successfully!",
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.BOTTOM,
+                            backgroundColor: Colors.green,
+                            textColor: Colors.white,
+                          );
+
+                          Navigator.pop(context);
+                        } else {
+                          Fluttertoast.showToast(
+                            msg:
+                                provider.errorMessage ??
+                                "Failed to submit feedback",
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.BOTTOM,
+                            backgroundColor: Colors.red,
+                            textColor: Colors.white,
+                          );
+                        }
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE53935),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                      ),
-                      child: AppText(
-                        "Submit",
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      title: "Submit",
                     ),
                   ),
                 ],
