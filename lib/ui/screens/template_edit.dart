@@ -13,6 +13,7 @@ import '../../network/provider/editor_provider.dart';
 import '../industry/widgets/editable.dart';
 import '../../network/provider/custom_theme_provider.dart';
 
+
 class TemplateEditScreen extends StatelessWidget {
   final String resizeSize;
   const TemplateEditScreen({super.key, this.resizeSize = "Post Square (1:1)"});
@@ -38,11 +39,13 @@ class EditorView extends StatefulWidget {
 
 class _EditorViewState extends State<EditorView> {
   bool _isCanvasBackground(EditorItem item) {
-    return item.position.dx == 0 &&
-        item.position.dy == 0 &&
-        (item.width ?? 0) >= 1000 &&
-        (item.height ?? 0) >= 1000 &&
-        (item.type == 'image' || item.type == 'video' || item.type == 'shape');
+    final typeIsBackground =
+        item.type == 'image' || item.type == 'video' || item.type == 'shape';
+    if (!typeIsBackground) return false;
+
+    // Keep the background identifiable after transform operations.
+    return item.id?.startsWith('bg_') == true ||
+        ((item.width ?? 0) >= 1000 && (item.height ?? 0) >= 1000);
   }
 
   Widget _buildCanvasBackground(EditorProvider provider) {
@@ -63,8 +66,8 @@ class _EditorViewState extends State<EditorView> {
           bg.contentUrl!.isNotEmpty) {
         final isLocal =
             bg.isLocal ||
-            (!bg.contentUrl!.startsWith('http://') &&
-                !bg.contentUrl!.startsWith('https://'));
+                (!bg.contentUrl!.startsWith('http://') &&
+                    !bg.contentUrl!.startsWith('https://'));
 
         if (isLocal) {
           return Image.file(
@@ -100,7 +103,7 @@ class _EditorViewState extends State<EditorView> {
       if (response.statusCode != 200) return null;
       final bytes = await response.fold<List<int>>(
         <int>[],
-        (buffer, data) => buffer..addAll(data),
+            (buffer, data) => buffer..addAll(data),
       );
       client.close();
       final dir = await getTemporaryDirectory();
@@ -115,10 +118,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _cropSelectedImage(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-  ) async {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      ) async {
     final item = provider.items.where((e) => e.id == itemId).isEmpty
         ? null
         : provider.items.firstWhere((e) => e.id == itemId);
@@ -156,11 +159,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<bool> _confirmReplaceBackground(
-    BuildContext context,
-    EditorProvider provider,
-    String imageUrl, {
-    String? selectedItemId,
-  }) async {
+      BuildContext context,
+      EditorProvider provider,
+      String imageUrl, {
+        String? selectedItemId,
+      }) async {
     final replace = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -253,11 +256,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showFontFamilyBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      bool isDark,
+      ) {
     final List<String> fontList = [
       "Inter",
       "Janda Manatee Solid",
@@ -356,11 +359,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showFontColorBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      bool isDark,
+      ) {
     int selectedTab = 0;
     Color pickerColor = Colors.red;
 
@@ -407,13 +410,13 @@ class _EditorViewState extends State<EditorView> {
                       _buildTab(
                         selectedTab == 0,
                         "Presets",
-                        () => setModalState(() => selectedTab = 0),
+                            () => setModalState(() => selectedTab = 0),
                       ),
                       const SizedBox(width: 20),
                       _buildTab(
                         selectedTab == 1,
                         "Custom",
-                        () => setModalState(() => selectedTab = 1),
+                            () => setModalState(() => selectedTab = 1),
                       ),
                     ],
                   ),
@@ -421,40 +424,40 @@ class _EditorViewState extends State<EditorView> {
                   Expanded(
                     child: selectedTab == 0
                         ? GridView.builder(
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 6,
-                                  mainAxisSpacing: 10,
-                                  crossAxisSpacing: 10,
-                                ),
-                            itemCount: Colors.primaries.length,
-                            itemBuilder: (context, index) {
-                              return GestureDetector(
-                                onTap: () => provider.updateTextColor(
-                                  itemId,
-                                  Colors.primaries[index],
-                                ),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.primaries[index],
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              );
-                            },
-                          )
-                        : SingleChildScrollView(
-                            child: ColorPicker(
-                              pickerColor: pickerColor,
-                              onColorChanged: (color) {
-                                setModalState(() => pickerColor = color);
-                                provider.updateTextColor(itemId, color);
-                              },
-                              enableAlpha: false,
-                              displayThumbColor: true,
-                              paletteType: PaletteType.hueWheel,
+                      gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 6,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                      ),
+                      itemCount: Colors.primaries.length,
+                      itemBuilder: (context, index) {
+                        return GestureDetector(
+                          onTap: () => provider.updateTextColor(
+                            itemId,
+                            Colors.primaries[index],
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.primaries[index],
+                              shape: BoxShape.circle,
                             ),
                           ),
+                        );
+                      },
+                    )
+                        : SingleChildScrollView(
+                      child: ColorPicker(
+                        pickerColor: pickerColor,
+                        onColorChanged: (color) {
+                          setModalState(() => pickerColor = color);
+                          provider.updateTextColor(itemId, color);
+                        },
+                        enableAlpha: false,
+                        displayThumbColor: true,
+                        paletteType: PaletteType.hueWheel,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -490,13 +493,13 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showFormatBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      bool isDark,
+      ) {
     final item = provider.items.firstWhere(
-      (e) => e.id == itemId,
+          (e) => e.id == itemId,
       orElse: () => provider.items.first,
     );
 
@@ -604,10 +607,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showImageUploadsBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     provider.fetchFreePikAssets("nature");
 
     showModalBottomSheet(
@@ -663,47 +666,47 @@ class _EditorViewState extends State<EditorView> {
                 Expanded(
                   child: provider.isFreePikLoading
                       ? const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.red,
-                            strokeWidth: 2,
-                          ),
-                        )
+                    child: CircularProgressIndicator(
+                      color: Colors.red,
+                      strokeWidth: 2,
+                    ),
+                  )
                       : provider.freePikAssets.isEmpty
                       ? Center(
-                          child: AppText(
-                            "No images found",
-                            style: TextStyle(
-                              color: isDark ? Colors.white70 : Colors.black54,
+                    child: AppText(
+                      "No images found",
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
+                  )
+                      : GridView.builder(
+                    gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                    ),
+                    itemCount: provider.freePikAssets.length,
+                    itemBuilder: (context, index) {
+                      final imgUrl = provider.freePikAssets[index];
+                      return GestureDetector(
+                        onTap: () {
+                          provider.addImage(imgUrl, isLocal: false);
+                          Navigator.pop(modalContext);
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            image: DecorationImage(
+                              image: NetworkImage(imgUrl),
+                              fit: BoxFit.cover,
                             ),
                           ),
-                        )
-                      : GridView.builder(
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 10,
-                              ),
-                          itemCount: provider.freePikAssets.length,
-                          itemBuilder: (context, index) {
-                            final imgUrl = provider.freePikAssets[index];
-                            return GestureDetector(
-                              onTap: () {
-                                provider.addImage(imgUrl, isLocal: false);
-                                Navigator.pop(modalContext);
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  image: DecorationImage(
-                                    image: NetworkImage(imgUrl),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
                         ),
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
@@ -714,13 +717,13 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showImageTransparencyBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      bool isDark,
+      ) {
     final item = provider.items.firstWhere(
-      (e) => e.id == itemId,
+          (e) => e.id == itemId,
       orElse: () => provider.items.first,
     );
 
@@ -808,10 +811,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showFramesBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -901,10 +904,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showMyBrandBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -984,10 +987,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTextStylesBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1056,10 +1059,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showMediaBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     int selectedTab = 2;
     String searchQuery = "shapes";
 
@@ -1376,137 +1379,137 @@ class _EditorViewState extends State<EditorView> {
                           child: ListView(
                             scrollDirection: Axis.horizontal,
                             children:
-                                [
-                                  "Super",
-                                  "Greetings",
-                                  "Thank You",
-                                  "Birthday",
-                                  "Offers",
-                                  "Shapes",
-                                ].map((category) {
-                                  bool isChipSelected =
-                                      searchQuery.toLowerCase() ==
+                            [
+                              "Super",
+                              "Greetings",
+                              "Thank You",
+                              "Birthday",
+                              "Offers",
+                              "Shapes",
+                            ].map((category) {
+                              bool isChipSelected =
+                                  searchQuery.toLowerCase() ==
                                       category.toLowerCase();
-                                  return GestureDetector(
-                                    onTap: () {
-                                      setModalState(
+                              return GestureDetector(
+                                onTap: () {
+                                  setModalState(
                                         () => searchQuery = category,
-                                      );
-                                      if (selectedTab == 1) {
-                                        edProvider.fetchFreePikAssets(category);
-                                      } else {
-                                        edProvider.fetchFreePikStickers(
-                                          category,
-                                        );
-                                      }
-                                    },
-                                    child: Container(
-                                      margin: const EdgeInsets.only(right: 10),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
+                                  );
+                                  if (selectedTab == 1) {
+                                    edProvider.fetchFreePikAssets(category);
+                                  } else {
+                                    edProvider.fetchFreePikStickers(
+                                      category,
+                                    );
+                                  }
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.only(right: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isChipSelected
+                                        ? Colors.grey.shade800
+                                        : (isDark
+                                        ? const Color(0xFF2C2C2C)
+                                        : Colors.white),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? Colors.grey.shade800
+                                          : Colors.grey.shade300,
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: AppText(
+                                      category,
+                                      style: TextStyle(
                                         color: isChipSelected
-                                            ? Colors.grey.shade800
+                                            ? Colors.white
                                             : (isDark
-                                                  ? const Color(0xFF2C2C2C)
-                                                  : Colors.white),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: isDark
-                                              ? Colors.grey.shade800
-                                              : Colors.grey.shade300,
-                                          width: 1.2,
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: AppText(
-                                          category,
-                                          style: TextStyle(
-                                            color: isChipSelected
-                                                ? Colors.white
-                                                : (isDark
-                                                      ? Colors.white70
-                                                      : Colors.black87),
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
+                                            ? Colors.white70
+                                            : Colors.black87),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                  );
-                                }).toList(),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                         const SizedBox(height: 12),
                         Expanded(
                           child:
-                              (selectedTab == 1
-                                  ? edProvider.isFreePikLoading
-                                  : edProvider.isStickersLoading)
+                          (selectedTab == 1
+                              ? edProvider.isFreePikLoading
+                              : edProvider.isStickersLoading)
                               ? const Center(
-                                  child: CircularProgressIndicator(
-                                    color: Colors.red,
-                                    strokeWidth: 2,
-                                  ),
-                                )
+                            child: CircularProgressIndicator(
+                              color: Colors.red,
+                              strokeWidth: 2,
+                            ),
+                          )
                               : (selectedTab == 1
-                                        ? edProvider.freePikAssets
-                                        : edProvider.freePikStickers)
-                                    .isEmpty
+                              ? edProvider.freePikAssets
+                              : edProvider.freePikStickers)
+                              .isEmpty
                               ? Center(
-                                  child: AppText(
-                                    "No items found",
-                                    style: TextStyle(
+                            child: AppText(
+                              "No items found",
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.black54,
+                                fontSize: 14,
+                              ),
+                            ),
+                          )
+                              : GridView.builder(
+                            gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                            ),
+                            itemCount: selectedTab == 1
+                                ? edProvider.freePikAssets.length
+                                : edProvider.freePikStickers.length,
+                            itemBuilder: (context, index) {
+                              final itemUrl = selectedTab == 1
+                                  ? edProvider.freePikAssets[index]
+                                  : edProvider.freePikStickers[index];
+                              return GestureDetector(
+                                onTap: () {
+                                  edProvider.addImage(
+                                    itemUrl,
+                                    isLocal: false,
+                                  );
+                                  Navigator.pop(modalContext);
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      12,
+                                    ),
+                                    border: Border.all(
                                       color: isDark
-                                          ? Colors.white70
-                                          : Colors.black54,
-                                      fontSize: 14,
+                                          ? Colors.grey.shade800
+                                          : Colors.grey.shade200,
+                                    ),
+                                    image: DecorationImage(
+                                      image: NetworkImage(itemUrl),
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
-                                )
-                              : GridView.builder(
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 4,
-                                        crossAxisSpacing: 10,
-                                        mainAxisSpacing: 10,
-                                      ),
-                                  itemCount: selectedTab == 1
-                                      ? edProvider.freePikAssets.length
-                                      : edProvider.freePikStickers.length,
-                                  itemBuilder: (context, index) {
-                                    final itemUrl = selectedTab == 1
-                                        ? edProvider.freePikAssets[index]
-                                        : edProvider.freePikStickers[index];
-                                    return GestureDetector(
-                                      onTap: () {
-                                        edProvider.addImage(
-                                          itemUrl,
-                                          isLocal: false,
-                                        );
-                                        Navigator.pop(modalContext);
-                                      },
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          border: Border.all(
-                                            color: isDark
-                                                ? Colors.grey.shade800
-                                                : Colors.grey.shade200,
-                                          ),
-                                          image: DecorationImage(
-                                            image: NetworkImage(itemUrl),
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
                                 ),
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ],
@@ -1521,10 +1524,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showBackgroundBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     int selectedBgTab = 0;
     provider.fetchFreePikAssets("backgrounds");
 
@@ -1683,197 +1686,197 @@ class _EditorViewState extends State<EditorView> {
                       Expanded(
                         child: selectedBgTab == 2
                             ? GridView.builder(
-                                padding: const EdgeInsets.only(top: 4),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 6,
-                                      crossAxisSpacing: 14,
-                                      mainAxisSpacing: 14,
-                                    ),
-                                itemCount: 18,
-                                itemBuilder: (context, index) {
-                                  const colors = [
-                                    Colors.white,
-                                    Colors.black,
-                                    Color(0xFFF44336),
-                                    Color(0xFFE91E63),
-                                    Color(0xFF9C27B0),
-                                    Color(0xFF673AB7),
-                                    Color(0xFF3F51B5),
-                                    Color(0xFF2196F3),
-                                    Color(0xFF03A9F4),
-                                    Color(0xFF00BCD4),
-                                    Color(0xFF009688),
-                                    Color(0xFF4CAF50),
-                                    Color(0xFF8BC34A),
-                                    Color(0xFFFFEB3B),
-                                    Color(0xFFFFC107),
-                                    Color(0xFFFF9800),
-                                    Color(0xFFFF5722),
-                                    Color(0xFF795548),
-                                  ];
-                                  final color = colors[index];
-                                  return InkWell(
-                                    borderRadius: BorderRadius.circular(12),
-                                    onTap: () {
-                                      edProvider.setBackgroundColor(color);
-                                      Navigator.pop(modalContext);
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: color,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: Colors.grey.shade300,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              )
+                          padding: const EdgeInsets.only(top: 4),
+                          gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 6,
+                            crossAxisSpacing: 14,
+                            mainAxisSpacing: 14,
+                          ),
+                          itemCount: 18,
+                          itemBuilder: (context, index) {
+                            const colors = [
+                              Colors.white,
+                              Colors.black,
+                              Color(0xFFF44336),
+                              Color(0xFFE91E63),
+                              Color(0xFF9C27B0),
+                              Color(0xFF673AB7),
+                              Color(0xFF3F51B5),
+                              Color(0xFF2196F3),
+                              Color(0xFF03A9F4),
+                              Color(0xFF00BCD4),
+                              Color(0xFF009688),
+                              Color(0xFF4CAF50),
+                              Color(0xFF8BC34A),
+                              Color(0xFFFFEB3B),
+                              Color(0xFFFFC107),
+                              Color(0xFFFF9800),
+                              Color(0xFFFF5722),
+                              Color(0xFF795548),
+                            ];
+                            final color = colors[index];
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                edProvider.setBackgroundColor(color);
+                                Navigator.pop(modalContext);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        )
                             : selectedBgTab == 0
                             ? (edProvider.isFreePikLoading
-                                  ? const Center(
-                                      child: CircularProgressIndicator(
-                                        color: Colors.red,
-                                      ),
-                                    )
-                                  : GridView.builder(
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount: 3,
-                                            crossAxisSpacing: 10,
-                                            mainAxisSpacing: 10,
-                                          ),
-                                      itemCount:
-                                          edProvider.freePikAssets.length,
-                                      itemBuilder: (context, index) {
-                                        final bgUrl =
-                                            edProvider.freePikAssets[index];
-                                        return GestureDetector(
-                                          onTap: () async {
-                                            final replaced =
-                                                await _confirmReplaceBackground(
-                                                  context,
-                                                  edProvider,
-                                                  bgUrl,
-                                                );
-                                            if (replaced &&
-                                                Navigator.canPop(
-                                                  modalContext,
-                                                )) {
-                                              Navigator.pop(modalContext);
-                                            }
-                                          },
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              image: DecorationImage(
-                                                image: NetworkImage(bgUrl),
-                                                fit: BoxFit.cover,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ))
+                            ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.red,
+                          ),
+                        )
+                            : GridView.builder(
+                          gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                          ),
+                          itemCount:
+                          edProvider.freePikAssets.length,
+                          itemBuilder: (context, index) {
+                            final bgUrl =
+                            edProvider.freePikAssets[index];
+                            return GestureDetector(
+                              onTap: () async {
+                                final replaced =
+                                await _confirmReplaceBackground(
+                                  context,
+                                  edProvider,
+                                  bgUrl,
+                                );
+                                if (replaced &&
+                                    Navigator.canPop(
+                                      modalContext,
+                                    )) {
+                                  Navigator.pop(modalContext);
+                                }
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius:
+                                  BorderRadius.circular(12),
+                                  image: DecorationImage(
+                                    image: NetworkImage(bgUrl),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ))
                             : (edProvider.isVideosLoading
-                                  ? const Center(
-                                      child: CircularProgressIndicator(
-                                        color: Colors.red,
+                            ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.red,
+                          ),
+                        )
+                            : edProvider.freePikVideos.isEmpty
+                            ? Center(
+                          child: AppText(
+                            "No videos found",
+                            style: TextStyle(
+                              color: isDark
+                                  ? Colors.white70
+                                  : Colors.black54,
+                            ),
+                          ),
+                        )
+                            : GridView.builder(
+                          gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                          ),
+                          itemCount:
+                          edProvider.freePikVideos.length,
+                          itemBuilder: (context, index) {
+                            final videoUrl =
+                            edProvider.freePikVideos[index];
+                            return GestureDetector(
+                              onTap: () async {
+                                final replace = await showDialog<bool>(
+                                  context: context,
+                                  builder: (dialogContext) => AlertDialog(
+                                    title: const Text(
+                                      'Replace Background?',
+                                    ),
+                                    content: const Text(
+                                      'The current background will be replaced with this video.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(
+                                              dialogContext,
+                                              false,
+                                            ),
+                                        child: const Text('CANCEL'),
                                       ),
-                                    )
-                                  : edProvider.freePikVideos.isEmpty
-                                  ? Center(
-                                      child: AppText(
-                                        "No videos found",
-                                        style: TextStyle(
-                                          color: isDark
-                                              ? Colors.white70
-                                              : Colors.black54,
+                                      FilledButton(
+                                        style:
+                                        FilledButton.styleFrom(
+                                          backgroundColor:
+                                          Colors.red,
+                                        ),
+                                        onPressed: () =>
+                                            Navigator.pop(
+                                              dialogContext,
+                                              true,
+                                            ),
+                                        child: const Text(
+                                          'REPLACE',
                                         ),
                                       ),
-                                    )
-                                  : GridView.builder(
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount: 3,
-                                            crossAxisSpacing: 10,
-                                            mainAxisSpacing: 10,
-                                          ),
-                                      itemCount:
-                                          edProvider.freePikVideos.length,
-                                      itemBuilder: (context, index) {
-                                        final videoUrl =
-                                            edProvider.freePikVideos[index];
-                                        return GestureDetector(
-                                          onTap: () async {
-                                            final replace = await showDialog<bool>(
-                                              context: context,
-                                              builder: (dialogContext) => AlertDialog(
-                                                title: const Text(
-                                                  'Replace Background?',
-                                                ),
-                                                content: const Text(
-                                                  'The current background will be replaced with this video.',
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () =>
-                                                        Navigator.pop(
-                                                          dialogContext,
-                                                          false,
-                                                        ),
-                                                    child: const Text('CANCEL'),
-                                                  ),
-                                                  FilledButton(
-                                                    style:
-                                                        FilledButton.styleFrom(
-                                                          backgroundColor:
-                                                              Colors.red,
-                                                        ),
-                                                    onPressed: () =>
-                                                        Navigator.pop(
-                                                          dialogContext,
-                                                          true,
-                                                        ),
-                                                    child: const Text(
-                                                      'REPLACE',
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                            if (replace == true) {
-                                              edProvider.setBackgroundVideo(
-                                                videoUrl,
-                                              );
-                                              edProvider.clearSelection();
-                                              Navigator.pop(modalContext);
-                                            }
-                                          },
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              color: Colors.grey.shade800,
-                                            ),
-                                            child: const Stack(
-                                              alignment: Alignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons
-                                                      .play_circle_fill_rounded,
-                                                  color: Colors.white,
-                                                  size: 36,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    )),
+                                    ],
+                                  ),
+                                );
+                                if (replace == true) {
+                                  edProvider.setBackgroundVideo(
+                                    videoUrl,
+                                  );
+                                  edProvider.clearSelection();
+                                  Navigator.pop(modalContext);
+                                }
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius:
+                                  BorderRadius.circular(12),
+                                  color: Colors.grey.shade800,
+                                ),
+                                child: const Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons
+                                          .play_circle_fill_rounded,
+                                      color: Colors.white,
+                                      size: 36,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        )),
                       ),
                     ],
                   ),
@@ -1955,31 +1958,33 @@ class _EditorViewState extends State<EditorView> {
                   return Stack(
                     clipBehavior: Clip.hardEdge,
                     children: [
-                      // Background is rendered exactly once. Full-canvas background
-                      // items are excluded from the normal editable-item stack below.
-                      // Background image/video remains editable after it is set.
-                      // Tap any empty area of the canvas to select the background.
-                      Positioned.fill(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.translucent,
-                          onTap: () {
-                            final backgrounds = provider.items
-                                .where(_isCanvasBackground)
-                                .toList();
-                            if (backgrounds.isNotEmpty) {
-                              final bg = backgrounds.last;
-                              provider.setSelectedItem(bg.type, bg.id);
-                            }
-                          },
-                          child: _buildCanvasBackground(provider),
-                        ),
-                      ),
+                      // Render ALL editor items through EditableItemWidget.
+                      // Background is a normal EditorItem too, so all existing
+                      // transforms, filters, shapes, outline, opacity and layer
+                      // actions are applied to it exactly like other images.
+                      ...provider.items.map((item) {
+                        return Positioned(
+                          left: item.position.dx * scaleX,
+                          top: item.position.dy * scaleY,
+                          child: Transform.scale(
+                            scale: scaleX,
+                            alignment: Alignment.topLeft,
+                            child: EditableItemWidget(
+                              item: item,
+                              onItemSelected: (type, id) {
+                                provider.setSelectedItem(type, id);
+                              },
+                            ),
+                          ),
+                        );
+                      }),
 
-                      // Show selection border when the background is selected.
+                      // Keep the selected-background outline without changing
+                      // the existing editor design.
                       if (provider.selectedItemId != null &&
                           provider.items.any(
-                            (item) =>
-                                item.id == provider.selectedItemId &&
+                                (item) =>
+                            item.id == provider.selectedItemId &&
                                 _isCanvasBackground(item),
                           ))
                         Positioned.fill(
@@ -1991,28 +1996,6 @@ class _EditorViewState extends State<EditorView> {
                             ),
                           ),
                         ),
-
-                      ...provider.items
-                          .where((item) => !_isCanvasBackground(item))
-                          .map((item) {
-                            return Positioned(
-                              left: item.position.dx * scaleX,
-                              top: item.position.dy * scaleY,
-                              child: Transform.scale(
-                                scale: scaleX,
-                                alignment: Alignment.topLeft,
-                                child: SizedBox(
-                                  width: item.width ?? 200,
-                                  child: EditableItemWidget(
-                                    item: item,
-                                    onItemSelected: (type, id) {
-                                      provider.setSelectedItem(type, id);
-                                    },
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
 
                       // 3. Frame Layer
                       if (provider.selectedFrameUrl != null)
@@ -2039,264 +2022,264 @@ class _EditorViewState extends State<EditorView> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child:
-            provider.selectedItemType == 'textbox' ||
-                provider.selectedItemType == 'text'
+        provider.selectedItemType == 'textbox' ||
+            provider.selectedItemType == 'text'
             ? Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  InkWell(
-                    onTap: () {
-                      if (provider.selectedItemId != null) {
-                        _showFontFamilyBottomSheet(
-                          context,
-                          provider,
-                          provider.selectedItemId!,
-                          isDark,
-                        );
-                      }
-                    },
-                    child: _buildTextActionItem(
-                      Icons.font_download_rounded,
-                      "FONT",
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      if (provider.selectedItemId != null) {
-                        _showFormatBottomSheet(
-                          context,
-                          provider,
-                          provider.selectedItemId!,
-                          isDark,
-                        );
-                      }
-                    },
-                    child: _buildTextActionItem(
-                      Icons.text_format_rounded,
-                      "FORMAT",
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {},
-                    child: _buildTextActionItem(
-                      Icons.space_bar_rounded,
-                      "SPACING",
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      if (provider.selectedItemId != null) {
-                        _showFontColorBottomSheet(
-                          context,
-                          provider,
-                          provider.selectedItemId!,
-                          isDark,
-                        );
-                      }
-                    },
-                    child: _buildTextActionItem(
-                      Icons.color_lens_rounded,
-                      "COLOR",
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {},
-                    child: _buildTextActionItem(
-                      Icons.format_align_left_rounded,
-                      "ALIGN",
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {},
-                    child: _buildTextActionItem(Icons.layers_rounded, "ORDER"),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      provider.clearSelection();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF2A1A1C)
-                            : Colors.red.shade50,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.red,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              )
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            InkWell(
+              onTap: () {
+                if (provider.selectedItemId != null) {
+                  _showFontFamilyBottomSheet(
+                    context,
+                    provider,
+                    provider.selectedItemId!,
+                    isDark,
+                  );
+                }
+              },
+              child: _buildTextActionItem(
+                Icons.font_download_rounded,
+                "FONT",
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                if (provider.selectedItemId != null) {
+                  _showFormatBottomSheet(
+                    context,
+                    provider,
+                    provider.selectedItemId!,
+                    isDark,
+                  );
+                }
+              },
+              child: _buildTextActionItem(
+                Icons.text_format_rounded,
+                "FORMAT",
+              ),
+            ),
+            InkWell(
+              onTap: () {},
+              child: _buildTextActionItem(
+                Icons.space_bar_rounded,
+                "SPACING",
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                if (provider.selectedItemId != null) {
+                  _showFontColorBottomSheet(
+                    context,
+                    provider,
+                    provider.selectedItemId!,
+                    isDark,
+                  );
+                }
+              },
+              child: _buildTextActionItem(
+                Icons.color_lens_rounded,
+                "COLOR",
+              ),
+            ),
+            InkWell(
+              onTap: () {},
+              child: _buildTextActionItem(
+                Icons.format_align_left_rounded,
+                "ALIGN",
+              ),
+            ),
+            InkWell(
+              onTap: () {},
+              child: _buildTextActionItem(Icons.layers_rounded, "ORDER"),
+            ),
+            InkWell(
+              onTap: () {
+                provider.clearSelection();
+              },
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF2A1A1C)
+                      : Colors.red.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.red,
+                  size: 18,
+                ),
+              ),
+            ),
+          ],
+        )
             : provider.selectedItemType == 'image'
             ? Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  // Replace selected image as the background.
-                  InkWell(
-                    onTap: () {
-                      final currentId = provider.selectedItemId;
-                      if (currentId == null) return;
-                      final selectedItem =
-                          provider.items.where((e) => e.id == currentId).isEmpty
-                          ? null
-                          : provider.items.firstWhere((e) => e.id == currentId);
-                      final imageUrl = selectedItem?.contentUrl;
-                      if (selectedItem != null &&
-                          selectedItem.type == 'image' &&
-                          imageUrl != null &&
-                          imageUrl.isNotEmpty) {
-                        _confirmReplaceBackground(
-                          context,
-                          provider,
-                          imageUrl,
-                          selectedItemId: currentId,
-                        );
-                      }
-                    },
-                    child: _buildTextActionItem(
-                      Icons.wallpaper_rounded,
-                      "REPLACE BG",
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      final currentId = provider.selectedItemId;
-                      if (currentId != null) {
-                        _cropSelectedImage(context, provider, currentId);
-                      }
-                    },
-                    child: _buildTextActionItem(Icons.crop_rounded, "CROP"),
-                  ),
-                  InkWell(
-                    onTap: () async {
-                      final picker = ImagePicker();
-                      final image = await picker.pickImage(
-                        source: ImageSource.gallery,
-                      );
-                      if (image == null) return;
-
-                      final selected = provider.items
-                          .where((e) => e.id == provider.selectedItemId)
-                          .toList();
-
-                      // If the selected image is the current background,
-                      // replace the background instead of adding a small image layer.
-                      if (selected.isNotEmpty &&
-                          _isCanvasBackground(selected.first)) {
-                        await _confirmReplaceBackground(
-                          context,
-                          provider,
-                          image.path,
-                          selectedItemId: selected.first.id,
-                        );
-                      } else {
-                        provider.addImage(image.path, isLocal: true);
-                      }
-                    },
-                    child: _buildTextActionItem(
-                      Icons.photo_library_rounded,
-                      "PHOTOS",
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      if (provider.selectedItemId != null) {
-                        _showImageTransparencyBottomSheet(
-                          context,
-                          provider,
-                          provider.selectedItemId!,
-                          isDark,
-                        );
-                      }
-                    },
-                    child: _buildTextActionItem(
-                      Icons.opacity_rounded,
-                      "TRANSPARENCY",
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => provider.clearSelection(),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF2A1A1C)
-                            : Colors.red.shade50,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.red,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  InkWell(
-                    onTap: () {
-                      setState(() => _bottomNavIndex = 0);
-                      _showFramesBottomSheet(context, provider, isDark);
-                    },
-                    child: _buildBottomNavItem(
-                      Icons.layers_rounded,
-                      "FRAMES",
-                      _bottomNavIndex == 0,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      setState(() => _bottomNavIndex = 1);
-                      _showMyBrandBottomSheet(context, provider, isDark);
-                    },
-                    child: _buildBottomNavItem(
-                      Icons.branding_watermark_rounded,
-                      "MY BRAND",
-                      _bottomNavIndex == 1,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      setState(() => _bottomNavIndex = 2);
-                      _showTextStylesBottomSheet(context, provider, isDark);
-                    },
-                    child: _buildBottomNavItem(
-                      Icons.text_fields_rounded,
-                      "TEXT",
-                      _bottomNavIndex == 2,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      setState(() => _bottomNavIndex = 3);
-                      _showMediaBottomSheet(context, provider, isDark);
-                    },
-                    child: _buildBottomNavItem(
-                      Icons.photo_library_rounded,
-                      "MEDIA",
-                      _bottomNavIndex == 3,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      setState(() => _bottomNavIndex = 4);
-                      _showBackgroundBottomSheet(context, provider, isDark);
-                    },
-                    child: _buildBottomNavItem(
-                      Icons.wallpaper_rounded,
-                      "BACKGROUND",
-                      _bottomNavIndex == 4,
-                    ),
-                  ),
-                ],
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            // Replace selected image as the background.
+            InkWell(
+              onTap: () {
+                final currentId = provider.selectedItemId;
+                if (currentId == null) return;
+                final selectedItem =
+                provider.items.where((e) => e.id == currentId).isEmpty
+                    ? null
+                    : provider.items.firstWhere((e) => e.id == currentId);
+                final imageUrl = selectedItem?.contentUrl;
+                if (selectedItem != null &&
+                    selectedItem.type == 'image' &&
+                    imageUrl != null &&
+                    imageUrl.isNotEmpty) {
+                  _confirmReplaceBackground(
+                    context,
+                    provider,
+                    imageUrl,
+                    selectedItemId: currentId,
+                  );
+                }
+              },
+              child: _buildTextActionItem(
+                Icons.wallpaper_rounded,
+                "REPLACE BG",
               ),
+            ),
+            InkWell(
+              onTap: () {
+                final currentId = provider.selectedItemId;
+                if (currentId != null) {
+                  _cropSelectedImage(context, provider, currentId);
+                }
+              },
+              child: _buildTextActionItem(Icons.crop_rounded, "CROP"),
+            ),
+            InkWell(
+              onTap: () async {
+                final picker = ImagePicker();
+                final image = await picker.pickImage(
+                  source: ImageSource.gallery,
+                );
+                if (image == null) return;
+
+                final selected = provider.items
+                    .where((e) => e.id == provider.selectedItemId)
+                    .toList();
+
+                // If the selected image is the current background,
+                // replace the background instead of adding a small image layer.
+                if (selected.isNotEmpty &&
+                    _isCanvasBackground(selected.first)) {
+                  await _confirmReplaceBackground(
+                    context,
+                    provider,
+                    image.path,
+                    selectedItemId: selected.first.id,
+                  );
+                } else {
+                  provider.addImage(image.path, isLocal: true);
+                }
+              },
+              child: _buildTextActionItem(
+                Icons.photo_library_rounded,
+                "PHOTOS",
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                if (provider.selectedItemId != null) {
+                  _showImageTransparencyBottomSheet(
+                    context,
+                    provider,
+                    provider.selectedItemId!,
+                    isDark,
+                  );
+                }
+              },
+              child: _buildTextActionItem(
+                Icons.opacity_rounded,
+                "TRANSPARENCY",
+              ),
+            ),
+            InkWell(
+              onTap: () => provider.clearSelection(),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF2A1A1C)
+                      : Colors.red.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.red,
+                  size: 18,
+                ),
+              ),
+            ),
+          ],
+        )
+            : Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            InkWell(
+              onTap: () {
+                setState(() => _bottomNavIndex = 0);
+                _showFramesBottomSheet(context, provider, isDark);
+              },
+              child: _buildBottomNavItem(
+                Icons.layers_rounded,
+                "FRAMES",
+                _bottomNavIndex == 0,
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                setState(() => _bottomNavIndex = 1);
+                _showMyBrandBottomSheet(context, provider, isDark);
+              },
+              child: _buildBottomNavItem(
+                Icons.branding_watermark_rounded,
+                "MY BRAND",
+                _bottomNavIndex == 1,
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                setState(() => _bottomNavIndex = 2);
+                _showTextStylesBottomSheet(context, provider, isDark);
+              },
+              child: _buildBottomNavItem(
+                Icons.text_fields_rounded,
+                "TEXT",
+                _bottomNavIndex == 2,
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                setState(() => _bottomNavIndex = 3);
+                _showMediaBottomSheet(context, provider, isDark);
+              },
+              child: _buildBottomNavItem(
+                Icons.photo_library_rounded,
+                "MEDIA",
+                _bottomNavIndex == 3,
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                setState(() => _bottomNavIndex = 4);
+                _showBackgroundBottomSheet(context, provider, isDark);
+              },
+              child: _buildBottomNavItem(
+                Icons.wallpaper_rounded,
+                "BACKGROUND",
+                _bottomNavIndex == 4,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

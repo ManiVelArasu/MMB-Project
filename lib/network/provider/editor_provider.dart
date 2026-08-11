@@ -1,8 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:project_mmb/core/app_provider/my_notifier.dart';
+
 import '../../Api Model/editor_model.dart';
 import '../../Repository/freeoic.dart';
-
+import '../../core/app_provider/my_notifier.dart';
 class EditorProvider extends ChangeNotifier with MyNotifier {
   final List<EditorItem> _items = [];
   List<EditorItem> get items => _items;
@@ -10,8 +11,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   final List<List<EditorItem>> _history = [];
   int _historyIndex = -1;
   Color _backgroundColor = Colors.white;
-  Color get backgroundColor => _backgroundColor;
-
   void _saveState() {
     if (_historyIndex < _history.length - 1) {
       _history.removeRange(_historyIndex + 1, _history.length);
@@ -154,9 +153,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   void addImage(String url, {bool isLocal = false}) {
     _saveState();
+    final imageId = DateTime.now().millisecondsSinceEpoch.toString();
     _items.add(
       EditorItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: imageId,
         type: 'image',
         contentUrl: url,
         position: const Offset(100, 150),
@@ -166,6 +166,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         text: 'rounded',
       ),
     );
+
+    // Newly uploaded/added media is selected immediately.
+    // The selection toolbar will then appear above the main bottom navigation,
+    // including REPLACE BG / CROP / EDIT IMAGE / REMOVE.
+    selectedItemType = 'image';
+    selectedItemId = imageId;
     _saveState();
     notifyListeners();
   }
@@ -247,7 +253,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setImageFilter(String id, String filterName) {
-    int index = _items.indexWhere((e) => e.id == id);
+    final index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _saveState();
       _items[index] = _items[index].copyWith(filterType: filterName);
@@ -256,13 +262,14 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void updateImageColorAdjustments(
-    String id, {
-    double? brightness,
-    double? contrast,
-    double? saturation,
-  }) {
-    int index = _items.indexWhere((e) => e.id == id);
+      String id, {
+        double? brightness,
+        double? contrast,
+        double? saturation,
+      }) {
+    final index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
+      _saveState();
       _items[index] = _items[index].copyWith(
         brightness: brightness ?? _items[index].brightness,
         contrast: contrast ?? _items[index].contrast,
@@ -530,20 +537,17 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void setBackgroundImage(String imageUrl) {
     _saveState();
 
-    _items.removeWhere(
-      (item) =>
-          item.position.dx == 0 &&
-          item.position.dy == 0 &&
-          (item.type == 'image' ||
-              item.type == 'video' ||
-              item.type == 'shape'),
-    );
+    // Always remove the previous background first. Do not depend on its
+    // position: the old background may already have been rotated, scaled or
+    // moved by the user.
+    _removeBackgroundLayers();
 
-    // புதிய பேக்ரவுண்டை முதல் லேயராக (Index 0) சேர்ப்பது
+    final bgId = 'bg_${DateTime.now().millisecondsSinceEpoch}';
+
     _items.insert(
       0,
       EditorItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: bgId,
         type: 'image',
         position: const Offset(0, 0),
         width: 1080.0,
@@ -552,27 +556,27 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         isLocal: !imageUrl.startsWith('http'),
       ),
     );
+
+    // IMPORTANT: keep the newly applied background selected so the user can
+    // immediately Crop / Edit Image / Rotation / Opacity / Flip / Remove it.
+    selectedItemType = 'image';
+    selectedItemId = bgId;
     notifyListeners();
   }
 
   void setBackgroundVideo(String videoUrl) {
     _saveState();
 
-    // ஏற்கனவே உள்ள பழைய பேக்ரவுண்டை நீக்குவது
-    _items.removeWhere(
-      (item) =>
-          item.position.dx == 0 &&
-          item.position.dy == 0 &&
-          (item.type == 'image' ||
-              item.type == 'video' ||
-              item.type == 'shape'),
-    );
+    // Remove the previous background even if it was transformed.
+    _removeBackgroundLayers();
 
     // புதிய பேக்ரவுண்ட் வீடியோவை முதல் லேயராக சேர்ப்பது
+    final bgId = 'bg_video_${DateTime.now().millisecondsSinceEpoch}';
+
     _items.insert(
       0,
       EditorItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: bgId,
         type: 'video',
         position: const Offset(0, 0),
         width: 1080.0,
@@ -581,29 +585,26 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         isLocal: !videoUrl.startsWith('http'),
       ),
     );
+
+    selectedItemType = 'video';
+    selectedItemId = bgId;
     notifyListeners();
   }
 
+  Color get backgroundColor => _backgroundColor;
+
   String? get backgroundImageUrl {
-    final bgItem = _items.firstWhere(
-      (item) =>
-          item.position.dx == 0 &&
-          item.position.dy == 0 &&
-          item.type == 'image',
-      orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
-    );
-    return bgItem.contentUrl;
+    final bgItems = _items
+        .where((item) => _isBackgroundLayer(item) && item.type == 'image')
+        .toList();
+    return bgItems.isEmpty ? null : bgItems.last.contentUrl;
   }
 
   String? get backgroundVideoUrl {
-    final bgItem = _items.firstWhere(
-      (item) =>
-          item.position.dx == 0 &&
-          item.position.dy == 0 &&
-          item.type == 'video',
-      orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
-    );
-    return bgItem.contentUrl;
+    final bgItems = _items
+        .where((item) => _isBackgroundLayer(item) && item.type == 'video')
+        .toList();
+    return bgItems.isEmpty ? null : bgItems.last.contentUrl;
   }
 
   // 🚀 ----------------------------------------------------
@@ -612,49 +613,76 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void replaceBackgroundImage(String imageUrl, String selectedItemIdToRemove) {
     _saveState();
 
-    // 1. ஏற்கனவே உள்ள பழைய பேக்ரவுண்ட் லேயர்களை முழுமையாக நீக்குதல்
-    _items.removeWhere(
-      (item) =>
-          item.position.dx == 0 &&
-          item.position.dy == 0 &&
-          (item.type == 'image' ||
-              item.type == 'video' ||
-              item.type == 'shape'),
-    );
+    // Remove every previous background first, including one that has already
+    // been moved/scaled/rotated.
+    _removeBackgroundLayers();
 
-    // 2. கிளிக் செய்து செலக்ட் செய்த அந்த சின்ன இமேஜை நீக்குதல்
+    // Also remove the selected media item when Replace BG was triggered from
+    // a normal image.
     _items.removeWhere((item) => item.id == selectedItemIdToRemove);
 
-    // 3. புதிய இமேஜை முழு ஸ்கிரீன் பேக்ரவுண்டாக (Index 0 மற்றும் முழு அளவில்) சேர்ப்பது
+    final bgId = "bg_${DateTime.now().millisecondsSinceEpoch}";
+
     _items.insert(
       0,
       EditorItem(
-        id: "bg_${DateTime.now().millisecondsSinceEpoch}",
+        id: bgId,
         type: 'image',
         position: const Offset(0, 0),
-        width: 1080.0, // முழு கேன்வாஸ் அகலம்
-        height: 1080.0, // முழு கேன்வாஸ் உயரம்
+        width: 1080.0,
+        height: 1080.0,
         contentUrl: imageUrl,
         isLocal: !imageUrl.startsWith('http'),
       ),
     );
 
-    clearSelection();
+    // Keep the new background selected for immediate editing.
+    selectedItemType = 'image';
+    selectedItemId = bgId;
     notifyListeners();
   }
 
+  final Map<String, double> _imageFilterIntensity = {};
 
+  double imageFilterIntensity(String id) => _imageFilterIntensity[id] ?? 1.0;
 
+  void updateImageFilterIntensity(String id, double value) {
+    _saveState();
+    _imageFilterIntensity[id] = value.clamp(0.0, 1.0);
+    notifyListeners();
+  }
+
+  final Map<String, bool> _imageFlipX = {};
+  final Map<String, bool> _imageFlipY = {};
+
+  bool isImageFlippedX(String id) => _imageFlipX[id] ?? false;
+  bool isImageFlippedY(String id) => _imageFlipY[id] ?? false;
+
+  void flipImageHorizontal(String id) {
+    _saveState();
+    _imageFlipX[id] = !(_imageFlipX[id] ?? false);
+    notifyListeners();
+  }
+
+  void flipImageVertical(String id) {
+    _saveState();
+    _imageFlipY[id] = !(_imageFlipY[id] ?? false);
+    notifyListeners();
+  }
+
+  // A background must stay identifiable even after the user moves, scales,
+  // rotates or otherwise edits it. The old implementation required position
+  // == (0, 0), so once a background was transformed it was no longer removed
+  // when a new background was selected.
   bool _isBackgroundLayer(EditorItem item) {
-    return item.position.dx == 0 &&
-        item.position.dy == 0 &&
-        item.width != null &&
-        item.height != null &&
-        item.width! >= 1000 &&
-        item.height! >= 1000 &&
-        (item.type == 'image' ||
-            item.type == 'video' ||
-            item.type == 'shape');
+    final typeIsBackground =
+        item.type == 'image' || item.type == 'video' || item.type == 'shape';
+    if (!typeIsBackground) return false;
+
+    final idLooksLikeBackground = item.id?.startsWith('bg_') == true;
+    final isCanvasSized = item.width >= 1000 && item.height >= 1000;
+
+    return idLooksLikeBackground || isCanvasSized;
   }
 
   void _removeBackgroundLayers() {
@@ -668,5 +696,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     clearSelection();
     notifyListeners();
   }
-
 }
+
+
+
+
