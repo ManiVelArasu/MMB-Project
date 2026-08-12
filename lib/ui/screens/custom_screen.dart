@@ -46,7 +46,9 @@ class _CustomCreateBody extends StatelessWidget {
             body: Center(
               child: Text(
                 provider.plansErrorMessage!,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ),
           );
@@ -176,15 +178,21 @@ class _CustomCreateBody extends StatelessWidget {
                         return Container(
                           padding: EdgeInsets.all(12.r),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                            color: isDark
+                                ? const Color(0xFF1E1E1E)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(16.r),
                             border: Border.all(
-                              color: isDark ? Colors.grey.shade800 : const Color(0xFFE8EEF5),
+                              color: isDark
+                                  ? Colors.grey.shade800
+                                  : const Color(0xFFE8EEF5),
                               width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                                color: Colors.black.withValues(
+                                  alpha: isDark ? 0.2 : 0.02,
+                                ),
                                 blurRadius: 8.r,
                                 offset: Offset(0, 2.h),
                               ),
@@ -198,11 +206,12 @@ class _CustomCreateBody extends StatelessWidget {
                                 width: 52.w,
                                 child: tool.imagePath.trim().isNotEmpty
                                     ? Image.asset(
-                                  tool.imagePath,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      _buildFallbackIcon(),
-                                )
+                                        tool.imagePath,
+                                        fit: BoxFit.contain,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                _buildFallbackIcon(),
+                                      )
                                     : _buildFallbackIcon(),
                               ),
 
@@ -228,7 +237,9 @@ class _CustomCreateBody extends StatelessWidget {
                                 tool.subtitle,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                  color: isDark
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
                                   fontSize: 9.5.sp,
                                   fontWeight: FontWeight.w500,
                                   height: 1.2,
@@ -273,7 +284,7 @@ class _CustomCreateBody extends StatelessWidget {
     if (width == 1080 && height == 1080) {
       return "assets/images/post_566.png";
     } else if (width == 1080 && height == 1350) {
-      return "assets/images/post_portrait.png";
+      return "assets/images/potrait.png";
     } else if (width == 1080 && height == 1920) {
       return "assets/images/post_1920.png";
     } else if (width == 1440 && height == 1080) {
@@ -297,7 +308,11 @@ class _CustomCreateBody extends StatelessWidget {
   }
 
   // Section Header Helper
-  Widget _buildHeader({required String title, required String iconAsset, required bool isDark}) {
+  Widget _buildHeader({
+    required String title,
+    required String iconAsset,
+    required bool isDark,
+  }) {
     return Row(
       children: [
         Image.asset(

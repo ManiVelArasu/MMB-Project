@@ -21,6 +21,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/gestures.dart';
 
+import '../../utils/constants.dart';
+
 class OtpScreen extends StatelessWidget {
   const OtpScreen({super.key});
 
@@ -166,7 +168,14 @@ class OtpScreen extends StatelessWidget {
                                           ),
                                   ),
                                   GestureDetector(
-                                    onTap: authProvider.toggleMobileEdit,
+                                    onTap: () {
+                                      _showEditMobileDialog(
+                                        context,
+                                        authProvider,
+                                        customColor,
+                                        theme,
+                                      );
+                                    },
                                     child: SvgPicture.asset(
                                       "assets/icons/edit_ic.svg",
                                     ),
@@ -206,10 +215,13 @@ class OtpScreen extends StatelessWidget {
                                 ),
 
                                 // 🚀 Invisible TextField for Keyboard Autofill & Manual Inputs
+                                // 🚀 Invisible TextField for Keyboard Autofill & Manual Inputs
                                 Positioned.fill(
                                   child: Opacity(
                                     opacity: 0.0,
                                     child: TextFormField(
+                                      autofocus:
+                                          true, // 🚀 ஸ்கிரீனுக்கு வந்தவுடன் கீபோர்டு தானாக ஓபன் ஆகும்
                                       keyboardType: TextInputType.number,
                                       autofillHints: const [
                                         AutofillHints.oneTimeCode,
@@ -241,55 +253,30 @@ class OtpScreen extends StatelessWidget {
 
                             height12,
                             Center(
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: () async {
-                                  /* // 🚀 Resend OTP Logic
-                                  String? newOtp = await authProvider
-                                      .resendOtpApi();
-                                  if (!context.mounted) return;
-
-                                  if (newOtp != null) {
-                                    Fluttertoast.showToast(
-                                      msg: "New OTP: $newOtp",
-                                      toastLength: Toast.LENGTH_LONG,
-                                      gravity: ToastGravity.BOTTOM,
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          authProvider.errorMessage ??
-                                              "Failed to resend OTP",
-                                        ),
-                                        backgroundColor: Colors.red,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "Didn't receive the code?",
+                                      style: theme.titleMedium!.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: customColor.baseColor,
                                       ),
-                                    );
-                                  }*/
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12.0),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        "Haven’t received the code?",
-                                        style: theme.titleMedium!.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: customColor.baseColor,
-                                        ),
-                                      ),
-                                      Text(
+                                    ),
+                                    InkWell(
+                                      onTap: () {},
+                                      child: Text(
                                         "Resend OTP",
                                         style: theme.titleMedium!.copyWith(
                                           fontWeight: FontWeight.w600,
                                           color: customColor.redColor,
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -396,6 +383,69 @@ class OtpScreen extends StatelessWidget {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showEditMobileDialog(
+    BuildContext context,
+    AuthProvider authProvider,
+    CustomColors customColor,
+    TextTheme theme,
+  ) {
+    authProvider.newMobileInput =
+        authProvider.mobileNumber; // பழைய நம்பரைக் காட்டுவதற்காக
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: customColor.whiteColor,
+          title: Text(
+            "Change Mobile Number",
+            style: theme.titleMedium!.copyWith(
+              fontWeight: FontWeight.bold,
+              color: customColor.baseColor,
+            ),
+          ),
+          content: TextField(
+            keyboardType: TextInputType.phone,
+            maxLength: 10,
+            autofocus: true,
+            controller: TextEditingController(text: authProvider.mobileNumber),
+            onChanged: (val) => authProvider.setNewMobileInput(val),
+            decoration: const InputDecoration(
+              counterText: "",
+              hintText: "Enter new mobile number",
+            ),
+            style: theme.bodyMedium!.copyWith(
+              color: customColor.baseColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: customColor.redColor,
+              ),
+              onPressed: () async {
+                bool success = await authProvider.updateAndSaveNewMobile();
+                if (success) {
+                  if (!dialogContext.mounted) return;
+                  Navigator.pop(dialogContext);
+                  Fluttertoast.showToast(
+                    msg: "Mobile number updated successfully!",
+                  );
+                }
+              },
+              child: const Text("Save", style: TextStyle(color: Colors.white)),
+            ),
+          ],
         );
       },
     );

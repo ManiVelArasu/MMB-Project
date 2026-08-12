@@ -78,6 +78,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 "Social Media Post",
                                 style: TextStyle(
                                   fontSize: AppFontSize.fontSize22,
+                                  fontWeight: FontWeight.bold
                                 ),
                               ),
                             ],

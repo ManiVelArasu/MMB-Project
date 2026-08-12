@@ -37,6 +37,34 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   bool _isVerifyLoading = false;
   bool get isVerifyLoading => _isVerifyLoading;
+  String newMobileInput = "";
+
+  void setNewMobileInput(String val) {
+    newMobileInput = val;
+    notifyListeners();
+  }
+
+  Future<bool> updateAndSaveNewMobile() async {
+    if (newMobileInput.trim().length != 10) {
+      mobileError = "Enter a valid 10-digit number";
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      _mobileNumber = newMobileInput.trim();
+      mobileError = null;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_mobile_number', _mobileNumber);
+
+      _isEditingMobile = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint("Error saving mobile: $e");
+      return false;
+    }
+  }
 
   void setLoading(bool value) {
     _isLoading = value;
@@ -83,7 +111,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       onError(e.message ?? "OTP verification failed");
     }
   }
-
 
   Future<String?> apiSendOtp(String phone, String purpose) async {
     _isLoginLoading = true; // 🚀 Login loading start
@@ -161,6 +188,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       return null;
     }
   }
+
   Future<void> resendOtp({
     required String phoneNumber,
     required Function(String) onCodeSent,
@@ -259,8 +287,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
-
-
 
   void toggleMobileEdit() {
     if (isEditingMobile && mobileError != null) return;

@@ -2,10 +2,12 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/network/provider/business_provider.dart';
 import 'package:project_mmb/network/provider/custom_theme_provider.dart';
 import 'package:project_mmb/ui/industry/search_bottom_sheet.dart';
 import 'package:project_mmb/utils/height_measure.dart';
+import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -33,6 +35,18 @@ class BusinessCategoryChooseView extends StatelessWidget {
     final accountProvider = context.watch<BusinessProvider>();
 
     bool isBusiness = accountProvider.currentIndex == 0;
+    final List<String> dummyCategories = [
+      "Real Estate",
+      "Electrical",
+      "Marketing",
+      "Mobile Store",
+      "Education",
+      "Clothes",
+      "Hospital and Clinic",
+      "Tour and Travels",
+      "Restaurant",
+      "Automobile",
+    ];
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -75,31 +89,28 @@ class BusinessCategoryChooseView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              AppText(
                 "Select Your Business Category",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: AppColors.appBlack,
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                "Find the category that best matches your Products/Services",
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              AppText(
+                "Find the category that best matches your business.",
+                style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
               ),
 
-              const SizedBox(height: 24),
-
-              // Search Industry Input Field
+              const SizedBox(height: 20),
               TextFormField(
                 readOnly: true,
                 onTap: () {
-                  // 🚀 Pass current inner context which has access to IndustryProvider
                   searchCategorySheet(context);
                 },
                 decoration: InputDecoration(
-                  hintText: "Find your Industry",
+                  hintText: "Search your business category",
                   hintStyle: theme.bodyMedium!.copyWith(
                     color: customColor.greyColor.withAlpha(50),
                   ),
@@ -135,6 +146,42 @@ class BusinessCategoryChooseView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide(color: customColor.baseColor),
                   ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // 🚀 ஸ்கிரீன் ஓபன் ஆனவுடனே மேலே உள்ள Dummy List-ஐக் காட்டுவது
+              Expanded(
+                child: ListView.separated(
+                  itemCount: dummyCategories.length,
+                  separatorBuilder: (context, index) =>
+                      Divider(color: Colors.grey.shade200),
+                  itemBuilder: (context, index) {
+                    final category = dummyCategories[index];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: AppText(
+                        category,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.north_east,
+                        size: 18,
+                        color: Colors.grey,
+                      ),
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          "/BusinessCategoryChooseView",
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ],

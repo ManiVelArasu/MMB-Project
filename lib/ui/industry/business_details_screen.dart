@@ -45,8 +45,10 @@ class BusinessDetailsScreen extends StatelessWidget {
                       const TitleValueWidget(
                         title: "Business Details",
                         subTitle:
-                            "Please provide your business details to help us personalize your experience.",
+                            "Add your business details to personalize your templates, branding, and AI recommendations.",
                       ),
+                      AppText("Business Logo (Optional)"),
+                      SizedBox(height: 10),
 
                       businessProvider.selectedImage == null &&
                               businessProvider.originalImage == null
@@ -112,7 +114,7 @@ class BusinessDetailsScreen extends StatelessWidget {
                                     ),
                                     Container(
                                       height: 120.h,
-                                      width: 120.w,
+                                      width: 130.w,
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(16),
@@ -132,7 +134,7 @@ class BusinessDetailsScreen extends StatelessWidget {
                                           ),
                                           height8,
                                           AppText(
-                                            "Create logo",
+                                            "Create with AI",
                                             style: theme.bodyMedium!.copyWith(
                                               color: customColor.blackColor,
                                               fontWeight: FontWeight.w700,
@@ -240,12 +242,10 @@ class BusinessDetailsScreen extends StatelessWidget {
 
                       height12,
 
-                      // 2. EMAIL ID FIELD
                       _buildCustomInputField(
                         title: "Email Id",
                         hintText: "Enter email id",
-                        controller:
-                            businessProvider.emailController, // இணைக்கப்பட்டது
+                        controller: businessProvider.emailController,
                         keyboardType: TextInputType.emailAddress,
                         customColor: customColor,
                         theme: theme,
@@ -254,8 +254,6 @@ class BusinessDetailsScreen extends StatelessWidget {
                       ),
 
                       height12,
-
-                      // 3. CONTACT NUMBER FIELD
                       _buildCustomInputField(
                         title: "Contact Number",
                         hintText: "Enter contact number",

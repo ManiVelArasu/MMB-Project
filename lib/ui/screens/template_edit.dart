@@ -44,8 +44,8 @@ class _EditorViewState extends State<EditorView> {
   bool _isCanvasBackground(EditorItem item) {
     return item.position.dx == 0 &&
         item.position.dy == 0 &&
-        (item.width ?? 0) >= 1000 &&
-        (item.height ?? 0) >= 1000 &&
+        (item.width) >= 1000 &&
+        (item.height) >= 1000 &&
         (item.type == 'image' || item.type == 'video' || item.type == 'shape');
   }
 
@@ -168,8 +168,8 @@ class _EditorViewState extends State<EditorView> {
     final replace = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Replace Background?'),
-        content: const Text(
+        title: const AppText('Replace Background?'),
+        content: const AppText(
           'The current background will be removed and this image will become the full-size background.',
         ),
         actions: [
@@ -180,7 +180,7 @@ class _EditorViewState extends State<EditorView> {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('REPLACE BACKGROUND'),
+            child: const AppText( 'REPLACE BACKGROUND'),
           ),
         ],
       ),
@@ -327,7 +327,7 @@ class _EditorViewState extends State<EditorView> {
                 child: ListView.separated(
                   itemCount: fontList.length,
                   separatorBuilder: (context, index) =>
-                      Divider(color: Colors.grey.withOpacity(0.2)),
+                      Divider(color: Colors.grey.withValues(alpha: .2)),
                   itemBuilder: (context, index) {
                     final font = fontList[index];
                     return ListTile(
@@ -680,7 +680,7 @@ class _EditorViewState extends State<EditorView> {
         width: 64,
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? Colors.red.withOpacity(.10) : Colors.transparent,
+          color: selected ? Colors.red.withValues(alpha: .10) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: selected ? Colors.red : Colors.grey.shade300),
         ),
@@ -765,7 +765,7 @@ class _EditorViewState extends State<EditorView> {
                     ],
                   ),
                   Slider(
-                    value: item.fontSize ?? 20.0,
+                    value: item.fontSize,
                     min: 10.0,
                     max: 100.0,
                     activeColor: Colors.red,
@@ -783,12 +783,12 @@ class _EditorViewState extends State<EditorView> {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       AppText(
-                        "${((item.opacity ?? 1.0) * 100).toStringAsFixed(0)}%",
+                        "${((item.opacity) * 100).toStringAsFixed(0)}%",
                       ),
                     ],
                   ),
                   Slider(
-                    value: item.opacity ?? 1.0,
+                    value: item.opacity,
                     min: 0.0,
                     max: 1.0,
                     activeColor: Colors.red,
@@ -839,7 +839,7 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  void _showImageUploadsBottomSheet(
+/*  void _showImageUploadsBottomSheet(
       BuildContext context,
       EditorProvider provider,
       bool isDark,
@@ -869,7 +869,7 @@ class _EditorViewState extends State<EditorView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     AppText(
-                      "Freepik Uploads",
+                      "FreePik Uploads",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -947,7 +947,7 @@ class _EditorViewState extends State<EditorView> {
         );
       },
     );
-  }
+  }*/
 
   void _showImageTransparencyBottomSheet(
       BuildContext context,
@@ -1523,11 +1523,12 @@ class _EditorViewState extends State<EditorView> {
                                   final image = await picker.pickImage(
                                     source: ImageSource.gallery,
                                   );
-                                  if (image != null)
+                                  if (image != null) {
                                     edProvider.addImage(
                                       image.path,
                                       isLocal: true,
                                     );
+                                  }
                                 },
                                 child: Container(
                                   width: 95,

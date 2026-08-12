@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/network/provider/business_provider.dart';
 import 'package:project_mmb/network/provider/custom_theme_provider.dart';
 import 'package:project_mmb/utils/height_measure.dart';
@@ -88,7 +89,7 @@ class AccountTypeScreen extends StatelessWidget {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(
+                                            AppText(
                                               accountTypeProvider
                                                   .accountTypeList[index]
                                                   .title,
@@ -98,7 +99,7 @@ class AccountTypeScreen extends StatelessWidget {
                                               ),
                                             ),
                                             height8,
-                                            Text(
+                                            AppText(
                                               accountTypeProvider
                                                   .accountTypeList[index]
                                                   .description,

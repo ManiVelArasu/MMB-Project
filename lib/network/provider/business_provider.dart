@@ -363,12 +363,13 @@ class BusinessProvider extends ChangeNotifier {
   List<AccTypeModel> accountTypeList = [
     AccTypeModel(
       title: "For my Business",
-      description: "Find business category that matches your Products/Services",
+      description:
+          "Create branded designs tailored to your business and industry.",
     ),
     AccTypeModel(
       title: "Personal Use",
       description:
-          "Find Special Occasions, Daily Quotes, Funny Posts to build your social media face",
+          "Create designs for festivals, birthdays, quotes, social posts, and more.",
     ),
   ];
 

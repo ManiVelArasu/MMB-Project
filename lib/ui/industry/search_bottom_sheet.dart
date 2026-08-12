@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
@@ -107,7 +108,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
+                        child: AppText(
                           "Choose your Preferences",
                           style: Theme.of(context).textTheme.bodyLarge
                               ?.copyWith(fontWeight: FontWeight.bold),
@@ -122,7 +123,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
 
                   const SizedBox(height: 8),
 
-                  Text(
+                  AppText(
                     "Find business category that matches your Products/Services",
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
@@ -163,7 +164,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
                   ? const Center(child: CircularProgressIndicator())
                   : provider.categories.isEmpty
                   ? Center(
-                      child: Text(
+                      child: AppText(
                         provider.isSearching
                             ? "No Search Found"
                             : "No Data Found",
@@ -197,28 +198,36 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
                 width: double.infinity,
                 height: 55,
                 child: ButtonWidget(
-                  decoration: BoxDecoration(color: AppColors.appRed,borderRadius: BorderRadius.all(Radius.circular(15))),
+                  decoration: BoxDecoration(
+                    color: AppColors.appRed,
+                    borderRadius: BorderRadius.all(Radius.circular(15)),
+                  ),
                   buttonPress: provider.selectedCategory == null
                       ? null
                       : () async {
-                    final prefs = await SharedPreferences.getInstance();
-                    final selectedCat = provider.selectedCategory;
+                          final prefs = await SharedPreferences.getInstance();
+                          final selectedCat = provider.selectedCategory;
 
-                    if (selectedCat != null) {
-                      await prefs.setString('saved_category_id', selectedCat.id.toString());
-                      await prefs.setString('saved_category_name', selectedCat.name ?? "");
-                    }
+                          if (selectedCat != null) {
+                            await prefs.setString(
+                              'saved_category_id',
+                              selectedCat.id.toString(),
+                            );
+                            await prefs.setString(
+                              'saved_category_name',
+                              selectedCat.slug ?? "",
+                            );
+                          }
 
-                    if (!context.mounted) return;
-                    Navigator.pop(context);
-                    Navigator.pushNamed(
-                      context,
-                      "/BusinessCategoryChooseView",
-                    );
-                  },
+                          if (!context.mounted) return;
+                          Navigator.pop(context);
+                          Navigator.pushNamed(
+                            context,
+                            "/BusinessCategoryChooseView",
+                          );
+                        },
                   title: "CONTINUE",
-
-                )
+                ),
               ),
             ),
           ],
