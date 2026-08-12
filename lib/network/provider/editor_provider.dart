@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../Api Model/editor_model.dart';
 import '../../Repository/freeoic.dart';
 import '../../core/app_provider/my_notifier.dart';
+
 class EditorProvider extends ChangeNotifier with MyNotifier {
   final List<EditorItem> _items = [];
   List<EditorItem> get items => _items;
@@ -11,6 +12,69 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   final List<List<EditorItem>> _history = [];
   int _historyIndex = -1;
   Color _backgroundColor = Colors.white;
+  final Map<String, double> _textLetterSpacing = {};
+  final Map<String, double> _textLineSpacing = {};
+  final Map<String, TextAlign> _textAlignment = {};
+  final Map<String, FontWeight> _textWeight = {};
+  final Map<String, FontStyle> _textStyle = {};
+  final Map<String, bool> _textUnderline = {};
+
+  double textLetterSpacing(String id) => _textLetterSpacing[id] ?? 0.0;
+  double textLineSpacing(String id) => _textLineSpacing[id] ?? 1.0;
+  TextAlign textAlignment(String id) => _textAlignment[id] ?? TextAlign.left;
+  FontWeight textWeight(String id) => _textWeight[id] ?? FontWeight.bold;
+  FontStyle textStyle(String id) => _textStyle[id] ?? FontStyle.normal;
+  bool textUnderline(String id) => _textUnderline[id] ?? false;
+  EditorItem? _copiedItem;
+  int? _copiedFromPageIndex;
+
+  bool get hasCopiedItem => _copiedItem != null;
+
+  bool get canPasteCopiedItem {
+    return _copiedItem != null &&
+        _copiedFromPageIndex != null &&
+        _copiedFromPageIndex != _currentPageIndex;
+  }
+  void updateTextLetterSpacing(String id, double value) {
+    _textLetterSpacing[id] = value.clamp(-2.0, 20.0);
+    notifyListeners();
+  }
+
+  void updateTextLineSpacing(String id, double value) {
+    _textLineSpacing[id] = value.clamp(0.7, 3.0);
+    notifyListeners();
+  }
+
+  void updateTextAlignment(String id, TextAlign value) {
+    _textAlignment[id] = value;
+    notifyListeners();
+  }
+
+  void toggleTextBold(String id) {
+    _textWeight[id] = textWeight(id) == FontWeight.bold
+        ? FontWeight.normal
+        : FontWeight.bold;
+    notifyListeners();
+  }
+
+  void toggleTextItalic(String id) {
+    _textStyle[id] = textStyle(id) == FontStyle.italic
+        ? FontStyle.normal
+        : FontStyle.italic;
+    notifyListeners();
+  }
+
+  void toggleTextUnderline(String id) {
+    _textUnderline[id] = !textUnderline(id);
+    notifyListeners();
+  }
+
+  void setTextNormal(String id) {
+    _textWeight[id] = FontWeight.normal;
+    _textStyle[id] = FontStyle.normal;
+    _textUnderline[id] = false;
+    notifyListeners();
+  }
   void _saveState() {
     if (_historyIndex < _history.length - 1) {
       _history.removeRange(_historyIndex + 1, _history.length);
@@ -27,7 +91,53 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool isFreePikLoading = false;
   List<String> freePikStickers = [];
   bool isStickersLoading = false;
+// ============================================================
+// PAGE COPY / PASTE
+// ============================================================
 
+  List<EditorItem>? _copiedPageItems;
+  int? _copiedPageIndex;
+  Color _copiedPageBackgroundColor = Colors.white;
+
+  bool get hasCopiedPage {
+    return _copiedPageItems != null && _copiedPageItems!.isNotEmpty;
+  }
+
+  bool get canPasteCopiedPage {
+    return hasCopiedPage &&
+        _copiedPageIndex != null &&
+        _copiedPageIndex != _currentPageIndex;
+  }
+
+  /// Copy ALL items from current page
+  void copyCurrentPage() {
+    // Make sure latest current-page changes are stored.
+    _syncCurrentPage();
+
+    _copiedPageItems = _items
+        .map((item) => item.copyWith())
+        .toList();
+
+    _copiedPageIndex = _currentPageIndex;
+    _copiedPageBackgroundColor = _backgroundColor;
+
+    notifyListeners();
+
+    debugPrint(
+      'Page ${_currentPageIndex + 1} copied: '
+          '${_copiedPageItems!.length} items',
+    );
+  }
+
+  /// Paste copied page content into another page.
+  /// Same page paste is blocked.
+
+  void clearCopiedPage() {
+    _copiedPageItems = null;
+    _copiedPageIndex = null;
+    _copiedPageBackgroundColor = Colors.white;
+    notifyListeners();
+  }
   void setSelectedItem(String? type, String? id) {
     selectedItemType = type;
     selectedItemId = id;
@@ -103,6 +213,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         }
       }
       isTemplateLoaded = true;
+      _pages
+        ..clear()
+        ..add(_items.map((e) => e.copyWith()).toList());
+      _currentPageIndex = 0;
       notifyListeners();
     } catch (e) {
       debugPrint("JSON Load Error: $e");
@@ -360,9 +474,68 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void removeItem(String id) {
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return;
+
     _saveState();
-    _items.removeWhere((e) => e.id == id);
+    _items.removeAt(index);
+
+    if (selectedItemId == id) {
+      selectedItemId = null;
+      selectedItemType = null;
+    }
+
     notifyListeners();
+  }
+
+  /// Exportable JSON for the current editor page.
+  /// This intentionally keeps the existing EditorItem model untouched.
+  Map<String, dynamic> exportCurrentPageJson() {
+    String colorToHex(Color? color) {
+      if (color == null) return '#FFFFFFFF';
+      return '#${color.value.toRadixString(16).padLeft(8, '0').toUpperCase()}';
+    }
+
+    return {
+      'version': 1,
+      'page': currentPageIndex + 1,
+      'backgroundColor': colorToHex(_backgroundColor),
+      'items': _items.map((item) {
+        final id = item.id ?? '';
+        return {
+          'id': id,
+          'type': item.type,
+          'text': item.text,
+          'contentUrl': item.contentUrl,
+          'isLocal': item.isLocal,
+          'left': item.position.dx,
+          'top': item.position.dy,
+          'width': item.width,
+          'height': item.height,
+          'scale': item.scale,
+          'rotation': item.rotation,
+          'opacity': item.opacity,
+          'fontSize': item.fontSize,
+          'fontFamily': item.fontFamily,
+          'color': colorToHex(item.color),
+          'filterType': item.filterType,
+          'brightness': item.brightness,
+          'contrast': item.contrast,
+          'saturation': item.saturation,
+          'borderRadius': item.borderRadius,
+          'outlineWidth': item.outlineWidth,
+          'outlineColor': colorToHex(item.outlineColor),
+          'textFormatting': {
+            'letterSpacing': textLetterSpacing(id),
+            'lineSpacing': textLineSpacing(id),
+            'alignment': textAlignment(id).name,
+            'fontWeight': textWeight(id).value,
+            'fontStyle': textStyle(id).name,
+            'underline': textUnderline(id),
+          },
+        };
+      }).toList(),
+    };
   }
 
   void undo() {
@@ -458,20 +631,24 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   void updateBorderRadius(String itemId, double radius) {
     final index = items.indexWhere((e) => e.id == itemId);
+    if (index == -1) return;
 
-    if (index != -1) {
-      items[index] = items[index].copyWith(borderRadius: radius);
-      notifyListeners();
-    }
+    _saveState();
+    items[index] = items[index].copyWith(borderRadius: radius.clamp(0.0, 500.0));
+    notifyListeners();
   }
 
   void updateImageShape(String id, String shape) {
-    int index = items.indexWhere((e) => e.id == id);
+    final index = items.indexWhere((e) => e.id == id);
+    if (index == -1) return;
 
-    if (index != -1) {
-      items[index] = items[index].copyWith(text: shape);
-      notifyListeners();
-    }
+    _saveState();
+    final radius = shape == 'circle' ? items[index].borderRadius : items[index].borderRadius;
+    items[index] = items[index].copyWith(
+      text: shape,
+      borderRadius: radius,
+    );
+    notifyListeners();
   }
 
   void updateSize(String id, double width, double height) {
@@ -537,10 +714,14 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void setBackgroundImage(String imageUrl) {
     _saveState();
 
-    // Always remove the previous background first. Do not depend on its
-    // position: the old background may already have been rotated, scaled or
-    // moved by the user.
-    _removeBackgroundLayers();
+    _items.removeWhere(
+          (item) =>
+      item.position.dx == 0 &&
+          item.position.dy == 0 &&
+          (item.type == 'image' ||
+              item.type == 'video' ||
+              item.type == 'shape'),
+    );
 
     final bgId = 'bg_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -567,8 +748,15 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void setBackgroundVideo(String videoUrl) {
     _saveState();
 
-    // Remove the previous background even if it was transformed.
-    _removeBackgroundLayers();
+    // ஏற்கனவே உள்ள பழைய பேக்ரவுண்டை நீக்குவது
+    _items.removeWhere(
+          (item) =>
+      item.position.dx == 0 &&
+          item.position.dy == 0 &&
+          (item.type == 'image' ||
+              item.type == 'video' ||
+              item.type == 'shape'),
+    );
 
     // புதிய பேக்ரவுண்ட் வீடியோவை முதல் லேயராக சேர்ப்பது
     final bgId = 'bg_video_${DateTime.now().millisecondsSinceEpoch}';
@@ -594,17 +782,25 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   Color get backgroundColor => _backgroundColor;
 
   String? get backgroundImageUrl {
-    final bgItems = _items
-        .where((item) => _isBackgroundLayer(item) && item.type == 'image')
-        .toList();
-    return bgItems.isEmpty ? null : bgItems.last.contentUrl;
+    final bgItem = _items.firstWhere(
+          (item) =>
+      item.position.dx == 0 &&
+          item.position.dy == 0 &&
+          item.type == 'image',
+      orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
+    );
+    return bgItem.contentUrl;
   }
 
   String? get backgroundVideoUrl {
-    final bgItems = _items
-        .where((item) => _isBackgroundLayer(item) && item.type == 'video')
-        .toList();
-    return bgItems.isEmpty ? null : bgItems.last.contentUrl;
+    final bgItem = _items.firstWhere(
+          (item) =>
+      item.position.dx == 0 &&
+          item.position.dy == 0 &&
+          item.type == 'video',
+      orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
+    );
+    return bgItem.contentUrl;
   }
 
   // 🚀 ----------------------------------------------------
@@ -613,12 +809,15 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void replaceBackgroundImage(String imageUrl, String selectedItemIdToRemove) {
     _saveState();
 
-    // Remove every previous background first, including one that has already
-    // been moved/scaled/rotated.
-    _removeBackgroundLayers();
+    _items.removeWhere(
+          (item) =>
+      item.position.dx == 0 &&
+          item.position.dy == 0 &&
+          (item.type == 'image' ||
+              item.type == 'video' ||
+              item.type == 'shape'),
+    );
 
-    // Also remove the selected media item when Replace BG was triggered from
-    // a normal image.
     _items.removeWhere((item) => item.id == selectedItemIdToRemove);
 
     final bgId = "bg_${DateTime.now().millisecondsSinceEpoch}";
@@ -670,19 +869,14 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
-  // A background must stay identifiable even after the user moves, scales,
-  // rotates or otherwise edits it. The old implementation required position
-  // == (0, 0), so once a background was transformed it was no longer removed
-  // when a new background was selected.
   bool _isBackgroundLayer(EditorItem item) {
-    final typeIsBackground =
-        item.type == 'image' || item.type == 'video' || item.type == 'shape';
-    if (!typeIsBackground) return false;
-
-    final idLooksLikeBackground = item.id?.startsWith('bg_') == true;
-    final isCanvasSized = item.width >= 1000 && item.height >= 1000;
-
-    return idLooksLikeBackground || isCanvasSized;
+    return item.position.dx == 0 &&
+        item.position.dy == 0 &&
+        item.width != null &&
+        item.height != null &&
+        item.width! >= 1000 &&
+        item.height! >= 1000 &&
+        (item.type == 'image' || item.type == 'video' || item.type == 'shape');
   }
 
   void _removeBackgroundLayers() {
@@ -696,8 +890,129 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     clearSelection();
     notifyListeners();
   }
+  // ========================= PAGE MANAGEMENT =========================
+  final List<List<EditorItem>> _pages = [];
+  int _currentPageIndex = 0;
+
+  int get pageCount => _pages.isEmpty ? 1 : _pages.length;
+  int get currentPageIndex => _currentPageIndex;
+
+  void _syncCurrentPage() {
+    if (_pages.isEmpty) {
+      _pages.add(_items.map((e) => e.copyWith()).toList());
+      _currentPageIndex = 0;
+      return;
+    }
+    _pages[_currentPageIndex] =
+        _items.map((e) => e.copyWith()).toList();
+  }
+
+  void addPage({bool duplicateCurrent = false}) {
+    _syncCurrentPage();
+    final source = duplicateCurrent
+        ? _items.map((e) => e.copyWith(
+      id: '${DateTime.now().microsecondsSinceEpoch}_${e.id}',
+    )).toList()
+        : <EditorItem>[];
+    _pages.add(source);
+    _currentPageIndex = _pages.length - 1;
+    _items
+      ..clear()
+      ..addAll(source.map((e) => e.copyWith()));
+    clearSelection();
+    notifyListeners();
+  }
+
+  void duplicateCurrentPage() => addPage(duplicateCurrent: true);
+
+  void switchPage(int index) {
+    if (index < 0 || index >= pageCount || index == _currentPageIndex) return;
+    _syncCurrentPage();
+    _currentPageIndex = index;
+    final page = _pages[index];
+    _items
+      ..clear()
+      ..addAll(page.map((e) => e.copyWith()));
+    clearSelection();
+    notifyListeners();
+  }
+
+  void deleteCurrentPage() {
+    if (pageCount <= 1) {
+      _items.clear();
+      clearSelection();
+      notifyListeners();
+      return;
+    }
+    _pages.removeAt(_currentPageIndex);
+    if (_currentPageIndex >= _pages.length) {
+      _currentPageIndex = _pages.length - 1;
+    }
+    _items
+      ..clear()
+      ..addAll(_pages[_currentPageIndex].map((e) => e.copyWith()));
+    clearSelection();
+    notifyListeners();
+  }
+
+  void copySelectedItem() {
+    final id = selectedItemId;
+
+    if (id == null) return;
+
+    final index = _items.indexWhere((e) => e.id == id);
+
+    if (index == -1) return;
+
+    // Store a copy, don't duplicate on current page.
+    _copiedItem = _items[index].copyWith();
+
+    // Remember which page copied from.
+    _copiedFromPageIndex = _currentPageIndex;
+
+    notifyListeners();
+  }
+  bool pasteCopiedPage() {
+    if (!canPasteCopiedPage) {
+      debugPrint('Paste blocked: same page or nothing copied');
+      return false;
+    }
+
+    _saveState();
+
+    final pastedItems = <EditorItem>[];
+
+    for (final original in _copiedPageItems!) {
+      final newId =
+          '${DateTime.now().microsecondsSinceEpoch}_${pastedItems.length}';
+
+      pastedItems.add(
+        original.copyWith(
+          id: newId,
+          position: original.position + const Offset(20, 20),
+        ),
+      );
+    }
+
+    _items.addAll(pastedItems);
+
+    // Copy background also
+    _backgroundColor = _copiedPageBackgroundColor;
+
+    _syncCurrentPage();
+
+    clearSelection();
+
+    notifyListeners();
+
+    debugPrint(
+      'Pasted ${pastedItems.length} items into '
+          'Page ${_currentPageIndex + 1}',
+    );
+
+    return true;
+  }
+
 }
-
-
 
 

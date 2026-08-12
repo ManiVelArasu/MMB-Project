@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/network/provider/business_provider.dart';
 import 'package:project_mmb/network/provider/custom_theme_provider.dart';
@@ -10,6 +11,8 @@ import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../Repository/image_upload_repository.dart';
 
 class BusinessDetailsScreen extends StatelessWidget {
   const BusinessDetailsScreen({super.key});
@@ -268,46 +271,24 @@ class BusinessDetailsScreen extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 15),
+
               // CONTINUE BUTTON
               ButtonWidget(
+                isLoading: businessProvider.isUploading,
                 buttonPress: () async {
-                  if (businessProvider.validateForm()) {
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setBool('is_business_completed', true);
-
-                    final imageFile = businessProvider.isImageSelected == true
-                        ? businessProvider.originalImage
-                        : (businessProvider.selectedImage ?? businessProvider.originalImage);
-
-                    if (imageFile != null) {
-                      await prefs.setString(
-                        'saved_business_image_path',
-                        imageFile.path,
-                      );
-
-                      // 🚀 உடனடியாக Provider-ன் இமேஜ் பாথ்தை அப்டேட் செய்ய:
-                      businessProvider.updateSavedImagePath(imageFile.path);
-                    }
-
-                    await prefs.setString(
-                      'saved_business_name',
-                      businessProvider.businessName,
-                    );
-                    await prefs.setString(
-                      'saved_email',
-                      businessProvider.email,
-                    );
-                    await prefs.setString(
-                      'saved_mobile_number',
-                      businessProvider.mobileNumber,
-                    );
-
-                    Navigator.pushNamed(context, "/CustomBottomNavScreen");
-                  }
+                  await businessProvider.uploadAndSaveBusinessDetails(context);
                 },
                 title: "CONTINUE",
-                // ... rest of the button properties
-              )
+                textStyle: theme.titleLarge!.copyWith(
+                  color: customColor.whiteColor,
+                  fontWeight: FontWeight.w700,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: customColor.redColor,
+                ),
+                height: 54.h,
+              ),
             ],
           ),
         ),

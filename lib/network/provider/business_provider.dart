@@ -15,6 +15,8 @@ import 'package:project_mmb/ui/industry/widgets/bg_remove_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../Repository/image_upload_repository.dart';
+
 class BusinessProvider extends ChangeNotifier {
   BusinessProvider() {
     requestPermissionIfNeeded();
@@ -79,6 +81,78 @@ class BusinessProvider extends ChangeNotifier {
   final mobileController = TextEditingController();
   final nameController = TextEditingController();
   final emailController = TextEditingController();
+  bool _isUploading = false;
+  bool get isUploading => _isUploading;
+
+  Future<bool> uploadAndSaveBusinessDetails(BuildContext context) async {
+    if (!validateForm()) return false;
+
+    _isUploading = true;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final imageFile = _isImageSelected == true
+          ? _originalImage
+          : (_selectedImage ?? _originalImage);
+
+      if (imageFile != null && imageFile.existsSync()) {
+        final filename = imageFile.path.split('/').last;
+        final uploadResult = await MediaUploadRepository.instance
+            .uploadImageAndConfirm(
+              imageFile: imageFile,
+              filename: filename,
+              width: 1080,
+              height: 1080,
+            );
+
+        bool isUploadSuccess = false;
+        uploadResult.when(
+          success: (data) {
+            debugPrint("✅ Logo Upload & Confirm Successful!");
+            isUploadSuccess = true;
+          },
+          failure: (error) {
+            debugPrint("❌ Logo Upload Failed: ${error.message}");
+            isUploadSuccess = false;
+          },
+        );
+
+        if (!isUploadSuccess) {
+          _isUploading = false;
+          notifyListeners();
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Logo upload failed. Please try again."),
+              ),
+            );
+          }
+          return false;
+        }
+        await prefs.setString('saved_business_image_path', imageFile.path);
+        updateSavedImagePath(imageFile.path);
+      }
+
+      await prefs.setBool('is_business_completed', true);
+      await prefs.setString('saved_business_name', _businessName);
+      await prefs.setString('saved_email', _email);
+      await prefs.setString('saved_mobile_number', _mobileNumber);
+
+      _isUploading = false;
+      notifyListeners();
+      if (context.mounted) {
+        Navigator.pushNamed(context, "/CustomBottomNavScreen");
+      }
+      return true;
+    } catch (e) {
+      debugPrint("❌ Exception in uploadAndSaveBusinessDetails: $e");
+      _isUploading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 
   Future<void> loadSavedData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -88,37 +162,31 @@ class BusinessProvider extends ChangeNotifier {
       _mobileNumber = savedNumber;
       mobileController.text = savedNumber;
     }
-
-    // 🚀 இமேஜ் பாத் சரியாக எடுக்கப்படுகிறதா எனப் பார்க்கவும்:
     _savedImagePath = prefs.getString('saved_business_image_path');
 
-    // Business Name
     final savedName = prefs.getString('saved_business_name');
     if (savedName != null && savedName.isNotEmpty) {
       _businessName = savedName;
       nameController.text = savedName;
     }
-
-    // Email
     final savedEmail = prefs.getString('saved_email');
     if (savedEmail != null && savedEmail.isNotEmpty) {
       _email = savedEmail;
       emailController.text = savedEmail;
     }
 
-    notifyListeners(); // 🚀 UI-ஐ உடனுக்குடன் ரெஃப்ரேஷ் செய்ய இது மிகவும் முக்கியம்
+    notifyListeners();
   }
 
-  // UPDATED SETTERS WITH AUTO ERROR CLEARING
   void setBusinessName(String value) {
     _businessName = value;
-    _nameError = null; // Error reset on typing
+    _nameError = null;
     notifyListeners();
   }
 
   void setEmail(String value) {
     _email = value;
-    _emailError = null; // Error reset on typing
+    _emailError = null;
     notifyListeners();
   }
 
@@ -194,16 +262,15 @@ class BusinessProvider extends ChangeNotifier {
     _resetLivePreview();
     _hasChanges = false;
     _isApplied = false;
-    _processedImageBytes =
-        null; // NEW: Clear processed image when new image selected
+    _processedImageBytes = null;
     _isProcessingBackground = false;
     notifyListeners();
   }
 
   void setSelectedTool(String tool) {
     _selectedTool = tool;
-    _resetLivePreview(); // Reset preview when switching tools
-    _hasChanges = false; // Reset changes when switching tools
+    _resetLivePreview();
+    _hasChanges = false;
     notifyListeners();
   }
 
@@ -695,6 +762,7 @@ class BusinessProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void updateSavedImagePath(String path) {
     _savedImagePath = path;
     notifyListeners();

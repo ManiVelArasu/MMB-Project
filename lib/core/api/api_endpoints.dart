@@ -36,4 +36,6 @@ class ApiEndpoints {
   static const String refreshToken = '/auth/refresh';
 
   static const String feedBack = '/feedback';
+
+  static const String fileUpload = '/uploads/presign';
 }

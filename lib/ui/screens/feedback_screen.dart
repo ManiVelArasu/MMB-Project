@@ -98,8 +98,6 @@ class FeedbackScreen extends StatelessWidget {
                             backgroundColor: Colors.green,
                             textColor: Colors.white,
                           );
-
-                          Navigator.pop(context);
                         } else {
                           Fluttertoast.showToast(
                             msg:
