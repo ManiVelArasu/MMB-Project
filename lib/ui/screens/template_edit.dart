@@ -71,19 +71,35 @@ class _EditorViewState extends State<EditorView> {
                     !bg.contentUrl!.startsWith('https://'));
 
         if (isLocal) {
-          return Image.file(
-            File(bg.contentUrl!),
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                Container(color: provider.backgroundColor),
+          return Opacity(
+            opacity: bg.opacity.clamp(0.0, 1.0),
+            child: Transform.rotate(
+              angle: bg.rotation,
+              child: Transform.scale(
+                scale: bg.scale.clamp(0.01, 10.0),
+                child: SizedBox(
+                  width: bg.width,
+                  height: bg.height,
+                  child: EditableItemWidget.buildStandaloneMediaContent(context, bg),
+                ),
+              ),
+            ),
           );
         }
 
-        return Image.network(
-          bg.contentUrl!,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
-              Container(color: provider.backgroundColor),
+        return Opacity(
+          opacity: bg.opacity.clamp(0.0, 1.0),
+          child: Transform.rotate(
+            angle: bg.rotation,
+            child: Transform.scale(
+              scale: bg.scale.clamp(0.01, 10.0),
+              child: SizedBox(
+                width: bg.width,
+                height: bg.height,
+                child: EditableItemWidget.buildStandaloneMediaContent(context, bg),
+              ),
+            ),
+          ),
         );
       }
     }
@@ -2982,3 +2998,4 @@ class _EditorViewState extends State<EditorView> {
   }
 
 }
+

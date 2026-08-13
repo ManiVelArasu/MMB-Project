@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../Api Model/editor_model.dart';
@@ -27,6 +27,25 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool textUnderline(String id) => _textUnderline[id] ?? false;
   EditorItem? _copiedItem;
   int? _copiedFromPageIndex;
+
+  List<EditorItem>? _copiedPageItems;
+  int? _copiedPageIndex;
+  Color? _copiedPageBackgroundColor;
+
+  final Map<String, double> _copiedLetterSpacing = {};
+  final Map<String, double> _copiedLineSpacing = {};
+  final Map<String, TextAlign> _copiedAlignment = {};
+  final Map<String, FontWeight> _copiedWeight = {};
+  final Map<String, FontStyle> _copiedStyle = {};
+  final Map<String, bool> _copiedUnderline = {};
+
+  bool get hasCopiedPage =>
+      _copiedPageItems != null && _copiedPageItems!.isNotEmpty;
+
+  bool get canPasteCopiedPage =>
+      hasCopiedPage &&
+          _copiedPageIndex != null &&
+          _copiedPageIndex != _currentPageIndex;
 
   bool get hasCopiedItem => _copiedItem != null;
 
@@ -91,53 +110,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool isFreePikLoading = false;
   List<String> freePikStickers = [];
   bool isStickersLoading = false;
-// ============================================================
-// PAGE COPY / PASTE
-// ============================================================
 
-  List<EditorItem>? _copiedPageItems;
-  int? _copiedPageIndex;
-  Color _copiedPageBackgroundColor = Colors.white;
-
-  bool get hasCopiedPage {
-    return _copiedPageItems != null && _copiedPageItems!.isNotEmpty;
-  }
-
-  bool get canPasteCopiedPage {
-    return hasCopiedPage &&
-        _copiedPageIndex != null &&
-        _copiedPageIndex != _currentPageIndex;
-  }
-
-  /// Copy ALL items from current page
-  void copyCurrentPage() {
-    // Make sure latest current-page changes are stored.
-    _syncCurrentPage();
-
-    _copiedPageItems = _items
-        .map((item) => item.copyWith())
-        .toList();
-
-    _copiedPageIndex = _currentPageIndex;
-    _copiedPageBackgroundColor = _backgroundColor;
-
-    notifyListeners();
-
-    debugPrint(
-      'Page ${_currentPageIndex + 1} copied: '
-          '${_copiedPageItems!.length} items',
-    );
-  }
-
-  /// Paste copied page content into another page.
-  /// Same page paste is blocked.
-
-  void clearCopiedPage() {
-    _copiedPageItems = null;
-    _copiedPageIndex = null;
-    _copiedPageBackgroundColor = Colors.white;
-    notifyListeners();
-  }
   void setSelectedItem(String? type, String? id) {
     selectedItemType = type;
     selectedItemId = id;
@@ -493,7 +466,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   Map<String, dynamic> exportCurrentPageJson() {
     String colorToHex(Color? color) {
       if (color == null) return '#FFFFFFFF';
-      return '#${color.value.toRadixString(16).padLeft(8, '0').toUpperCase()}';
+      return '#${color.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
     }
 
     return {
@@ -674,10 +647,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   List<String> _freePikVideos = [];
   List<String> get freePikVideos => _freePikVideos;
 
-  bool _isVideoLoading = false;
+  final bool _isVideoLoading = false;
   bool get isVideoLoading => _isVideoLoading;
 
-  bool _isVideosLoading = false; // 🚀 லோடிங் ஸ்டேட் பெயர் தெளிவுக்காக
+  bool _isVideosLoading = false;
   bool get isVideosLoading => _isVideosLoading;
 
   Future<void> fetchFreePikVideos(String query) async {
@@ -872,10 +845,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool _isBackgroundLayer(EditorItem item) {
     return item.position.dx == 0 &&
         item.position.dy == 0 &&
-        item.width != null &&
-        item.height != null &&
-        item.width! >= 1000 &&
-        item.height! >= 1000 &&
+        item.width >= 1000 &&
+        item.height >= 1000 &&
         (item.type == 'image' || item.type == 'video' || item.type == 'shape');
   }
 
@@ -955,6 +926,108 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
+  // ============================================================
+  // COPY ENTIRE CURRENT PAGE
+  // ============================================================
+  void copyCurrentPage() {
+    _syncCurrentPage();
+
+    if (_items.isEmpty) {
+      debugPrint('Copy page: no items');
+      return;
+    }
+
+    _copiedPageItems = _items.map((item) => item.copyWith()).toList();
+    _copiedPageIndex = _currentPageIndex;
+    _copiedPageBackgroundColor = _backgroundColor;
+
+    _copiedLetterSpacing.clear();
+    _copiedLineSpacing.clear();
+    _copiedAlignment.clear();
+    _copiedWeight.clear();
+    _copiedStyle.clear();
+    _copiedUnderline.clear();
+
+    for (final item in _items) {
+      final id = item.id;
+      if (id == null) continue;
+
+      _copiedLetterSpacing[id] = textLetterSpacing(id);
+      _copiedLineSpacing[id] = textLineSpacing(id);
+      _copiedAlignment[id] = textAlignment(id);
+      _copiedWeight[id] = textWeight(id);
+      _copiedStyle[id] = textStyle(id);
+      _copiedUnderline[id] = textUnderline(id);
+    }
+
+    notifyListeners();
+  }
+
+  // ============================================================
+  // PASTE ENTIRE COPIED PAGE INTO ANOTHER PAGE
+  // ============================================================
+  bool pasteCopiedPage() {
+    if (!hasCopiedPage) {
+      debugPrint('Paste page: nothing copied');
+      return false;
+    }
+
+    if (_copiedPageIndex == _currentPageIndex) {
+      debugPrint('Paste page blocked: same page');
+      return false;
+    }
+
+    _saveState();
+
+    final pastedItems = <EditorItem>[];
+
+    for (var i = 0; i < _copiedPageItems!.length; i++) {
+      final source = _copiedPageItems![i];
+      final oldId = source.id ?? 'item_$i';
+      final newId =
+          'page_${_currentPageIndex}_${DateTime.now().microsecondsSinceEpoch}_$i';
+
+      pastedItems.add(source.copyWith(id: newId));
+
+      _textLetterSpacing[newId] =
+          _copiedLetterSpacing[oldId] ?? 0.0;
+      _textLineSpacing[newId] =
+          _copiedLineSpacing[oldId] ?? 1.0;
+      _textAlignment[newId] =
+          _copiedAlignment[oldId] ?? TextAlign.left;
+      _textWeight[newId] =
+          _copiedWeight[oldId] ?? FontWeight.bold;
+      _textStyle[newId] =
+          _copiedStyle[oldId] ?? FontStyle.normal;
+      _textUnderline[newId] =
+          _copiedUnderline[oldId] ?? false;
+    }
+
+    // Replace the target page contents.
+    _items
+      ..clear()
+      ..addAll(pastedItems);
+
+    // Restore the copied page background.
+    if (_copiedPageBackgroundColor != null) {
+      _backgroundColor = _copiedPageBackgroundColor!;
+    }
+
+    selectedItemId = pastedItems.isNotEmpty ? pastedItems.first.id : null;
+    selectedItemType =
+    pastedItems.isNotEmpty ? pastedItems.first.type : null;
+
+    _syncCurrentPage();
+    notifyListeners();
+
+    debugPrint(
+      'FULL PAGE PASTED: ${pastedItems.length} items -> '
+          'Page ${_currentPageIndex + 1}',
+    );
+
+    return true;
+  }
+
   void copySelectedItem() {
     final id = selectedItemId;
 
@@ -972,43 +1045,31 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     notifyListeners();
   }
-  bool pasteCopiedPage() {
-    if (!canPasteCopiedPage) {
-      debugPrint('Paste blocked: same page or nothing copied');
+  bool pasteCopiedItem() {
+    if (_copiedItem == null) return false;
+
+    // Same page → don't paste.
+    if (_copiedFromPageIndex == _currentPageIndex) {
       return false;
     }
 
     _saveState();
 
-    final pastedItems = <EditorItem>[];
+    final source = _copiedItem!;
 
-    for (final original in _copiedPageItems!) {
-      final newId =
-          '${DateTime.now().microsecondsSinceEpoch}_${pastedItems.length}';
+    final newItem = source.copyWith(
+      id: 'item_${DateTime.now().microsecondsSinceEpoch}',
+      position: source.position + const Offset(30, 30),
+    );
 
-      pastedItems.add(
-        original.copyWith(
-          id: newId,
-          position: original.position + const Offset(20, 20),
-        ),
-      );
-    }
+    _items.add(newItem);
 
-    _items.addAll(pastedItems);
-
-    // Copy background also
-    _backgroundColor = _copiedPageBackgroundColor;
+    selectedItemId = newItem.id;
+    selectedItemType = newItem.type;
 
     _syncCurrentPage();
 
-    clearSelection();
-
     notifyListeners();
-
-    debugPrint(
-      'Pasted ${pastedItems.length} items into '
-          'Page ${_currentPageIndex + 1}',
-    );
 
     return true;
   }

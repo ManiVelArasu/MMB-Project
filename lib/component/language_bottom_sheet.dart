@@ -9,7 +9,6 @@ class LanguagesBottomSheet extends StatefulWidget {
 }
 
 class _LanguagesBottomSheetState extends State<LanguagesBottomSheet> {
-  // Master Languages List
   final List<String> _languages = [
     "English",
     "தமிழ்",
@@ -19,12 +18,7 @@ class _LanguagesBottomSheetState extends State<LanguagesBottomSheet> {
     "తెలుగు",
   ];
 
-  // Currently Selected Languages
-  final Set<String> _selectedLanguages = {
-    "English",
-    "தமிழ்",
-    "हिंदी",
-  };
+  final Set<String> _selectedLanguages = {"English", "தமிழ்", "हिंदी"};
 
   void _toggleLanguage(String lang) {
     setState(() {
@@ -52,9 +46,6 @@ class _LanguagesBottomSheetState extends State<LanguagesBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // -------------------------------------------------------------
-            // 1. TOP DRAG HANDLE
-            // -------------------------------------------------------------
             Center(
               child: Container(
                 height: 4.h,
@@ -66,10 +57,6 @@ class _LanguagesBottomSheetState extends State<LanguagesBottomSheet> {
               ),
             ),
             SizedBox(height: 12.h),
-
-            // -------------------------------------------------------------
-            // 2. HEADER: "Languages" Title & Close Button
-            // -------------------------------------------------------------
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -101,10 +88,6 @@ class _LanguagesBottomSheetState extends State<LanguagesBottomSheet> {
             ),
 
             SizedBox(height: 20.h),
-
-            // -------------------------------------------------------------
-            // 3. SELECTED LANGUAGES COUNT BADGE
-            // -------------------------------------------------------------
             Row(
               children: [
                 Text(
@@ -136,7 +119,6 @@ class _LanguagesBottomSheetState extends State<LanguagesBottomSheet> {
 
             SizedBox(height: 8.h),
 
-            // Subtitle Description
             Text(
               "Your post, their language - connect better, reach wider!",
               style: TextStyle(
@@ -148,9 +130,6 @@ class _LanguagesBottomSheetState extends State<LanguagesBottomSheet> {
 
             SizedBox(height: 20.h),
 
-            // -------------------------------------------------------------
-            // 4. LANGUAGE PILLS (GRID / WRAP)
-            // -------------------------------------------------------------
             Wrap(
               spacing: 12.w,
               runSpacing: 12.h,
@@ -167,13 +146,17 @@ class _LanguagesBottomSheetState extends State<LanguagesBottomSheet> {
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFFFFDCDA) // Light Pink fill for Selected
+                          ? const Color(
+                              0xFFFFDCDA,
+                            ) // Light Pink fill for Selected
                           : Colors.white,
                       borderRadius: BorderRadius.circular(30.r),
                       border: Border.all(
                         color: isSelected
                             ? Colors.transparent
-                            : const Color(0xFFFFCDD2), // Soft Pink Border for Unselected
+                            : const Color(
+                                0xFFFFCDD2,
+                              ), // Soft Pink Border for Unselected
                         width: 1.2,
                       ),
                     ),
