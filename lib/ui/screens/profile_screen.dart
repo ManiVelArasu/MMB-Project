@@ -9,7 +9,6 @@ import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/you_screen_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -55,7 +54,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
-            statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+            statusBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
             statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
           ),
           child: Scaffold(
@@ -84,7 +85,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           width: double.infinity,
                           padding: EdgeInsets.all(16.r),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
+                            color: isDark
+                                ? const Color(0xFF2A1A1C)
+                                : const Color(0xFFFFECEE),
                             borderRadius: BorderRadius.circular(16.r),
                           ),
                           child: Column(
@@ -103,7 +106,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 11.sp,
-                                  color: isDark ? Colors.white70 : Colors.black87,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black87,
                                 ),
                               ),
                               SizedBox(height: 12.h),
@@ -134,7 +139,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Container(
                                 padding: EdgeInsets.all(16.r),
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF1B2A38) : const Color(0xFFE3F2FD),
+                                  color: isDark
+                                      ? const Color(0xFF1B2A38)
+                                      : const Color(0xFFE3F2FD),
                                   borderRadius: BorderRadius.circular(16.r),
                                 ),
                                 child: Column(
@@ -150,7 +157,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12.sp,
-                                        color: isDark ? Colors.white : Colors.black,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
                                       ),
                                     ),
                                   ],
@@ -162,7 +171,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Container(
                                 padding: EdgeInsets.all(16.r),
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF231B38) : const Color(0xFFEDE7F6),
+                                  color: isDark
+                                      ? const Color(0xFF231B38)
+                                      : const Color(0xFFEDE7F6),
                                   borderRadius: BorderRadius.circular(16.r),
                                 ),
                                 child: Column(
@@ -178,7 +189,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12.sp,
-                                        color: isDark ? Colors.white : Colors.black,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
                                       ),
                                     ),
                                   ],
@@ -199,7 +212,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   margin: EdgeInsets.symmetric(horizontal: 4.w),
                                   padding: EdgeInsets.symmetric(vertical: 16.h),
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF1E1E1E) : item.backgroundColor,
+                                    color: isDark
+                                        ? const Color(0xFF1E1E1E)
+                                        : item.backgroundColor,
                                     borderRadius: BorderRadius.circular(16.r),
                                   ),
                                   child: Column(
@@ -209,7 +224,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         item.iconPath,
                                         height: 32.h,
                                         width: 32.w,
-                                        errorBuilder: (_, __, ___) => Icon(
+                                        errorBuilder: (_, _, _) => Icon(
                                           Icons.badge_outlined,
                                           size: 28.sp,
                                           color: Colors.blueGrey,
@@ -220,7 +235,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         item.title,
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
-                                          color: isDark ? Colors.white : Colors.black,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black,
                                           fontSize: 12.sp,
                                           fontWeight: FontWeight.w800,
                                           height: 1.1,
@@ -246,7 +263,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               context: context,
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
-                              builder: (context) => const LanguagesBottomSheet(),
+                              builder: (context) =>
+                                  const LanguagesBottomSheet(),
                             );
                           },
                         ),
@@ -403,13 +421,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Center(
                         child: TextButton(
                           onPressed: () async {
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.clear();
-                            Navigator.pushNamedAndRemoveUntil(
-                              context,
-                              "/LoginScreen",
-                                  (route) => false,
-                            );
+                            logoutUser(context);
                           },
                           child: Text(
                             "Logout",
@@ -436,6 +448,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> logoutUser(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // 🚀 பழைய பிசினஸ் டேட்டாக்களை முழுமையாக நீக்குவது
+    await prefs.remove('is_business_completed');
+    await prefs.remove('saved_business_name');
+    await prefs.remove('saved_email');
+    await prefs.remove('saved_mobile_number');
+    await prefs.remove('saved_business_image_path');
+    await prefs.remove('is_logged_in');
+
+    if (!context.mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/LoginScreen',
+      (route) => false,
     );
   }
 
@@ -467,7 +498,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           iconAsset,
           height: 24.h,
           width: 24.w,
-          errorBuilder: (_, __, ___) => Icon(
+          errorBuilder: (_, _, _) => Icon(
             Icons.tune_rounded,
             size: 20.sp,
             color: const Color(0xFFE53935),
@@ -483,16 +514,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         subtitle: subtitle != null
             ? Text(
-          subtitle,
-          style: TextStyle(
-            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-            fontSize: 11.sp,
-            fontWeight: FontWeight.w500,
-          ),
-        )
+                subtitle,
+                style: TextStyle(
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+              )
             : null,
         trailing:
-        trailingWidget ??
+            trailingWidget ??
             Icon(
               Icons.chevron_right_rounded,
               color: isDark ? Colors.white70 : Colors.black87,

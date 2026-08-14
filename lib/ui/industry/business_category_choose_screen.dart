@@ -10,6 +10,7 @@ import 'package:project_mmb/utils/height_measure.dart';
 import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../network/provider/industry_provider.dart';
 
@@ -19,7 +20,7 @@ class BusinessCategoryChooseScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => IndustryProvider(),
+      create: (_) => IndustryProvider()..fetchAssetCategories(),
       child: const BusinessCategoryChooseView(),
     );
   }
@@ -33,20 +34,9 @@ class BusinessCategoryChooseView extends StatelessWidget {
     final customColor = context.watch<CustomThemeProvider>().colors;
     final theme = Theme.of(context).textTheme;
     final accountProvider = context.watch<BusinessProvider>();
+    final industryProvider = context.watch<IndustryProvider>();
 
     bool isBusiness = accountProvider.currentIndex == 0;
-    final List<String> dummyCategories = [
-      "Real Estate",
-      "Electrical",
-      "Marketing",
-      "Mobile Store",
-      "Education",
-      "Clothes",
-      "Hospital and Clinic",
-      "Tour and Travels",
-      "Restaurant",
-      "Automobile",
-    ];
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -150,39 +140,73 @@ class BusinessCategoryChooseView extends StatelessWidget {
               ),
 
               const SizedBox(height: 16),
-
-              // 🚀 ஸ்கிரீன் ஓபன் ஆனவுடனே மேலே உள்ள Dummy List-ஐக் காட்டுவது
               Expanded(
-                child: ListView.separated(
-                  itemCount: dummyCategories.length,
-                  separatorBuilder: (context, index) =>
-                      Divider(color: Colors.grey.shade200),
-                  itemBuilder: (context, index) {
-                    final category = dummyCategories[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: AppText(
-                        category,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                child: industryProvider.isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Colors.red),
+                      )
+                    : industryProvider.categories.isEmpty
+                    ? Center(
+                        child: AppText(
+                          industryProvider.errorMessage ??
+                              "No categories found",
+                          style: TextStyle(color: Colors.grey.shade600),
                         ),
+                      )
+                    : ListView.separated(
+                        itemCount: industryProvider.categories.length > 10
+                            ? 10
+                            : industryProvider.categories.length,
+                        separatorBuilder: (context, index) =>
+                            Divider(color: Colors.grey.shade200),
+                        itemBuilder: (context, index) {
+                          final category = industryProvider.categories[index];
+                          final categoryName = category.name ?? "";
+
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: AppText(
+                              categoryName,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            trailing: const Icon(
+                              Icons.north_east,
+                              size: 18,
+                              color: Colors.grey,
+                            ),
+                            onTap: () async {
+                              industryProvider.selectCategory(category);
+
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              final selectedCat =
+                                  industryProvider.selectedCategory;
+
+                              if (selectedCat != null) {
+                                await prefs.setString(
+                                  'saved_category_id',
+                                  selectedCat.id.toString(),
+                                );
+                                await prefs.setString(
+                                  'saved_category_name',
+                                  selectedCat.name ?? "",
+                                );
+                              }
+
+                              if (!context.mounted) return;
+
+                              Navigator.pushNamed(
+                                context,
+                                "/BusinessCategoryChooseView",
+                              );
+                            },
+                          );
+                        },
                       ),
-                      trailing: const Icon(
-                        Icons.north_east,
-                        size: 18,
-                        color: Colors.grey,
-                      ),
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          "/BusinessCategoryChooseView",
-                        );
-                      },
-                    );
-                  },
-                ),
               ),
             ],
           ),
@@ -193,8 +217,7 @@ class BusinessCategoryChooseView extends StatelessWidget {
 
   void searchCategorySheet(BuildContext context) {
     final industryProvider = context.read<IndustryProvider>();
-    industryProvider.fetchAssetCategories();
-    final DraggableScrollableController _sheetController =
+    final DraggableScrollableController sheetController =
         DraggableScrollableController();
 
     showModalBottomSheet(
@@ -209,11 +232,13 @@ class BusinessCategoryChooseView extends StatelessWidget {
               Positioned.fill(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
-                  child: Container(color: Colors.black.withValues(alpha: 0.2)),
+                  child: Container(
+                    color: AppColors.appBlack.withValues(alpha: 0.2),
+                  ),
                 ),
               ),
               DraggableScrollableSheet(
-                controller: _sheetController,
+                controller: sheetController,
                 expand: false,
                 initialChildSize: 0.75,
                 minChildSize: 0.5,
@@ -221,7 +246,7 @@ class BusinessCategoryChooseView extends StatelessWidget {
                 builder: (context, scrollController) {
                   return SearchBottomSheet(
                     scrollController: scrollController,
-                    sheetController: _sheetController,
+                    sheetController: sheetController,
                   );
                 },
               ),

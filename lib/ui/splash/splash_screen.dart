@@ -32,17 +32,18 @@ class _SplashScreenState extends State<SplashScreen> {
     final bool isPersonalUse = prefs.getBool('is_personal_use') ?? false;
 
     if (!mounted) return;
-    print("fsdfsdfsdfsdf${isBusinessCompleted}");
-
     if (!isOnboarded) {
       Navigator.pushReplacementNamed(context, '/OnboardingScreen');
     } else if (isLoggedIn && !hasSeenPlans) {
       Navigator.pushReplacementNamed(context, '/PlansAndPricingScreen');
-    } else if (isLoggedIn && hasSeenPlans && !isBusinessCompleted && !isPersonalUse) {
-      // பிசினஸும் முடிக்கவில்லை, பர்சனல் யூசரும் இல்லை எனில் பிசினஸ் டீடெய்ல்ஸ் போகும்
+    } else if (isLoggedIn &&
+        hasSeenPlans &&
+        !isBusinessCompleted &&
+        !isPersonalUse) {
       Navigator.pushReplacementNamed(context, '/BusinessDetailsScreen');
-    } else if (isLoggedIn && hasSeenPlans && (isBusinessCompleted || isPersonalUse)) {
-      // 🚀 பிசினஸ் கம்ப்ீட் ஆகியிருந்தாலோ அல்லது பர்சனல் யூசாக இருந்தாலோ நேராக ஹோம் ஸ்கிரீனுக்குச் செல்லும்
+    } else if (isLoggedIn &&
+        hasSeenPlans &&
+        (isBusinessCompleted || isPersonalUse)) {
       Navigator.pushReplacementNamed(context, '/CustomBottomNavScreen');
     } else {
       Navigator.pushReplacementNamed(context, '/LoginScreen');

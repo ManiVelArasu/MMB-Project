@@ -21,6 +21,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/gestures.dart';
 
+import '../../network/provider/business_provider.dart';
 import '../../utils/constants.dart';
 
 class OtpScreen extends StatelessWidget {
@@ -294,14 +295,31 @@ class OtpScreen extends StatelessWidget {
                               if (!context.mounted) return;
 
                               if (responseData != null) {
+                                final businessProvider =
+                                    Provider.of<BusinessProvider>(
+                                      context,
+                                      listen: false,
+                                    );
+
+                                // 1. பழைய டேட்டாவை க்ளியர் செய்வது
+                                await businessProvider
+                                    .clearBusinessDataForNewLogin();
+
+                                // 2. 🚀 தற்போதைய மொபைல் நம்பரை SharedPreferences-ல் சேமிப்பது (மிக முக்கியம்)
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                await prefs.setString(
+                                  'saved_mobile_number',
+                                  authProvider.mobileNumber,
+                                );
+
+                                await prefs.setBool('is_logged_in', true);
+                                await prefs.setBool('has_seen_plans', false);
+
                                 String message =
                                     responseData['message'] ??
                                     "OTP Verified Successfully";
                                 Fluttertoast.showToast(msg: message);
-                                final prefs =
-                                    await SharedPreferences.getInstance();
-                                await prefs.setBool('is_logged_in', true);
-                                await prefs.setBool('has_seen_plans', false);
 
                                 if (!context.mounted) return;
                                 Navigator.pushReplacementNamed(
@@ -321,15 +339,7 @@ class OtpScreen extends StatelessWidget {
                               }
                             },
                             title: "CONTINUE",
-                            textStyle: theme.titleLarge!.copyWith(
-                              color: customColor.whiteColor,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              color: customColor.redColor,
-                            ),
-                            height: 54.h,
+                            // ... மற்ற கோடுகள் அப்படியே இருக்கும் ...
                           ),
                           height24,
                           Center(

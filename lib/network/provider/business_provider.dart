@@ -84,6 +84,32 @@ class BusinessProvider extends ChangeNotifier {
   bool _isUploading = false;
   bool get isUploading => _isUploading;
 
+  // 🚀 புதிய யூசர் லாகின் செய்யும் போது அல்லது லோகவுட் செய்யும்போது பழைய பிசினஸ் டேட்டாவை க்ளியர் செய்ய
+  Future<void> clearBusinessDataForNewLogin() async {
+    _businessName = "";
+    _email = "";
+    _mobileNumber = "";
+    _selectedImage = null;
+    _originalImage = null;
+    _savedImagePath = null;
+    _isImageSelected = false;
+    _processedImageBytes = null;
+
+    nameController.clear();
+    emailController.clear();
+    mobileController.clear();
+
+    // SharedPreferences-ல் உள்ள பழைய பிசினஸ் தகவல்களை நீக்குதல்
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('is_business_completed');
+    await prefs.remove('saved_business_name');
+    await prefs.remove('saved_email');
+    await prefs.remove('saved_mobile_number');
+    await prefs.remove('saved_business_image_path');
+
+    notifyListeners();
+  }
+
   Future<bool> uploadAndSaveBusinessDetails(BuildContext context) async {
     if (!validateForm()) return false;
 
@@ -109,11 +135,9 @@ class BusinessProvider extends ChangeNotifier {
         bool isUploadSuccess = false;
         uploadResult.when(
           success: (data) {
-            debugPrint("✅ Logo Upload & Confirm Successful!");
             isUploadSuccess = true;
           },
           failure: (error) {
-            debugPrint("❌ Logo Upload Failed: ${error.message}");
             isUploadSuccess = false;
           },
         );
@@ -138,7 +162,7 @@ class BusinessProvider extends ChangeNotifier {
       await prefs.setBool('is_business_completed', true);
       await prefs.setString('saved_business_name', _businessName);
       await prefs.setString('saved_email', _email);
-      await prefs.setString('saved_mobile_number', _mobileNumber);
+      // await prefs.setString('saved_mobile_number', _mobileNumber);
 
       _isUploading = false;
       notifyListeners();
@@ -158,10 +182,13 @@ class BusinessProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
 
     final savedNumber = prefs.getString('saved_mobile_number');
+
     if (savedNumber != null && savedNumber.isNotEmpty) {
       _mobileNumber = savedNumber;
       mobileController.text = savedNumber;
     }
+
+    // மற்ற டேட்டாக்கள்...
     _savedImagePath = prefs.getString('saved_business_image_path');
 
     final savedName = prefs.getString('saved_business_name');
@@ -169,12 +196,28 @@ class BusinessProvider extends ChangeNotifier {
       _businessName = savedName;
       nameController.text = savedName;
     }
+
     final savedEmail = prefs.getString('saved_email');
     if (savedEmail != null && savedEmail.isNotEmpty) {
       _email = savedEmail;
       emailController.text = savedEmail;
     }
 
+    notifyListeners();
+  }
+
+  void setMobileNumber(String value) {
+    _mobileNumber = value.trim();
+    mobileController.text =
+        _mobileNumber; // கண்ட்ரோலரையும் சிங்க் செய்து கொள்வது
+
+    if (_mobileNumber.isEmpty) {
+      _mobileError = "Contact number is required";
+    } else if (_mobileNumber.length < 10) {
+      _mobileError = "Enter a valid 10-digit contact number";
+    } else {
+      _mobileError = null;
+    }
     notifyListeners();
   }
 
@@ -188,15 +231,6 @@ class BusinessProvider extends ChangeNotifier {
     _email = value;
     _emailError = null;
     notifyListeners();
-  }
-
-  Future<void> setMobileNumber(String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedNumber = prefs.getString('saved_mobile_number');
-    if (savedNumber != null && savedNumber.isNotEmpty) {
-      _mobileNumber = savedNumber;
-      notifyListeners();
-    }
   }
 
   // FORM VALIDATION FUNCTION
@@ -231,11 +265,12 @@ class BusinessProvider extends ChangeNotifier {
       _emailError = null;
     }
 
-    // 4. Contact Number Validation
-    if (_mobileNumber.trim().isEmpty) {
+    _mobileNumber = mobileController.text.trim();
+
+    if (_mobileNumber.isEmpty) {
       _mobileError = "Contact number is required";
       isValid = false;
-    } else if (_mobileNumber.trim().length < 10) {
+    } else if (_mobileNumber.length < 10) {
       _mobileError = "Enter a valid 10-digit contact number";
       isValid = false;
     } else {
@@ -705,7 +740,6 @@ class BusinessProvider extends ChangeNotifier {
         _hasChanges = false;
         _isProcessingBackground = false;
 
-        // 🚀 இங்கு Background Remove முடிந்ததும் BG Removed இமேஜ் தான் செலக்ட் ஆக வேண்டும் என குறிப்பிடப்பட்டுள்ளது:
         _isImageSelected = false;
 
         notifyListeners();

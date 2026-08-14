@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Repository/auth_repository.dart';
 import '../../core/api/api_handler.dart';
-import '../../core/api/api_repository.dart';
+
 
 class AuthProvider extends ChangeNotifier with MyNotifier {
   String _mobileNumber = "";
@@ -14,7 +14,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   final List<TextEditingController> _controllers = List.generate(
     6,
-    (index) => TextEditingController(),
+        (index) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
 
@@ -37,6 +37,10 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   bool _isVerifyLoading = false;
   bool get isVerifyLoading => _isVerifyLoading;
+
+  bool _isResendLoading = false;
+  bool get isResendLoading => _isResendLoading;
+
   String newMobileInput = "";
 
   void setNewMobileInput(String val) {
@@ -44,6 +48,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
+  // 🚀 புதிய மொபைல் எண்ணை சேமிக்கும் மெத்தட்
   Future<bool> updateAndSaveNewMobile() async {
     if (newMobileInput.trim().length != 10) {
       mobileError = "Enter a valid 10-digit number";
@@ -66,6 +71,19 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
+  // 🚀 லோகவுட் அல்லது புதிய லாகின் போது டேட்டாவை க்ளியர் செய்ய
+  Future<void> clearAuthDataForNewLogin() async {
+    _mobileNumber = "";
+    newMobileInput = "";
+    clearOtp();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('saved_mobile_number');
+    await prefs.remove('is_logged_in');
+
+    notifyListeners();
+  }
+
   void setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
@@ -73,7 +91,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   bool isOtpComplete() {
     return _controllers.every(
-      (controller) => controller.text.trim().isNotEmpty,
+          (controller) => controller.text.trim().isNotEmpty,
     );
   }
 
@@ -101,10 +119,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
         smsCode: smsCode,
       );
 
-      //await _auth.signInWithCredential(credential);
-
       setLoading(false);
-
       onSuccess();
     } on FirebaseAuthException catch (e) {
       setLoading(false);
@@ -113,13 +128,24 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
   }
 
   Future<String?> apiSendOtp(String phone, String purpose) async {
-    _isLoginLoading = true; // 🚀 Login loading start
+    _isLoginLoading = true;
     _errorMessage = null;
+
+    // IMPORTANT
+    _mobileNumber = phone.trim();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('saved_mobile_number', _mobileNumber);
+
     notifyListeners();
 
     try {
-      final result = await AuthRepository.instance.sendOtp(phone, purpose);
-      _isLoginLoading = false; // 🚀 Login loading end
+      final result = await AuthRepository.instance.sendOtp(
+        phone,
+        purpose,
+      );
+
+      _isLoginLoading = false;
       notifyListeners();
 
       return result.when(
@@ -138,6 +164,36 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
+  // 🚀 Resend OTP API மெத்தட்
+  Future<String?> resendOtpApi() async {
+    _isResendLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await AuthRepository.instance.sendOtp(_mobileNumber, "login");
+      _isResendLoading = false;
+      notifyListeners();
+
+      return result.when(
+        success: (data) {
+          clearOtp(); // பழைய OTP பாக்ஸ்களை கிளியர் செய்வது
+          return data.otp;
+        },
+        failure: (error) {
+          _errorMessage = error.message ?? "Failed to resend OTP";
+          notifyListeners();
+          return null;
+        },
+      );
+    } catch (e) {
+      _isResendLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>?> verifyOtpApi() async {
     String enteredOtp = getOtp();
 
@@ -147,7 +203,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       return null;
     }
 
-    _isVerifyLoading = true; // 🚀 Verify loading start
+    _isVerifyLoading = true;
     _errorMessage = null;
     notifyListeners();
 
@@ -158,19 +214,27 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
         enteredOtp,
         "android",
       );
-      _isVerifyLoading = false; // 🚀 Verify loading end
+      _isVerifyLoading = false;
       notifyListeners();
 
       return result.when(
         success: (data) async {
           final accessToken = data['access_token'];
           final refreshToken = data['refresh_token'];
+
           if (accessToken != null) {
             await ApiHandler.instance.setTokens(
               token: accessToken,
               refreshToken: refreshToken,
             );
           }
+
+          // Save logged-in mobile number
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(
+            'saved_mobile_number',
+            _mobileNumber.trim(),
+          );
 
           notifyListeners();
           return data;
@@ -193,22 +257,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     required String phoneNumber,
     required Function(String) onCodeSent,
     required Function(String) onError,
-  }) async {
-    /*await _auth.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      verificationCompleted: (credential) async {
-        await _auth.signInWithCredential(credential);
-      },
-      verificationFailed: (e) {
-        onError(e.message ?? "Verification failed");
-      },
-      codeSent: (verificationId, _) {
-        clearOtp();
-        onCodeSent(verificationId);
-      },
-      codeAutoRetrievalTimeout: (_) {},
-    );*/
-  }
+  }) async {}
+
   Future<void> sendOtp({
     required String phoneNumber,
     required Function(String verificationId) onCodeSent,
@@ -216,31 +266,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
   }) async {
     try {
       setLoading(true);
-
-      /*await _auth.verifyPhoneNumber(
-        phoneNumber: phoneNumber,
-
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          await _auth.signInWithCredential(credential);
-          setLoading(false);
-        },
-
-        verificationFailed: (FirebaseAuthException e) {
-          setLoading(false);
-          onError(e.message ?? "Verification failed");
-        },
-
-        codeSent: (String verificationId, int? resendToken) {
-          setLoading(false);
-          onCodeSent(verificationId);
-        },
-
-        codeAutoRetrievalTimeout: (String verificationId) {
-          setLoading(false);
-        },
-
-        timeout: const Duration(seconds: 60),
-      );*/
     } catch (e) {
       setLoading(false);
       onError(e.toString());

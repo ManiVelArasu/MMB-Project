@@ -211,7 +211,9 @@ class BgRemoveSheet extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           ButtonWidget(
-                            buttonPress: () {},
+                            buttonPress: () {
+                              Navigator.pop(context);
+                            },
                             title: "NO",
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),

@@ -143,7 +143,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                 const SizedBox(height: 10),
 
                 Column(
-                  children: widget.plan.planFeatures.map((feature) {
+                  children: widget.plan.features.map((feature) {
                     bool isAvailable = feature.enabled ?? false;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10.0),

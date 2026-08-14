@@ -38,14 +38,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   final Map<String, FontWeight> _copiedWeight = {};
   final Map<String, FontStyle> _copiedStyle = {};
   final Map<String, bool> _copiedUnderline = {};
+  final Map<String, double> _copiedFilterIntensity = {};
 
   bool get hasCopiedPage =>
       _copiedPageItems != null && _copiedPageItems!.isNotEmpty;
 
-  bool get canPasteCopiedPage =>
-      hasCopiedPage &&
-          _copiedPageIndex != null &&
-          _copiedPageIndex != _currentPageIndex;
+  bool get canPasteCopiedPage => hasCopiedPage;
 
   bool get hasCopiedItem => _copiedItem != null;
 
@@ -947,6 +945,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _copiedWeight.clear();
     _copiedStyle.clear();
     _copiedUnderline.clear();
+    _copiedFilterIntensity.clear();
 
     for (final item in _items) {
       final id = item.id;
@@ -958,6 +957,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       _copiedWeight[id] = textWeight(id);
       _copiedStyle[id] = textStyle(id);
       _copiedUnderline[id] = textUnderline(id);
+      _copiedFilterIntensity[id] = imageFilterIntensity(id);
     }
 
     notifyListeners();
@@ -969,11 +969,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool pasteCopiedPage() {
     if (!hasCopiedPage) {
       debugPrint('Paste page: nothing copied');
-      return false;
-    }
-
-    if (_copiedPageIndex == _currentPageIndex) {
-      debugPrint('Paste page blocked: same page');
       return false;
     }
 
@@ -1001,12 +996,13 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           _copiedStyle[oldId] ?? FontStyle.normal;
       _textUnderline[newId] =
           _copiedUnderline[oldId] ?? false;
+      _imageFilterIntensity[newId] =
+          _copiedFilterIntensity[oldId] ?? 1.0;
     }
 
-    // Replace the target page contents.
-    _items
-      ..clear()
-      ..addAll(pastedItems);
+    // Paste means duplicate into the current page. Do not wipe existing
+    // content; this also works when copying and pasting on the same page.
+    _items.addAll(pastedItems);
 
     // Restore the copied page background.
     if (_copiedPageBackgroundColor != null) {
@@ -1047,11 +1043,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
   bool pasteCopiedItem() {
     if (_copiedItem == null) return false;
-
-    // Same page → don't paste.
-    if (_copiedFromPageIndex == _currentPageIndex) {
-      return false;
-    }
 
     _saveState();
 

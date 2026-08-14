@@ -4,7 +4,7 @@ import '../../model/feedback_model.dart';
 
 class FeedbackProvider extends ChangeNotifier {
   /// Selected emoji index
-  int _selectedEmoji = 3;
+  int _selectedEmoji = 0;
   int get selectedEmoji => _selectedEmoji;
 
   /// Feedback text controller
@@ -26,7 +26,6 @@ class FeedbackProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Local Submit Feedback (உள்ளூரில் மட்டும் சேமிக்க வேண்டுமென்றால்)
   void submitFeedbackLocally() {
     if (feedbackController.text.trim().isEmpty) return;
 
@@ -63,7 +62,7 @@ class FeedbackProvider extends ChangeNotifier {
       _isVerifyLoading = false;
       notifyListeners();
 
-      return result.when(
+      return await result.when(
         success: (data) {
           feedbackController.clear();
           _selectedEmoji = 3;
@@ -71,7 +70,7 @@ class FeedbackProvider extends ChangeNotifier {
           return data;
         },
         failure: (error) {
-          _errorMessage = error.message ?? "Feedback submission failed";
+          _errorMessage = error.message;
           notifyListeners();
           return null;
         },

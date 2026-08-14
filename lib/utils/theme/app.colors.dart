@@ -106,4 +106,5 @@ class AppColors {
 
   static const Color normalButtonColor = Color(0xFF4ED8F2);
   static const Color searchBorderColor = Color(0xFFFFE4E5);
+  static const Color deepBlue = Color(0xFF1E2E5F);
 }

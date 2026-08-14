@@ -6,7 +6,6 @@ import '../../component/custom_widget.dart';
 import '../../network/provider/smcalender_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 
-
 class SmCalendarScreen extends StatelessWidget {
   const SmCalendarScreen({super.key});
 
@@ -45,7 +44,9 @@ class SmCalendarView extends StatelessWidget {
                         vertical: 16.h,
                       ),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2A1A1C) : AppColors.litePink,
+                        color: isDark
+                            ? const Color(0xFF2A1A1C)
+                            : AppColors.litePink,
                         borderRadius: BorderRadius.only(
                           bottomLeft: Radius.circular(30.r),
                           bottomRight: Radius.circular(30.r),
@@ -77,7 +78,9 @@ class SmCalendarView extends StatelessWidget {
                               AppText(
                                 "My Monthly SM Calendars",
                                 style: TextStyle(
-                                  color: isDark ? Colors.white : Theme.of(context).colorScheme.onSurface,
+                                  color: isDark
+                                      ? Colors.white
+                                      : Theme.of(context).colorScheme.onSurface,
                                   fontSize: 20.sp,
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -90,7 +93,9 @@ class SmCalendarView extends StatelessWidget {
                           AppText(
                             "Plan your content with ease using our AI-powered calendar. Get ready-to-use post ideas and matching content tailored for your brand. All in just a few taps!",
                             style: TextStyle(
-                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                              color: isDark
+                                  ? Colors.grey.shade400
+                                  : Colors.grey.shade700,
                               fontSize: 13.5.sp,
                               height: 1.4,
                               fontWeight: FontWeight.w500,
@@ -111,7 +116,9 @@ class SmCalendarView extends StatelessWidget {
                           AppText(
                             "My SM Calendars",
                             style: TextStyle(
-                              color: isDark ? Colors.white : Theme.of(context).colorScheme.onSurface,
+                              color: isDark
+                                  ? Colors.white
+                                  : Theme.of(context).colorScheme.onSurface,
                               fontSize: 18.sp,
                               fontWeight: FontWeight.w900,
                             ),
@@ -132,15 +139,21 @@ class SmCalendarView extends StatelessWidget {
                                 margin: EdgeInsets.only(bottom: 14.h),
                                 padding: EdgeInsets.all(16.r),
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                  color: isDark
+                                      ? const Color(0xFF1E1E1E)
+                                      : Colors.white,
                                   borderRadius: BorderRadius.circular(16.r),
                                   border: Border.all(
-                                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                                    color: isDark
+                                        ? Colors.grey.shade800
+                                        : Colors.grey.shade200,
                                     width: 1.2,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                                      color: Colors.black.withValues(
+                                        alpha: isDark ? 0.2 : 0.02,
+                                      ),
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
                                     ),
@@ -152,7 +165,9 @@ class SmCalendarView extends StatelessWidget {
                                     AppText(
                                       item.title,
                                       style: TextStyle(
-                                        color: isDark ? Colors.white : Colors.black87,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black87,
                                         fontSize: 16.sp,
                                         fontWeight: FontWeight.w800,
                                       ),
@@ -163,7 +178,9 @@ class SmCalendarView extends StatelessWidget {
                                     AppText(
                                       item.frequency,
                                       style: TextStyle(
-                                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                        color: isDark
+                                            ? Colors.grey.shade400
+                                            : Colors.grey.shade600,
                                         fontSize: 12.5.sp,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -173,7 +190,9 @@ class SmCalendarView extends StatelessWidget {
                                     AppText(
                                       item.platformAndPosts,
                                       style: TextStyle(
-                                        color: isDark ? Colors.white70 : AppColors.appBlack,
+                                        color: isDark
+                                            ? Colors.white70
+                                            : AppColors.appBlack,
                                         fontSize: 14.sp,
                                         fontWeight: FontWeight.w900,
                                       ),

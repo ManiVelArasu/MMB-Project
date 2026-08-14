@@ -10,19 +10,29 @@ import 'package:project_mmb/utils/height_measure.dart';
 import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../Repository/image_upload_repository.dart';
-
-class BusinessDetailsScreen extends StatelessWidget {
+class BusinessDetailsScreen extends StatefulWidget {
   const BusinessDetailsScreen({super.key});
+
+  @override
+  State<BusinessDetailsScreen> createState() => _BusinessDetailsScreenState();
+}
+
+class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BusinessProvider>().loadSavedData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final customColor = context.watch<CustomThemeProvider>().colors;
     final theme = Theme.of(context).textTheme;
     final businessProvider = context.watch<BusinessProvider>();
-
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -274,6 +284,7 @@ class BusinessDetailsScreen extends StatelessWidget {
               ButtonWidget(
                 isLoading: businessProvider.isUploading,
                 buttonPress: () async {
+                  print("sffdfdfdfdf${businessProvider.mobileController.text}");
                   await businessProvider.uploadAndSaveBusinessDetails(context);
                 },
                 title: "CONTINUE",

@@ -21,7 +21,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
-      final themeProvider = context.watch<CustomThemeProvider>();
+    final themeProvider = context.watch<CustomThemeProvider>();
     final isDark = themeProvider.isDarkMode;
 
     return ChangeNotifierProvider(
@@ -230,7 +230,7 @@ class HomeScreen extends StatelessWidget {
                                       child: Image.asset(
                                         "assets/images/thumbnail1.png",
                                         fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
+                                        errorBuilder: (_, _, _) => Container(
                                           color: isDark
                                               ? const Color(0xFF2C2C2C)
                                               : Colors.grey.shade200,
@@ -854,7 +854,7 @@ class HomeScreen extends StatelessWidget {
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
-                              errorBuilder: (_, __, ___) => Container(
+                              errorBuilder: (_, _, _) => Container(
                                 color: isDark
                                     ? const Color(0xFF2C2C2C)
                                     : Colors.grey.shade200,

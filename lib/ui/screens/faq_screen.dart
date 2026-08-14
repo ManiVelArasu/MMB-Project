@@ -8,7 +8,6 @@ import '../../network/provider/faq_provider.dart';
 
 import '../../network/provider/custom_theme_provider.dart';
 
-
 class FaqScreen extends StatelessWidget {
   const FaqScreen({super.key});
 
@@ -22,10 +21,7 @@ class FaqScreen extends StatelessWidget {
 
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            appBar: const CustomAppBar(
-              title: "FAQs",
-              showRightIcon: false,
-            ),
+            appBar: const CustomAppBar(title: "FAQs", showRightIcon: false),
             body: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -51,9 +47,11 @@ class FaqScreen extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: provider.faqList.length,
-                    separatorBuilder: (_, __) => Divider(
+                    separatorBuilder: (_, _) => Divider(
                       height: 30,
-                      color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                      color: isDark
+                          ? Colors.grey.shade800
+                          : Colors.grey.shade300,
                     ),
                     itemBuilder: (context, index) {
                       final faq = provider.faqList[index];
@@ -74,7 +72,9 @@ class FaqScreen extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w600,
-                                      color: isDark ? Colors.white : Colors.black,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black,
                                     ),
                                   ),
                                 ),
@@ -82,13 +82,17 @@ class FaqScreen extends StatelessWidget {
                                   width: 28,
                                   height: 28,
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE5E7EB),
+                                    color: isDark
+                                        ? const Color(0xFF2C2C2C)
+                                        : const Color(0xFFE5E7EB),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(
                                     faq.isExpanded ? Icons.remove : Icons.add,
                                     size: 18,
-                                    color: isDark ? Colors.white70 : Colors.black87,
+                                    color: isDark
+                                        ? Colors.white70
+                                        : Colors.black87,
                                   ),
                                 ),
                               ],
@@ -103,7 +107,9 @@ class FaqScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 17,
                                 height: 1.6,
-                                color: isDark ? Colors.grey.shade400 : const Color(0xFF4B5563),
+                                color: isDark
+                                    ? Colors.grey.shade400
+                                    : const Color(0xFF4B5563),
                               ),
                             ),
                           ],

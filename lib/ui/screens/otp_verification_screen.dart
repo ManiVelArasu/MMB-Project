@@ -8,10 +8,10 @@ class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
 
   const OtpVerificationScreen({
-    Key? key,
+    super.key,
     required this.verificationId,
     required this.phoneNumber,
-  }) : super(key: key);
+  });
 
   @override
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
