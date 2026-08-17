@@ -264,7 +264,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
                               builder: (context) =>
-                              const LanguagesBottomSheet(),
+                                  const LanguagesBottomSheet(),
                             );
                           },
                         ),
@@ -320,7 +320,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: "Notifications",
                         iconAsset: "assets/images/notification_icon.png",
                         isDark: isDark,
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.pushNamed(context, "/NotificationScreen");
+                        },
                       ),
 
                       SizedBox(height: 20.h),
@@ -461,12 +463,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await prefs.remove('saved_mobile_number');
     await prefs.remove('saved_business_image_path');
     await prefs.remove('is_logged_in');
-
+    await prefs.remove('auth_token');
+    await prefs.remove('refresh_token');
     if (!context.mounted) return;
     Navigator.pushNamedAndRemoveUntil(
       context,
       '/LoginScreen',
-          (route) => false,
+      (route) => false,
     );
   }
 
@@ -514,16 +517,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         subtitle: subtitle != null
             ? Text(
-          subtitle,
-          style: TextStyle(
-            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-            fontSize: 11.sp,
-            fontWeight: FontWeight.w500,
-          ),
-        )
+                subtitle,
+                style: TextStyle(
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+              )
             : null,
         trailing:
-        trailingWidget ??
+            trailingWidget ??
             Icon(
               Icons.chevron_right_rounded,
               color: isDark ? Colors.white70 : Colors.black87,

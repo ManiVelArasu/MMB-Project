@@ -4,7 +4,7 @@ import '../../model/you_screen_model.dart';
 
 class ProfileScreenProvider extends ChangeNotifier {
   bool isDarkMode = false;
-  bool isWatermarkEnabled = true;
+  bool isWatermarkEnabled = false;
 
   void toggleDarkMode(bool value) {
     isDarkMode = value;

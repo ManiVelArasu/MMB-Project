@@ -8,6 +8,7 @@ import '../../network/provider/business_provider.dart';
 import '../../network/provider/businessprofile_provider.dart';
 
 import '../../network/provider/custom_theme_provider.dart';
+import '../industry/widgets/image_viewer.dart';
 
 class BusinessProfileScreen extends StatelessWidget {
   const BusinessProfileScreen({super.key});
@@ -93,37 +94,45 @@ class BusinessProfileView extends StatelessWidget {
                           width: 48.w,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            // 🚀 வெளியே பார்டர் லைன் கொடுக்க இந்த பகுதி உதவும்
-                            border: Border.all(
-                              color: Colors
-                                  .white, // உங்களுக்குத் தேவையான நிறத்தை (Color) மாற்றிக் கொள்ளலாம்
-                              width: 2.0, // பார்டரின் தடிமன் (Thickness)
-                            ),
+                            border: Border.all(color: Colors.white, width: 2.0),
                           ),
                           child: ClipOval(
                             child:
                                 savedImagePath != null &&
                                     savedImagePath.isNotEmpty &&
                                     File(savedImagePath).existsSync()
-                                ? Image.file(
-                                    File(savedImagePath),
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Image.asset(
-                                              "assets/images/BName.png",
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  Container(
-                                                    color: const Color(
-                                                      0xFFE91E63,
+                                ? InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              ImageViewerScreen(
+                                                imagePath: savedImagePath ?? "",
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    child: Image.file(
+                                      File(savedImagePath),
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              Image.asset(
+                                                "assets/images/BName.png",
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) =>
+                                                    Container(
+                                                      color: const Color(
+                                                        0xFFE91E63,
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.business,
+                                                        color: Colors.white,
+                                                      ),
                                                     ),
-                                                    child: const Icon(
-                                                      Icons.business,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                            ),
+                                              ),
+                                    ),
                                   )
                                 : Image.asset(
                                     "assets/images/BName.png",
