@@ -64,10 +64,8 @@ class BusinessProvider extends ChangeNotifier {
   double get scaleValue => _liveScaleValue;
   bool get isApplied => _isApplied;
   bool get hasChanges => _hasChanges;
-  Uint8List? get processedImageBytes =>
-      _processedImageBytes; // NEW: Getter for processed image
-  bool get isProcessingBackground =>
-      _isProcessingBackground; // NEW: Getter for processing state
+  Uint8List? get processedImageBytes => _processedImageBytes;
+  bool get isProcessingBackground => _isProcessingBackground;
   bool get isImageSelected => _isImageSelected;
 
   String? _nameError;
@@ -111,8 +109,6 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<bool> uploadAndSaveBusinessDetails(BuildContext context) async {
-    if (!validateForm()) return false;
-
     _isUploading = true;
     notifyListeners();
 
@@ -203,11 +199,6 @@ class BusinessProvider extends ChangeNotifier {
               _savedImagePath!,
             );
           }
-
-          debugPrint(
-            "✅ Business details and Image saved to SharedPreferences successfully!",
-          );
-
           if (context.mounted) {
             Navigator.pushNamed(context, "/CustomBottomNavScreen");
           }
@@ -216,15 +207,6 @@ class BusinessProvider extends ChangeNotifier {
         failure: (error) {
           _errorMessage = error.message;
           notifyListeners();
-
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(_errorMessage ?? "Update failed"),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
           return null;
         },
       );
@@ -232,8 +214,6 @@ class BusinessProvider extends ChangeNotifier {
       _isUploading = false;
       _errorMessage = e.toString();
       notifyListeners();
-
-      debugPrint("❌ Exception in businessUpdateApi: $e");
       return null;
     }
   }

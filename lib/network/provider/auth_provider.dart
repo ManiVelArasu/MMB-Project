@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../Repository/auth_repository.dart';
 import '../../core/api/api_handler.dart';
 
-
 class AuthProvider extends ChangeNotifier with MyNotifier {
   String _mobileNumber = "";
   String? mobileError;
@@ -14,7 +13,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   final List<TextEditingController> _controllers = List.generate(
     6,
-        (index) => TextEditingController(),
+    (index) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
 
@@ -91,7 +90,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   bool isOtpComplete() {
     return _controllers.every(
-          (controller) => controller.text.trim().isNotEmpty,
+      (controller) => controller.text.trim().isNotEmpty,
     );
   }
 
@@ -140,10 +139,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
 
     try {
-      final result = await AuthRepository.instance.sendOtp(
-        phone,
-        purpose,
-      );
+      final result = await AuthRepository.instance.sendOtp(phone, purpose);
 
       _isLoginLoading = false;
       notifyListeners();
@@ -171,7 +167,10 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
 
     try {
-      final result = await AuthRepository.instance.sendOtp(_mobileNumber, "login");
+      final result = await AuthRepository.instance.sendOtp(
+        _mobileNumber,
+        "login",
+      );
       _isResendLoading = false;
       notifyListeners();
 
@@ -194,7 +193,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  Future<Map<String, dynamic>?> verifyOtpApi() async {
+  Future<Map<String, dynamic>?> verifyOtpApi(BuildContext context) async {
     String enteredOtp = getOtp();
 
     if (enteredOtp.length < 6) {
@@ -217,10 +216,12 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       _isVerifyLoading = false;
       notifyListeners();
 
-      return result.when(
+      return await result.when(
         success: (data) async {
           final accessToken = data['access_token'];
           final refreshToken = data['refresh_token'];
+          final bool isNewUser =
+              data['is_new_user'] ?? data['data']?['is_new_user'] ?? false;
 
           if (accessToken != null) {
             await ApiHandler.instance.setTokens(
@@ -229,14 +230,19 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             );
           }
 
-          // Save logged-in mobile number
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString(
-            'saved_mobile_number',
-            _mobileNumber.trim(),
-          );
+          await prefs.setString('saved_mobile_number', _mobileNumber.trim());
 
           notifyListeners();
+
+          if (context.mounted) {
+            if (isNewUser) {
+              Navigator.pushReplacementNamed(context, "/PlanDetailsScreen");
+            } else {
+              Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
+            }
+          }
+
           return data;
         },
         failure: (error) {

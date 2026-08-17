@@ -42,4 +42,6 @@ class ApiEndpoints {
   static const String logout = '/auth/logout';
 
   static const String businessUpdate = '/businesses';
+
+  static const String user = '/users/me';
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_otp_text_field/flutter_otp_text_field.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -12,15 +11,6 @@ import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/gestures.dart';
-
 import '../../network/provider/business_provider.dart';
 import '../../utils/constants.dart';
 
@@ -290,7 +280,7 @@ class OtpScreen extends StatelessWidget {
                             isLoading: authProvider.isVerifyLoading,
                             buttonPress: () async {
                               final responseData = await authProvider
-                                  .verifyOtpApi();
+                                  .verifyOtpApi(context);
 
                               if (!context.mounted) return;
 
@@ -300,12 +290,8 @@ class OtpScreen extends StatelessWidget {
                                       context,
                                       listen: false,
                                     );
-
-                                // 1. பழைய டேட்டாவை க்ளியர் செய்வது
                                 await businessProvider
                                     .clearBusinessDataForNewLogin();
-
-                                // 2. 🚀 தற்போதைய மொபைல் நம்பரை SharedPreferences-ல் சேமிப்பது (மிக முக்கியம்)
                                 final prefs =
                                     await SharedPreferences.getInstance();
                                 await prefs.setString(
@@ -339,7 +325,6 @@ class OtpScreen extends StatelessWidget {
                               }
                             },
                             title: "CONTINUE",
-                            // ... மற்ற கோடுகள் அப்படியே இருக்கும் ...
                           ),
                           height24,
                           Center(
