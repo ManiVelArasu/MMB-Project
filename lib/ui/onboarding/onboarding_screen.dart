@@ -78,7 +78,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 "Social Media Post",
                                 style: TextStyle(
                                   fontSize: AppFontSize.fontSize22,
-                                  fontWeight: FontWeight.bold
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -156,13 +156,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-
                             children: [
                               Text.rich(
                                 TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: "Build Your ",
+                                      text: "Build Your",
                                       style: theme.headlineLarge!.copyWith(
                                         fontSize: 26,
                                         fontWeight: FontWeight.w900,
@@ -216,7 +215,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // LEFT SIDE (dummy spacing)
                 const SizedBox(width: 52),
 
                 // CENTER INDICATOR

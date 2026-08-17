@@ -117,7 +117,6 @@ class BusinessProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
       final imageFile = _isImageSelected == true
           ? _originalImage
           : (_selectedImage ?? _originalImage);
@@ -155,18 +154,11 @@ class BusinessProvider extends ChangeNotifier {
           }
           return false;
         }
-        await prefs.setString('saved_business_image_path', imageFile.path);
         updateSavedImagePath(imageFile.path);
       }
 
-      await prefs.setBool('is_business_completed', true);
-      await prefs.setString('saved_business_name', _businessName);
-      await prefs.setString('saved_email', _email);
       _isUploading = false;
       notifyListeners();
-      if (context.mounted) {
-        Navigator.pushNamed(context, "/CustomBottomNavScreen");
-      }
       return true;
     } catch (e) {
       _isUploading = false;
@@ -186,6 +178,8 @@ class BusinessProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      bool isImageUploaded = await uploadAndSaveBusinessDetails(context);
+      if (!isImageUploaded) return null;
       final result = await BusinessRepository.instance.businessUpdate(
         _businessName,
         _mobileNumber,
@@ -196,7 +190,27 @@ class BusinessProvider extends ChangeNotifier {
       notifyListeners();
 
       return await result.when(
-        success: (data) {
+        success: (data) async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('is_business_completed', true);
+          await prefs.setString('saved_business_name', _businessName);
+          await prefs.setString('saved_email', _email);
+          await prefs.setString('saved_mobile_number', _mobileNumber);
+
+          if (_savedImagePath != null && _savedImagePath!.isNotEmpty) {
+            await prefs.setString(
+              'saved_business_image_path',
+              _savedImagePath!,
+            );
+          }
+
+          debugPrint(
+            "✅ Business details and Image saved to SharedPreferences successfully!",
+          );
+
+          if (context.mounted) {
+            Navigator.pushNamed(context, "/CustomBottomNavScreen");
+          }
           return data;
         },
         failure: (error) {
@@ -233,8 +247,6 @@ class BusinessProvider extends ChangeNotifier {
       _mobileNumber = savedNumber;
       mobileController.text = savedNumber;
     }
-
-    // மற்ற டேட்டாக்கள்...
     _savedImagePath = prefs.getString('saved_business_image_path');
 
     final savedName = prefs.getString('saved_business_name');
@@ -254,8 +266,7 @@ class BusinessProvider extends ChangeNotifier {
 
   void setMobileNumber(String value) {
     _mobileNumber = value.trim();
-    mobileController.text =
-        _mobileNumber; // கண்ட்ரோலரையும் சிங்க் செய்து கொள்வது
+    mobileController.text = _mobileNumber;
 
     if (_mobileNumber.isEmpty) {
       _mobileError = "Contact number is required";

@@ -282,7 +282,6 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
               ButtonWidget(
                 isLoading: businessProvider.isUploading,
                 buttonPress: () async {
-                  print("sffdfdfdfdf${businessProvider.mobileController.text}");
                   await businessProvider.uploadAndSaveBusinessDetails(context);
                   await businessProvider.businessUpdateApi(context);
                 },

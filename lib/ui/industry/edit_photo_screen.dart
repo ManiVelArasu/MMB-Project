@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -348,7 +349,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
         children: [
           TextButton(
             onPressed: _isProcessing ? null : () => Navigator.pop(context),
-            child: AppText(
+            child: Text(
               "Cancel",
               style: theme.bodyMedium!.copyWith(
                 color: _isProcessing ? Colors.grey : customColor.redColor,
@@ -406,7 +407,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : AppText(
+                : Text(
                     provider.hasChanges ? "Apply" : "Save",
                     style: theme.bodyMedium!.copyWith(
                       color: customColor.textColor,
@@ -444,7 +445,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: AppText("${provider.selectedTool} applied!"),
+              content: Text("${provider.selectedTool} applied!"),
               duration: const Duration(seconds: 1),
             ),
           );
@@ -459,7 +460,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
       debugPrint("Error applying transformation: $e");
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: AppText("Error: $e"), backgroundColor: Colors.red),
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -491,7 +492,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
             height: 24,
           ),
           const SizedBox(height: 4),
-          AppText(
+          Text(
             label,
             style: theme.bodySmall!.copyWith(
               color: isActive ? Colors.blue : Colors.white,
@@ -522,7 +523,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
           borderRadius: BorderRadius.circular(8),
           color: active ? const Color(0xff4ED8F2).withValues(alpha: 0.1) : null,
         ),
-        child: AppText(
+        child: Text(
           text,
           style: theme.bodySmall!.copyWith(
             color: active ? const Color(0xff4ED8F2) : Colors.white,

@@ -354,11 +354,11 @@ class ApiHandler {
         throw UnimplementedError();
     }
   }
-
   String? _extractServerMessage(dynamic data) {
     if (data == null) return null;
     if (data is String && data.isNotEmpty) return data;
     if (data is Map) {
+      // 1. சாதாரண கீ-க்களை செக் செய்வது
       for (final key in const [
         'message',
         'error',
@@ -368,6 +368,12 @@ class ApiHandler {
       ]) {
         final val = data[key];
         if (val is String && val.isNotEmpty) return val;
+
+        // 🚀 2. 'error' ஒரு ம্যাপ-ஆக (Nested Map) இருந்தால் அதனுள் உள்ள 'message'-ஐ எடுப்பது
+        if (key == 'error' && val is Map) {
+          final nestedMsg = val['message'];
+          if (nestedMsg is String && nestedMsg.isNotEmpty) return nestedMsg;
+        }
       }
     }
     return null;
