@@ -32,11 +32,16 @@ import '../ui/screens/template_edit.dart';
 import '../ui/screens/theme_detail_screen.dart';
 import '../ui/screens/theme_single_item_view_screen.dart';
 import '../ui/subscription/basic_plan.dart';
+import '../ui/subscription/change_plan_screen.dart';
+import '../ui/subscription/confirm_plan.dart';
 import '../ui/subscription/elit_plan.dart';
+import '../ui/subscription/my_subscription.dart';
 import '../ui/subscription/plan_detail_screen.dart';
 import '../ui/subscription/premium_plan.dart';
+import '../ui/subscription/subscription_activate_screen.dart';
 import '../ui/subscription/subscription_screen.dart';
 import '../ui/screens/feedback_screen.dart';
+import '../ui/subscription/usage_screen.dart';
 
 class RouteGenerator {
   Route<dynamic>? generateRoute(RouteSettings settings) {
@@ -177,6 +182,21 @@ class RouteGenerator {
         final plan = settings.arguments as Plan;
         return MaterialPageRoute(
           builder: (context) => PlanDetailScreen(plan: plan),
+        );
+      case "/ConfirmPlanScreen":
+        return MaterialPageRoute(builder: (context) => ConfirmPlanScreen());
+      case "/SubscriptionActivatedScreen":
+        return MaterialPageRoute(
+          builder: (context) => SubscriptionActivatedScreen(),
+        ); case "/MySubscriptionScreen":
+        return MaterialPageRoute(
+          builder: (context) => MySubscriptionScreen(),
+        );case "/ChangePlanScreen":
+        return MaterialPageRoute(
+          builder: (context) => ChangePlanScreen(),
+        );case "/UsageScreen":
+        return MaterialPageRoute(
+          builder: (context) => UsageScreen(),
         );
     }
     return null;

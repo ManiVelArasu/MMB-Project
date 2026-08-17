@@ -64,8 +64,8 @@ class ApiHandler {
 
   static ApiHandler get instance {
     assert(
-    _instance != null,
-    'ApiHandler.init() must be called before accessing ApiHandler.instance.',
+      _instance != null,
+      'ApiHandler.init() must be called before accessing ApiHandler.instance.',
     );
     return _instance!;
   }
@@ -241,9 +241,9 @@ class ApiHandler {
   }
 
   Map<String, String> _buildHeaders(
-      ApiContentType contentType,
-      Map<String, String>? extra,
-      ) {
+    ApiContentType contentType,
+    Map<String, String>? extra,
+  ) {
     final headers = <String, String>{};
     if (_token != null) {
       headers[ApiHeaderKey.authorization.value] = 'Bearer $_token';
@@ -269,9 +269,9 @@ class ApiHandler {
   }
 
   ApiResult<T> _parseResponse<T>(
-      Response<dynamic> response,
-      T Function(dynamic json)? fromJson,
-      ) {
+    Response<dynamic> response,
+    T Function(dynamic json)? fromJson,
+  ) {
     final statusCode = response.statusCode ?? 0;
     if (statusCode >= 200 && statusCode < 300) {
       try {
@@ -294,7 +294,9 @@ class ApiHandler {
     return ApiResult.failure(
       ApiError(
         type: ApiErrorType.serverError,
-        message: _extractServerMessage(response.data) ?? 'Server error ($statusCode)',
+        message:
+            _extractServerMessage(response.data) ??
+            'Server error ($statusCode)',
         statusCode: statusCode,
         serverData: response.data,
       ),
@@ -328,7 +330,9 @@ class ApiHandler {
         final statusCode = e.response?.statusCode;
         return ApiError(
           type: ApiErrorType.serverError,
-          message: _extractServerMessage(e.response?.data) ?? 'Server error (${statusCode ?? 'unknown'})',
+          message:
+              _extractServerMessage(e.response?.data) ??
+              'Server error (${statusCode ?? 'unknown'})',
           statusCode: statusCode,
           serverData: e.response?.data,
         );
@@ -345,6 +349,9 @@ class ApiHandler {
           statusCode: e.response?.statusCode,
           serverData: e.response?.data,
         );
+      case DioExceptionType.transformTimeout:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
   }
 
@@ -352,7 +359,13 @@ class ApiHandler {
     if (data == null) return null;
     if (data is String && data.isNotEmpty) return data;
     if (data is Map) {
-      for (final key in const ['message', 'error', 'detail', 'msg', 'description']) {
+      for (final key in const [
+        'message',
+        'error',
+        'detail',
+        'msg',
+        'description',
+      ]) {
         final val = data[key];
         if (val is String && val.isNotEmpty) return val;
       }

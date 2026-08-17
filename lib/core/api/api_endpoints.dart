@@ -38,4 +38,6 @@ class ApiEndpoints {
   static const String feedBack = '/feedback';
 
   static const String fileUpload = '/uploads/presign';
+
+  static const String logout = '/auth/logout';
 }

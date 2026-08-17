@@ -49,7 +49,7 @@ class LocaleProvider extends ChangeNotifier with MyNotifier {
 
   @override
   void dispose() {
-    authProvider.dispose(); // Auto dispose AuthProvider resources
+    authProvider.dispose();
     super.dispose();
   }
 }

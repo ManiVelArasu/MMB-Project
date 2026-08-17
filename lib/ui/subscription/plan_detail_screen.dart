@@ -131,7 +131,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                 ),
                 const SizedBox(height: 20),
 
-
                 const Text(
                   "Features & Benefits",
                   style: TextStyle(
@@ -190,7 +189,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                   height: 52,
                   child: ElevatedButton(
                     onPressed: () {
-                      // 🚀 Payment action
+                      Navigator.pushNamed(context, "/ConfirmPlanScreen");
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,

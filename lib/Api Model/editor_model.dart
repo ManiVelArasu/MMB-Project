@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
 
-enum EditorItemType {
-  text,
-  sticker,
-  shape,
-}
-
-
+enum EditorItemType { text, sticker, shape }
 
 class EditorItem {
   final String? id;
@@ -81,7 +75,7 @@ class EditorItem {
   }) {
     return EditorItem(
       id: id ?? this.id,
-      type: type ?? this.type, // 🚀 இதை இங்கே அப்டேட் செய்யவும்
+      type: type ?? this.type,
       position: position ?? this.position,
       text: text ?? this.text,
       contentUrl: contentUrl ?? this.contentUrl,
@@ -148,4 +142,3 @@ class EditorItem {
     );
   }
 }
-

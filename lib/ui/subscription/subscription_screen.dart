@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:project_mmb/component/custom_widget.dart';
+import 'package:project_mmb/ui/industry/business_category_choose_screen.dart';
 import 'package:project_mmb/ui/subscription/plan_detail_screen.dart';
 import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:provider/provider.dart';
@@ -85,7 +86,7 @@ class PlansAndPricingScreen extends StatelessWidget {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(16.r),
                                 child: Image.asset(
-                                  "assets/images/offer.png",
+                                  "assets/images/offers.png",
                                   width: double.infinity,
                                   height: 150
                                       .h, // உங்களது இமேஜ் உயரத்திற்கேற்ப மாற்றிக் கொள்ளலாம்
@@ -351,12 +352,15 @@ class PlansAndPricingScreen extends StatelessWidget {
               ),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PlanDetailScreen(plan: plan),
-                    ),
-                  );
+                  if (index > 0) {
+                    Navigator.pushNamed(
+                      context,
+                      '/PlanDetailScreen',
+                      arguments: plan,
+                    );
+                  } else {
+                    Navigator.pushNamed(context, "/AccountTypeScreen");
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: buttonColor,
