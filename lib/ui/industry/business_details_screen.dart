@@ -237,8 +237,6 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
 
                       height12,
 
-                      // 1. BUSINESS NAME FIELD
-                      // 1. BUSINESS NAME FIELD
                       _buildCustomInputField(
                         title: "Business Name",
                         hintText: "Enter business name",
@@ -286,6 +284,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                 buttonPress: () async {
                   print("sffdfdfdfdf${businessProvider.mobileController.text}");
                   await businessProvider.uploadAndSaveBusinessDetails(context);
+                  await businessProvider.businessUpdateApi(context);
                 },
                 title: "CONTINUE",
                 textStyle: theme.titleLarge!.copyWith(

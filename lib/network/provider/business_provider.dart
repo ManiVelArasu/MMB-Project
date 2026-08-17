@@ -11,11 +11,13 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:project_mmb/Repository/business_repository.dart';
 import 'package:project_mmb/ui/industry/widgets/bg_remove_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Repository/image_upload_repository.dart';
+import '../../core/api/api_handler.dart';
 
 class BusinessProvider extends ChangeNotifier {
   BusinessProvider() {
@@ -84,7 +86,6 @@ class BusinessProvider extends ChangeNotifier {
   bool _isUploading = false;
   bool get isUploading => _isUploading;
 
-  // 🚀 புதிய யூசர் லாகின் செய்யும் போது அல்லது லோகவுட் செய்யும்போது பழைய பிசினஸ் டேட்டாவை க்ளியர் செய்ய
   Future<void> clearBusinessDataForNewLogin() async {
     _businessName = "";
     _email = "";
@@ -99,7 +100,6 @@ class BusinessProvider extends ChangeNotifier {
     emailController.clear();
     mobileController.clear();
 
-    // SharedPreferences-ல் உள்ள பழைய பிசினஸ் தகவல்களை நீக்குதல்
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('is_business_completed');
     await prefs.remove('saved_business_name');
@@ -126,11 +126,11 @@ class BusinessProvider extends ChangeNotifier {
         final filename = imageFile.path.split('/').last;
         final uploadResult = await MediaUploadRepository.instance
             .uploadImageAndConfirm(
-          imageFile: imageFile,
-          filename: filename,
-          width: 1080,
-          height: 1080,
-        );
+              imageFile: imageFile,
+              filename: filename,
+              width: 1080,
+              height: 1080,
+            );
 
         bool isUploadSuccess = false;
         uploadResult.when(
@@ -162,8 +162,6 @@ class BusinessProvider extends ChangeNotifier {
       await prefs.setBool('is_business_completed', true);
       await prefs.setString('saved_business_name', _businessName);
       await prefs.setString('saved_email', _email);
-      // await prefs.setString('saved_mobile_number', _mobileNumber);
-
       _isUploading = false;
       notifyListeners();
       if (context.mounted) {
@@ -171,10 +169,58 @@ class BusinessProvider extends ChangeNotifier {
       }
       return true;
     } catch (e) {
-      debugPrint("❌ Exception in uploadAndSaveBusinessDetails: $e");
       _isUploading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
+
+  Future<Map<String, dynamic>?> businessUpdateApi(BuildContext context) async {
+    if (!validateForm()) return null;
+
+    _isUploading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await BusinessRepository.instance.businessUpdate(
+        _businessName,
+        _mobileNumber,
+        _email,
+      );
+
+      _isUploading = false;
+      notifyListeners();
+
+      return await result.when(
+        success: (data) {
+          return data;
+        },
+        failure: (error) {
+          _errorMessage = error.message;
+          notifyListeners();
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(_errorMessage ?? "Update failed"),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return null;
+        },
+      );
+    } catch (e) {
+      _isUploading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+
+      debugPrint("❌ Exception in businessUpdateApi: $e");
+      return null;
     }
   }
 
@@ -357,7 +403,7 @@ class BusinessProvider extends ChangeNotifier {
     }
     final deviceInfo = DeviceInfoPlugin();
     final androidInfo = await deviceInfo.androidInfo;
-    final sdkInt = androidInfo.version.sdkInt ?? 0;
+    final sdkInt = androidInfo.version.sdkInt;
     if (sdkInt >= 33) {
       final status = await Permission.photos.request();
       return status.isGranted;
@@ -368,9 +414,9 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<void> pickImage(
-      BuildContext context, {
-        ImageSource source = ImageSource.gallery,
-      }) async {
+    BuildContext context, {
+    ImageSource source = ImageSource.gallery,
+  }) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -399,12 +445,12 @@ class BusinessProvider extends ChangeNotifier {
     AccTypeModel(
       title: "For my Business",
       description:
-      "Create branded designs tailored to your business and industry.",
+          "Create branded designs tailored to your business and industry.",
     ),
     AccTypeModel(
       title: "Personal Use",
       description:
-      "Create designs for festivals, birthdays, quotes, social posts, and more.",
+          "Create designs for festivals, birthdays, quotes, social posts, and more.",
     ),
   ];
 
@@ -417,31 +463,6 @@ class BusinessProvider extends ChangeNotifier {
     selectedCategory = category;
     notifyListeners();
   }
-
-  final List<String> businessCategories = [
-    "Real Estate",
-    "Electrical",
-    "Mobile Store",
-    "Tour and Travels",
-    "Automobile",
-    "Construction",
-    "Clothing & Fashion",
-    "Hospitality",
-    "Food & Beverage",
-    "IT Services",
-    "Hardware Store",
-    "Furniture",
-    "Medical & Pharmacy",
-    "Education",
-    "Beauty & Wellness",
-    "Grocery Store",
-    "Home Appliances",
-    "Jewellery",
-    "Photography",
-    "Logistics",
-    "Sports & Fitness",
-    "Pet Store",
-  ];
 
   double? getAspectRatio(String aspect) {
     switch (aspect) {

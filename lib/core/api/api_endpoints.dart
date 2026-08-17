@@ -40,4 +40,6 @@ class ApiEndpoints {
   static const String fileUpload = '/uploads/presign';
 
   static const String logout = '/auth/logout';
+
+  static const String businessUpdate = '/businesses';
 }

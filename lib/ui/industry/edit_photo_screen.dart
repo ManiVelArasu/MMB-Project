@@ -1,15 +1,13 @@
-
-import 'dart:io';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/ui/industry/widgets/rotation_slider.dart';
 import 'package:project_mmb/ui/industry/widgets/scale_slider.dart';
-import 'package:project_mmb/utils/constants.dart';
-import 'package:project_mmb/widgets/custom_sized_box.dart';
 import 'package:provider/provider.dart';
 import 'package:project_mmb/network/provider/business_provider.dart';
 import 'package:project_mmb/network/provider/custom_theme_provider.dart';
+
 class EditPhotoScreen extends StatefulWidget {
   const EditPhotoScreen({super.key});
 
@@ -49,7 +47,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
               onPressed: () => Navigator.pop(context),
               icon: SvgPicture.asset("assets/icons/back_icon.svg"),
             ),
-            title: Text(
+            title: AppText(
               "Edit Photo",
               style: theme.bodyMedium!.copyWith(
                 color: customColor.blackColor,
@@ -64,16 +62,12 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
                 Expanded(
                   child: Container(
                     color: Colors.grey[100],
-                    child: Center(
-                      child: _buildImagePreview(businessProvider),
-                    ),
+                    child: Center(child: _buildImagePreview(businessProvider)),
                   ),
                 ),
 
-                // TOOL-SPECIFIC CONTROLS
                 _buildToolControls(businessProvider, customColor, theme),
 
-                // BOTTOM TOOLBAR
                 _buildBottomToolbar(
                   context,
                   businessProvider,
@@ -110,9 +104,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
         },
         loadStateChanged: (state) {
           if (state.extendedImageLoadState == LoadState.failed) {
-            return const Center(
-              child: Text("Failed to load image"),
-            );
+            return const Center(child: AppText("Failed to load image"));
           }
           return null;
         },
@@ -135,17 +127,15 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
       return imageWidget;
     } catch (e) {
       debugPrint("Error building image preview: $e");
-      return Center(
-        child: Text("Error loading image: $e"),
-      );
+      return Center(child: AppText("Error loading image: $e"));
     }
   }
 
   Widget _buildToolControls(
-      BusinessProvider provider,
-      dynamic customColor,
-      TextTheme theme,
-      ) {
+    BusinessProvider provider,
+    dynamic customColor,
+    TextTheme theme,
+  ) {
     switch (provider.selectedTool) {
       case "Crop":
         return _buildCropControls(provider, customColor, theme);
@@ -159,10 +149,10 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
   }
 
   Widget _buildCropControls(
-      BusinessProvider provider,
-      dynamic customColor,
-      TextTheme theme,
-      ) {
+    BusinessProvider provider,
+    dynamic customColor,
+    TextTheme theme,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -196,10 +186,10 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
   }
 
   Widget _buildRotateControls(
-      BusinessProvider provider,
-      dynamic customColor,
-      TextTheme theme,
-      ) {
+    BusinessProvider provider,
+    dynamic customColor,
+    TextTheme theme,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -224,11 +214,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
                 color: Colors.white.withValues(alpha: 0.1),
                 border: Border.all(color: Colors.white, width: 2),
               ),
-              child: const Icon(
-                Icons.refresh,
-                color: Colors.white,
-                size: 20,
-              ),
+              child: const Icon(Icons.refresh, color: Colors.white, size: 20),
             ),
           ),
           const SizedBox(width: 12),
@@ -240,7 +226,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
                   onChanged: (v) => provider.setLiveRotationAngle(v),
                 ),
                 const SizedBox(height: 8),
-                Text(
+                AppText(
                   "${provider.rotationAngle.toStringAsFixed(1)}°",
                   style: theme.bodyMedium!.copyWith(
                     color: Colors.white,
@@ -277,10 +263,10 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
   }
 
   Widget _buildScaleControls(
-      BusinessProvider provider,
-      dynamic customColor,
-      TextTheme theme,
-      ) {
+    BusinessProvider provider,
+    dynamic customColor,
+    TextTheme theme,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
@@ -323,7 +309,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
+          AppText(
             "${(provider.scaleValue * 100).toStringAsFixed(0)}%",
             style: theme.bodySmall!.copyWith(
               color: const Color(0xff4ED8F2),
@@ -336,11 +322,11 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
   }
 
   Widget _buildBottomToolbar(
-      BuildContext context,
-      BusinessProvider provider,
-      dynamic customColor,
-      TextTheme theme,
-      ) {
+    BuildContext context,
+    BusinessProvider provider,
+    dynamic customColor,
+    TextTheme theme,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -362,7 +348,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
         children: [
           TextButton(
             onPressed: _isProcessing ? null : () => Navigator.pop(context),
-            child: Text(
+            child: AppText(
               "Cancel",
               style: theme.bodyMedium!.copyWith(
                 color: _isProcessing ? Colors.grey : customColor.redColor,
@@ -382,7 +368,9 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
                   icon: "assets/icons/crop.svg",
                   label: "Crop",
                   isActive: provider.selectedTool == "Crop",
-                  onTap: _isProcessing ? () {} : () => provider.setSelectedTool("Crop"),
+                  onTap: _isProcessing
+                      ? () {}
+                      : () => provider.setSelectedTool("Crop"),
                   theme: theme,
                 ),
                 const SizedBox(width: 24),
@@ -390,7 +378,9 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
                   icon: "assets/icons/rotate.svg",
                   label: "Rotate",
                   isActive: provider.selectedTool == "Rotate",
-                  onTap: _isProcessing ? () {} : () => provider.setSelectedTool("Rotate"),
+                  onTap: _isProcessing
+                      ? () {}
+                      : () => provider.setSelectedTool("Rotate"),
                   theme: theme,
                 ),
                 const SizedBox(width: 24),
@@ -398,34 +388,41 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
                   icon: "assets/icons/scale.svg",
                   label: "Scale",
                   isActive: provider.selectedTool == "Scale",
-                  onTap: _isProcessing ? () {} : () => provider.setSelectedTool("Scale"),
+                  onTap: _isProcessing
+                      ? () {}
+                      : () => provider.setSelectedTool("Scale"),
                   theme: theme,
                 ),
               ],
             ),
           ),
           TextButton(
-            onPressed: _isProcessing ? null : () => _handleApply(context, provider),
+            onPressed: _isProcessing
+                ? null
+                : () => _handleApply(context, provider),
             child: _isProcessing
                 ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-                : Text(
-              provider.hasChanges ? "Apply" : "Save",
-              style: theme.bodyMedium!.copyWith(
-                color: customColor.textColor,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : AppText(
+                    provider.hasChanges ? "Apply" : "Save",
+                    style: theme.bodyMedium!.copyWith(
+                      color: customColor.textColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _handleApply(BuildContext context, BusinessProvider provider) async {
+  Future<void> _handleApply(
+    BuildContext context,
+    BusinessProvider provider,
+  ) async {
     if (_isProcessing) return;
 
     setState(() => _isProcessing = true);
@@ -447,7 +444,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("${provider.selectedTool} applied!"),
+              content: AppText("${provider.selectedTool} applied!"),
               duration: const Duration(seconds: 1),
             ),
           );
@@ -462,10 +459,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
       debugPrint("Error applying transformation: $e");
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error: $e"),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: AppText("Error: $e"), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -497,7 +491,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
             height: 24,
           ),
           const SizedBox(height: 4),
-          Text(
+          AppText(
             label,
             style: theme.bodySmall!.copyWith(
               color: isActive ? Colors.blue : Colors.white,
@@ -511,11 +505,11 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
   }
 
   Widget _aspectButton(
-      String text,
-      BusinessProvider provider,
-      dynamic customColor,
-      TextTheme theme,
-      ) {
+    String text,
+    BusinessProvider provider,
+    dynamic customColor,
+    TextTheme theme,
+  ) {
     bool active = provider.selectedAspect == text;
     return GestureDetector(
       onTap: () => provider.setAspect(text),
@@ -528,7 +522,7 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
           borderRadius: BorderRadius.circular(8),
           color: active ? const Color(0xff4ED8F2).withValues(alpha: 0.1) : null,
         ),
-        child: Text(
+        child: AppText(
           text,
           style: theme.bodySmall!.copyWith(
             color: active ? const Color(0xff4ED8F2) : Colors.white,
