@@ -23,6 +23,7 @@ class BusinessProvider extends ChangeNotifier {
   BusinessProvider() {
     requestPermissionIfNeeded();
     loadSavedData();
+    loadSavedBusinessImage();
   }
   String? _savedImagePath;
   String? get savedImagePath => _savedImagePath;
@@ -104,8 +105,20 @@ class BusinessProvider extends ChangeNotifier {
     await prefs.remove('saved_email');
     await prefs.remove('saved_mobile_number');
     await prefs.remove('saved_business_image_path');
+    await prefs.remove('saved_business_image_path');
 
     notifyListeners();
+  }
+
+  Future<void> loadSavedBusinessImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? imagePath = prefs.getString('saved_business_image_path');
+
+    if (imagePath != null && imagePath.isNotEmpty) {
+      _savedImagePath = imagePath;
+      _originalImage = File(imagePath);
+      notifyListeners();
+    }
   }
 
   Future<bool> uploadAndSaveBusinessDetails(BuildContext context) async {
@@ -119,6 +132,7 @@ class BusinessProvider extends ChangeNotifier {
 
       if (imageFile != null && imageFile.existsSync()) {
         final filename = imageFile.path.split('/').last;
+
         final uploadResult = await MediaUploadRepository.instance
             .uploadImageAndConfirm(
               imageFile: imageFile,
@@ -128,9 +142,23 @@ class BusinessProvider extends ChangeNotifier {
             );
 
         bool isUploadSuccess = false;
-        uploadResult.when(
-          success: (data) {
+
+        await uploadResult.when(
+          success: (data) async {
             isUploadSuccess = true;
+            _savedImagePath = imageFile.path;
+
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool('is_business_completed', true);
+            await prefs.setString('saved_business_name', _businessName);
+            await prefs.setString('saved_email', _email);
+            await prefs.setString('saved_mobile_number', _mobileNumber);
+            await prefs.setString('saved_business_image_path', imageFile.path);
+
+            updateSavedImagePath(imageFile.path);
+            if (context.mounted) {
+              Navigator.pushNamed(context, "/CustomBottomNavScreen");
+            }
           },
           failure: (error) {
             isUploadSuccess = false;
@@ -145,12 +173,12 @@ class BusinessProvider extends ChangeNotifier {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text("Logo upload failed. Please try again."),
+                backgroundColor: Colors.red,
               ),
             );
           }
           return false;
         }
-        updateSavedImagePath(imageFile.path);
       }
 
       _isUploading = false;
@@ -159,6 +187,7 @@ class BusinessProvider extends ChangeNotifier {
     } catch (e) {
       _isUploading = false;
       notifyListeners();
+      debugPrint("❌ Exception in uploadAndSaveBusinessDetails: $e");
       return false;
     }
   }
@@ -221,20 +250,24 @@ class BusinessProvider extends ChangeNotifier {
   Future<void> loadSavedData() async {
     final prefs = await SharedPreferences.getInstance();
 
+    // 1. மொபைல் நம்பர் / காண்டாக்ட் நம்பர்
     final savedNumber = prefs.getString('saved_mobile_number');
-
     if (savedNumber != null && savedNumber.isNotEmpty) {
       _mobileNumber = savedNumber;
       mobileController.text = savedNumber;
     }
+
+    // 2. பிசினஸ் இமேஜ் பாத்
     _savedImagePath = prefs.getString('saved_business_image_path');
 
+    // 3. பிசினஸ் பெயர்
     final savedName = prefs.getString('saved_business_name');
     if (savedName != null && savedName.isNotEmpty) {
       _businessName = savedName;
       nameController.text = savedName;
     }
 
+    // 4. இமெயில்
     final savedEmail = prefs.getString('saved_email');
     if (savedEmail != null && savedEmail.isNotEmpty) {
       _email = savedEmail;
@@ -797,16 +830,6 @@ class BusinessProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint("Failed to apply processed image: $e");
       return false;
-    }
-  }
-
-  Future<void> loadSavedBusinessImage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? imagePath = prefs.getString('saved_business_image_path');
-
-    if (imagePath != null && imagePath.isNotEmpty) {
-      _originalImage = File(imagePath);
-      notifyListeners();
     }
   }
 

@@ -24,7 +24,6 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     final themeProvider = context.watch<CustomThemeProvider>();
     final isDark = themeProvider.isDarkMode;
 
-    // 🚀 FutureBuilder-க்கு பதிலாக Provider-ஐப் பயன்படுத்துதல்
     final businessProvider = context.watch<BusinessProvider>();
 
     String businessName = businessProvider.businessName.isNotEmpty

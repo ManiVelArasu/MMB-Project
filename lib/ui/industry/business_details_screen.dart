@@ -283,7 +283,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                 isLoading: businessProvider.isUploading,
                 buttonPress: () async {
                   await businessProvider.uploadAndSaveBusinessDetails(context);
-                  await businessProvider.businessUpdateApi(context);
+                 // await businessProvider.businessUpdateApi(context);
                 },
                 title: "CONTINUE",
                 textStyle: theme.titleLarge!.copyWith(

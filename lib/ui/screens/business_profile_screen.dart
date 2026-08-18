@@ -35,6 +35,8 @@ class BusinessProfileView extends StatelessWidget {
       builder: (context, provider, child) {
         final businessProvider = context.watch<BusinessProvider>();
         String? savedImagePath = businessProvider.savedImagePath;
+
+
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: SafeArea(

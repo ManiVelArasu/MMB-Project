@@ -7,7 +7,7 @@ import 'package:project_mmb/network/provider/theme_screen_provider.dart';
 import '../network/provider/bottom_provider.dart';
 import 'package:provider/provider.dart';
 import '../network/provider/custom_screen_provider.dart';
-import '../network/provider/you_screen_provider.dart';
+import '../network/provider/profile_screen_provider.dart';
 import '../ui/screens/custom_screen.dart';
 import '../ui/screens/home_screen.dart';
 import '../ui/screens/nearme_screen.dart';

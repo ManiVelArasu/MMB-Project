@@ -133,9 +133,7 @@ class _DynamicFormBottomSheetState extends State<DynamicFormBottomSheet> {
             ),
             Text(
               widget.subTitle,
-              style: theme.bodyMedium!.copyWith(
-                color: customColor.blackColor,
-              ),
+              style: theme.bodyMedium!.copyWith(color: customColor.blackColor),
             ),
             SizedBox(height: 16.h),
 
@@ -183,11 +181,12 @@ class _DynamicFormBottomSheetState extends State<DynamicFormBottomSheet> {
     );
   }
 
-  // Helper renderer for different input types
-  Widget _buildFieldWidget(FormFieldConfig field, dynamic customColor, TextTheme theme) {
+  Widget _buildFieldWidget(
+    FormFieldConfig field,
+    dynamic customColor,
+    TextTheme theme,
+  ) {
     switch (field.type) {
-
-    // 1. TEXT / INPUT FIELD
       case FieldType.text:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,7 +208,10 @@ class _DynamicFormBottomSheetState extends State<DynamicFormBottomSheet> {
                 hintStyle: theme.bodyMedium!.copyWith(
                   color: customColor.greyColor.withAlpha(80),
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 14,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(color: Colors.grey.shade400),
@@ -219,7 +221,6 @@ class _DynamicFormBottomSheetState extends State<DynamicFormBottomSheet> {
           ],
         );
 
-    // 2. SEARCHABLE DROPDOWN FIELD
       case FieldType.dropdown:
         final selectedVal = _formValues[field.id];
         return Column(
@@ -233,7 +234,10 @@ class _DynamicFormBottomSheetState extends State<DynamicFormBottomSheet> {
             InkWell(
               onTap: () => _openSelectionModal(field, customColor, theme),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 14,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Colors.grey.shade400),
@@ -246,11 +250,16 @@ class _DynamicFormBottomSheetState extends State<DynamicFormBottomSheet> {
                         color: selectedVal != null
                             ? customColor.blackColor
                             : customColor.greyColor.withAlpha(80),
-                        fontWeight: selectedVal != null ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: selectedVal != null
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                     const Spacer(),
-                    Icon(Icons.keyboard_arrow_down, color: customColor.greyColor),
+                    Icon(
+                      Icons.keyboard_arrow_down,
+                      color: customColor.greyColor,
+                    ),
                   ],
                 ),
               ),
@@ -258,7 +267,6 @@ class _DynamicFormBottomSheetState extends State<DynamicFormBottomSheet> {
           ],
         );
 
-    // 3. RADIO BUTTON FIELD
       case FieldType.radioButton:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,7 +295,7 @@ class _DynamicFormBottomSheetState extends State<DynamicFormBottomSheet> {
           ],
         );
 
-    // 4. CHECKBOX FIELD
+      // 4. CHECKBOX FIELD
       case FieldType.checkbox:
         return CheckboxListTile(
           title: Text(field.label, style: theme.bodyMedium),
@@ -305,7 +313,11 @@ class _DynamicFormBottomSheetState extends State<DynamicFormBottomSheet> {
   }
 
   // Modal Sheet for Searchable Dropdown Options
-  void _openSelectionModal(FormFieldConfig field, dynamic customColor, TextTheme theme) {
+  void _openSelectionModal(
+    FormFieldConfig field,
+    dynamic customColor,
+    TextTheme theme,
+  ) {
     String search = "";
     showModalBottomSheet(
       context: context,
@@ -314,7 +326,9 @@ class _DynamicFormBottomSheetState extends State<DynamicFormBottomSheet> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             final filteredOptions = (field.options ?? [])
-                .where((opt) => opt.toLowerCase().contains(search.toLowerCase()))
+                .where(
+                  (opt) => opt.toLowerCase().contains(search.toLowerCase()),
+                )
                 .toList();
 
             return Container(
@@ -322,14 +336,21 @@ class _DynamicFormBottomSheetState extends State<DynamicFormBottomSheet> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  Text("Select ${field.label}", style: theme.bodyLarge!.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    "Select ${field.label}",
+                    style: theme.bodyLarge!.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   SizedBox(height: 12.h),
                   TextFormField(
                     onChanged: (val) => setModalState(() => search = val),
                     decoration: InputDecoration(
                       hintText: "Search...",
                       prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                   SizedBox(height: 12.h),
@@ -341,7 +362,10 @@ class _DynamicFormBottomSheetState extends State<DynamicFormBottomSheet> {
                         return ListTile(
                           title: Text(item),
                           trailing: _formValues[field.id] == item
-                              ? Icon(Icons.check_circle, color: customColor.redColor)
+                              ? Icon(
+                                  Icons.check_circle,
+                                  color: customColor.redColor,
+                                )
                               : null,
                           onTap: () {
                             setState(() => _formValues[field.id] = item);

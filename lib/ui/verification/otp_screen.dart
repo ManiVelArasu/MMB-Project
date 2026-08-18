@@ -176,7 +176,6 @@ class OtpScreen extends StatelessWidget {
                             ),
                             height16,
 
-                            // 🚀 6 Display Boxes (Manual typing & Auto-fill display)
                             Stack(
                               children: [
                                 Row(
@@ -205,14 +204,11 @@ class OtpScreen extends StatelessWidget {
                                   }),
                                 ),
 
-                                // 🚀 Invisible TextField for Keyboard Autofill & Manual Inputs
-                                // 🚀 Invisible TextField for Keyboard Autofill & Manual Inputs
                                 Positioned.fill(
                                   child: Opacity(
                                     opacity: 0.0,
                                     child: TextFormField(
-                                      autofocus:
-                                          true, // 🚀 ஸ்கிரீனுக்கு வந்தவுடன் கீபோர்டு தானாக ஓபன் ஆகும்
+                                      autofocus: true,
                                       keyboardType: TextInputType.number,
                                       autofillHints: const [
                                         AutofillHints.oneTimeCode,
@@ -278,6 +274,9 @@ class OtpScreen extends StatelessWidget {
                         children: [
                           ButtonWidget(
                             isLoading: authProvider.isVerifyLoading,
+                            decoration: BoxDecoration(
+                              color: customColor.redColor,
+                            ),
                             buttonPress: () async {
                               final responseData = await authProvider
                                   .verifyOtpApi(context);
@@ -389,8 +388,7 @@ class OtpScreen extends StatelessWidget {
     CustomColors customColor,
     TextTheme theme,
   ) {
-    authProvider.newMobileInput =
-        authProvider.mobileNumber; // பழைய நம்பரைக் காட்டுவதற்காக
+    authProvider.newMobileInput = authProvider.mobileNumber;
 
     showDialog(
       context: context,

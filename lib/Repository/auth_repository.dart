@@ -48,4 +48,15 @@ class AuthRepository {
     );
     return result;
   }
+
+  Future<ApiResult<Map<String, dynamic>>> logout() async {
+    final result = await ApiRepository.instance.request<Map<String, dynamic>>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.logout,
+        method: ApiMethod.post,
+      ),
+      fromJson: (json) => json['data'] as Map<String, dynamic>,
+    );
+    return result;
+  }
 }

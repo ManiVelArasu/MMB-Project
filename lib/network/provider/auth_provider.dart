@@ -1,10 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:project_mmb/core/app_provider/my_notifier.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Repository/auth_repository.dart';
 import '../../core/api/api_handler.dart';
+import 'business_provider.dart';
 
 class AuthProvider extends ChangeNotifier with MyNotifier {
   String _mobileNumber = "";
@@ -39,6 +41,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   bool _isResendLoading = false;
   bool get isResendLoading => _isResendLoading;
+
 
   String newMobileInput = "";
 
@@ -340,6 +343,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       notifyListeners();
     }
   }
+
+
 
   @override
   void dispose() {
