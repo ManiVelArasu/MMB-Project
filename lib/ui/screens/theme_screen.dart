@@ -12,7 +12,6 @@ import 'package:flutter/material.dart';
 
 import 'package:project_mmb/network/provider/custom_theme_provider.dart';
 
-
 class ThemesScreen extends StatefulWidget {
   const ThemesScreen({super.key});
 
@@ -51,7 +50,9 @@ class _ThemesScreenState extends State<ThemesScreen> {
             body: Center(
               child: Text(
                 provider.plansErrorMessage!,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ),
           );
@@ -98,8 +99,14 @@ class _ThemesScreenState extends State<ThemesScreen> {
                         borderRadius: BorderRadius.circular(20.r),
                         gradient: LinearGradient(
                           colors: isDark
-                              ? [const Color(0xFF1E1E2C), const Color(0xFF2D2B42)]
-                              : [const Color(0xFFE8EAF6), const Color(0xFFD1C4E9)],
+                              ? [
+                                  const Color(0xFF1E1E2C),
+                                  const Color(0xFF2D2B42),
+                                ]
+                              : [
+                                  const Color(0xFFE8EAF6),
+                                  const Color(0xFFD1C4E9),
+                                ],
                         ),
                       ),
                       child: Stack(
@@ -112,7 +119,9 @@ class _ThemesScreenState extends State<ThemesScreen> {
                                 style: TextStyle(
                                   fontSize: 20.sp,
                                   fontWeight: FontWeight.w900,
-                                  color: isDark ? const Color(0xFF9FA8DA) : const Color(0xFF303F9F),
+                                  color: isDark
+                                      ? const Color(0xFF9FA8DA)
+                                      : const Color(0xFF303F9F),
                                 ),
                               ),
 
@@ -122,7 +131,9 @@ class _ThemesScreenState extends State<ThemesScreen> {
                                 "Select, Customize, and Publish.\nAll in One Place!",
                                 style: TextStyle(
                                   fontSize: 11.sp,
-                                  color: isDark ? Colors.white70 : Colors.black87,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black87,
                                 ),
                               ),
 
@@ -165,11 +176,16 @@ class ThemeGroupSection extends StatelessWidget {
   final ThemeItem group;
   final bool isDark;
 
-  const ThemeGroupSection({super.key, required this.group, required this.isDark});
+  const ThemeGroupSection({
+    super.key,
+    required this.group,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
     String? iconUrl = group.iconS3Key;
+    print("sdsadsdsadds${ApiEndpoints.cdnImageUrl}/${iconUrl ?? ''}");
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,7 +219,7 @@ class ThemeGroupSection extends StatelessWidget {
 
             Expanded(
               child: Text(
-                group.name ?? "",
+                group.slug ?? "",
                 style: TextStyle(
                   color: isDark ? Colors.white : Colors.black,
                   fontSize: 18.sp,
@@ -260,6 +276,7 @@ class ThemeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String? thumbnailKey = theme.thumbnailS3Key;
     return Container(
       width: 150.w,
       margin: EdgeInsets.only(right: 14.w),
@@ -280,32 +297,37 @@ class ThemeCard extends StatelessWidget {
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: theme.thumbnailS3Key == null ||
-                          theme.thumbnailS3Key!.isEmpty
+                      child: thumbnailKey == null || thumbnailKey.isEmpty
                           ? Container(
-                        color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade300,
-                        child: Icon(
-                          Icons.image_outlined,
-                          size: 40.sp,
-                          color: Colors.grey,
-                        ),
-                      )
+                              color: isDark
+                                  ? const Color(0xFF2C2C2C)
+                                  : Colors.grey.shade300,
+                              child: Icon(
+                                Icons.image_outlined,
+                                size: 40.sp,
+                                color: Colors.grey,
+                              ),
+                            )
                           : Image.network(
-                        "${ApiEndpoints.cdnImageUrl}${theme.thumbnailS3Key ?? ''}",
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) {
-                          return Container(
-                            color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade300,
-                            child: Icon(
-                              Icons.image_outlined,
-                              size: 40.sp,
-                              color: Colors.grey,
+                              // 🚀 CDN URL மற்றும் thumbnailKey-ஐ இணைப்பது
+                              "${ApiEndpoints.cdnImageUrl}/$thumbnailKey",
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) {
+                                return Container(
+                                  color: isDark
+                                      ? const Color(0xFF2C2C2C)
+                                      : Colors.grey.shade300,
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 40.sp,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
                     ),
 
+                    // கிரவுன் (Crown) ஐகான்
                     Positioned(
                       top: 10.h,
                       left: 10.w,
@@ -323,6 +345,7 @@ class ThemeCard extends StatelessWidget {
 
           SizedBox(height: 8.h),
 
+          // Variant Name மற்றும் Likes
           Row(
             children: [
               Expanded(
