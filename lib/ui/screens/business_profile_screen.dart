@@ -36,7 +36,6 @@ class BusinessProfileView extends StatelessWidget {
         final businessProvider = context.watch<BusinessProvider>();
         String? savedImagePath = businessProvider.savedImagePath;
 
-
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: SafeArea(
@@ -110,7 +109,7 @@ class BusinessProfileView extends StatelessWidget {
                                         MaterialPageRoute(
                                           builder: (context) =>
                                               ImageViewerScreen(
-                                                imagePath: savedImagePath ?? "",
+                                                imagePath: savedImagePath,
                                               ),
                                         ),
                                       );
@@ -539,7 +538,6 @@ class BusinessProfileView extends StatelessWidget {
                       ],
                     ),
                   ),
-
                   SizedBox(height: 16.h),
                   Divider(
                     height: 1,

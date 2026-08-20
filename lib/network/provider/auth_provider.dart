@@ -42,7 +42,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
   bool _isResendLoading = false;
   bool get isResendLoading => _isResendLoading;
 
-
   String newMobileInput = "";
 
   void setNewMobileInput(String val) {
@@ -133,7 +132,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     _isLoginLoading = true;
     _errorMessage = null;
 
-    // IMPORTANT
     _mobileNumber = phone.trim();
 
     final prefs = await SharedPreferences.getInstance();
@@ -147,7 +145,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       _isLoginLoading = false;
       notifyListeners();
 
-      return result.when(
+      return await result.when(
         success: (data) => data.otp,
         failure: (error) {
           _errorMessage = error.toString();
@@ -163,7 +161,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  // 🚀 Resend OTP API மெத்தட்
   Future<String?> resendOtpApi() async {
     _isResendLoading = true;
     _errorMessage = null;
@@ -177,13 +174,13 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       _isResendLoading = false;
       notifyListeners();
 
-      return result.when(
+      return await result.when(
         success: (data) {
-          clearOtp(); // பழைய OTP பாக்ஸ்களை கிளியர் செய்வது
+          clearOtp();
           return data.otp;
         },
         failure: (error) {
-          _errorMessage = error.message ?? "Failed to resend OTP";
+          _errorMessage = error.message;
           notifyListeners();
           return null;
         },
@@ -226,6 +223,18 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
           final bool isNewUser =
               data['is_new_user'] ?? data['data']?['is_new_user'] ?? false;
 
+          // 🚀 ஆன்போர்டிங் டேட்டாவை பாதுகாப்பாக எடுப்பது (Null Check)
+          final onboardingData = data['onboarding'] ?? data['data']?['onboarding'];
+
+          // கன்சோலில் செக் செய்ய பிரிண்ட் செய்து கொள்ளலாம்
+          debugPrint("📦 Onboarding Raw Data: $onboardingData");
+
+          final String accountType = onboardingData?['account_type'] ?? "";
+          final bool hasBusiness = onboardingData?['has_business'] ?? false;
+          final bool completed = onboardingData?['completed'] ?? false;
+
+          debugPrint("🔍 Parsed -> AccountType: $accountType, HasBusiness: $hasBusiness, Completed: $completed");
+
           if (accessToken != null) {
             await ApiHandler.instance.setTokens(
               token: accessToken,
@@ -235,21 +244,27 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('saved_mobile_number', _mobileNumber.trim());
+          await prefs.setBool('is_new_user', isNewUser);
+          await prefs.setBool('is_logged_in', true);
+          await prefs.setBool('is_business_completed', completed);
+          await prefs.setString('account_type', accountType);
 
           notifyListeners();
 
           if (context.mounted) {
-            if (isNewUser) {
-              Navigator.pushReplacementNamed(context, "/PlanDetailsScreen");
-            } else {
+            if (completed == true || (accountType == "business" && hasBusiness == true)) {
+              debugPrint("👉 Navigating to CustomBottomNavScreen");
               Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
+            } else {
+              debugPrint("👉 Navigating to BusinessDetailsScreen");
+              Navigator.pushReplacementNamed(context, "/BusinessDetailsScreen");
             }
           }
 
           return data;
         },
         failure: (error) {
-          _errorMessage = error.message ?? "Verification failed";
+          _errorMessage = error.message;
           notifyListeners();
           return null;
         },
@@ -343,8 +358,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       notifyListeners();
     }
   }
-
-
 
   @override
   void dispose() {

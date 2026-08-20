@@ -192,7 +192,6 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                                     borderRadius: BorderRadius.circular(10),
                                     child: Builder(
                                       builder: (context) {
-                                        // 🚀 மாற்றப்பட்ட சரியான இமேஜ் செலக்ட் லாஜிக்:
                                         final imageFile =
                                             businessProvider.isImageSelected ==
                                                 true
@@ -240,8 +239,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                       _buildCustomInputField(
                         title: "Business Name",
                         hintText: "Enter business name",
-                        controller:
-                            businessProvider.nameController, // இணைக்கப்பட்டது
+                        controller: businessProvider.nameController,
                         customColor: customColor,
                         theme: theme,
                         onChanged: businessProvider.setBusinessName,
@@ -283,7 +281,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                 isLoading: businessProvider.isUploading,
                 buttonPress: () async {
                   await businessProvider.uploadAndSaveBusinessDetails(context);
-                 // await businessProvider.businessUpdateApi(context);
+                  await businessProvider.businessUpdateApi(context);
                 },
                 title: "CONTINUE",
                 textStyle: theme.titleLarge!.copyWith(
@@ -310,7 +308,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
     required TextTheme theme,
     required Function(String) onChanged,
     required String? errorMessage,
-    required TextEditingController controller, // இதைச் சேர்க்கவும்
+    required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
   }) {
     return Column(
@@ -338,7 +336,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
               ),
               const SizedBox(height: 6),
               TextFormField(
-                controller: controller, // கண்ட்ரோலரை இங்கு இணைக்கவும்
+                controller: controller,
                 keyboardType: keyboardType,
                 onChanged: onChanged,
                 decoration: InputDecoration(

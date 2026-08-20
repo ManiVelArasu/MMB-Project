@@ -254,7 +254,35 @@ class OtpScreen extends StatelessWidget {
                                       ),
                                     ),
                                     InkWell(
-                                      onTap: () {},
+                                      onTap: () async {
+                                        print('asdasdsadsads');
+                                        if (authProvider.submitLogin()) {
+                                          String? otp = await authProvider
+                                              .apiSendOtp(
+                                                authProvider.mobileNumber,
+                                                "login",
+                                              );
+
+                                          if (otp != null && context.mounted) {
+                                            final prefs =
+                                                await SharedPreferences.getInstance();
+                                            await prefs.setString(
+                                              'saved_mobile_number',
+                                              authProvider.mobileNumber,
+                                            );
+
+                                            Navigator.pushNamed(
+                                              context,
+                                              "/OtpScreen",
+                                              arguments: {
+                                                'otp': otp,
+                                                'phone':
+                                                    authProvider.mobileNumber,
+                                              },
+                                            );
+                                          } else {}
+                                        }
+                                      },
                                       child: Text(
                                         "Resend OTP",
                                         style: theme.titleMedium!.copyWith(
@@ -278,39 +306,17 @@ class OtpScreen extends StatelessWidget {
                               color: customColor.redColor,
                             ),
                             buttonPress: () async {
+                              // 🚀 1. OTP வெரிஃபிகேஷன் API-ஐ கால் செய்வது (இதுவே உள்ளே சரியான ஸ்கிரீனுக்கு நேவிகேட் செய்துவிடும்)
                               final responseData = await authProvider
                                   .verifyOtpApi(context);
 
                               if (!context.mounted) return;
 
                               if (responseData != null) {
-                                final businessProvider =
-                                    Provider.of<BusinessProvider>(
-                                      context,
-                                      listen: false,
-                                    );
-                                await businessProvider
-                                    .clearBusinessDataForNewLogin();
-                                final prefs =
-                                    await SharedPreferences.getInstance();
-                                await prefs.setString(
-                                  'saved_mobile_number',
-                                  authProvider.mobileNumber,
-                                );
-
-                                await prefs.setBool('is_logged_in', true);
-                                await prefs.setBool('has_seen_plans', false);
-
                                 String message =
                                     responseData['message'] ??
                                     "OTP Verified Successfully";
                                 Fluttertoast.showToast(msg: message);
-
-                                if (!context.mounted) return;
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  "/PlansAndPricingScreen",
-                                );
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(

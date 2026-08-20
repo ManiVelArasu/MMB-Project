@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../component/home_appbar.dart';
 import '../../component/language_bottom_sheet.dart';
 import '../../network/provider/auth_provider.dart';
-import '../../network/provider/business_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/profile_screen_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -447,8 +446,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   onPressed: () async {
                                     Navigator.pop(dialogContext);
 
-                                    // IMPORTANT:
-                                    // Dialog context இல்லாமல் parent screen context
+
                                     await provider.logoutApi(parentContext);
                                   },
                                   child: const Text(
