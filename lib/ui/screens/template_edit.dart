@@ -972,117 +972,6 @@ class _EditorViewState extends State<EditorView> {
       },
     );
   }
-
-  /*  void _showImageUploadsBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
-    provider.fetchFreePikAssets("nature");
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return ChangeNotifierProvider.value(
-          value: provider,
-          child: Container(
-            height: MediaQuery.of(context).size.height * 0.45,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    AppText(
-                      "FreePik Uploads",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () => Navigator.pop(modalContext),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF2A1A1C)
-                              : Colors.red.shade50,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.red,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Expanded(
-                  child: provider.isFreePikLoading
-                      ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.red,
-                      strokeWidth: 2,
-                    ),
-                  )
-                      : provider.freePikAssets.isEmpty
-                      ? Center(
-                    child: AppText(
-                      "No images found",
-                      style: TextStyle(
-                        color: isDark ? Colors.white70 : Colors.black54,
-                      ),
-                    ),
-                  )
-                      : GridView.builder(
-                    gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                    ),
-                    itemCount: provider.freePikAssets.length,
-                    itemBuilder: (context, index) {
-                      final imgUrl = provider.freePikAssets[index];
-                      return GestureDetector(
-                        onTap: () {
-                          provider.addImage(imgUrl, isLocal: false);
-                          Navigator.pop(modalContext);
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            image: DecorationImage(
-                              image: NetworkImage(imgUrl),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }*/
-
   void _showImageTransparencyBottomSheet(
     BuildContext context,
     EditorProvider provider,
@@ -1280,73 +1169,77 @@ class _EditorViewState extends State<EditorView> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  AppText(
-                    "Upload Brand Assets",
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    AppText(
+                      "Upload Brand Assets",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => Navigator.pop(modalContext),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF2A1A1C)
+                              : Colors.red.shade50,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.red,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(modalContext);
+                    final picker = ImagePicker();
+                    final image = await picker.pickImage(
+                      source: ImageSource.gallery,
+                    );
+                    if (image != null) {
+                      provider.addImage(image.path, isLocal: true);
+                    }
+                  },
+                  child: const AppText(
+                    "UPLOAD LOGO / IMAGE",
                     style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : Colors.black,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  InkWell(
-                    onTap: () => Navigator.pop(modalContext),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF2A1A1C)
-                            : Colors.red.shade50,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.red,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
-                onPressed: () async {
-                  Navigator.pop(modalContext);
-                  final picker = ImagePicker();
-                  final image = await picker.pickImage(
-                    source: ImageSource.gallery,
-                  );
-                  if (image != null) {
-                    provider.addImage(image.path, isLocal: true);
-                  }
-                },
-                child: const AppText(
-                  "UPLOAD LOGO / IMAGE",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -1363,62 +1256,94 @@ class _EditorViewState extends State<EditorView> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  AppText(
-                    "Add Text",
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    AppText(
+                      "Add Text",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => Navigator.pop(modalContext),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF2A1A1C)
+                              : Colors.red.shade50,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.red,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  title: AppText(
+                    "My Heading",
                     style: TextStyle(
                       fontSize: 20,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w900,
                       color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
-                  InkWell(
-                    onTap: () => Navigator.pop(modalContext),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF2A1A1C)
-                            : Colors.red.shade50,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.red,
-                        size: 18,
-                      ),
+                  onTap: () {
+                    provider.addText(initialText: "My Heading");
+                    Navigator.pop(modalContext);
+                  },
+                ),
+                ListTile(
+                  title: AppText(
+                    "My Sub Title",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: AppText(
-                  "My Heading",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
+                  onTap: () {
+                    provider.addText(initialText: "My Sub Title");
+                    Navigator.pop(modalContext);
+                  },
                 ),
-                onTap: () {
-                  provider.addText(initialText: "My Heading");
-                  Navigator.pop(modalContext);
-                },
-              ),
-            ],
+                ListTile(
+                  title: AppText(
+                    "My Text",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  onTap: () {
+                    provider.addText(initialText: "My Text");
+                    Navigator.pop(modalContext);
+                  },
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -1430,483 +1355,443 @@ class _EditorViewState extends State<EditorView> {
     EditorProvider provider,
     bool isDark,
   ) {
-    int selectedTab = 2;
-    String searchQuery = "shapes";
+    int selectedTab = 1; // 0 uploads, 1 elements, 2 stickers
+    String? expandedCategory;
+    bool sheetOpen = true;
+    final searchController = TextEditingController();
 
-    provider.fetchFreePikAssets("furniture");
-    provider.fetchFreePikStickers("shapes");
+    const categories = <Map<String, String>>[
+      {'title': 'Shapes', 'query': 'shapes'},
+      {'title': 'Stickers', 'query': 'stickers'},
+      {'title': 'Social Media', 'query': 'social media icons'},
+      {'title': 'E-commerce', 'query': 'ecommerce shopping'},
+    ];
+
+    void loadCategory(String query, void Function(void Function()) setState) {
+      if (provider.elementCategoryAssets(query).isNotEmpty ||
+          provider.isElementCategoryLoading(query)) {
+        return;
+      }
+
+      provider.fetchElementCategory(query).then((_) {
+        if (!sheetOpen) return;
+        setState(() {});
+      });
+      setState(() {});
+    }
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(modalContext).viewInsets.bottom,
-            ),
-            child: ChangeNotifierProvider.value(
-              value: provider,
-              child: StatefulBuilder(
-                builder: (context, setModalState) {
-                  final edProvider = context.watch<EditorProvider>();
-                  return Container(
-                    height: MediaQuery.of(context).size.height * 0.60,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(28),
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            if (selectedTab == 1 && expandedCategory == null) {
+              for (final category in categories) {
+                loadCategory(category['query']!, setSheetState);
+              }
+            }
+
+            Widget elementCard(String url) {
+              return GestureDetector(
+                onTap: () {
+                  provider.addImage(url, isLocal: false);
+                  Navigator.pop(modalContext);
+                },
+                child: Container(
+                  height: 58,
+                  width: 58,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF24262B)
+                        : const Color(0xFFF8F8F8),
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(
+                      color: isDark ? Colors.white12 : const Color(0xFFE8E8E8),
+                    ),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.image_outlined, color: Colors.grey),
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            }
+
+            Widget categoryTitle(String title, String query) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF151515),
+                        ),
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    GestureDetector(
+                      onTap: () {
+                        loadCategory(query, setSheetState);
+                        setSheetState(() => expandedCategory = query);
+                      },
+                      child: const Text(
+                        'View all',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            Widget categorySection(Map<String, String> category) {
+              final title = category['title']!;
+              final query = category['query']!;
+              final items = provider.elementCategoryAssets(query);
+              final preview = items.take(4).toList();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  categoryTitle(title, query),
+                  SizedBox(
+                    height: 58,
+                    child: provider.isElementCategoryLoading(query)
+                        ? const Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.8,
+                              ),
+                            ),
+                          )
+                        : preview.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No items found',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 11,
+                              ),
+                            ),
+                          )
+                        : Row(
+                            children: preview
+                                .map(
+                                  (url) => Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: elementCard(url),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                  ),
+                  const SizedBox(height: 18),
+                ],
+              );
+            }
+
+            Widget elementsView() {
+              if (expandedCategory != null) {
+                final query = expandedCategory!;
+                final title = categories.firstWhere(
+                  (e) => e['query'] == query,
+                )['title']!;
+                final items = provider.elementCategoryAssets(query);
+                return Column(
+                  children: [
+                    Row(
                       children: [
-                        Center(
-                          child: Container(
-                            height: 4,
-                            width: 45,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? Colors.grey.shade700
-                                  : Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(10),
+                        IconButton(
+                          onPressed: () =>
+                              setSheetState(() => expandedCategory = null),
+                          icon: const Icon(Icons.arrow_back_rounded),
+                        ),
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 14),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            AppText(
-                              "Media",
+                      ],
+                    ),
+                    Expanded(
+                      child: provider.isElementCategoryLoading(query)
+                          ? const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : GridView.builder(
+                              padding: const EdgeInsets.fromLTRB(4, 4, 4, 20),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 4,
+                                    crossAxisSpacing: 10,
+                                    mainAxisSpacing: 10,
+                                  ),
+                              itemCount: items.length,
+                              itemBuilder: (_, index) =>
+                                  elementCard(items[index]),
+                            ),
+                    ),
+                  ],
+                );
+              }
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(4, 12, 4, 20),
+                children: categories.map(categorySection).toList(),
+              );
+            }
+
+            Widget uploadsView() {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () async {
+                      Navigator.pop(modalContext);
+                      final image = await ImagePicker().pickImage(
+                        source: ImageSource.camera,
+                      );
+                      if (image != null)
+                        provider.addImage(image.path, isLocal: true);
+                    },
+                    child: _mediaPickerTile(isDark, Icons.camera_alt, 'CAMERA'),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: () async {
+                      Navigator.pop(modalContext);
+                      final image = await ImagePicker().pickImage(
+                        source: ImageSource.gallery,
+                      );
+                      if (image != null)
+                        provider.addImage(image.path, isLocal: true);
+                    },
+                    child: _mediaPickerTile(
+                      isDark,
+                      Icons.photo_library,
+                      'GALLERY',
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            Widget stickersView() {
+              final stickers = provider.freePikStickers;
+              if (!provider.isStickersLoading && stickers.isEmpty) {
+                Future.microtask(
+                  () => provider.fetchFreePikStickers('stickers'),
+                );
+              }
+              if (provider.isStickersLoading) {
+                return const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                );
+              }
+              return Column(
+                children: [
+                  Container(
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF24262B) : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white24
+                            : const Color(0xFFD9D9D9),
+                      ),
+                    ),
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: (value) => provider.fetchFreePikStickers(
+                        value.isEmpty ? 'stickers' : value,
+                      ),
+                      decoration: const InputDecoration(
+                        hintText: 'Search stickers...',
+                        prefixIcon: Icon(Icons.search_rounded, size: 20),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: GridView.builder(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                          ),
+                      itemCount: stickers.length,
+                      itemBuilder: (_, index) => elementCard(stickers[index]),
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return Container(
+              height: MediaQuery.of(sheetContext).size.height * .72,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF17191E) : Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white38 : Colors.black26,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 12, 4),
+                      child: Row(
+                        children: [
+                          if (expandedCategory != null)
+                            IconButton(
+                              onPressed: () =>
+                                  setSheetState(() => expandedCategory = null),
+                              icon: const Icon(Icons.arrow_back_rounded),
+                            ),
+                          Expanded(
+                            child: Text(
+                              'Media',
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: 22,
                                 fontWeight: FontWeight.w800,
                                 color: isDark ? Colors.white : Colors.black,
                               ),
                             ),
-                            InkWell(
-                              onTap: () => Navigator.pop(modalContext),
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? const Color(0xFF2A1A1C)
-                                      : Colors.red.shade50,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.close,
-                                  color: Colors.red,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () => setModalState(() => selectedTab = 0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AppText(
-                                    "Uploads",
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: selectedTab == 0
-                                          ? (isDark
-                                                ? Colors.white
-                                                : Colors.black)
-                                          : Colors.grey,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (selectedTab == 0)
-                                    Container(
-                                      height: 2,
-                                      width: 55,
-                                      color: Colors.red,
-                                    ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                            GestureDetector(
-                              onTap: () {
-                                setModalState(() => selectedTab = 1);
-                                edProvider.fetchFreePikAssets(
-                                  "design elements",
-                                );
-                              },
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AppText(
-                                    "Elements",
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: selectedTab == 1
-                                          ? (isDark
-                                                ? Colors.white
-                                                : Colors.black)
-                                          : Colors.grey,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (selectedTab == 1)
-                                    Container(
-                                      height: 2,
-                                      width: 60,
-                                      color: Colors.red,
-                                    ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                            GestureDetector(
-                              onTap: () {
-                                setModalState(() => selectedTab = 2);
-                                edProvider.fetchFreePikStickers("shapes");
-                              },
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AppText(
-                                    "Stickers",
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: selectedTab == 2
-                                          ? (isDark
-                                                ? Colors.white
-                                                : Colors.black)
-                                          : Colors.grey,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (selectedTab == 2)
-                                    Container(
-                                      height: 2,
-                                      width: 50,
-                                      color: Colors.red,
-                                    ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                          ],
-                        ),
-                        Divider(
-                          height: 20,
-                          thickness: 1,
-                          color: isDark
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade300,
-                        ),
-
-                        if (selectedTab == 0) ...[
-                          Expanded(
-                            child: Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: () async {
-                                    Navigator.pop(modalContext);
-                                    final picker = ImagePicker();
-                                    final image = await picker.pickImage(
-                                      source: ImageSource.camera,
-                                    );
-                                    if (image != null) {
-                                      edProvider.addImage(
-                                        image.path,
-                                        isLocal: true,
-                                      );
-                                    }
-                                  },
-                                  child: Container(
-                                    width: 95,
-                                    height: 95,
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? const Color(0xFF2A1A1C)
-                                          : const Color(0xFFFFECEE),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: const Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.camera_alt,
-                                          color: Colors.red,
-                                          size: 28,
-                                        ),
-                                        SizedBox(height: 6),
-                                        AppText(
-                                          "CAMERA",
-                                          style: TextStyle(
-                                            color: Colors.red,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                GestureDetector(
-                                  onTap: () async {
-                                    Navigator.pop(modalContext);
-                                    final picker = ImagePicker();
-                                    final image = await picker.pickImage(
-                                      source: ImageSource.gallery,
-                                    );
-                                    if (image != null) {
-                                      edProvider.addImage(
-                                        image.path,
-                                        isLocal: true,
-                                      );
-                                    }
-                                  },
-                                  child: Container(
-                                    width: 95,
-                                    height: 95,
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? const Color(0xFF2A1A1C)
-                                          : const Color(0xFFFFECEE),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: const Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.photo_library,
-                                          color: Colors.red,
-                                          size: 28,
-                                        ),
-                                        SizedBox(height: 6),
-                                        AppText(
-                                          "GALLERY",
-                                          style: TextStyle(
-                                            color: Colors.red,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
                           ),
-                        ] else ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF2C2C2C)
-                                  : Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(30),
-                              border: Border.all(
-                                color: isDark
-                                    ? Colors.grey.shade800
-                                    : Colors.grey.shade300,
-                              ),
+                          IconButton(
+                            onPressed: () {
+                              sheetOpen = false;
+                              Navigator.pop(modalContext);
+                            },
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.red,
+                              size: 28,
                             ),
-                            child: TextField(
-                              style: TextStyle(
-                                color: isDark ? Colors.white : Colors.black,
-                              ),
-                              onChanged: (val) {
-                                setModalState(() => searchQuery = val);
-                                if (selectedTab == 1) {
-                                  edProvider.fetchFreePikAssets(val);
-                                } else {
-                                  edProvider.fetchFreePikStickers(val);
-                                }
-                              },
-                              decoration: InputDecoration(
-                                icon: Icon(
-                                  Icons.search,
-                                  color: Colors.grey.shade500,
-                                ),
-                                hintText: "Find your Industry",
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 14,
-                                ),
-                                suffixIcon: const Icon(
-                                  Icons.mic,
-                                  color: Colors.grey,
-                                ),
-                                border: InputBorder.none,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            height: 38,
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              children:
-                                  [
-                                    "Super",
-                                    "Greetings",
-                                    "Thank You",
-                                    "Birthday",
-                                    "Offers",
-                                    "Shapes",
-                                  ].map((category) {
-                                    bool isChipSelected =
-                                        searchQuery.toLowerCase() ==
-                                        category.toLowerCase();
-                                    return GestureDetector(
-                                      onTap: () {
-                                        setModalState(
-                                          () => searchQuery = category,
-                                        );
-                                        if (selectedTab == 1) {
-                                          edProvider.fetchFreePikAssets(
-                                            category,
-                                          );
-                                        } else {
-                                          edProvider.fetchFreePikStickers(
-                                            category,
-                                          );
-                                        }
-                                      },
-                                      child: Container(
-                                        margin: const EdgeInsets.only(
-                                          right: 10,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 18,
-                                          vertical: 8,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isChipSelected
-                                              ? Colors.grey.shade800
-                                              : (isDark
-                                                    ? const Color(0xFF2C2C2C)
-                                                    : Colors.white),
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                          border: Border.all(
-                                            color: isDark
-                                                ? Colors.grey.shade800
-                                                : Colors.grey.shade300,
-                                            width: 1.2,
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: AppText(
-                                            category,
-                                            style: TextStyle(
-                                              color: isChipSelected
-                                                  ? Colors.white
-                                                  : (isDark
-                                                        ? Colors.white70
-                                                        : Colors.black87),
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Expanded(
-                            child:
-                                (selectedTab == 1
-                                    ? edProvider.isFreePikLoading
-                                    : edProvider.isStickersLoading)
-                                ? const Center(
-                                    child: CircularProgressIndicator(
-                                      color: Colors.red,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : (selectedTab == 1
-                                          ? edProvider.freePikAssets
-                                          : edProvider.freePikStickers)
-                                      .isEmpty
-                                ? Center(
-                                    child: AppText(
-                                      "No items found",
-                                      style: TextStyle(
-                                        color: isDark
-                                            ? Colors.white70
-                                            : Colors.black54,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  )
-                                : GridView.builder(
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 4,
-                                          crossAxisSpacing: 10,
-                                          mainAxisSpacing: 10,
-                                        ),
-                                    itemCount: selectedTab == 1
-                                        ? edProvider.freePikAssets.length
-                                        : edProvider.freePikStickers.length,
-                                    itemBuilder: (context, index) {
-                                      final itemUrl = selectedTab == 1
-                                          ? edProvider.freePikAssets[index]
-                                          : edProvider.freePikStickers[index];
-                                      return GestureDetector(
-                                        onTap: () {
-                                          edProvider.addImage(
-                                            itemUrl,
-                                            isLocal: false,
-                                          );
-                                          Navigator.pop(modalContext);
-                                        },
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                            border: Border.all(
-                                              color: isDark
-                                                  ? Colors.grey.shade800
-                                                  : Colors.grey.shade200,
-                                            ),
-                                            image: DecorationImage(
-                                              image: NetworkImage(itemUrl),
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
                           ),
                         ],
-                      ],
+                      ),
                     ),
-                  );
-                },
+                    if (expandedCategory == null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            _backgroundTab(
+                              title: 'UPLOADS',
+                              selected: selectedTab == 0,
+                              onTap: () => setSheetState(() => selectedTab = 0),
+                            ),
+                            const SizedBox(width: 24),
+                            _backgroundTab(
+                              title: 'ELEMENTS',
+                              selected: selectedTab == 1,
+                              onTap: () => setSheetState(() => selectedTab = 1),
+                            ),
+                            const SizedBox(width: 24),
+                            _backgroundTab(
+                              title: 'STICKERS',
+                              selected: selectedTab == 2,
+                              onTap: () => setSheetState(() => selectedTab = 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                    Divider(
+                      height: 18,
+                      color: isDark ? Colors.white10 : Colors.black12,
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: selectedTab == 0
+                            ? uploadsView()
+                            : selectedTab == 1
+                            ? elementsView()
+                            : stickersView(),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
+    ).whenComplete(() {
+      sheetOpen = false;
+      searchController.dispose();
+    });
+  }
+
+  Widget _mediaPickerTile(bool isDark, IconData icon, String title) {
+    return Container(
+      width: 95,
+      height: 95,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: Colors.red, size: 28),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.red,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1915,460 +1800,497 @@ class _EditorViewState extends State<EditorView> {
     EditorProvider provider,
     bool isDark,
   ) {
-    int selectedBgTab = 0;
-    String bgSearchQuery = "backgrounds"; // 🚀 பேக்ரவுண்ட் சர்ச் க்கான குவெரி
+    int selectedTab = 0; // 0 images, 1 videos, 2 colors
+    String searchQuery = 'abstract background';
+    bool sheetOpen = true;
+    bool backgroundRequestStarted = false;
+    final searchController = TextEditingController(text: searchQuery);
 
-    // ஆரம்பத்தில் பேக்ரவுண்ட் இமேஜ்களை ஃபெட்ச் செய்வது
-    provider.fetchFreePikAssets("backgrounds");
+    const chips = <String>[
+      'Abstract background',
+      'Gradient',
+      'Soft background',
+      'Minimal',
+      'Nature',
+      'Texture',
+    ];
+
+    void fetchImages(String query, void Function(void Function()) setState) {
+      final value = query.trim().isEmpty ? 'abstract background' : query.trim();
+      searchQuery = value;
+      setState(() {});
+
+      provider.fetchBackgroundAssets(value).then((_) {
+        if (!sheetOpen) return;
+        setState(() {});
+      });
+    }
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(modalContext).viewInsets.bottom,
-          ),
-          child: ChangeNotifierProvider.value(
-            value: provider,
-            child: StatefulBuilder(
-              builder: (context, setModalState) {
-                final edProvider = context.watch<EditorProvider>();
-                return Container(
-                  height:
-                      MediaQuery.of(context).size.height *
-                      0.65, // உய்ப்பை சற்று கூட்டியுள்ளோம் (Search bar-க்காக)
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(28),
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            if (selectedTab == 0 && !backgroundRequestStarted) {
+              backgroundRequestStarted = true;
+              Future.microtask(() async {
+                await provider.fetchBackgroundAssets(searchQuery);
+                if (sheetOpen) {
+                  setSheetState(() {});
+                }
+              });
+            }
+
+            Widget searchBox() {
+              return Container(
+                height: 42,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF24262B) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? Colors.white24 : const Color(0xFFD9D9D9),
+                  ),
+                ),
+                child: TextField(
+                  controller: searchController,
+                  onSubmitted: (value) => fetchImages(value, setSheetState),
+                  onChanged: (value) {
+                    searchQuery = value;
+                    setSheetState(() {});
+                  },
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.white : const Color(0xFF222222),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Search backgrounds...',
+                    hintStyle: TextStyle(
+                      color: isDark ? Colors.white54 : const Color(0xFF8A8A8A),
+                      fontSize: 13,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        Icons.search_rounded,
+                        size: 21,
+                        color: isDark
+                            ? Colors.white70
+                            : const Color(0xFF444444),
+                      ),
+                      onPressed: () =>
+                          fetchImages(searchController.text, setSheetState),
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ),
+              );
+            }
+
+            Widget chip(String title) {
+              final selected = searchQuery.toLowerCase() == title.toLowerCase();
+              return GestureDetector(
+                onTap: () {
+                  searchController.text = title;
+                  fetchImages(title, setSheetState);
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? (isDark
+                              ? const Color(0xFF4A2024)
+                              : const Color(0xFFFFE7E7))
+                        : (isDark ? const Color(0xFF24262B) : Colors.white),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: selected
+                          ? Colors.red.shade300
+                          : (isDark ? Colors.white24 : const Color(0xFFE2E2E2)),
+                    ),
+                  ),
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: selected
+                          ? Colors.red
+                          : (isDark ? Colors.white70 : const Color(0xFF444444)),
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            Widget imageCard(String url, double height) {
+              return GestureDetector(
+                onTap: () async {
+                  final replaced = await _confirmReplaceBackground(
+                    context,
+                    provider,
+                    url,
+                  );
+                  if (replaced && Navigator.canPop(modalContext)) {
+                    Navigator.pop(modalContext);
+                  }
+                },
+                child: Container(
+                  height: height,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF24262B)
+                        : const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    errorBuilder: (_, __, ___) => const Center(
+                      child: Icon(Icons.image_outlined, color: Colors.grey),
+                    ),
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            }
+
+            Widget imageResults() {
+              if (provider.isBackgroundLoading) {
+                return const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                );
+              }
+
+              final items = provider.backgroundAssets.take(24).toList();
+              if (items.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No backgrounds found',
+                    style: TextStyle(
+                      color: isDark ? Colors.white54 : Colors.grey,
+                      fontSize: 13,
+                    ),
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(4, 10, 4, 20),
+                itemCount: (items.length / 2).ceil(),
+                itemBuilder: (_, rowIndex) {
+                  final leftIndex = rowIndex * 2;
+                  final rightIndex = leftIndex + 1;
+                  final rowHeight = rowIndex % 3 == 0
+                      ? 170.0
+                      : rowIndex % 3 == 1
+                      ? 118.0
+                      : 145.0;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: imageCard(items[leftIndex], rowHeight)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: rightIndex < items.length
+                              ? imageCard(
+                                  items[rightIndex],
+                                  rowHeight * (rowIndex.isEven ? .78 : 1.18),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            }
+
+            Widget colorsView() {
+              const colors = [
+                Colors.white,
+                Colors.black,
+                Color(0xFFF44336),
+                Color(0xFFE91E63),
+                Color(0xFF9C27B0),
+                Color(0xFF673AB7),
+                Color(0xFF3F51B5),
+                Color(0xFF2196F3),
+                Color(0xFF03A9F4),
+                Color(0xFF00BCD4),
+                Color(0xFF009688),
+                Color(0xFF4CAF50),
+                Color(0xFF8BC34A),
+                Color(0xFFFFEB3B),
+                Color(0xFFFFC107),
+                Color(0xFFFF9800),
+                Color(0xFFFF5722),
+                Color(0xFF795548),
+              ];
+              return GridView.builder(
+                padding: const EdgeInsets.all(8),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 6,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: colors.length,
+                itemBuilder: (_, index) => InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () {
+                    provider.setBackgroundColor(colors[index]);
+                    Navigator.pop(modalContext);
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colors[index],
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            Widget videosView() {
+              if (!provider.isVideosLoading && provider.freePikVideos.isEmpty) {
+                Future.microtask(
+                  () => provider.fetchFreePikVideos('background'),
+                );
+              }
+              if (provider.isVideosLoading) {
+                return const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                );
+              }
+              if (provider.freePikVideos.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No videos found',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                );
+              }
+              return GridView.builder(
+                padding: const EdgeInsets.all(8),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: .78,
+                ),
+                itemCount: provider.freePikVideos.length,
+                itemBuilder: (_, index) {
+                  final videoUrl = provider.freePikVideos[index];
+                  return GestureDetector(
+                    onTap: () async {
+                      final replace = await showDialog<bool>(
+                        context: context,
+                        builder: (dialogContext) => AlertDialog(
+                          title: const Text('Replace Background?'),
+                          content: const Text(
+                            'The current background will be replaced with this video.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.pop(dialogContext, false),
+                              child: const Text('CANCEL'),
+                            ),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.red,
+                              ),
+                              onPressed: () =>
+                                  Navigator.pop(dialogContext, true),
+                              child: const Text('REPLACE'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (replace == true) {
+                        provider.setBackgroundVideo(videoUrl);
+                        provider.clearSelection();
+                        if (Navigator.canPop(modalContext))
+                          Navigator.pop(modalContext);
+                      }
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF24262B)
+                            : const Color(0xFFF4F4F4),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.play_circle_fill_rounded, size: 44),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }
+
+            return Container(
+              height: MediaQuery.of(sheetContext).size.height * .86,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF17191E) : Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white38 : Colors.black26,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 12, 4),
+                      child: Row(
                         children: [
-                          AppText(
-                            "Background",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: isDark ? Colors.white : Colors.black,
+                          const Expanded(
+                            child: Text(
+                              'Background',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
-                          InkWell(
-                            onTap: () => Navigator.pop(modalContext),
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF2A1A1C)
-                                    : Colors.red.shade50,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                color: Colors.red,
-                                size: 18,
-                              ),
+                          IconButton(
+                            onPressed: () {
+                              sheetOpen = false;
+                              Navigator.pop(modalContext);
+                            },
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.red,
+                              size: 30,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
-
-                      // 🚀 1. Search Bar for Backgrounds (நீங்கள் அனுப்பிய ஸ்கிரீன்ஷாட் போல)
-                      if (selectedBgTab == 0) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF2C2C2C)
-                                : Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(
-                              color: isDark
-                                  ? Colors.grey.shade800
-                                  : Colors.grey.shade300,
-                            ),
-                          ),
-                          child: TextField(
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black,
-                            ),
-                            onChanged: (val) {
-                              setModalState(() => bgSearchQuery = val);
-                              edProvider.fetchFreePikAssets(
-                                val.isEmpty ? "backgrounds" : val,
-                              );
-                            },
-                            decoration: InputDecoration(
-                              icon: Icon(
-                                Icons.search,
-                                color: Colors.grey.shade500,
-                              ),
-                              hintText: "Search backgrounds...",
-                              hintStyle: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 14,
-                              ),
-                              border: InputBorder.none,
-                            ),
-                          ),
+                    ),
+                    if (selectedTab == 0) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(6, 4, 6, 8),
+                        child: searchBox(),
+                      ),
+                      SizedBox(
+                        height: 38,
+                        child: ListView(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          scrollDirection: Axis.horizontal,
+                          children: chips.map(chip).toList(),
                         ),
-                        const SizedBox(height: 12),
-
-                        // 🚀 2. Quick Category Chips (Abstract, Gradient, etc.)
-                        SizedBox(
-                          height: 38,
-                          child: ListView(
-                            scrollDirection: Axis.horizontal,
-                            children:
-                                [
-                                  "Abstract background",
-                                  "Gradient",
-                                  "Soft",
-                                  "Geometric",
-                                  "Nature",
-                                  "Minimal",
-                                ].map((category) {
-                                  bool isChipSelected =
-                                      bgSearchQuery.toLowerCase() ==
-                                      category.toLowerCase();
-                                  return GestureDetector(
-                                    onTap: () {
-                                      setModalState(
-                                        () => bgSearchQuery = category,
-                                      );
-                                      edProvider.fetchFreePikAssets(category);
-                                    },
-                                    child: Container(
-                                      margin: const EdgeInsets.only(right: 10),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isChipSelected
-                                            ? Colors.red.shade50
-                                            : (isDark
-                                                  ? const Color(0xFF2C2C2C)
-                                                  : Colors.white),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: isChipSelected
-                                              ? Colors.red
-                                              : (isDark
-                                                    ? Colors.grey.shade800
-                                                    : Colors.grey.shade300),
-                                          width: 1.2,
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: AppText(
-                                          category,
-                                          style: TextStyle(
-                                            color: isChipSelected
-                                                ? Colors.red
-                                                : (isDark
-                                                      ? Colors.white70
-                                                      : Colors.black87),
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Tabs Row (Images, Videos, Colors)
-                        Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                setModalState(() => selectedBgTab = 0);
-                                edProvider.fetchFreePikAssets("backgrounds");
-                              },
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AppText(
-                                    "IMAGES",
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: selectedBgTab == 0
-                                          ? (isDark
-                                                ? Colors.white
-                                                : Colors.black)
-                                          : Colors.grey,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (selectedBgTab == 0)
-                                    Container(
-                                      height: 2,
-                                      width: 55,
-                                      color: Colors.red,
-                                    ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                            GestureDetector(
-                              onTap: () {
-                                setModalState(() => selectedBgTab = 1);
-                                edProvider.fetchFreePikVideos("background");
-                              },
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AppText(
-                                    "VIDEOS",
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: selectedBgTab == 1
-                                          ? (isDark
-                                                ? Colors.white
-                                                : Colors.black)
-                                          : Colors.grey,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (selectedBgTab == 1)
-                                    Container(
-                                      height: 2,
-                                      width: 50,
-                                      color: Colors.red,
-                                    ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                            GestureDetector(
-                              onTap: () =>
-                                  setModalState(() => selectedBgTab = 2),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AppText(
-                                    "COLORS",
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: selectedBgTab == 2
-                                          ? (isDark
-                                                ? Colors.white
-                                                : Colors.black)
-                                          : Colors.grey,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (selectedBgTab == 2)
-                                    Container(
-                                      height: 2,
-                                      width: 55,
-                                      color: Colors.red,
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        Divider(
-                          height: 20,
-                          thickness: 1,
-                          color: isDark
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade300,
-                        ),
-
-                        // Content Area (Images Grid / Videos Grid / Colors Grid)
-                        // Content Area (Images Grid / Videos Grid / Colors Grid)
-                        Expanded(
-                          child: selectedBgTab == 2
-                              ? GridView.builder(
-                            padding: const EdgeInsets.only(top: 4),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 6,
-                              crossAxisSpacing: 14,
-                              mainAxisSpacing: 14,
-                            ),
-                            itemCount: 18,
-                            itemBuilder: (context, index) {
-                              const colors = [
-                                Colors.white,
-                                Colors.black,
-                                Color(0xFFF44336),
-                                Color(0xFFE91E63),
-                                Color(0xFF9C27B0),
-                                Color(0xFF673AB7),
-                                Color(0xFF3F51B5),
-                                Color(0xFF2196F3),
-                                Color(0xFF03A9F4),
-                                Color(0xFF00BCD4),
-                                Color(0xFF009688),
-                                Color(0xFF4CAF50),
-                                Color(0xFF8BC34A),
-                                Color(0xFFFFEB3B),
-                                Color(0xFFFFC107),
-                                Color(0xFFFF9800),
-                                Color(0xFFFF5722),
-                                Color(0xFF795548),
-                              ];
-                              final color = colors[index];
-                              return InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: () {
-                                  edProvider.setBackgroundColor(color);
-                                  Navigator.pop(modalContext);
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: color,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey.shade300),
-                                  ),
-                                ),
-                              );
-                            },
-                          )
-                              : selectedBgTab == 0
-                              ? (edProvider.isFreePikLoading
-                              ? const Center(
-                            child: CircularProgressIndicator(color: Colors.red),
-                          )
-                              : edProvider.freePikAssets.isEmpty
-                              ? Center(
-                            child: AppText(
-                              "No backgrounds found",
-                              style: TextStyle(
-                                color: isDark ? Colors.white70 : Colors.black54,
-                              ),
-                            ),
-                          )
-                              : GridView.builder(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.75,
-                            ),
-                            itemCount: edProvider.freePikAssets.length,
-                            itemBuilder: (context, index) {
-                              final bgUrl = edProvider.freePikAssets[index];
-                              return GestureDetector(
-                                onTap: () async {
-                                  final replaced = await _confirmReplaceBackground(
-                                    context,
-                                    edProvider,
-                                    bgUrl,
-                                  );
-                                  if (replaced && Navigator.canPop(modalContext)) {
-                                    Navigator.pop(modalContext);
-                                  }
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    image: DecorationImage(
-                                      image: NetworkImage(bgUrl),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ))
-                              : (edProvider.isVideosLoading
-                              ? const Center(
-                            child: CircularProgressIndicator(color: Colors.red),
-                          )
-                              : edProvider.freePikVideos.isEmpty
-                              ? Center(
-                            child: AppText(
-                              "No videos found",
-                              style: TextStyle(
-                                color: isDark ? Colors.white70 : Colors.black54,
-                              ),
-                            ),
-                          )
-                              : GridView.builder(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.75,
-                            ),
-                            itemCount: edProvider.freePikVideos.length,
-                            itemBuilder: (context, index) {
-                              final videoUrl = edProvider.freePikVideos[index];
-                              return GestureDetector(
-                                onTap: () async {
-                                  final replace = await showDialog<bool>(
-                                    context: context,
-                                    builder: (dialogContext) => AlertDialog(
-                                      title: const Text('Replace Background?'),
-                                      content: const Text(
-                                        'The current background will be replaced with this video.',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(dialogContext, false),
-                                          child: const Text('CANCEL'),
-                                        ),
-                                        FilledButton(
-                                          style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                                          onPressed: () => Navigator.pop(dialogContext, true),
-                                          child: const Text('REPLACE'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  if (replace == true) {
-                                    edProvider.setBackgroundVideo(videoUrl);
-                                    edProvider.clearSelection();
-                                    Navigator.pop(modalContext);
-                                  }
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    color: Colors.grey.shade800,
-                                  ),
-                                  child: const Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.play_circle_fill_rounded,
-                                        color: Colors.white,
-                                        size: 42,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          )),
-                        ),
-                      ],
+                      ),
                     ],
-                  ),
-                );
-              },
-            ),
-          ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
+                      child: Row(
+                        children: [
+                          _backgroundTab(
+                            title: 'IMAGES',
+                            selected: selectedTab == 0,
+                            onTap: () => setSheetState(() => selectedTab = 0),
+                          ),
+                          const SizedBox(width: 24),
+                          _backgroundTab(
+                            title: 'VIDEOS',
+                            selected: selectedTab == 1,
+                            onTap: () => setSheetState(() => selectedTab = 1),
+                          ),
+                          const SizedBox(width: 24),
+                          _backgroundTab(
+                            title: 'COLORS',
+                            selected: selectedTab == 2,
+                            onTap: () => setSheetState(() => selectedTab = 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Divider(
+                      height: 1,
+                      color: isDark ? Colors.white10 : Colors.black12,
+                    ),
+                    Expanded(
+                      child: selectedTab == 0
+                          ? imageResults()
+                          : selectedTab == 1
+                          ? videosView()
+                          : colorsView(),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
+    ).whenComplete(() {
+      sheetOpen = false;
+      searchController.dispose();
+    });
+  }
+
+  Widget _backgroundTab({
+    required String title,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: selected ? Colors.black : Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 4),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 2,
+            width: selected ? 46 : 0,
+            color: Colors.red,
+          ),
+        ],
+      ),
     );
   }
 

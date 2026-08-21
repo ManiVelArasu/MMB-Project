@@ -108,6 +108,175 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool isFreePikLoading = false;
   List<String> freePikStickers = [];
   bool isStickersLoading = false;
+  // Keep background search results completely separate from element results.
+  List<String> backgroundAssets = [];
+  bool isBackgroundLoading = false;
+  String _backgroundQuery = '';
+  final Map<String, int> _backgroundRequestIds = {};
+
+  // Element categories keep their own results/loading state.
+  final Map<String, List<String>> _elementCategoryAssets = {};
+  final Map<String, bool> _elementCategoryLoading = {};
+  final Map<String, int> _elementCategoryRequestIds = {};
+
+  List<String> elementCategoryAssets(String query) =>
+      List.unmodifiable(_elementCategoryAssets[query] ?? const <String>[]);
+
+  bool isElementCategoryLoading(String query) =>
+      _elementCategoryLoading[query] ?? false;
+
+
+  // Background category assets loaded from the existing Freepik API.
+  List<String> freePikShapes = [];
+  List<String> freePikSocialMedia = [];
+  List<String> freePikEcommerce = [];
+
+  bool isShapesLoading = false;
+  bool isSocialMediaLoading = false;
+  bool isEcommerceLoading = false;
+
+  Future<List<String>> _fetchFreepikCategory(
+      String query, {
+        required void Function(bool) setLoading,
+        required void Function(List<String>) setData,
+      }) async {
+    setLoading(true);
+    notifyListeners();
+    try {
+      final result = await FreePikService.searchAssets(
+        query,
+        limit: 20,
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => <String>[],
+      );
+      setData(result);
+      return result;
+    } catch (e) {
+      debugPrint('Freepik category error [$query]: $e');
+      setData(<String>[]);
+      return <String>[];
+    } finally {
+      setLoading(false);
+      notifyListeners();
+    }
+  }
+
+  /// Loads background assets into a dedicated state.
+  /// A request token prevents a late response from an older search from
+  /// replacing the currently selected category/search results.
+  Future<void> fetchBackgroundAssets(String query) async {
+    final normalized =
+    query.trim().isEmpty ? 'abstract background' : query.trim();
+
+    final requestId = (_backgroundRequestIds[normalized] ?? 0) + 1;
+    _backgroundRequestIds[normalized] = requestId;
+
+    _backgroundQuery = normalized;
+    isBackgroundLoading = true;
+    backgroundAssets = <String>[];
+    notifyListeners();
+
+    try {
+      final result = await FreePikService.searchAssets(
+        normalized,
+        limit: 30,
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => <String>[],
+      );
+
+      // Only apply the response if this is still the latest request for
+      // this query and the user has not moved to another background query.
+      if (_backgroundRequestIds[normalized] == requestId &&
+          _backgroundQuery == normalized) {
+        backgroundAssets = result.toSet().toList();
+      }
+    } catch (e) {
+      debugPrint('Background Freepik error [$normalized]: $e');
+      if (_backgroundRequestIds[normalized] == requestId &&
+          _backgroundQuery == normalized) {
+        backgroundAssets = <String>[];
+      }
+    } finally {
+      if (_backgroundRequestIds[normalized] == requestId &&
+          _backgroundQuery == normalized) {
+        isBackgroundLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Loads one element category without touching backgroundAssets or the
+  /// generic freePikAssets list.
+  Future<void> fetchElementCategory(String query) async {
+    final normalized = query.trim();
+    if (normalized.isEmpty) return;
+
+    final requestId = (_elementCategoryRequestIds[normalized] ?? 0) + 1;
+    _elementCategoryRequestIds[normalized] = requestId;
+
+    _elementCategoryLoading[normalized] = true;
+    _elementCategoryAssets[normalized] = <String>[];
+    notifyListeners();
+
+    try {
+      final result = await FreePikService.searchAssets(
+        normalized,
+        limit: 20,
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => <String>[],
+      );
+
+      if (_elementCategoryRequestIds[normalized] == requestId) {
+        _elementCategoryAssets[normalized] = result.toSet().toList();
+      }
+    } catch (e) {
+      debugPrint('Element category error [$normalized]: $e');
+      if (_elementCategoryRequestIds[normalized] == requestId) {
+        _elementCategoryAssets[normalized] = <String>[];
+      }
+    } finally {
+      if (_elementCategoryRequestIds[normalized] == requestId) {
+        _elementCategoryLoading[normalized] = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> fetchFreePikBackgroundCategories() async {
+    await Future.wait([
+      fetchFreePikShapes(),
+      fetchFreePikSocialMedia(),
+      fetchFreePikEcommerce(),
+      fetchFreePikStickers('stickers'),
+    ]);
+  }
+
+  Future<void> fetchFreePikShapes() async {
+    await _fetchFreepikCategory(
+      'shapes vector icons elements',
+      setLoading: (value) => isShapesLoading = value,
+      setData: (value) => freePikShapes = value,
+    );
+  }
+
+  Future<void> fetchFreePikSocialMedia() async {
+    await _fetchFreepikCategory(
+      'social media icons stickers',
+      setLoading: (value) => isSocialMediaLoading = value,
+      setData: (value) => freePikSocialMedia = value,
+    );
+  }
+
+  Future<void> fetchFreePikEcommerce() async {
+    await _fetchFreepikCategory(
+      'ecommerce shopping online store icons',
+      setLoading: (value) => isEcommerceLoading = value,
+      setData: (value) => freePikEcommerce = value,
+    );
+  }
 
   void setSelectedItem(String? type, String? id) {
     selectedItemType = type;
@@ -528,39 +697,74 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   Future<void> fetchFreePikAssets(String query) async {
-    if (isFreePikLoading) return;
+    final normalized = query.trim();
+    if (normalized.isEmpty) return;
+
+    // Generic/legacy element search. Keep this list independent from
+    // backgroundAssets. Also guard against stale responses.
+    final requestId = (_elementCategoryRequestIds['__generic__'] ?? 0) + 1;
+    _elementCategoryRequestIds['__generic__'] = requestId;
+
     isFreePikLoading = true;
-    notifyListeners(); // 🚀 Loading start
+    freePikAssets = <String>[];
+    notifyListeners();
 
     try {
-      freePikAssets = await FreePikService.searchAssets(
-        query,
-      ).timeout(const Duration(seconds: 10), onTimeout: () => []);
+      final result = await FreePikService.searchAssets(
+        normalized,
+        limit: 20,
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => <String>[],
+      );
+
+      if (_elementCategoryRequestIds['__generic__'] == requestId) {
+        freePikAssets = result.toSet().toList();
+      }
     } catch (e) {
       debugPrint("Error fetching assets: $e");
-      freePikAssets = [];
+      if (_elementCategoryRequestIds['__generic__'] == requestId) {
+        freePikAssets = <String>[];
+      }
     } finally {
-      isFreePikLoading = false;
-      Future.microtask(() => notifyListeners());
+      if (_elementCategoryRequestIds['__generic__'] == requestId) {
+        isFreePikLoading = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<void> fetchFreePikStickers(String query) async {
-    if (isStickersLoading) return;
+    final normalized = query.trim().isEmpty ? 'stickers' : query.trim();
+    final requestId = (_elementCategoryRequestIds['__stickers__'] ?? 0) + 1;
+    _elementCategoryRequestIds['__stickers__'] = requestId;
+
     isStickersLoading = true;
-    notifyListeners(); // 🚀 Loading start
+    freePikStickers = <String>[];
+    notifyListeners();
 
     try {
-      freePikStickers = await FreePikService.searchAssets(
-        "$query stickers",
-      ).timeout(const Duration(seconds: 10), onTimeout: () => []);
+      final result = await FreePikService.searchAssets(
+        '$normalized stickers',
+        limit: 20,
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => <String>[],
+      );
+
+      if (_elementCategoryRequestIds['__stickers__'] == requestId) {
+        freePikStickers = result.toSet().toList();
+      }
     } catch (e) {
       debugPrint("Error fetching stickers: $e");
-      freePikStickers = [];
+      if (_elementCategoryRequestIds['__stickers__'] == requestId) {
+        freePikStickers = <String>[];
+      }
     } finally {
-      isStickersLoading = false;
-
-      Future.microtask(() => notifyListeners());
+      if (_elementCategoryRequestIds['__stickers__'] == requestId) {
+        isStickersLoading = false;
+        notifyListeners();
+      }
     }
   }
 

@@ -27,7 +27,7 @@ class EditableItemWidget extends StatelessWidget {
     final provider = context.watch<EditorProvider>();
 
     final currentItem = provider.items.firstWhere(
-      (e) => e.id == item.id,
+          (e) => e.id == item.id,
       orElse: () => item,
     );
     bool isSelected = provider.selectedItemId == currentItem.id;
@@ -88,10 +88,10 @@ class EditableItemWidget extends StatelessWidget {
   // Use this from the page/background GestureDetector instead of opening
   // another background-specific bottom sheet.
   static void showUnifiedImageActions(
-    BuildContext context,
-    EditorProvider provider,
-    EditorItem backgroundItem,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      EditorItem backgroundItem,
+      ) {
     final widget = EditableItemWidget(
       item: backgroundItem,
       onItemSelected: (_, __) {},
@@ -108,18 +108,18 @@ class EditableItemWidget extends StatelessWidget {
   // Reusable media renderer for canvas backgrounds. It applies the same
   // filters, color adjustments and mask shape used by normal image items.
   static Widget buildStandaloneMediaContent(
-    BuildContext context,
-    EditorItem item,
-  ) {
+      BuildContext context,
+      EditorItem item,
+      ) {
     final widget = EditableItemWidget(item: item, onItemSelected: (_, __) {});
     return widget._buildItemContent(item, context);
   }
 
   Widget _buildFilteredImage(
-    EditorItem item,
-    Widget imageWidget,
-    BuildContext context,
-  ) {
+      EditorItem item,
+      Widget imageWidget,
+      BuildContext context,
+      ) {
     final filter = _baseFilter(item.filterType);
     final adjusted = _adjustmentFilter(
       brightness: item.brightness,
@@ -606,35 +606,35 @@ class EditableItemWidget extends StatelessWidget {
     if (item.type == 'image') {
       final isLocalFile =
           item.isLocal ||
-          (item.contentUrl != null &&
-              (item.contentUrl!.startsWith('file://') ||
-                  item.contentUrl!.startsWith('/data/')));
+              (item.contentUrl != null &&
+                  (item.contentUrl!.startsWith('file://') ||
+                      item.contentUrl!.startsWith('/data/')));
 
       Widget imageWidget = isLocalFile
           ? Image.file(
-              File(item.contentUrl!.replaceFirst('file://', '')),
-              width: item.width,
-              height: item.height,
-              fit: BoxFit.cover,
-              errorBuilder: (c, e, s) => Container(
-                width: item.width,
-                height: item.height,
-                color: Colors.grey,
-                child: const Icon(Icons.broken_image),
-              ),
-            )
+        File(item.contentUrl!.replaceFirst('file://', '')),
+        width: item.width,
+        height: item.height,
+        fit: BoxFit.cover,
+        errorBuilder: (c, e, s) => Container(
+          width: item.width,
+          height: item.height,
+          color: Colors.grey,
+          child: const Icon(Icons.broken_image),
+        ),
+      )
           : Image.network(
-              item.contentUrl ?? "",
-              width: item.width,
-              height: item.height,
-              fit: BoxFit.cover,
-              errorBuilder: (c, e, s) => Container(
-                width: item.width,
-                height: item.height,
-                color: Colors.grey,
-                child: const Icon(Icons.wifi_off, color: Colors.amber),
-              ),
-            );
+        item.contentUrl ?? "",
+        width: item.width,
+        height: item.height,
+        fit: BoxFit.cover,
+        errorBuilder: (c, e, s) => Container(
+          width: item.width,
+          height: item.height,
+          color: Colors.grey,
+          child: const Icon(Icons.wifi_off, color: Colors.amber),
+        ),
+      );
 
       final shape = (item.text ?? 'rounded').toLowerCase();
       final Widget maskedImage = ClipPath(
@@ -680,11 +680,11 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   void _showProActionSheet(
-    BuildContext context,
-    EditorProvider provider,
-    EditorItem item, {
-    bool isBackground = false,
-  }) {
+      BuildContext context,
+      EditorProvider provider,
+      EditorItem item, {
+        bool isBackground = false,
+      }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -698,7 +698,7 @@ class EditableItemWidget extends StatelessWidget {
             child: StatefulBuilder(
               builder: (sheetContext, setModalState) {
                 final currentItem = provider.items.firstWhere(
-                  (e) => e.id == item.id,
+                      (e) => e.id == item.id,
                   orElse: () => item,
                 );
 
@@ -710,7 +710,7 @@ class EditableItemWidget extends StatelessWidget {
                     : 0.0;
                 final normalizedRotation =
                     ((rawRotation % (2 * math.pi)) + (2 * math.pi)) %
-                    (2 * math.pi);
+                        (2 * math.pi);
                 final safeOpacity = currentItem.opacity.isFinite
                     ? currentItem.opacity.clamp(0.0, 1.0)
                     : 1.0;
@@ -778,11 +778,11 @@ class EditableItemWidget extends StatelessWidget {
                                   const SizedBox(height: 3),
                                   Text(
                                     currentItem.type == 'text' ||
-                                            currentItem.type == 'textbox'
+                                        currentItem.type == 'textbox'
                                         ? 'Edit your text'
                                         : (isBackground
-                                              ? 'Edit your canvas background'
-                                              : 'Professional image controls'),
+                                        ? 'Edit your canvas background'
+                                        : 'Professional image controls'),
                                     style: const TextStyle(
                                       color: Colors.white54,
                                       fontSize: 12,
@@ -833,14 +833,14 @@ class EditableItemWidget extends StatelessWidget {
                                       Navigator.pop(modalContext);
                                       WidgetsBinding.instance
                                           .addPostFrameCallback((_) {
-                                            if (!context.mounted) return;
-                                            _showTextEditorDialog(
-                                              context,
-                                              provider,
-                                              currentItem.id ?? '',
-                                              currentItem.text ?? '',
-                                            );
-                                          });
+                                        if (!context.mounted) return;
+                                        _showTextEditorDialog(
+                                          context,
+                                          provider,
+                                          currentItem.id ?? '',
+                                          currentItem.text ?? '',
+                                        );
+                                      });
                                     },
                                   ),
                                 if (currentItem.type != 'text' &&
@@ -890,13 +890,13 @@ class EditableItemWidget extends StatelessWidget {
                                       Navigator.pop(modalContext);
                                       WidgetsBinding.instance
                                           .addPostFrameCallback((_) {
-                                            if (!context.mounted) return;
-                                            _showMaskSheet(
-                                              context,
-                                              provider,
-                                              currentItem.id ?? '',
-                                            );
-                                          });
+                                        if (!context.mounted) return;
+                                        _showMaskSheet(
+                                          context,
+                                          provider,
+                                          currentItem.id ?? '',
+                                        );
+                                      });
                                     },
                                   ),
                                   _premiumActionTile(
@@ -999,7 +999,7 @@ class EditableItemWidget extends StatelessWidget {
                               min: .5,
                               max: 3,
                               onChanged: (v) => setModalState(
-                                () => provider.updateScale(
+                                    () => provider.updateScale(
                                   currentItem.id ?? '',
                                   v.clamp(.5, 3.0),
                                 ),
@@ -1009,12 +1009,12 @@ class EditableItemWidget extends StatelessWidget {
                               icon: Icons.rotate_right_rounded,
                               title: 'Rotation',
                               valueText:
-                                  '${((normalizedRotation * 180) / math.pi).round()}°',
+                              '${((normalizedRotation * 180) / math.pi).round()}°',
                               value: normalizedRotation.clamp(0.0, 2 * math.pi),
                               min: 0,
                               max: 2 * math.pi,
                               onChanged: (v) => setModalState(
-                                () => provider.updateRotation(
+                                    () => provider.updateRotation(
                                   currentItem.id ?? '',
                                   v.clamp(0.0, 2 * math.pi),
                                 ),
@@ -1028,7 +1028,7 @@ class EditableItemWidget extends StatelessWidget {
                               min: 0,
                               max: 1,
                               onChanged: (v) => setModalState(
-                                () => provider.updateOpacity(
+                                    () => provider.updateOpacity(
                                   currentItem.id ?? '',
                                   v.clamp(0.0, 1.0),
                                 ),
@@ -1050,19 +1050,19 @@ class EditableItemWidget extends StatelessWidget {
                                   icon: Icons.category_rounded,
                                   label: 'Open Mask Shapes',
                                   selected:
-                                      currentItem.text != 'square' &&
+                                  currentItem.text != 'square' &&
                                       currentItem.text != 'rounded',
                                   onTap: () {
                                     Navigator.pop(modalContext);
                                     WidgetsBinding.instance
                                         .addPostFrameCallback((_) {
-                                          if (!context.mounted) return;
-                                          _showMaskSheet(
-                                            context,
-                                            provider,
-                                            currentItem.id ?? '',
-                                          );
-                                        });
+                                      if (!context.mounted) return;
+                                      _showMaskSheet(
+                                        context,
+                                        provider,
+                                        currentItem.id ?? '',
+                                      );
+                                    });
                                   },
                                 ),
                               ),
@@ -1075,7 +1075,7 @@ class EditableItemWidget extends StatelessWidget {
                                 min: 0,
                                 max: 20,
                                 onChanged: (v) => setModalState(
-                                  () => provider.updateOutline(
+                                      () => provider.updateOutline(
                                     currentItem.id ?? '',
                                     v.clamp(0.0, 20.0),
                                     Colors.white,
@@ -1127,12 +1127,12 @@ class EditableItemWidget extends StatelessWidget {
                             _premiumDangerButton(
                               icon: Icons.delete_outline_rounded,
                               label:
-                                  currentItem.type == 'text' ||
-                                      currentItem.type == 'textbox'
+                              currentItem.type == 'text' ||
+                                  currentItem.type == 'textbox'
                                   ? 'Delete Text'
                                   : (isBackground
-                                        ? 'Delete Background'
-                                        : 'Delete Image'),
+                                  ? 'Delete Background'
+                                  : 'Delete Image'),
                               onTap: () {
                                 final id = currentItem.id ?? '';
                                 provider.removeItem(id);
@@ -1154,11 +1154,11 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Future<void> _pickAndReplaceBackground(
-    BuildContext context,
-    EditorProvider provider,
-    EditorItem currentItem,
-    BuildContext modalContext,
-  ) async {
+      BuildContext context,
+      EditorProvider provider,
+      EditorItem currentItem,
+      BuildContext modalContext,
+      ) async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
@@ -1378,12 +1378,12 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _miniFilter(
-    EditorProvider provider,
-    EditorItem item,
-    String label,
-    String type,
-    StateSetter setModalState,
-  ) {
+      EditorProvider provider,
+      EditorItem item,
+      String label,
+      String type,
+      StateSetter setModalState,
+      ) {
     final selected = item.filterType == type;
     return GestureDetector(
       onTap: () =>
@@ -1430,10 +1430,10 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   void _showMaskSheet(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      ) {
     final shapes = <Map<String, dynamic>>[
       {'name': 'Square', 'id': 'square', 'icon': Icons.crop_square_rounded},
       {'name': 'Rounded', 'id': 'rounded', 'icon': Icons.rounded_corner},
@@ -1470,12 +1470,12 @@ class EditableItemWidget extends StatelessWidget {
           final filtered = shapes
               .where(
                 (s) => (s['name'] as String).toLowerCase().contains(
-                  query.toLowerCase(),
-                ),
-              )
+              query.toLowerCase(),
+            ),
+          )
               .toList();
           final current = provider.items.firstWhere(
-            (e) => e.id == itemId,
+                (e) => e.id == itemId,
             orElse: () => provider.items.first,
           );
           return SizedBox(
@@ -1521,12 +1521,12 @@ class EditableItemWidget extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                     itemCount: filtered.length,
                     gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: .94,
-                        ),
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: .94,
+                    ),
                     itemBuilder: (_, index) {
                       final shape = filtered[index];
                       final selected = current.text == shape['id'];
@@ -1581,12 +1581,12 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   void _showImageEditSheet(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      ) {
     final item = provider.items.firstWhere(
-      (e) => e.id == itemId,
+          (e) => e.id == itemId,
       orElse: () => provider.items.first,
     );
 
@@ -1704,12 +1704,12 @@ class EditableItemWidget extends StatelessWidget {
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: filters.length,
                           gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 4,
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: .82,
-                              ),
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: .82,
+                          ),
                           itemBuilder: (_, index) {
                             final f = filters[index];
                             final selected = filter == f;
@@ -1762,9 +1762,9 @@ class EditableItemWidget extends StatelessWidget {
                           filterIntensity,
                           0,
                           1,
-                          (v) {
+                              (v) {
                             setModalState(
-                              () => filterIntensity = v.clamp(0.0, 1.0),
+                                  () => filterIntensity = v.clamp(0.0, 1.0),
                             );
                             apply();
                           },
@@ -1810,13 +1810,13 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _imageEditSlider(
-    String title,
-    double value,
-    double min,
-    double max,
-    ValueChanged<double> onChanged,
-    String valueText,
-  ) {
+      String title,
+      double value,
+      double min,
+      double max,
+      ValueChanged<double> onChanged,
+      String valueText,
+      ) {
     final safeValue = value.isFinite ? value.clamp(min, max) : min;
 
     return Column(
@@ -1917,12 +1917,12 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _filterButton(
-    EditorProvider provider,
-    EditorItem item,
-    String label,
-    String type,
-    StateSetter setModalState,
-  ) {
+      EditorProvider provider,
+      EditorItem item,
+      String label,
+      String type,
+      StateSetter setModalState,
+      ) {
     return TextButton(
       onPressed: () {
         setModalState(() {
@@ -1939,11 +1939,11 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   void _showTextEditorDialog(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-    String initialText,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      String initialText,
+      ) {
     final controller = TextEditingController(text: initialText);
 
     showDialog(
@@ -2004,12 +2004,12 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Future<void> _openCropScreen(
-    BuildContext context,
-    EditorProvider provider,
-    EditorItem item,
-  ) async {
+      BuildContext context,
+      EditorProvider provider,
+      EditorItem item,
+      ) async {
     final GlobalKey<ExtendedImageEditorState> editorKey =
-        GlobalKey<ExtendedImageEditorState>();
+    GlobalKey<ExtendedImageEditorState>();
 
     await Navigator.push(
       context,
@@ -2059,23 +2059,23 @@ class EditableItemWidget extends StatelessWidget {
           ),
           body: Center(
             child:
-                (item.isLocal ||
-                    (item.contentUrl != null &&
-                        item.contentUrl!.startsWith('/')))
+            (item.isLocal ||
+                (item.contentUrl != null &&
+                    item.contentUrl!.startsWith('/')))
                 ? ExtendedImage.file(
-                    File(item.contentUrl!.replaceFirst('file://', '')),
-                    fit: BoxFit.contain,
-                    mode: ExtendedImageMode.editor,
-                    extendedImageEditorKey: editorKey,
-                    cacheRawData: true,
-                  )
+              File(item.contentUrl!.replaceFirst('file://', '')),
+              fit: BoxFit.contain,
+              mode: ExtendedImageMode.editor,
+              extendedImageEditorKey: editorKey,
+              cacheRawData: true,
+            )
                 : ExtendedImage.network(
-                    item.contentUrl ?? "",
-                    fit: BoxFit.contain,
-                    mode: ExtendedImageMode.editor,
-                    extendedImageEditorKey: editorKey,
-                    cacheRawData: true,
-                  ),
+              item.contentUrl ?? "",
+              fit: BoxFit.contain,
+              mode: ExtendedImageMode.editor,
+              extendedImageEditorKey: editorKey,
+              cacheRawData: true,
+            ),
           ),
         ),
       ),
@@ -2274,13 +2274,13 @@ class ShapeClipper extends CustomClipper<Path> {
   }
 
   void _polygon(
-    Path p,
-    double cx,
-    double cy,
-    double r,
-    int sides,
-    double rotation,
-  ) {
+      Path p,
+      double cx,
+      double cy,
+      double r,
+      int sides,
+      double rotation,
+      ) {
     for (var i = 0; i < sides; i++) {
       final a = rotation + i * 2 * math.pi / sides;
       final x = cx + math.cos(a) * r;
@@ -2324,7 +2324,7 @@ class ShapeBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant ShapeBorderPainter oldDelegate) =>
       oldDelegate.shape != shape ||
-      oldDelegate.radius != radius ||
-      oldDelegate.color != color ||
-      oldDelegate.width != width;
+          oldDelegate.radius != radius ||
+          oldDelegate.color != color ||
+          oldDelegate.width != width;
 }

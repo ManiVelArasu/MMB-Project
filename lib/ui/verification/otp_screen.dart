@@ -303,10 +303,13 @@ class OtpScreen extends StatelessWidget {
                           ButtonWidget(
                             isLoading: authProvider.isVerifyLoading,
                             decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
                               color: customColor.redColor,
+                              border: Border.all(
+                                color: customColor.borderColor,
+                              ),
                             ),
                             buttonPress: () async {
-                              // 🚀 1. OTP வெரிஃபிகேஷன் API-ஐ கால் செய்வது (இதுவே உள்ளே சரியான ஸ்கிரீனுக்கு நேவிகேட் செய்துவிடும்)
                               final responseData = await authProvider
                                   .verifyOtpApi(context);
 

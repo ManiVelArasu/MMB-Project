@@ -185,8 +185,6 @@ class ThemeGroupSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String? iconUrl = group.iconS3Key;
-    print("sdsadsdsadds${ApiEndpoints.cdnImageUrl}/${iconUrl ?? ''}");
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

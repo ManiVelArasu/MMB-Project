@@ -18,51 +18,112 @@ class BrandVideoCard extends StatefulWidget {
 
 class _BrandVideoCardState extends State<BrandVideoCard> {
   VideoPlayerController? _controller;
+
   bool _isInitialized = false;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  Future<void> _initializeAndPlay() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.videoUrl),
+      );
+
+      _controller = controller;
+
+      await controller.initialize();
+
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+
+      controller.setLooping(true);
+
+      controller.addListener(_videoListener);
+
+      setState(() {
+        _isInitialized = true;
+        _isLoading = false;
+      });
+
+      // Previous video pause
+      videoPlaybackManager.setActive(controller);
+
+      await controller.play();
+
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('Video initialization error: $e');
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   void _videoListener() {
-    // Controller play/pause state change aagumbodhu icon update aaga UI rebuild pannum
+    if (!mounted || _controller == null) return;
+
+    setState(() {});
+  }
+
+  Future<void> _togglePlayPause() async {
+    if (_controller == null || !_isInitialized) {
+      await _initializeAndPlay();
+      return;
+    }
+
+    final controller = _controller!;
+
+    if (controller.value.isPlaying) {
+      await controller.pause();
+    } else {
+      videoPlaybackManager.setActive(controller);
+
+      await controller.play();
+    }
+
     if (mounted) {
       setState(() {});
     }
   }
 
-  void _togglePlayPause() {
-    if (_controller == null) {
-      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
-        ..initialize().then((_) {
-          if (!mounted) return;
-          setState(() {
-            _isInitialized = true;
-          });
-          _controller!.addListener(_videoListener); // 👈 State listener added
-          _controller!.play();
-          _controller!.setLooping(true);
-        });
-    } else {
-      setState(() {
-        if (_controller!.value.isPlaying) {
-          _controller!.pause();
-        } else {
-          _controller!.play();
-        }
-      });
-    }
-  }
-
   @override
   void dispose() {
-    _controller?.removeListener(_videoListener); // 👈 Clean up listener
-    _controller?.dispose();
+    final controller = _controller;
+
+    if (controller != null) {
+      controller.removeListener(_videoListener);
+      videoPlaybackManager.remove(controller);
+      controller.dispose();
+    }
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Exact play state check
-    final bool isPlaying = _controller != null &&
-        _controller!.value.isInitialized &&
-        _controller!.value.isPlaying;
+    final controller = _controller;
+
+    final bool isPlaying =
+        controller != null &&
+        controller.value.isInitialized &&
+        controller.value.isPlaying;
 
     return Container(
       decoration: BoxDecoration(
@@ -74,28 +135,40 @@ class _BrandVideoCardState extends State<BrandVideoCard> {
         child: Stack(
           alignment: Alignment.bottomLeft,
           children: [
-            // 1. VIDEO OR THUMBNAIL IMAGE
+            // VIDEO / THUMBNAIL
             Positioned.fill(
-              child: _isInitialized && _controller != null
-                  ? AspectRatio(
-                aspectRatio: _controller!.value.aspectRatio,
-                child: VideoPlayer(_controller!),
-              )
+              child: _isInitialized && controller != null
+                  ? FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: controller.value.size.width,
+                        height: controller.value.size.height,
+                        child: VideoPlayer(controller),
+                      ),
+                    )
                   : Image.asset(
-                widget.thumbnailUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey.shade300,
-                  child: Icon(
-                    Icons.movie_creation,
-                    size: 30.sp,
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
+                      widget.thumbnailUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey.shade300,
+                          child: Icon(
+                            Icons.movie_creation,
+                            size: 30.sp,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                    ),
             ),
 
-            // 2. PLAY / PAUSE TRANSLUCENT OVERLAY BUTTON
+            // LOADING
+            if (_isLoading)
+              const Positioned.fill(
+                child: Center(child: CircularProgressIndicator()),
+              ),
+
+            // PLAY / PAUSE BUTTON
             Positioned(
               bottom: 10.h,
               left: 10.w,
@@ -112,7 +185,7 @@ class _BrandVideoCardState extends State<BrandVideoCard> {
                     child: Icon(
                       isPlaying
                           ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded, // 👈 Correct Icon State
+                          : Icons.play_arrow_rounded,
                       color: Colors.white,
                       size: 22.sp,
                     ),
@@ -126,3 +199,29 @@ class _BrandVideoCardState extends State<BrandVideoCard> {
     );
   }
 }
+
+class VideoPlaybackManager {
+  VideoPlayerController? _activeController;
+
+  void setActive(VideoPlayerController controller) {
+    if (_activeController != null &&
+        _activeController != controller &&
+        _activeController!.value.isInitialized) {
+      _activeController!.pause();
+    }
+
+    _activeController = controller;
+  }
+
+  void remove(VideoPlayerController controller) {
+    if (_activeController == controller) {
+      _activeController = null;
+    }
+  }
+
+  void dispose() {
+    _activeController = null;
+  }
+}
+
+final videoPlaybackManager = VideoPlaybackManager();
