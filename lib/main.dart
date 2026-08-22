@@ -38,16 +38,15 @@ Future<void> _initializeApp() async {
   final prefs = await SharedPreferences.getInstance();
   final savedToken = prefs.getString('auth_token');
   final savedRefreshToken = prefs.getString('refresh_token');
+
   if (savedToken != null && savedToken.isNotEmpty) {
     await ApiHandler.instance.setTokens(
       token: savedToken,
       refreshToken: savedRefreshToken,
     );
-    debugPrint("✅ Restored Saved Token: $savedToken");
+    debugPrint("✅ Restored Saved Token & Refresh Token");
   } else {
-    debugPrint(
-      "⚠️ No Saved Token Found (User not logged in or OTP not verified yet)",
-    );
+    debugPrint("⚠️ No Saved Token Found");
   }
 }
 

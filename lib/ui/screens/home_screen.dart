@@ -374,265 +374,113 @@ class HomeScreen extends StatelessWidget {
                         },
                       ),
                       SizedBox(height: 16.h),
-                      if (homeScreenProvider.templateCategories.isNotEmpty) ...[
-                        SizedBox(height: 16.h),
-                        _buildSectionHeader(
-                          title:
-                              homeScreenProvider.templateCategories[0].name ??
-                              '',
-                          iconAsset:
-                              "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[0].iconS3Key ?? ''}",
-                          hasViewAll: true,
-                          isDark: isDark,
-                        ),
-                        SizedBox(height: 12.h),
-                        _buildMyCelebrateList(homeScreenProvider, isDark),
-                      ],
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: homeScreenProvider.templateCategories.length,
+                        itemBuilder: (context, index) {
+                          final category = homeScreenProvider.templateCategories[index];
+                          final categoryName = category.name ?? "";
+                          final categoryIcon = "${ApiEndpoints.cdnImageUrl}/${category.iconS3Key ?? ''}";
+                          final slug = category.slug ?? ""; // Slug-ah vachu list-ah map panrom
 
-                      if (homeScreenProvider.templateCategories.length > 1) ...[
-                        SizedBox(height: 16.h),
-                        _buildSectionHeader(
-                          title:
-                              homeScreenProvider.templateCategories[1].name ??
-                              "",
-                          iconAsset:
-                              "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[1].iconS3Key ?? ''}",
-                          hasViewAll: true,
-                          isDark: isDark,
-                        ),
-                        SizedBox(height: 12.h),
-                        _buildYoutubePostsGrid(isDark),
-                      ],
-
-                      if (homeScreenProvider.templateCategories.length > 2) ...[
-                        SizedBox(height: 12.h),
-                        _buildSectionHeader(
-                          title:
-                              homeScreenProvider.templateCategories[2].name ??
-                              "",
-                          iconAsset:
-                              "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[2].iconS3Key ?? ''}",
-                          hasViewAll: true,
-                          isDark: isDark,
-                        ),
-                        SizedBox(height: 12.h),
-                        SizedBox(
-                          height: 200.h,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount:
-                                homeScreenProvider.whatsappStatusList.length,
-                            itemBuilder: (context, index) {
-                              final item =
-                                  homeScreenProvider.whatsappStatusList[index];
-                              return Container(
-                                width: 115.w,
-                                margin: EdgeInsets.only(right: 12.w),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16.r),
-                                  color: isDark
-                                      ? const Color(0xFF1E1E1E)
-                                      : Colors.grey.shade200,
+                          // Slug-ku etha mathiri data list-ah select panrom
+                          List<dynamic> currentList = [];
+                          if (index == 0) {
+                            // First category-ku ungaloda special method / list
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(height: 16.h),
+                                _buildSectionHeader(
+                                  title: categoryName,
+                                  iconAsset: categoryIcon,
+                                  hasViewAll: true,
+                                  isDark: isDark,
                                 ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16.r),
-                                  child: Stack(
-                                    children: [
-                                      Positioned.fill(
-                                        child: Image.asset(
-                                          item["image"],
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, _, _) => Container(
-                                            color: isDark
-                                                ? const Color(0xFF2C2C2C)
-                                                : Colors.grey.shade300,
-                                            child: Icon(
-                                              Icons.image,
-                                              size: 30.sp,
-                                              color: Colors.grey,
+                                SizedBox(height: 12.h),
+                                _buildMyCelebrateList(homeScreenProvider, isDark),
+                              ],
+                            );
+                          } else if (index == 1) {
+                            // Second category-ku ungaloda grid method
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(height: 16.h),
+                                _buildSectionHeader(
+                                  title: categoryName,
+                                  iconAsset: categoryIcon,
+                                  hasViewAll: true,
+                                  isDark: isDark,
+                                ),
+                                SizedBox(height: 12.h),
+                                _buildYoutubePostsGrid(isDark),
+                              ],
+                            );
+                          } else {
+                            if (slug == "whatsapp-status" || index == 2) {
+                              currentList = homeScreenProvider.whatsappStatusList;
+                            } else if (slug == "devotional" || index == 3) {
+                              currentList = homeScreenProvider.devotionalList;
+                            } else {
+                              currentList = homeScreenProvider.corporateNeedsList;
+                            }
+
+                            if (currentList.isEmpty) return const SizedBox.shrink();
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(height: 24.h),
+                                _buildSectionHeader(
+                                  title: categoryName,
+                                  iconAsset: categoryIcon,
+                                  hasViewAll: true,
+                                  isDark: isDark,
+                                ),
+                                SizedBox(height: 12.h),
+                                SizedBox(
+                                  height: 165.h,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    physics: const BouncingScrollPhysics(),
+                                    itemCount: currentList.length,
+                                    itemBuilder: (context, itemIndex) {
+                                      final item = currentList[itemIndex];
+                                      final imageUrl = item is String ? item : (item["image"] ?? '');
+
+                                      return Container(
+                                        width: 110.w,
+                                        margin: EdgeInsets.only(right: 12.w),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(16.r),
+                                          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                          border: Border.all(
+                                            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                                            width: 1.2,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(16.r),
+                                          child: Image.asset(
+                                            imageUrl,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => Container(
+                                              color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200,
+                                              child: Icon(Icons.image, size: 30.sp, color: Colors.grey),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                      if (item["isVideo"] == true)
-                                        Positioned(
-                                          bottom: 10.h,
-                                          left: 10.w,
-                                          child: Container(
-                                            padding: EdgeInsets.all(4.r),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.5,
-                                              ),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Icon(
-                                              Icons.play_arrow_rounded,
-                                              color: Colors.white,
-                                              size: 18.sp,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
+                                      );
+                                    },
                                   ),
                                 ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-
-                      if (homeScreenProvider.templateCategories.length > 3) ...[
-                        SizedBox(height: 24.h),
-                        _buildSectionHeader(
-                          title:
-                              homeScreenProvider.templateCategories[3].name ??
-                              "",
-                          iconAsset:
-                              "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[3].iconS3Key ?? ''}",
-                          hasViewAll: true,
-                          isDark: isDark,
-                        ),
-                        SizedBox(height: 12.h),
-                        SizedBox(
-                          height: 165.h,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: homeScreenProvider.devotionalList.length,
-                            itemBuilder: (context, index) {
-                              final item =
-                                  homeScreenProvider.devotionalList[index];
-                              return Container(
-                                width: 110.w,
-                                margin: EdgeInsets.only(right: 12.w),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16.r),
-                                  color: isDark
-                                      ? const Color(0xFF1E1E1E)
-                                      : Colors.white,
-                                  border: Border.all(
-                                    color: isDark
-                                        ? Colors.grey.shade800
-                                        : Colors.grey.shade200,
-                                    width: 1.2,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.03,
-                                      ),
-                                      blurRadius: 6.r,
-                                      offset: Offset(0, 2.h),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: [
-                                    Expanded(
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.vertical(
-                                          top: Radius.circular(15.r),
-                                        ),
-                                        child: Image.asset(
-                                          item["image"] ?? '',
-                                          width: double.infinity,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, _, _) => Container(
-                                            color: isDark
-                                                ? const Color(0xFF2C2C2C)
-                                                : Colors.grey.shade200,
-                                            child: Icon(
-                                              Icons.auto_awesome,
-                                              size: 30.sp,
-                                              color: Colors.orange,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      width: double.infinity,
-                                      padding: EdgeInsets.symmetric(
-                                        vertical: 8.h,
-                                        horizontal: 4.w,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? const Color(0xFF1E1E1E)
-                                            : Colors.white,
-                                        borderRadius: BorderRadius.vertical(
-                                          bottom: Radius.circular(15.r),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        item["title"] ?? "",
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: isDark
-                                              ? Colors.white
-                                              : Colors.black,
-                                          fontSize: 10.sp,
-                                          fontWeight: FontWeight.w900,
-                                          height: 1.1,
-                                        ),
-                                        maxLines: 2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                      if (homeScreenProvider.templateCategories.length > 4) ...[
-                        SizedBox(height: 24.h),
-                        _buildSectionHeader(
-                          title:
-                              homeScreenProvider.templateCategories[4].name ??
-                              "",
-                          iconAsset:
-                              "${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.templateCategories[4].iconS3Key ?? ''}",
-                          hasViewAll: true,
-                          isDark: isDark,
-                        ),
-                        SizedBox(height: 12.h),
-                        SizedBox(
-                          height: 100.h,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount:
-                                homeScreenProvider.corporateNeedsList.length,
-                            itemBuilder: (context, index) {
-                              return Container(
-                                width: 105.w,
-                                margin: EdgeInsets.only(right: 12.w),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(14.r),
-                                  child: Image.asset(
-                                    homeScreenProvider
-                                        .corporateNeedsList[index],
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, _, _) => Container(
-                                      color: isDark
-                                          ? const Color(0xFF2C2C2C)
-                                          : Colors.grey.shade200,
-                                      child: Icon(
-                                        Icons.business_center,
-                                        size: 30.sp,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
+                              ],
+                            );
+                          }
+                        },
+                      ),
                       SizedBox(height: 24.h),
                     ],
                   ),

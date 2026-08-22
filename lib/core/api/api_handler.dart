@@ -122,6 +122,50 @@ class ApiHandler {
         ),
       );
     }
+    _instance!._dio.interceptors.add(
+      QueuedInterceptorsWrapper(
+        onError: (DioException error, ErrorInterceptorHandler handler) async {
+          if (error.response?.statusCode == 401) {
+            try {
+              final prefs = await SharedPreferences.getInstance();
+              final String? currentRefreshToken = prefs.getString('refresh_token');
+
+              if (currentRefreshToken == null || currentRefreshToken.isEmpty) {
+                return handler.next(error);
+              }
+
+              final dioRefresh = Dio(BaseOptions(baseUrl: _instance!._dio.options.baseUrl));
+
+              final response = await dioRefresh.post(
+                "/auth/refresh-token",
+                data: {'refresh_token': currentRefreshToken},
+              );
+
+              if (response.statusCode == 200 || response.statusCode == 201) {
+                final newAccessToken = response.data['access_token'] ?? response.data['token'];
+                final newRefreshToken = response.data['refresh_token'];
+
+                await _instance!.setTokens(
+                  token: newAccessToken,
+                  refreshToken: newRefreshToken,
+                );
+
+                final RequestOptions requestOptions = error.requestOptions;
+                requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+
+                final retryResponse = await _instance!._dio.fetch(requestOptions);
+                return handler.resolve(retryResponse);
+              }
+            } catch (e) {
+              debugPrint("Refresh token failed error: $e");
+            }
+          }
+          return handler.next(error);
+        },
+      ),
+    );
+
+    // 4. Kadeesiyil user pass panra custom interceptor iruntha add pannalam
     if (interceptor != null) {
       _instance!._dio.interceptors.add(interceptor);
     }
@@ -133,7 +177,6 @@ class ApiHandler {
     _dio.options.baseUrl = newBaseUrl;
   }
 
-  // 🚀 SharedPreferences-ல் சேமிக்கும்படி அப்டேட் செய்யப்பட்ட setTokens
   Future<void> setTokens({required String token, String? refreshToken}) async {
     _token = token;
     _refreshToken = refreshToken;
@@ -354,6 +397,7 @@ class ApiHandler {
         throw UnimplementedError();
     }
   }
+
   String? _extractServerMessage(dynamic data) {
     if (data == null) return null;
     if (data is String && data.isNotEmpty) return data;

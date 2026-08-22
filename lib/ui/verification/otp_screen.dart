@@ -254,42 +254,49 @@ class OtpScreen extends StatelessWidget {
                                       ),
                                     ),
                                     InkWell(
-                                      onTap: () async {
-                                        print('asdasdsadsads');
-                                        if (authProvider.submitLogin()) {
-                                          String? otp = await authProvider
-                                              .apiSendOtp(
-                                                authProvider.mobileNumber,
-                                                "login",
-                                              );
+                                      onTap: authProvider.isReSendLoading
+                                          ? null
+                                          : () async {
+                                              if (authProvider.submitLogin()) {
+                                                String? otp = await authProvider
+                                                    .reSendOtp(
+                                                      authProvider.mobileNumber,
+                                                      "login",
+                                                    );
 
-                                          if (otp != null && context.mounted) {
-                                            final prefs =
-                                                await SharedPreferences.getInstance();
-                                            await prefs.setString(
-                                              'saved_mobile_number',
-                                              authProvider.mobileNumber,
-                                            );
-
-                                            Navigator.pushNamed(
-                                              context,
-                                              "/OtpScreen",
-                                              arguments: {
-                                                'otp': otp,
-                                                'phone':
+                                                if (otp != null &&
+                                                    context.mounted) {
+                                                  final prefs =
+                                                      await SharedPreferences.getInstance();
+                                                  await prefs.setString(
+                                                    'saved_mobile_number',
                                                     authProvider.mobileNumber,
-                                              },
-                                            );
-                                          } else {}
-                                        }
-                                      },
-                                      child: Text(
-                                        "Resend OTP",
-                                        style: theme.titleMedium!.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: customColor.redColor,
-                                        ),
-                                      ),
+                                                  );
+
+                                                  Fluttertoast.showToast(
+                                                    msg:
+                                                        "OTP Resent Successfully!",
+                                                  );
+                                                }
+                                              }
+                                            },
+                                      child: authProvider.isReSendLoading
+                                          ? SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: customColor.redColor,
+                                              ),
+                                            )
+                                          : Text(
+                                              "Resend OTP",
+                                              style: theme.titleMedium!
+                                                  .copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: customColor.redColor,
+                                                  ),
+                                            ),
                                     ),
                                   ],
                                 ),

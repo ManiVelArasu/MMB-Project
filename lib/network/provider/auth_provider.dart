@@ -36,6 +36,9 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
   bool _isLoginLoading = false;
   bool get isLoginLoading => _isLoginLoading;
 
+  bool _isReSendLoading = false;
+  bool get isReSendLoading => _isReSendLoading;
+
   bool _isVerifyLoading = false;
   bool get isVerifyLoading => _isVerifyLoading;
 
@@ -161,32 +164,33 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  Future<String?> resendOtpApi() async {
-    _isResendLoading = true;
+  Future<String?> reSendOtp(String phone, String purpose) async {
+    _isReSendLoading = true;
     _errorMessage = null;
+
+    _mobileNumber = phone.trim();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('saved_mobile_number', _mobileNumber);
+
     notifyListeners();
 
     try {
-      final result = await AuthRepository.instance.sendOtp(
-        _mobileNumber,
-        "login",
-      );
-      _isResendLoading = false;
+      final result = await AuthRepository.instance.sendOtp(phone, purpose);
+
+      _isReSendLoading = false;
       notifyListeners();
 
       return await result.when(
-        success: (data) {
-          clearOtp();
-          return data.otp;
-        },
+        success: (data) => data.otp,
         failure: (error) {
-          _errorMessage = error.message;
+          _errorMessage = error.toString();
           notifyListeners();
           return null;
         },
       );
     } catch (e) {
-      _isResendLoading = false;
+      _isReSendLoading = false;
       _errorMessage = e.toString();
       notifyListeners();
       return null;
@@ -224,7 +228,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               data['is_new_user'] ?? data['data']?['is_new_user'] ?? false;
 
           // 🚀 ஆன்போர்டிங் டேட்டாவை பாதுகாப்பாக எடுப்பது (Null Check)
-          final onboardingData = data['onboarding'] ?? data['data']?['onboarding'];
+          final onboardingData =
+              data['onboarding'] ?? data['data']?['onboarding'];
 
           // கன்சோலில் செக் செய்ய பிரிண்ட் செய்து கொள்ளலாம்
           debugPrint("📦 Onboarding Raw Data: $onboardingData");
@@ -233,7 +238,9 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
           final bool hasBusiness = onboardingData?['has_business'] ?? false;
           final bool completed = onboardingData?['completed'] ?? false;
 
-          debugPrint("🔍 Parsed -> AccountType: $accountType, HasBusiness: $hasBusiness, Completed: $completed");
+          debugPrint(
+            "🔍 Parsed -> AccountType: $accountType, HasBusiness: $hasBusiness, Completed: $completed",
+          );
 
           if (accessToken != null) {
             await ApiHandler.instance.setTokens(
@@ -252,7 +259,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
           notifyListeners();
 
           if (context.mounted) {
-            if (completed == true || (accountType == "business" && hasBusiness == true)) {
+            if (completed == true ||
+                (accountType == "business" && hasBusiness == true)) {
               debugPrint("👉 Navigating to CustomBottomNavScreen");
               Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
             } else {

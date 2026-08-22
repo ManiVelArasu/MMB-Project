@@ -1,16 +1,13 @@
 import 'package:dio/dio.dart';
-
-import 'package:dio/dio.dart';
-import 'api_handler.dart';
-
-import 'package:dio/dio.dart';
-import 'api_handler.dart';
+import 'package:flutter/foundation.dart';
+import 'package:project_mmb/core/api/api_handler.dart';
 
 class TokenRefreshInterceptor extends Interceptor {
   final Dio dio;
   bool _isRefreshing = false;
   final List<void Function(String token)> _tokenSubscribers = [];
-  static const String refreshTokenEndpoint = '/auth/refresh';
+  static const String refreshTokenEndpoint =
+      '/auth/refresh'; // Ungaloda endpoint
 
   TokenRefreshInterceptor(this.dio);
 
@@ -29,10 +26,10 @@ class TokenRefreshInterceptor extends Interceptor {
       final currentRefreshToken = ApiHandler.instance.refreshToken;
 
       if (currentRefreshToken == null || currentRefreshToken.isEmpty) {
+        debugPrint("❌ Refresh Token missing. Logging out...");
         _logoutAndRedirect();
         return super.onError(err, handler);
       }
-
       if (_isRefreshing) {
         _tokenSubscribers.add((newToken) async {
           err.requestOptions.headers['Authorization'] = 'Bearer $newToken';
@@ -41,7 +38,9 @@ class TokenRefreshInterceptor extends Interceptor {
             handler.resolve(response);
           } catch (e) {
             handler.reject(
-              e is DioException ? e : DioException(requestOptions: err.requestOptions, error: e),
+              e is DioException
+                  ? e
+                  : DioException(requestOptions: err.requestOptions, error: e),
             );
           }
         });
@@ -57,31 +56,44 @@ class TokenRefreshInterceptor extends Interceptor {
           options: Options(headers: {}),
         );
 
-        if (response.statusCode == 200 && response.data['success'] == true) {
-          final newAccessToken = response.data['data']['access_token'];
-          final newRefreshToken = response.data['data']['refresh_token'];
+        final responseData = response.data;
+        final bool isSuccess =
+            response.statusCode == 200 &&
+            (responseData['success'] == true ||
+                responseData['status'] == true ||
+                response.statusCode == 201);
 
-          await ApiHandler.instance.setTokens(
-            token: newAccessToken,
-            refreshToken: newRefreshToken ?? currentRefreshToken,
-          );
+        if (isSuccess) {
+          final dataMap = responseData['data'] ?? responseData;
 
-          _isRefreshing = false;
+          final newAccessToken = dataMap['access_token'] ?? dataMap['token'];
+          final newRefreshToken = dataMap['refresh_token'];
 
-          for (var subscriber in _tokenSubscribers) {
-            subscriber(newAccessToken);
+          if (newAccessToken != null) {
+            await ApiHandler.instance.setTokens(
+              token: newAccessToken,
+              refreshToken: newRefreshToken ?? currentRefreshToken,
+            );
+
+            _isRefreshing = false;
+
+            for (var subscriber in _tokenSubscribers) {
+              subscriber(newAccessToken);
+            }
+            _tokenSubscribers.clear();
+
+            err.requestOptions.headers['Authorization'] =
+                'Bearer $newAccessToken';
+            final retryResponse = await dio.fetch(err.requestOptions);
+            return handler.resolve(retryResponse);
           }
-          _tokenSubscribers.clear();
-
-          err.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
-          final retryResponse = await dio.fetch(err.requestOptions);
-          return handler.resolve(retryResponse);
-        } else {
-          _isRefreshing = false;
-          _logoutAndRedirect();
-          return super.onError(err, handler);
         }
+
+        _isRefreshing = false;
+        _logoutAndRedirect();
+        return super.onError(err, handler);
       } catch (e) {
+        debugPrint("❌ Token Refresh Exception: $e");
         _isRefreshing = false;
         _tokenSubscribers.clear();
         _logoutAndRedirect();

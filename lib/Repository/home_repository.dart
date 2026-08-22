@@ -16,6 +16,10 @@ class HomeRepository {
           config: ApiRequestConfig(
             endpoint: ApiEndpoints.templateCategory,
             method: ApiMethod.get,
+            queryParams: {
+              "tree":"1",
+              "homepage":"1"
+            }
           ),
           fromJson: (json) =>
               TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
