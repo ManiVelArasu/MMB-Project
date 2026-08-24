@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/core/api/api_endpoints.dart';
 import 'package:project_mmb/network/provider/home_screen_provider.dart';
+import 'package:project_mmb/Api Model/Template_model.dart';
 
 import 'package:project_mmb/ui/screens/video_widget/video_widget.dart';
 import 'package:project_mmb/utils/theme/app.colors.dart';
@@ -105,7 +106,6 @@ class HomeScreen extends StatelessWidget {
 
                       SizedBox(height: 20.h),
 
-                      // MY ZONE SECTION
                       _buildSectionHeader(
                         title: "My Zone",
                         iconAsset: "assets/images/my_zone.png",
@@ -287,7 +287,6 @@ class HomeScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 12.h),
 
-                      // MY BRAND VIDEO POSTS
                       _buildSectionHeader(
                         title: "My Brand Video Posts",
                         iconAsset: "assets/images/my_brand_posts.png",
@@ -368,120 +367,93 @@ class HomeScreen extends StatelessWidget {
                           final videoData =
                               homeScreenProvider.brandVideoPostsList[index];
                           return BrandVideoCard(
-                            thumbnailUrl: videoData["thumbnail"]!,
-                            videoUrl: videoData["videoUrl"]!,
+                            thumbnailUrl: videoData["thumbnail"] ?? '',
+                            videoUrl: videoData["videoUrl"] ?? '',
                           );
                         },
                       ),
-                      SizedBox(height: 16.h),
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: homeScreenProvider.templateCategories.length,
                         itemBuilder: (context, index) {
-                          final category = homeScreenProvider.templateCategories[index];
-                          final categoryName = category.name ?? "";
-                          final categoryIcon = "${ApiEndpoints.cdnImageUrl}/${category.iconS3Key ?? ''}";
-                          final slug = category.slug ?? ""; // Slug-ah vachu list-ah map panrom
+                          final category =
+                              homeScreenProvider.templateCategories[index];
+                          final categoryName = category.name?.trim() ?? '';
+                          final slug = category.slug?.trim() ?? '';
 
-                          // Slug-ku etha mathiri data list-ah select panrom
-                          List<dynamic> currentList = [];
-                          if (index == 0) {
-                            // First category-ku ungaloda special method / list
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(height: 16.h),
-                                _buildSectionHeader(
-                                  title: categoryName,
-                                  iconAsset: categoryIcon,
-                                  hasViewAll: true,
-                                  isDark: isDark,
-                                ),
-                                SizedBox(height: 12.h),
-                                _buildMyCelebrateList(homeScreenProvider, isDark),
-                              ],
-                            );
-                          } else if (index == 1) {
-                            // Second category-ku ungaloda grid method
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(height: 16.h),
-                                _buildSectionHeader(
-                                  title: categoryName,
-                                  iconAsset: categoryIcon,
-                                  hasViewAll: true,
-                                  isDark: isDark,
-                                ),
-                                SizedBox(height: 12.h),
-                                _buildYoutubePostsGrid(isDark),
-                              ],
-                            );
-                          } else {
-                            if (slug == "whatsapp-status" || index == 2) {
-                              currentList = homeScreenProvider.whatsappStatusList;
-                            } else if (slug == "devotional" || index == 3) {
-                              currentList = homeScreenProvider.devotionalList;
-                            } else {
-                              currentList = homeScreenProvider.corporateNeedsList;
-                            }
-
-                            if (currentList.isEmpty) return const SizedBox.shrink();
-
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(height: 24.h),
-                                _buildSectionHeader(
-                                  title: categoryName,
-                                  iconAsset: categoryIcon,
-                                  hasViewAll: true,
-                                  isDark: isDark,
-                                ),
-                                SizedBox(height: 12.h),
-                                SizedBox(
-                                  height: 165.h,
-                                  child: ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    physics: const BouncingScrollPhysics(),
-                                    itemCount: currentList.length,
-                                    itemBuilder: (context, itemIndex) {
-                                      final item = currentList[itemIndex];
-                                      final imageUrl = item is String ? item : (item["image"] ?? '');
-
-                                      return Container(
-                                        width: 110.w,
-                                        margin: EdgeInsets.only(right: 12.w),
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(16.r),
-                                          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                                          border: Border.all(
-                                            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-                                            width: 1.2,
-                                          ),
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(16.r),
-                                          child: Image.asset(
-                                            imageUrl,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) => Container(
-                                              color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200,
-                                              child: Icon(Icons.image, size: 30.sp, color: Colors.grey),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            );
+                          if (slug.isEmpty) {
+                            return const SizedBox.shrink();
                           }
+
+                          final categoryIcon =
+                              (category.iconS3Key?.trim().isNotEmpty ?? false)
+                              ? '${ApiEndpoints.cdnImageUrl}/${category.iconS3Key}'
+                              : '';
+
+                          final templates = homeScreenProvider
+                              .templatesForCategory(slug);
+                          final isLoading = homeScreenProvider
+                              .isTemplateLoading(slug);
+
+                          return Padding(
+                            padding: EdgeInsets.only(top: 24.h),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSectionHeader(
+                                  title: categoryName,
+                                  iconAsset: categoryIcon,
+                                  hasViewAll: true,
+                                  isDark: isDark,
+                                ),
+                                SizedBox(height: 12.h),
+                                if (isLoading)
+                                  SizedBox(
+                                    height: 165.h,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Color(0xFFE53935),
+                                      ),
+                                    ),
+                                  )
+                                else if (templates.isEmpty)
+                                  SizedBox(
+                                    height: 110.h,
+                                    child: Center(
+                                      child: Text(
+                                        'No templates available',
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white54
+                                              : Colors.black45,
+                                          fontSize: 13.sp,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  SizedBox(
+                                    height: 165.h,
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: const BouncingScrollPhysics(),
+                                      itemCount: templates.length,
+                                      itemBuilder: (context, templateIndex) {
+                                        return _buildApiTemplateCard(
+                                          context,
+                                          templates[templateIndex],
+                                          isDark,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
                         },
                       ),
-                      SizedBox(height: 24.h),
                     ],
                   ),
                 ),
@@ -489,6 +461,108 @@ class HomeScreen extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildApiTemplateCard(
+    BuildContext context,
+    TemplateModel template,
+    bool isDark,
+  ) {
+    final key = template.thumbnailS3Key?.trim() ?? "";
+
+    final imageUrl = key.isEmpty ? "" : "${ApiEndpoints.cdnImageUrl}/$key";
+
+    return Container(
+      width: 120.w,
+      margin: EdgeInsets.only(right: 12.w),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          width: 1.2,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16.r),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (imageUrl.isEmpty)
+              _templateImagePlaceholder(isDark)
+            else
+              Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) {
+                    return child;
+                  }
+
+                  return const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  debugPrint("Template thumbnail failed: $imageUrl");
+
+                  return _templateImagePlaceholder(isDark);
+                },
+              ),
+
+            if (template.isPremium == 1)
+              Positioned(
+                top: 8.h,
+                left: 8.w,
+                child: Container(
+                  padding: EdgeInsets.all(5.r),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.workspace_premium,
+                    color: Colors.amber,
+                    size: 16.sp,
+                  ),
+                ),
+              ),
+
+            if (template.isLocked ?? false)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black26,
+                  child: Center(
+                    child: Container(
+                      padding: EdgeInsets.all(7.r),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.lock_outline,
+                        color: Colors.white,
+                        size: 19.sp,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _templateImagePlaceholder(bool isDark) {
+    return Container(
+      color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200,
+      child: Icon(
+        Icons.image_outlined,
+        size: 36.sp,
+        color: Colors.grey.shade400,
       ),
     );
   }

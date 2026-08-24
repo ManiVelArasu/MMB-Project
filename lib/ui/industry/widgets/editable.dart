@@ -44,13 +44,10 @@ class EditableItemWidget extends StatelessWidget {
           );
         },
         onTap: () {
+          // Selection only. All editing controls are rendered in the
+          // normal bottom toolbar of TemplateEditScreen. Do not open
+          // another modal bottom sheet when an item is tapped.
           onItemSelected(currentItem.type ?? '', currentItem.id!);
-          _showProActionSheet(
-            context,
-            provider,
-            currentItem,
-            isBackground: _isCanvasBackground(currentItem),
-          );
         },
         child: Container(
           decoration: BoxDecoration(
@@ -658,26 +655,35 @@ class EditableItemWidget extends StatelessWidget {
     final editorProvider = context.read<EditorProvider>();
     final id = item.id ?? '';
 
-    return Text(
-      item.text ?? "",
-      maxLines: null,
-      softWrap: true,
-      textAlign: editorProvider.textAlignment(id),
-      overflow: TextOverflow.visible,
-      style: TextStyle(
-        fontSize: item.fontSize,
-        color: item.color ?? Colors.white,
-        fontWeight: editorProvider.textWeight(id),
-        fontStyle: editorProvider.textStyle(id),
-        decoration: editorProvider.textUnderline(id)
-            ? TextDecoration.underline
-            : TextDecoration.none,
-        letterSpacing: editorProvider.textLetterSpacing(id),
-        height: editorProvider.textLineSpacing(id),
-        fontFamily: item.fontFamily,
-      ),
-    );
-  }
+    // TextAlign only has a visible effect when the Text widget has a
+    // meaningful width. Previously text items had no width, so CENTER/RIGHT
+    // appeared not to work. Give every text item a stable editable box.
+    final textWidth = (item.width ?? 600.0).clamp(80.0, 1080.0).toDouble();
+    final textHeight = (item.height ?? 180.0).clamp(40.0, 1080.0).toDouble();
+
+    return SizedBox(
+        width: textWidth,
+        height: textHeight,
+        child: Text(
+          item.text ?? "",
+          maxLines: null,
+          softWrap: true,
+          textAlign: editorProvider.textAlignment(id),
+          overflow: TextOverflow.visible,
+          style: TextStyle(
+            fontSize: item.fontSize,
+            color: item.color ?? Colors.white,
+            fontWeight: editorProvider.textWeight(id),
+            fontStyle: editorProvider.textStyle(id),
+            decoration: editorProvider.textUnderline(id)
+                ? TextDecoration.underline
+                : TextDecoration.none,
+            letterSpacing: editorProvider.textLetterSpacing(id),
+            height: editorProvider.textLineSpacing(id),
+            fontFamily: item.fontFamily,
+          ),
+        ));
+    }
 
   void _showProActionSheet(
       BuildContext context,

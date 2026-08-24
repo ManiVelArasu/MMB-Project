@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_mmb/Repository/theme_repoaitory.dart';
-
 import '../../Api Model/theme_screen_model.dart';
-import '../../model/theme_screen_model.dart';
 
 class ThemesScreenProvider extends ChangeNotifier {
   bool _isLoadingPlans = false;
@@ -18,6 +16,7 @@ class ThemesScreenProvider extends ChangeNotifier {
 
   Future<void> fetchPlans() async {
     _isLoadingPlans = true;
+
     _plansErrorMessage = null;
     notifyListeners();
 

@@ -11,7 +11,6 @@ import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../network/provider/business_provider.dart';
 import '../../utils/constants.dart';
 
 class OtpScreen extends StatelessWidget {
@@ -182,6 +181,18 @@ class OtpScreen extends StatelessWidget {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
                                   children: List.generate(6, (index) {
+                                    // 🚀 எந்த பெட்டியில் கரெக்ட்டாக எழுதிக் கொண்டிருக்கிறோம் அல்லது செலக்ட் செய்துள்ளோம் எனக் கண்டுபிடிக்க
+                                    final bool isCurrentBox =
+                                        authProvider
+                                            .controllers[index]
+                                            .text
+                                            .isEmpty &&
+                                        (index == 0 ||
+                                            authProvider
+                                                .controllers[index - 1]
+                                                .text
+                                                .isNotEmpty);
+
                                     return Container(
                                       width: 52.w,
                                       height: 64.h,
@@ -190,15 +201,39 @@ class OtpScreen extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(
                                           16.r,
                                         ),
+                                        // 🚀 நாம் க்ளிக் செய்துள்ள அல்லது டைப் செய்யும் பாக்ஸுக்கு மட்டும் ரெட் கலர் பார்டர் மற்றும் திக்னஸ் வரும்
+                                        border: Border.all(
+                                          color: isCurrentBox
+                                              ? customColor.redColor
+                                              : customColor.borderColor,
+                                          width: isCurrentBox ? 2.0 : 1.0,
+                                        ),
                                       ),
                                       child: Center(
-                                        child: Text(
-                                          authProvider.controllers[index].text,
-                                          style: theme.bodyLarge!.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: customColor.blackColor,
-                                          ),
-                                        ),
+                                        child:
+                                            authProvider
+                                                    .controllers[index]
+                                                    .text
+                                                    .isEmpty &&
+                                                isCurrentBox
+                                            ? Container(
+                                                // 🚀 பெட்டி காலியாக இருந்தால் அங்கே ஒரு டேஷ் (Dash / Cursor) தெரியும்
+                                                width: 12,
+                                                height: 2,
+                                                color: customColor.redColor,
+                                              )
+                                            : Text(
+                                                authProvider
+                                                    .controllers[index]
+                                                    .text,
+                                                style: theme.bodyLarge!
+                                                    .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: customColor
+                                                          .blackColor,
+                                                    ),
+                                              ),
                                       ),
                                     );
                                   }),
@@ -290,7 +325,7 @@ class OtpScreen extends StatelessWidget {
                                               ),
                                             )
                                           : Text(
-                                              "Resend OTP",
+                                              "Resend the code",
                                               style: theme.titleMedium!
                                                   .copyWith(
                                                     fontWeight: FontWeight.w600,

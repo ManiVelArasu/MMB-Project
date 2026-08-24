@@ -23,6 +23,7 @@ class ApiEndpoints {
   static String themesDetail(String varientId) => '/variants/$varientId';
 
   static const String templateCategory = '/template-categories';
+  static const String templates = '/templates';
 
   static const String cdnImageUrl =
       'https://temp-m2b-assets.s3.ap-south-1.amazonaws.com';

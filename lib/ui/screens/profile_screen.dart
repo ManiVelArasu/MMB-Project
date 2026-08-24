@@ -446,7 +446,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   onPressed: () async {
                                     Navigator.pop(dialogContext);
 
-
                                     await provider.logoutApi(parentContext);
                                   },
                                   child: const Text(

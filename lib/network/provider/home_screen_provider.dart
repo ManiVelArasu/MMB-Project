@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../Api Model/templatecategories.dart';
+import '../../Api Model/Template_model.dart';
 import '../../Repository/home_repository.dart';
 import '../../model/my_space_model.dart';
-
-import 'package:flutter/material.dart';
 
 class HomeScreenProvider extends ChangeNotifier {
   HomeScreenProvider() {
@@ -25,12 +25,15 @@ class HomeScreenProvider extends ChangeNotifier {
       }
 
       _businessName = name ?? "";
-
       notifyListeners();
     } catch (e) {
       debugPrint("Error loading business name: $e");
     }
   }
+
+  // ============================================================
+  // TEMPLATE CATEGORIES
+  // ============================================================
 
   List<TemplateCategories> _templateCategories = [];
   bool _isLoadingCategories = false;
@@ -40,13 +43,38 @@ class HomeScreenProvider extends ChangeNotifier {
   bool get isLoadingCategories => _isLoadingCategories;
   String? get categoryErrorMessage => _categoryErrorMessage;
 
-  int selectedCategoryIndex = 0;
+  // ============================================================
+  // CATEGORY -> TEMPLATES
+  // ============================================================
 
-  List<dynamic> _categoryPostsList = [];
-  bool _isLoadingPosts = false;
+  /// Key = category slug
+  /// Value = templates returned by:
+  /// GET /templates?category=<slug>
+  final Map<String, List<TemplateModel>> _templatesByCategory = {};
 
-  List<dynamic> get categoryPostsList => _categoryPostsList;
-  bool get isLoadingPosts => _isLoadingPosts;
+  /// Key = category slug
+  final Map<String, bool> _templateLoadingByCategory = {};
+
+  final Map<String, String?> _templateErrorByCategory = {};
+
+  Map<String, List<TemplateModel>> get templatesByCategory =>
+      Map.unmodifiable(_templatesByCategory);
+
+  List<TemplateModel> templatesForCategory(String slug) {
+    return _templatesByCategory[slug] ?? const <TemplateModel>[];
+  }
+
+  bool isTemplateLoading(String slug) {
+    return _templateLoadingByCategory[slug] ?? false;
+  }
+
+  String? templateError(String slug) {
+    return _templateErrorByCategory[slug];
+  }
+
+  // ============================================================
+  // LOAD CATEGORIES
+  // ============================================================
 
   Future<void> fetchTemplateCategories() async {
     _isLoadingCategories = true;
@@ -58,12 +86,21 @@ class HomeScreenProvider extends ChangeNotifier {
 
       if (result.isSuccess && result.data != null) {
         final response = result.data!;
+
         if (response.success == true) {
           _templateCategories = response.data ?? [];
           _categoryErrorMessage = null;
 
-          if (_templateCategories.isNotEmpty) {
-            fetchPostsByCategory(_templateCategories[0].slug ?? "");
+          notifyListeners();
+
+          // Load templates for every category using its slug.
+          // We intentionally don't use category index.
+          for (final category in _templateCategories) {
+            final slug = category.slug?.trim();
+
+            if (slug != null && slug.isNotEmpty) {
+              await fetchTemplatesByCategory(slug);
+            }
           }
         } else {
           _categoryErrorMessage = "Failed to load categories";
@@ -72,7 +109,9 @@ class HomeScreenProvider extends ChangeNotifier {
         _categoryErrorMessage =
             result.error?.message ?? "Network Error Occurred";
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint("Category API error: $e");
+      debugPrintStack(stackTrace: stackTrace);
       _categoryErrorMessage = e.toString();
     } finally {
       _isLoadingCategories = false;
@@ -80,34 +119,71 @@ class HomeScreenProvider extends ChangeNotifier {
     }
   }
 
-  // 🚀 Category Change Handler
-  void onCategorySelected(int index) {
-    if (selectedCategoryIndex == index) return;
+  Future<void> fetchTemplatesByCategory(String slug) async {
+    final categorySlug = slug.trim();
 
-    selectedCategoryIndex = index;
-    notifyListeners();
+    if (categorySlug.isEmpty) return;
 
-    if (_templateCategories.isNotEmpty) {
-      final selectedSlug = _templateCategories[index].slug ?? "";
-      fetchPostsByCategory(selectedSlug);
-    }
-  }
-
-  // 🚀 Category Wise Posts API Call
-  Future<void> fetchPostsByCategory(String categorySlug) async {
-    _isLoadingPosts = true;
+    _templateLoadingByCategory[categorySlug] = true;
+    _templateErrorByCategory[categorySlug] = null;
     notifyListeners();
 
     try {
-      // Unga Repository Call Inga Irungkanum:
-      // final result = await HomeRepository.instance.getPostsByCategory(categorySlug);
-      // _categoryPostsList = result.data ?? [];
-      await Future.delayed(const Duration(milliseconds: 300));
-    } catch (e) {
-      debugPrint("Error fetching category posts: $e");
+      final result = await HomeRepository.instance.templatesByCategory(
+        categorySlug,
+      );
+
+      if (result.isSuccess && result.data != null) {
+        final response = result.data!;
+
+        if (response.success == true) {
+          _templatesByCategory[categorySlug] = response.data;
+        } else {
+          _templatesByCategory[categorySlug] = [];
+          _templateErrorByCategory[categorySlug] = "Failed to load templates";
+        }
+      } else {
+        _templatesByCategory[categorySlug] = [];
+        _templateErrorByCategory[categorySlug] =
+            result.error?.message ?? "Network Error Occurred";
+      }
+    } catch (e, stackTrace) {
+      debugPrint("Template API error [$categorySlug]: $e");
+      debugPrintStack(stackTrace: stackTrace);
+
+      _templatesByCategory[categorySlug] = [];
+      _templateErrorByCategory[categorySlug] = e.toString();
     } finally {
-      _isLoadingPosts = false;
+      _templateLoadingByCategory[categorySlug] = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> refreshTemplateCategory(String slug) async {
+    final categorySlug = slug.trim();
+
+    if (categorySlug.isEmpty) return;
+
+    _templatesByCategory.remove(categorySlug);
+
+    await fetchTemplatesByCategory(categorySlug);
+  }
+
+  int selectedCategoryIndex = 0;
+
+  void onCategorySelected(int index) {
+    if (index < 0 || index >= _templateCategories.length) {
+      return;
+    }
+
+    selectedCategoryIndex = index;
+
+    final slug = _templateCategories[index].slug?.trim();
+
+    notifyListeners();
+
+    if (slug != null && slug.isNotEmpty) {
+      fetchTemplatesByCategory(slug);
     }
   }
 
@@ -237,27 +313,6 @@ class HomeScreenProvider extends ChangeNotifier {
       "videoUrl":
           "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
-  ];
-
-  final List<Map<String, dynamic>> whatsappStatusList = [
-    {"image": "assets/images/whatsapp1.png", "isVideo": true},
-    {"image": "assets/images/whatsapp2.png", "isVideo": false},
-    {"image": "assets/images/whatsapp2.png", "isVideo": false},
-    {"image": "assets/images/whatsapp2.png", "isVideo": false},
-  ];
-
-  final List<Map<String, String>> devotionalList = [
-    {"title": "DEVOTIONAL\nQUOTES", "image": "assets/images/devational2.png"},
-    {"title": "DEVOTIONAL\nSTORY", "image": "assets/images/devational1.png"},
-    {"title": "BIBLE\nVERSES", "image": "assets/images/devational1.png"},
-    {"title": "QURAN\nVERSES", "image": "assets/images/devational1.png"},
-  ];
-
-  final List<String> corporateNeedsList = [
-    "assets/images/corporate1.png",
-    "assets/images/corporate2.png",
-    "assets/images/corporate2.png",
-    "assets/images/corporate2.png",
   ];
 
   void updateVideoCategoryIndex(int index) {

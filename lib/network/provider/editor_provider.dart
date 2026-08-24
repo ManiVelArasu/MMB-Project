@@ -394,6 +394,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         type: 'text',
         text: initialText,
         position: const Offset(120, 200),
+        width: 600,
+        height: 180,
         color: Colors.black87,
       ),
     );
@@ -889,16 +891,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void setBackgroundImage(String imageUrl) {
     _saveState();
 
-    _items.removeWhere(
-          (item) =>
-      item.position.dx == 0 &&
-          item.position.dy == 0 &&
-          (item.type == 'image' ||
-              item.type == 'video' ||
-              item.type == 'shape'),
-    );
+    // Always remove the previous background first.
+    _removeBackgroundLayers();
 
-    final bgId = 'bg_${DateTime.now().millisecondsSinceEpoch}';
+    final bgId =
+        'bg_${DateTime.now().millisecondsSinceEpoch}';
 
     _items.insert(
       0,
@@ -913,10 +910,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       ),
     );
 
-    // IMPORTANT: keep the newly applied background selected so the user can
-    // immediately Crop / Edit Image / Rotation / Opacity / Flip / Remove it.
     selectedItemType = 'image';
     selectedItemId = bgId;
+
     notifyListeners();
   }
 
@@ -926,11 +922,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     // ஏற்கனவே உள்ள பழைய பேக்ரவுண்டை நீக்குவது
     _items.removeWhere(
           (item) =>
-      item.position.dx == 0 &&
-          item.position.dy == 0 &&
-          (item.type == 'image' ||
-              item.type == 'video' ||
-              item.type == 'shape'),
+      item.id?.startsWith('bg_') == true,
     );
 
     // புதிய பேக்ரவுண்ட் வீடியோவை முதல் லேயராக சேர்ப்பது
@@ -981,21 +973,22 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   // 🚀 ----------------------------------------------------
   // 🚀 புதிய REPLACE BG வசதிக்காக மட்டும் சேர்க்கப்பட்ட பாதுகாப்பு மெத்தடுகள் (Existing code பாதிக்கப்படாது)
   // 🚀 ----------------------------------------------------
-  void replaceBackgroundImage(String imageUrl, String selectedItemIdToRemove) {
+  void replaceBackgroundImage(
+      String imageUrl,
+      String selectedItemIdToRemove,
+      ) {
     _saveState();
 
+    // Remove the old background even if it was moved, scaled or rotated.
+    _removeBackgroundLayers();
+
+    // If the selected item was a normal media image, remove it too.
     _items.removeWhere(
-          (item) =>
-      item.position.dx == 0 &&
-          item.position.dy == 0 &&
-          (item.type == 'image' ||
-              item.type == 'video' ||
-              item.type == 'shape'),
+          (item) => item.id == selectedItemIdToRemove,
     );
 
-    _items.removeWhere((item) => item.id == selectedItemIdToRemove);
-
-    final bgId = "bg_${DateTime.now().millisecondsSinceEpoch}";
+    final bgId =
+        'bg_${DateTime.now().millisecondsSinceEpoch}';
 
     _items.insert(
       0,
@@ -1010,9 +1003,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       ),
     );
 
-    // Keep the new background selected for immediate editing.
     selectedItemType = 'image';
     selectedItemId = bgId;
+
     notifyListeners();
   }
 
@@ -1045,11 +1038,22 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   bool _isBackgroundLayer(EditorItem item) {
+    final isBackgroundType =
+        item.type == 'image' ||
+            item.type == 'video' ||
+            item.type == 'shape';
+
+    // bg_ IDs are stable even after drag/scale/rotate.
+    if (item.id?.startsWith('bg_') == true && isBackgroundType) {
+      return true;
+    }
+
+    // Backward compatibility for older saved projects.
     return item.position.dx == 0 &&
         item.position.dy == 0 &&
         item.width >= 1000 &&
         item.height >= 1000 &&
-        (item.type == 'image' || item.type == 'video' || item.type == 'shape');
+        isBackgroundType;
   }
 
   void _removeBackgroundLayers() {
@@ -1267,6 +1271,30 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
 
     return true;
+  }
+
+
+
+  /// Updates position, scale and rotation in a single provider notification.
+  /// Used by interactive canvas/background gestures.
+  void updateItemTransform(
+      String id, {
+        Offset? position,
+        double? scale,
+        double? rotation,
+      }) {
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index == -1) return;
+
+    final current = _items[index];
+
+    _items[index] = current.copyWith(
+      position: position ?? current.position,
+      scale: scale ?? current.scale,
+      rotation: rotation ?? current.rotation,
+    );
+
+    notifyListeners();
   }
 
 }

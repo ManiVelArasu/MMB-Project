@@ -227,11 +227,11 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
           final bool isNewUser =
               data['is_new_user'] ?? data['data']?['is_new_user'] ?? false;
 
-          // 🚀 ஆன்போர்டிங் டேட்டாவை பாதுகாப்பாக எடுப்பது (Null Check)
+
           final onboardingData =
               data['onboarding'] ?? data['data']?['onboarding'];
 
-          // கன்சோலில் செக் செய்ய பிரிண்ட் செய்து கொள்ளலாம்
+
           debugPrint("📦 Onboarding Raw Data: $onboardingData");
 
           final String accountType = onboardingData?['account_type'] ?? "";

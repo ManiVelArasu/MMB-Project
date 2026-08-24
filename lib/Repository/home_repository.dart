@@ -1,3 +1,4 @@
+import '../Api Model/Template_model.dart';
 import '../Api Model/templatecategories.dart';
 import '../core/api/api_endpoints.dart';
 import '../core/api/api_repository.dart';
@@ -16,14 +17,28 @@ class HomeRepository {
           config: ApiRequestConfig(
             endpoint: ApiEndpoints.templateCategory,
             method: ApiMethod.get,
-            queryParams: {
-              "tree":"1",
-              "homepage":"1"
-            }
+            queryParams: {"tree": "1", "homepage": "1"},
           ),
           fromJson: (json) =>
               TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
         );
+    return result;
+  }
+
+  Future<ApiResult<TemplatesResponseModel>> templatesByCategory(
+    String categorySlug,
+  ) async {
+    final result = await ApiRepository.instance.request<TemplatesResponseModel>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.templates,
+        method: ApiMethod.get,
+        queryParams: {'category': categorySlug},
+      ),
+      fromJson: (json) {
+        return TemplatesResponseModel.fromJson(json as Map<String, dynamic>);
+      },
+    );
+
     return result;
   }
 }
