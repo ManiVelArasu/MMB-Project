@@ -94,6 +94,7 @@ class ApiHandler {
     Interceptor? interceptor,
   }) {
     _instance = ApiHandler._();
+
     _instance!._defaultContentType = defaultContentType;
     _instance!._defaultConnectTimeoutMs = connectTimeoutMs;
     _instance!._defaultReceiveTimeoutMs = receiveTimeoutMs;
@@ -107,7 +108,8 @@ class ApiHandler {
         connectTimeout: Duration(milliseconds: connectTimeoutMs),
         receiveTimeout: Duration(milliseconds: receiveTimeoutMs),
         headers: {
-          ApiHeaderKey.accept.value: ApiHeaderValue.applicationJson.value,
+          ApiHeaderKey.accept.value:
+          ApiHeaderValue.applicationJson.value,
           ...extraDefaultHeaders,
         },
       ),
@@ -122,50 +124,141 @@ class ApiHandler {
         ),
       );
     }
+
     _instance!._dio.interceptors.add(
       QueuedInterceptorsWrapper(
-        onError: (DioException error, ErrorInterceptorHandler handler) async {
-          if (error.response?.statusCode == 401) {
-            try {
-              final prefs = await SharedPreferences.getInstance();
-              final String? currentRefreshToken = prefs.getString('refresh_token');
+        onError: (
+            DioException error,
+            ErrorInterceptorHandler handler,
+            ) async {
+          // Only handle 401
+          if (error.response?.statusCode != 401) {
+            return handler.next(error);
+          }
 
-              if (currentRefreshToken == null || currentRefreshToken.isEmpty) {
-                return handler.next(error);
-              }
+          // Don't refresh the refresh request itself
+          if (error.requestOptions.path.contains('/auth/refresh')) {
+            return handler.next(error);
+          }
 
-              final dioRefresh = Dio(BaseOptions(baseUrl: _instance!._dio.options.baseUrl));
+          try {
+            final prefs =
+            await SharedPreferences.getInstance();
 
-              final response = await dioRefresh.post(
-                "/auth/refresh-token",
-                data: {'refresh_token': currentRefreshToken},
+            final refreshToken =
+            prefs.getString('refresh_token');
+
+            if (refreshToken == null ||
+                refreshToken.isEmpty) {
+              return handler.next(error);
+            }
+
+            debugPrint(
+              '🔄 Access token expired. Refreshing...',
+            );
+            final refreshDio = Dio(
+              BaseOptions(
+                baseUrl: _instance!._dio.options.baseUrl,
+                connectTimeout:
+                const Duration(seconds: 30),
+                receiveTimeout:
+                const Duration(seconds: 30),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                },
+              ),
+            );
+
+            final refreshResponse = await refreshDio.post(
+              '/auth/refresh',
+              data: {
+                'refresh_token': refreshToken,
+              },
+            );
+
+            if (refreshResponse.statusCode != 200 &&
+                refreshResponse.statusCode != 201) {
+              debugPrint(
+                '❌ Refresh failed: '
+                    '${refreshResponse.statusCode}',
               );
 
-              if (response.statusCode == 200 || response.statusCode == 201) {
-                final newAccessToken = response.data['access_token'] ?? response.data['token'];
-                final newRefreshToken = response.data['refresh_token'];
-
-                await _instance!.setTokens(
-                  token: newAccessToken,
-                  refreshToken: newRefreshToken,
-                );
-
-                final RequestOptions requestOptions = error.requestOptions;
-                requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
-
-                final retryResponse = await _instance!._dio.fetch(requestOptions);
-                return handler.resolve(retryResponse);
-              }
-            } catch (e) {
-              debugPrint("Refresh token failed error: $e");
+              return handler.next(error);
             }
+
+            final data = refreshResponse.data;
+
+            final newAccessToken =
+                data['access_token'] ??
+                    data['accessToken'] ??
+                    data['token'];
+
+            final newRefreshToken =
+                data['refresh_token'] ??
+                    data['refreshToken'];
+
+            if (newAccessToken == null ||
+                newAccessToken.toString().isEmpty) {
+              debugPrint(
+                '❌ Refresh response has no access token',
+              );
+
+              return handler.next(error);
+            }
+
+            // If backend rotates refresh token,
+            // use the new one.
+            final String finalRefreshToken =
+            newRefreshToken != null &&
+                newRefreshToken
+                    .toString()
+                    .isNotEmpty
+                ? newRefreshToken.toString()
+                : refreshToken;
+
+            // Save BOTH tokens.
+            await _instance!.setTokens(
+              token: newAccessToken.toString(),
+              refreshToken: finalRefreshToken,
+            );
+
+            debugPrint(
+              '✅ New access token saved',
+            );
+
+            debugPrint(
+              '✅ New refresh token saved',
+            );
+
+            // Retry original request
+            final requestOptions =
+                error.requestOptions;
+
+            requestOptions.headers['Authorization'] =
+            'Bearer ${newAccessToken.toString()}';
+
+            final retryResponse =
+            await _instance!._dio.fetch(
+              requestOptions,
+            );
+
+            return handler.resolve(retryResponse);
+          } catch (e, stackTrace) {
+            debugPrint(
+              '❌ Refresh token failed: $e',
+            );
+            debugPrintStack(
+              stackTrace: stackTrace,
+            );
+
+            return handler.next(error);
           }
-          return handler.next(error);
         },
       ),
     );
 
-    // 4. Kadeesiyil user pass panra custom interceptor iruntha add pannalam
+    // Add your custom interceptor AFTER refresh interceptor.
     if (interceptor != null) {
       _instance!._dio.interceptors.add(interceptor);
     }

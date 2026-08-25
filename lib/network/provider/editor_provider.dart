@@ -513,6 +513,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     if (index != -1) {
       _saveState();
       _items[index] = _items[index].copyWith(filterType: filterName);
+      _syncCurrentPage();
       notifyListeners();
     }
   }
@@ -820,11 +821,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     if (index == -1) return;
 
     _saveState();
-    final radius = shape == 'circle' ? items[index].borderRadius : items[index].borderRadius;
+    final radius = items[index].borderRadius;
     items[index] = items[index].copyWith(
       text: shape,
       borderRadius: radius,
     );
+    _syncCurrentPage();
     notifyListeners();
   }
 
@@ -891,8 +893,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void setBackgroundImage(String imageUrl) {
     _saveState();
 
-    // Always remove the previous background first.
+    // Replace the previous background completely.
+    // A background image must not leave the previous color behind.
     _removeBackgroundLayers();
+    _backgroundColor = Colors.transparent;
 
     final bgId =
         'bg_${DateTime.now().millisecondsSinceEpoch}';
@@ -913,17 +917,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     selectedItemType = 'image';
     selectedItemId = bgId;
 
+    _syncCurrentPage();
     notifyListeners();
   }
 
   void setBackgroundVideo(String videoUrl) {
     _saveState();
 
-    // ஏற்கனவே உள்ள பழைய பேக்ரவுண்டை நீக்குவது
-    _items.removeWhere(
-          (item) =>
-      item.id?.startsWith('bg_') == true,
-    );
+    // Replace the previous background completely.
+    _removeBackgroundLayers();
+    _backgroundColor = Colors.transparent;
 
     // புதிய பேக்ரவுண்ட் வீடியோவை முதல் லேயராக சேர்ப்பது
     final bgId = 'bg_video_${DateTime.now().millisecondsSinceEpoch}';
@@ -943,6 +946,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     selectedItemType = 'video';
     selectedItemId = bgId;
+    _syncCurrentPage();
     notifyListeners();
   }
 
@@ -1016,6 +1020,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void updateImageFilterIntensity(String id, double value) {
     _saveState();
     _imageFilterIntensity[id] = value.clamp(0.0, 1.0);
+    _syncCurrentPage();
     notifyListeners();
   }
 
@@ -1062,9 +1067,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   void setBackgroundColor(Color color) {
     _saveState();
+
+    // A color background replaces any image/video background.
     _removeBackgroundLayers();
     _backgroundColor = color;
-    clearSelection();
+    selectedItemId = null;
+    selectedItemType = null;
+    selectedFrameUrl = null;
+
+    // Keep the current page state in sync immediately.
+    _syncCurrentPage();
     notifyListeners();
   }
   // ========================= PAGE MANAGEMENT =========================

@@ -59,4 +59,5 @@ class AuthRepository {
     );
     return result;
   }
+
 }

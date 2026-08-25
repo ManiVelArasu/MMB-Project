@@ -167,7 +167,7 @@ class HomeScreen extends StatelessWidget {
                                   ),
                                 ),
                                 child: Center(
-                                  child: Text(
+                                  child: AppText(
                                     homeScreenProvider.videoCategories[index],
                                     style: TextStyle(
                                       color: isSelected
@@ -332,7 +332,7 @@ class HomeScreen extends StatelessWidget {
                                   ),
                                 ),
                                 child: Center(
-                                  child: Text(
+                                  child: AppText(
                                     homeScreenProvider.videoCategories[index],
                                     style: TextStyle(
                                       color: isSelected
@@ -422,7 +422,7 @@ class HomeScreen extends StatelessWidget {
                                   SizedBox(
                                     height: 110.h,
                                     child: Center(
-                                      child: Text(
+                                      child: AppText(
                                         'No templates available',
                                         style: TextStyle(
                                           color: isDark
@@ -651,7 +651,7 @@ class HomeScreen extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 SizedBox(height: 6.h),
-                Text(
+                AppText(
                   item.title,
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -696,7 +696,7 @@ class HomeScreen extends StatelessWidget {
                   Positioned.fill(
                     child: InkWell(
                       onTap: () async {},
-                      child: Image.asset(item["icon"]!, fit: BoxFit.cover),
+                      child: Image.asset(item["icon"] ?? "", fit: BoxFit.cover),
                     ),
                   ),
                   Positioned(
@@ -711,7 +711,7 @@ class HomeScreen extends StatelessWidget {
                         color: const Color(0xFFEEB04B),
                         borderRadius: BorderRadius.circular(8.r),
                       ),
-                      child: Text(
+                      child: AppText(
                         item["dayCount"] ?? "${index + 5}",
                         style: TextStyle(
                           color: Colors.white,
@@ -739,7 +739,7 @@ class HomeScreen extends StatelessWidget {
       builder: (context, snapshot) {
         String? savedImagePath;
         if (snapshot.hasData) {
-          savedImagePath = snapshot.data!.getString(
+          savedImagePath = snapshot.data?.getString(
             'saved_business_image_path',
           );
         }
@@ -764,29 +764,98 @@ class HomeScreen extends StatelessWidget {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16.r),
-                      child: savedImagePath != null && savedImagePath.isNotEmpty
-                          ? Image.file(
-                              File(savedImagePath),
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                            )
-                          : Image.asset(
-                              homeScreenProvider.myZoneBanners[index],
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorBuilder: (_, _, _) => Container(
-                                color: isDark
-                                    ? const Color(0xFF2C2C2C)
-                                    : Colors.grey.shade200,
-                                child: Icon(
-                                  Icons.image_outlined,
-                                  size: 50.sp,
-                                  color: Colors.grey.shade400,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          savedImagePath != null && savedImagePath.isNotEmpty
+                              ? Image.file(
+                                  File(savedImagePath),
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                )
+                              : Image.asset(
+                                  homeScreenProvider.myZoneBanners[index],
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  errorBuilder: (_, _, _) => Container(
+                                    color: isDark
+                                        ? const Color(0xFF2C2C2C)
+                                        : Colors.grey.shade200,
+                                    child: Icon(
+                                      Icons.image_outlined,
+                                      size: 50.sp,
+                                      color: Colors.grey.shade400,
+                                    ),
+                                  ),
                                 ),
+
+                          Positioned(
+                            top: 12.h,
+                            left: 14.w,
+                            child: Container(
+                              width: 58.w,
+                              height: 58.w,
+                              padding: EdgeInsets.all(5.r),
+                              child: Image.asset(
+                                'assets/icons/app_logo.png',
+                                fit: BoxFit.contain,
                               ),
                             ),
+                          ),
+
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 18.w,
+                                vertical: 12.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF246BFE),
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(45.r),
+                                  topRight: Radius.circular(0),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.phone_in_talk_rounded,
+                                    color: Colors.white,
+                                    size: 18.sp,
+                                  ),
+
+                                  SizedBox(width: 6.w),
+
+                                  Text(
+                                    '+91 98765 43210',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+
+                                  const Spacer(),
+
+                                  Text(
+                                    'Sarah Gym & Fitness',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -893,28 +962,34 @@ class HomeScreen extends StatelessWidget {
               return Container(
                 padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1E1E2C)
-                      : const Color(0xFFF3EFEF),
+                  gradient: isDark
+                      ? const LinearGradient(
+                          colors: [Color(0xFF1E1E2C), Color(0xFF1E1E2C)],
+                        )
+                      : const LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [Color(0xFFFFEEEE), Color(0xFFFFF9EA)],
+                        ),
                   borderRadius: BorderRadius.circular(16.r),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      banner["title"]!,
+                    AppText(
+                      banner["title"] ?? "",
                       style: TextStyle(
                         color: isDark
                             ? const Color(0xFF9FA8DA)
-                            : const Color(0xFF7C4DFF),
+                            : AppColors.gold,
                         fontSize: 20.sp,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     SizedBox(height: 6.h),
-                    Text(
-                      banner["subTitle"]!,
+                    AppText(
+                      banner["subTitle"] ?? "",
                       style: TextStyle(
                         color: isDark ? Colors.white70 : Colors.black87,
                         fontSize: 12.sp,
@@ -929,8 +1004,8 @@ class HomeScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10.r),
                         ),
                       ),
-                      child: Text(
-                        banner["btnText"]!,
+                      child: AppText(
+                        banner["btnText"] ?? "",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 10.sp,
@@ -966,112 +1041,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildYoutubePostsGrid(bool isDark) {
-    return SizedBox(
-      height: 180.h,
-      child: GridView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: 8,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12.h,
-          mainAxisSpacing: 12.w,
-          childAspectRatio: 0.70,
-        ),
-        itemBuilder: (context, index) {
-          return Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16.r),
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade200,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 6.r,
-                  offset: Offset(0, 2.h),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16.r),
-              child: Image.asset(
-                "assets/images/thumbnail1.png",
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: isDark
-                      ? const Color(0xFF2C2C2C)
-                      : Colors.grey.shade200,
-                  child: Icon(
-                    Icons.smart_display_rounded,
-                    size: 40.sp,
-                    color: Colors.red.shade400,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildMyCelebrateList(
-    HomeScreenProvider homeScreenProvider,
-    bool isDark,
-  ) {
-    return SizedBox(
-      height: 90.h,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: homeScreenProvider.myCelebrateList.length,
-        physics: const BouncingScrollPhysics(),
-        itemBuilder: (context, index) {
-          final item = homeScreenProvider.myCelebrateList[index];
-          return Container(
-            width: 100.w,
-            margin: EdgeInsets.only(right: 12.w),
-            padding: EdgeInsets.all(10.r),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: item.gradientColors.isNotEmpty
-                    ? item.gradientColors
-                    : (isDark
-                          ? [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)]
-                          : [Colors.white, Colors.grey.shade200]),
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  item.icon,
-                  height: 36.h,
-                  width: 36.w,
-                  fit: BoxFit.contain,
-                ),
-                SizedBox(height: 6.h),
-                Text(
-                  item.title,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black,
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w900,
-                    height: 1.1,
-                  ),
-                  maxLines: 2,
-                ),
-              ],
-            ),
-          );
-        },
-      ),
     );
   }
 }

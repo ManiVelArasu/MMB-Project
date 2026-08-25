@@ -2619,7 +2619,7 @@ class _EditorViewState extends State<EditorView> {
               aspectRatio: aspectRatio,
               child: Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  color: provider.backgroundColor,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
@@ -2643,7 +2643,13 @@ class _EditorViewState extends State<EditorView> {
                     return Stack(
                       clipBehavior: Clip.hardEdge,
                       children: [
-
+                        // Always render the provider background color first.
+                        // A background image/video is rendered above this layer;
+                        // when a new image is selected the provider clears the
+                        // color to transparent, so the old color cannot remain.
+                        Positioned.fill(
+                          child: ColoredBox(color: provider.backgroundColor),
+                        ),
 
                         if (backgroundItems.isNotEmpty)
                           _InteractiveBackgroundLayer(
@@ -3205,7 +3211,10 @@ class _EditorViewState extends State<EditorView> {
     );
     final controller = TextEditingController(text: item.text ?? '');
 
-    await showDialog<void>(
+    // Let the dialog return the edited text first. Updating the provider
+    // while the dialog route is still being deactivated can trigger
+    // InheritedElement.debugDeactivated (_dependents.isEmpty) in Flutter.
+    final newText = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Edit Text'),
@@ -3220,20 +3229,33 @@ class _EditorViewState extends State<EditorView> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('CANCEL'),
           ),
           FilledButton(
-            onPressed: () {
-              provider.updateTextContent(itemId, controller.text);
-              Navigator.pop(dialogContext);
-            },
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(controller.text),
             child: const Text('SAVE'),
           ),
         ],
       ),
     );
+
+    // The showDialog Future completes when the route is popped, but Flutter
+    // may still be deactivating the dialog subtree in the same frame.
+    // Updating the ChangeNotifier immediately here can therefore rebuild the
+    // editor while the dialog's inherited elements still have dependents,
+    // causing: InheritedElement.debugDeactivated (_dependents.isEmpty).
+    // Wait until the current frame has completely finished before notifying
+    // the editor provider.
+    await WidgetsBinding.instance.endOfFrame;
+
     controller.dispose();
+
+    if (!mounted) return;
+    if (newText != null && newText != item.text) {
+      provider.updateTextContent(itemId, newText);
+    }
   }
 
   Widget _buildTextActionItem(IconData icon, String label) {
@@ -3759,15 +3781,10 @@ class _InteractiveBackgroundLayerState
         child: Transform.rotate(
           angle: item.rotation,
           child: Opacity(
-            opacity: item.opacity,
-            child: ClipRRect(
-              borderRadius:
-              BorderRadius.circular(
-                item.borderRadius,
-              ),
-              child: _buildBackgroundImage(
-                item,
-              ),
+            opacity: item.opacity.clamp(0.0, 1.0),
+            child: EditableItemWidget.buildStandaloneMediaContent(
+              context,
+              item,
             ),
           ),
         ),

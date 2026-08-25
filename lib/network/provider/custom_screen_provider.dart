@@ -33,19 +33,19 @@ class CustomScreenProvider extends ChangeNotifier {
   final List<AIToolModel> aiToolsList = [
     AIToolModel(
       title: "Logo Generator",
-      subtitle: "Turn your text into\nstunning logos",
-      imagePath: 'assets/images/logo_generator.png',
+      subtitle: "Create professional logos in seconds",
+      imagePath: 'assets/images/ai.png',
 
     ),
     AIToolModel(
       title: "Magic Media",
-      subtitle: "Elevate your products\nwith unique bgs",
-      imagePath: 'assets/images/magic_media.png',
+      subtitle: "Create product backgrounds with AI",
+      imagePath: 'assets/images/ai_image.png',
     ),
     AIToolModel(
       title: "BG Remover",
       subtitle: "Remove backgrounds\ninstantly",
-      imagePath: 'assets/images/logo_generator.png',
+      imagePath: 'assets/images/bg_remover.png',
     ),
     AIToolModel(
       title: "AI Image",
@@ -54,18 +54,18 @@ class CustomScreenProvider extends ChangeNotifier {
     ),
     AIToolModel(
       title: "Captions",
-      subtitle: "Image-driven\ncaptions!",
-      imagePath: 'assets/images/captions.png',
+      subtitle: "Generate engaging captions",
+      imagePath: 'assets/images/caption.png',
     ),
     AIToolModel(
       title: "SM Calendar",
-      subtitle: "Create custom,\nmonthly SM calendars",
-      imagePath: 'assets/images/sm.png',
+      subtitle: "Generate monthly content calendars",
+      imagePath: 'assets/images/sm_calender.png',
     ),
     AIToolModel(
       title: "Text to Audio",
-      subtitle: "Instant High Quality\nHuman Like Voiceover",
-      imagePath: 'assets/images/text_audio.png',
+      subtitle: "Convert text into natural AI voiceovers",
+      imagePath: 'assets/images/text_to_audio.png',
     ),
     AIToolModel(
       title: "Translate",

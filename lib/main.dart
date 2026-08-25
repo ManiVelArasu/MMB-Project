@@ -35,7 +35,9 @@ Future<void> main() async {
 
 Future<void> _initializeApp() async {
   await _initApi();
+
   final prefs = await SharedPreferences.getInstance();
+
   final savedToken = prefs.getString('auth_token');
   final savedRefreshToken = prefs.getString('refresh_token');
 
@@ -44,6 +46,7 @@ Future<void> _initializeApp() async {
       token: savedToken,
       refreshToken: savedRefreshToken,
     );
+
     debugPrint("✅ Restored Saved Token & Refresh Token");
   } else {
     debugPrint("⚠️ No Saved Token Found");
@@ -61,7 +64,6 @@ Future<void> _initApi() async {
     rethrowExceptions: false,
     showToastOnError: true,
     defaultToastPosition: ApiToastPosition.bottom,
-    interceptor: TokenRefreshInterceptor(tempDio),
   );
 }
 
