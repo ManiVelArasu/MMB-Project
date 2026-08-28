@@ -14,7 +14,7 @@ class HomeScreenProvider extends ChangeNotifier {
 
   String _businessName = "";
   String get businessName => _businessName;
-
+  String selectedDate = "2";
   Future<void> loadSavedBusinessData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -30,7 +30,10 @@ class HomeScreenProvider extends ChangeNotifier {
       debugPrint("Error loading business name: $e");
     }
   }
-
+  void updateSelectedDate(String date) {
+    selectedDate = date;
+    notifyListeners();
+  }
   // ============================================================
   // TEMPLATE CATEGORIES
   // ============================================================

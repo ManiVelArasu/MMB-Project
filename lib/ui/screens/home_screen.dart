@@ -25,6 +25,8 @@ class HomeScreen extends StatelessWidget {
     final themeProvider = context.watch<CustomThemeProvider>();
     final isDark = themeProvider.isDarkMode;
 
+    const bool isBusinessUser = true;
+
     return ChangeNotifierProvider(
       create: (_) => HomeScreenProvider(),
       builder: (context, provider) => Consumer<HomeScreenProvider>(
@@ -75,6 +77,7 @@ class HomeScreen extends StatelessWidget {
 
                       SizedBox(height: 20.h),
 
+                      // 🚀 1. Special Days ஹெட்டிங் (இருவருக்கும் பொதுவானது)
                       Row(
                         children: [
                           Image.asset(
@@ -94,14 +97,83 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           const Spacer(),
-                          Image.asset(
-                            "assets/images/calendar.png",
-                            height: 32.h,
-                            width: 32.w,
+                          Text(
+                            "VIEW ALL",
+                            style: TextStyle(
+                              color: isDark
+                                  ? Colors.grey.shade400
+                                  : Colors.grey.shade600,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
                       SizedBox(height: 12.h),
+
+                      // 🚀 2. Special Days-க்கு கீழே வர வேண்டிய டேட் ஸ்க்ரோலர் பாக்ஸ் (இருவருக்கும் பொதுவானது)
+                      Container(
+                        height: 50.h,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 4.w,
+                          vertical: 4.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFEEEE),
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 14.w,
+                                vertical: 8.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE53935),
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
+                              child: AppText(
+                                "AUG",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 6.w),
+                            Expanded(
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                children: [
+                                  _buildDateBox(context, homeScreenProvider, "2"),
+                                  _buildDateBox(context, homeScreenProvider, "7"),
+                                  _buildDateBox(context, homeScreenProvider, "15"),
+                                  _buildDateBox(context, homeScreenProvider, "17"),
+                                  _buildDateBox(context, homeScreenProvider, "26"),
+                                  _buildDateBox(context, homeScreenProvider, "29"),
+                                  _buildDateBox(context, homeScreenProvider, "30"),
+                                  Container(
+                                    alignment: Alignment.center,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 10.w,
+                                    ),
+                                    child: Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      size: 14.sp,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 12.h),
+
                       _buildSpecialDaysList(homeScreenProvider, isDark),
 
                       SizedBox(height: 20.h),
@@ -112,266 +184,255 @@ class HomeScreen extends StatelessWidget {
                         isDark: isDark,
                       ),
                       SizedBox(height: 12.h),
-                      _buildMyZoneSlider(homeScreenProvider, isDark),
+
+                      _buildMyZoneSlider(
+                        homeScreenProvider,
+                        isDark,
+                        isBusinessUser: isBusinessUser,
+                      ),
 
                       SizedBox(height: 24.h),
 
                       _buildMyFrameHeader(isDark),
 
                       SizedBox(height: 16.h),
-                      _buildLeadBannerSlider(homeScreenProvider, isDark),
+
+                      _buildLeadBannerSlider(
+                        homeScreenProvider,
+                        isDark,
+                        isBusinessUser: isBusinessUser,
+                      ),
 
                       SizedBox(height: 20.h),
 
-                      _buildSectionHeader(
-                        title: "My Brand Posts",
-                        iconAsset: "assets/images/my_brand_posts.png",
-                        hasViewAll: true,
-                        isDark: isDark,
-                      ),
-                      SizedBox(height: 12.h),
+                      // 🚀 My Brand Posts (பிசினஸ் யூசர்களுக்கு மட்டும்)
+                      if (isBusinessUser) ...[
+                        _buildSectionHeader(
+                          title: "My Brand Posts",
+                          iconAsset: "assets/images/my_brand_posts.png",
+                          hasViewAll: true,
+                          isDark: isDark,
+                        ),
+                        SizedBox(height: 12.h),
 
-                      SizedBox(
-                        height: 45.h,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: homeScreenProvider.videoCategories.length,
-                          physics: const BouncingScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            bool isSelected =
-                                homeScreenProvider.selectedVideoCategoryIndex ==
-                                index;
-                            return GestureDetector(
-                              onTap: () => homeScreenProvider
-                                  .updateVideoCategoryIndex(index),
-                              child: Container(
-                                margin: EdgeInsets.only(right: 10.w),
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 22.w,
-                                  vertical: 10.h,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? const Color(0xFF555555)
-                                      : (isDark
-                                            ? const Color(0xFF1E1E1E)
-                                            : Colors.white),
-                                  borderRadius: BorderRadius.circular(30.r),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? Colors.transparent
-                                        : (isDark
-                                              ? Colors.grey.shade700
-                                              : Colors.grey.shade400),
-                                    width: 1.5,
+                        SizedBox(
+                          height: 45.h,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount:
+                                homeScreenProvider.videoCategories.length,
+                            physics: const BouncingScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              bool isSelected =
+                                  homeScreenProvider
+                                      .selectedVideoCategoryIndex ==
+                                  index;
+                              return GestureDetector(
+                                onTap: () => homeScreenProvider
+                                    .updateVideoCategoryIndex(index),
+                                child: Container(
+                                  margin: EdgeInsets.only(right: 10.w),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 22.w,
+                                    vertical: 10.h,
                                   ),
-                                ),
-                                child: Center(
-                                  child: AppText(
-                                    homeScreenProvider.videoCategories[index],
-                                    style: TextStyle(
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFF555555)
+                                        : (isDark
+                                              ? const Color(0xFF1E1E1E)
+                                              : Colors.white),
+                                    borderRadius: BorderRadius.circular(30.r),
+                                    border: Border.all(
                                       color: isSelected
-                                          ? Colors.white
+                                          ? Colors.transparent
                                           : (isDark
-                                                ? Colors.white70
-                                                : Colors.grey.shade800),
-                                      fontSize: 14.sp,
-                                      fontWeight: FontWeight.bold,
+                                                ? Colors.grey.shade700
+                                                : Colors.grey.shade400),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: AppText(
+                                      homeScreenProvider.videoCategories[index],
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : (isDark
+                                                  ? Colors.white70
+                                                  : Colors.grey.shade800),
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                      SizedBox(height: 16.h),
-
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount:
-                            homeScreenProvider.brandVideoPostsList.isNotEmpty
-                            ? homeScreenProvider.brandVideoPostsList.length
-                            : 4,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12.w,
-                          mainAxisSpacing: 12.h,
-                          childAspectRatio: 1.0,
-                        ),
-                        itemBuilder: (context, index) {
-                          return InkWell(
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                "/TemplateDetailScreen",
                               );
                             },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20.r),
-                                color: isDark
-                                    ? const Color(0xFF1E1E1E)
-                                    : Colors.grey.shade100,
-                                border: Border.all(
-                                  color: isDark
-                                      ? Colors.grey.shade800
-                                      : Colors.grey.shade300,
-                                  width: 1.2,
-                                ),
+                          ),
+                        ),
+
+                        SizedBox(height: 16.h),
+
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount:
+                              homeScreenProvider.brandVideoPostsList.isNotEmpty
+                              ? homeScreenProvider.brandVideoPostsList.length
+                              : 4,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12.w,
+                                mainAxisSpacing: 12.h,
+                                childAspectRatio: 1.0,
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(20.r),
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: Image.asset(
-                                        "assets/images/thumbnail1.png",
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, _, _) => Container(
-                                          color: isDark
-                                              ? const Color(0xFF2C2C2C)
-                                              : Colors.grey.shade200,
-                                          child: Icon(
-                                            Icons.image_outlined,
-                                            size: 40.sp,
-                                            color: Colors.grey.shade400,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      top: 10.h,
-                                      left: 10.w,
-                                      child: Container(
-                                        padding: EdgeInsets.all(6.r),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.4,
-                                          ),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Image.asset(
-                                          "assets/images/crown.png",
-                                          width: 14.w,
-                                          height: 14.h,
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      top: 10.h,
-                                      right: 10.w,
-                                      child: Container(
-                                        padding: EdgeInsets.all(6.r),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.4,
-                                          ),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.more_horiz,
-                                          color: Colors.white,
-                                          size: 16.sp,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      SizedBox(height: 12.h),
-
-                      _buildSectionHeader(
-                        title: "My Brand Video Posts",
-                        iconAsset: "assets/images/my_brand_posts.png",
-                        hasViewAll: true,
-                        isDark: isDark,
-                      ),
-
-                      SizedBox(height: 12.h),
-
-                      SizedBox(
-                        height: 38.h,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: homeScreenProvider.videoCategories.length,
-                          physics: const BouncingScrollPhysics(),
                           itemBuilder: (context, index) {
-                            bool isSelected =
-                                homeScreenProvider.selectedVideoCategoryIndex ==
-                                index;
-                            return GestureDetector(
-                              onTap: () => homeScreenProvider
-                                  .updateVideoCategoryIndex(index),
+                            return InkWell(
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  "/TemplateDetailScreen",
+                                );
+                              },
                               child: Container(
-                                margin: EdgeInsets.only(right: 10.w),
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 16.w,
-                                  vertical: 8.h,
-                                ),
                                 decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? const Color(0xFF555555)
-                                      : (isDark
-                                            ? const Color(0xFF1E1E1E)
-                                            : Colors.white),
                                   borderRadius: BorderRadius.circular(20.r),
+                                  color: isDark
+                                      ? const Color(0xFF1E1E1E)
+                                      : Colors.grey.shade100,
                                   border: Border.all(
-                                    color: isSelected
-                                        ? Colors.transparent
-                                        : (isDark
-                                              ? Colors.grey.shade700
-                                              : Colors.grey.shade400),
+                                    color: isDark
+                                        ? Colors.grey.shade800
+                                        : Colors.grey.shade300,
                                     width: 1.2,
                                   ),
                                 ),
-                                child: Center(
-                                  child: AppText(
-                                    homeScreenProvider.videoCategories[index],
-                                    style: TextStyle(
-                                      color: isSelected
-                                          ? Colors.white
-                                          : (isDark
-                                                ? Colors.white70
-                                                : Colors.grey.shade800),
-                                      fontSize: 12.sp,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(20.r),
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: Image.asset(
+                                          "assets/images/thumbnail1.png",
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, _, _) => Container(
+                                            color: isDark
+                                                ? const Color(0xFF2C2C2C)
+                                                : Colors.grey.shade200,
+                                            child: Icon(
+                                              Icons.image_outlined,
+                                              size: 40.sp,
+                                              color: Colors.grey.shade400,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
                             );
                           },
                         ),
-                      ),
+                        SizedBox(height: 12.h),
+                      ],
 
-                      SizedBox(height: 16.h),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount:
-                            homeScreenProvider.brandVideoPostsList.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12.w,
-                          mainAxisSpacing: 12.h,
-                          childAspectRatio: 1.0,
+                      // 🚀 My Brand Video Posts (பிசினஸ் யூசர்களுக்கு மட்டும்)
+                      if (isBusinessUser) ...[
+                        _buildSectionHeader(
+                          title: "My Brand Video Posts",
+                          iconAsset: "assets/images/my_brand_posts.png",
+                          hasViewAll: true,
+                          isDark: isDark,
                         ),
-                        itemBuilder: (context, index) {
-                          final videoData =
-                              homeScreenProvider.brandVideoPostsList[index];
-                          return BrandVideoCard(
-                            thumbnailUrl: videoData["thumbnail"] ?? '',
-                            videoUrl: videoData["videoUrl"] ?? '',
-                          );
-                        },
-                      ),
+
+                        SizedBox(height: 12.h),
+
+                        SizedBox(
+                          height: 38.h,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount:
+                                homeScreenProvider.videoCategories.length,
+                            physics: const BouncingScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              bool isSelected =
+                                  homeScreenProvider
+                                      .selectedVideoCategoryIndex ==
+                                  index;
+                              return GestureDetector(
+                                onTap: () => homeScreenProvider
+                                    .updateVideoCategoryIndex(index),
+                                child: Container(
+                                  margin: EdgeInsets.only(right: 10.w),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 16.w,
+                                    vertical: 8.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFF555555)
+                                        : (isDark
+                                              ? const Color(0xFF1E1E1E)
+                                              : Colors.white),
+                                    borderRadius: BorderRadius.circular(20.r),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Colors.transparent
+                                          : (isDark
+                                                ? Colors.grey.shade700
+                                                : Colors.grey.shade400),
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: AppText(
+                                      homeScreenProvider.videoCategories[index],
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : (isDark
+                                                  ? Colors.white70
+                                                  : Colors.grey.shade800),
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        SizedBox(height: 16.h),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount:
+                              homeScreenProvider.brandVideoPostsList.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12.w,
+                                mainAxisSpacing: 12.h,
+                                childAspectRatio: 1.0,
+                              ),
+                          itemBuilder: (context, index) {
+                            final videoData =
+                                homeScreenProvider.brandVideoPostsList[index];
+                            return BrandVideoCard(
+                              thumbnailUrl: videoData["thumbnail"] ?? '',
+                              videoUrl: videoData["videoUrl"] ?? '',
+                            );
+                          },
+                        ),
+                        SizedBox(height: 12.h),
+                      ],
+
+                      // பொதுவான டெம்ப்ளேட் வகைகள்
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -465,13 +526,39 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildDateBox(BuildContext context, HomeScreenProvider provider, String date) {
+    final bool isSelected = provider.selectedDate == date;
+
+    return GestureDetector(
+      onTap: () {
+        provider.updateSelectedDate(date); // ப்ரோவைடர் மூலமாக மதிப்பை மாற்றுதல்
+      },
+      child: Container(
+        alignment: Alignment.center,
+        margin: EdgeInsets.symmetric(horizontal: 4.w),
+        padding: EdgeInsets.symmetric(horizontal: 14.w),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFE53935) : Colors.white,
+          borderRadius: BorderRadius.circular(8.r),
+        ),
+        child: AppText(
+          date,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black,
+            fontSize: 13.sp,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildApiTemplateCard(
     BuildContext context,
     TemplateModel template,
     bool isDark,
   ) {
     final key = template.thumbnailS3Key?.trim() ?? "";
-
     final imageUrl = key.isEmpty ? "" : "${ApiEndpoints.cdnImageUrl}/$key";
 
     return Container(
@@ -497,58 +584,13 @@ class HomeScreen extends StatelessWidget {
                 imageUrl,
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) {
-                    return child;
-                  }
-
+                  if (loadingProgress == null) return child;
                   return const Center(
                     child: CircularProgressIndicator(strokeWidth: 2),
                   );
                 },
-                errorBuilder: (context, error, stackTrace) {
-                  debugPrint("Template thumbnail failed: $imageUrl");
-
-                  return _templateImagePlaceholder(isDark);
-                },
-              ),
-
-            if (template.isPremium == 1)
-              Positioned(
-                top: 8.h,
-                left: 8.w,
-                child: Container(
-                  padding: EdgeInsets.all(5.r),
-                  decoration: const BoxDecoration(
-                    color: Colors.black54,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.workspace_premium,
-                    color: Colors.amber,
-                    size: 16.sp,
-                  ),
-                ),
-              ),
-
-            if (template.isLocked ?? false)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black26,
-                  child: Center(
-                    child: Container(
-                      padding: EdgeInsets.all(7.r),
-                      decoration: const BoxDecoration(
-                        color: Colors.black54,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.lock_outline,
-                        color: Colors.white,
-                        size: 19.sp,
-                      ),
-                    ),
-                  ),
-                ),
+                errorBuilder: (context, error, stackTrace) =>
+                    _templateImagePlaceholder(isDark),
               ),
           ],
         ),
@@ -699,28 +741,6 @@ class HomeScreen extends StatelessWidget {
                       child: Image.asset(item["icon"] ?? "", fit: BoxFit.cover),
                     ),
                   ),
-                  Positioned(
-                    bottom: 10.h,
-                    left: 10.w,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10.w,
-                        vertical: 4.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEB04B),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: AppText(
-                        item["dayCount"] ?? "${index + 5}",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -732,8 +752,9 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildMyZoneSlider(
     HomeScreenProvider homeScreenProvider,
-    bool isDark,
-  ) {
+    bool isDark, {
+    required bool isBusinessUser,
+  }) {
     return FutureBuilder<SharedPreferences>(
       future: SharedPreferences.getInstance(),
       builder: (context, snapshot) {
@@ -744,147 +765,71 @@ class HomeScreen extends StatelessWidget {
           );
         }
 
-        return Column(
-          children: [
-            SizedBox(
-              height: 360.h,
-              child: PageView.builder(
-                controller: homeScreenProvider.zonePageController,
-                itemCount: homeScreenProvider.myZoneBanners.length,
-                onPageChanged: (index) =>
-                    homeScreenProvider.updateZoneIndex(index),
-                itemBuilder: (context, index) {
-                  return Container(
-                    margin: EdgeInsets.symmetric(horizontal: 25.w),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16.r),
-                      color: isDark
-                          ? const Color(0xFF1E1E1E)
-                          : Colors.grey.shade100,
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16.r),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          savedImagePath != null && savedImagePath.isNotEmpty
-                              ? Image.file(
-                                  File(savedImagePath),
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                )
-                              : Image.asset(
-                                  homeScreenProvider.myZoneBanners[index],
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  errorBuilder: (_, _, _) => Container(
-                                    color: isDark
-                                        ? const Color(0xFF2C2C2C)
-                                        : Colors.grey.shade200,
-                                    child: Icon(
-                                      Icons.image_outlined,
-                                      size: 50.sp,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                  ),
-                                ),
-
-                          Positioned(
-                            top: 12.h,
-                            left: 14.w,
-                            child: Container(
-                              width: 58.w,
-                              height: 58.w,
-                              padding: EdgeInsets.all(5.r),
-                              child: Image.asset(
-                                'assets/icons/app_logo.png',
-                                fit: BoxFit.contain,
-                              ),
+        return SizedBox(
+          height: 360.h,
+          child: PageView.builder(
+            controller: homeScreenProvider.zonePageController,
+            itemCount: homeScreenProvider.myZoneBanners.length,
+            itemBuilder: (context, index) {
+              return Container(
+                margin: EdgeInsets.symmetric(horizontal: 25.w),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16.r),
+                  color: isDark
+                      ? const Color(0xFF1E1E1E)
+                      : Colors.grey.shade100,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16.r),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      savedImagePath != null && savedImagePath.isNotEmpty
+                          ? Image.file(File(savedImagePath), fit: BoxFit.cover)
+                          : Image.asset(
+                              homeScreenProvider.myZoneBanners[index],
+                              fit: BoxFit.cover,
                             ),
-                          ),
-
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 18.w,
-                                vertical: 12.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF246BFE),
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(45.r),
-                                  topRight: Radius.circular(0),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.phone_in_talk_rounded,
+                      if (isBusinessUser)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 18.w,
+                              vertical: 12.h,
+                            ),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF246BFE),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  '+91 98765 43210',
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    size: 18.sp,
+                                    fontSize: 11.sp,
                                   ),
-
-                                  SizedBox(width: 6.w),
-
-                                  Text(
-                                    '+91 98765 43210',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11.sp,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  'Sarah Gym & Fitness',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11.sp,
                                   ),
-
-                                  const Spacer(),
-
-                                  Text(
-                                    'Sarah Gym & Fitness',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11.sp,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            SizedBox(height: 12.h),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                homeScreenProvider.myZoneBanners.length,
-                (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: EdgeInsets.symmetric(horizontal: 3.w),
-                  height: 6.h,
-                  width: homeScreenProvider.currentZoneIndex == index
-                      ? 22.w
-                      : 6.w,
-                  decoration: BoxDecoration(
-                    color: homeScreenProvider.currentZoneIndex == index
-                        ? const Color(0xFFE53935)
-                        : (isDark
-                              ? Colors.grey.shade700
-                              : Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(10.r),
+                        ),
+                    ],
                   ),
                 ),
-              ),
-            ),
-          ],
+              );
+            },
+          ),
         );
       },
     );
@@ -901,146 +846,147 @@ class HomeScreen extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        SizedBox(width: 6.w),
-        Container(
-          padding: EdgeInsets.all(4.r),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.more_vert_rounded,
-            color: const Color(0xFFE53935),
-            size: 16.sp,
-          ),
-        ),
-        const Spacer(),
-        Container(
-          padding: EdgeInsets.all(8.r),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.edit_outlined,
-            color: const Color(0xFFE53935),
-            size: 18.sp,
-          ),
-        ),
-        SizedBox(width: 8.w),
-        Container(
-          padding: EdgeInsets.all(8.r),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.file_download_outlined,
-            color: const Color(0xFFE53935),
-            size: 18.sp,
-          ),
-        ),
       ],
     );
   }
 
   Widget _buildLeadBannerSlider(
     HomeScreenProvider homeScreenProvider,
-    bool isDark,
-  ) {
-    return Column(
-      children: [
-        SizedBox(
-          height: 140.h,
-          child: PageView.builder(
-            controller: homeScreenProvider.leadPageController,
-            itemCount: homeScreenProvider.leadBanners.length,
-            onPageChanged: (index) =>
-                homeScreenProvider.updateLeadBannerIndex(index),
-            itemBuilder: (context, index) {
-              final banner = homeScreenProvider.leadBanners[index];
-              return Container(
-                padding: EdgeInsets.all(16.r),
-                decoration: BoxDecoration(
-                  gradient: isDark
-                      ? const LinearGradient(
-                          colors: [Color(0xFF1E1E2C), Color(0xFF1E1E2C)],
-                        )
-                      : const LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [Color(0xFFFFEEEE), Color(0xFFFFF9EA)],
+    bool isDark, {
+    required bool isBusinessUser,
+  }) {
+    if (!isBusinessUser) {
+      return SizedBox(
+        height: 140.h,
+        child: PageView.builder(
+          controller: homeScreenProvider.leadPageController,
+          itemCount: homeScreenProvider.leadBanners.length,
+          itemBuilder: (context, index) {
+            return Container(
+              padding: EdgeInsets.all(16.r),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEEEE),
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AppText(
+                    "Grow Your Business",
+                    style: TextStyle(
+                      color: AppColors.gold,
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  AppText(
+                    "List your business on MMB and get discovered by potential customers.",
+                    style: TextStyle(
+                      color: AppColors.appBlack,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          // 🚀 Button Action இங்கே எழுதவும்
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              AppColors.gold, // மிகவும் எளிய மற்றும் சரியான வழி
+                          foregroundColor:
+                              Colors.white, // உரையின் நிறம் (Text color)
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              12.r,
+                            ), // விளிம்புகளை வளைக்க
+                          ),
                         ),
-                  borderRadius: BorderRadius.circular(16.r),
+                        child: AppText(
+                          "GO PREMIUM",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 140.h,
+      child: PageView.builder(
+        controller: homeScreenProvider.leadPageController,
+        itemCount: homeScreenProvider.leadBanners.length,
+        itemBuilder: (context, index) {
+          return Container(
+            padding: EdgeInsets.all(16.r),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFEEEE),
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AppText(
+                  "Grow Your Business",
+                  style: TextStyle(
+                    color: AppColors.gold,
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                AppText(
+                  "List your business on MMB and get discovered by potential customers.",
+                  style: TextStyle(
+                    color: AppColors.appBlack,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Row(
                   children: [
-                    AppText(
-                      banner["title"] ?? "",
-                      style: TextStyle(
-                        color: isDark
-                            ? const Color(0xFF9FA8DA)
-                            : AppColors.gold,
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 6.h),
-                    AppText(
-                      banner["subTitle"] ?? "",
-                      style: TextStyle(
-                        color: isDark ? Colors.white70 : Colors.black87,
-                        fontSize: 12.sp,
-                      ),
-                    ),
-                    SizedBox(height: 5.h),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        // 🚀 Button Action இங்கே எழுதவும்
+                      },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF9172FF),
+                        backgroundColor:
+                            AppColors.gold, // மிகவும் எளிய மற்றும் சரியான வழி
+                        foregroundColor:
+                            Colors.white, // உரையின் நிறம் (Text color)
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.r),
+                          borderRadius: BorderRadius.circular(
+                            12.r,
+                          ), // விளிம்புகளை வளைக்க
                         ),
                       ),
                       child: AppText(
-                        banner["btnText"] ?? "",
+                        "GO PREMIUM",
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ],
                 ),
-              );
-            },
-          ),
-        ),
-        SizedBox(height: 10.h),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            homeScreenProvider.leadBanners.length,
-            (index) => AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              margin: EdgeInsets.symmetric(horizontal: 3.w),
-              height: 6.h,
-              width: homeScreenProvider.currentLeadBannerIndex == index
-                  ? 22.w
-                  : 6.w,
-              decoration: BoxDecoration(
-                color: homeScreenProvider.currentLeadBannerIndex == index
-                    ? (isDark ? Colors.blueAccent : const Color(0xFF2C3860))
-                    : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(10.r),
-              ),
+              ],
             ),
-          ),
-        ),
-      ],
+          );
+        },
+      ),
     );
   }
 }

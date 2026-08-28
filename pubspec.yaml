@@ -61,6 +61,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/lottie/
+    - assets/shapes/
 
   fonts:
     - family: Outfit

@@ -4,12 +4,15 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:project_mmb/ui/screens/video_widget/editor_video.dart';
 import 'package:provider/provider.dart';
 import '../../Api Model/editor_model.dart';
@@ -21,6 +24,21 @@ import '../../network/provider/custom_theme_provider.dart';
 class TemplateEditScreen extends StatelessWidget {
   final String resizeSize;
   const TemplateEditScreen({super.key, this.resizeSize = "Post Square (1:1)"});
+
+  bool _isSelectedCanvasBackground(EditorProvider provider) {
+    final id = provider.selectedItemId;
+    if (id == null) return false;
+
+    final item = provider.items.where((e) => e.id == id).toList();
+    if (item.isEmpty) return false;
+
+    final value = item.first;
+    return value.id?.startsWith('bg_') == true ||
+        (value.position.dx == 0 &&
+            value.position.dy == 0 &&
+            value.width >= 1000 &&
+            value.height >= 1000);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -210,9 +228,7 @@ class _EditorViewState extends State<EditorView> {
 
       // Close the selection sheet, then keep the new background selected.
       // The image editor bottom toolbar is driven by selectedItemType.
-      final bgItems = provider.items
-          .where(_isCanvasBackground)
-          .toList();
+      final bgItems = provider.items.where(_isCanvasBackground).toList();
 
       if (bgItems.isNotEmpty) {
         final bg = bgItems.last;
@@ -286,217 +302,165 @@ class _EditorViewState extends State<EditorView> {
     provider.fetchFreePikStickers("shapes");
   }
 
-  void _showFontFamilyBottomSheet(
+  static const List<String> _localShapeAssets = [
+    'assets/shapes/4-point-star.svg',
+    'assets/shapes/5-point-star.svg',
+    'assets/shapes/8-point-badge.svg',
+    'assets/shapes/badge-shield.svg',
+    'assets/shapes/beveled-octagon.svg',
+    'assets/shapes/bookmark.svg',
+    'assets/shapes/capsule.svg',
+    'assets/shapes/check-mark.svg',
+    'assets/shapes/chevron-up.svg',
+    'assets/shapes/circle.svg',
+    'assets/shapes/cloud-badge.svg',
+    'assets/shapes/corner-line.svg',
+    'assets/shapes/crescent-moon.svg',
+    'assets/shapes/curved-badge.svg',
+    'assets/shapes/d-shape.svg',
+    'assets/shapes/decorative-shield.svg',
+    'assets/shapes/diamond.svg',
+    'assets/shapes/diamond-gem.svg',
+    'assets/shapes/diamond2.svg',
+    'assets/shapes/egg-oval.svg',
+    'assets/shapes/half-circle.svg',
+    'assets/shapes/heart.svg',
+    'assets/shapes/hexagon.svg',
+    'assets/shapes/hexagon2.svg',
+    'assets/shapes/hexagonal-capsule.svg',
+    'assets/shapes/leaf.svg',
+    'assets/shapes/line.svg',
+    'assets/shapes/notched-square.svg',
+    'assets/shapes/octagon.svg',
+    'assets/shapes/oval-burst.svg',
+    'assets/shapes/pennant-shield.svg',
+    'assets/shapes/pentagon.svg',
+    'assets/shapes/pentagon-shield.svg',
+    'assets/shapes/pill.svg',
+    'assets/shapes/plus.svg',
+    'assets/shapes/pointed-shield.svg',
+    'assets/shapes/quarter-ring.svg',
+    'assets/shapes/rectangle.svg',
+    'assets/shapes/ribbon-banner.svg',
+    'assets/shapes/ribbon2.svg',
+    'assets/shapes/round-shield.svg',
+    'assets/shapes/rounded-rectangle-2.svg',
+    'assets/shapes/rounded-shield.svg',
+    'assets/shapes/rounded-speech-bubble.svg',
+    'assets/shapes/rounded-square.svg',
+    'assets/shapes/rounded-star.svg',
+    'assets/shapes/scalloped-circle.svg',
+    'assets/shapes/scalloped-oval.svg',
+    'assets/shapes/seal.svg',
+    'assets/shapes/sharp-star.svg',
+    'assets/shapes/shield.svg',
+    'assets/shapes/small-diamond.svg',
+    'assets/shapes/speech-bubble.svg',
+    'assets/shapes/spiky-burst.svg',
+    'assets/shapes/square.svg',
+    'assets/shapes/sunburst-circle.svg',
+    'assets/shapes/swallowtail-ribbon.svg',
+    'assets/shapes/tall-oval.svg',
+    'assets/shapes/teardrop.svg',
+    'assets/shapes/ticket.svg',
+    'assets/shapes/trapezoid.svg',
+    'assets/shapes/triangle.svg',
+    'assets/shapes/u-shape.svg',
+    'assets/shapes/up-arrow.svg',
+    'assets/shapes/vertical-oval.svg',
+    'assets/shapes/zigzag-ribbon.svg',
+  ];
+
+  Future<void> _addLocalShape(
       BuildContext context,
       EditorProvider provider,
-      String itemId,
-      bool isDark,
-      ) {
-    final List<String> fontList = [
-      "Inter",
-      "Janda Manatee Solid",
-      "JekoVariable",
-      "Anton",
-      "Roboto",
-      "Poppins",
-      "Pacifico",
-      "Playfair Display",
-      "Montserrat",
-    ];
+      String assetPath,
+      ) async {
+    try {
+      final pictureInfo = await vg.loadPicture(
+        SvgAssetLoader(assetPath),
+        null,
+      );
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.60,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  AppText(
-                    "Fonts",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      provider.clearSelection();
-                      Navigator.pop(modalContext);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF2A1A1C)
-                            : Colors.red.shade50,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.red,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: ListView.separated(
-                  itemCount: fontList.length,
-                  separatorBuilder: (context, index) =>
-                      Divider(color: Colors.grey.withValues(alpha: .2)),
-                  itemBuilder: (context, index) {
-                    final font = fontList[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: AppText(
-                        "Aa - $font",
-                        style: TextStyle(
-                          fontFamily: font,
-                          fontSize: 18,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                      trailing: const Icon(
-                        Icons.arrow_forward_ios,
-                        size: 14,
-                        color: Colors.grey,
-                      ),
-                      onTap: () {
-                        provider.updateFontFamily(itemId, font);
-                        Navigator.pop(modalContext);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+      const outputSize = 512.0;
+
+      final sourceSize = pictureInfo.size;
+
+      final sourceWidth =
+      sourceSize.width > 0
+          ? sourceSize.width
+          : outputSize;
+
+      final sourceHeight =
+      sourceSize.height > 0
+          ? sourceSize.height
+          : outputSize;
+
+      final recorder = ui.PictureRecorder();
+
+      final canvas = Canvas(recorder);
+
+      final scale = math.min(
+        outputSize / sourceWidth,
+        outputSize / sourceHeight,
+      );
+
+      canvas.translate(
+        (outputSize - sourceWidth * scale) / 2,
+        (outputSize - sourceHeight * scale) / 2,
+      );
+
+      canvas.scale(scale);
+
+      canvas.drawPicture(
+        pictureInfo.picture,
+      );
+
+      final picture = recorder.endRecording();
+
+      final image = await picture.toImage(
+        outputSize.toInt(),
+        outputSize.toInt(),
+      );
+
+      final byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+
+      pictureInfo.picture.dispose();
+      picture.dispose();
+      image.dispose();
+
+      if (byteData == null) {
+        throw Exception('Unable to render SVG');
+      }
+
+      final dir = await getTemporaryDirectory();
+
+      final file = File(
+        "${dir.path}/shape_${DateTime.now().microsecondsSinceEpoch}.png",
+      );
+
+      await file.writeAsBytes(
+        byteData.buffer.asUint8List(),
+        flush: true,
+      );
+
+      provider.addImage(
+        file.path,
+        isLocal: true,
+      );
+
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+    } catch (_) {
+      if (context.mounted) {
+        Fluttertoast.showToast(
+          msg: "Unable to add shape",
         );
-      },
-    );
-  }
-
-  void _showFontColorBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      bool isDark,
-      ) {
-    int selectedTab = 0;
-    Color pickerColor = Colors.red;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.65,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      AppText(
-                        "Colors",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.red),
-                        onPressed: () {
-                          provider.clearSelection();
-                          Navigator.pop(modalContext);
-                        },
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      _buildTab(
-                        selectedTab == 0,
-                        "Presets",
-                            () => setModalState(() => selectedTab = 0),
-                      ),
-                      const SizedBox(width: 20),
-                      _buildTab(
-                        selectedTab == 1,
-                        "Custom",
-                            () => setModalState(() => selectedTab = 1),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: selectedTab == 0
-                        ? GridView.builder(
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 6,
-                        mainAxisSpacing: 10,
-                        crossAxisSpacing: 10,
-                      ),
-                      itemCount: Colors.primaries.length,
-                      itemBuilder: (context, index) {
-                        return GestureDetector(
-                          onTap: () => provider.updateTextColor(
-                            itemId,
-                            Colors.primaries[index],
-                          ),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.primaries[index],
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                        : SingleChildScrollView(
-                      child: ColorPicker(
-                        pickerColor: pickerColor,
-                        onColorChanged: (color) {
-                          setModalState(() => pickerColor = color);
-                          provider.updateTextColor(itemId, color);
-                        },
-                        enableAlpha: false,
-                        displayThumbColor: true,
-                        paletteType: PaletteType.hueWheel,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+      }
+    }
   }
 
   Widget _buildTab(bool isSelected, String title, VoidCallback onTap) {
@@ -554,248 +518,6 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  void _showSpacingBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      bool isDark,
-      ) {
-    double letter = provider.textLetterSpacing(itemId);
-    double line = provider.textLineSpacing(itemId);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return _textSheetContainer(
-            isDark: isDark,
-            height: .40,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Spacing',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(modalContext),
-                      icon: const Icon(Icons.close, color: Colors.red),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Expanded(child: Text('Letter spacing')),
-                    Text(letter.toStringAsFixed(1)),
-                  ],
-                ),
-                Slider(
-                  value: letter.clamp(-2.0, 20.0),
-                  min: -2,
-                  max: 20,
-                  activeColor: Colors.red,
-                  onChanged: (v) {
-                    setModalState(() => letter = v);
-                    provider.updateTextLetterSpacing(itemId, v);
-                  },
-                ),
-                Row(
-                  children: [
-                    const Expanded(child: Text('Line spacing')),
-                    Text(line.toStringAsFixed(1)),
-                  ],
-                ),
-                Slider(
-                  value: line.clamp(.7, 3.0),
-                  min: .7,
-                  max: 3,
-                  activeColor: Colors.red,
-                  onChanged: (v) {
-                    setModalState(() => line = v);
-                    provider.updateTextLineSpacing(itemId, v);
-                  },
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showAlignBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      bool isDark,
-      ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) => _textSheetContainer(
-        isDark: isDark,
-        height: .30,
-        child: Column(
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Alignment',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(modalContext),
-                  icon: const Icon(Icons.close, color: Colors.red),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _alignmentButton(
-                  modalContext,
-                  provider,
-                  itemId,
-                  TextAlign.left,
-                  Icons.format_align_left_rounded,
-                  'Left',
-                ),
-                _alignmentButton(
-                  modalContext,
-                  provider,
-                  itemId,
-                  TextAlign.center,
-                  Icons.format_align_center_rounded,
-                  'Center',
-                ),
-                _alignmentButton(
-                  modalContext,
-                  provider,
-                  itemId,
-                  TextAlign.right,
-                  Icons.format_align_right_rounded,
-                  'Right',
-                ),
-                _alignmentButton(
-                  modalContext,
-                  provider,
-                  itemId,
-                  TextAlign.justify,
-                  Icons.format_align_justify_rounded,
-                  'Justify',
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _alignmentButton(
-      BuildContext context,
-      EditorProvider provider,
-      String id,
-      TextAlign alignment,
-      IconData icon,
-      String label,
-      ) {
-    final selected = provider.textAlignment(id) == alignment;
-    return InkWell(
-      onTap: () {
-        provider.updateTextAlignment(id, alignment);
-        Navigator.pop(context);
-      },
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: selected ? Colors.red : Colors.grey.shade700,
-            size: 30,
-          ),
-          const SizedBox(height: 5),
-          Text(
-            label,
-            style: TextStyle(fontSize: 11, color: selected ? Colors.red : null),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showTextOrderBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      bool isDark,
-      ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) => _textSheetContainer(
-        isDark: isDark,
-        height: .28,
-        child: Column(
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Layer Order',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(modalContext),
-                  icon: const Icon(Icons.close, color: Colors.red),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      provider.bringToFront(itemId);
-                      Navigator.pop(modalContext);
-                    },
-                    icon: const Icon(Icons.flip_to_front),
-                    label: const Text('Bring Front'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      provider.sendToBack(itemId);
-                      Navigator.pop(modalContext);
-                    },
-                    icon: const Icon(Icons.flip_to_back),
-                    label: const Text('Send Back'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _formatToggle({
     required IconData icon,
     required String label,
@@ -832,341 +554,6 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  void _showFormatBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      bool isDark,
-      ) {
-    final item = provider.items.firstWhere(
-          (e) => e.id == itemId,
-      orElse: () => provider.items.first,
-    );
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.45,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Format",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                      InkWell(
-                        onTap: () => Navigator.pop(modalContext),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF2A1A1C)
-                                : Colors.red.shade50,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.red,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const AppText(
-                        "Text Size",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      AppText("${item.fontSize.toInt()}"),
-                    ],
-                  ),
-                  Slider(
-                    value: item.fontSize,
-                    min: 10.0,
-                    max: 100.0,
-                    activeColor: Colors.red,
-                    onChanged: (val) {
-                      setModalState(() {
-                        provider.updateFontSize(itemId, val);
-                      });
-                    },
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const AppText(
-                        "Transparency",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      AppText("${((item.opacity) * 100).toStringAsFixed(0)}%"),
-                    ],
-                  ),
-                  Slider(
-                    value: item.opacity,
-                    min: 0.0,
-                    max: 1.0,
-                    activeColor: Colors.red,
-                    onChanged: (val) {
-                      setModalState(() {
-                        provider.updateOpacity(itemId, val);
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _formatToggle(
-                        icon: Icons.format_bold_rounded,
-                        label: 'Bold',
-                        selected:
-                        provider.textWeight(itemId) == FontWeight.bold,
-                        onTap: () {
-                          provider.toggleTextBold(itemId);
-                          setModalState(() {});
-                        },
-                      ),
-                      _formatToggle(
-                        icon: Icons.format_italic_rounded,
-                        label: 'Italic',
-                        selected:
-                        provider.textStyle(itemId) == FontStyle.italic,
-                        onTap: () {
-                          provider.toggleTextItalic(itemId);
-                          setModalState(() {});
-                        },
-                      ),
-                      _formatToggle(
-                        icon: Icons.format_underline_rounded,
-                        label: 'Underline',
-                        selected: provider.textUnderline(itemId),
-                        onTap: () {
-                          provider.toggleTextUnderline(itemId);
-                          setModalState(() {});
-                        },
-                      ),
-                      _formatToggle(
-                        icon: Icons.text_fields_rounded,
-                        label: 'Normal',
-                        selected:
-                        provider.textWeight(itemId) == FontWeight.normal &&
-                            provider.textStyle(itemId) == FontStyle.normal &&
-                            !provider.textUnderline(itemId),
-                        onTap: () {
-                          provider.setTextNormal(itemId);
-                          setModalState(() {});
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showImageFilterBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      bool isDark,
-      ) {
-    const filters = <String>[
-      'normal',
-      'grayscale',
-      'sepia',
-      'vintage',
-      'warm',
-      'cool',
-      'dramatic',
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return Container(
-          height: 250,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const AppText(
-                'Filters',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: filters.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemBuilder: (_, index) {
-                    final filter = filters[index];
-                    return InkWell(
-                      onTap: () {
-                        provider.setImageFilter(itemId, filter);
-                        Navigator.pop(sheetContext);
-                      },
-                      child: Container(
-                        width: 82,
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF2A2A2A)
-                              : const Color(0xFFF4F4F4),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          filter.toUpperCase(),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showImageAdjustBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      bool isDark,
-      ) {
-    final item = provider.items
-        .where((e) => e.id == itemId)
-        .cast<EditorItem?>()
-        .firstWhere((e) => e != null, orElse: () => null);
-
-    if (item == null) return;
-
-    double brightness = item.brightness;
-    double contrast = item.contrast;
-    double saturation = item.saturation;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return Container(
-              height: 360,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-              ),
-              child: Column(
-                children: [
-                  const AppText(
-                    'Adjust',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildImageAdjustSlider(
-                    'Brightness',
-                    brightness,
-                    -1,
-                    1,
-                        (v) {
-                      setSheetState(() => brightness = v);
-                      provider.updateImageColorAdjustments(
-                        itemId,
-                        brightness: v,
-                      );
-                    },
-                  ),
-                  _buildImageAdjustSlider(
-                    'Contrast',
-                    contrast,
-                    0,
-                    2,
-                        (v) {
-                      setSheetState(() => contrast = v);
-                      provider.updateImageColorAdjustments(
-                        itemId,
-                        contrast: v,
-                      );
-                    },
-                  ),
-                  _buildImageAdjustSlider(
-                    'Saturation',
-                    saturation,
-                    0,
-                    2,
-                        (v) {
-                      setSheetState(() => saturation = v);
-                      provider.updateImageColorAdjustments(
-                        itemId,
-                        saturation: v,
-                      );
-                    },
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => Navigator.pop(sheetContext),
-                    child: const Text('DONE'),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   Widget _buildImageAdjustSlider(
       String title,
       double value,
@@ -1176,10 +563,7 @@ class _EditorViewState extends State<EditorView> {
       ) {
     return Row(
       children: [
-        SizedBox(
-          width: 88,
-          child: Text(title),
-        ),
+        SizedBox(width: 88, child: Text(title)),
         Expanded(
           child: Slider(
             value: value.clamp(min, max),
@@ -1190,106 +574,9 @@ class _EditorViewState extends State<EditorView> {
         ),
         SizedBox(
           width: 42,
-          child: Text(
-            value.toStringAsFixed(1),
-            textAlign: TextAlign.right,
-          ),
+          child: Text(value.toStringAsFixed(1), textAlign: TextAlign.right),
         ),
       ],
-    );
-  }
-
-  void _showImageTransparencyBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      bool isDark,
-      ) {
-    final item = provider.items.firstWhere(
-          (e) => e.id == itemId,
-      orElse: () => provider.items.first,
-    );
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.25,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      AppText(
-                        "Transparency",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                      InkWell(
-                        onTap: () => Navigator.pop(modalContext),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF2A1A1C)
-                                : Colors.red.shade50,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.red,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Slider(
-                          value: item.opacity,
-                          min: 0.0,
-                          max: 1.0,
-                          activeColor: Colors.red,
-                          onChanged: (val) {
-                            setModalState(() {
-                              provider.updateOpacity(itemId, val);
-                            });
-                          },
-                        ),
-                      ),
-                      AppText(
-                        "${((item.opacity) * 100).toStringAsFixed(0)}%",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
@@ -1595,6 +882,7 @@ class _EditorViewState extends State<EditorView> {
     ];
 
     void loadCategory(String query, void Function(void Function()) setState) {
+      if (query == 'shapes') return;
       if (provider.elementCategoryAssets(query).isNotEmpty ||
           provider.isElementCategoryLoading(query)) {
         return;
@@ -1621,10 +909,66 @@ class _EditorViewState extends State<EditorView> {
             }
 
             Widget elementCard(String url) {
+              final isLocalShape = url.startsWith('assets/shapes/');
+
+              final Widget preview = isLocalShape
+                  ? SvgPicture.asset(
+                url,
+                fit: BoxFit.contain,
+                width: 58,
+                height: 58,
+                placeholderBuilder: (_) => const Center(
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                    ),
+                  ),
+                ),
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.broken_image_outlined,
+                  color: Colors.grey,
+                ),
+              )
+                  : Image.network(
+                url,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.image_outlined,
+                  color: Colors.grey,
+                ),
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+
+                  return const Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.5,
+                      ),
+                    ),
+                  );
+                },
+              );
+
               return GestureDetector(
                 onTap: () {
-                  provider.addImage(url, isLocal: false);
-                  Navigator.pop(modalContext);
+                  if (isLocalShape) {
+                    _addLocalShape(
+                      modalContext,
+                      provider,
+                      url,
+                    );
+                  } else {
+                    provider.addImage(
+                      url,
+                      isLocal: false,
+                    );
+
+                    Navigator.pop(modalContext);
+                  }
                 },
                 child: Container(
                   height: 58,
@@ -1635,26 +979,13 @@ class _EditorViewState extends State<EditorView> {
                         : const Color(0xFFF8F8F8),
                     borderRadius: BorderRadius.circular(9),
                     border: Border.all(
-                      color: isDark ? Colors.white12 : const Color(0xFFE8E8E8),
+                      color: isDark
+                          ? Colors.white12
+                          : const Color(0xFFE8E8E8),
                     ),
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: Image.network(
-                    url,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.image_outlined, color: Colors.grey),
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return const Center(
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 1.5),
-                        ),
-                      );
-                    },
-                  ),
+                  child: preview,
                 ),
               );
             }
@@ -1698,7 +1029,9 @@ class _EditorViewState extends State<EditorView> {
             Widget categorySection(Map<String, String> category) {
               final title = category['title']!;
               final query = category['query']!;
-              final items = provider.elementCategoryAssets(query);
+              final List<String> items = query == 'shapes'
+                  ? _localShapeAssets
+                  : provider.elementCategoryAssets(query);
               final preview = items.take(4).toList();
 
               return Column(
@@ -1751,7 +1084,9 @@ class _EditorViewState extends State<EditorView> {
                 final title = categories.firstWhere(
                       (e) => e['query'] == query,
                 )['title']!;
-                final items = provider.elementCategoryAssets(query);
+                final List<String> items = query == 'shapes'
+                    ? _localShapeAssets
+                    : provider.elementCategoryAssets(query);
                 return Column(
                   children: [
                     Row(
@@ -2618,44 +1953,27 @@ class _EditorViewState extends State<EditorView> {
             child: AspectRatio(
               aspectRatio: aspectRatio,
               child: Container(
-                decoration: BoxDecoration(
-                  color: provider.backgroundColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
-                      blurRadius: 10,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
+                decoration: BoxDecoration(color: provider.backgroundColor),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final double scaleX =
-                        constraints.maxWidth / 1080;
+                    final double scaleX = constraints.maxWidth / 1080;
 
-                    final double scaleY =
-                        constraints.maxHeight / 1080;
+                    final double scaleY = constraints.maxHeight / 1080;
 
                     final backgroundItems = provider.items
                         .where(_isCanvasBackground)
                         .toList();
 
                     return Stack(
-                      clipBehavior: Clip.hardEdge,
+                      clipBehavior: Clip.none,
                       children: [
-                        // Always render the provider background color first.
-                        // A background image/video is rendered above this layer;
-                        // when a new image is selected the provider clears the
-                        // color to transparent, so the old color cannot remain.
                         Positioned.fill(
                           child: ColoredBox(color: provider.backgroundColor),
                         ),
 
                         if (backgroundItems.isNotEmpty)
                           _InteractiveBackgroundLayer(
-                            key: ValueKey(
-                              backgroundItems.last.id,
-                            ),
+                            key: ValueKey(backgroundItems.last.id),
                             item: backgroundItems.last,
                             scaleX: scaleX,
                             scaleY: scaleY,
@@ -2664,10 +1982,7 @@ class _EditorViewState extends State<EditorView> {
 
                               // Select the background exactly like a normal
                               // image layer so the image editor toolbar opens.
-                              provider.setSelectedItem(
-                                bg.type,
-                                bg.id,
-                              );
+                              provider.setSelectedItem(bg.type, bg.id);
 
                               if (mounted) {
                                 setState(() {
@@ -2677,44 +1992,28 @@ class _EditorViewState extends State<EditorView> {
                             },
                           ),
 
-
                         ...provider.items
-                            .where(
-                              (item) =>
-                          !_isCanvasBackground(item),
-                        )
-                            .map(
-                              (item) {
-                            return Positioned(
-                              left:
-                              item.position.dx * scaleX,
-                              top:
-                              item.position.dy * scaleY,
-                              child: Transform.scale(
-                                scale: scaleX,
-                                alignment:
-                                Alignment.topLeft,
-                                child:
-                                EditableItemWidget(
-                                  item: item,
-                                  onItemSelected:
-                                      (type, id) {
-                                    provider
-                                        .setSelectedItem(
-                                      type,
-                                      id,
-                                    );
-                                  },
-                                ),
+                            .where((item) => !_isCanvasBackground(item))
+                            .map((item) {
+                          return Positioned(
+                            left: item.position.dx * scaleX,
+                            top: item.position.dy * scaleY,
+                            child: Transform.scale(
+                              scale: scaleX,
+                              alignment: Alignment.topLeft,
+                              child: EditableItemWidget(
+                                item: item,
+                                onItemSelected: (type, id) {
+                                  provider.setSelectedItem(type, id);
+                                },
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        }),
 
                         // -----------------------------------------
                         // FRAME
                         // -----------------------------------------
-
                         if (provider.selectedFrameUrl != null)
                           Positioned.fill(
                             child: IgnorePointer(
@@ -2723,6 +2022,38 @@ class _EditorViewState extends State<EditorView> {
                                 fit: BoxFit.cover,
                               ),
                             ),
+                          ),
+
+                        // -----------------------------------------
+                        // IMAGE SELECTION OVERLAY
+                        // Keeps the existing image/editor behavior intact
+                        // and only adds the Canva-style selection box when
+                        // an image is selected.
+                        // -----------------------------------------
+                        if (provider.selectedItemId != null &&
+                            (provider.selectedItemType == 'image' ||
+                                provider.items.any((e) =>
+                                e.id == provider.selectedItemId &&
+                                    _isCanvasBackground(e))))
+                          Builder(
+                            builder: (context) {
+                              final selected = provider.items.where(
+                                    (item) => item.id == provider.selectedItemId,
+                              ).toList();
+
+                              if (selected.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+
+                              final item = selected.first;
+
+                              return _ImageSelectionOverlay(
+                                item: item,
+                                scaleX: scaleX,
+                                scaleY: scaleY,
+                                isBackground: _isCanvasBackground(item),
+                              );
+                            },
                           ),
                       ],
                     );
@@ -2733,11 +2064,7 @@ class _EditorViewState extends State<EditorView> {
           ),
         ),
       ),
-      bottomNavigationBar: _buildEditorBottomBar(
-        context,
-        provider,
-        isDark,
-      ),
+      bottomNavigationBar: _buildEditorBottomBar(context, provider, isDark),
     );
   }
 
@@ -2816,10 +2143,26 @@ class _EditorViewState extends State<EditorView> {
     ];
 
     final alignments = <Map<String, dynamic>>[
-      {'label': 'LEFT', 'icon': Icons.format_align_left_rounded, 'value': TextAlign.left},
-      {'label': 'CENTER', 'icon': Icons.format_align_center_rounded, 'value': TextAlign.center},
-      {'label': 'RIGHT', 'icon': Icons.format_align_right_rounded, 'value': TextAlign.right},
-      {'label': 'JUSTIFY', 'icon': Icons.format_align_justify_rounded, 'value': TextAlign.justify},
+      {
+        'label': 'LEFT',
+        'icon': Icons.format_align_left_rounded,
+        'value': TextAlign.left,
+      },
+      {
+        'label': 'CENTER',
+        'icon': Icons.format_align_center_rounded,
+        'value': TextAlign.center,
+      },
+      {
+        'label': 'RIGHT',
+        'icon': Icons.format_align_right_rounded,
+        'value': TextAlign.right,
+      },
+      {
+        'label': 'JUSTIFY',
+        'icon': Icons.format_align_justify_rounded,
+        'value': TextAlign.justify,
+      },
     ];
 
     final palette = <Color>[
@@ -2849,29 +2192,79 @@ class _EditorViewState extends State<EditorView> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 10),
               children: [
-                _bottomTool(Icons.edit_rounded, 'EDIT', () => _showTextEditDialog(context, provider, id)),
-                ...fonts.map(
-                      (font) => _bottomTool(Icons.font_download_rounded, font, () => provider.updateFontFamily(id, font)),
+                _bottomTool(
+                  Icons.edit_rounded,
+                  'EDIT',
+                      () => _showTextEditDialog(context, provider, id),
                 ),
-                _bottomTool(Icons.format_bold_rounded, 'BOLD', () => provider.toggleTextBold(id), selected: provider.textWeight(id) == FontWeight.bold),
-                _bottomTool(Icons.format_italic_rounded, 'ITALIC', () => provider.toggleTextItalic(id), selected: provider.textStyle(id) == FontStyle.italic),
-                _bottomTool(Icons.format_underlined_rounded, 'UNDERLINE', () => provider.toggleTextUnderline(id), selected: provider.textUnderline(id)),
+                ...fonts.map(
+                      (font) => _bottomTool(
+                    Icons.font_download_rounded,
+                    font,
+                        () => provider.updateFontFamily(id, font),
+                  ),
+                ),
+                _bottomTool(
+                  Icons.format_bold_rounded,
+                  'BOLD',
+                      () => provider.toggleTextBold(id),
+                  selected: provider.textWeight(id) == FontWeight.bold,
+                ),
+                _bottomTool(
+                  Icons.format_italic_rounded,
+                  'ITALIC',
+                      () => provider.toggleTextItalic(id),
+                  selected: provider.textStyle(id) == FontStyle.italic,
+                ),
+                _bottomTool(
+                  Icons.format_underlined_rounded,
+                  'UNDERLINE',
+                      () => provider.toggleTextUnderline(id),
+                  selected: provider.textUnderline(id),
+                ),
                 ...alignments.map(
                       (item) => _bottomTool(
                     item['icon'] as IconData,
                     item['label'] as String,
-                        () => provider.updateTextAlignment(id, item['value'] as TextAlign),
+                        () => provider.updateTextAlignment(
+                      id,
+                      item['value'] as TextAlign,
+                    ),
                     selected: provider.textAlignment(id) == item['value'],
                   ),
                 ),
                 ...palette.map(
-                      (color) => _colorTool(color, () => provider.updateTextColor(id, color)),
+                      (color) => _colorTool(
+                    color,
+                        () => provider.updateTextColor(id, color),
+                  ),
                 ),
-                _bottomTool(Icons.flip_to_front_rounded, 'FRONT', () => provider.bringToFront(id)),
-                _bottomTool(Icons.flip_to_back_rounded, 'BACK', () => provider.sendToBack(id)),
-                _bottomTool(Icons.copy_rounded, 'DUPLICATE', () => provider.duplicateItem(id)),
-                _bottomTool(Icons.delete_outline_rounded, 'DELETE', () => provider.removeItem(id), danger: true),
-                _bottomTool(Icons.close_rounded, 'CLOSE', provider.clearSelection),
+                _bottomTool(
+                  Icons.flip_to_front_rounded,
+                  'FRONT',
+                      () => provider.bringToFront(id),
+                ),
+                _bottomTool(
+                  Icons.flip_to_back_rounded,
+                  'BACK',
+                      () => provider.sendToBack(id),
+                ),
+                _bottomTool(
+                  Icons.copy_rounded,
+                  'DUPLICATE',
+                      () => provider.duplicateItem(id),
+                ),
+                _bottomTool(
+                  Icons.delete_outline_rounded,
+                  'DELETE',
+                      () => provider.removeItem(id),
+                  danger: true,
+                ),
+                _bottomTool(
+                  Icons.close_rounded,
+                  'CLOSE',
+                  provider.clearSelection,
+                ),
               ],
             ),
           ),
@@ -2916,13 +2309,34 @@ class _EditorViewState extends State<EditorView> {
     );
 
     const filters = <String>[
-      'normal', 'grayscale', 'sepia', 'vintage', 'drama', 'cali', 'epic',
-      'street', 'rosie', 'edge', 'nordic', 'selfie', 'blues', 'whimsical',
-      'summer', 'retro',
+      'normal',
+      'grayscale',
+      'sepia',
+      'vintage',
+      'drama',
+      'cali',
+      'epic',
+      'street',
+      'rosie',
+      'edge',
+      'nordic',
+      'selfie',
+      'blues',
+      'whimsical',
+      'summer',
+      'retro',
     ];
     const masks = <String>[
-      'square', 'rounded', 'rectangle', 'circle', 'oval', 'triangle',
-      'diamond', 'pentagon', 'hexagon', 'octagon',
+      'square',
+      'rounded',
+      'rectangle',
+      'circle',
+      'oval',
+      'triangle',
+      'diamond',
+      'pentagon',
+      'hexagon',
+      'octagon',
     ];
 
     return Container(
@@ -2943,20 +2357,57 @@ class _EditorViewState extends State<EditorView> {
                 _bottomTool(Icons.wallpaper_rounded, 'REPLACE BG', () async {
                   final url = item.contentUrl;
                   if (url != null && url.isNotEmpty) {
-                    await _confirmReplaceBackground(context, provider, url, selectedItemId: id);
+                    await _confirmReplaceBackground(
+                      context,
+                      provider,
+                      url,
+                      selectedItemId: id,
+                    );
                   }
                 }),
-                _bottomTool(Icons.crop_rounded, 'CROP', () => _cropSelectedImage(context, provider, id)),
+                _bottomTool(
+                  Icons.crop_rounded,
+                  'CROP',
+                      () => _cropSelectedImage(context, provider, id),
+                ),
                 _bottomTool(Icons.photo_library_rounded, 'PHOTO', () async {
-                  final image = await ImagePicker().pickImage(source: ImageSource.gallery);
-                  if (image != null) provider.addImage(image.path, isLocal: true);
+                  final image = await ImagePicker().pickImage(
+                    source: ImageSource.gallery,
+                  );
+                  if (image != null)
+                    provider.addImage(image.path, isLocal: true);
                 }),
-                _bottomTool(Icons.flip_rounded, 'FLIP', () => provider.flipImageHorizontal(id)),
-                _bottomTool(Icons.flip_to_front_rounded, 'FRONT', () => provider.bringToFront(id)),
-                _bottomTool(Icons.flip_to_back_rounded, 'BACK', () => provider.sendToBack(id)),
-                _bottomTool(Icons.copy_rounded, 'DUPLICATE', () => provider.duplicateItem(id)),
-                _bottomTool(Icons.delete_outline_rounded, 'DELETE', () => provider.removeItem(id), danger: true),
-                _bottomTool(Icons.close_rounded, 'CLOSE', provider.clearSelection),
+                _bottomTool(
+                  Icons.flip_rounded,
+                  'FLIP',
+                      () => provider.flipImageHorizontal(id),
+                ),
+                _bottomTool(
+                  Icons.flip_to_front_rounded,
+                  'FRONT',
+                      () => provider.bringToFront(id),
+                ),
+                _bottomTool(
+                  Icons.flip_to_back_rounded,
+                  'BACK',
+                      () => provider.sendToBack(id),
+                ),
+                _bottomTool(
+                  Icons.copy_rounded,
+                  'DUPLICATE',
+                      () => provider.duplicateItem(id),
+                ),
+                _bottomTool(
+                  Icons.delete_outline_rounded,
+                  'DELETE',
+                      () => provider.removeItem(id),
+                  danger: true,
+                ),
+                _bottomTool(
+                  Icons.close_rounded,
+                  'CLOSE',
+                  provider.clearSelection,
+                ),
               ],
             ),
           ),
@@ -2987,31 +2438,54 @@ class _EditorViewState extends State<EditorView> {
               padding: const EdgeInsets.symmetric(horizontal: 10),
               children: [
                 _bottomSliderTool(
-                  'SCALE', item.scale.clamp(.5, 3.0), .5, 3,
+                  'SCALE',
+                  item.scale.clamp(.5, 3.0),
+                  .5,
+                  3,
                       (v) => provider.updateScale(id, v),
                 ),
                 _bottomSliderTool(
-                  'ROTATION', item.rotation.clamp(0.0, math.pi * 2), 0, math.pi * 2,
+                  'ROTATION',
+                  item.rotation.clamp(0.0, math.pi * 2),
+                  0,
+                  math.pi * 2,
                       (v) => provider.updateRotation(id, v),
                 ),
                 _bottomSliderTool(
-                  'OPACITY', item.opacity.clamp(0.0, 1.0), 0, 1,
+                  'OPACITY',
+                  item.opacity.clamp(0.0, 1.0),
+                  0,
+                  1,
                       (v) => provider.updateOpacity(id, v),
                 ),
                 _bottomSliderTool(
-                  'BRIGHTNESS', item.brightness, -1, 1,
-                      (v) => provider.updateImageColorAdjustments(id, brightness: v),
+                  'BRIGHTNESS',
+                  item.brightness,
+                  -1,
+                  1,
+                      (v) =>
+                      provider.updateImageColorAdjustments(id, brightness: v),
                 ),
                 _bottomSliderTool(
-                  'CONTRAST', item.contrast, 0, 2,
+                  'CONTRAST',
+                  item.contrast,
+                  0,
+                  2,
                       (v) => provider.updateImageColorAdjustments(id, contrast: v),
                 ),
                 _bottomSliderTool(
-                  'SATURATION', item.saturation, 0, 2,
-                      (v) => provider.updateImageColorAdjustments(id, saturation: v),
+                  'SATURATION',
+                  item.saturation,
+                  0,
+                  2,
+                      (v) =>
+                      provider.updateImageColorAdjustments(id, saturation: v),
                 ),
                 _bottomSliderTool(
-                  'OUTLINE', item.outlineWidth.clamp(0.0, 20.0), 0, 20,
+                  'OUTLINE',
+                  item.outlineWidth.clamp(0.0, 20.0),
+                  0,
+                  20,
                       (v) => provider.updateOutline(id, v, Colors.white),
                 ),
               ],
@@ -3044,9 +2518,7 @@ class _EditorViewState extends State<EditorView> {
                 ? Colors.amber.withValues(alpha: .18)
                 : const Color(0xFF1F232C),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected ? Colors.amber : Colors.white10,
-            ),
+            border: Border.all(color: selected ? Colors.amber : Colors.white10),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -3098,7 +2570,11 @@ class _EditorViewState extends State<EditorView> {
               const SizedBox(height: 3),
               const Text(
                 'COLOR',
-                style: TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 7,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
@@ -3127,7 +2603,11 @@ class _EditorViewState extends State<EditorView> {
             padding: const EdgeInsets.symmetric(horizontal: 5),
             child: Text(
               title,
-              style: const TextStyle(color: Colors.amber, fontSize: 8, fontWeight: FontWeight.w800),
+              style: const TextStyle(
+                color: Colors.amber,
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           ...values.map(
@@ -3137,15 +2617,26 @@ class _EditorViewState extends State<EditorView> {
                 onTap: () => onSelected(value),
                 borderRadius: BorderRadius.circular(9),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: selected == value ? Colors.amber.withValues(alpha: .18) : const Color(0xFF252A34),
+                    color: selected == value
+                        ? Colors.amber.withValues(alpha: .18)
+                        : const Color(0xFF252A34),
                     borderRadius: BorderRadius.circular(9),
-                    border: Border.all(color: selected == value ? Colors.amber : Colors.white10),
+                    border: Border.all(
+                      color: selected == value ? Colors.amber : Colors.white10,
+                    ),
                   ),
                   child: Text(
                     value.toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 7,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -3177,12 +2668,23 @@ class _EditorViewState extends State<EditorView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(color: Colors.white70, fontSize: 8, fontWeight: FontWeight.w800)),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               Text(
                 title == 'OPACITY'
                     ? '${(safeValue * 100).round()}%'
                     : safeValue.toStringAsFixed(1),
-                style: const TextStyle(color: Colors.amber, fontSize: 8, fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  color: Colors.amber,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ],
           ),
@@ -3233,8 +2735,7 @@ class _EditorViewState extends State<EditorView> {
             child: const Text('CANCEL'),
           ),
           FilledButton(
-            onPressed: () =>
-                Navigator.of(dialogContext).pop(controller.text),
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
             child: const Text('SAVE'),
           ),
         ],
@@ -3324,15 +2825,12 @@ class _EditorViewState extends State<EditorView> {
         Fluttertoast.showToast(msg: 'Canvas is not ready');
         return;
       }
-
-      // Use the Android/iOS system share/save sheet. This avoids the old
-      // image_gallery_saver_plus Android Registrar compatibility problem.
       if (!context.mounted) return;
-      /* await Share.shareXFiles(
+      await Share.shareXFiles(
         [XFile(file.path, mimeType: 'image/png')],
         subject: 'MMB Design PNG',
         text: 'Save this MMB design image.',
-      );*/
+      );
     } catch (e) {
       debugPrint('Download error: $e');
       Fluttertoast.showToast(msg: 'Unable to download design');
@@ -3691,6 +3189,329 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 }
+
+class _ImageSelectionOverlay extends StatefulWidget {
+  final EditorItem item;
+  final double scaleX;
+  final double scaleY;
+  final bool isBackground;
+
+  const _ImageSelectionOverlay({
+    super.key,
+    required this.item,
+    required this.scaleX,
+    required this.scaleY,
+    this.isBackground = false,
+  });
+
+  @override
+  State<_ImageSelectionOverlay> createState() => _ImageSelectionOverlayState();
+}
+
+class _ImageSelectionOverlayState extends State<_ImageSelectionOverlay> {
+  final GlobalKey _overlayKey = GlobalKey();
+
+  double _startScale = 1.0;
+  double _startRotation = 0.0;
+  Offset _startPosition = Offset.zero;
+  Offset _startFocalPoint = Offset.zero;
+  Offset _rotationCenterGlobal = Offset.zero;
+  double _rotationStartAngle = 0.0;
+
+  double _resizeStartScale = 1.0;
+  double _resizeStartRadius = 1.0;
+  Offset _resizeCenterGlobal = Offset.zero;
+
+  EditorProvider get _provider => context.read<EditorProvider>();
+
+  // Normal media items are rendered inside a Transform.scale(scaleX), so
+  // both axes use the canvas width scale. Background media is rendered by
+  // _InteractiveBackgroundLayer with independent X/Y canvas scales.
+  double get _width =>
+      widget.item.width * widget.item.scale * widget.scaleX;
+
+  double get _height =>
+      widget.item.height *
+          widget.item.scale *
+          (widget.isBackground ? widget.scaleY : widget.scaleX);
+
+  // Normal media is rendered inside an outer canvas item and then scaled
+  // around its CENTER by EditableItemWidget. The selection box must use the
+  // same visual origin, otherwise it stays at the old top-left when the
+  // image is resized. Background items do not have this extra centered
+  // scale, so their origin remains the item's position.
+  double get _left => widget.item.position.dx * widget.scaleX +
+      (widget.isBackground
+          ? 0.0
+          : (widget.item.width * widget.scaleX - _width) / 2);
+
+  double get _top => widget.item.position.dy * widget.scaleY +
+      (widget.isBackground
+          ? 0.0
+          : (widget.item.height * widget.scaleX - _height) / 2);
+
+  @override
+  Widget build(BuildContext context) {
+    final width = _width;
+    final height = _height;
+
+    if (!width.isFinite || !height.isFinite || width <= 0 || height <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Positioned(
+      left: _left,
+      top: _top,
+      width: width,
+      height: height,
+      child: Transform.rotate(
+        angle: widget.item.rotation.isFinite ? widget.item.rotation : 0.0,
+        alignment: Alignment.center,
+        child: Stack(
+          key: _overlayKey,
+          clipBehavior: Clip.none,
+          children: [
+            // Drag the selected image from anywhere inside the box.
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onPanStart: (details) {
+                  _startPosition = widget.item.position;
+                  _startFocalPoint = details.globalPosition;
+                },
+                onPanUpdate: (details) {
+                  final dx =
+                      (details.globalPosition.dx - _startFocalPoint.dx) /
+                          widget.scaleX;
+                  final dy =
+                      (details.globalPosition.dy - _startFocalPoint.dy) /
+                          widget.scaleY;
+
+                  _provider.updateItemTransform(
+                    widget.item.id ?? '',
+                    position: Offset(
+                      _startPosition.dx + dx,
+                      _startPosition.dy + dy,
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _ImageSelectionPainter(),
+                ),
+              ),
+            ),
+
+            // 8 resize handles.
+            _buildHandle(alignment: Alignment.topLeft, cursor: SystemMouseCursors.resizeUpLeft),
+            _buildHandle(alignment: Alignment.topCenter, cursor: SystemMouseCursors.resizeUp),
+            _buildHandle(alignment: Alignment.topRight, cursor: SystemMouseCursors.resizeUpRight),
+            _buildHandle(alignment: Alignment.centerLeft, cursor: SystemMouseCursors.resizeLeft),
+            _buildHandle(alignment: Alignment.centerRight, cursor: SystemMouseCursors.resizeRight),
+            _buildHandle(alignment: Alignment.bottomLeft, cursor: SystemMouseCursors.resizeDownLeft),
+            _buildHandle(alignment: Alignment.bottomCenter, cursor: SystemMouseCursors.resizeDown),
+            _buildHandle(alignment: Alignment.bottomRight, cursor: SystemMouseCursors.resizeDownRight),
+
+            // Rotation handle above the top-center.
+            Positioned(
+              left: width / 2 - 14,
+              top: -39,
+              width: 28,
+              height: 28,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanStart: (details) {
+                  _startRotation = widget.item.rotation;
+                  _rotationCenterGlobal = _globalCenter();
+                  _rotationStartAngle = math.atan2(
+                    details.globalPosition.dy - _rotationCenterGlobal.dy,
+                    details.globalPosition.dx - _rotationCenterGlobal.dx,
+                  );
+                },
+                onPanUpdate: (details) {
+                  final currentAngle = math.atan2(
+                    details.globalPosition.dy - _rotationCenterGlobal.dy,
+                    details.globalPosition.dx - _rotationCenterGlobal.dx,
+                  );
+                  final delta = _normalizeAngle(
+                    currentAngle - _rotationStartAngle,
+                  );
+
+                  _provider.updateItemTransform(
+                    widget.item.id ?? '',
+                    rotation: _startRotation + delta,
+                  );
+                },
+                child: const Center(
+                  child: _RotationHandleVisual(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Offset _globalCenter() {
+    final box = _overlayKey.currentContext?.findRenderObject();
+    if (box is RenderBox) {
+      return box.localToGlobal(
+        Offset(_width / 2, _height / 2),
+      );
+    }
+    return Offset.zero;
+  }
+
+  double _normalizeAngle(double angle) {
+    while (angle > math.pi) {
+      angle -= math.pi * 2;
+    }
+    while (angle < -math.pi) {
+      angle += math.pi * 2;
+    }
+    return angle;
+  }
+
+  Widget _buildHandle({
+    required Alignment alignment,
+    required MouseCursor cursor,
+  }) {
+    const handleSize = 24.0;
+
+    return Align(
+      alignment: alignment,
+      child: SizedBox(
+        width: handleSize,
+        height: handleSize,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onPanStart: (details) {
+            _resizeStartScale = widget.item.scale;
+            _resizeCenterGlobal = _globalCenter();
+            _resizeStartRadius =
+                (details.globalPosition - _resizeCenterGlobal).distance;
+
+            if (_resizeStartRadius < 1) {
+              _resizeStartRadius = 1;
+            }
+          },
+          onPanUpdate: (details) {
+            final currentRadius =
+                (details.globalPosition - _resizeCenterGlobal).distance;
+            final ratio = currentRadius / _resizeStartRadius;
+
+            // Dragging any of the 8 dots scales the image proportionally.
+            final newScale =
+            (_resizeStartScale * ratio).clamp(0.1, 10.0);
+
+            _provider.updateItemTransform(
+              widget.item.id ?? '',
+              scale: newScale,
+            );
+          },
+          child: MouseRegion(
+            cursor: cursor,
+            child: const Center(
+              child: _ResizeHandleVisual(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Offset _globalToOverlay(Offset globalPosition) {
+    final box = _overlayKey.currentContext?.findRenderObject();
+    if (box is RenderBox) {
+      return box.globalToLocal(globalPosition);
+    }
+    return Offset(_width / 2, _height / 2);
+  }
+}
+
+class _ResizeHandleVisual extends StatelessWidget {
+  const _ResizeHandleVisual();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 11,
+      height: 11,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0xFF2196F3),
+          width: 2,
+        ),
+      ),
+    );
+  }
+}
+
+class _RotationHandleVisual extends StatelessWidget {
+  const _RotationHandleVisual();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 11,
+      height: 11,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0xFF2196F3),
+          width: 2,
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageSelectionPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const selectionColor = Color(0xFF2196F3);
+    const strokeWidth = 1.8;
+
+    final borderPaint = Paint()
+      ..color = selectionColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    canvas.drawRect(
+      Rect.fromLTWH(
+        strokeWidth / 2,
+        strokeWidth / 2,
+        size.width - strokeWidth,
+        size.height - strokeWidth,
+      ),
+      borderPaint,
+    );
+
+    // Connector for rotation handle.
+    final connectorPaint = Paint()
+      ..color = selectionColor
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawLine(
+      Offset(size.width / 2, 0),
+      Offset(size.width / 2, -25),
+      connectorPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ImageSelectionPainter oldDelegate) => false;
+}
+
 class _InteractiveBackgroundLayer extends StatefulWidget {
   final EditorItem item;
   final double scaleX;
@@ -3741,19 +3562,14 @@ class _InteractiveBackgroundLayerState
         },
 
         onScaleUpdate: (details) {
-          final provider =
-          context.read<EditorProvider>();
+          final provider = context.read<EditorProvider>();
 
           // Move
           final dx =
-              (details.focalPoint.dx -
-                  _startFocalPoint.dx) /
-                  widget.scaleX;
+              (details.focalPoint.dx - _startFocalPoint.dx) / widget.scaleX;
 
           final dy =
-              (details.focalPoint.dy -
-                  _startFocalPoint.dy) /
-                  widget.scaleY;
+              (details.focalPoint.dy - _startFocalPoint.dy) / widget.scaleY;
 
           final newPosition = Offset(
             _startPosition.dx + dx,
@@ -3761,17 +3577,13 @@ class _InteractiveBackgroundLayerState
           );
 
           // Scale
-          final newScale =
-          (_startScale * details.scale)
-              .clamp(0.1, 10.0);
+          final newScale = (_startScale * details.scale).clamp(0.1, 10.0);
 
           // Rotation
-          final newRotation =
-              _startRotation +
-                  details.rotation;
+          final newRotation = _startRotation + details.rotation;
 
           provider.updateItemTransform(
-            item.id??'',
+            item.id ?? '',
             position: newPosition,
             scale: newScale,
             rotation: newRotation,
@@ -3807,45 +3619,48 @@ class _InteractiveBackgroundLayerState
     final sb = 0.0722 * (1 - saturation);
 
     return <double>[
-      (c * (sr + 1)), c * sg, c * sb, 0, t + b,
-      c * sr, (c * (sg + 1)), c * sb, 0, t + b,
-      c * sr, c * sg, (c * (sb + 1)), 0, t + b,
-      0, 0, 0, 1, 0,
+      (c * (sr + 1)),
+      c * sg,
+      c * sb,
+      0,
+      t + b,
+      c * sr,
+      (c * (sg + 1)),
+      c * sb,
+      0,
+      t + b,
+      c * sr,
+      c * sg,
+      (c * (sb + 1)),
+      0,
+      t + b,
+      0,
+      0,
+      0,
+      1,
+      0,
     ];
   }
 
-  Widget _buildBackgroundImage(
-      EditorItem item,
-      ) {
+  Widget _buildBackgroundImage(EditorItem item) {
     final url = item.contentUrl;
 
     if (url == null || url.isEmpty) {
-      return Container(
-        color: item.color ?? Colors.white,
-      );
+      return Container(color: item.color ?? Colors.white);
     }
 
     Widget image;
 
     if (item.isLocal) {
-      image = Image.file(
-        File(url),
-        fit: BoxFit.cover,
-      );
+      image = Image.file(File(url), fit: BoxFit.cover);
     } else {
       image = Image.network(
         url,
         fit: BoxFit.cover,
-        errorBuilder: (
-            context,
-            error,
-            stackTrace,
-            ) {
+        errorBuilder: (context, error, stackTrace) {
           return Container(
             color: Colors.grey.shade300,
-            child: const Icon(
-              Icons.broken_image_outlined,
-            ),
+            child: const Icon(Icons.broken_image_outlined),
           );
         },
       );
@@ -3857,16 +3672,10 @@ class _InteractiveBackgroundLayerState
     final contrast = item.contrast;
     final saturation = item.saturation;
 
-    if (brightness != 0 ||
-        contrast != 1 ||
-        saturation != 1) {
+    if (brightness != 0 || contrast != 1 || saturation != 1) {
       filtered = ColorFiltered(
         colorFilter: ColorFilter.matrix(
-          _imageColorMatrix(
-            brightness,
-            contrast,
-            saturation,
-          ),
+          _imageColorMatrix(brightness, contrast, saturation),
         ),
         child: filtered,
       );

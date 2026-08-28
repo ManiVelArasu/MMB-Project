@@ -181,7 +181,6 @@ class OtpScreen extends StatelessWidget {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
                                   children: List.generate(6, (index) {
-                                    // 🚀 எந்த பெட்டியில் கரெக்ட்டாக எழுதிக் கொண்டிருக்கிறோம் அல்லது செலக்ட் செய்துள்ளோம் எனக் கண்டுபிடிக்க
                                     final bool isCurrentBox =
                                         authProvider
                                             .controllers[index]
@@ -201,7 +200,6 @@ class OtpScreen extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(
                                           16.r,
                                         ),
-                                        // 🚀 நாம் க்ளிக் செய்துள்ள அல்லது டைப் செய்யும் பாக்ஸுக்கு மட்டும் ரெட் கலர் பார்டர் மற்றும் திக்னஸ் வரும்
                                         border: Border.all(
                                           color: isCurrentBox
                                               ? customColor.redColor
@@ -217,7 +215,7 @@ class OtpScreen extends StatelessWidget {
                                                     .isEmpty &&
                                                 isCurrentBox
                                             ? Container(
-                                                // 🚀 பெட்டி காலியாக இருந்தால் அங்கே ஒரு டேஷ் (Dash / Cursor) தெரியும்
+
                                                 width: 12,
                                                 height: 2,
                                                 color: customColor.redColor,

@@ -46,15 +46,15 @@ Future<void> _initializeApp() async {
       token: savedToken,
       refreshToken: savedRefreshToken,
     );
-
-    debugPrint("✅ Restored Saved Token & Refresh Token");
   } else {
     debugPrint("⚠️ No Saved Token Found");
   }
 }
 
 Future<void> _initApi() async {
-  final Dio tempDio = Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl));
+  final dioForInterceptor = Dio(
+    BaseOptions(baseUrl: ApiEndpoints.baseUrl),
+  );
 
   ApiHandler.init(
     baseUrl: ApiEndpoints.baseUrl,
@@ -64,6 +64,7 @@ Future<void> _initApi() async {
     rethrowExceptions: false,
     showToastOnError: true,
     defaultToastPosition: ApiToastPosition.bottom,
+    interceptor: TokenRefreshInterceptor(dioForInterceptor),
   );
 }
 

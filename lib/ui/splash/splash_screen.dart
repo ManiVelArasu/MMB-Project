@@ -30,13 +30,10 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.pushReplacementNamed(context, '/LoginScreen');
       return;
     }
-
-    // 🚀 1. சேமித்து வைத்திருந்த டோக்கன்களை ஷேர்ட் பிரிஃபரன்ஸில் இருந்து எடுத்து Restore செய்வது
     final String? savedAccessToken = prefs.getString('access_token');
     final String? savedRefreshToken = prefs.getString('refresh_token');
 
     if (savedAccessToken != null && savedRefreshToken != null) {
-      // ApiHandler-ல் டோக்கன்களை மீண்டும் செட் செய்வது
       await ApiHandler.instance.setTokens(
         token: savedAccessToken,
         refreshToken: savedRefreshToken,
@@ -44,7 +41,6 @@ class _SplashScreenState extends State<SplashScreen> {
       debugPrint("✅ Restored Saved Token Successfully");
     }
 
-    // 2. இப்போது GetMe API-ஐக் கால் செய்வது
     final result = await GetMeRepository.instance.getMe();
 
     if (!mounted) return;

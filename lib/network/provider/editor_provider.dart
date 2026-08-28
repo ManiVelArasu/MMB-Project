@@ -974,26 +974,28 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     return bgItem.contentUrl;
   }
 
-  // 🚀 ----------------------------------------------------
-  // 🚀 புதிய REPLACE BG வசதிக்காக மட்டும் சேர்க்கப்பட்ட பாதுகாப்பு மெத்தடுகள் (Existing code பாதிக்கப்படாது)
-  // 🚀 ----------------------------------------------------
+
   void replaceBackgroundImage(
       String imageUrl,
       String selectedItemIdToRemove,
       ) {
     _saveState();
 
-    // Remove the old background even if it was moved, scaled or rotated.
+    // Remove old background image/video/shape
     _removeBackgroundLayers();
 
-    // If the selected item was a normal media image, remove it too.
+    // Remove the currently selected normal image
     _items.removeWhere(
           (item) => item.id == selectedItemIdToRemove,
     );
 
+    // Remove background color
+    _backgroundColor = Colors.transparent;
+
     final bgId =
         'bg_${DateTime.now().millisecondsSinceEpoch}';
 
+    // Add new image as background
     _items.insert(
       0,
       EditorItem(
@@ -1002,11 +1004,14 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         position: const Offset(0, 0),
         width: 1080.0,
         height: 1080.0,
+        scale: 1.0,
+        rotation: 0.0,
         contentUrl: imageUrl,
         isLocal: !imageUrl.startsWith('http'),
       ),
     );
 
+    // Select new background
     selectedItemType = 'image';
     selectedItemId = bgId;
 

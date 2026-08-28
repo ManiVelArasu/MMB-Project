@@ -683,7 +683,7 @@ class EditableItemWidget extends StatelessWidget {
             fontFamily: item.fontFamily,
           ),
         ));
-    }
+  }
 
   void _showProActionSheet(
       BuildContext context,
