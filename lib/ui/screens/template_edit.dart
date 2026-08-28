@@ -2825,6 +2825,9 @@ class _EditorViewState extends State<EditorView> {
         Fluttertoast.showToast(msg: 'Canvas is not ready');
         return;
       }
+
+      // Open the native Android/iOS save/share sheet for the rendered PNG.
+      // The rendered file contains only the canvas, not selection dots/handles.
       if (!context.mounted) return;
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'image/png')],
@@ -2849,11 +2852,12 @@ class _EditorViewState extends State<EditorView> {
       await file.writeAsString(prettyJson, flush: true);
 
       if (!context.mounted) return;
-      /*await Share.shareXFiles(
+      await Share.shareXFiles(
         [XFile(file.path, mimeType: 'application/json')],
         subject: 'MMB Editor JSON',
         text: 'Exported MMB editor page JSON.',
-      );*/
+      );
+      Fluttertoast.showToast(msg: 'JSON ready to save/share');
     } catch (e) {
       debugPrint('JSON export error: $e');
       Fluttertoast.showToast(msg: 'Unable to export JSON');
