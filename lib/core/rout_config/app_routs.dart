@@ -16,9 +16,6 @@ import '../../ui/screens/profile_screen.dart';
 import '../../ui/screens/smcalender_screen.dart';
 import '../../ui/screens/theme_detail_screen.dart';
 import '../../ui/splash/splash_screen.dart';
-import '../../ui/subscription/basic_plan.dart';
-import '../../ui/subscription/elit_plan.dart';
-import '../../ui/subscription/premium_plan.dart';
 import '../../ui/subscription/subscription_screen.dart';
 import '../../ui/verification/otp_screen.dart';
 
@@ -86,14 +83,7 @@ class AppRouter {
      /* case '/CustomBottomNavScreen':
         return _page(const CustomBottomNavScreen(), settings: settings);*/
 
-      case '/BasicPlan':
-        return _page(const BasicPlanScreen(), settings: settings);
 
-      case '/PremiumPlan':
-        return _page(const PremiumPlanScreen(), settings: settings);
-
-      case '/ElitePlan':
-        return _page(const ElitePlanScreen(), settings: settings);
 
       case '/ThemeDetailScreen':
         return _page(const ThemeDetailScreen(), settings: settings);

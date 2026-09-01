@@ -30,6 +30,14 @@ class HomeScreenProvider extends ChangeNotifier {
       debugPrint("Error loading business name: $e");
     }
   }
+  String? _selectedDates;
+
+  String? get selectedDates => _selectedDates;
+
+  void setSelectedDate(String date) {
+    _selectedDates = date;
+    notifyListeners();
+  }
   void updateSelectedDate(String date) {
     selectedDate = date;
     notifyListeners();

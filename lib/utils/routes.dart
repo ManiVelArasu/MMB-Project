@@ -31,13 +31,13 @@ import '../ui/screens/template_detail_screen.dart';
 import '../ui/screens/template_edit.dart';
 import '../ui/screens/theme_detail_screen.dart';
 import '../ui/screens/theme_single_item_view_screen.dart';
-import '../ui/subscription/basic_plan.dart';
+
 import '../ui/subscription/change_plan_screen.dart';
 import '../ui/subscription/confirm_plan.dart';
-import '../ui/subscription/elit_plan.dart';
+
 import '../ui/subscription/my_subscription.dart';
 import '../ui/subscription/plan_detail_screen.dart';
-import '../ui/subscription/premium_plan.dart';
+
 import '../ui/subscription/subscription_activate_screen.dart';
 import '../ui/subscription/subscription_screen.dart';
 import '../ui/screens/feedback_screen.dart';
@@ -89,14 +89,7 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (context) => const CustomBottomNavScreen(),
         );
-      case "/BasicPlan":
-        return MaterialPageRoute(builder: (context) => const BasicPlanScreen());
-      case "/PremiumPlan":
-        return MaterialPageRoute(
-          builder: (context) => const PremiumPlanScreen(),
-        );
-      case "/ElitePlan":
-        return MaterialPageRoute(builder: (context) => const ElitePlanScreen());
+
       case '/ThemeDetailScreen':
         final args = settings.arguments;
         return MaterialPageRoute(

@@ -227,10 +227,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
           final bool isNewUser =
               data['is_new_user'] ?? data['data']?['is_new_user'] ?? false;
 
-
           final onboardingData =
               data['onboarding'] ?? data['data']?['onboarding'];
-
 
           debugPrint("📦 Onboarding Raw Data: $onboardingData");
 

@@ -1,5 +1,11 @@
 
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../Api Model/editor_model.dart';
 import '../../Repository/freeoic.dart';
@@ -100,6 +106,142 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _historyIndex = _history.length - 1;
   }
 
+  // The exact design frame passed from the previous screen.
+  // Every normal element transform is constrained to this frame.
+  double canvasWidth = 1080.0;
+  double canvasHeight = 1080.0;
+
+  void setCanvasSize(double width, double height) {
+    final w = width.isFinite && width > 0 ? width : 1080.0;
+    final h = height.isFinite && height > 0 ? height : 1080.0;
+
+    if ((canvasWidth - w).abs() < 0.01 &&
+        (canvasHeight - h).abs() < 0.01) {
+      return;
+    }
+
+    canvasWidth = w;
+    canvasHeight = h;
+
+    // If items already exist (for example after loading a template), bring
+    // them back inside the newly selected frame immediately.
+    for (var i = 0; i < _items.length; i++) {
+      final item = _items[i];
+      if (_isBackgroundLayer(item)) {
+        _items[i] = item.copyWith(position: Offset.zero);
+        continue;
+      }
+
+      final safeScale = _maxScaleForFrame(item, item.scale);
+      final scaled = item.copyWith(scale: safeScale);
+      _items[i] = scaled.copyWith(
+        position: _clampPositionForFrame(scaled, scaled.position),
+      );
+    }
+  }
+
+  double _rotationExtentX(EditorItem item, double scale) {
+    final w = math.max(1.0, item.width ?? 100.0);
+    final h = math.max(1.0, item.height ?? 100.0);
+    final angle = item.rotation.isFinite ? item.rotation : 0.0;
+    final c = math.cos(angle).abs();
+    final s = math.sin(angle).abs();
+    return ((w * c) + (h * s)) * scale / 2.0;
+  }
+
+  double _rotationExtentY(EditorItem item, double scale) {
+    final w = math.max(1.0, item.width ?? 100.0);
+    final h = math.max(1.0, item.height ?? 100.0);
+    final angle = item.rotation.isFinite ? item.rotation : 0.0;
+    final c = math.cos(angle).abs();
+    final s = math.sin(angle).abs();
+    return ((w * s) + (h * c)) * scale / 2.0;
+  }
+
+  Offset _clampPositionForFrame(EditorItem item, Offset position) {
+    if (_isBackgroundLayer(item)) return Offset.zero;
+
+    final scale = (item.scale.isFinite ? item.scale : 1.0)
+        .clamp(0.05, 10.0)
+        .toDouble();
+
+    final baseW = math.max(1.0, item.width ?? 100.0);
+    final baseH = math.max(1.0, item.height ?? 100.0);
+
+    final extentX = _rotationExtentX(item, scale);
+    final extentY = _rotationExtentY(item, scale);
+
+    // position is the unscaled top-left. Transform.scale is centered, so
+    // the visual center remains position + baseSize/2.
+    var centerX = position.dx + baseW / 2.0;
+    var centerY = position.dy + baseH / 2.0;
+
+    if (extentX * 2.0 >= canvasWidth) {
+      centerX = canvasWidth / 2.0;
+    } else {
+      centerX = centerX.clamp(
+        extentX,
+        canvasWidth - extentX,
+      ).toDouble();
+    }
+
+    if (extentY * 2.0 >= canvasHeight) {
+      centerY = canvasHeight / 2.0;
+    } else {
+      centerY = centerY.clamp(
+        extentY,
+        canvasHeight - extentY,
+      ).toDouble();
+    }
+
+    return Offset(
+      centerX - baseW / 2.0,
+      centerY - baseH / 2.0,
+    );
+  }
+
+  double _maxScaleForFrame(EditorItem item, double requested) {
+    if (_isBackgroundLayer(item)) {
+      return requested.clamp(0.01, 10.0).toDouble();
+    }
+
+    final safeRequested =
+    requested.isFinite ? requested.clamp(0.05, 10.0).toDouble() : 1.0;
+
+    final baseW = math.max(1.0, item.width ?? 100.0);
+    final baseH = math.max(1.0, item.height ?? 100.0);
+
+    // Keep the current visual center fixed while resizing. This means the
+    // maximum scale is determined by the free space on all four sides.
+    final centerX = item.position.dx + baseW / 2.0;
+    final centerY = item.position.dy + baseH / 2.0;
+
+    final angle = item.rotation.isFinite ? item.rotation : 0.0;
+    final c = math.cos(angle).abs();
+    final s = math.sin(angle).abs();
+
+    final extentXAtOne = (baseW * c + baseH * s) / 2.0;
+    final extentYAtOne = (baseW * s + baseH * c) / 2.0;
+
+    final limitX = extentXAtOne <= 0
+        ? 10.0
+        : math.min(
+      centerX / extentXAtOne,
+      (canvasWidth - centerX) / extentXAtOne,
+    );
+
+    final limitY = extentYAtOne <= 0
+        ? 10.0
+        : math.min(
+      centerY / extentYAtOne,
+      (canvasHeight - centerY) / extentYAtOne,
+    );
+
+    final maxAllowed = math.max(0.05, math.min(10.0, math.min(limitX, limitY)));
+
+    return math.min(safeRequested, maxAllowed).clamp(0.05, 10.0).toDouble();
+  }
+
   String? selectedItemType;
   String? selectedItemId;
   String? selectedFrameUrl;
@@ -113,6 +255,14 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool isBackgroundLoading = false;
   String _backgroundQuery = '';
   final Map<String, int> _backgroundRequestIds = {};
+
+  // Media -> Images (Pexels) keeps its own state so it never conflicts
+  // with the Background panel results.
+  List<String> mediaImageAssets = [];
+  bool isMediaImagesLoading = false;
+  String _mediaImagesQuery = '';
+  String get mediaImagesQuery => _mediaImagesQuery;
+  int _mediaImagesRequestId = 0;
 
   // Element categories keep their own results/loading state.
   final Map<String, List<String>> _elementCategoryAssets = {};
@@ -145,9 +295,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     try {
       final result = await FreePikService.searchAssets(
         query,
-        limit: 20,
+        page: 1,
+        limit: 30,
       ).timeout(
-        const Duration(seconds: 15),
+        const Duration(seconds: 20),
         onTimeout: () => <String>[],
       );
       setData(result);
@@ -178,9 +329,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
 
     try {
-      final result = await FreePikService.searchAssets(
+      final result = await FreePikService.searchPexelsPhotos(
         normalized,
-        limit: 30,
+        page: 1,
+        limit: 24,
       ).timeout(
         const Duration(seconds: 15),
         onTimeout: () => <String>[],
@@ -193,7 +345,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         backgroundAssets = result.toSet().toList();
       }
     } catch (e) {
-      debugPrint('Background Freepik error [$normalized]: $e');
+      debugPrint('Background Pexels error [$normalized]: $e');
       if (_backgroundRequestIds[normalized] == requestId &&
           _backgroundQuery == normalized) {
         backgroundAssets = <String>[];
@@ -207,38 +359,137 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
+  Future<void> fetchMediaImages(String query) async {
+    final normalized = query.trim().isEmpty ? 'background' : query.trim();
+    final requestId = ++_mediaImagesRequestId;
+
+    _mediaImagesQuery = normalized;
+    isMediaImagesLoading = true;
+    mediaImageAssets = <String>[];
+    notifyListeners();
+
+    try {
+      final result = await FreePikService.searchPexelsPhotos(
+        normalized,
+        page: 1,
+        limit: 24,
+      ).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => <String>[],
+      );
+
+      if (requestId == _mediaImagesRequestId &&
+          _mediaImagesQuery == normalized) {
+        mediaImageAssets = result
+            .where((url) => url.trim().isNotEmpty)
+            .toSet()
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Media Pexels images error [$normalized]: $e');
+      if (requestId == _mediaImagesRequestId &&
+          _mediaImagesQuery == normalized) {
+        mediaImageAssets = <String>[];
+      }
+    } finally {
+      if (requestId == _mediaImagesRequestId &&
+          _mediaImagesQuery == normalized) {
+        isMediaImagesLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
   /// Loads one element category without touching backgroundAssets or the
   /// generic freePikAssets list.
-  Future<void> fetchElementCategory(String query) async {
+  Future<void> fetchElementCategory(
+      String query, {
+        int page = 1,
+        int limit = 4,
+        bool append = false,
+      }) async {
     final normalized = query.trim();
     if (normalized.isEmpty) return;
 
-    final requestId = (_elementCategoryRequestIds[normalized] ?? 0) + 1;
-    _elementCategoryRequestIds[normalized] = requestId;
+    final requestKey = '${normalized}__$page';
+    final requestId = (_elementCategoryRequestIds[requestKey] ?? 0) + 1;
+    _elementCategoryRequestIds[requestKey] = requestId;
 
-    _elementCategoryLoading[normalized] = true;
-    _elementCategoryAssets[normalized] = <String>[];
+    if (!append) {
+      _elementCategoryLoading[normalized] = true;
+      _elementCategoryAssets[normalized] = <String>[];
+    }
     notifyListeners();
 
     try {
       final result = await FreePikService.searchAssets(
         normalized,
-        limit: 20,
+        page: page,
+        limit: limit,
       ).timeout(
         const Duration(seconds: 15),
         onTimeout: () => <String>[],
       );
 
-      if (_elementCategoryRequestIds[normalized] == requestId) {
-        _elementCategoryAssets[normalized] = result.toSet().toList();
-      }
+      if (_elementCategoryRequestIds[requestKey] != requestId) return;
+
+      final current = _elementCategoryAssets[normalized] ?? <String>[];
+      _elementCategoryAssets[normalized] = append
+          ? [...current, ...result].toSet().toList()
+          : result.toSet().toList();
     } catch (e) {
-      debugPrint('Element category error [$normalized]: $e');
-      if (_elementCategoryRequestIds[normalized] == requestId) {
+      debugPrint('Element category error [$normalized, page=$page]: $e');
+      if (!append && _elementCategoryRequestIds[requestKey] == requestId) {
         _elementCategoryAssets[normalized] = <String>[];
       }
     } finally {
-      if (_elementCategoryRequestIds[normalized] == requestId) {
+      if (_elementCategoryRequestIds[requestKey] == requestId) {
+        _elementCategoryLoading[normalized] = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> fetchElementCategoryAll(String query) async {
+    final normalized = query.trim();
+    if (normalized.isEmpty || normalized == 'shapes') return;
+
+    final requestId = (_elementCategoryRequestIds['${normalized}__all'] ?? 0) + 1;
+    _elementCategoryRequestIds['${normalized}__all'] = requestId;
+    _elementCategoryLoading[normalized] = true;
+    _elementCategoryAssets[normalized] = <String>[];
+    notifyListeners();
+
+    try {
+      final all = <String>[];
+      // Fetch several pages so View all is not limited to the first 4 results.
+      // The backend may cap per_page, so page-by-page loading is intentional.
+      for (var page = 1; page <= 10; page++) {
+        if (_elementCategoryRequestIds['${normalized}__all'] != requestId) return;
+        final result = await FreePikService.searchAssets(
+          normalized,
+          page: page,
+          limit: 20,
+        ).timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => <String>[],
+        );
+        if (result.isEmpty) break;
+        final before = all.length;
+        all.addAll(result);
+        final unique = all.toSet().toList();
+        all
+          ..clear()
+          ..addAll(unique);
+        _elementCategoryAssets[normalized] = List.unmodifiable(all);
+        notifyListeners();
+        if (all.length == before) break;
+        if (result.length < 2) break;
+      }
+    } catch (e) {
+      debugPrint('Element category all error [$normalized]: $e');
+    } finally {
+      if (_elementCategoryRequestIds['${normalized}__all'] == requestId) {
         _elementCategoryLoading[normalized] = false;
         notifyListeners();
       }
@@ -264,7 +515,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   Future<void> fetchFreePikSocialMedia() async {
     await _fetchFreepikCategory(
-      'social media icons stickers',
+      'social media',
       setLoading: (value) => isSocialMediaLoading = value,
       setData: (value) => freePikSocialMedia = value,
     );
@@ -272,7 +523,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   Future<void> fetchFreePikEcommerce() async {
     await _fetchFreepikCategory(
-      'ecommerce shopping online store icons',
+      'e-commerce',
       setLoading: (value) => isEcommerceLoading = value,
       setData: (value) => freePikEcommerce = value,
     );
@@ -407,6 +658,330 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     addText(initialText: emojiText);
   }
 
+  /// Add a Freepik asset as a selectable group.
+  ///
+  /// The API currently returns PNG thumbnails for many assets (`free_svg:
+  /// false`). We still create a `svg_group`/group-like item so the same
+  /// toolbar is shown. If an SVG payload is available it is used directly;
+  /// otherwise the PNG is kept as the group's source and can be split into
+  /// raster child elements when the user presses UNGROUP ELEMENTS.
+  void addFreePikElement(String thumbnailUrl) {
+    final svg = FreePikService.svgForThumbnail(thumbnailUrl);
+
+    _saveState();
+    final id = 'svg_group_${DateTime.now().microsecondsSinceEpoch}';
+    _items.add(
+      EditorItem(
+        id: id,
+        type: 'svg_group',
+        contentUrl: (svg != null && svg.trim().isNotEmpty)
+            ? svg
+            : thumbnailUrl,
+        position: const Offset(100, 150),
+        width: 220,
+        height: 220,
+        isLocal: false,
+        text: (svg != null && svg.trim().isNotEmpty)
+            ? 'svg_group'
+            : 'raster_group',
+      ),
+    );
+    selectedItemType = 'svg_group';
+    selectedItemId = id;
+    notifyListeners();
+  }
+
+  /// Ungroups the SVG into individual drawable SVG elements. Every fragment
+  /// keeps the original viewBox and group transforms, so all pieces retain
+  /// their original positions when they become separate editor items.
+  Future<void> ungroupSvgElement(String groupId) async {
+    final index = _items.indexWhere((e) => e.id == groupId);
+    if (index == -1) return;
+    final group = _items[index];
+    if (group.type != 'svg_group') return;
+
+    final source = group.contentUrl ?? '';
+    final isSvg = source.trimLeft().startsWith('<svg');
+
+    if (isSvg) {
+      final fragments = _extractSvgLeafFragments(source);
+      if (fragments.isEmpty) return;
+
+      _saveState();
+      _items.removeAt(index);
+
+      final created = <EditorItem>[];
+      for (var i = 0; i < fragments.length; i++) {
+        created.add(
+          EditorItem(
+            id: 'svg_${DateTime.now().microsecondsSinceEpoch}_$i',
+            type: 'svg_element',
+            contentUrl: fragments[i],
+            position: group.position,
+            width: group.width,
+            height: group.height,
+            scale: group.scale,
+            rotation: group.rotation,
+            opacity: group.opacity,
+            isLocal: false,
+          ),
+        );
+      }
+
+      _items.insertAll(index, created);
+      selectedItemId = created.first.id;
+      selectedItemType = 'svg_element';
+      notifyListeners();
+      return;
+    }
+
+    // Current Freepik proxy returns PNG thumbnails for many assets. Split
+    // the transparent raster into connected visual components so the user
+    // can still ungroup/edit the pieces individually without another API
+    // request.
+    await _ungroupRasterGroup(index, group);
+  }
+
+  Future<void> _ungroupRasterGroup(int index, EditorItem group) async {
+    final source = group.contentUrl ?? '';
+    if (source.isEmpty) return;
+
+    try {
+      final bytes = await _readImageBytes(source, group.isLocal);
+      if (bytes == null || bytes.isEmpty) return;
+
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      final width = image.width;
+      final height = image.height;
+      final raw = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      if (raw == null) return;
+
+      final rgba = raw.buffer.asUint8List();
+      final boxes = _findAlphaComponents(rgba, width, height);
+      image.dispose();
+      codec.dispose();
+
+      if (boxes.isEmpty) return;
+
+      _saveState();
+      _items.removeAt(index);
+
+      final tempDir = await getTemporaryDirectory();
+      final created = <EditorItem>[];
+      var componentIndex = 0;
+
+      for (final box in boxes) {
+        final cropBytes = await _cropImageToPng(bytes, box);
+        if (cropBytes == null || cropBytes.isEmpty) continue;
+
+        final file = File(
+          '${tempDir.path}/ungroup_${DateTime.now().microsecondsSinceEpoch}_${componentIndex++}.png',
+        );
+        await file.writeAsBytes(cropBytes, flush: true);
+
+        final relX = box.left / width;
+        final relY = box.top / height;
+        final relW = box.width / width;
+        final relH = box.height / height;
+
+        created.add(
+          EditorItem(
+            id: 'raster_${DateTime.now().microsecondsSinceEpoch}_${created.length}',
+            type: 'image',
+            contentUrl: file.path,
+            position: Offset(
+              group.position.dx + group.width * relX,
+              group.position.dy + group.height * relY,
+            ),
+            width: group.width * relW,
+            height: group.height * relH,
+            scale: group.scale,
+            rotation: group.rotation,
+            opacity: group.opacity,
+            isLocal: true,
+            text: 'rounded',
+          ),
+        );
+      }
+
+      if (created.isEmpty) {
+        _items.insert(index, group);
+        return;
+      }
+
+      _items.insertAll(index, created);
+      selectedItemId = created.first.id;
+      selectedItemType = 'image';
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Raster ungroup failed: $e');
+    }
+  }
+
+  Future<Uint8List?> _readImageBytes(String source, bool isLocal) async {
+    try {
+      if (isLocal || source.startsWith('/') || source.startsWith('file://')) {
+        return await File(source.replaceFirst('file://', '')).readAsBytes();
+      }
+      final response = await HttpClient().getUrl(Uri.parse(source)).then((r) => r.close());
+      if (response.statusCode != 200) return null;
+      final chunks = <int>[];
+      await for (final chunk in response) {
+        chunks.addAll(chunk);
+      }
+      return Uint8List.fromList(chunks);
+    } catch (e) {
+      debugPrint('Image bytes load failed: $e');
+      return null;
+    }
+  }
+
+  List<ui.Rect> _findAlphaComponents(Uint8List rgba, int width, int height) {
+    final pixelCount = width * height;
+    final visited = Uint8List(pixelCount);
+    final boxes = <ui.Rect>[];
+    const alphaThreshold = 12;
+    const minPixels = 8;
+
+    final queue = List<int>.filled(pixelCount, 0);
+
+    for (var start = 0; start < pixelCount; start++) {
+      if (visited[start] != 0) continue;
+      final alpha = rgba[start * 4 + 3];
+      if (alpha < alphaThreshold) {
+        visited[start] = 1;
+        continue;
+      }
+
+      var head = 0;
+      var tail = 0;
+      queue[tail++] = start;
+      visited[start] = 1;
+
+      var minX = start % width;
+      var maxX = minX;
+      var minY = start ~/ width;
+      var maxY = minY;
+      var count = 0;
+
+      while (head < tail) {
+        final p = queue[head++];
+        final x = p % width;
+        final y = p ~/ width;
+        count++;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+
+        void visit(int nx, int ny) {
+          if (nx < 0 || nx >= width || ny < 0 || ny >= height) return;
+          final n = ny * width + nx;
+          if (visited[n] != 0) return;
+          visited[n] = 1;
+          if (rgba[n * 4 + 3] >= alphaThreshold) queue[tail++] = n;
+        }
+
+        visit(x - 1, y);
+        visit(x + 1, y);
+        visit(x, y - 1);
+        visit(x, y + 1);
+      }
+
+      if (count >= minPixels) {
+        boxes.add(ui.Rect.fromLTRB(
+          minX.toDouble(),
+          minY.toDouble(),
+          (maxX + 1).toDouble(),
+          (maxY + 1).toDouble(),
+        ));
+      }
+    }
+
+    boxes.sort((a, b) => (a.top + a.left).compareTo(b.top + b.left));
+    return boxes;
+  }
+
+  Future<Uint8List?> _cropImageToPng(Uint8List source, ui.Rect box) async {
+    try {
+      final codec = await ui.instantiateImageCodec(source);
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final dst = ui.Rect.fromLTWH(0, 0, box.width, box.height);
+      canvas.drawImageRect(image, box, dst, Paint());
+      final picture = recorder.endRecording();
+      final cropped = await picture.toImage(
+        box.width.ceil(),
+        box.height.ceil(),
+      );
+      final data = await cropped.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      cropped.dispose();
+      codec.dispose();
+      return data?.buffer.asUint8List();
+    } catch (e) {
+      debugPrint('Image crop failed: $e');
+      return null;
+    }
+  }
+
+  List<String> _extractSvgLeafFragments(String source) {
+    final svgMatch = RegExp(r'''<svg\b([^>]*)>''', caseSensitive: false).firstMatch(source);
+    final attrs = svgMatch?.group(1) ?? '';
+    final viewBox = RegExp(r'''\bviewBox\s*=\s*["']([^"']+)["']''', caseSensitive: false)
+        .firstMatch(attrs)
+        ?.group(1) ??
+        '0 0 512 512';
+
+    final root = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="$viewBox">';
+    final tokens = RegExp(r'<[^>]+>', multiLine: true).allMatches(source).toList();
+    final groups = <String>[];
+    final fragments = <String>[];
+    const drawable = <String>{
+      'path', 'rect', 'circle', 'ellipse', 'polygon', 'polyline', 'line',
+      'text', 'image', 'use',
+    };
+
+    for (final token in tokens) {
+      final tag = token.group(0) ?? '';
+      final closing = RegExp(r'</\s*([A-Za-z0-9:_-]+)\s*>').firstMatch(tag);
+      if (closing != null) {
+        if (closing.group(1)!.toLowerCase() == 'g' && groups.isNotEmpty) {
+          groups.removeLast();
+        }
+        continue;
+      }
+
+      final opening = RegExp(r'<\s*([A-Za-z0-9:_-]+)\b').firstMatch(tag);
+      if (opening == null) continue;
+      final name = opening.group(1)!.toLowerCase();
+
+      if (name == 'g') {
+        if (!tag.trimRight().endsWith('/>')) groups.add(tag);
+        continue;
+      }
+
+      if (!drawable.contains(name)) continue;
+
+      final out = StringBuffer(root);
+      for (final parent in groups) out.write(parent);
+      out.write(tag);
+      if (!tag.trimRight().endsWith('/>')) {
+        final endTag = '</$name>';
+        final after = source.substring(token.end);
+        final end = after.toLowerCase().indexOf(endTag.toLowerCase());
+        if (end >= 0) out.write(after.substring(0, end + endTag.length));
+      }
+      out.write('</svg>');
+      fragments.add(out.toString());
+    }
+    return fragments;
+  }
+
   void addImage(String url, {bool isLocal = false}) {
     _saveState();
     final imageId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -423,16 +998,19 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       ),
     );
 
-    // Newly uploaded/added media is selected immediately.
-    // The selection toolbar will then appear above the main bottom navigation,
-    // including REPLACE BG / CROP / EDIT IMAGE / REMOVE.
+
     selectedItemType = 'image';
     selectedItemId = imageId;
     _saveState();
     notifyListeners();
   }
 
-  void addVideo(String videoUrl, {bool isLocal = false}) {
+  void addVideo(
+      String videoUrl, {
+        bool isLocal = false,
+        double width = 600,
+        double height = 400,
+      }) {
     if (videoUrl.trim().isEmpty) return;
 
     _saveState();
@@ -442,8 +1020,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       type: "video",
       contentUrl: videoUrl,
       position: const Offset(100, 100),
-      width: 600,
-      height: 400,
+      width: width,
+      height: height,
       isLocal: isLocal,
     );
 
@@ -456,29 +1034,53 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void updatePosition(String id, Offset newPos) {
-    int index = _items.indexWhere((e) => e.id == id);
-    if (index != -1) {
-      _items[index] = _items[index].copyWith(position: newPos);
-      notifyListeners();
-    }
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return;
+
+    final item = _items[index];
+    final bounded = _clampPositionForFrame(item, newPos);
+
+    _items[index] = item.copyWith(
+      position: _isBackgroundLayer(item) ? Offset.zero : bounded,
+    );
+    notifyListeners();
   }
 
   void updateRotation(String id, double rot) {
-    int index = _items.indexWhere((e) => e.id == id);
-    if (index != -1) {
-      _saveState();
-      _items[index] = _items[index].copyWith(rotation: rot);
-      notifyListeners();
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return;
+
+    _saveState();
+
+    final current = _items[index];
+    if (_isBackgroundLayer(current)) {
+      _items[index] = current.copyWith(rotation: rot);
+    } else {
+      final rotated = current.copyWith(rotation: rot);
+      final safeScale = _maxScaleForFrame(rotated, rotated.scale);
+      final resized = rotated.copyWith(scale: safeScale);
+      _items[index] = resized.copyWith(
+        position: _clampPositionForFrame(resized, resized.position),
+      );
     }
+    notifyListeners();
   }
 
   void updateScale(String id, double scl) {
-    int index = _items.indexWhere((e) => e.id == id);
-    if (index != -1) {
-      _saveState();
-      _items[index] = _items[index].copyWith(scale: scl);
-      notifyListeners();
-    }
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return;
+
+    _saveState();
+
+    final current = _items[index];
+    final requested = scl.isFinite ? scl : current.scale;
+    final safeScale = _maxScaleForFrame(current, requested);
+
+    final scaled = current.copyWith(scale: safeScale);
+    _items[index] = scaled.copyWith(
+      position: _clampPositionForFrame(scaled, scaled.position),
+    );
+    notifyListeners();
   }
 
   void updateFontSize(String id, double newSize) {
@@ -553,6 +1155,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
+  Color textColor(String id) {
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return Colors.white;
+    return _items[index].color ?? Colors.white;
+  }
   void updateTextColor(String id, Color newColor) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -715,9 +1322,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     try {
       final result = await FreePikService.searchAssets(
         normalized,
-        limit: 20,
+        page: 1,
+        limit: 30,
       ).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 20),
         onTimeout: () => <String>[],
       );
 
@@ -738,8 +1346,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   Future<void> fetchFreePikStickers(String query) async {
-    final normalized = query.trim().isEmpty ? 'stickers' : query.trim();
-    final requestId = (_elementCategoryRequestIds['__stickers__'] ?? 0) + 1;
+    final normalized = query.trim();
+
+    final requestId =
+        (_elementCategoryRequestIds['__stickers__'] ?? 0) + 1;
     _elementCategoryRequestIds['__stickers__'] = requestId;
 
     isStickersLoading = true;
@@ -747,11 +1357,18 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
 
     try {
-      final result = await FreePikService.searchAssets(
-        '$normalized stickers',
-        limit: 20,
+      // IMPORTANT:
+      // Use the dedicated /api/freepik/stickers endpoint.
+      // Do NOT append "stickers" to the search term; that was causing
+      // requests such as "stickers stickers".
+      final result = await FreePikService.searchStickers(
+        term: normalized.isEmpty || normalized == 'stickers'
+            ? null
+            : normalized,
+        page: 1,
+        perPage: 30,
       ).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 20),
         onTimeout: () => <String>[],
       );
 
@@ -770,6 +1387,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       }
     }
   }
+
 
   void updateImageContent(String id, String newUrl) {
     int index = _items.indexWhere((e) => e.id == id);
@@ -850,8 +1468,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  List<String> _freePikVideos = [];
-  List<String> get freePikVideos => _freePikVideos;
+  List<PexelsVideoAsset> _pexelsVideoAssets = [];
+  List<PexelsVideoAsset> get pexelsVideoAssets => _pexelsVideoAssets;
+
+  // Kept for existing callers.
+  List<String> get freePikVideos =>
+      _pexelsVideoAssets.map((e) => e.videoUrl).toList();
 
   final bool _isVideoLoading = false;
   bool get isVideoLoading => _isVideoLoading;
@@ -868,29 +1490,37 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     try {
       final searchQuery = query.trim().isEmpty ? "background" : query.trim();
 
-      debugPrint("Searching Freepik videos: $searchQuery");
+      debugPrint("Searching Pexels videos: $searchQuery");
 
-      _freePikVideos = await FreePikService.searchVideos(searchQuery).timeout(
+      _pexelsVideoAssets = await FreePikService.searchPexelsVideoAssets(
+        searchQuery,
+        page: 1,
+        limit: 24,
+      ).timeout(
         const Duration(seconds: 15),
         onTimeout: () {
-          debugPrint("Freepik video search timeout");
-          return [];
+          debugPrint("Pexels video search timeout");
+          return <PexelsVideoAsset>[];
         },
       );
 
-      debugPrint("Freepik videos found: ${_freePikVideos.length}");
+      debugPrint("Pexels videos found: ${_pexelsVideoAssets.length}");
     } catch (e, stackTrace) {
       debugPrint("Fetch Freepik Videos Error: $e");
       debugPrint("$stackTrace");
 
-      _freePikVideos = [];
+      _pexelsVideoAssets = [];
     } finally {
       _isVideosLoading = false;
       notifyListeners();
     }
   }
 
-  void setBackgroundImage(String imageUrl) {
+  void setBackgroundImage(
+      String imageUrl, {
+        double canvasWidth = 1080.0,
+        double canvasHeight = 1080.0,
+      }) {
     _saveState();
 
     // Replace the previous background completely.
@@ -907,8 +1537,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         id: bgId,
         type: 'image',
         position: const Offset(0, 0),
-        width: 1080.0,
-        height: 1080.0,
+        width: canvasWidth,
+        height: canvasHeight,
         contentUrl: imageUrl,
         isLocal: !imageUrl.startsWith('http'),
       ),
@@ -921,7 +1551,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
-  void setBackgroundVideo(String videoUrl) {
+  void setBackgroundVideo(
+      String videoUrl, {
+        double canvasWidth = 1080.0,
+        double canvasHeight = 1080.0,
+      }) {
     _saveState();
 
     // Replace the previous background completely.
@@ -937,8 +1571,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         id: bgId,
         type: 'video',
         position: const Offset(0, 0),
-        width: 1080.0,
-        height: 1080.0,
+        width: canvasWidth,
+        height: canvasHeight,
         contentUrl: videoUrl,
         isLocal: !videoUrl.startsWith('http'),
       ),
@@ -977,8 +1611,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   void replaceBackgroundImage(
       String imageUrl,
-      String selectedItemIdToRemove,
-      ) {
+      String selectedItemIdToRemove, {
+        double canvasWidth = 1080.0,
+        double canvasHeight = 1080.0,
+      }) {
     _saveState();
 
     // Remove old background image/video/shape
@@ -1002,8 +1638,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         id: bgId,
         type: 'image',
         position: const Offset(0, 0),
-        width: 1080.0,
-        height: 1080.0,
+        width: canvasWidth,
+        height: canvasHeight,
         scale: 1.0,
         rotation: 0.0,
         contentUrl: imageUrl,
@@ -1305,12 +1941,30 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     final current = _items[index];
 
-    _items[index] = current.copyWith(
-      position: position ?? current.position,
-      scale: scale ?? current.scale,
-      rotation: rotation ?? current.rotation,
+    if (_isBackgroundLayer(current)) {
+      _items[index] = current.copyWith(
+        position: Offset.zero,
+        scale: scale ?? current.scale,
+        rotation: rotation ?? current.rotation,
+      );
+      notifyListeners();
+      return;
+    }
+
+    final nextRotation = rotation ?? current.rotation;
+    final rotated = current.copyWith(rotation: nextRotation);
+
+    final requestedScale =
+    (scale ?? current.scale).isFinite ? (scale ?? current.scale) : current.scale;
+    final safeScale = _maxScaleForFrame(rotated, requestedScale);
+    final transformed = rotated.copyWith(scale: safeScale);
+
+    final nextPosition = _clampPositionForFrame(
+      transformed,
+      position ?? current.position,
     );
 
+    _items[index] = transformed.copyWith(position: nextPosition);
     notifyListeners();
   }
 

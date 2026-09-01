@@ -6,7 +6,6 @@ import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -42,10 +41,24 @@ class TemplateEditScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // TemplateDetailScreen opens this screen with Navigator.pushNamed(..., arguments: selectedResizeSize).
+    // Read that argument here so the editor always uses the exact size selected on the previous screen.
+    final args = ModalRoute.of(context)?.settings.arguments;
+    String resolvedResizeSize = resizeSize;
+
+    if (args is String && args.trim().isNotEmpty) {
+      resolvedResizeSize = args.trim();
+    } else if (args is Map) {
+      final value = args['resizeSize'] ?? args['resize_size'];
+      if (value is String && value.trim().isNotEmpty) {
+        resolvedResizeSize = value.trim();
+      }
+    }
+
     return ChangeNotifierProvider(
       create: (_) => EditorProvider(),
       child: Scaffold(
-        body: SafeArea(child: EditorView(resizeSize: resizeSize)),
+        body: SafeArea(child: EditorView(resizeSize: resolvedResizeSize)),
       ),
     );
   }
@@ -60,6 +73,24 @@ class EditorView extends StatefulWidget {
 }
 
 class _EditorViewState extends State<EditorView> {
+  Size _getCanvasSize() {
+    final size = widget.resizeSize.toLowerCase();
+
+    if (size.contains('4:5')) {
+      return const Size(1080, 1350);
+    }
+    if (size.contains('9:16')) {
+      return const Size(1080, 1920);
+    }
+    if (size.contains('horizontal')) {
+      return const Size(1200, 628);
+    }
+    if (size.contains('portrait')) {
+      return const Size(1080, 1350);
+    }
+    return const Size(1080, 1080);
+  }
+
   bool _isCanvasBackground(EditorItem item) {
     // Background layers have a stable bg_ id, so they remain a background
     // even after the user drags / scales / rotates them.
@@ -133,7 +164,7 @@ class _EditorViewState extends State<EditorView> {
       if (response.statusCode != 200) return null;
       final bytes = await response.fold<List<int>>(
         <int>[],
-            (buffer, data) => buffer..addAll(data),
+        (buffer, data) => buffer..addAll(data),
       );
       client.close();
       final dir = await getTemporaryDirectory();
@@ -148,10 +179,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _cropSelectedImage(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+  ) async {
     final item = provider.items.where((e) => e.id == itemId).isEmpty
         ? null
         : provider.items.firstWhere((e) => e.id == itemId);
@@ -189,11 +220,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<bool> _confirmReplaceBackground(
-      BuildContext context,
-      EditorProvider provider,
-      String imageUrl, {
-        String? selectedItemId,
-      }) async {
+    BuildContext context,
+    EditorProvider provider,
+    String imageUrl, {
+    String? selectedItemId,
+  }) async {
     final replace = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -219,11 +250,22 @@ class _EditorViewState extends State<EditorView> {
       if (selectedItemId != null) {
         // Media image -> full-size background.
         // This also removes the selected media item so it is not rendered twice.
-        provider.replaceBackgroundImage(imageUrl, selectedItemId);
+        final canvasSize = _getCanvasSize();
+        provider.replaceBackgroundImage(
+          imageUrl,
+          selectedItemId,
+          canvasWidth: canvasSize.width,
+          canvasHeight: canvasSize.height,
+        );
       } else {
         // Background/stock image -> full-size background.
         // setBackgroundImage creates/selects the new bg_ layer.
-        provider.setBackgroundImage(imageUrl);
+        final canvasSize = _getCanvasSize();
+        provider.setBackgroundImage(
+          imageUrl,
+          canvasWidth: canvasSize.width,
+          canvasHeight: canvasSize.height,
+        );
       }
 
       // Close the selection sheet, then keep the new background selected.
@@ -263,6 +305,7 @@ class _EditorViewState extends State<EditorView> {
 
   Future<void> _loadTemplateJsonAndInitEditor() async {
     final provider = Provider.of<EditorProvider>(context, listen: false);
+    final canvasSize = _getCanvasSize();
 
     provider.loadItemsFromJson([
       {
@@ -270,8 +313,8 @@ class _EditorViewState extends State<EditorView> {
         "type": "rect",
         "left": 0,
         "top": 0,
-        "width": 1080,
-        "height": 1080,
+        "width": canvasSize.width,
+        "height": canvasSize.height,
         "fill": "white",
         "name": "clip",
       },
@@ -280,9 +323,10 @@ class _EditorViewState extends State<EditorView> {
         "type": "image",
         "left": 0,
         "top": 0,
-        "width": 1080,
-        "height": 1080,
-        "src": "https://picsum.photos/1080/1080",
+        "width": canvasSize.width,
+        "height": canvasSize.height,
+        "src":
+            "https://picsum.photos/${canvasSize.width.toInt()}/${canvasSize.height.toInt()}",
       },
       {
         "version": "5.3.0",
@@ -299,7 +343,7 @@ class _EditorViewState extends State<EditorView> {
     ]);
 
     provider.fetchFreePikAssets("furniture");
-    provider.fetchFreePikStickers("shapes");
+    provider.fetchFreePikStickers("stickers");
   }
 
   static const List<String> _localShapeAssets = [
@@ -372,27 +416,20 @@ class _EditorViewState extends State<EditorView> {
   ];
 
   Future<void> _addLocalShape(
-      BuildContext context,
-      EditorProvider provider,
-      String assetPath,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    String assetPath,
+  ) async {
     try {
-      final pictureInfo = await vg.loadPicture(
-        SvgAssetLoader(assetPath),
-        null,
-      );
+      final pictureInfo = await vg.loadPicture(SvgAssetLoader(assetPath), null);
 
       const outputSize = 512.0;
 
       final sourceSize = pictureInfo.size;
 
-      final sourceWidth =
-      sourceSize.width > 0
-          ? sourceSize.width
-          : outputSize;
+      final sourceWidth = sourceSize.width > 0 ? sourceSize.width : outputSize;
 
-      final sourceHeight =
-      sourceSize.height > 0
+      final sourceHeight = sourceSize.height > 0
           ? sourceSize.height
           : outputSize;
 
@@ -412,9 +449,7 @@ class _EditorViewState extends State<EditorView> {
 
       canvas.scale(scale);
 
-      canvas.drawPicture(
-        pictureInfo.picture,
-      );
+      canvas.drawPicture(pictureInfo.picture);
 
       final picture = recorder.endRecording();
 
@@ -423,9 +458,7 @@ class _EditorViewState extends State<EditorView> {
         outputSize.toInt(),
       );
 
-      final byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
       pictureInfo.picture.dispose();
       picture.dispose();
@@ -441,24 +474,16 @@ class _EditorViewState extends State<EditorView> {
         "${dir.path}/shape_${DateTime.now().microsecondsSinceEpoch}.png",
       );
 
-      await file.writeAsBytes(
-        byteData.buffer.asUint8List(),
-        flush: true,
-      );
+      await file.writeAsBytes(byteData.buffer.asUint8List(), flush: true);
 
-      provider.addImage(
-        file.path,
-        isLocal: true,
-      );
+      provider.addImage(file.path, isLocal: true);
 
       if (context.mounted) {
         Navigator.pop(context);
       }
     } catch (_) {
       if (context.mounted) {
-        Fluttertoast.showToast(
-          msg: "Unable to add shape",
-        );
+        Fluttertoast.showToast(msg: "Unable to add shape");
       }
     }
   }
@@ -495,19 +520,19 @@ class _EditorViewState extends State<EditorView> {
     return Container(
       height: WidgetsBinding.instance.platformDispatcher.views.isNotEmpty
           ? WidgetsBinding
-          .instance
-          .platformDispatcher
-          .views
-          .first
-          .physicalSize
-          .height /
-          WidgetsBinding
-              .instance
-              .platformDispatcher
-              .views
-              .first
-              .devicePixelRatio *
-          height
+                    .instance
+                    .platformDispatcher
+                    .views
+                    .first
+                    .physicalSize
+                    .height /
+                WidgetsBinding
+                    .instance
+                    .platformDispatcher
+                    .views
+                    .first
+                    .devicePixelRatio *
+                height
           : 320,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -555,12 +580,12 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildImageAdjustSlider(
-      String title,
-      double value,
-      double min,
-      double max,
-      ValueChanged<double> onChanged,
-      ) {
+    String title,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged,
+  ) {
     return Row(
       children: [
         SizedBox(width: 88, child: Text(title)),
@@ -581,10 +606,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showFramesBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -674,10 +699,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showMyBrandBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -761,10 +786,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTextStylesBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -865,11 +890,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showMediaBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
-    int selectedTab = 1; // 0 uploads, 1 elements, 2 stickers
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
+    int selectedTab = 1; // 0 uploads, 1 elements, 2 images
     String? expandedCategory;
     bool sheetOpen = true;
     final searchController = TextEditingController();
@@ -877,18 +902,46 @@ class _EditorViewState extends State<EditorView> {
     const categories = <Map<String, String>>[
       {'title': 'Shapes', 'query': 'shapes'},
       {'title': 'Stickers', 'query': 'stickers'},
-      {'title': 'Social Media', 'query': 'social media icons'},
-      {'title': 'E-commerce', 'query': 'ecommerce shopping'},
+      {'title': 'Social Media', 'query': 'social media'},
+      {'title': 'E-commerce', 'query': 'e-commerce'},
     ];
 
-    void loadCategory(String query, void Function(void Function()) setState) {
+    const imageCategories = <Map<String, String>>[
+      {'title': 'Nature', 'query': 'nature'},
+      {'title': 'People', 'query': 'people'},
+      {'title': 'Business', 'query': 'business'},
+      {'title': 'Animals', 'query': 'animals'},
+      {'title': 'Travel', 'query': 'travel'},
+      {'title': 'Food', 'query': 'food'},
+      {'title': 'Technology', 'query': 'technology'},
+      {'title': 'Fashion', 'query': 'fashion'},
+      {'title': 'Architecture', 'query': 'architecture'},
+      {'title': 'Background', 'query': 'background'},
+    ];
+
+    void loadCategory(
+      String query,
+      void Function(void Function()) setState, {
+      int limit = 4,
+      bool force = false,
+    }) {
       if (query == 'shapes') return;
-      if (provider.elementCategoryAssets(query).isNotEmpty ||
-          provider.isElementCategoryLoading(query)) {
+      if (query == 'stickers') {
+        if (!force && provider.freePikStickers.isNotEmpty) return;
+        if (provider.isStickersLoading) return;
+        provider.fetchFreePikStickers('stickers').then((_) {
+          if (!sheetOpen) return;
+          setState(() {});
+        });
+        setState(() {});
         return;
       }
+      if (!force && provider.elementCategoryAssets(query).isNotEmpty) {
+        return;
+      }
+      if (provider.isElementCategoryLoading(query)) return;
 
-      provider.fetchElementCategory(query).then((_) {
+      provider.fetchElementCategory(query, limit: limit).then((_) {
         if (!sheetOpen) return;
         setState(() {});
       });
@@ -913,60 +966,46 @@ class _EditorViewState extends State<EditorView> {
 
               final Widget preview = isLocalShape
                   ? SvgPicture.asset(
-                url,
-                fit: BoxFit.contain,
-                width: 58,
-                height: 58,
-                placeholderBuilder: (_) => const Center(
-                  child: SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.5,
-                    ),
-                  ),
-                ),
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.broken_image_outlined,
-                  color: Colors.grey,
-                ),
-              )
-                  : Image.network(
-                url,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.image_outlined,
-                  color: Colors.grey,
-                ),
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-
-                  return const Center(
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1.5,
+                      url,
+                      fit: BoxFit.contain,
+                      width: 58,
+                      height: 58,
+                      placeholderBuilder: (_) => const Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                        ),
                       ),
-                    ),
-                  );
-                },
-              );
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.grey,
+                      ),
+                    )
+                  : Image.network(
+                      url,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.image_outlined, color: Colors.grey),
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+
+                        return const Center(
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 1.5),
+                          ),
+                        );
+                      },
+                    );
 
               return GestureDetector(
                 onTap: () {
                   if (isLocalShape) {
-                    _addLocalShape(
-                      modalContext,
-                      provider,
-                      url,
-                    );
+                    _addLocalShape(modalContext, provider, url);
                   } else {
-                    provider.addImage(
-                      url,
-                      isLocal: false,
-                    );
-
+                    provider.addFreePikElement(url);
                     Navigator.pop(modalContext);
                   }
                 },
@@ -979,9 +1018,7 @@ class _EditorViewState extends State<EditorView> {
                         : const Color(0xFFF8F8F8),
                     borderRadius: BorderRadius.circular(9),
                     border: Border.all(
-                      color: isDark
-                          ? Colors.white12
-                          : const Color(0xFFE8E8E8),
+                      color: isDark ? Colors.white12 : const Color(0xFFE8E8E8),
                     ),
                   ),
                   clipBehavior: Clip.antiAlias,
@@ -1009,7 +1046,15 @@ class _EditorViewState extends State<EditorView> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        loadCategory(query, setSheetState);
+                        if (query == 'stickers') {
+                          provider.fetchFreePikStickers('stickers').then((_) {
+                            if (sheetOpen) setSheetState(() {});
+                          });
+                        } else if (query != 'shapes') {
+                          provider.fetchElementCategoryAll(query).then((_) {
+                            if (sheetOpen) setSheetState(() {});
+                          });
+                        }
                         setSheetState(() => expandedCategory = query);
                       },
                       child: const Text(
@@ -1031,6 +1076,8 @@ class _EditorViewState extends State<EditorView> {
               final query = category['query']!;
               final List<String> items = query == 'shapes'
                   ? _localShapeAssets
+                  : query == 'stickers'
+                  ? provider.freePikStickers
                   : provider.elementCategoryAssets(query);
               final preview = items.take(4).toList();
 
@@ -1042,36 +1089,36 @@ class _EditorViewState extends State<EditorView> {
                     height: 58,
                     child: provider.isElementCategoryLoading(query)
                         ? const Center(
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 1.8,
-                        ),
-                      ),
-                    )
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.8,
+                              ),
+                            ),
+                          )
                         : preview.isEmpty
                         ? const Center(
-                      child: Text(
-                        'No items found',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 11,
-                        ),
-                      ),
-                    )
+                            child: Text(
+                              'No items found',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 11,
+                              ),
+                            ),
+                          )
                         : Row(
-                      children: preview
-                          .map(
-                            (url) => Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: elementCard(url),
+                            children: preview
+                                .map(
+                                  (url) => Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: elementCard(url),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
                           ),
-                        ),
-                      )
-                          .toList(),
-                    ),
                   ),
                   const SizedBox(height: 18),
                 ],
@@ -1082,10 +1129,12 @@ class _EditorViewState extends State<EditorView> {
               if (expandedCategory != null) {
                 final query = expandedCategory!;
                 final title = categories.firstWhere(
-                      (e) => e['query'] == query,
+                  (e) => e['query'] == query,
                 )['title']!;
                 final List<String> items = query == 'shapes'
                     ? _localShapeAssets
+                    : query == 'stickers'
+                    ? provider.freePikStickers
                     : provider.elementCategoryAssets(query);
                 return Column(
                   children: [
@@ -1108,22 +1157,25 @@ class _EditorViewState extends State<EditorView> {
                       ],
                     ),
                     Expanded(
-                      child: provider.isElementCategoryLoading(query)
+                      child:
+                          (query == 'stickers'
+                              ? provider.isStickersLoading
+                              : provider.isElementCategoryLoading(query))
                           ? const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : GridView.builder(
-                        padding: const EdgeInsets.fromLTRB(4, 4, 4, 20),
-                        gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                        ),
-                        itemCount: items.length,
-                        itemBuilder: (_, index) =>
-                            elementCard(items[index]),
-                      ),
+                              padding: const EdgeInsets.fromLTRB(4, 4, 4, 20),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 4,
+                                    crossAxisSpacing: 10,
+                                    mainAxisSpacing: 10,
+                                  ),
+                              itemCount: items.length,
+                              itemBuilder: (_, index) =>
+                                  elementCard(items[index]),
+                            ),
                     ),
                   ],
                 );
@@ -1169,19 +1221,60 @@ class _EditorViewState extends State<EditorView> {
               );
             }
 
-            Widget stickersView() {
-              final stickers = provider.freePikStickers;
-              if (!provider.isStickersLoading && stickers.isEmpty) {
-                Future.microtask(
-                      () => provider.fetchFreePikStickers('stickers'),
+            Widget imagesView() {
+              const defaultQuery = 'background';
+              final images = provider.mediaImageAssets;
+
+              if (!provider.isMediaImagesLoading &&
+                  images.isEmpty &&
+                  provider.mediaImageAssets.isEmpty) {
+                Future.microtask(() => provider.fetchMediaImages(defaultQuery));
+              }
+
+              Widget imageChip(String title, String query) {
+                final selected = provider.mediaImagesQuery == query;
+                return GestureDetector(
+                  onTap: () {
+                    searchController.text = query;
+                    provider.fetchMediaImages(query).then((_) {
+                      if (sheetOpen) setSheetState(() {});
+                    });
+                    setSheetState(() {});
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xFFFFE9E9)
+                          : (isDark ? const Color(0xFF24262B) : Colors.white),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: selected
+                            ? Colors.redAccent
+                            : (isDark
+                                  ? Colors.white24
+                                  : const Color(0xFFE0E0E0)),
+                      ),
+                    ),
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: selected
+                            ? Colors.redAccent
+                            : (isDark ? Colors.white : Colors.black87),
+                      ),
+                    ),
+                  ),
                 );
               }
-              if (provider.isStickersLoading) {
-                return const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                );
-              }
+
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     height: 42,
@@ -1196,29 +1289,119 @@ class _EditorViewState extends State<EditorView> {
                     ),
                     child: TextField(
                       controller: searchController,
-                      onChanged: (value) => provider.fetchFreePikStickers(
-                        value.isEmpty ? 'stickers' : value,
-                      ),
-                      decoration: const InputDecoration(
-                        hintText: 'Search stickers...',
-                        prefixIcon: Icon(Icons.search_rounded, size: 20),
+                      onSubmitted: (value) {
+                        provider.fetchMediaImages(
+                          value.trim().isEmpty ? defaultQuery : value.trim(),
+                        );
+                      },
+                      onChanged: (value) {
+                        if (value.trim().isEmpty) {
+                          provider.fetchMediaImages(defaultQuery);
+                        }
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search images...',
+                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.search_rounded, size: 20),
+                          onPressed: () {
+                            final value = searchController.text.trim();
+                            provider.fetchMediaImages(
+                              value.isEmpty ? defaultQuery : value,
+                            );
+                          },
+                        ),
                         border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 38,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: imageCategories.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (_, index) {
+                        final category = imageCategories[index];
+                        return imageChip(
+                          category['title']!,
+                          category['query']!,
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 12),
                   Expanded(
-                    child: GridView.builder(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                      ),
-                      itemCount: stickers.length,
-                      itemBuilder: (_, index) => elementCard(stickers[index]),
-                    ),
+                    child: provider.isMediaImagesLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : images.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No images found',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : GridView.builder(
+                            padding: const EdgeInsets.only(bottom: 20),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 10,
+                                  mainAxisSpacing: 10,
+                                  childAspectRatio: 0.92,
+                                ),
+                            itemCount: images.length,
+                            itemBuilder: (_, index) {
+                              return GestureDetector(
+                                onTap: () {
+                                  provider.addImage(
+                                    images[index],
+                                    isLocal: false,
+                                  );
+                                  Navigator.pop(modalContext);
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? const Color(0xFF24262B)
+                                        : const Color(0xFFF7F7F7),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? Colors.white12
+                                          : const Color(0xFFE6E6E6),
+                                    ),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: Image.network(
+                                    images[index],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        const SizedBox.shrink(),
+                                    loadingBuilder: (context, child, progress) {
+                                      if (progress == null) return child;
+                                      return const Center(
+                                        child: SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 1.6,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                   ),
                 ],
               );
@@ -1297,9 +1480,15 @@ class _EditorViewState extends State<EditorView> {
                             ),
                             const SizedBox(width: 24),
                             _backgroundTab(
-                              title: 'STICKERS',
+                              title: 'IMAGES',
                               selected: selectedTab == 2,
-                              onTap: () => setSheetState(() => selectedTab = 2),
+                              onTap: () {
+                                setSheetState(() => selectedTab = 2);
+                                if (provider.mediaImageAssets.isEmpty &&
+                                    !provider.isMediaImagesLoading) {
+                                  provider.fetchMediaImages('background');
+                                }
+                              },
                             ),
                           ],
                         ),
@@ -1315,7 +1504,7 @@ class _EditorViewState extends State<EditorView> {
                             ? uploadsView()
                             : selectedTab == 1
                             ? elementsView()
-                            : stickersView(),
+                            : imagesView(),
                       ),
                     ),
                   ],
@@ -1358,15 +1547,17 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showBackgroundBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     int selectedTab = 0; // 0 images, 1 videos, 2 colors
-    String searchQuery = 'abstract background';
+    String searchQuery = 'background';
+    String videoSearchQuery = 'background';
     bool sheetOpen = true;
     bool backgroundRequestStarted = false;
     final searchController = TextEditingController(text: searchQuery);
+    final videoSearchController = TextEditingController(text: videoSearchQuery);
 
     const chips = <String>[
       'Abstract background',
@@ -1378,11 +1569,22 @@ class _EditorViewState extends State<EditorView> {
     ];
 
     void fetchImages(String query, void Function(void Function()) setState) {
-      final value = query.trim().isEmpty ? 'abstract background' : query.trim();
+      final value = query.trim().isEmpty ? 'background' : query.trim();
       searchQuery = value;
       setState(() {});
 
       provider.fetchBackgroundAssets(value).then((_) {
+        if (!sheetOpen) return;
+        setState(() {});
+      });
+    }
+
+    void fetchVideos(String query, void Function(void Function()) setState) {
+      final value = query.trim().isEmpty ? 'background' : query.trim();
+      videoSearchQuery = value;
+      setState(() {});
+
+      provider.fetchFreePikVideos(value).then((_) {
         if (!sheetOpen) return;
         setState(() {});
       });
@@ -1405,7 +1607,11 @@ class _EditorViewState extends State<EditorView> {
               });
             }
 
-            Widget searchBox() {
+            Widget searchBox({required bool forVideos}) {
+              final controller = forVideos
+                  ? videoSearchController
+                  : searchController;
+              final currentQuery = forVideos ? videoSearchQuery : searchQuery;
               return Container(
                 height: 42,
                 decoration: BoxDecoration(
@@ -1416,10 +1622,16 @@ class _EditorViewState extends State<EditorView> {
                   ),
                 ),
                 child: TextField(
-                  controller: searchController,
-                  onSubmitted: (value) => fetchImages(value, setSheetState),
+                  controller: controller,
+                  onSubmitted: (value) => forVideos
+                      ? fetchVideos(value, setSheetState)
+                      : fetchImages(value, setSheetState),
                   onChanged: (value) {
-                    searchQuery = value;
+                    if (forVideos) {
+                      videoSearchQuery = value;
+                    } else {
+                      searchQuery = value;
+                    }
                     setSheetState(() {});
                   },
                   style: TextStyle(
@@ -1427,7 +1639,9 @@ class _EditorViewState extends State<EditorView> {
                     color: isDark ? Colors.white : const Color(0xFF222222),
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Search backgrounds...',
+                    hintText: forVideos
+                        ? 'Search background videos...'
+                        : 'Search background...',
                     hintStyle: TextStyle(
                       color: isDark ? Colors.white54 : const Color(0xFF8A8A8A),
                       fontSize: 13,
@@ -1445,8 +1659,9 @@ class _EditorViewState extends State<EditorView> {
                             ? Colors.white70
                             : const Color(0xFF444444),
                       ),
-                      onPressed: () =>
-                          fetchImages(searchController.text, setSheetState),
+                      onPressed: () => forVideos
+                          ? fetchVideos(controller.text, setSheetState)
+                          : fetchImages(controller.text, setSheetState),
                     ),
                   ),
                 ),
@@ -1469,8 +1684,49 @@ class _EditorViewState extends State<EditorView> {
                   decoration: BoxDecoration(
                     color: selected
                         ? (isDark
-                        ? const Color(0xFF4A2024)
-                        : const Color(0xFFFFE7E7))
+                              ? const Color(0xFF4A2024)
+                              : const Color(0xFFFFE7E7))
+                        : (isDark ? const Color(0xFF24262B) : Colors.white),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: selected
+                          ? Colors.red.shade300
+                          : (isDark ? Colors.white24 : const Color(0xFFE2E2E2)),
+                    ),
+                  ),
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: selected
+                          ? Colors.red
+                          : (isDark ? Colors.white70 : const Color(0xFF444444)),
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            Widget videoChip(String title) {
+              final selected =
+                  videoSearchQuery.toLowerCase() == title.toLowerCase();
+              return GestureDetector(
+                onTap: () {
+                  videoSearchController.text = title;
+                  fetchVideos(title, setSheetState);
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? (isDark
+                              ? const Color(0xFF4A2024)
+                              : const Color(0xFFFFE7E7))
                         : (isDark ? const Color(0xFF24262B) : Colors.white),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
@@ -1518,9 +1774,7 @@ class _EditorViewState extends State<EditorView> {
                     url,
                     fit: BoxFit.cover,
                     width: double.infinity,
-                    errorBuilder: (_, __, ___) => const Center(
-                      child: Icon(Icons.image_outlined, color: Colors.grey),
-                    ),
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     loadingBuilder: (context, child, progress) {
                       if (progress == null) return child;
                       return const Center(
@@ -1543,7 +1797,14 @@ class _EditorViewState extends State<EditorView> {
                 );
               }
 
-              final items = provider.backgroundAssets.take(24).toList();
+              final items = provider.backgroundAssets
+                  .where((u) {
+                    final uri = Uri.tryParse(u);
+                    return uri != null &&
+                        (uri.scheme == 'http' || uri.scheme == 'https');
+                  })
+                  .take(24)
+                  .toList();
               if (items.isEmpty) {
                 return Center(
                   child: Text(
@@ -1578,9 +1839,9 @@ class _EditorViewState extends State<EditorView> {
                         Expanded(
                           child: rightIndex < items.length
                               ? imageCard(
-                            items[rightIndex],
-                            rowHeight * (rowIndex.isEven ? .78 : 1.18),
-                          )
+                                  items[rightIndex],
+                                  rowHeight * (rowIndex.isEven ? .78 : 1.18),
+                                )
                               : const SizedBox.shrink(),
                         ),
                       ],
@@ -1637,9 +1898,10 @@ class _EditorViewState extends State<EditorView> {
             }
 
             Widget videosView() {
-              if (!provider.isVideosLoading && provider.freePikVideos.isEmpty) {
+              if (!provider.isVideosLoading &&
+                  provider.pexelsVideoAssets.isEmpty) {
                 Future.microtask(
-                      () => provider.fetchFreePikVideos('background'),
+                  () => provider.fetchFreePikVideos(videoSearchQuery),
                 );
               }
               if (provider.isVideosLoading) {
@@ -1647,7 +1909,9 @@ class _EditorViewState extends State<EditorView> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 );
               }
-              if (provider.freePikVideos.isEmpty) {
+
+              final assets = provider.pexelsVideoAssets;
+              if (assets.isEmpty) {
                 return const Center(
                   child: Text(
                     'No videos found',
@@ -1655,17 +1919,18 @@ class _EditorViewState extends State<EditorView> {
                   ),
                 );
               }
+
               return GridView.builder(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.fromLTRB(4, 10, 4, 20),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
-                  childAspectRatio: .78,
+                  childAspectRatio: 1.35,
                 ),
-                itemCount: provider.freePikVideos.length,
+                itemCount: assets.length,
                 itemBuilder: (_, index) {
-                  final videoUrl = provider.freePikVideos[index];
+                  final asset = assets[index];
                   return GestureDetector(
                     onTap: () async {
                       final replace = await showDialog<bool>(
@@ -1693,7 +1958,12 @@ class _EditorViewState extends State<EditorView> {
                         ),
                       );
                       if (replace == true) {
-                        provider.setBackgroundVideo(videoUrl);
+                        final canvasSize = _getCanvasSize();
+                        provider.setBackgroundVideo(
+                          asset.videoUrl,
+                          canvasWidth: canvasSize.width,
+                          canvasHeight: canvasSize.height,
+                        );
                         provider.clearSelection();
                         if (Navigator.canPop(modalContext))
                           Navigator.pop(modalContext);
@@ -1704,10 +1974,28 @@ class _EditorViewState extends State<EditorView> {
                         color: isDark
                             ? const Color(0xFF24262B)
                             : const Color(0xFFF4F4F4),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Center(
-                        child: Icon(Icons.play_circle_fill_rounded, size: 44),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (asset.thumbnailUrl != null)
+                            Image.network(
+                              asset.thumbnailUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const SizedBox.shrink(),
+                            ),
+                          Container(color: Colors.black26),
+                          const Center(
+                            child: Icon(
+                              Icons.play_circle_fill_rounded,
+                              size: 42,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
@@ -1766,7 +2054,7 @@ class _EditorViewState extends State<EditorView> {
                     if (selectedTab == 0) ...[
                       Padding(
                         padding: const EdgeInsets.fromLTRB(6, 4, 6, 8),
-                        child: searchBox(),
+                        child: searchBox(forVideos: false),
                       ),
                       SizedBox(
                         height: 38,
@@ -1774,6 +2062,26 @@ class _EditorViewState extends State<EditorView> {
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                           scrollDirection: Axis.horizontal,
                           children: chips.map(chip).toList(),
+                        ),
+                      ),
+                    ] else if (selectedTab == 1) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(6, 4, 6, 8),
+                        child: searchBox(forVideos: true),
+                      ),
+                      SizedBox(
+                        height: 38,
+                        child: ListView(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            'Abstract',
+                            'Loop',
+                            'Animation',
+                            'Nature',
+                            'Technology',
+                            'Texture',
+                          ].map(videoChip).toList(),
                         ),
                       ),
                     ],
@@ -1822,6 +2130,7 @@ class _EditorViewState extends State<EditorView> {
     ).whenComplete(() {
       sheetOpen = false;
       searchController.dispose();
+      videoSearchController.dispose();
     });
   }
 
@@ -1862,14 +2171,9 @@ class _EditorViewState extends State<EditorView> {
     final themeProvider = context.watch<CustomThemeProvider>();
     final isDark = themeProvider.isDarkMode;
 
-    double aspectRatio = 1 / 1;
-    if (widget.resizeSize.contains("4:5")) {
-      aspectRatio = 4 / 5;
-    } else if (widget.resizeSize.contains("9:16")) {
-      aspectRatio = 9 / 16;
-    } else if (widget.resizeSize.contains("Horizontal")) {
-      aspectRatio = 1200 / 628;
-    }
+    final canvasSize = _getCanvasSize();
+    provider.setCanvasSize(canvasSize.width, canvasSize.height);
+    final double aspectRatio = canvasSize.width / canvasSize.height;
 
     return Scaffold(
       backgroundColor: isDark
@@ -1924,14 +2228,14 @@ class _EditorViewState extends State<EditorView> {
             onPressed: !provider.canPasteCopiedPage
                 ? null
                 : () {
-              final pasted = provider.pasteCopiedPage();
-              if (pasted) {
-                Fluttertoast.showToast(
-                  msg:
-                  'Copied page pasted to Page ${provider.currentPageIndex + 1}',
-                );
-              }
-            },
+                    final pasted = provider.pasteCopiedPage();
+                    if (pasted) {
+                      Fluttertoast.showToast(
+                        msg:
+                            'Copied page pasted to Page ${provider.currentPageIndex + 1}',
+                      );
+                    }
+                  },
           ),
           IconButton(
             tooltip: 'Download',
@@ -1956,106 +2260,118 @@ class _EditorViewState extends State<EditorView> {
                 decoration: BoxDecoration(color: provider.backgroundColor),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final double scaleX = constraints.maxWidth / 1080;
-
-                    final double scaleY = constraints.maxHeight / 1080;
+                    final double scaleX =
+                        constraints.maxWidth / canvasSize.width;
+                    final double scaleY =
+                        constraints.maxHeight / canvasSize.height;
 
                     final backgroundItems = provider.items
                         .where(_isCanvasBackground)
                         .toList();
 
-                    return Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Positioned.fill(
-                          child: ColoredBox(color: provider.backgroundColor),
-                        ),
-
-                        if (backgroundItems.isNotEmpty)
-                          _InteractiveBackgroundLayer(
-                            key: ValueKey(backgroundItems.last.id),
-                            item: backgroundItems.last,
-                            scaleX: scaleX,
-                            scaleY: scaleY,
-                            onSelected: () {
-                              final bg = backgroundItems.last;
-
-                              // Select the background exactly like a normal
-                              // image layer so the image editor toolbar opens.
-                              provider.setSelectedItem(bg.type, bg.id);
-
-                              if (mounted) {
-                                setState(() {
-                                  _bottomNavIndex = 3;
-                                });
-                              }
-                            },
-                          ),
-
-                        ...provider.items
-                            .where((item) => !_isCanvasBackground(item))
-                            .map((item) {
-                          return Positioned(
-                            left: item.position.dx * scaleX,
-                            top: item.position.dy * scaleY,
-                            child: Transform.scale(
-                              scale: scaleX,
-                              alignment: Alignment.topLeft,
-                              child: EditableItemWidget(
-                                item: item,
-                                onItemSelected: (type, id) {
-                                  provider.setSelectedItem(type, id);
-                                },
-                              ),
-                            ),
-                          );
-                        }),
-
-                        // -----------------------------------------
-                        // FRAME
-                        // -----------------------------------------
-                        if (provider.selectedFrameUrl != null)
+                    return ClipRect(
+                      child: Stack(
+                        clipBehavior: Clip.hardEdge,
+                        children: [
                           Positioned.fill(
-                            child: IgnorePointer(
-                              child: Image.asset(
-                                provider.selectedFrameUrl!,
-                                fit: BoxFit.cover,
+                            child: ColoredBox(color: provider.backgroundColor),
+                          ),
+
+                          if (backgroundItems.isNotEmpty)
+                            _InteractiveBackgroundLayer(
+                              key: ValueKey(backgroundItems.last.id),
+                              item: backgroundItems.last,
+                              scaleX: scaleX,
+                              scaleY: scaleY,
+                              onSelected: () {
+                                final bg = backgroundItems.last;
+
+                                // Select the background exactly like a normal
+                                // image layer so the image editor toolbar opens.
+                                provider.setSelectedItem(bg.type, bg.id);
+
+                                if (mounted) {
+                                  setState(() {
+                                    _bottomNavIndex = 3;
+                                  });
+                                }
+                              },
+                            ),
+
+                          ...provider.items
+                              .where((item) => !_isCanvasBackground(item))
+                              .map((item) {
+                                return Positioned(
+                                  left: item.position.dx * scaleX,
+                                  top: item.position.dy * scaleY,
+                                  child: Transform.scale(
+                                    scale: scaleX,
+                                    alignment: Alignment.topLeft,
+                                    child: EditableItemWidget(
+                                      item: item,
+                                      onItemSelected: (type, id) {
+                                        provider.setSelectedItem(type, id);
+                                      },
+                                    ),
+                                  ),
+                                );
+                              }),
+
+                          // -----------------------------------------
+                          // FRAME
+                          // -----------------------------------------
+                          if (provider.selectedFrameUrl != null)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: Image.asset(
+                                  provider.selectedFrameUrl!,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
-                          ),
 
-                        // -----------------------------------------
-                        // IMAGE SELECTION OVERLAY
-                        // Keeps the existing image/editor behavior intact
-                        // and only adds the Canva-style selection box when
-                        // an image is selected.
-                        // -----------------------------------------
-                        if (provider.selectedItemId != null &&
-                            (provider.selectedItemType == 'image' ||
-                                provider.items.any((e) =>
-                                e.id == provider.selectedItemId &&
-                                    _isCanvasBackground(e))))
-                          Builder(
-                            builder: (context) {
-                              final selected = provider.items.where(
-                                    (item) => item.id == provider.selectedItemId,
-                              ).toList();
+                          // -----------------------------------------
+                          // TRANSFORM SELECTION OVERLAY
+                          // Keeps the existing editor behavior intact
+                          // and only adds the Canva-style selection box when
+                          // an image is selected.
+                          // -----------------------------------------
+                          if (provider.selectedItemId != null &&
+                              (provider.selectedItemType == 'image' ||
+                                  provider.selectedItemType == 'svg_group' ||
+                                  provider.selectedItemType == 'svg_element' ||
+                                  provider.selectedItemType == 'text' ||
+                                  provider.selectedItemType == 'textbox') &&
+                              !provider.items.any(
+                                (e) =>
+                                    e.id == provider.selectedItemId &&
+                                    _isCanvasBackground(e),
+                              ))
+                            Builder(
+                              builder: (context) {
+                                final selected = provider.items
+                                    .where(
+                                      (item) =>
+                                          item.id == provider.selectedItemId,
+                                    )
+                                    .toList();
 
-                              if (selected.isEmpty) {
-                                return const SizedBox.shrink();
-                              }
+                                if (selected.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
 
-                              final item = selected.first;
+                                final item = selected.first;
 
-                              return _ImageSelectionOverlay(
-                                item: item,
-                                scaleX: scaleX,
-                                scaleY: scaleY,
-                                isBackground: _isCanvasBackground(item),
-                              );
-                            },
-                          ),
-                      ],
+                                return _TransformSelectionOverlay(
+                                  item: item,
+                                  scaleX: scaleX,
+                                  scaleY: scaleY,
+                                  isBackground: _isCanvasBackground(item),
+                                );
+                              },
+                            ),
+                        ],
+                      ),
                     );
                   },
                 ),
@@ -2069,16 +2385,22 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildEditorBottomBar(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     final type = provider.selectedItemType;
     if (type == 'text' || type == 'textbox') {
       return _buildTextEditorToolbar(context, provider, isDark);
     }
     if (type == 'image') {
       return _buildImageEditorToolbar(context, provider, isDark);
+    }
+    if (type == 'svg_group') {
+      return _buildSvgGroupToolbar(context, provider, isDark);
+    }
+    if (type == 'svg_element') {
+      return _buildSvgElementToolbar(context, provider, isDark);
     }
 
     return Container(
@@ -2096,27 +2418,27 @@ class _EditorViewState extends State<EditorView> {
             _bottomTool(
               Icons.layers_rounded,
               'FRAMES',
-                  () => _showFramesBottomSheet(context, provider, isDark),
+              () => _showFramesBottomSheet(context, provider, isDark),
             ),
             _bottomTool(
               Icons.branding_watermark_rounded,
               'MY BRAND',
-                  () => _showMyBrandBottomSheet(context, provider, isDark),
+              () => _showMyBrandBottomSheet(context, provider, isDark),
             ),
             _bottomTool(
               Icons.text_fields_rounded,
               'TEXT',
-                  () => _showTextStylesBottomSheet(context, provider, isDark),
+              () => _showTextStylesBottomSheet(context, provider, isDark),
             ),
             _bottomTool(
               Icons.photo_library_rounded,
               'MEDIA',
-                  () => _showMediaBottomSheet(context, provider, isDark),
+              () => _showMediaBottomSheet(context, provider, isDark),
             ),
             _bottomTool(
               Icons.wallpaper_rounded,
               'BACKGROUND',
-                  () => _showBackgroundBottomSheet(context, provider, isDark),
+              () => _showBackgroundBottomSheet(context, provider, isDark),
             ),
           ],
         ),
@@ -2124,11 +2446,129 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
+  Future<void> _showTextColorPicker(
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) async {
+    var hsv = HSVColor.fromColor(provider.textColor(id));
+
+    final picked = await showDialog<Color>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final current = hsv.toColor();
+
+            return AlertDialog(
+              title: const Text('Text Color'),
+              content: SizedBox(
+                width: 340,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: current,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade400),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Hue
+                    Row(
+                      children: [
+                        const SizedBox(width: 42, child: Text('Hue')),
+                        Expanded(
+                          child: Slider(
+                            min: 0,
+                            max: 360,
+                            value: hsv.hue,
+                            onChanged: (v) {
+                              setState(() {
+                                hsv = hsv.withHue(v);
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Saturation
+                    Row(
+                      children: [
+                        const SizedBox(width: 42, child: Text('Sat')),
+                        Expanded(
+                          child: Slider(
+                            min: 0,
+                            max: 1,
+                            value: hsv.saturation,
+                            onChanged: (v) {
+                              setState(() {
+                                hsv = hsv.withSaturation(v);
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Brightness
+                    Row(
+                      children: [
+                        const SizedBox(width: 42, child: Text('Val')),
+                        Expanded(
+                          child: Slider(
+                            min: 0,
+                            max: 1,
+                            value: hsv.value,
+                            onChanged: (v) {
+                              setState(() {
+                                hsv = hsv.withValue(v);
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 4),
+                    Text(
+                      '#${current.value.toRadixString(16).substring(2).toUpperCase()}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('CANCEL'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, current),
+                  child: const Text('APPLY'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (picked != null) {
+      provider.updateTextColor(id, picked);
+    }
+  }
+
   Widget _buildTextEditorToolbar(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     final id = provider.selectedItemId;
     if (id == null) return const SizedBox.shrink();
 
@@ -2195,69 +2635,74 @@ class _EditorViewState extends State<EditorView> {
                 _bottomTool(
                   Icons.edit_rounded,
                   'EDIT',
-                      () => _showTextEditDialog(context, provider, id),
+                  () => _showTextEditDialog(context, provider, id),
                 ),
                 ...fonts.map(
-                      (font) => _bottomTool(
+                  (font) => _bottomTool(
                     Icons.font_download_rounded,
                     font,
-                        () => provider.updateFontFamily(id, font),
+                    () => provider.updateFontFamily(id, font),
                   ),
                 ),
                 _bottomTool(
                   Icons.format_bold_rounded,
                   'BOLD',
-                      () => provider.toggleTextBold(id),
+                  () => provider.toggleTextBold(id),
                   selected: provider.textWeight(id) == FontWeight.bold,
                 ),
                 _bottomTool(
                   Icons.format_italic_rounded,
                   'ITALIC',
-                      () => provider.toggleTextItalic(id),
+                  () => provider.toggleTextItalic(id),
                   selected: provider.textStyle(id) == FontStyle.italic,
                 ),
                 _bottomTool(
                   Icons.format_underlined_rounded,
                   'UNDERLINE',
-                      () => provider.toggleTextUnderline(id),
+                  () => provider.toggleTextUnderline(id),
                   selected: provider.textUnderline(id),
                 ),
                 ...alignments.map(
-                      (item) => _bottomTool(
+                  (item) => _bottomTool(
                     item['icon'] as IconData,
                     item['label'] as String,
-                        () => provider.updateTextAlignment(
+                    () => provider.updateTextAlignment(
                       id,
                       item['value'] as TextAlign,
                     ),
                     selected: provider.textAlignment(id) == item['value'],
                   ),
                 ),
+                _bottomTool(
+                  Icons.colorize_rounded,
+                  'COLOR',
+                  () => _showTextColorPicker(context, provider, id, isDark),
+                ),
                 ...palette.map(
-                      (color) => _colorTool(
+                  (color) => _colorTool(
                     color,
-                        () => provider.updateTextColor(id, color),
+                    () => provider.updateTextColor(id, color),
                   ),
                 ),
                 _bottomTool(
                   Icons.flip_to_front_rounded,
                   'FRONT',
-                      () => provider.bringToFront(id),
+                  () => provider.bringToFront(id),
                 ),
                 _bottomTool(
                   Icons.flip_to_back_rounded,
                   'BACK',
-                      () => provider.sendToBack(id),
+                  () => provider.sendToBack(id),
                 ),
                 _bottomTool(
                   Icons.copy_rounded,
                   'DUPLICATE',
-                      () => provider.duplicateItem(id),
+                  () => provider.duplicateItem(id),
                 ),
                 _bottomTool(
                   Icons.delete_outline_rounded,
                   'DELETE',
-                      () => provider.removeItem(id),
+                  () => provider.removeItem(id),
                   danger: true,
                 ),
                 _bottomTool(
@@ -2278,14 +2723,199 @@ class _EditorViewState extends State<EditorView> {
                   provider.textLetterSpacing(id),
                   -2,
                   20,
-                      (v) => provider.updateTextLetterSpacing(id, v),
+                  (v) => provider.updateTextLetterSpacing(id, v),
                 ),
                 _bottomSliderTool(
                   'LINE SPACING',
                   provider.textLineSpacing(id),
                   .7,
                   3,
-                      (v) => provider.updateTextLineSpacing(id, v),
+                  (v) => provider.updateTextLineSpacing(id, v),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSvgGroupToolbar(
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
+    final id = provider.selectedItemId;
+    if (id == null) return const SizedBox.shrink();
+    final item = provider.items.firstWhere(
+      (e) => e.id == id,
+      orElse: () => provider.items.first,
+    );
+
+    return Container(
+      height: 150,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.black,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 64,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              children: [
+                _bottomTool(
+                  Icons.unfold_more_rounded,
+                  'UNGROUP ELEMENTS',
+                  () => provider.ungroupSvgElement(id),
+                ),
+                _bottomTool(
+                  Icons.flip_to_front_rounded,
+                  'FRONT',
+                  () => provider.bringToFront(id),
+                ),
+                _bottomTool(
+                  Icons.flip_to_back_rounded,
+                  'BACK',
+                  () => provider.sendToBack(id),
+                ),
+                _bottomTool(
+                  Icons.copy_rounded,
+                  'DUPLICATE',
+                  () => provider.duplicateItem(id),
+                ),
+                _bottomTool(
+                  Icons.delete_outline_rounded,
+                  'DELETE',
+                  () => provider.removeItem(id),
+                  danger: true,
+                ),
+                _bottomTool(
+                  Icons.close_rounded,
+                  'CLOSE',
+                  provider.clearSelection,
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              children: [
+                _bottomSliderTool(
+                  'SCALE',
+                  item.scale.clamp(.1, 10.0),
+                  .1,
+                  10,
+                  (v) => provider.updateScale(id, v),
+                ),
+                _bottomSliderTool(
+                  'ROTATION',
+                  item.rotation.clamp(0.0, math.pi * 2),
+                  0,
+                  math.pi * 2,
+                  (v) => provider.updateRotation(id, v),
+                ),
+                _bottomSliderTool(
+                  'OPACITY',
+                  item.opacity.clamp(0.0, 1.0),
+                  0,
+                  1,
+                  (v) => provider.updateOpacity(id, v),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSvgElementToolbar(
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
+    final id = provider.selectedItemId;
+    if (id == null) return const SizedBox.shrink();
+    final item = provider.items.firstWhere(
+      (e) => e.id == id,
+      orElse: () => provider.items.first,
+    );
+
+    return Container(
+      height: 150,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.black,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 64,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              children: [
+                _bottomTool(
+                  Icons.flip_to_front_rounded,
+                  'FRONT',
+                  () => provider.bringToFront(id),
+                ),
+                _bottomTool(
+                  Icons.flip_to_back_rounded,
+                  'BACK',
+                  () => provider.sendToBack(id),
+                ),
+                _bottomTool(
+                  Icons.copy_rounded,
+                  'DUPLICATE',
+                  () => provider.duplicateItem(id),
+                ),
+                _bottomTool(
+                  Icons.delete_outline_rounded,
+                  'DELETE',
+                  () => provider.removeItem(id),
+                  danger: true,
+                ),
+                _bottomTool(
+                  Icons.close_rounded,
+                  'CLOSE',
+                  provider.clearSelection,
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              children: [
+                _bottomSliderTool(
+                  'SCALE',
+                  item.scale.clamp(.1, 10.0),
+                  .1,
+                  10,
+                  (v) => provider.updateScale(id, v),
+                ),
+                _bottomSliderTool(
+                  'ROTATION',
+                  item.rotation.clamp(0.0, math.pi * 2),
+                  0,
+                  math.pi * 2,
+                  (v) => provider.updateRotation(id, v),
+                ),
+                _bottomSliderTool(
+                  'OPACITY',
+                  item.opacity.clamp(0.0, 1.0),
+                  0,
+                  1,
+                  (v) => provider.updateOpacity(id, v),
                 ),
               ],
             ),
@@ -2296,15 +2926,15 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildImageEditorToolbar(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     final id = provider.selectedItemId;
     if (id == null) return const SizedBox.shrink();
 
     final item = provider.items.firstWhere(
-          (e) => e.id == id,
+      (e) => e.id == id,
       orElse: () => provider.items.first,
     );
 
@@ -2368,7 +2998,7 @@ class _EditorViewState extends State<EditorView> {
                 _bottomTool(
                   Icons.crop_rounded,
                   'CROP',
-                      () => _cropSelectedImage(context, provider, id),
+                  () => _cropSelectedImage(context, provider, id),
                 ),
                 _bottomTool(Icons.photo_library_rounded, 'PHOTO', () async {
                   final image = await ImagePicker().pickImage(
@@ -2380,27 +3010,27 @@ class _EditorViewState extends State<EditorView> {
                 _bottomTool(
                   Icons.flip_rounded,
                   'FLIP',
-                      () => provider.flipImageHorizontal(id),
+                  () => provider.flipImageHorizontal(id),
                 ),
                 _bottomTool(
                   Icons.flip_to_front_rounded,
                   'FRONT',
-                      () => provider.bringToFront(id),
+                  () => provider.bringToFront(id),
                 ),
                 _bottomTool(
                   Icons.flip_to_back_rounded,
                   'BACK',
-                      () => provider.sendToBack(id),
+                  () => provider.sendToBack(id),
                 ),
                 _bottomTool(
                   Icons.copy_rounded,
                   'DUPLICATE',
-                      () => provider.duplicateItem(id),
+                  () => provider.duplicateItem(id),
                 ),
                 _bottomTool(
                   Icons.delete_outline_rounded,
                   'DELETE',
-                      () => provider.removeItem(id),
+                  () => provider.removeItem(id),
                   danger: true,
                 ),
                 _bottomTool(
@@ -2420,13 +3050,13 @@ class _EditorViewState extends State<EditorView> {
                 _labelledHorizontalList(
                   'FILTER',
                   filters,
-                      (value) => provider.setImageFilter(id, value),
+                  (value) => provider.setImageFilter(id, value),
                   selected: item.filterType,
                 ),
                 _labelledHorizontalList(
                   'MASK',
                   masks,
-                      (value) => provider.updateImageShape(id, value),
+                  (value) => provider.updateImageShape(id, value),
                   selected: item.text,
                 ),
               ],
@@ -2442,28 +3072,28 @@ class _EditorViewState extends State<EditorView> {
                   item.scale.clamp(.5, 3.0),
                   .5,
                   3,
-                      (v) => provider.updateScale(id, v),
+                  (v) => provider.updateScale(id, v),
                 ),
                 _bottomSliderTool(
                   'ROTATION',
                   item.rotation.clamp(0.0, math.pi * 2),
                   0,
                   math.pi * 2,
-                      (v) => provider.updateRotation(id, v),
+                  (v) => provider.updateRotation(id, v),
                 ),
                 _bottomSliderTool(
                   'OPACITY',
                   item.opacity.clamp(0.0, 1.0),
                   0,
                   1,
-                      (v) => provider.updateOpacity(id, v),
+                  (v) => provider.updateOpacity(id, v),
                 ),
                 _bottomSliderTool(
                   'BRIGHTNESS',
                   item.brightness,
                   -1,
                   1,
-                      (v) =>
+                  (v) =>
                       provider.updateImageColorAdjustments(id, brightness: v),
                 ),
                 _bottomSliderTool(
@@ -2471,14 +3101,14 @@ class _EditorViewState extends State<EditorView> {
                   item.contrast,
                   0,
                   2,
-                      (v) => provider.updateImageColorAdjustments(id, contrast: v),
+                  (v) => provider.updateImageColorAdjustments(id, contrast: v),
                 ),
                 _bottomSliderTool(
                   'SATURATION',
                   item.saturation,
                   0,
                   2,
-                      (v) =>
+                  (v) =>
                       provider.updateImageColorAdjustments(id, saturation: v),
                 ),
                 _bottomSliderTool(
@@ -2486,7 +3116,7 @@ class _EditorViewState extends State<EditorView> {
                   item.outlineWidth.clamp(0.0, 20.0),
                   0,
                   20,
-                      (v) => provider.updateOutline(id, v, Colors.white),
+                  (v) => provider.updateOutline(id, v, Colors.white),
                 ),
               ],
             ),
@@ -2497,12 +3127,12 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _bottomTool(
-      IconData icon,
-      String label,
-      VoidCallback onTap, {
-        bool selected = false,
-        bool danger = false,
-      }) {
+    IconData icon,
+    String label,
+    VoidCallback onTap, {
+    bool selected = false,
+    bool danger = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: InkWell(
@@ -2584,11 +3214,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _labelledHorizontalList(
-      String title,
-      List<String> values,
-      ValueChanged<String> onSelected, {
-        String? selected,
-      }) {
+    String title,
+    List<String> values,
+    ValueChanged<String> onSelected, {
+    String? selected,
+  }) {
     return Container(
       margin: const EdgeInsets.only(right: 10),
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
@@ -2611,7 +3241,7 @@ class _EditorViewState extends State<EditorView> {
             ),
           ),
           ...values.map(
-                (value) => Padding(
+            (value) => Padding(
               padding: const EdgeInsets.only(left: 4),
               child: InkWell(
                 onTap: () => onSelected(value),
@@ -2648,12 +3278,12 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _bottomSliderTool(
-      String title,
-      double value,
-      double min,
-      double max,
-      ValueChanged<double> onChanged,
-      ) {
+    String title,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged,
+  ) {
     final safeValue = value.isFinite ? value.clamp(min, max).toDouble() : min;
     return Container(
       width: 175,
@@ -2703,12 +3333,12 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _showTextEditDialog(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+  ) async {
     final item = provider.items.firstWhere(
-          (e) => e.id == itemId,
+      (e) => e.id == itemId,
       orElse: () => provider.items.first,
     );
     final controller = TextEditingController(text: item.text ?? '');
@@ -3040,10 +3670,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showPagesSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -3122,12 +3752,12 @@ class _EditorViewState extends State<EditorView> {
                   Expanded(
                     child: GridView.builder(
                       gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: .82,
-                      ),
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: .82,
+                          ),
                       itemCount: provider.pageCount,
                       itemBuilder: (_, index) {
                         final selected = index == provider.currentPageIndex;
@@ -3194,13 +3824,13 @@ class _EditorViewState extends State<EditorView> {
   }
 }
 
-class _ImageSelectionOverlay extends StatefulWidget {
+class _TransformSelectionOverlay extends StatefulWidget {
   final EditorItem item;
   final double scaleX;
   final double scaleY;
   final bool isBackground;
 
-  const _ImageSelectionOverlay({
+  const _TransformSelectionOverlay({
     super.key,
     required this.item,
     required this.scaleX,
@@ -3209,10 +3839,12 @@ class _ImageSelectionOverlay extends StatefulWidget {
   });
 
   @override
-  State<_ImageSelectionOverlay> createState() => _ImageSelectionOverlayState();
+  State<_TransformSelectionOverlay> createState() =>
+      _TransformSelectionOverlayState();
 }
 
-class _ImageSelectionOverlayState extends State<_ImageSelectionOverlay> {
+class _TransformSelectionOverlayState
+    extends State<_TransformSelectionOverlay> {
   final GlobalKey _overlayKey = GlobalKey();
 
   double _startScale = 1.0;
@@ -3223,33 +3855,34 @@ class _ImageSelectionOverlayState extends State<_ImageSelectionOverlay> {
   double _rotationStartAngle = 0.0;
 
   double _resizeStartScale = 1.0;
-  double _resizeStartRadius = 1.0;
-  Offset _resizeCenterGlobal = Offset.zero;
+  Offset _resizeStartLocal = Offset.zero;
+  Offset _resizeStartPosition = Offset.zero;
 
   EditorProvider get _provider => context.read<EditorProvider>();
 
   // Normal media items are rendered inside a Transform.scale(scaleX), so
   // both axes use the canvas width scale. Background media is rendered by
   // _InteractiveBackgroundLayer with independent X/Y canvas scales.
-  double get _width =>
-      widget.item.width * widget.item.scale * widget.scaleX;
+  double get _width => widget.item.width * widget.item.scale * widget.scaleX;
 
   double get _height =>
       widget.item.height *
-          widget.item.scale *
-          (widget.isBackground ? widget.scaleY : widget.scaleX);
+      widget.item.scale *
+      (widget.isBackground ? widget.scaleY : widget.scaleX);
 
   // Normal media is rendered inside an outer canvas item and then scaled
   // around its CENTER by EditableItemWidget. The selection box must use the
   // same visual origin, otherwise it stays at the old top-left when the
   // image is resized. Background items do not have this extra centered
   // scale, so their origin remains the item's position.
-  double get _left => widget.item.position.dx * widget.scaleX +
+  double get _left =>
+      widget.item.position.dx * widget.scaleX +
       (widget.isBackground
           ? 0.0
           : (widget.item.width * widget.scaleX - _width) / 2);
 
-  double get _top => widget.item.position.dy * widget.scaleY +
+  double get _top =>
+      widget.item.position.dy * widget.scaleY +
       (widget.isBackground
           ? 0.0
           : (widget.item.height * widget.scaleX - _height) / 2);
@@ -3286,10 +3919,10 @@ class _ImageSelectionOverlayState extends State<_ImageSelectionOverlay> {
                 onPanUpdate: (details) {
                   final dx =
                       (details.globalPosition.dx - _startFocalPoint.dx) /
-                          widget.scaleX;
+                      widget.scaleX;
                   final dy =
                       (details.globalPosition.dy - _startFocalPoint.dy) /
-                          widget.scaleY;
+                      widget.scaleY;
 
                   _provider.updateItemTransform(
                     widget.item.id ?? '',
@@ -3304,21 +3937,43 @@ class _ImageSelectionOverlayState extends State<_ImageSelectionOverlay> {
 
             Positioned.fill(
               child: IgnorePointer(
-                child: CustomPaint(
-                  painter: _ImageSelectionPainter(),
-                ),
+                child: CustomPaint(painter: _ImageSelectionPainter()),
               ),
             ),
 
-            // 8 resize handles.
-            _buildHandle(alignment: Alignment.topLeft, cursor: SystemMouseCursors.resizeUpLeft),
-            _buildHandle(alignment: Alignment.topCenter, cursor: SystemMouseCursors.resizeUp),
-            _buildHandle(alignment: Alignment.topRight, cursor: SystemMouseCursors.resizeUpRight),
-            _buildHandle(alignment: Alignment.centerLeft, cursor: SystemMouseCursors.resizeLeft),
-            _buildHandle(alignment: Alignment.centerRight, cursor: SystemMouseCursors.resizeRight),
-            _buildHandle(alignment: Alignment.bottomLeft, cursor: SystemMouseCursors.resizeDownLeft),
-            _buildHandle(alignment: Alignment.bottomCenter, cursor: SystemMouseCursors.resizeDown),
-            _buildHandle(alignment: Alignment.bottomRight, cursor: SystemMouseCursors.resizeDownRight),
+            // 8 resize handles for image/text.
+            _buildHandle(
+              alignment: Alignment.topLeft,
+              cursor: SystemMouseCursors.resizeUpLeft,
+            ),
+            _buildHandle(
+              alignment: Alignment.topCenter,
+              cursor: SystemMouseCursors.resizeUp,
+            ),
+            _buildHandle(
+              alignment: Alignment.topRight,
+              cursor: SystemMouseCursors.resizeUpRight,
+            ),
+            _buildHandle(
+              alignment: Alignment.centerLeft,
+              cursor: SystemMouseCursors.resizeLeft,
+            ),
+            _buildHandle(
+              alignment: Alignment.centerRight,
+              cursor: SystemMouseCursors.resizeRight,
+            ),
+            _buildHandle(
+              alignment: Alignment.bottomLeft,
+              cursor: SystemMouseCursors.resizeDownLeft,
+            ),
+            _buildHandle(
+              alignment: Alignment.bottomCenter,
+              cursor: SystemMouseCursors.resizeDown,
+            ),
+            _buildHandle(
+              alignment: Alignment.bottomRight,
+              cursor: SystemMouseCursors.resizeDownRight,
+            ),
 
             // Rotation handle above the top-center.
             Positioned(
@@ -3350,9 +4005,7 @@ class _ImageSelectionOverlayState extends State<_ImageSelectionOverlay> {
                     rotation: _startRotation + delta,
                   );
                 },
-                child: const Center(
-                  child: _RotationHandleVisual(),
-                ),
+                child: const Center(child: _RotationHandleVisual()),
               ),
             ),
           ],
@@ -3364,9 +4017,7 @@ class _ImageSelectionOverlayState extends State<_ImageSelectionOverlay> {
   Offset _globalCenter() {
     final box = _overlayKey.currentContext?.findRenderObject();
     if (box is RenderBox) {
-      return box.localToGlobal(
-        Offset(_width / 2, _height / 2),
-      );
+      return box.localToGlobal(Offset(_width / 2, _height / 2));
     }
     return Offset.zero;
   }
@@ -3385,7 +4036,7 @@ class _ImageSelectionOverlayState extends State<_ImageSelectionOverlay> {
     required Alignment alignment,
     required MouseCursor cursor,
   }) {
-    const handleSize = 24.0;
+    const handleSize = 32.0;
 
     return Align(
       alignment: alignment,
@@ -3396,33 +4047,83 @@ class _ImageSelectionOverlayState extends State<_ImageSelectionOverlay> {
           behavior: HitTestBehavior.opaque,
           onPanStart: (details) {
             _resizeStartScale = widget.item.scale;
-            _resizeCenterGlobal = _globalCenter();
-            _resizeStartRadius =
-                (details.globalPosition - _resizeCenterGlobal).distance;
+            _resizeStartPosition = widget.item.position;
 
-            if (_resizeStartRadius < 1) {
-              _resizeStartRadius = 1;
+            final box = _overlayKey.currentContext?.findRenderObject();
+            if (box is RenderBox) {
+              _resizeStartLocal = box.globalToLocal(details.globalPosition);
+            } else {
+              _resizeStartLocal = Offset(_width / 2, _height / 2);
             }
           },
           onPanUpdate: (details) {
-            final currentRadius =
-                (details.globalPosition - _resizeCenterGlobal).distance;
-            final ratio = currentRadius / _resizeStartRadius;
+            final box = _overlayKey.currentContext?.findRenderObject();
+            if (box is! RenderBox) return;
 
-            // Dragging any of the 8 dots scales the image proportionally.
-            final newScale =
-            (_resizeStartScale * ratio).clamp(0.1, 10.0);
+            final local = box.globalToLocal(details.globalPosition);
+            final delta = local - _resizeStartLocal;
+
+            final baseWidth = math.max(1.0, widget.item.width);
+            final baseHeight = math.max(1.0, widget.item.height);
+
+            // Convert screen movement to the design/canvas coordinate
+            // system. scaleX/scaleY are the editor's actual canvas scales.
+            final dx = delta.dx / widget.scaleX;
+            final dy =
+                delta.dy /
+                (widget.isBackground ? widget.scaleY : widget.scaleX);
+
+            double deltaScale;
+
+            if (alignment.x == 0) {
+              // Top/bottom-center: only vertical movement controls size.
+              deltaScale = alignment.y == 1
+                  ? dy / baseHeight
+                  : -dy / baseHeight;
+            } else if (alignment.y == 0) {
+              // Left/right-center: only horizontal movement controls size.
+              deltaScale = alignment.x == 1 ? dx / baseWidth : -dx / baseWidth;
+            } else {
+              // Corners: use the dominant proportional axis. This preserves
+              // the element's aspect ratio and makes the touched corner track
+              // the finger instead of using a center-radius calculation.
+              final sx = alignment.x == 1 ? dx / baseWidth : -dx / baseWidth;
+              final sy = alignment.y == 1 ? dy / baseHeight : -dy / baseHeight;
+
+              deltaScale = (sx.abs() >= sy.abs() ? sx : sy);
+            }
+
+            final newScale = (_resizeStartScale + deltaScale).clamp(0.05, 10.0);
+
+            // Because EditableItemWidget scales around its CENTER, keep the
+            // opposite edge fixed. Without this correction the item appears
+            // to jump away from the finger while resizing.
+            final scaleDelta = newScale - _resizeStartScale;
+            final anchorX = alignment.x == 1
+                ? baseWidth * scaleDelta / 2
+                : alignment.x == -1
+                ? -baseWidth * scaleDelta / 2
+                : 0.0;
+            final anchorY = alignment.y == 1
+                ? baseHeight * scaleDelta / 2
+                : alignment.y == -1
+                ? -baseHeight * scaleDelta / 2
+                : 0.0;
+
+            final nextPosition = Offset(
+              _resizeStartPosition.dx + anchorX,
+              _resizeStartPosition.dy + anchorY,
+            );
 
             _provider.updateItemTransform(
               widget.item.id ?? '',
               scale: newScale,
+              position: nextPosition,
             );
           },
           child: MouseRegion(
             cursor: cursor,
-            child: const Center(
-              child: _ResizeHandleVisual(),
-            ),
+            child: const Center(child: _ResizeHandleVisual()),
           ),
         ),
       ),
@@ -3449,10 +4150,7 @@ class _ResizeHandleVisual extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFF2196F3),
-          width: 2,
-        ),
+        border: Border.all(color: const Color(0xFF2196F3), width: 2),
       ),
     );
   }
@@ -3469,10 +4167,7 @@ class _RotationHandleVisual extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFF2196F3),
-          width: 2,
-        ),
+        border: Border.all(color: const Color(0xFF2196F3), width: 2),
       ),
     );
   }
@@ -3609,10 +4304,10 @@ class _InteractiveBackgroundLayerState
   }
 
   List<double> _imageColorMatrix(
-      double brightness,
-      double contrast,
-      double saturation,
-      ) {
+    double brightness,
+    double contrast,
+    double saturation,
+  ) {
     final b = brightness * 255.0;
     final c = contrast;
     final t = (1 - c) * 128.0;

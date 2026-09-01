@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
@@ -29,20 +30,6 @@ class BusinessCategoryView extends StatefulWidget {
 }
 
 class _BusinessCategoryViewState extends State<BusinessCategoryView> {
-  String selectedSpecialization = "Ladies Gym";
-
-  final List<String> specializations = [
-    "Ladies Gym",
-    "Personal Training",
-    "CrossFit",
-    "Yoga Studio",
-    "Zumba Studio",
-    "Wellness Center",
-    "Physiotherapy Center",
-    "Martial Arts Academy",
-    "Other",
-  ];
-
   @override
   Widget build(BuildContext context) {
     final accountProvider = context.watch<BusinessProvider>();
@@ -73,7 +60,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                 int newIndex = isBusiness ? 1 : 0;
                 accountProvider.setCurrentIndex(newIndex);
               },
-              child: Text(
+              child: AppText(
                 isBusiness ? "SWITCH TO PERSONAL" : "SWITCH TO BUSINESS",
                 style: const TextStyle(
                   color: Colors.black,
@@ -91,7 +78,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              const AppText(
                 "Select Your Business Category",
                 style: TextStyle(
                   fontSize: 22,
@@ -101,7 +88,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
               ),
               const SizedBox(height: 16),
 
-              const Text(
+              const AppText(
                 "Business Category",
                 style: TextStyle(
                   fontSize: 12,
@@ -121,7 +108,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.red.shade200),
                 ),
-                child: Text(
+                child: AppText(
                   industryProvider.savedCategoryName,
                   style: const TextStyle(
                     color: Colors.red,
@@ -132,56 +119,109 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
               ),
               const SizedBox(height: 20),
 
-              const Text(
-                "Choose a specialization",
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
               const SizedBox(height: 4),
-              Text(
-                "Find the category that best matches your business.",
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 14),
+              if (industryProvider.childCategories.isEmpty) ...[
+                const AppText(
+                  "Can't find your business type?",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                AppText(
+                  "Choose Other and enter your business type. We'll review new requests "
+                  "and continuously expand our industry database to improve template "
+                  "recommendations.",
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ] else ...[
+                const AppText(
+                  "Choose a specialization",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                AppText(
+                  "Find the category that best matches your business.",
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: specializations.map((spec) {
-                  bool isSelected = selectedSpecialization == spec;
-                  return ChoiceChip(
-                    label: Text(spec),
-                    selected: isSelected,
-                    selectedColor: const Color(0xFFFFECEE),
-                    backgroundColor: Colors.grey.shade100,
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.red : Colors.black87,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(
-                        color: isSelected
-                            ? Colors.red.shade300
-                            : Colors.grey.shade300,
+                children: [
+                  ...industryProvider.childCategories.map((category) {
+                    final name = category.name ?? '';
+                    final selected =
+                        industryProvider.selectedCategorySlug == category.slug;
+
+                    return ChoiceChip(
+                      label: AppText(name),
+                      selected: selected,
+                      selectedColor: const Color(0xFFFFECEE),
+                      backgroundColor: Colors.grey.shade100,
+                      labelStyle: TextStyle(
+                        color: selected ? Colors.red : Colors.black87,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                    onSelected: (selected) {
-                      setState(() {
-                        selectedSpecialization = spec;
-                      });
-                      // 🚀 Provider-க்கும் அப்டேட் செய்து டெக்ஸ்ட் ஃபீல்டை இயக்க/மறைக்க உதவுகிறது
-                      industryProvider.setSelectedSpecialization(spec);
-                    },
-                  );
-                }).toList(),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: selected
+                              ? Colors.red.shade300
+                              : Colors.grey.shade300,
+                        ),
+                      ),
+                      onSelected: (value) {
+                        if (value) {
+                          industryProvider.selectSpecialization(category);
+                        }
+                      },
+                    );
+                  }),
+
+                  // Always keep Other as the LAST option.
+                  industryProvider.childCategories.isNotEmpty
+                      ? ChoiceChip(
+                          label: const AppText("Other"),
+                          selected: industryProvider.showOtherInput,
+                          selectedColor: const Color(0xFFFFECEE),
+                          backgroundColor: Colors.grey.shade100,
+                          labelStyle: TextStyle(
+                            color: industryProvider.showOtherInput
+                                ? Colors.red
+                                : Colors.black87,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: industryProvider.showOtherInput
+                                  ? Colors.red.shade300
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
+                          onSelected: (value) {
+                            if (value) {
+                              industryProvider.setSelectedSpecialization(
+                                "Other",
+                              );
+                            }
+                          },
+                        )
+                      : SimpleDialog(),
+                ],
               ),
               const SizedBox(height: 20),
 
-              // 🚀 "Other" என்பதைத் தேர்ந்தென்றால் மட்டுமே TextField தெரியும்
               if (industryProvider.showOtherInput) ...[
                 TextField(
                   controller: industryProvider.otherController,
@@ -212,8 +252,27 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                 const SizedBox(height: 20),
               ],
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 10),
 
+              AppText(
+                "We’ll review your industry details and add them to your profile once approved.",
+                style: TextStyle(color: AppColors.appGrey),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AppText(
+                    "Nothing Matched?",
+                    style: TextStyle(
+                      color: AppColors.appBlack,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  AppText(" Skip", style: TextStyle(color: AppColors.appRed)),
+                ],
+              ),
+              const SizedBox(height: 20),
               ButtonWidget(
                 buttonPress: () {
                   Navigator.pushNamed(context, "/BusinessDetailsScreen");

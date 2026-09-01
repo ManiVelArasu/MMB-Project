@@ -73,11 +73,12 @@ class HomeScreen extends StatelessWidget {
                         isDark: isDark,
                       ),
                       SizedBox(height: 12.h),
-                      _buildMySpaceList(homeScreenProvider, isDark),
+                      _buildMySpaceList(homeScreenProvider, isDark, (item) {
+                        Navigator.pushNamed(context, "/TemplateEditScreen");
+                      }),
 
                       SizedBox(height: 20.h),
 
-                      // 🚀 1. Special Days ஹெட்டிங் (இருவருக்கும் பொதுவானது)
                       Row(
                         children: [
                           Image.asset(
@@ -114,56 +115,87 @@ class HomeScreen extends StatelessWidget {
                       // 🚀 2. Special Days-க்கு கீழே வர வேண்டிய டேட் ஸ்க்ரோலர் பாக்ஸ் (இருவருக்கும் பொதுவானது)
                       Container(
                         height: 50.h,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 4.w,
-                          vertical: 4.h,
-                        ),
+                        padding: EdgeInsets.all(4.w),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFEEEE),
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                         child: Row(
                           children: [
+                            // Month
                             Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 14.w,
-                                vertical: 8.h,
-                              ),
+                              width: 74.w,
+                              height: double.infinity,
+                              alignment: Alignment.center,
                               decoration: BoxDecoration(
                                 color: const Color(0xFFE53935),
-                                borderRadius: BorderRadius.circular(8.r),
+                                borderRadius: BorderRadius.circular(10.r),
                               ),
                               child: AppText(
                                 "AUG",
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 12.sp,
+                                  fontSize: 14.sp,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                            SizedBox(width: 6.w),
+
+                            SizedBox(width: 4.w),
+
+                            // Dates
                             Expanded(
                               child: ListView(
                                 scrollDirection: Axis.horizontal,
                                 physics: const BouncingScrollPhysics(),
+                                padding: EdgeInsets.zero,
                                 children: [
-                                  _buildDateBox(context, homeScreenProvider, "2"),
-                                  _buildDateBox(context, homeScreenProvider, "7"),
-                                  _buildDateBox(context, homeScreenProvider, "15"),
-                                  _buildDateBox(context, homeScreenProvider, "17"),
-                                  _buildDateBox(context, homeScreenProvider, "26"),
-                                  _buildDateBox(context, homeScreenProvider, "29"),
-                                  _buildDateBox(context, homeScreenProvider, "30"),
-                                  Container(
-                                    alignment: Alignment.center,
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 10.w,
-                                    ),
-                                    child: Icon(
-                                      Icons.arrow_forward_ios_rounded,
-                                      size: 14.sp,
-                                      color: Colors.black87,
+                                  _buildDateBox(
+                                    context,
+                                    homeScreenProvider,
+                                    "2",
+                                  ),
+                                  _buildDateBox(
+                                    context,
+                                    homeScreenProvider,
+                                    "7",
+                                  ),
+                                  _buildDateBox(
+                                    context,
+                                    homeScreenProvider,
+                                    "15",
+                                  ),
+                                  _buildDateBox(
+                                    context,
+                                    homeScreenProvider,
+                                    "17",
+                                  ),
+                                  _buildDateBox(
+                                    context,
+                                    homeScreenProvider,
+                                    "26",
+                                  ),
+                                  _buildDateBox(
+                                    context,
+                                    homeScreenProvider,
+                                    "29",
+                                  ),
+                                  _buildDateBox(
+                                    context,
+                                    homeScreenProvider,
+                                    "30",
+                                  ),
+
+                                  SizedBox(width: 2.w),
+
+                                  SizedBox(
+                                    width: 34.w,
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        size: 16.sp,
+                                        color: Colors.black87,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -526,27 +558,32 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDateBox(BuildContext context, HomeScreenProvider provider, String date) {
-    final bool isSelected = provider.selectedDate == date;
+  Widget _buildDateBox(
+    BuildContext context,
+    HomeScreenProvider provider,
+    String date,
+  ) {
+    final isSelected = provider.selectedDates == date;
 
     return GestureDetector(
       onTap: () {
-        provider.updateSelectedDate(date); // ப்ரோவைடர் மூலமாக மதிப்பை மாற்றுதல்
+        provider.setSelectedDate(date);
       },
       child: Container(
+        width: 44.w,
+        height: 42.h,
+        margin: EdgeInsets.only(right: 5.w),
         alignment: Alignment.center,
-        margin: EdgeInsets.symmetric(horizontal: 4.w),
-        padding: EdgeInsets.symmetric(horizontal: 14.w),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFE53935) : Colors.white,
-          borderRadius: BorderRadius.circular(8.r),
+          color: isSelected ? const Color(0xFFE53935) : const Color(0xFFFFF8F8),
+          borderRadius: BorderRadius.circular(9.r),
         ),
         child: AppText(
           date,
           style: TextStyle(
             color: isSelected ? Colors.white : Colors.black,
             fontSize: 13.sp,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -658,7 +695,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMySpaceList(HomeScreenProvider homeScreenProvider, bool isDark) {
+  Widget _buildMySpaceList(
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+    void Function(dynamic item) onTap,
+  ) {
     return SizedBox(
       height: 90.h,
       child: ListView.builder(
@@ -667,44 +708,48 @@ class HomeScreen extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         itemBuilder: (context, index) {
           final item = homeScreenProvider.mySpaceList[index];
-          return Container(
-            width: 100.w,
-            margin: EdgeInsets.only(right: 12.w),
-            padding: EdgeInsets.all(10.r),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: item.gradientColors.isNotEmpty
-                    ? item.gradientColors
-                    : (isDark
-                          ? [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)]
-                          : [Colors.white, Colors.grey.shade200]),
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+
+          return InkWell(
+            onTap: () => onTap(item),
+            child: Container(
+              width: 100.w,
+              margin: EdgeInsets.only(right: 12.w),
+              padding: EdgeInsets.all(10.r),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: item.gradientColors.isNotEmpty
+                      ? item.gradientColors
+                      : (isDark
+                            ? [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)]
+                            : [Colors.white, Colors.grey.shade200]),
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20.r),
               ),
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  item.icon,
-                  height: 36.h,
-                  width: 36.w,
-                  fit: BoxFit.contain,
-                ),
-                SizedBox(height: 6.h),
-                AppText(
-                  item.title,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black,
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w900,
-                    height: 1.1,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    item.icon,
+                    height: 36.h,
+                    width: 36.w,
+                    fit: BoxFit.contain,
                   ),
-                  maxLines: 2,
-                ),
-              ],
+                  SizedBox(height: 6.h),
+                  AppText(
+                    item.title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w900,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },

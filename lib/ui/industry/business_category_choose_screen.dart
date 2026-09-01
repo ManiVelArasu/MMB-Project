@@ -143,70 +143,79 @@ class BusinessCategoryChooseView extends StatelessWidget {
               Expanded(
                 child: industryProvider.isLoading
                     ? const Center(
-                        child: CircularProgressIndicator(color: Colors.red),
-                      )
+                  child: CircularProgressIndicator(color: Colors.red),
+                )
                     : industryProvider.categories.isEmpty
-                    ? Center(
-                        child: AppText(
-                          industryProvider.errorMessage ??
-                              "No categories found",
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                      )
+                    ? _buildEmptyCategoryState(
+                  context,
+                  industryProvider,
+                )
                     : ListView.separated(
-                        itemCount: industryProvider.categories.length > 10
-                            ? 10
-                            : industryProvider.categories.length,
-                        separatorBuilder: (context, index) =>
-                            Divider(color: Colors.grey.shade200),
-                        itemBuilder: (context, index) {
-                          final category = industryProvider.categories[index];
-                          final categoryName = category.name ?? "";
+                  itemCount: industryProvider.categories.length > 10
+                      ? 10
+                      : industryProvider.categories.length,
+                  separatorBuilder: (context, index) =>
+                      Divider(color: Colors.grey.shade200),
+                  itemBuilder: (context, index) {
+                    final category = industryProvider.categories[index];
+                    final categoryName = category.name ?? "";
 
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: AppText(
-                              categoryName,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            trailing: const Icon(
-                              Icons.north_east,
-                              size: 18,
-                              color: Colors.grey,
-                            ),
-                            onTap: () async {
-                              industryProvider.selectCategory(category);
-
-                              final prefs =
-                                  await SharedPreferences.getInstance();
-                              final selectedCat =
-                                  industryProvider.selectedCategory;
-
-                              if (selectedCat != null) {
-                                await prefs.setString(
-                                  'saved_category_id',
-                                  selectedCat.id.toString(),
-                                );
-                                await prefs.setString(
-                                  'saved_category_name',
-                                  selectedCat.name ?? "",
-                                );
-                              }
-
-                              if (!context.mounted) return;
-
-                              Navigator.pushNamed(
-                                context,
-                                "/BusinessCategoryChooseView",
-                              );
-                            },
-                          );
-                        },
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: AppText(
+                        categoryName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
                       ),
+                      trailing: const Icon(
+                        Icons.north_east,
+                        size: 18,
+                        color: Colors.grey,
+                      ),
+                      onTap: () async {
+                        industryProvider.selectCategory(category);
+
+                        final prefs =
+                        await SharedPreferences.getInstance();
+                        final selectedCat =
+                            industryProvider.selectedCategory;
+
+                        if (selectedCat != null) {
+                          await prefs.setString(
+                            'saved_category_id',
+                            selectedCat.id.toString(),
+                          );
+                          await prefs.setString(
+                            'saved_category_name',
+                            selectedCat.name ?? "",
+                          );
+                          // IMPORTANT: save the exact slug of the item
+                          // the user clicked. Do not use a fixed index/name.
+                          await prefs.setString(
+                            'saved_category_slug',
+                            selectedCat.slug ?? "",
+                          );
+
+                          debugPrint(
+                            '✅ Selected industry: '
+                                '${selectedCat.name} '
+                                '(slug: ${selectedCat.slug})',
+                          );
+                        }
+
+                        if (!context.mounted) return;
+
+                        Navigator.pushNamed(
+                          context,
+                          "/BusinessCategoryChooseView",
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -215,10 +224,77 @@ class BusinessCategoryChooseView extends StatelessWidget {
     );
   }
 
+  Widget _buildEmptyCategoryState(
+      BuildContext context,
+      IndustryProvider industryProvider,
+      ) {
+    return Column(
+      children: [
+        const SizedBox(height: 4),
+        const Text(
+          "Can't find your business type?",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          "Choose Other and enter your business type. We'll review new "
+              "requests and continuously expand our industry database to "
+              "improve template recommendations.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 15,
+            height: 1.35,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 26),
+        TextButton(
+          onPressed: () {
+            industryProvider.setSelectedSpecialization("Other");
+          },
+          child: const Text(
+            "Choose Other",
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        if (industryProvider.showOtherInput) ...[
+          const SizedBox(height: 8),
+          TextField(
+            controller: industryProvider.otherController,
+            decoration: InputDecoration(
+              hintText: "Enter your business type",
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+                borderSide: BorderSide(color: Colors.red),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   void searchCategorySheet(BuildContext context) {
     final industryProvider = context.read<IndustryProvider>();
     final DraggableScrollableController sheetController =
-        DraggableScrollableController();
+    DraggableScrollableController();
 
     showModalBottomSheet(
       context: context,

@@ -20,4 +20,19 @@ class IndustryDropdown {
           IndustryResponse.fromJson(json as Map<String, dynamic>),
     );
   }
+
+  Future<ApiResult<IndustryResponse>> industryView({String? parentSlug}) {
+    return ApiRepository.instance.request<IndustryResponse>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.industries,
+        method: ApiMethod.get,
+        queryParams: {
+          if (parentSlug != null && parentSlug.trim().isNotEmpty)
+            'parent': parentSlug.trim(),
+        },
+      ),
+      fromJson: (json) =>
+          IndustryResponse.fromJson(json as Map<String, dynamic>),
+    );
+  }
 }
