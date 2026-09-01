@@ -266,11 +266,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   // Element categories keep their own results/loading state.
   final Map<String, List<String>> _elementCategoryAssets = {};
+  final Set<String> _elementCategoryRequested = <String>{};
+  final Map<String, List<AssetCategoryItem>> _assetCategoryItems = {};
   final Map<String, bool> _elementCategoryLoading = {};
   final Map<String, int> _elementCategoryRequestIds = {};
 
   List<String> elementCategoryAssets(String query) =>
       List.unmodifiable(_elementCategoryAssets[query] ?? const <String>[]);
+
+  List<AssetCategoryItem> assetCategoryItems(String query) =>
+      List.unmodifiable(_assetCategoryItems[query] ?? const <AssetCategoryItem>[]);
 
   bool isElementCategoryLoading(String query) =>
       _elementCategoryLoading[query] ?? false;
@@ -408,8 +413,17 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         int limit = 4,
         bool append = false,
       }) async {
-    final normalized = query.trim();
+    final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) return;
+
+    // Prevent StatefulBuilder rebuilds from starting the same empty/error
+    // request again and again.
+    if (!append && page == 1 && _elementCategoryRequested.contains(normalized)) {
+      return;
+    }
+    if (!append && page == 1) {
+      _elementCategoryRequested.add(normalized);
+    }
 
     final requestKey = '${normalized}__$page';
     final requestId = (_elementCategoryRequestIds[requestKey] ?? 0) + 1;
@@ -418,29 +432,59 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     if (!append) {
       _elementCategoryLoading[normalized] = true;
       _elementCategoryAssets[normalized] = <String>[];
+      _assetCategoryItems[normalized] = <AssetCategoryItem>[];
     }
     notifyListeners();
 
     try {
-      final result = await FreePikService.searchAssets(
-        normalized,
-        page: page,
-        limit: limit,
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () => <String>[],
-      );
+      if (normalized == 'shapes' || normalized == 'masks') {
+        final result = await FreePikService.fetchAssetsByCategory(
+          normalized,
+          page: page,
+          perPage: limit,
+        );
 
-      if (_elementCategoryRequestIds[requestKey] != requestId) return;
+        if (_elementCategoryRequestIds[requestKey] != requestId) return;
 
-      final current = _elementCategoryAssets[normalized] ?? <String>[];
-      _elementCategoryAssets[normalized] = append
-          ? [...current, ...result].toSet().toList()
-          : result.toSet().toList();
+        final current =
+            _assetCategoryItems[normalized] ?? <AssetCategoryItem>[];
+        final merged = append ? [...current, ...result] : result;
+        final unique = <String, AssetCategoryItem>{};
+
+        for (final item in merged) {
+          final key = item.id?.toString() ?? item.s3Key;
+          unique[key] = item;
+        }
+
+        final items = unique.values.toList();
+        _assetCategoryItems[normalized] = items;
+        _elementCategoryAssets[normalized] = items
+            .map((e) => e.previewKey)
+            .where((e) => e.trim().isNotEmpty)
+            .toSet()
+            .toList();
+      } else {
+        final result = await FreePikService.searchAssets(
+          normalized,
+          page: page,
+          limit: limit,
+        ).timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => <String>[],
+        );
+
+        if (_elementCategoryRequestIds[requestKey] != requestId) return;
+
+        final current = _elementCategoryAssets[normalized] ?? <String>[];
+        _elementCategoryAssets[normalized] = append
+            ? [...current, ...result].toSet().toList()
+            : result.toSet().toList();
+      }
     } catch (e) {
       debugPrint('Element category error [$normalized, page=$page]: $e');
       if (!append && _elementCategoryRequestIds[requestKey] == requestId) {
         _elementCategoryAssets[normalized] = <String>[];
+        _assetCategoryItems[normalized] = <AssetCategoryItem>[];
       }
     } finally {
       if (_elementCategoryRequestIds[requestKey] == requestId) {
@@ -450,9 +494,13 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
+  void resetElementCategoryRequest(String query) {
+    _elementCategoryRequested.remove(query.trim().toLowerCase());
+  }
+
   Future<void> fetchElementCategoryAll(String query) async {
     final normalized = query.trim();
-    if (normalized.isEmpty || normalized == 'shapes') return;
+    if (normalized.isEmpty) return;
 
     final requestId = (_elementCategoryRequestIds['${normalized}__all'] ?? 0) + 1;
     _elementCategoryRequestIds['${normalized}__all'] = requestId;
@@ -463,10 +511,19 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     try {
       final all = <String>[];
       // Fetch several pages so View all is not limited to the first 4 results.
+      // Shapes/masks are supplied by /api/assets as AssetCategoryItem objects.
       // The backend may cap per_page, so page-by-page loading is intentional.
       for (var page = 1; page <= 10; page++) {
         if (_elementCategoryRequestIds['${normalized}__all'] != requestId) return;
-        final result = await FreePikService.searchAssets(
+        final result = (normalized == 'shapes' || normalized == 'masks')
+            ? (await FreePikService.fetchAssetsByCategory(
+          normalized,
+          page: page,
+          perPage: 30,
+        ))
+            .map((e) => e.previewKey)
+            .toList()
+            : await FreePikService.searchAssets(
           normalized,
           page: page,
           limit: 20,
@@ -1083,13 +1140,21 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
+  /// Updates the selected text's font size.
+  /// Keeps the value finite and within a practical editor range.
   void updateFontSize(String id, double newSize) {
-    int index = _items.indexWhere((e) => e.id == id);
-    if (index != -1) {
-      _saveState();
-      _items[index] = _items[index].copyWith(fontSize: newSize);
-      notifyListeners();
-    }
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return;
+
+    final safeSize = newSize.isFinite
+        ? newSize.clamp(8.0, 300.0).toDouble()
+        : _items[index].fontSize;
+
+    if ((_items[index].fontSize - safeSize).abs() < 0.01) return;
+
+    _saveState();
+    _items[index] = _items[index].copyWith(fontSize: safeSize);
+    notifyListeners();
   }
 
   void updateOpacity(String id, double op) {
@@ -1402,11 +1467,27 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void updateFontFamily(String itemId, String fontFamily) {
-    final index = items.indexWhere((e) => e.id == itemId);
-    if (index != -1) {
-      items[index].fontFamily = fontFamily;
-      notifyListeners();
+    final index = _items.indexWhere((e) => e.id == itemId);
+    if (index == -1) return;
+
+    final safeFont = fontFamily.trim();
+    if (safeFont.isEmpty) return;
+
+    if ((_items[index].fontFamily ?? '').trim() == safeFont) {
+      return;
     }
+
+    _saveState();
+
+    // Use copyWith so the whole editor item is replaced. This guarantees
+    // EditableItemWidget rebuilds immediately and the selected font is also
+    // preserved by page/history/export state.
+    _items[index] = _items[index].copyWith(
+      fontFamily: safeFont,
+    );
+
+    _syncCurrentPage();
+    notifyListeners();
   }
 
   void updateFilter(String itemId, String filterType) {

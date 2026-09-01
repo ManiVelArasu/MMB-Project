@@ -13,12 +13,18 @@ class BusinessRepository {
     String name,
     String phone,
     String email,
+    String industrySlug,
   ) async {
     final result = await ApiRepository.instance.request<Map<String, dynamic>>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.businessUpdate,
         method: ApiMethod.post,
-        body: {"name": name, "phone": phone, "email": email},
+        body: {
+          "name": name,
+          "phone": phone,
+          "email": email,
+          'industry': industrySlug,
+        },
       ),
       fromJson: (json) => json['data'] as Map<String, dynamic>,
     );

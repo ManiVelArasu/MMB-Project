@@ -9,6 +9,49 @@ class PexelsVideoAsset {
   const PexelsVideoAsset({required this.videoUrl, this.thumbnailUrl});
 }
 
+class AssetCategoryItem {
+  final int? id;
+  final String name;
+  final String s3Key;
+  final String? thumbnailS3Key;
+  final String assetType;
+  final bool isPremium;
+  final bool isLocked;
+
+  const AssetCategoryItem({
+    this.id,
+    required this.name,
+    required this.s3Key,
+    this.thumbnailS3Key,
+    required this.assetType,
+    required this.isPremium,
+    required this.isLocked,
+  });
+
+  factory AssetCategoryItem.fromJson(Map<String, dynamic> json) {
+    return AssetCategoryItem(
+      id: json['id'] is num ? (json['id'] as num).toInt() : null,
+      name: json['name']?.toString() ?? '',
+      s3Key: json['s3_key']?.toString() ?? '',
+      thumbnailS3Key: json['thumbnail_s3_key']?.toString(),
+      assetType: json['asset_type']?.toString() ?? '',
+      isPremium: json['is_premium'] == 1 || json['is_premium'] == true,
+      isLocked: json['is_locked'] == true,
+    );
+  }
+
+  String get previewKey {
+    final key = (thumbnailS3Key ?? '').trim().isNotEmpty
+        ? thumbnailS3Key!.trim()
+        : s3Key.trim();
+
+    if (key.isEmpty) return '';
+    if (key.startsWith('http://') || key.startsWith('https://')) return key;
+
+    return '${FreePikService.assetCdnBaseUrl}/${key.replaceFirst(RegExp(r'^/+'), '')}';
+  }
+}
+
 class FreePikService {
   /// Original SVG returned alongside each thumbnail by the backend.
   static final Map<String, String> _svgByThumbnail = <String, String>{};
@@ -17,11 +60,69 @@ class FreePikService {
       _svgByThumbnail[thumbnailUrl];
   static const String proxyBaseUrl =
       'https://mmb-v3.vercel.app/api/freepik/stickers';
+  static const String assetCategoryBaseUrl =
+      'https://mmb-v3.vercel.app/api/assets';
+  static const String assetCdnBaseUrl =
+      'https://temp-m2b-assets.s3.ap-south-1.amazonaws.com';
 
   /// Fetches sticker assets from the backend proxy.
   ///
   /// The backend response shape is:
   /// { data: [{ thumbnails: [{ url: "..." }] }], meta: {...} }
+  static Future<List<AssetCategoryItem>> fetchAssetsByCategory(
+      String category, {
+        int page = 1,
+        int perPage = 30,
+      }) async {
+    final slug = category.trim().toLowerCase();
+    if (slug.isEmpty) return <AssetCategoryItem>[];
+
+    try {
+      final uri = Uri.parse(assetCategoryBaseUrl).replace(
+        queryParameters: {
+          'category': slug,
+          'page': '$page',
+          'per_page': '$perPage',
+        },
+      );
+
+      final response = await http.get(
+        uri,
+        headers: const {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      ).timeout(const Duration(seconds: 20));
+
+      if (response.statusCode != 200) {
+        debugPrint(
+          'Asset category error [$slug]: '
+              '${response.statusCode} ${response.body}',
+        );
+        return <AssetCategoryItem>[];
+      }
+
+      final decoded = jsonDecode(response.body);
+      // Assets API returns { items: [...] } (not { data: [...] }).
+      // Accept both shapes so older/newer backend responses keep working.
+      final data = decoded is Map
+          ? (decoded['items'] ?? decoded['data'])
+          : null;
+      if (data is! List) return <AssetCategoryItem>[];
+
+      return data
+          .whereType<Map>()
+          .map((e) => AssetCategoryItem.fromJson(
+        Map<String, dynamic>.from(e),
+      ))
+          .where((e) => e.s3Key.trim().isNotEmpty)
+          .toList();
+    } catch (e) {
+      debugPrint('Asset category request failed [$slug]: $e');
+      return <AssetCategoryItem>[];
+    }
+  }
+
   static Future<List<String>> searchAssets(
       String query, {
         int page = 1,
@@ -164,6 +265,49 @@ class FreePikService {
 
   static const String pexelsVideosProxyUrl =
       'https://mmb-v3.vercel.app/api/pexels/videos';
+
+  /// Category terms used by the Media > Images section.
+  /// Each category is searched against Pexels through the backend proxy.
+  static const Map<String, String> pexelsImageCategories = {
+    'Nature': 'nature landscape',
+    'People': 'people portrait',
+    'Business': 'business',
+    'Technology': 'technology',
+    'Travel': 'travel',
+    'Food': 'food',
+    'Animals': 'animals',
+    'Fashion': 'fashion',
+    'Sports': 'sports',
+    'Architecture': 'architecture',
+    'Wedding': 'wedding',
+    'Background': 'background',
+  };
+
+  /// Returns the Pexels search term for a category shown in the Media UI.
+  /// Unknown categories are still accepted and searched as-is.
+  static String pexelsTermForCategory(String category) {
+    final key = category.trim();
+    if (key.isEmpty) return 'background';
+    return pexelsImageCategories[key] ?? key.toLowerCase();
+  }
+
+  /// Fetch images for a specific Media category.
+  ///
+  /// Example:
+  ///   searchPexelsImagesByCategory('Nature')
+  /// calls:
+  ///   /api/pexels/photos?page=1&per_page=24&term=nature+landscape
+  static Future<List<String>> searchPexelsImagesByCategory(
+      String category, {
+        int page = 1,
+        int limit = 24,
+      }) {
+    return searchPexelsPhotos(
+      pexelsTermForCategory(category),
+      page: page,
+      limit: limit,
+    );
+  }
 
   /// Pexels background images. The backend can return a normal Pexels
   /// response (`photos`), or a wrapped response (`data` / `results`).

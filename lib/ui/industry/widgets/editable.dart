@@ -38,7 +38,9 @@ class EditableItemWidget extends StatelessWidget {
 
     return KeyedSubtree(
       key: ValueKey(
-        "${currentItem.id}_${currentItem.filterType}_${currentItem.rotation}_${currentItem.scale}_${currentItem.opacity}_${currentItem.position}",
+        "${currentItem.id}_${currentItem.filterType}_${currentItem
+            .rotation}_${currentItem.scale}_${currentItem.opacity}_${currentItem
+            .position}_${currentItem.fontFamily}_${currentItem.fontSize}",
       ),
       child: GestureDetector(
         // IMPORTANT: only the actual item body moves. Resize/rotate handles
@@ -49,6 +51,9 @@ class EditableItemWidget extends StatelessWidget {
             currentItem.id!,
             currentItem.position + details.delta,
           );
+        },
+        onTapDown: (_) {
+          onItemSelected(currentItem.type ?? '', currentItem.id!);
         },
         onTap: () {
           onItemSelected(currentItem.type ?? '', currentItem.id!);
@@ -157,60 +162,19 @@ class EditableItemWidget extends StatelessWidget {
                               isVertical: true,
                             ),
 
-                            // Rotate handle. It is visually a tiny 3-dot
-                            // handle, but the touch target is 32x32.
+                            // Rotate handle. Image, video, sticker and
+                            // text all use the same bottom-center 3-dot
+                            // control. The gesture keeps the initial angle so
+                            // the first touch never causes a jump.
                             Positioned(
-                              left: (currentItem.width ?? 220) / 2 - 16,
-                              bottom: -42,
-                              width: 32,
-                              height: 32,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onPanUpdate: (details) {
-                                  final box = context.findRenderObject()
-                                  as RenderBox?;
-                                  if (box == null || !box.hasSize) return;
-
-                                  final local = box.globalToLocal(
-                                    details.globalPosition,
-                                  );
-
-                                  final w = currentItem.width ?? 220;
-                                  final h = currentItem.height ?? 220;
-                                  final center = Offset(w / 2, h / 2);
-
-                                  final angle = math.atan2(
-                                    local.dy - center.dy,
-                                    local.dx - center.dx,
-                                  );
-
-                                  // Pointer starts below the object, so offset
-                                  // by +90 degrees to make the bottom handle
-                                  // feel natural.
-                                  provider.updateRotation(
-                                    currentItem.id!,
-                                    angle + math.pi / 2,
-                                  );
-                                },
-                                child: Center(
-                                  child: Container(
-                                    width: 10,
-                                    height: 10,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.red,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.more_horiz,
-                                      size: 8,
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                                ),
+                              left: (currentItem.width ?? 220) / 2 - 22,
+                              bottom: -48,
+                              width: 44,
+                              height: 44,
+                              child: _RotateThreeDotHandle(
+                                parentContext: context,
+                                provider: provider,
+                                item: currentItem,
                               ),
                             ),
                           ],
@@ -1005,7 +969,9 @@ class EditableItemWidget extends StatelessWidget {
                 : TextDecoration.none,
             letterSpacing: editorProvider.textLetterSpacing(id),
             height: editorProvider.textLineSpacing(id),
-            fontFamily: item.fontFamily,
+            fontFamily: (item.fontFamily ?? '').trim().isEmpty
+                ? null
+                : item.fontFamily!.trim(),
           ),
         ));
   }
@@ -1036,6 +1002,9 @@ class EditableItemWidget extends StatelessWidget {
                 final safeScale = currentItem.scale.isFinite
                     ? currentItem.scale.clamp(.5, 3.0)
                     : 1.0;
+                final safeFontSize = currentItem.fontSize.isFinite
+                    ? currentItem.fontSize.clamp(8.0, 300.0).toDouble()
+                    : 36.0;
                 final rawRotation = currentItem.rotation.isFinite
                     ? currentItem.rotation
                     : 0.0;
@@ -1149,31 +1118,30 @@ class EditableItemWidget extends StatelessWidget {
                               mainAxisSpacing: 10,
                               crossAxisSpacing: 10,
                               childAspectRatio: .98,
-                              children: [
-                                if (currentItem.type == 'text' ||
-                                    currentItem.type == 'textbox')
-                                  _premiumActionTile(
-                                    icon: Icons.edit_rounded,
-                                    label: 'Edit',
-                                    accent: const Color(0xFFFFC107),
-                                    onTap: () {
-                                      // Close the bottom sheet first. The sheet's
-                                      // builder context becomes invalid after pop,
-                                      // so open the dialog with the parent context
-                                      // on the next frame.
-                                      Navigator.pop(modalContext);
-                                      WidgetsBinding.instance
-                                          .addPostFrameCallback((_) {
-                                        if (!context.mounted) return;
-                                        _showTextEditorDialog(
-                                          context,
-                                          provider,
-                                          currentItem.id ?? '',
-                                          currentItem.text ?? '',
-                                        );
-                                      });
-                                    },
-                                  ),
+                              children: [if (currentItem.type == 'text' ||
+                                  currentItem.type == 'textbox')
+                                _premiumActionTile(
+                                  icon: Icons.edit_rounded,
+                                  label: 'Edit',
+                                  accent: const Color(0xFFFFC107),
+                                  onTap: () {
+                                    // Close the bottom sheet first. The sheet's
+                                    // builder context becomes invalid after pop,
+                                    // so open the dialog with the parent context
+                                    // on the next frame.
+                                    Navigator.pop(modalContext);
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      if (!context.mounted) return;
+                                      _showTextEditorDialog(
+                                        context,
+                                        provider,
+                                        currentItem.id ?? '',
+                                        currentItem.text ?? '',
+                                      );
+                                    });
+                                  },
+                                ),
                                 if (currentItem.type != 'text' &&
                                     currentItem.type != 'textbox') ...[
                                   _premiumActionTile(
@@ -1322,6 +1290,15 @@ class EditableItemWidget extends StatelessWidget {
                               Icons.open_with_rounded,
                             ),
                             const SizedBox(height: 10),
+
+                            if (currentItem.type == 'text' ||
+                                currentItem.type == 'textbox')
+                              _textSizeControl(
+                                currentItem,
+                                provider,
+                                setModalState,
+                              ),
+
                             _premiumSliderCard(
                               icon: Icons.zoom_in_rounded,
                               title: 'Scale',
@@ -1644,6 +1621,111 @@ class EditableItemWidget extends StatelessWidget {
     );
   }
 
+  Widget _textSizeControl(
+      EditorItem currentItem,
+      EditorProvider provider,
+      StateSetter setModalState,
+      ) {
+    final size = currentItem.fontSize.isFinite
+        ? currentItem.fontSize.clamp(8.0, 300.0).toDouble()
+        : 36.0;
+
+    void changeSize(double value) {
+      provider.updateFontSize(
+        currentItem.id ?? '',
+        value.clamp(8.0, 300.0).toDouble(),
+      );
+      setModalState(() {});
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B1F27),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.format_size_rounded,
+                size: 18,
+                color: Colors.white70,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Text Size',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                '${size.toStringAsFixed(0)} px',
+                style: const TextStyle(
+                  color: Color(0xFFFFC107),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => changeSize(size - 2),
+                child: const SizedBox(
+                  width: 34,
+                  height: 38,
+                  child: Icon(
+                    Icons.remove_rounded,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: SliderTheme(
+                  data: SliderThemeData(
+                    activeTrackColor: const Color(0xFFFFC107),
+                    inactiveTrackColor: Colors.white12,
+                    thumbColor: const Color(0xFFFFC107),
+                    overlayColor: const Color(0x1FFFC107),
+                    trackHeight: 3,
+                  ),
+                  child: Slider(
+                    value: size,
+                    min: 8,
+                    max: 300,
+                    onChanged: changeSize,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => changeSize(size + 2),
+                child: const SizedBox(
+                  width: 34,
+                  height: 38,
+                  child: Icon(
+                    Icons.add_rounded,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _premiumSliderCard({
     required IconData icon,
     required String title,
@@ -1653,7 +1735,10 @@ class EditableItemWidget extends StatelessWidget {
     required double max,
     required ValueChanged<double> onChanged,
   }) {
-    final safeValue = value.isFinite ? value.clamp(min, max) : min;
+    final safeValue = value.isFinite
+        ? value.clamp(min, max).toDouble()
+        : min;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
@@ -1666,7 +1751,11 @@ class EditableItemWidget extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: Colors.white70),
+              Icon(
+                icon,
+                size: 18,
+                color: Colors.white70,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1688,6 +1777,7 @@ class EditableItemWidget extends StatelessWidget {
               ),
             ],
           ),
+
           SliderTheme(
             data: SliderThemeData(
               activeTrackColor: const Color(0xFFFFC107),
@@ -2435,6 +2525,128 @@ class EditableItemWidget extends StatelessWidget {
     }
   }
 }
+
+class _RotateThreeDotHandle extends StatefulWidget {
+  final BuildContext parentContext;
+  final EditorProvider provider;
+  final EditorItem item;
+
+  const _RotateThreeDotHandle({
+    required this.parentContext,
+    required this.provider,
+    required this.item,
+  });
+
+  @override
+  State<_RotateThreeDotHandle> createState() => _RotateThreeDotHandleState();
+}
+
+class _RotateThreeDotHandleState extends State<_RotateThreeDotHandle> {
+  double? _startPointerAngle;
+  double _startRotation = 0.0;
+
+  Offset _parentLocal(Offset globalPosition) {
+    final renderObject = widget.parentContext.findRenderObject();
+    if (renderObject is RenderBox && renderObject.hasSize) {
+      return renderObject.globalToLocal(globalPosition);
+    }
+    return globalPosition;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final w = widget.item.width ?? 220.0;
+    final h = widget.item.height ?? 220.0;
+    final center = Offset(w / 2, h / 2);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onPanStart: (details) {
+        final p = _parentLocal(details.globalPosition);
+        _startPointerAngle = math.atan2(
+          p.dy - center.dy,
+          p.dx - center.dx,
+        );
+        _startRotation = widget.item.rotation.isFinite
+            ? widget.item.rotation
+            : 0.0;
+      },
+      onPanUpdate: (details) {
+        final startAngle = _startPointerAngle;
+        if (startAngle == null) return;
+
+        final p = _parentLocal(details.globalPosition);
+        final currentAngle = math.atan2(
+          p.dy - center.dy,
+          p.dx - center.dx,
+        );
+
+        var delta = currentAngle - startAngle;
+
+        // Keep the shortest angular path across the -pi/pi boundary.
+        if (delta > math.pi) delta -= math.pi * 2;
+        if (delta < -math.pi) delta += math.pi * 2;
+
+        widget.provider.updateRotation(
+          widget.item.id!,
+          _startRotation + delta,
+        );
+      },
+      onPanEnd: (_) {
+        _startPointerAngle = null;
+      },
+      child: Center(
+        child: Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.red,
+              width: 1.5,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 2,
+              ),
+            ],
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _RotateDot(),
+              SizedBox(width: 2),
+              _RotateDot(),
+              SizedBox(width: 2),
+              _RotateDot(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RotateDot extends StatelessWidget {
+  const _RotateDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      width: 3,
+      height: 3,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.red,
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+}
+
 
 // 🚀 Hexagon Clipper
 class HexagonClipper extends CustomClipper<Path> {

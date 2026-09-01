@@ -194,6 +194,8 @@ class BusinessProvider extends ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+  String _savedCategorySlug = "";
+  String get savedCategorySlug => _savedCategorySlug;
 
   Future<Map<String, dynamic>?> businessUpdateApi(BuildContext context) async {
     if (!validateForm()) return null;
@@ -203,12 +205,15 @@ class BusinessProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      _savedCategorySlug = prefs.getString('saved_category_slug') ?? '';
       bool isImageUploaded = await uploadAndSaveBusinessDetails(context);
       if (!isImageUploaded) return null;
       final result = await BusinessRepository.instance.businessUpdate(
         _businessName,
         _mobileNumber,
         _email,
+        _savedCategorySlug,
       );
 
       _isUploading = false;
