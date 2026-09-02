@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -14,6 +15,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:project_mmb/ui/screens/video_widget/editor_video.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
 import '../../Api Model/editor_model.dart';
 import '../../Repository/freePic.dart';
 import '../../component/custom_widget.dart';
@@ -236,6 +238,48 @@ class _EditorViewState extends State<EditorView> {
     }
   }
 
+  Future<Size?> _resolveNetworkImageSize(String url) async {
+    try {
+      final completer = Completer<Size>();
+      final provider = NetworkImage(url);
+      final stream = provider.resolve(const ImageConfiguration());
+      late final ImageStreamListener listener;
+      listener = ImageStreamListener((info, _) {
+        final image = info.image;
+        completer.complete(
+          Size(image.width.toDouble(), image.height.toDouble()),
+        );
+        stream.removeListener(listener);
+      }, onError: (error, stack) {
+        if (!completer.isCompleted) completer.complete(null);
+        stream.removeListener(listener);
+      });
+      stream.addListener(listener);
+      return await completer.future.timeout(
+        const Duration(seconds: 10),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Size?> _resolveNetworkVideoSize(String url) async {
+    VideoPlayerController? controller;
+    try {
+      controller = VideoPlayerController.networkUrl(Uri.parse(url));
+      await controller.initialize().timeout(const Duration(seconds: 15));
+      final size = controller.value.size;
+      if (size.width > 0 && size.height > 0) {
+        return size;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    } finally {
+      await controller?.dispose();
+    }
+  }
+
   Future<bool> _confirmReplaceBackground(
       BuildContext context,
       EditorProvider provider,
@@ -268,20 +312,26 @@ class _EditorViewState extends State<EditorView> {
         // Media image -> full-size background.
         // This also removes the selected media item so it is not rendered twice.
         final canvasSize = _getCanvasSize();
+        final sourceSize = await _resolveNetworkImageSize(imageUrl);
         provider.replaceBackgroundImage(
           imageUrl,
           selectedItemId,
           canvasWidth: canvasSize.width,
           canvasHeight: canvasSize.height,
+          sourceWidth: sourceSize?.width,
+          sourceHeight: sourceSize?.height,
         );
       } else {
         // Background/stock image -> full-size background.
         // setBackgroundImage creates/selects the new bg_ layer.
         final canvasSize = _getCanvasSize();
+        final sourceSize = await _resolveNetworkImageSize(imageUrl);
         provider.setBackgroundImage(
           imageUrl,
           canvasWidth: canvasSize.width,
           canvasHeight: canvasSize.height,
+          sourceWidth: sourceSize?.width,
+          sourceHeight: sourceSize?.height,
         );
       }
 
@@ -2120,10 +2170,15 @@ class _EditorViewState extends State<EditorView> {
                       );
                       if (replace == true) {
                         final canvasSize = _getCanvasSize();
+                        final sourceSize = await _resolveNetworkVideoSize(
+                          asset.videoUrl,
+                        );
                         provider.setBackgroundVideo(
                           asset.videoUrl,
                           canvasWidth: canvasSize.width,
                           canvasHeight: canvasSize.height,
+                          sourceWidth: sourceSize?.width,
+                          sourceHeight: sourceSize?.height,
                         );
                         provider.clearSelection();
                         if (Navigator.canPop(modalContext))
@@ -2499,8 +2554,11 @@ class _EditorViewState extends State<EditorView> {
                           // -----------------------------------------
                           if (provider.selectedItemId != null &&
                               (provider.selectedItemType == 'image' ||
+                                  provider.selectedItemType == 'video' ||
+                                  provider.selectedItemType == 'shape' ||
                                   provider.selectedItemType == 'svg_group' ||
                                   provider.selectedItemType == 'svg_element' ||
+                                  provider.selectedItemType == 'raster_group' ||
                                   provider.selectedItemType == 'text' ||
                                   provider.selectedItemType == 'textbox') &&
                               !provider.items.any(
@@ -4247,6 +4305,43 @@ class _TransformSelectionOverlayState
               ),
             ),
 
+            // Three-dot menu is also available on the selected background.
+            Positioned(
+              right: -18,
+              top: -18,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _showItemQuickMenu(context),
+                  borderRadius: BorderRadius.circular(18),
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF2196F3),
+                        width: 1.5,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                          color: Color(0x22000000),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.more_horiz_rounded,
+                      size: 20,
+                      color: Color(0xFF222222),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
             // 8 resize handles for image/text.
             _buildHandle(
               alignment: Alignment.topLeft,
@@ -4279,6 +4374,43 @@ class _TransformSelectionOverlayState
             _buildHandle(
               alignment: Alignment.bottomRight,
               cursor: SystemMouseCursors.resizeDownRight,
+            ),
+
+            // Canva-style three-dot action button for every selected item.
+            Positioned(
+              right: -18,
+              top: -18,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _showItemQuickMenu(context),
+                  borderRadius: BorderRadius.circular(18),
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF2196F3),
+                        width: 1.5,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                          color: Color(0x22000000),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.more_horiz_rounded,
+                      size: 20,
+                      color: Color(0xFF222222),
+                    ),
+                  ),
+                ),
+              ),
             ),
 
             // Rotation handle above the top-center.
@@ -4314,6 +4446,53 @@ class _TransformSelectionOverlayState
                 child: const Center(child: _RotationHandleVisual()),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showItemQuickMenu(BuildContext context) {
+    final id = widget.item.id;
+    if (id == null || id.isEmpty) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final provider = _provider;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _quickAction(sheetContext, Icons.flip_to_front_rounded, 'Front', () => provider.bringToFront(id)),
+                _quickAction(sheetContext, Icons.copy_rounded, 'Duplicate', () => provider.duplicateItem(id)),
+                _quickAction(sheetContext, Icons.delete_outline_rounded, 'Delete', () => provider.removeItem(id), destructive: true),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _quickAction(BuildContext context, IconData icon, String label, VoidCallback onTap, {bool destructive = false}) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: destructive ? Colors.red : null),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(fontSize: 11, color: destructive ? Colors.red : null)),
           ],
         ),
       ),
@@ -4595,15 +4774,102 @@ class _InteractiveBackgroundLayerState
           );
         },
 
-        child: Transform.rotate(
-          angle: item.rotation,
-          child: Opacity(
-            opacity: item.opacity.clamp(0.0, 1.0),
-            child: EditableItemWidget.buildStandaloneMediaContent(
-              context,
-              item,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Transform.rotate(
+              angle: item.rotation,
+              child: Opacity(
+                opacity: item.opacity.clamp(0.0, 1.0),
+                child: EditableItemWidget.buildStandaloneMediaContent(
+                  context,
+                  item,
+                ),
+              ),
+            ),
+            Positioned(
+              right: -18,
+              top: -18,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _showBackgroundQuickMenu(context),
+                  borderRadius: BorderRadius.circular(18),
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF2196F3),
+                        width: 1.5,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                          color: Color(0x22000000),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.more_horiz_rounded,
+                      size: 20,
+                      color: Color(0xFF222222),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBackgroundQuickMenu(BuildContext context) {
+    final id = widget.item.id;
+    if (id == null || id.isEmpty) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final provider = context.read<EditorProvider>();
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _backgroundAction(sheetContext, Icons.flip_to_front_rounded, 'Front', () => provider.bringToFront(id)),
+                _backgroundAction(sheetContext, Icons.copy_rounded, 'Duplicate', () => provider.duplicateItem(id)),
+                _backgroundAction(sheetContext, Icons.delete_outline_rounded, 'Delete', () => provider.removeItem(id), destructive: true),
+              ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _backgroundAction(BuildContext context, IconData icon, String label, VoidCallback onTap, {bool destructive = false}) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: destructive ? Colors.red : null),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(fontSize: 11, color: destructive ? Colors.red : null)),
+          ],
         ),
       ),
     );

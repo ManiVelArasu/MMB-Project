@@ -683,9 +683,49 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       }
 
       final root = Map<String, dynamic>.from(decoded);
-      final objects = root['objects'];
-      if (objects is! List) {
-        throw Exception('Template content has no objects array');
+
+      // Backend returns the Fabric JSON inside:
+      // { pages: [ { fabric: { objects: [...] } } ] }
+      // Older/local templates may still return { objects: [...] }.
+      // Support both formats so API templates load without refresh/retry.
+      List<dynamic>? objects;
+
+      final directObjects = root['objects'];
+      if (directObjects is List) {
+        objects = directObjects;
+      } else {
+        final pages = root['pages'];
+        if (pages is List && pages.isNotEmpty) {
+          // Load the first page into the existing editor. The editor's own
+          // page-copy/paste system can then manage subsequent pages.
+          final firstPage = pages.first;
+          if (firstPage is Map) {
+            final fabric = firstPage['fabric'];
+            if (fabric is Map && fabric['objects'] is List) {
+              objects = fabric['objects'] as List;
+
+              // Prefer the API page dimensions when the caller did not pass
+              // an explicit canvas size.
+              if (canvasWidth == null || canvasHeight == null) {
+                final pageWidth = _toDouble(firstPage['width']);
+                final pageHeight = _toDouble(firstPage['height']);
+                if (pageWidth != null &&
+                    pageHeight != null &&
+                    pageWidth > 0 &&
+                    pageHeight > 0) {
+                  setCanvasSize(pageWidth, pageHeight);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (objects == null) {
+        throw Exception(
+          'Template content has no supported objects array '
+              '(expected objects or pages[0].fabric.objects)',
+        );
       }
 
       // Prefer the exact size supplied by the previous screen.
@@ -1012,10 +1052,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       return;
     }
 
-    // Current Freepik proxy returns PNG thumbnails for many assets. Split
-    // the transparent raster into connected visual components so the user
-    // can still ungroup/edit the pieces individually without another API
-    // request.
     await _ungroupRasterGroup(index, group);
   }
 
@@ -1856,24 +1892,39 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       String imageUrl, {
         double canvasWidth = 1080.0,
         double canvasHeight = 1080.0,
+        double? sourceWidth,
+        double? sourceHeight,
       }) {
     _saveState();
-
-    // Replace the previous background completely.
-    // A background image must not leave the previous color behind.
     _removeBackgroundLayers();
     _backgroundColor = Colors.transparent;
 
     final bgId = 'bg_${DateTime.now().millisecondsSinceEpoch}';
+    final sw = (sourceWidth != null && sourceWidth.isFinite && sourceWidth > 0)
+        ? sourceWidth
+        : canvasWidth;
+    final sh = (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
+        ? sourceHeight
+        : canvasHeight;
+
+    // Keep the fetched asset's native aspect ratio and scale it just enough
+    // to cover the current canvas (Canva-style background cover).
+    final coverScale = math.max(canvasWidth / sw, canvasHeight / sh);
+    final safeScale = coverScale.isFinite && coverScale > 0 ? coverScale : 1.0;
+    final renderedWidth = sw * safeScale;
+    final renderedHeight = sh * safeScale;
+    final left = (canvasWidth - renderedWidth) / 2.0;
+    final top = (canvasHeight - renderedHeight) / 2.0;
 
     _items.insert(
       0,
       EditorItem(
         id: bgId,
         type: 'image',
-        position: const Offset(0, 0),
-        width: canvasWidth,
-        height: canvasHeight,
+        position: Offset(left, top),
+        width: sw,
+        height: sh,
+        scale: safeScale,
         contentUrl: imageUrl,
         isLocal: !imageUrl.startsWith('http'),
       ),
@@ -1881,7 +1932,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     selectedItemType = 'image';
     selectedItemId = bgId;
-
     _syncCurrentPage();
     notifyListeners();
   }
@@ -1890,24 +1940,37 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       String videoUrl, {
         double canvasWidth = 1080.0,
         double canvasHeight = 1080.0,
+        double? sourceWidth,
+        double? sourceHeight,
       }) {
     _saveState();
-
-    // Replace the previous background completely.
     _removeBackgroundLayers();
     _backgroundColor = Colors.transparent;
 
-    // புதிய பேக்ரவுண்ட் வீடியோவை முதல் லேயராக சேர்ப்பது
     final bgId = 'bg_video_${DateTime.now().millisecondsSinceEpoch}';
+    final sw = (sourceWidth != null && sourceWidth.isFinite && sourceWidth > 0)
+        ? sourceWidth
+        : canvasWidth;
+    final sh = (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
+        ? sourceHeight
+        : canvasHeight;
+
+    final coverScale = math.max(canvasWidth / sw, canvasHeight / sh);
+    final safeScale = coverScale.isFinite && coverScale > 0 ? coverScale : 1.0;
+    final renderedWidth = sw * safeScale;
+    final renderedHeight = sh * safeScale;
+    final left = (canvasWidth - renderedWidth) / 2.0;
+    final top = (canvasHeight - renderedHeight) / 2.0;
 
     _items.insert(
       0,
       EditorItem(
         id: bgId,
         type: 'video',
-        position: const Offset(0, 0),
-        width: canvasWidth,
-        height: canvasHeight,
+        position: Offset(left, top),
+        width: sw,
+        height: sh,
+        scale: safeScale,
         contentUrl: videoUrl,
         isLocal: !videoUrl.startsWith('http'),
       ),
@@ -1948,40 +2011,47 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       String selectedItemIdToRemove, {
         double canvasWidth = 1080.0,
         double canvasHeight = 1080.0,
+        double? sourceWidth,
+        double? sourceHeight,
       }) {
     _saveState();
-
-    // Remove old background image/video/shape
     _removeBackgroundLayers();
-
-    // Remove the currently selected normal image
     _items.removeWhere((item) => item.id == selectedItemIdToRemove);
-
-    // Remove background color
     _backgroundColor = Colors.transparent;
 
     final bgId = 'bg_${DateTime.now().millisecondsSinceEpoch}';
+    final sw = (sourceWidth != null && sourceWidth.isFinite && sourceWidth > 0)
+        ? sourceWidth
+        : canvasWidth;
+    final sh = (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
+        ? sourceHeight
+        : canvasHeight;
+    final coverScale = math.max(canvasWidth / sw, canvasHeight / sh);
+    final safeScale = coverScale.isFinite && coverScale > 0 ? coverScale : 1.0;
+    final renderedWidth = sw * safeScale;
+    final renderedHeight = sh * safeScale;
 
-    // Add new image as background
     _items.insert(
       0,
       EditorItem(
         id: bgId,
         type: 'image',
-        position: const Offset(0, 0),
-        width: canvasWidth,
-        height: canvasHeight,
-        scale: 1.0,
+        position: Offset(
+          (canvasWidth - renderedWidth) / 2.0,
+          (canvasHeight - renderedHeight) / 2.0,
+        ),
+        width: sw,
+        height: sh,
+        scale: safeScale,
         rotation: 0.0,
         contentUrl: imageUrl,
         isLocal: !imageUrl.startsWith('http'),
       ),
     );
 
-    // Select new background
     selectedItemType = 'image';
     selectedItemId = bgId;
-
+    _syncCurrentPage();
     notifyListeners();
   }
 

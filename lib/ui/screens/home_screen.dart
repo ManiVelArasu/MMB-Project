@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:project_mmb/component/custom_widget.dart';
@@ -595,16 +596,23 @@ class HomeScreen extends StatelessWidget {
       TemplateModel template,
       bool isDark,
       ) {
-    final key = template.thumbnailS3Key?.trim() ?? "";
-    final imageUrl = key.isEmpty ? "" : "${ApiEndpoints.cdnImageUrl}/$key";
+    final key = template.thumbnailS3Key?.trim() ?? '';
+
+    final imageUrl = key.isEmpty
+        ? ''
+        : '${ApiEndpoints.cdnImageUrl}/$key';
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
-        final templateUid = (template as dynamic).uid?.toString().trim() ?? '';
+        final templateUid =
+            (template as dynamic).uid?.toString().trim() ?? '';
+
         if (templateUid.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Template UID not available')),
+            const SnackBar(
+              content: Text('Template UID not available'),
+            ),
           );
           return;
         }
@@ -620,37 +628,34 @@ class HomeScreen extends StatelessWidget {
         );
       },
       child: Container(
-        width: 120.w,
         margin: EdgeInsets.only(right: 12.w),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          color: isDark
+              ? const Color(0xFF1E1E1E)
+              : Colors.white,
           borderRadius: BorderRadius.circular(16.r),
           border: Border.all(
-            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+            color: isDark
+                ? Colors.grey.shade800
+                : Colors.grey.shade200,
             width: 1.2,
           ),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16.r),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (imageUrl.isEmpty)
-                _templateImagePlaceholder(isDark)
-              else
-                Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) =>
-                      _templateImagePlaceholder(isDark),
-                ),
-            ],
+          child: imageUrl.isEmpty
+              ? _templateImagePlaceholder(isDark)
+              : CachedNetworkImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.contain,
+            placeholder: (context, url) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            },
+            errorWidget: (context, url, error) {
+              return _templateImagePlaceholder(isDark);
+            },
           ),
         ),
       ),
