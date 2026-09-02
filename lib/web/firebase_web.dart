@@ -1,4 +1,5 @@
 // Only for web
+import 'dart:js' as js;
 import 'package:flutter/material.dart';
 class FirebaseWebAuth {
   static void initialize() {

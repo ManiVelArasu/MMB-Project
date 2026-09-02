@@ -6,7 +6,7 @@ import 'package:project_mmb/component/custom_widget.dart';
 import 'package:project_mmb/core/api/api_endpoints.dart';
 import 'package:project_mmb/network/provider/home_screen_provider.dart';
 import 'package:project_mmb/Api Model/Template_model.dart';
-
+import 'package:project_mmb/ui/screens/template_edit.dart';
 import 'package:project_mmb/ui/screens/video_widget/video_widget.dart';
 import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:project_mmb/utils/theme/app.fonts.dart';
@@ -252,13 +252,13 @@ class HomeScreen extends StatelessWidget {
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount:
-                                homeScreenProvider.videoCategories.length,
+                            homeScreenProvider.videoCategories.length,
                             physics: const BouncingScrollPhysics(),
                             itemBuilder: (context, index) {
                               bool isSelected =
                                   homeScreenProvider
                                       .selectedVideoCategoryIndex ==
-                                  index;
+                                      index;
                               return GestureDetector(
                                 onTap: () => homeScreenProvider
                                     .updateVideoCategoryIndex(index),
@@ -272,15 +272,15 @@ class HomeScreen extends StatelessWidget {
                                     color: isSelected
                                         ? const Color(0xFF555555)
                                         : (isDark
-                                              ? const Color(0xFF1E1E1E)
-                                              : Colors.white),
+                                        ? const Color(0xFF1E1E1E)
+                                        : Colors.white),
                                     borderRadius: BorderRadius.circular(30.r),
                                     border: Border.all(
                                       color: isSelected
                                           ? Colors.transparent
                                           : (isDark
-                                                ? Colors.grey.shade700
-                                                : Colors.grey.shade400),
+                                          ? Colors.grey.shade700
+                                          : Colors.grey.shade400),
                                       width: 1.5,
                                     ),
                                   ),
@@ -291,8 +291,8 @@ class HomeScreen extends StatelessWidget {
                                         color: isSelected
                                             ? Colors.white
                                             : (isDark
-                                                  ? Colors.white70
-                                                  : Colors.grey.shade800),
+                                            ? Colors.white70
+                                            : Colors.grey.shade800),
                                         fontSize: 14.sp,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -310,16 +310,16 @@ class HomeScreen extends StatelessWidget {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount:
-                              homeScreenProvider.brandVideoPostsList.isNotEmpty
+                          homeScreenProvider.brandVideoPostsList.isNotEmpty
                               ? homeScreenProvider.brandVideoPostsList.length
                               : 4,
                           gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12.w,
-                                mainAxisSpacing: 12.h,
-                                childAspectRatio: 1.0,
-                              ),
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12.w,
+                            mainAxisSpacing: 12.h,
+                            childAspectRatio: 1.0,
+                          ),
                           itemBuilder: (context, index) {
                             return InkWell(
                               onTap: () {
@@ -387,13 +387,13 @@ class HomeScreen extends StatelessWidget {
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount:
-                                homeScreenProvider.videoCategories.length,
+                            homeScreenProvider.videoCategories.length,
                             physics: const BouncingScrollPhysics(),
                             itemBuilder: (context, index) {
                               bool isSelected =
                                   homeScreenProvider
                                       .selectedVideoCategoryIndex ==
-                                  index;
+                                      index;
                               return GestureDetector(
                                 onTap: () => homeScreenProvider
                                     .updateVideoCategoryIndex(index),
@@ -407,15 +407,15 @@ class HomeScreen extends StatelessWidget {
                                     color: isSelected
                                         ? const Color(0xFF555555)
                                         : (isDark
-                                              ? const Color(0xFF1E1E1E)
-                                              : Colors.white),
+                                        ? const Color(0xFF1E1E1E)
+                                        : Colors.white),
                                     borderRadius: BorderRadius.circular(20.r),
                                     border: Border.all(
                                       color: isSelected
                                           ? Colors.transparent
                                           : (isDark
-                                                ? Colors.grey.shade700
-                                                : Colors.grey.shade400),
+                                          ? Colors.grey.shade700
+                                          : Colors.grey.shade400),
                                       width: 1.2,
                                     ),
                                   ),
@@ -426,8 +426,8 @@ class HomeScreen extends StatelessWidget {
                                         color: isSelected
                                             ? Colors.white
                                             : (isDark
-                                                  ? Colors.white70
-                                                  : Colors.grey.shade800),
+                                            ? Colors.white70
+                                            : Colors.grey.shade800),
                                         fontSize: 12.sp,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -444,17 +444,17 @@ class HomeScreen extends StatelessWidget {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount:
-                              homeScreenProvider.brandVideoPostsList.length,
+                          homeScreenProvider.brandVideoPostsList.length,
                           gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12.w,
-                                mainAxisSpacing: 12.h,
-                                childAspectRatio: 1.0,
-                              ),
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12.w,
+                            mainAxisSpacing: 12.h,
+                            childAspectRatio: 1.0,
+                          ),
                           itemBuilder: (context, index) {
                             final videoData =
-                                homeScreenProvider.brandVideoPostsList[index];
+                            homeScreenProvider.brandVideoPostsList[index];
                             return BrandVideoCard(
                               thumbnailUrl: videoData["thumbnail"] ?? '',
                               videoUrl: videoData["videoUrl"] ?? '',
@@ -471,7 +471,7 @@ class HomeScreen extends StatelessWidget {
                         itemCount: homeScreenProvider.templateCategories.length,
                         itemBuilder: (context, index) {
                           final category =
-                              homeScreenProvider.templateCategories[index];
+                          homeScreenProvider.templateCategories[index];
                           final categoryName = category.name?.trim() ?? '';
                           final slug = category.slug?.trim() ?? '';
 
@@ -480,7 +480,7 @@ class HomeScreen extends StatelessWidget {
                           }
 
                           final categoryIcon =
-                              (category.iconS3Key?.trim().isNotEmpty ?? false)
+                          (category.iconS3Key?.trim().isNotEmpty ?? false)
                               ? '${ApiEndpoints.cdnImageUrl}/${category.iconS3Key}'
                               : '';
 
@@ -559,10 +559,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildDateBox(
-    BuildContext context,
-    HomeScreenProvider provider,
-    String date,
-  ) {
+      BuildContext context,
+      HomeScreenProvider provider,
+      String date,
+      ) {
     final isSelected = provider.selectedDates == date;
 
     return GestureDetector(
@@ -591,45 +591,67 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildApiTemplateCard(
-    BuildContext context,
-    TemplateModel template,
-    bool isDark,
-  ) {
+      BuildContext context,
+      TemplateModel template,
+      bool isDark,
+      ) {
     final key = template.thumbnailS3Key?.trim() ?? "";
     final imageUrl = key.isEmpty ? "" : "${ApiEndpoints.cdnImageUrl}/$key";
 
-    return Container(
-      width: 120.w,
-      margin: EdgeInsets.only(right: 12.w),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-          width: 1.2,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        final templateUid = (template as dynamic).uid?.toString().trim() ?? '';
+        if (templateUid.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Template UID not available')),
+          );
+          return;
+        }
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TemplateEditScreen(
+              templateUid: templateUid,
+              resizeSize: 'Post Square (1:1)',
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 120.w,
+        margin: EdgeInsets.only(right: 12.w),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(
+            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+            width: 1.2,
+          ),
         ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16.r),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (imageUrl.isEmpty)
-              _templateImagePlaceholder(isDark)
-            else
-              Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) =>
-                    _templateImagePlaceholder(isDark),
-              ),
-          ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16.r),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (imageUrl.isEmpty)
+                _templateImagePlaceholder(isDark)
+              else
+                Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) =>
+                      _templateImagePlaceholder(isDark),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -696,10 +718,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildMySpaceList(
-    HomeScreenProvider homeScreenProvider,
-    bool isDark,
-    void Function(dynamic item) onTap,
-  ) {
+      HomeScreenProvider homeScreenProvider,
+      bool isDark,
+      void Function(dynamic item) onTap,
+      ) {
     return SizedBox(
       height: 90.h,
       child: ListView.builder(
@@ -720,8 +742,8 @@ class HomeScreen extends StatelessWidget {
                   colors: item.gradientColors.isNotEmpty
                       ? item.gradientColors
                       : (isDark
-                            ? [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)]
-                            : [Colors.white, Colors.grey.shade200]),
+                      ? [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)]
+                      : [Colors.white, Colors.grey.shade200]),
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -758,9 +780,9 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildSpecialDaysList(
-    HomeScreenProvider homeScreenProvider,
-    bool isDark,
-  ) {
+      HomeScreenProvider homeScreenProvider,
+      bool isDark,
+      ) {
     return SizedBox(
       height: 160.h,
       child: ListView.builder(
@@ -796,10 +818,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildMyZoneSlider(
-    HomeScreenProvider homeScreenProvider,
-    bool isDark, {
-    required bool isBusinessUser,
-  }) {
+      HomeScreenProvider homeScreenProvider,
+      bool isDark, {
+        required bool isBusinessUser,
+      }) {
     return FutureBuilder<SharedPreferences>(
       future: SharedPreferences.getInstance(),
       builder: (context, snapshot) {
@@ -832,9 +854,9 @@ class HomeScreen extends StatelessWidget {
                       savedImagePath != null && savedImagePath.isNotEmpty
                           ? Image.file(File(savedImagePath), fit: BoxFit.cover)
                           : Image.asset(
-                              homeScreenProvider.myZoneBanners[index],
-                              fit: BoxFit.cover,
-                            ),
+                        homeScreenProvider.myZoneBanners[index],
+                        fit: BoxFit.cover,
+                      ),
                       if (isBusinessUser)
                         Positioned(
                           left: 0,
@@ -896,10 +918,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildLeadBannerSlider(
-    HomeScreenProvider homeScreenProvider,
-    bool isDark, {
-    required bool isBusinessUser,
-  }) {
+      HomeScreenProvider homeScreenProvider,
+      bool isDark, {
+        required bool isBusinessUser,
+      }) {
     if (!isBusinessUser) {
       return SizedBox(
         height: 140.h,
@@ -941,9 +963,9 @@ class HomeScreen extends StatelessWidget {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
-                              AppColors.gold, // மிகவும் எளிய மற்றும் சரியான வழி
+                          AppColors.gold, // மிகவும் எளிய மற்றும் சரியான வழி
                           foregroundColor:
-                              Colors.white, // உரையின் நிறம் (Text color)
+                          Colors.white, // உரையின் நிறம் (Text color)
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
                               12.r,
@@ -1008,9 +1030,9 @@ class HomeScreen extends StatelessWidget {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor:
-                            AppColors.gold, // மிகவும் எளிய மற்றும் சரியான வழி
+                        AppColors.gold, // மிகவும் எளிய மற்றும் சரியான வழி
                         foregroundColor:
-                            Colors.white, // உரையின் நிறம் (Text color)
+                        Colors.white, // உரையின் நிறம் (Text color)
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
                             12.r,

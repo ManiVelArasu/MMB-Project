@@ -32,9 +32,13 @@ class AssetCategoryItem {
     return AssetCategoryItem(
       id: json['id'] is num ? (json['id'] as num).toInt() : null,
       name: json['name']?.toString() ?? '',
-      s3Key: json['s3_key']?.toString() ?? '',
-      thumbnailS3Key: json['thumbnail_s3_key']?.toString(),
-      assetType: json['asset_type']?.toString() ?? '',
+      s3Key: (json['s3_key'] ?? json['key'] ?? json['path'] ??
+          json['url'] ?? json['asset_url'] ?? json['preview_url'] ?? '')
+          .toString(),
+      thumbnailS3Key: (json['thumbnail_s3_key'] ??
+          json['thumbnail_url'] ?? json['thumbnailUrl'] ??
+          json['preview_url'] ?? json['previewUrl'])?.toString(),
+      assetType: (json['asset_type'] ?? json['type'] ?? '').toString(),
       isPremium: json['is_premium'] == 1 || json['is_premium'] == true,
       isLocked: json['is_locked'] == true,
     );
@@ -86,13 +90,15 @@ class FreePikService {
         },
       );
 
-      final response = await http.get(
+      final response = await http
+          .get(
         uri,
         headers: const {
           'Accept': 'application/json',
           'Cache-Control': 'no-cache',
         },
-      ).timeout(const Duration(seconds: 20));
+      )
+          .timeout(const Duration(seconds: 20));
 
       if (response.statusCode != 200) {
         debugPrint(
@@ -103,20 +109,47 @@ class FreePikService {
       }
 
       final decoded = jsonDecode(response.body);
-      // Assets API returns { items: [...] } (not { data: [...] }).
-      // Accept both shapes so older/newer backend responses keep working.
-      final data = decoded is Map
-          ? (decoded['items'] ?? decoded['data'])
-          : null;
-      if (data is! List) return <AssetCategoryItem>[];
 
-      return data
-          .whereType<Map>()
-          .map((e) => AssetCategoryItem.fromJson(
-        Map<String, dynamic>.from(e),
-      ))
-          .where((e) => e.s3Key.trim().isNotEmpty)
-          .toList();
+      // The assets API has returned a few response shapes across versions:
+      // {data:[...]}, {items:[...]}, {assets:[...]}, and sometimes a nested
+      // {data:{items:[...]}}. Accept all of them.
+      dynamic data = decoded;
+      if (data is Map) {
+        data = data['items'] ?? data['data'] ?? data['assets'];
+        if (data is Map) {
+          data = data['items'] ?? data['assets'] ?? data['results'];
+        }
+      }
+      if (data is! List) {
+        debugPrint('Assets API [$slug] returned unexpected shape: ${response.body}');
+        return <AssetCategoryItem>[];
+      }
+
+      final items = <AssetCategoryItem>[];
+      for (final raw in data) {
+        if (raw is! Map) continue;
+        final item = Map<String, dynamic>.from(raw);
+        // Accept backend naming variants. If a direct URL is supplied, keep
+        // it as s3Key so previewKey returns the URL unchanged.
+        final directUrl = (item['url'] ??
+            item['asset_url'] ??
+            item['preview_url'] ??
+            item['previewUrl'] ??
+            item['thumbnail_url'] ??
+            item['thumbnailUrl'])?.toString().trim();
+        if ((item['s3_key'] == null || item['s3_key'].toString().trim().isEmpty) &&
+            directUrl != null && directUrl.isNotEmpty) {
+          item['s3_key'] = directUrl;
+        }
+        if ((item['thumbnail_s3_key'] == null ||
+            item['thumbnail_s3_key'].toString().trim().isEmpty) &&
+            directUrl != null && directUrl.isNotEmpty) {
+          item['thumbnail_s3_key'] = directUrl;
+        }
+        final parsed = AssetCategoryItem.fromJson(item);
+        if (parsed.previewKey.trim().isNotEmpty) items.add(parsed);
+      }
+      return items;
     } catch (e) {
       debugPrint('Asset category request failed [$slug]: $e');
       return <AssetCategoryItem>[];
@@ -198,8 +231,7 @@ class FreePikService {
         queryParameters: {
           'page': '$page',
           'per_page': '$perPage',
-          if (term != null && term.trim().isNotEmpty)
-            'term': term.trim(),
+          if (term != null && term.trim().isNotEmpty) 'term': term.trim(),
         },
       );
 

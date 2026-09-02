@@ -15,14 +15,21 @@ import 'package:share_plus/share_plus.dart';
 import 'package:project_mmb/ui/screens/video_widget/editor_video.dart';
 import 'package:provider/provider.dart';
 import '../../Api Model/editor_model.dart';
+import '../../Repository/freePic.dart';
 import '../../component/custom_widget.dart';
 import '../../network/provider/editor_provider.dart';
 import '../industry/widgets/editable.dart';
 import '../../network/provider/custom_theme_provider.dart';
 
 class TemplateEditScreen extends StatelessWidget {
-  final String resizeSize;
-  const TemplateEditScreen({super.key, this.resizeSize = "Post Square (1:1)"});
+  final String? resizeSize;
+  final String? templateUid;
+
+  const TemplateEditScreen({
+    super.key,
+    this.resizeSize,
+    this.templateUid,
+  });
 
   bool _isSelectedCanvasBackground(EditorProvider provider) {
     final id = provider.selectedItemId;
@@ -41,10 +48,8 @@ class TemplateEditScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TemplateDetailScreen opens this screen with Navigator.pushNamed(..., arguments: selectedResizeSize).
-    // Read that argument here so the editor always uses the exact size selected on the previous screen.
     final args = ModalRoute.of(context)?.settings.arguments;
-    String resolvedResizeSize = resizeSize;
+    String resolvedResizeSize = resizeSize??'';
 
     if (args is String && args.trim().isNotEmpty) {
       resolvedResizeSize = args.trim();
@@ -58,7 +63,13 @@ class TemplateEditScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => EditorProvider(),
       child: Scaffold(
-        body: SafeArea(child: EditorView(resizeSize: resolvedResizeSize)),
+        body: SafeArea(
+          child: EditorView(
+            resizeSize: resolvedResizeSize,
+            templateUid: templateUid ??
+                (args is Map ? args['templateUid']?.toString() : null),
+          ),
+        ),
       ),
     );
   }
@@ -66,7 +77,13 @@ class TemplateEditScreen extends StatelessWidget {
 
 class EditorView extends StatefulWidget {
   final String resizeSize;
-  const EditorView({super.key, required this.resizeSize});
+  final String? templateUid;
+
+  const EditorView({
+    super.key,
+    required this.resizeSize,
+    this.templateUid,
+  });
 
   @override
   State<EditorView> createState() => _EditorViewState();
@@ -306,42 +323,20 @@ class _EditorViewState extends State<EditorView> {
   Future<void> _loadTemplateJsonAndInitEditor() async {
     final provider = Provider.of<EditorProvider>(context, listen: false);
     final canvasSize = _getCanvasSize();
+    provider.setCanvasSize(canvasSize.width, canvasSize.height);
 
-    /*   provider.loadItemsFromJson([
-      {
-        "version": "5.3.0",
-        "type": "rect",
-        "left": 0,
-        "top": 0,
-        "width": canvasSize.width,
-        "height": canvasSize.height,
-        "fill": "white",
-        "name": "clip",
-      },
-      {
-        "version": "5.3.0",
-        "type": "image",
-        "left": 0,
-        "top": 0,
-        "width": canvasSize.width,
-        "height": canvasSize.height,
-        "src":
-            "https://picsum.photos/${canvasSize.width.toInt()}/${canvasSize.height.toInt()}",
-      },
-      {
-        "version": "5.3.0",
-        "type": "textbox",
-        "left": 98.06,
-        "top": 399.07,
-        "width": 444.29,
-        "height": 95.35,
-        "fill": "rgba(0,0,0,1)",
-        "fontSize": 20,
-        "fontWeight": 700,
-        "text": "STAY COZY",
-      },
-    ]);*/
+    final uid = widget.templateUid?.trim() ?? '';
+    if (uid.isNotEmpty) {
+      await provider.loadTemplateByUid(
+        uid,
+        canvasWidth: canvasSize.width,
+        canvasHeight: canvasSize.height,
+      );
+    } else {
+      debugPrint('ℹ️ No template UID supplied; opening blank editor');
+    }
 
+    // Keep the editor asset panels working exactly as before.
     provider.fetchFreePikAssets("furniture");
     provider.fetchFreePikStickers("stickers");
   }
@@ -889,6 +884,13 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
+  bool isStickerProxyCategory(String category) {
+    final normalized = category.trim().toLowerCase();
+    return normalized == 'stickers' ||
+        normalized == 'social media' ||
+        normalized == 'e-commerce';
+  }
+
   void _showMediaBottomSheet(
       BuildContext context,
       EditorProvider provider,
@@ -936,10 +938,10 @@ class _EditorViewState extends State<EditorView> {
         setState(() {});
         return;
       }
-      if (query == 'stickers') {
-        if (!force && provider.freePikStickers.isNotEmpty) return;
-        if (provider.isStickersLoading) return;
-        provider.fetchFreePikStickers('stickers').then((_) {
+      if (isStickerProxyCategory(query)) {
+        if (!force && provider.elementCategoryAssets(query).isNotEmpty) return;
+        if (provider.isElementCategoryLoading(query)) return;
+        provider.fetchElementCategory(query, limit: limit).then((_) {
           if (!sheetOpen) return;
           setState(() {});
         });
@@ -971,12 +973,21 @@ class _EditorViewState extends State<EditorView> {
               }
             }
 
-            Widget elementCard(String url) {
+            Widget elementCard(
+                String url, {
+                  bool locked = false,
+                  VoidCallback? onTap,
+                }) {
               final isLocalShape = url.startsWith('assets/shapes/');
+              final bool isSvg =
+              url.toLowerCase().split('?').first.endsWith('.svg');
 
-              final bool isSvg = url.toLowerCase().split('?').first.endsWith('.svg');
-
-              final Widget preview = isLocalShape
+              final Widget preview = url.isEmpty
+                  ? const Icon(
+                Icons.image_not_supported_outlined,
+                color: Colors.grey,
+              )
+                  : isLocalShape
                   ? SvgPicture.asset(
                 url,
                 fit: BoxFit.contain,
@@ -986,7 +997,9 @@ class _EditorViewState extends State<EditorView> {
                   child: SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 1.5),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                    ),
                   ),
                 ),
                 errorBuilder: (_, __, ___) => const Icon(
@@ -1002,52 +1015,150 @@ class _EditorViewState extends State<EditorView> {
                   child: SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 1.5),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                    ),
                   ),
+                ),
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.image_outlined,
+                  color: Colors.grey,
                 ),
               )
                   : Image.network(
                 url,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) =>
-                const Icon(Icons.image_outlined, color: Colors.grey),
-                loadingBuilder: (context, child, progress) {
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.image_outlined,
+                  color: Colors.grey,
+                ),
+                loadingBuilder:
+                    (context, child, progress) {
                   if (progress == null) return child;
-
                   return const Center(
                     child: SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 1.5),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.5,
+                      ),
                     ),
                   );
                 },
               );
 
               return GestureDetector(
-                onTap: () {
+                onTap: locked
+                    ? null
+                    : onTap ??
+                        () {
+                      if (isLocalShape) {
+                        _addLocalShape(modalContext, provider, url);
+                      } else {
+                        provider.addFreePikElement(url);
+                        Navigator.pop(modalContext);
+                      }
+                    },
+                child: Stack(
+                  children: [
+                    Container(
+                      height: 58,
+                      width: 58,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF24262B)
+                            : const Color(0xFFF8F8F8),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(
+                          color: locked
+                              ? (isDark
+                              ? Colors.orange.withOpacity(.55)
+                              : Colors.orange.shade200)
+                              : (isDark
+                              ? Colors.white12
+                              : const Color(0xFFE8E8E8)),
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Opacity(
+                        opacity: locked ? .38 : 1,
+                        child: preview,
+                      ),
+                    ),
+                    if (locked)
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(.18),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(
+                                Icons.lock_rounded,
+                                size: 20,
+                                color: Colors.orange,
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'LOCKED',
+                                style: TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 7,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }
+
+            Widget assetCategoryCard(
+                AssetCategoryItem item, {
+                  bool isShape = false,
+                }) {
+              final url = item.previewKey;
+              final isLocalShape = url.startsWith('assets/shapes/');
+
+              return elementCard(
+                url,
+                locked: item.isLocked,
+                onTap: item.isLocked
+                    ? null
+                    : () async {
                   if (isLocalShape) {
-                    _addLocalShape(modalContext, provider, url);
+                    await _addLocalShape(
+                      modalContext,
+                      provider,
+                      url,
+                    );
+                  } else if (isShape) {
+                    // Shapes and masks must become real shape layers.
+                    provider.addShape(
+                      url,
+                      isLocal: false,
+                    );
+
+                    if (modalContext.mounted) {
+                      Navigator.pop(modalContext);
+                    }
                   } else {
-                    provider.addFreePikElement(url);
-                    Navigator.pop(modalContext);
+                    // Other API assets are normal image layers.
+                    provider.addImage(
+                      url,
+                      isLocal: false,
+                    );
+
+                    if (modalContext.mounted) {
+                      Navigator.pop(modalContext);
+                    }
                   }
                 },
-                child: Container(
-                  height: 58,
-                  width: 58,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF24262B)
-                        : const Color(0xFFF8F8F8),
-                    borderRadius: BorderRadius.circular(9),
-                    border: Border.all(
-                      color: isDark ? Colors.white12 : const Color(0xFFE8E8E8),
-                    ),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: preview,
-                ),
               );
             }
 
@@ -1070,16 +1181,10 @@ class _EditorViewState extends State<EditorView> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        if (query == 'stickers') {
-                          provider.fetchFreePikStickers('stickers').then((_) {
-                            if (sheetOpen) setSheetState(() {});
-                          });
-                        } else {
-                          provider.resetElementCategoryRequest(query);
-                          provider.fetchElementCategoryAll(query).then((_) {
-                            if (sheetOpen) setSheetState(() {});
-                          });
-                        }
+                        provider.resetElementCategoryRequest(query);
+                        provider.fetchElementCategoryAll(query).then((_) {
+                          if (sheetOpen) setSheetState(() {});
+                        });
                         setSheetState(() => expandedCategory = query);
                       },
                       child: const Text(
@@ -1099,21 +1204,36 @@ class _EditorViewState extends State<EditorView> {
             Widget categorySection(Map<String, String> category) {
               final title = category['title']!;
               final query = category['query']!;
-              final List<String> items =
-              query == 'shapes' || query == 'masks'
+
+              final bool stickerProxy = isStickerProxyCategory(query);
+
+              final List<AssetCategoryItem> assetItems = stickerProxy
+                  ? const <AssetCategoryItem>[]
+                  : provider.assetCategoryItems(query);
+
+              final List<String> stickerItems = stickerProxy
                   ? provider.elementCategoryAssets(query)
-                  : query == 'stickers'
-                  ? provider.freePikStickers
-                  : provider.elementCategoryAssets(query);
-              final preview = items.take(4).toList();
+                  : const <String>[];
+
+              final previewAssets = assetItems.take(4).toList();
+              final previewStickers = stickerItems.take(4).toList();
+
+              final bool hasItems = stickerProxy
+                  ? previewStickers.isNotEmpty
+                  : previewAssets.isNotEmpty;
+
+              final bool isLoading = stickerProxy
+                  ? (provider.isFreePikStickerCategoryLoading[query] ?? false)
+                  : provider.isElementCategoryLoading(query);
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   categoryTitle(title, query),
+
                   SizedBox(
                     height: 58,
-                    child: provider.isElementCategoryLoading(query)
+                    child: isLoading
                         ? const Center(
                       child: SizedBox(
                         width: 18,
@@ -1123,7 +1243,7 @@ class _EditorViewState extends State<EditorView> {
                         ),
                       ),
                     )
-                        : preview.isEmpty
+                        : !hasItems
                         ? const Center(
                       child: Text(
                         'No items found',
@@ -1134,18 +1254,30 @@ class _EditorViewState extends State<EditorView> {
                       ),
                     )
                         : Row(
-                      children: preview
-                          .map(
-                            (url) => Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: elementCard(url),
-                          ),
-                        ),
-                      )
-                          .toList(),
+                      children: stickerProxy
+                          ? previewStickers.map(
+                            (url) {
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: elementCard(url),
+                            ),
+                          );
+                        },
+                      ).toList()
+                          : previewAssets.map(
+                            (item) {
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: assetCategoryCard(item, isShape: query == 'shapes' || query == 'masks'),
+                            ),
+                          );
+                        },
+                      ).toList(),
                     ),
                   ),
+
                   const SizedBox(height: 18),
                 ],
               );
@@ -1157,12 +1289,11 @@ class _EditorViewState extends State<EditorView> {
                 final title = categories.firstWhere(
                       (e) => e['query'] == query,
                 )['title']!;
-                final List<String> items =
-                query == 'shapes' || query == 'masks'
-                    ? provider.elementCategoryAssets(query)
-                    : query == 'stickers'
-                    ? provider.freePikStickers
-                    : provider.elementCategoryAssets(query);
+                final bool stickerProxy = isStickerProxyCategory(query);
+                final List<AssetCategoryItem> assetItems =
+                stickerProxy ? const <AssetCategoryItem>[] : provider.assetCategoryItems(query);
+                final List<String> stickerItems =
+                stickerProxy ? provider.elementCategoryAssets(query) : const <String>[];
                 return Column(
                   children: [
                     Row(
@@ -1185,8 +1316,8 @@ class _EditorViewState extends State<EditorView> {
                     ),
                     Expanded(
                       child:
-                      (query == 'stickers'
-                          ? provider.isStickersLoading
+                      (isStickerProxyCategory(query)
+                          ? (provider.isFreePikStickerCategoryLoading[query] ?? false)
                           : provider.isElementCategoryLoading(query))
                           ? const Center(
                         child: CircularProgressIndicator(strokeWidth: 2),
@@ -1199,9 +1330,12 @@ class _EditorViewState extends State<EditorView> {
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
                         ),
-                        itemCount: items.length,
-                        itemBuilder: (_, index) =>
-                            elementCard(items[index]),
+                        itemCount: isStickerProxyCategory(query)
+                            ? stickerItems.length
+                            : assetItems.length,
+                        itemBuilder: (_, index) => isStickerProxyCategory(query)
+                            ? elementCard(stickerItems[index])
+                            : assetCategoryCard(assetItems[index], isShape: query == 'shapes' || query == 'masks'),
                       ),
                     ),
                   ],
@@ -4513,45 +4647,5 @@ class _InteractiveBackgroundLayerState
     ];
   }
 
-  Widget _buildBackgroundImage(EditorItem item) {
-    final url = item.contentUrl;
 
-    if (url == null || url.isEmpty) {
-      return Container(color: item.color ?? Colors.white);
-    }
-
-    Widget image;
-
-    if (item.isLocal) {
-      image = Image.file(File(url), fit: BoxFit.cover);
-    } else {
-      image = Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: Colors.grey.shade300,
-            child: const Icon(Icons.broken_image_outlined),
-          );
-        },
-      );
-    }
-
-    Widget filtered = image;
-
-    final brightness = item.brightness;
-    final contrast = item.contrast;
-    final saturation = item.saturation;
-
-    if (brightness != 0 || contrast != 1 || saturation != 1) {
-      filtered = ColorFiltered(
-        colorFilter: ColorFilter.matrix(
-          _imageColorMatrix(brightness, contrast, saturation),
-        ),
-        child: filtered,
-      );
-    }
-
-    return filtered;
-  }
 }

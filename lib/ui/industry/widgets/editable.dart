@@ -74,7 +74,7 @@ class EditableItemWidget extends StatelessWidget {
                     height: currentItem.height ?? 220,
                     decoration: BoxDecoration(
                       border: isSelected
-                          ? Border.all(color: Colors.red, width: 2)
+                          ? Border.all(color: const Color(0xFF2196F3), width: 2)
                           : Border.all(
                         color: Colors.transparent,
                         width: 2,
@@ -227,6 +227,9 @@ class EditableItemWidget extends StatelessWidget {
       height: 32,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
+        onPanStart: (_) {
+          provider.setSelectedItem(item.type, item.id);
+        },
         onPanUpdate: (details) {
           final oldScale = item.scale.isFinite ? item.scale : 1.0;
 
@@ -889,38 +892,102 @@ class EditableItemWidget extends StatelessWidget {
       );
     }
 
-    if (item.type == 'image') {
+    if (item.type == 'image' || item.type == 'shape') {
+      final url = item.contentUrl ?? '';
       final isLocalFile =
           item.isLocal ||
-              (item.contentUrl != null &&
-                  (item.contentUrl!.startsWith('file://') ||
-                      item.contentUrl!.startsWith('/data/')));
+              url.startsWith('file://') ||
+              url.startsWith('/data/');
 
-      Widget imageWidget = isLocalFile
-          ? Image.file(
-        File(item.contentUrl!.replaceFirst('file://', '')),
-        width: item.width,
-        height: item.height,
-        fit: BoxFit.cover,
-        errorBuilder: (c, e, s) => Container(
+      final isSvg = url
+          .toLowerCase()
+          .split('?')
+          .first
+          .endsWith('.svg');
+
+      Widget imageWidget;
+
+      if (url.trim().isEmpty) {
+        imageWidget = const Center(
+          child: Icon(
+            Icons.image_not_supported_outlined,
+            color: Colors.grey,
+          ),
+        );
+      } else if (isLocalFile) {
+        final localPath = url.replaceFirst('file://', '');
+        imageWidget = isSvg
+            ? SvgPicture.file(
+          File(localPath),
+          fit: BoxFit.contain,
+          placeholderBuilder: (_) => const Center(
+            child: CircularProgressIndicator(strokeWidth: 1.5),
+          ),
+        )
+            : Image.file(
+          File(localPath),
           width: item.width,
           height: item.height,
-          color: Colors.grey,
-          child: const Icon(Icons.broken_image),
-        ),
-      )
-          : Image.network(
-        item.contentUrl ?? "",
-        width: item.width,
-        height: item.height,
-        fit: BoxFit.cover,
-        errorBuilder: (c, e, s) => Container(
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const Center(
+            child: Icon(
+              Icons.broken_image_outlined,
+              color: Colors.grey,
+            ),
+          ),
+        );
+      } else if (isSvg) {
+        // Image.network cannot decode SVG. Freepik/category APIs can return
+        // SVG URLs, so SVG assets must use flutter_svg.
+        imageWidget = SvgPicture.network(
+          url,
           width: item.width,
           height: item.height,
-          color: Colors.grey,
-          child: const Icon(Icons.wifi_off, color: Colors.amber),
-        ),
-      );
+          fit: BoxFit.contain,
+          placeholderBuilder: (_) => const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 1.5),
+            ),
+          ),
+          errorBuilder: (_, __, ___) => const Center(
+            child: Icon(
+              Icons.broken_image_outlined,
+              color: Colors.grey,
+            ),
+          ),
+        );
+      } else {
+        imageWidget = Image.network(
+          url,
+          width: item.width,
+          height: item.height,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const Center(
+            child: Icon(
+              Icons.broken_image_outlined,
+              color: Colors.grey,
+            ),
+          ),
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 1.5),
+              ),
+            );
+          },
+        );
+      }
+
+      // A remote shape already contains its own shape. Do not apply the
+      // normal image rounded-mask to it.
+      if (item.type == 'shape') {
+        return _buildFilteredImage(item, imageWidget, context);
+      }
 
       final shape = (item.text ?? 'rounded').toLowerCase();
       final Widget maskedImage = ClipPath(

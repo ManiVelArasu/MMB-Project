@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 
-enum EditorItemType { text, sticker, shape }
+enum EditorItemType { text, sticker, shape, image, video, svg_group, svg_element }
 
 class EditorItem {
   final String? id;
-  final String? type; // 'text', 'image', 'shape'
+  final String? type; // 'text', 'image', 'shape', 'video', 'svg_group', 'svg_element', 'textbox'
   final Offset position;
   final String? text;
   final String? contentUrl;
@@ -25,6 +24,15 @@ class EditorItem {
   final double brightness;
   final double contrast;
   final double saturation;
+  final bool isLocked;
+  final bool isVisible;
+  final Color? shadowColor;
+  final double shadowBlur;
+  final double shadowOffsetX;
+  final double shadowOffsetY;
+  final Color? textBackgroundColor;
+  final String textCase; // 'none', 'upper', 'lower', 'title'
+  final Color? svgFillColor;
 
   EditorItem({
     required this.id,
@@ -48,11 +56,20 @@ class EditorItem {
     this.brightness = 0.0,
     this.contrast = 1.0,
     this.saturation = 1.0,
+    this.isLocked = false,
+    this.isVisible = true,
+    this.shadowColor,
+    this.shadowBlur = 0.0,
+    this.shadowOffsetX = 0.0,
+    this.shadowOffsetY = 0.0,
+    this.textBackgroundColor,
+    this.textCase = 'none',
+    this.svgFillColor,
   });
 
   EditorItem copyWith({
     String? id,
-    String? type, // 🚀 இதை இங்கே சேர்க்கவும்
+    String? type,
     Offset? position,
     String? text,
     String? contentUrl,
@@ -72,6 +89,15 @@ class EditorItem {
     double? brightness,
     double? contrast,
     double? saturation,
+    bool? isLocked,
+    bool? isVisible,
+    Color? shadowColor,
+    double? shadowBlur,
+    double? shadowOffsetX,
+    double? shadowOffsetY,
+    Color? textBackgroundColor,
+    String? textCase,
+    Color? svgFillColor,
   }) {
     return EditorItem(
       id: id ?? this.id,
@@ -95,6 +121,15 @@ class EditorItem {
       brightness: brightness ?? this.brightness,
       contrast: contrast ?? this.contrast,
       saturation: saturation ?? this.saturation,
+      isLocked: isLocked ?? this.isLocked,
+      isVisible: isVisible ?? this.isVisible,
+      shadowColor: shadowColor ?? this.shadowColor,
+      shadowBlur: shadowBlur ?? this.shadowBlur,
+      shadowOffsetX: shadowOffsetX ?? this.shadowOffsetX,
+      shadowOffsetY: shadowOffsetY ?? this.shadowOffsetY,
+      textBackgroundColor: textBackgroundColor ?? this.textBackgroundColor,
+      textCase: textCase ?? this.textCase,
+      svgFillColor: svgFillColor ?? this.svgFillColor,
     );
   }
 
@@ -116,6 +151,12 @@ class EditorItem {
     'font_family': fontFamily,
     'outline_width': outlineWidth,
     'filter_type': filterType,
+    'is_locked': isLocked,
+    'is_visible': isVisible,
+    'shadow_blur': shadowBlur,
+    'shadow_offset_x': shadowOffsetX,
+    'shadow_offset_y': shadowOffsetY,
+    'text_case': textCase,
   };
 
   factory EditorItem.fromJson(Map<String, dynamic> json) {
@@ -139,6 +180,12 @@ class EditorItem {
       fontFamily: json['font_family'] ?? 'Roboto',
       outlineWidth: (json['outline_width'] as num?)?.toDouble() ?? 0.0,
       filterType: json['filter_type'] ?? 'normal',
+      isLocked: json['is_locked'] ?? false,
+      isVisible: json['is_visible'] ?? true,
+      shadowBlur: (json['shadow_blur'] as num?)?.toDouble() ?? 0.0,
+      shadowOffsetX: (json['shadow_offset_x'] as num?)?.toDouble() ?? 0.0,
+      shadowOffsetY: (json['shadow_offset_y'] as num?)?.toDouble() ?? 0.0,
+      textCase: json['text_case'] ?? 'none',
     );
   }
 }
