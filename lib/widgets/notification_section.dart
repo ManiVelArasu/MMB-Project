@@ -9,7 +9,7 @@ import '../../network/provider/custom_theme_provider.dart';
 
 class NotificationSection extends StatelessWidget {
   final String title;
-  final List<NotificationModel> notifications;
+  final List<NotificationModels> notifications;
 
   const NotificationSection({
     super.key,
@@ -78,7 +78,7 @@ class NotificationSection extends StatelessWidget {
 }
 
 class _NotificationItem extends StatelessWidget {
-  final NotificationModel notification;
+  final NotificationModels notification;
   final String timeText;
 
   const _NotificationItem({

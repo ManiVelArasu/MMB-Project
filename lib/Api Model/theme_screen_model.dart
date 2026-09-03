@@ -4,17 +4,15 @@ class ThemeApiResponse {
   final bool success;
   final List<ThemeItem> data;
 
-  ThemeApiResponse({
-    required this.success,
-    required this.data,
-  });
+  ThemeApiResponse({required this.success, required this.data});
 
   factory ThemeApiResponse.fromJson(Map<String, dynamic> json) {
     return ThemeApiResponse(
       success: json['success'] ?? false,
-      data: (json['data'] as List<dynamic>?)
-          ?.map((item) => ThemeItem.fromJson(item))
-          .toList() ??
+      data:
+          (json['data'] as List<dynamic>?)
+              ?.map((item) => ThemeItem.fromJson(item))
+              .toList() ??
           [],
     );
   }
@@ -37,7 +35,7 @@ class ThemeItem {
   final String? isActive;
   final String? createdAt;
   final String? updatedAt;
-  final List<dynamic> stylePersonalities;
+  final List<StylePersonality> stylePersonalities;
   final List<dynamic> tags;
   final List<dynamic> colors;
   final String? variantsCount;
@@ -69,36 +67,90 @@ class ThemeItem {
   });
 
   factory ThemeItem.fromJson(Map<String, dynamic> json) {
+    final personalityJson =
+        json['stylePersonalities'] ??
+            json['StylePersonalities'] ??
+            [];
+
+    final variantsJson =
+        json['Variants'] ??
+            json['variants'] ??
+            [];
+
     return ThemeItem(
       id: json['id']?.toString(),
       uid: json['uid']?.toString(),
-      name: json['name'] ?.toString(),
-      slug: json['slug'] ?.toString(),
+      name: json['name']?.toString(),
+      slug: json['slug']?.toString(),
       iconS3Key: json['icon_s3_key']?.toString(),
       caption: json['caption']?.toString(),
       description: json['description']?.toString(),
-      displayOrder: json['display_order'] ?.toString(),
+      displayOrder: json['display_order']?.toString(),
       isActive: json['is_active']?.toString(),
       createdAt: json['created_at']?.toString(),
-      updatedAt: json['updated_at'] ?.toString(),
-      stylePersonalities: json["stylePersonalities"] == null
-          ? []
-          : List<dynamic>.from(json["stylePersonalities"]),
-      tags: json["tags"] == null
-          ? []
-          : List<dynamic>.from(json["tags"]),
-      colors: json["colors"] == null
-          ? []
-          : List<dynamic>.from(json["colors"]),
+      updatedAt: json['updated_at']?.toString(),
 
-      variantsCount: json['variants_count']?.toString(),
-      templatesCount: json['templates_count'] ?.toString(),
-      unlockedVariantsCount: json['unlocked_variants_count']?.toString(),
-      isLocked: json['is_locked'] ?? false,
-      variants: (json['Variants'] as List<dynamic>?)
-          ?.map((v) => Variant.fromJson(v))
-          .toList() ??
-          [],
+      // ✅ Style Personalities
+      stylePersonalities: personalityJson is List
+          ? personalityJson
+          .map((item) {
+        if (item is Map<String, dynamic>) {
+          return StylePersonality.fromJson(item);
+        }
+
+        if (item is Map) {
+          return StylePersonality.fromJson(
+            Map<String, dynamic>.from(item),
+          );
+        }
+
+        return null;
+      })
+          .whereType<StylePersonality>()
+          .toList()
+          : <StylePersonality>[],
+
+      // ✅ Tags
+      tags: json['tags'] is List
+          ? List<dynamic>.from(json['tags'])
+          : <dynamic>[],
+
+      // ✅ Colors
+      colors: json['colors'] is List
+          ? List<dynamic>.from(json['colors'])
+          : <dynamic>[],
+
+      variantsCount:
+      json['variants_count']?.toString(),
+
+      templatesCount:
+      json['templates_count']?.toString(),
+
+      unlockedVariantsCount:
+      json['unlocked_variants_count']?.toString(),
+
+      isLocked:
+      json['is_locked'] == true,
+
+      // ✅ Variants
+      variants: variantsJson is List
+          ? variantsJson
+          .map((item) {
+        if (item is Map<String, dynamic>) {
+          return Variant.fromJson(item);
+        }
+
+        if (item is Map) {
+          return Variant.fromJson(
+            Map<String, dynamic>.from(item),
+          );
+        }
+
+        return null;
+      })
+          .whereType<Variant>()
+          .toList()
+          : <Variant>[],
     );
   }
 
@@ -166,20 +218,21 @@ class Variant {
     return Variant(
       id: json['id']?.toString(),
       uid: json['uid']?.toString(),
-      seriesId: json['series_id'] ?.toString(),
+      seriesId: json['series_id']?.toString(),
       badgeId: json['badge_id']?.toString(),
-      name: json['name'] ?.toString(),
+      name: json['name']?.toString(),
       description: json['description']?.toString(),
       thumbnailS3Key: json['thumbnail_s3_key']?.toString(),
       likesCount: json['likes_count']?.toString(),
       displayOrder: json['display_order']?.toString(),
-      isActive: json['is_active'] ?.toString(),
+      isActive: json['is_active']?.toString(),
       createdAt: json['created_at']?.toString(),
-      updatedAt: json['updated_at'] ?.toString(),
+      updatedAt: json['updated_at']?.toString(),
       variantBadge: json['VariantBadge']?.toString(),
-      businessCategories: (json['BusinessCategories'] as List<dynamic>?)
-          ?.map((bc) => BusinessCategory.fromJson(bc))
-          .toList() ??
+      businessCategories:
+          (json['BusinessCategories'] as List<dynamic>?)
+              ?.map((bc) => BusinessCategory.fromJson(bc))
+              .toList() ??
           [],
       templatesCount: json['templates_count']?.toString(),
       isLocked: json['is_locked'] ?? false,
@@ -200,8 +253,7 @@ class Variant {
     'created_at': createdAt,
     'updated_at': updatedAt,
     'VariantBadge': variantBadge,
-    'BusinessCategories':
-    businessCategories.map((bc) => bc.toJson()).toList(),
+    'BusinessCategories': businessCategories.map((bc) => bc.toJson()).toList(),
     'templates_count': templatesCount,
     'is_locked': isLocked,
   };
@@ -222,10 +274,10 @@ class BusinessCategory {
 
   factory BusinessCategory.fromJson(Map<String, dynamic> json) {
     return BusinessCategory(
-      id: json['id'] ?.toString(),
-      uid: json['uid'] ?.toString(),
-      slug: json['slug'] ?.toString(),
-      name: json['name'] ?.toString(),
+      id: json['id']?.toString(),
+      uid: json['uid']?.toString(),
+      slug: json['slug']?.toString(),
+      name: json['name']?.toString(),
     );
   }
 
@@ -234,5 +286,34 @@ class BusinessCategory {
     'uid': uid,
     'slug': slug,
     'name': name,
+  };
+}
+
+class StylePersonality {
+  final String? id;
+  final String? uid;
+  final String? slug;
+  final String? name;
+
+  StylePersonality({
+    required this.id,
+    required this.uid,
+    required this.slug,
+    required this.name,
+  });
+
+  factory StylePersonality.fromJson(Map<String, dynamic> json) =>
+      StylePersonality(
+        id: json["id"]?.toString(),
+        uid: json["uid"]?.toString(),
+        slug: json["slug"]?.toString(),
+        name: json["name"]?.toString(),
+      );
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "uid": uid,
+    "slug": slug,
+    "name": name,
   };
 }

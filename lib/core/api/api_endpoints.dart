@@ -47,4 +47,6 @@ class ApiEndpoints {
   static const String user = '/users/me';
 
   static const String language = '/languages';
+
+  static const String notification = '/notifications';
 }

@@ -118,7 +118,9 @@ class ThemeDetailView extends StatelessWidget {
                       spacing: 8.w,
                       runSpacing: 8.h,
                       alignment: WrapAlignment.center,
-                      children: tags.map((tag) {
+                      children: themeItem!.stylePersonalities
+                          .where((tag) => tag.name != null && tag.name!.isNotEmpty)
+                          .map((tag) {
                         return Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: 12.w,
@@ -136,7 +138,7 @@ class ThemeDetailView extends StatelessWidget {
                             ),
                           ),
                           child: AppText(
-                            tag.toString(),
+                            tag.name!,
                             style: TextStyle(
                               color: const Color(0xFFE53935),
                               fontSize: 11.5.sp,

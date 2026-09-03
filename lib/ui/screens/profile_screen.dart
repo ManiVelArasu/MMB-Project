@@ -495,7 +495,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   ) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 🚀 பழைய பிசினஸ் டேட்டாக்களை முழுமையாக நீக்குவது
     await prefs.remove('is_business_completed');
     await prefs.remove('saved_business_name');
     await prefs.remove('saved_email');
@@ -612,7 +611,6 @@ void _showLanguagesBottomSheet(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 Center(
                   child: Container(
                     width: 82.w,
@@ -714,7 +712,9 @@ void _showLanguagesBottomSheet(
                   spacing: 10.w,
                   runSpacing: 10.h,
                   children: languages.map((language) {
-                    final isSelected = selectedCodes.contains(language.isActive);
+                    final isSelected = selectedCodes.contains(
+                      language.isActive,
+                    );
 
                     return GestureDetector(
                       onTap: () {
@@ -746,7 +746,7 @@ void _showLanguagesBottomSheet(
                           ),
                         ),
                         child: Text(
-                           language.name,
+                          language.name,
 
                           style: TextStyle(
                             color: isDark ? Colors.white : Colors.black,

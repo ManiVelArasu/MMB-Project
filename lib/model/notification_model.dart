@@ -1,4 +1,4 @@
-class NotificationModel {
+class NotificationModels {
   final String title;
   final String description;
   final String category;
@@ -6,7 +6,7 @@ class NotificationModel {
   final DateTime dateTime;
   bool isRead;
 
-  NotificationModel({
+  NotificationModels({
     required this.title,
     required this.description,
     required this.category,
@@ -26,8 +26,8 @@ class NotificationModel {
     };
   }
 
-  factory NotificationModel.fromMap(Map<String, dynamic> map) {
-    return NotificationModel(
+  factory NotificationModels.fromMap(Map<String, dynamic> map) {
+    return NotificationModels(
       title: map['title'] ?? '',
       description: map['description'] ?? '',
       category: map['category'] ?? '',
@@ -49,7 +49,7 @@ class NotificationModel {
     );
   }
 
-  NotificationModel copyWith({
+  NotificationModels copyWith({
     String? title,
     String? description,
     String? category,
@@ -57,7 +57,7 @@ class NotificationModel {
     DateTime? dateTime,
     bool? isRead,
   }) {
-    return NotificationModel(
+    return NotificationModels(
       title: title ?? this.title,
       description: description ?? this.description,
       category: category ?? this.category,

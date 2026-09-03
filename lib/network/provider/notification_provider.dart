@@ -1,113 +1,128 @@
 import 'package:flutter/material.dart';
+import 'package:project_mmb/Api%20Model/notification_model.dart';
 import 'package:project_mmb/model/notification_model.dart';
 
+import '../../Repository/notification_repository.dart';
+
 class NotificationProvider extends ChangeNotifier {
+  final NotificationRepository _repository = NotificationRepository.instance;
 
-  final List<NotificationModel> _notifications = [
+  NotificationModel? _notificationData;
 
-    NotificationModel(
-      title: "New theme added to the library.",
-      description: "Check now and design your SM posts",
-      category: "THEMES",
-      avatarUrl: "https://picsum.photos/seed/theme1/44",
-      dateTime: DateTime.now().subtract(const Duration(hours: 1)),
-      isRead: false,
-    ),
+  NotificationModel? get notificationData => _notificationData;
 
-    NotificationModel(
-      title: "Your post received 10 likes.",
-      description: "Great engagement on your latest post",
-      category: "POSTS",
-      avatarUrl: "https://picsum.photos/seed/post1/44",
-      dateTime: DateTime.now().subtract(const Duration(hours: 2)),
-      isRead: false,
-    ),
+  String? _errorMessage;
 
-    NotificationModel(
-      title: "A new shop opened near you.",
-      description: "Visit and explore new offers nearby",
-      category: "NEAR BY",
-      avatarUrl: "https://picsum.photos/seed/near1/44",
-      dateTime: DateTime.now().subtract(const Duration(days: 1)),
-      isRead: false,
-    ),
+  String? get errorMessage => _errorMessage;
 
-    NotificationModel(
-      title: "Your post has new comments.",
-      description: "Check what people are saying",
-      category: "POSTS",
-      avatarUrl: "https://picsum.photos/seed/post2/44",
-      dateTime: DateTime.now().subtract(const Duration(days: 2)),
-      isRead: true,
-    ),
+  bool _isLoading = false;
 
-    NotificationModel(
-      title: "Weekly report is ready.",
-      description: "View your weekly performance summary",
-      category: "POSTS",
-      avatarUrl: "https://picsum.photos/seed/post3/44",
-      dateTime: DateTime.now().subtract(const Duration(days: 5)),
-      isRead: true,
-    ),
-  ];
+  bool get isLoading => _isLoading;
 
-  List<NotificationModel> get notifications => _notifications;
+  List<NotificationList> get notifications => _notificationData?.data ?? [];
 
-  List<NotificationModel> get todayNotifications {
+  List<NotificationList> get todayNotifications {
     final now = DateTime.now();
-    return _notifications.where((item) {
-      return item.dateTime.day == now.day &&
-          item.dateTime.month == now.month &&
-          item.dateTime.year == now.year;
+
+    return notifications.where((item) {
+      final date = item.createdAt;
+
+      if (date == null) return false;
+
+      return date.day == now.day &&
+          date.month == now.month &&
+          date.year == now.year;
     }).toList();
   }
 
-  List<NotificationModel> get yesterdayNotifications {
+  List<NotificationList> get yesterdayNotifications {
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
-    return _notifications.where((item) {
-      return item.dateTime.day == yesterday.day &&
-          item.dateTime.month == yesterday.month &&
-          item.dateTime.year == yesterday.year;
+
+    return notifications.where((item) {
+      final date = item.createdAt;
+
+      if (date == null) return false;
+
+      return date.day == yesterday.day &&
+          date.month == yesterday.month &&
+          date.year == yesterday.year;
     }).toList();
   }
 
-  List<NotificationModel> get oldNotifications {
+  List<NotificationList> get oldNotifications {
     final now = DateTime.now();
+
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
-    return _notifications.where((item) {
-      final isToday = item.dateTime.day == now.day &&
-          item.dateTime.month == now.month &&
-          item.dateTime.year == now.year;
-      final isYesterday = item.dateTime.day == yesterday.day &&
-          item.dateTime.month == yesterday.month &&
-          item.dateTime.year == yesterday.year;
+
+    return notifications.where((item) {
+      final date = item.createdAt;
+
+      if (date == null) return false;
+
+      final isToday =
+          date.day == now.day &&
+          date.month == now.month &&
+          date.year == now.year;
+
+      final isYesterday =
+          date.day == yesterday.day &&
+          date.month == yesterday.month &&
+          date.year == yesterday.year;
+
       return !isToday && !isYesterday;
     }).toList();
   }
 
-  void markAsRead(int index) {
-    _notifications[index].isRead = true;
+  int get unreadCount {
+    return notifications.where((item) => item.isRead != true).length;
+  }
+
+  Future<void> fetchNotifications() async {
+    _isLoading = true;
+    _errorMessage = null;
+
     notifyListeners();
+
+    try {
+      final result = await _repository.getNotification();
+
+      if (result.isSuccess && result.data != null) {
+        _notificationData = result.data;
+      } else {
+        _errorMessage = result.error?.message ?? "Something went wrong";
+      }
+    } catch (e) {
+      _errorMessage = "Failed to load notifications";
+      debugPrint("Notification API Error: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void markAllAsRead() {
-    for (var item in _notifications) {
-      item.isRead = true;
+    if (_notificationData == null) return;
+
+    for (final item in _notificationData!.data) {
+      item.isRead == true;
     }
+
     notifyListeners();
   }
 
-  void addNotification(NotificationModel notification) {
-    _notifications.insert(0, notification);
+  void markAsRead(String uid) {
+    if (_notificationData == null) return;
+
+    final index = _notificationData!.data.indexWhere((item) => item.uid == uid);
+
+    if (index == -1) return;
+
+    _notificationData!.data[index].isRead == true;
+
     notifyListeners();
   }
 
-  void deleteNotification(int index) {
-    _notifications.removeAt(index);
-    notifyListeners();
-  }
-
-  int get unreadCount {
-    return _notifications.where((item) => !item.isRead).length;
+  Future<void> refreshNotifications() async {
+    await fetchNotifications();
   }
 }
