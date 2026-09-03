@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../Api Model/theme_screen_model.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/home_appbar.dart';
+import '../../component/network_image.dart';
 import '../../network/provider/theme_screen_provider.dart';
 
 import 'package:flutter/material.dart';
@@ -199,16 +200,14 @@ class ThemeGroupSection extends StatelessWidget {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8.r),
-                child: Image.network(
-                  "${ApiEndpoints.cdnImageUrl}/${iconUrl ?? ''}",
+                child:NetworkAssetImage(
+                  url: "${ApiEndpoints.cdnImageUrl}/${iconUrl ?? ''}",
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
-                      Icons.category,
-                      size: 16,
-                      color: Colors.white,
-                    );
-                  },
+                  errorWidget: const Icon(
+                    Icons.category,
+                    size: 16,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),

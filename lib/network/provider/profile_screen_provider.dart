@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../Api Model/language_model.dart';
 import '../../Repository/auth_repository.dart';
+import '../../Repository/profile_repository.dart';
 import '../../core/api/api_handler.dart';
-import '../../model/you_screen_model.dart';
+import '../../model/profile_screen_model.dart';
 import 'business_provider.dart';
 
 class ProfileScreenProvider extends ChangeNotifier {
@@ -12,11 +14,17 @@ class ProfileScreenProvider extends ChangeNotifier {
   bool isWatermarkEnabled = false;
   bool _isLogoutLoading = false;
   bool get isLogoutLoading => _isLogoutLoading;
+  LanguageModel? _plansData;
+  LanguageModel? get plansData => _plansData;
+
+  String? _plansErrorMessage;
+  String? get plansErrorMessage => _plansErrorMessage;
   void toggleDarkMode(bool value) {
     isDarkMode = value;
     notifyListeners();
   }
 
+  final ProfileRepository _repository = ProfileRepository.instance;
   void toggleWatermark(bool value) {
     isWatermarkEnabled = value;
     notifyListeners();
@@ -83,6 +91,22 @@ class ProfileScreenProvider extends ChangeNotifier {
           const SnackBar(content: Text("Logout failed. Please try again.")),
         );
       }
+    }
+  }
+
+  Future<void> fetchLanguage() async {
+    notifyListeners();
+
+    try {
+      final result = await _repository.getLanguage();
+
+      if (result.isSuccess && result.data != null) {
+        _plansData = result.data;
+      } else {
+        _plansErrorMessage = result.error?.message ?? "Something went wrong";
+      }
+    } finally {
+      notifyListeners();
     }
   }
 }

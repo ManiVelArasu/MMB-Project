@@ -953,7 +953,6 @@ class _EditorViewState extends State<EditorView> {
 
     const categories = <Map<String, String>>[
       {'title': 'Shapes', 'query': 'shapes'},
-      {'title': 'Masks', 'query': 'masks'},
       {'title': 'Stickers', 'query': 'stickers'},
       {'title': 'Social Media', 'query': 'social media'},
       {'title': 'E-commerce', 'query': 'e-commerce'},
@@ -978,7 +977,7 @@ class _EditorViewState extends State<EditorView> {
           int limit = 4,
           bool force = false,
         }) {
-      if (query == 'shapes' || query == 'masks') {
+      if (query == 'shapes') {
         if (!force && provider.elementCategoryAssets(query).isNotEmpty) return;
         if (provider.isElementCategoryLoading(query)) return;
         provider.fetchElementCategory(query, limit: limit).then((_) {
@@ -1320,7 +1319,7 @@ class _EditorViewState extends State<EditorView> {
                           return Expanded(
                             child: Padding(
                               padding: const EdgeInsets.only(right: 8),
-                              child: assetCategoryCard(item, isShape: query == 'shapes' || query == 'masks'),
+                              child: assetCategoryCard(item, isShape: query == 'shapes'),
                             ),
                           );
                         },
@@ -1385,7 +1384,7 @@ class _EditorViewState extends State<EditorView> {
                             : assetItems.length,
                         itemBuilder: (_, index) => isStickerProxyCategory(query)
                             ? elementCard(stickerItems[index])
-                            : assetCategoryCard(assetItems[index], isShape: query == 'shapes' || query == 'masks'),
+                            : assetCategoryCard(assetItems[index], isShape: query == 'shapes'),
                       ),
                     ),
                   ],
@@ -3289,6 +3288,153 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
+  Widget _buildMaskPreview(String url) {
+    final clean = url.toLowerCase().split('?').first.split('#').first;
+    final isSvg = clean.endsWith('.svg') || clean.endsWith('.svgz');
+
+    if (isSvg) {
+      return SvgPicture.network(
+        url,
+        fit: BoxFit.contain,
+        placeholderBuilder: (_) => const Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 1.5),
+          ),
+        ),
+        errorBuilder: (_, __, ___) => const Icon(
+          Icons.broken_image_outlined,
+          color: Colors.grey,
+        ),
+      );
+    }
+
+    return Image.network(
+      url,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => const Icon(
+        Icons.broken_image_outlined,
+        color: Colors.grey,
+      ),
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return const Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 1.5),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showApiMaskSheet(
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      ) {
+    String query = '';
+    bool requested = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setState) {
+            if (!requested) {
+              requested = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                await provider.fetchElementCategory('masks', page: 1, limit: 30);
+                if (sheetContext.mounted) setState(() {});
+              });
+            }
+
+            final masks = provider.assetCategoryItems('masks');
+            final q = query.trim().toLowerCase();
+            final filtered = q.isEmpty
+                ? masks
+                : masks.where((m) => m.name.toLowerCase().contains(q)).toList();
+            final loading = provider.isElementCategoryLoading('masks');
+
+            return SizedBox(
+              height: MediaQuery.of(sheetContext).size.height * .70,
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  Container(width: 42, height: 5, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(20))),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 12, 10),
+                    child: Row(children: [
+                      const Expanded(child: Text('Image Masks', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700))),
+                      IconButton(onPressed: () => Navigator.pop(sheetContext), icon: const Icon(Icons.close_rounded)),
+                    ]),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      onChanged: (value) => setState(() => query = value),
+                      decoration: InputDecoration(
+                        hintText: 'Search image masks',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: loading && filtered.isEmpty
+                        ? const Center(child: CircularProgressIndicator())
+                        : filtered.isEmpty
+                        ? const Center(child: Text('No mask found'))
+                        : GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 1),
+                      itemCount: filtered.length,
+                      itemBuilder: (_, index) {
+                        final mask = filtered[index];
+                        final url = provider.assetCdnUrl(mask.previewKey);
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: url.isEmpty ? null : () {
+                            // Apply the selected mask only to the image
+                            // whose Image > MASK toolbar opened this sheet.
+                            provider.setImageMask(
+                              itemId,
+                              name: mask.name,
+                              url: url,
+                            );
+                            Navigator.pop(sheetContext);
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.black12)),
+                            clipBehavior: Clip.antiAlias,
+                            child: url.isEmpty
+                                ? const Icon(Icons.image_not_supported_outlined)
+                                : _buildMaskPreview(url),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildImageEditorToolbar(
       BuildContext context,
       EditorProvider provider,
@@ -3320,18 +3466,7 @@ class _EditorViewState extends State<EditorView> {
       'summer',
       'retro',
     ];
-    const masks = <String>[
-      'square',
-      'rounded',
-      'rectangle',
-      'circle',
-      'oval',
-      'triangle',
-      'diamond',
-      'pentagon',
-      'hexagon',
-      'octagon',
-    ];
+
 
     return Container(
       height: 205,
@@ -3417,11 +3552,14 @@ class _EditorViewState extends State<EditorView> {
                       (value) => provider.setImageFilter(id, value),
                   selected: item.filterType,
                 ),
-                _labelledHorizontalList(
+                _bottomTool(
+                  Icons.category_rounded,
                   'MASK',
-                  masks,
-                      (value) => provider.updateImageShape(id, value),
-                  selected: item.text,
+                      () => _showApiMaskSheet(context, provider, id),
+                  selected: provider.imageMaskUrl(id) != null ||
+                      (item.text != null &&
+                          item.text!.trim().isNotEmpty &&
+                          item.text != 'image'),
                 ),
               ],
             ),

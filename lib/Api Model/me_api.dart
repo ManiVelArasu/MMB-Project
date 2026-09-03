@@ -1,16 +1,16 @@
 import 'dart:convert';
 
-MeApi meApiFromJson(String str) => MeApi.fromJson(json.decode(str));
+Language meApiFromJson(String str) => Language.fromJson(json.decode(str));
 
-String meApiToJson(MeApi data) => json.encode(data.toJson());
+String meApiToJson(Language data) => json.encode(data.toJson());
 
-class MeApi {
+class Language {
   final bool success;
   final GetMe data;
 
-  MeApi({required this.success, required this.data});
+  Language({required this.success, required this.data});
 
-  factory MeApi.fromJson(Map<String, dynamic> json) => MeApi(
+  factory Language.fromJson(Map<String, dynamic> json) => Language(
     success: json["success"] ?? false,
     data: json["data"] != null ? GetMe.fromJson(json["data"]) : GetMe.empty(),
   );

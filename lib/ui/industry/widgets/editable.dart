@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'dart:typed_data';
 import 'package:extended_image/extended_image.dart';
@@ -29,7 +31,7 @@ class EditableItemWidget extends StatelessWidget {
     final provider = context.watch<EditorProvider>();
 
     final currentItem = provider.items.firstWhere(
-          (e) => e.id == item.id,
+      (e) => e.id == item.id,
       orElse: () => item,
     );
     bool isSelected = provider.selectedItemId == currentItem.id;
@@ -38,9 +40,7 @@ class EditableItemWidget extends StatelessWidget {
 
     return KeyedSubtree(
       key: ValueKey(
-        "${currentItem.id}_${currentItem.filterType}_${currentItem
-            .rotation}_${currentItem.scale}_${currentItem.opacity}_${currentItem
-            .position}_${currentItem.fontFamily}_${currentItem.fontSize}",
+        "${currentItem.id}_${currentItem.filterType}_${currentItem.rotation}_${currentItem.scale}_${currentItem.opacity}_${currentItem.position}_${currentItem.fontFamily}_${currentItem.fontSize}",
       ),
       child: GestureDetector(
         // IMPORTANT: only the actual item body moves. Resize/rotate handles
@@ -75,10 +75,7 @@ class EditableItemWidget extends StatelessWidget {
                     decoration: BoxDecoration(
                       border: isSelected
                           ? Border.all(color: const Color(0xFF2196F3), width: 2)
-                          : Border.all(
-                        color: Colors.transparent,
-                        width: 2,
-                      ),
+                          : Border.all(color: Colors.transparent, width: 2),
                     ),
                     child: Opacity(
                       opacity: currentItem.opacity.clamp(0.0, 1.0),
@@ -191,13 +188,13 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _buildResizeHandle(
-      BuildContext context,
-      EditorProvider provider,
-      EditorItem item,
-      Alignment alignment, {
-        required bool isHorizontal,
-        required bool isVertical,
-      }) {
+    BuildContext context,
+    EditorProvider provider,
+    EditorItem item,
+    Alignment alignment, {
+    required bool isHorizontal,
+    required bool isVertical,
+  }) {
     final w = item.width ?? 220;
     final h = item.height ?? 220;
 
@@ -272,15 +269,9 @@ class EditableItemWidget extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.red,
-                width: 1.5,
-              ),
+              border: Border.all(color: Colors.red, width: 1.5),
               boxShadow: const [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 2,
-                ),
+                BoxShadow(color: Colors.black26, blurRadius: 2),
               ],
             ),
           ),
@@ -304,10 +295,10 @@ class EditableItemWidget extends StatelessWidget {
   // Use this from the page/background GestureDetector instead of opening
   // another background-specific bottom sheet.
   static void showUnifiedImageActions(
-      BuildContext context,
-      EditorProvider provider,
-      EditorItem backgroundItem,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    EditorItem backgroundItem,
+  ) {
     final widget = EditableItemWidget(
       item: backgroundItem,
       onItemSelected: (_, __) {},
@@ -324,18 +315,18 @@ class EditableItemWidget extends StatelessWidget {
   // Reusable media renderer for canvas backgrounds. It applies the same
   // filters, color adjustments and mask shape used by normal image items.
   static Widget buildStandaloneMediaContent(
-      BuildContext context,
-      EditorItem item,
-      ) {
+    BuildContext context,
+    EditorItem item,
+  ) {
     final widget = EditableItemWidget(item: item, onItemSelected: (_, __) {});
     return widget._buildItemContent(item, context);
   }
 
   Widget _buildFilteredImage(
-      EditorItem item,
-      Widget imageWidget,
-      BuildContext context,
-      ) {
+    EditorItem item,
+    Widget imageWidget,
+    BuildContext context,
+  ) {
     final filter = _baseFilter(item.filterType);
     final adjusted = _adjustmentFilter(
       brightness: item.brightness,
@@ -819,9 +810,7 @@ class EditableItemWidget extends StatelessWidget {
       return SizedBox(
         width: item.width,
         height: item.height,
-        child: EditorVideoWidget(
-          videoUrl: item.contentUrl ?? '',
-        ),
+        child: EditorVideoWidget(videoUrl: item.contentUrl ?? ''),
       );
     }
 
@@ -895,47 +884,35 @@ class EditableItemWidget extends StatelessWidget {
     if (item.type == 'image' || item.type == 'shape') {
       final url = item.contentUrl ?? '';
       final isLocalFile =
-          item.isLocal ||
-              url.startsWith('file://') ||
-              url.startsWith('/data/');
+          item.isLocal || url.startsWith('file://') || url.startsWith('/data/');
 
-      final isSvg = url
-          .toLowerCase()
-          .split('?')
-          .first
-          .endsWith('.svg');
+      final isSvg = url.toLowerCase().split('?').first.endsWith('.svg');
 
       Widget imageWidget;
 
       if (url.trim().isEmpty) {
         imageWidget = const Center(
-          child: Icon(
-            Icons.image_not_supported_outlined,
-            color: Colors.grey,
-          ),
+          child: Icon(Icons.image_not_supported_outlined, color: Colors.grey),
         );
       } else if (isLocalFile) {
         final localPath = url.replaceFirst('file://', '');
         imageWidget = isSvg
             ? SvgPicture.file(
-          File(localPath),
-          fit: BoxFit.contain,
-          placeholderBuilder: (_) => const Center(
-            child: CircularProgressIndicator(strokeWidth: 1.5),
-          ),
-        )
+                File(localPath),
+                fit: BoxFit.contain,
+                placeholderBuilder: (_) => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 1.5),
+                ),
+              )
             : Image.file(
-          File(localPath),
-          width: item.width,
-          height: item.height,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const Center(
-            child: Icon(
-              Icons.broken_image_outlined,
-              color: Colors.grey,
-            ),
-          ),
-        );
+                File(localPath),
+                width: item.width,
+                height: item.height,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Center(
+                  child: Icon(Icons.broken_image_outlined, color: Colors.grey),
+                ),
+              );
       } else if (isSvg) {
         // Image.network cannot decode SVG. Freepik/category APIs can return
         // SVG URLs, so SVG assets must use flutter_svg.
@@ -952,10 +929,7 @@ class EditableItemWidget extends StatelessWidget {
             ),
           ),
           errorBuilder: (_, __, ___) => const Center(
-            child: Icon(
-              Icons.broken_image_outlined,
-              color: Colors.grey,
-            ),
+            child: Icon(Icons.broken_image_outlined, color: Colors.grey),
           ),
         );
       } else {
@@ -965,10 +939,7 @@ class EditableItemWidget extends StatelessWidget {
           height: item.height,
           fit: BoxFit.contain,
           errorBuilder: (_, __, ___) => const Center(
-            child: Icon(
-              Icons.broken_image_outlined,
-              color: Colors.grey,
-            ),
+            child: Icon(Icons.broken_image_outlined, color: Colors.grey),
           ),
           loadingBuilder: (context, child, progress) {
             if (progress == null) return child;
@@ -989,14 +960,36 @@ class EditableItemWidget extends StatelessWidget {
         return _buildFilteredImage(item, imageWidget, context);
       }
 
-      final shape = (item.text ?? 'rounded').toLowerCase();
-      final Widget maskedImage = ClipPath(
-        clipper: ShapeClipper(shape, radius: item.borderRadius),
-        child: imageWidget,
-      );
+      final editorProvider = context.read<EditorProvider>();
+      final apiMaskUrl = editorProvider.imageMaskUrl(item.id ?? '');
+      final hasApiMask = apiMaskUrl != null && apiMaskUrl.trim().isNotEmpty;
+
+      // API masks belong to the image that opened the Image > MASK toolbar.
+      // When a mask is selected, use the mask asset's alpha channel to clip
+      // only this image. Do not use the mask name as a ShapeClipper name:
+      // API mask names are arbitrary and are not built-in shapes.
+      final Widget maskedImage = hasApiMask
+          ? _ApiMaskImage(
+              image: imageWidget,
+              maskUrl: apiMaskUrl!,
+              width: item.width ?? 220,
+              height: item.height ?? 220,
+            )
+          : ClipPath(
+              clipper: ShapeClipper(
+                (item.text ?? 'rounded').toLowerCase(),
+                radius: item.borderRadius,
+              ),
+              child: imageWidget,
+            );
 
       final filteredImage = _buildFilteredImage(item, maskedImage, context);
 
+      // API masks already define the final shape, so the normal shape border
+      // painter is only used when no API mask is selected.
+      if (hasApiMask) return filteredImage;
+
+      final shape = (item.text ?? 'rounded').toLowerCase();
       return CustomPaint(
         foregroundPainter: ShapeBorderPainter(
           shape: shape,
@@ -1018,37 +1011,38 @@ class EditableItemWidget extends StatelessWidget {
     final textHeight = (item.height ?? 180.0).clamp(40.0, 1080.0).toDouble();
 
     return SizedBox(
-        width: textWidth,
-        height: textHeight,
-        child: Text(
-          item.text ?? "",
-          maxLines: null,
-          softWrap: true,
-          textAlign: editorProvider.textAlignment(id),
-          overflow: TextOverflow.visible,
-          style: TextStyle(
-            fontSize: item.fontSize,
-            color: item.color ?? Colors.white,
-            fontWeight: editorProvider.textWeight(id),
-            fontStyle: editorProvider.textStyle(id),
-            decoration: editorProvider.textUnderline(id)
-                ? TextDecoration.underline
-                : TextDecoration.none,
-            letterSpacing: editorProvider.textLetterSpacing(id),
-            height: editorProvider.textLineSpacing(id),
-            fontFamily: (item.fontFamily ?? '').trim().isEmpty
-                ? null
-                : item.fontFamily!.trim(),
-          ),
-        ));
+      width: textWidth,
+      height: textHeight,
+      child: Text(
+        item.text ?? "",
+        maxLines: null,
+        softWrap: true,
+        textAlign: editorProvider.textAlignment(id),
+        overflow: TextOverflow.visible,
+        style: TextStyle(
+          fontSize: item.fontSize,
+          color: item.color ?? Colors.white,
+          fontWeight: editorProvider.textWeight(id),
+          fontStyle: editorProvider.textStyle(id),
+          decoration: editorProvider.textUnderline(id)
+              ? TextDecoration.underline
+              : TextDecoration.none,
+          letterSpacing: editorProvider.textLetterSpacing(id),
+          height: editorProvider.textLineSpacing(id),
+          fontFamily: (item.fontFamily ?? '').trim().isEmpty
+              ? null
+              : item.fontFamily!.trim(),
+        ),
+      ),
+    );
   }
 
   void _showProActionSheet(
-      BuildContext context,
-      EditorProvider provider,
-      EditorItem item, {
-        bool isBackground = false,
-      }) {
+    BuildContext context,
+    EditorProvider provider,
+    EditorItem item, {
+    bool isBackground = false,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1062,7 +1056,7 @@ class EditableItemWidget extends StatelessWidget {
             child: StatefulBuilder(
               builder: (sheetContext, setModalState) {
                 final currentItem = provider.items.firstWhere(
-                      (e) => e.id == item.id,
+                  (e) => e.id == item.id,
                   orElse: () => item,
                 );
 
@@ -1077,7 +1071,7 @@ class EditableItemWidget extends StatelessWidget {
                     : 0.0;
                 final normalizedRotation =
                     ((rawRotation % (2 * math.pi)) + (2 * math.pi)) %
-                        (2 * math.pi);
+                    (2 * math.pi);
                 final safeOpacity = currentItem.opacity.isFinite
                     ? currentItem.opacity.clamp(0.0, 1.0)
                     : 1.0;
@@ -1145,11 +1139,11 @@ class EditableItemWidget extends StatelessWidget {
                                   const SizedBox(height: 3),
                                   Text(
                                     currentItem.type == 'text' ||
-                                        currentItem.type == 'textbox'
+                                            currentItem.type == 'textbox'
                                         ? 'Edit your text'
                                         : (isBackground
-                                        ? 'Edit your canvas background'
-                                        : 'Professional image controls'),
+                                              ? 'Edit your canvas background'
+                                              : 'Professional image controls'),
                                     style: const TextStyle(
                                       color: Colors.white54,
                                       fontSize: 12,
@@ -1185,30 +1179,31 @@ class EditableItemWidget extends StatelessWidget {
                               mainAxisSpacing: 10,
                               crossAxisSpacing: 10,
                               childAspectRatio: .98,
-                              children: [if (currentItem.type == 'text' ||
-                                  currentItem.type == 'textbox')
-                                _premiumActionTile(
-                                  icon: Icons.edit_rounded,
-                                  label: 'Edit',
-                                  accent: const Color(0xFFFFC107),
-                                  onTap: () {
-                                    // Close the bottom sheet first. The sheet's
-                                    // builder context becomes invalid after pop,
-                                    // so open the dialog with the parent context
-                                    // on the next frame.
-                                    Navigator.pop(modalContext);
-                                    WidgetsBinding.instance
-                                        .addPostFrameCallback((_) {
-                                      if (!context.mounted) return;
-                                      _showTextEditorDialog(
-                                        context,
-                                        provider,
-                                        currentItem.id ?? '',
-                                        currentItem.text ?? '',
-                                      );
-                                    });
-                                  },
-                                ),
+                              children: [
+                                if (currentItem.type == 'text' ||
+                                    currentItem.type == 'textbox')
+                                  _premiumActionTile(
+                                    icon: Icons.edit_rounded,
+                                    label: 'Edit',
+                                    accent: const Color(0xFFFFC107),
+                                    onTap: () {
+                                      // Close the bottom sheet first. The sheet's
+                                      // builder context becomes invalid after pop,
+                                      // so open the dialog with the parent context
+                                      // on the next frame.
+                                      Navigator.pop(modalContext);
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                            if (!context.mounted) return;
+                                            _showTextEditorDialog(
+                                              context,
+                                              provider,
+                                              currentItem.id ?? '',
+                                              currentItem.text ?? '',
+                                            );
+                                          });
+                                    },
+                                  ),
                                 if (currentItem.type != 'text' &&
                                     currentItem.type != 'textbox') ...[
                                   _premiumActionTile(
@@ -1256,13 +1251,13 @@ class EditableItemWidget extends StatelessWidget {
                                       Navigator.pop(modalContext);
                                       WidgetsBinding.instance
                                           .addPostFrameCallback((_) {
-                                        if (!context.mounted) return;
-                                        _showMaskSheet(
-                                          context,
-                                          provider,
-                                          currentItem.id ?? '',
-                                        );
-                                      });
+                                            if (!context.mounted) return;
+                                            _showMaskSheet(
+                                              context,
+                                              provider,
+                                              currentItem.id ?? '',
+                                            );
+                                          });
                                     },
                                   ),
                                   _premiumActionTile(
@@ -1374,7 +1369,7 @@ class EditableItemWidget extends StatelessWidget {
                               min: .5,
                               max: 3,
                               onChanged: (v) => setModalState(
-                                    () => provider.updateScale(
+                                () => provider.updateScale(
                                   currentItem.id ?? '',
                                   v.clamp(.5, 3.0),
                                 ),
@@ -1384,12 +1379,12 @@ class EditableItemWidget extends StatelessWidget {
                               icon: Icons.rotate_right_rounded,
                               title: 'Rotation',
                               valueText:
-                              '${((normalizedRotation * 180) / math.pi).round()}°',
+                                  '${((normalizedRotation * 180) / math.pi).round()}°',
                               value: normalizedRotation.clamp(0.0, 2 * math.pi),
                               min: 0,
                               max: 2 * math.pi,
                               onChanged: (v) => setModalState(
-                                    () => provider.updateRotation(
+                                () => provider.updateRotation(
                                   currentItem.id ?? '',
                                   v.clamp(0.0, 2 * math.pi),
                                 ),
@@ -1403,7 +1398,7 @@ class EditableItemWidget extends StatelessWidget {
                               min: 0,
                               max: 1,
                               onChanged: (v) => setModalState(
-                                    () => provider.updateOpacity(
+                                () => provider.updateOpacity(
                                   currentItem.id ?? '',
                                   v.clamp(0.0, 1.0),
                                 ),
@@ -1425,19 +1420,19 @@ class EditableItemWidget extends StatelessWidget {
                                   icon: Icons.category_rounded,
                                   label: 'Open Mask Shapes',
                                   selected:
-                                  currentItem.text != 'square' &&
+                                      currentItem.text != 'square' &&
                                       currentItem.text != 'rounded',
                                   onTap: () {
                                     Navigator.pop(modalContext);
                                     WidgetsBinding.instance
                                         .addPostFrameCallback((_) {
-                                      if (!context.mounted) return;
-                                      _showMaskSheet(
-                                        context,
-                                        provider,
-                                        currentItem.id ?? '',
-                                      );
-                                    });
+                                          if (!context.mounted) return;
+                                          _showMaskSheet(
+                                            context,
+                                            provider,
+                                            currentItem.id ?? '',
+                                          );
+                                        });
                                   },
                                 ),
                               ),
@@ -1450,7 +1445,7 @@ class EditableItemWidget extends StatelessWidget {
                                 min: 0,
                                 max: 20,
                                 onChanged: (v) => setModalState(
-                                      () => provider.updateOutline(
+                                  () => provider.updateOutline(
                                     currentItem.id ?? '',
                                     v.clamp(0.0, 20.0),
                                     Colors.white,
@@ -1502,12 +1497,12 @@ class EditableItemWidget extends StatelessWidget {
                             _premiumDangerButton(
                               icon: Icons.delete_outline_rounded,
                               label:
-                              currentItem.type == 'text' ||
-                                  currentItem.type == 'textbox'
+                                  currentItem.type == 'text' ||
+                                      currentItem.type == 'textbox'
                                   ? 'Delete Text'
                                   : (isBackground
-                                  ? 'Delete Background'
-                                  : 'Delete Image'),
+                                        ? 'Delete Background'
+                                        : 'Delete Image'),
                               onTap: () {
                                 final id = currentItem.id ?? '';
                                 provider.removeItem(id);
@@ -1529,11 +1524,11 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Future<void> _pickAndReplaceBackground(
-      BuildContext context,
-      EditorProvider provider,
-      EditorItem currentItem,
-      BuildContext modalContext,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    EditorItem currentItem,
+    BuildContext modalContext,
+  ) async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
@@ -1689,10 +1684,10 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _textSizeControl(
-      EditorItem currentItem,
-      EditorProvider provider,
-      StateSetter setModalState,
-      ) {
+    EditorItem currentItem,
+    EditorProvider provider,
+    StateSetter setModalState,
+  ) {
     final size = currentItem.fontSize.isFinite
         ? currentItem.fontSize.clamp(8.0, 300.0).toDouble()
         : 36.0;
@@ -1751,10 +1746,7 @@ class EditableItemWidget extends StatelessWidget {
                 child: const SizedBox(
                   width: 34,
                   height: 38,
-                  child: Icon(
-                    Icons.remove_rounded,
-                    color: Colors.white70,
-                  ),
+                  child: Icon(Icons.remove_rounded, color: Colors.white70),
                 ),
               ),
               Expanded(
@@ -1780,10 +1772,7 @@ class EditableItemWidget extends StatelessWidget {
                 child: const SizedBox(
                   width: 34,
                   height: 38,
-                  child: Icon(
-                    Icons.add_rounded,
-                    color: Colors.white70,
-                  ),
+                  child: Icon(Icons.add_rounded, color: Colors.white70),
                 ),
               ),
             ],
@@ -1802,9 +1791,7 @@ class EditableItemWidget extends StatelessWidget {
     required double max,
     required ValueChanged<double> onChanged,
   }) {
-    final safeValue = value.isFinite
-        ? value.clamp(min, max).toDouble()
-        : min;
+    final safeValue = value.isFinite ? value.clamp(min, max).toDouble() : min;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -1818,11 +1805,7 @@ class EditableItemWidget extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                size: 18,
-                color: Colors.white70,
-              ),
+              Icon(icon, size: 18, color: Colors.white70),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1866,12 +1849,12 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _miniFilter(
-      EditorProvider provider,
-      EditorItem item,
-      String label,
-      String type,
-      StateSetter setModalState,
-      ) {
+    EditorProvider provider,
+    EditorItem item,
+    String label,
+    String type,
+    StateSetter setModalState,
+  ) {
     final selected = item.filterType == type;
     return GestureDetector(
       onTap: () =>
@@ -1918,10 +1901,10 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   void _showMaskSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+  ) {
     final shapes = <Map<String, dynamic>>[
       {'name': 'Square', 'id': 'square', 'icon': Icons.crop_square_rounded},
       {'name': 'Rounded', 'id': 'rounded', 'icon': Icons.rounded_corner},
@@ -1958,12 +1941,12 @@ class EditableItemWidget extends StatelessWidget {
           final filtered = shapes
               .where(
                 (s) => (s['name'] as String).toLowerCase().contains(
-              query.toLowerCase(),
-            ),
-          )
+                  query.toLowerCase(),
+                ),
+              )
               .toList();
           final current = provider.items.firstWhere(
-                (e) => e.id == itemId,
+            (e) => e.id == itemId,
             orElse: () => provider.items.first,
           );
           return SizedBox(
@@ -2009,12 +1992,12 @@ class EditableItemWidget extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                     itemCount: filtered.length,
                     gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: .94,
-                    ),
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: .94,
+                        ),
                     itemBuilder: (_, index) {
                       final shape = filtered[index];
                       final selected = current.text == shape['id'];
@@ -2069,12 +2052,12 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   void _showImageEditSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+  ) {
     final item = provider.items.firstWhere(
-          (e) => e.id == itemId,
+      (e) => e.id == itemId,
       orElse: () => provider.items.first,
     );
 
@@ -2192,12 +2175,12 @@ class EditableItemWidget extends StatelessWidget {
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: filters.length,
                           gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: .82,
-                          ),
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 4,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: .82,
+                              ),
                           itemBuilder: (_, index) {
                             final f = filters[index];
                             final selected = filter == f;
@@ -2250,9 +2233,9 @@ class EditableItemWidget extends StatelessWidget {
                           filterIntensity,
                           0,
                           1,
-                              (v) {
+                          (v) {
                             setModalState(
-                                  () => filterIntensity = v.clamp(0.0, 1.0),
+                              () => filterIntensity = v.clamp(0.0, 1.0),
                             );
                             apply();
                           },
@@ -2298,13 +2281,13 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _imageEditSlider(
-      String title,
-      double value,
-      double min,
-      double max,
-      ValueChanged<double> onChanged,
-      String valueText,
-      ) {
+    String title,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged,
+    String valueText,
+  ) {
     final safeValue = value.isFinite ? value.clamp(min, max) : min;
 
     return Column(
@@ -2405,12 +2388,12 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _filterButton(
-      EditorProvider provider,
-      EditorItem item,
-      String label,
-      String type,
-      StateSetter setModalState,
-      ) {
+    EditorProvider provider,
+    EditorItem item,
+    String label,
+    String type,
+    StateSetter setModalState,
+  ) {
     return TextButton(
       onPressed: () {
         setModalState(() {
@@ -2427,11 +2410,11 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   void _showTextEditorDialog(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      String initialText,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+    String initialText,
+  ) {
     final controller = TextEditingController(text: initialText);
 
     showDialog(
@@ -2492,12 +2475,12 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Future<void> _openCropScreen(
-      BuildContext context,
-      EditorProvider provider,
-      EditorItem item,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    EditorItem item,
+  ) async {
     final GlobalKey<ExtendedImageEditorState> editorKey =
-    GlobalKey<ExtendedImageEditorState>();
+        GlobalKey<ExtendedImageEditorState>();
 
     await Navigator.push(
       context,
@@ -2547,23 +2530,23 @@ class EditableItemWidget extends StatelessWidget {
           ),
           body: Center(
             child:
-            (item.isLocal ||
-                (item.contentUrl != null &&
-                    item.contentUrl!.startsWith('/')))
+                (item.isLocal ||
+                    (item.contentUrl != null &&
+                        item.contentUrl!.startsWith('/')))
                 ? ExtendedImage.file(
-              File(item.contentUrl!.replaceFirst('file://', '')),
-              fit: BoxFit.contain,
-              mode: ExtendedImageMode.editor,
-              extendedImageEditorKey: editorKey,
-              cacheRawData: true,
-            )
+                    File(item.contentUrl!.replaceFirst('file://', '')),
+                    fit: BoxFit.contain,
+                    mode: ExtendedImageMode.editor,
+                    extendedImageEditorKey: editorKey,
+                    cacheRawData: true,
+                  )
                 : ExtendedImage.network(
-              item.contentUrl ?? "",
-              fit: BoxFit.contain,
-              mode: ExtendedImageMode.editor,
-              extendedImageEditorKey: editorKey,
-              cacheRawData: true,
-            ),
+                    item.contentUrl ?? "",
+                    fit: BoxFit.contain,
+                    mode: ExtendedImageMode.editor,
+                    extendedImageEditorKey: editorKey,
+                    cacheRawData: true,
+                  ),
           ),
         ),
       ),
@@ -2630,10 +2613,7 @@ class _RotateThreeDotHandleState extends State<_RotateThreeDotHandle> {
       behavior: HitTestBehavior.opaque,
       onPanStart: (details) {
         final p = _parentLocal(details.globalPosition);
-        _startPointerAngle = math.atan2(
-          p.dy - center.dy,
-          p.dx - center.dx,
-        );
+        _startPointerAngle = math.atan2(p.dy - center.dy, p.dx - center.dx);
         _startRotation = widget.item.rotation.isFinite
             ? widget.item.rotation
             : 0.0;
@@ -2643,10 +2623,7 @@ class _RotateThreeDotHandleState extends State<_RotateThreeDotHandle> {
         if (startAngle == null) return;
 
         final p = _parentLocal(details.globalPosition);
-        final currentAngle = math.atan2(
-          p.dy - center.dy,
-          p.dx - center.dx,
-        );
+        final currentAngle = math.atan2(p.dy - center.dy, p.dx - center.dx);
 
         var delta = currentAngle - startAngle;
 
@@ -2654,10 +2631,7 @@ class _RotateThreeDotHandleState extends State<_RotateThreeDotHandle> {
         if (delta > math.pi) delta -= math.pi * 2;
         if (delta < -math.pi) delta += math.pi * 2;
 
-        widget.provider.updateRotation(
-          widget.item.id!,
-          _startRotation + delta,
-        );
+        widget.provider.updateRotation(widget.item.id!, _startRotation + delta);
       },
       onPanEnd: (_) {
         _startPointerAngle = null;
@@ -2669,16 +2643,8 @@ class _RotateThreeDotHandleState extends State<_RotateThreeDotHandle> {
           decoration: BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.red,
-              width: 1.5,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 2,
-              ),
-            ],
+            border: Border.all(color: Colors.red, width: 1.5),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 2)],
           ),
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -2705,15 +2671,11 @@ class _RotateDot extends StatelessWidget {
       width: 3,
       height: 3,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.red,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
       ),
     );
   }
 }
-
 
 // 🚀 Hexagon Clipper
 class HexagonClipper extends CustomClipper<Path> {
@@ -2884,13 +2846,13 @@ class ShapeClipper extends CustomClipper<Path> {
   }
 
   void _polygon(
-      Path p,
-      double cx,
-      double cy,
-      double r,
-      int sides,
-      double rotation,
-      ) {
+    Path p,
+    double cx,
+    double cy,
+    double r,
+    int sides,
+    double rotation,
+  ) {
     for (var i = 0; i < sides; i++) {
       final a = rotation + i * 2 * math.pi / sides;
       final x = cx + math.cos(a) * r;
@@ -2906,6 +2868,187 @@ class ShapeClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(covariant ShapeClipper oldClipper) =>
       oldClipper.shape != shape || oldClipper.radius != radius;
+}
+
+class _ApiMaskImage extends StatefulWidget {
+  final Widget image;
+  final String maskUrl;
+  final double width;
+  final double height;
+
+  const _ApiMaskImage({
+    required this.image,
+    required this.maskUrl,
+    required this.width,
+    required this.height,
+  });
+
+  @override
+  State<_ApiMaskImage> createState() => _ApiMaskImageState();
+}
+
+class _ApiMaskImageState extends State<_ApiMaskImage> {
+  ui.Image? _maskImage;
+  bool _maskImageOwned = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMask();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ApiMaskImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.maskUrl != widget.maskUrl) {
+      if (_maskImageOwned) {
+        _maskImage?.dispose();
+      }
+      _maskImage = null;
+      _maskImageOwned = false;
+      _loadMask();
+    }
+  }
+
+  bool _looksLikeSvg(String url) {
+    final value = url.toLowerCase().split('?').first.split('#').first;
+    return value.endsWith('.svg') || value.endsWith('.svgz');
+  }
+
+  Future<void> _loadMask() async {
+    final url = widget.maskUrl.trim();
+    if (url.isEmpty) return;
+
+    try {
+      if (_looksLikeSvg(url)) {
+        final pictureInfo = await vg.loadPicture(SvgNetworkLoader(url), null);
+
+        final targetWidth = math.max(1, widget.width.round());
+        final targetHeight = math.max(1, widget.height.round());
+
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(
+          recorder,
+          Rect.fromLTWH(0, 0, targetWidth.toDouble(), targetHeight.toDouble()),
+        );
+
+        final sourceWidth = pictureInfo.size.width <= 0
+            ? targetWidth.toDouble()
+            : pictureInfo.size.width;
+        final sourceHeight = pictureInfo.size.height <= 0
+            ? targetHeight.toDouble()
+            : pictureInfo.size.height;
+
+        canvas.scale(targetWidth / sourceWidth, targetHeight / sourceHeight);
+        canvas.drawPicture(pictureInfo.picture);
+
+        final image = await recorder.endRecording().toImage(
+          targetWidth,
+          targetHeight,
+        );
+
+        pictureInfo.picture.dispose();
+
+        if (!mounted) {
+          image.dispose();
+          return;
+        }
+
+        setState(() {
+          _maskImage = image;
+          _maskImageOwned = true;
+        });
+        return;
+      }
+      final stream = NetworkImage(url).resolve(const ImageConfiguration());
+      final completer = Completer<ui.Image>();
+      late final ImageStreamListener listener;
+
+      listener = ImageStreamListener(
+        (ImageInfo info, bool _) {
+          if (!completer.isCompleted) completer.complete(info.image);
+          stream.removeListener(listener);
+        },
+        onError: (Object error, StackTrace? stack) {
+          if (!completer.isCompleted) completer.completeError(error, stack);
+          stream.removeListener(listener);
+        },
+      );
+      stream.addListener(listener);
+
+      final image = await completer.future;
+      if (!mounted) return;
+      setState(() {
+        _maskImage = image;
+        _maskImageOwned = false;
+      });
+    } catch (e, st) {
+      debugPrint('API mask load failed: ${widget.maskUrl} - $e');
+      debugPrint('$st');
+      if (mounted) setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_maskImageOwned) {
+      _maskImage?.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mask = _maskImage;
+
+    if (mask == null) {
+      // Keep the selected image visible while the mask loads/fails.
+      return SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: widget.image,
+      );
+    }
+
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: CustomPaint(
+        foregroundPainter: _ApiMaskPainter(mask),
+        child: widget.image,
+      ),
+    );
+  }
+}
+
+class _ApiMaskPainter extends CustomPainter {
+  final ui.Image maskImage;
+
+  const _ApiMaskPainter(this.maskImage);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Draw the image first (CustomPaint child), then use the mask as dstIn.
+    // This leaves the image visible only where the mask has alpha.
+    final src = Rect.fromLTWH(
+      0,
+      0,
+      maskImage.width.toDouble(),
+      maskImage.height.toDouble(),
+    );
+    final dst = Offset.zero & size;
+
+    final paint = Paint()
+      ..isAntiAlias = true
+      ..filterQuality = FilterQuality.high
+      ..blendMode = BlendMode.dstIn;
+
+    canvas.drawImageRect(maskImage, src, dst, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ApiMaskPainter oldDelegate) =>
+      oldDelegate.maskImage != maskImage;
 }
 
 class ShapeBorderPainter extends CustomPainter {
@@ -2934,7 +3077,7 @@ class ShapeBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant ShapeBorderPainter oldDelegate) =>
       oldDelegate.shape != shape ||
-          oldDelegate.radius != radius ||
-          oldDelegate.color != color ||
-          oldDelegate.width != width;
+      oldDelegate.radius != radius ||
+      oldDelegate.color != color ||
+      oldDelegate.width != width;
 }

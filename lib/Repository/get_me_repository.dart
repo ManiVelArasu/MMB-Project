@@ -11,13 +11,13 @@ class GetMeRepository {
 
   static final GetMeRepository instance = GetMeRepository._();
 
-  Future<ApiResult<MeApi>> getMe() {
-    return ApiRepository.instance.request<MeApi>(
+  Future<ApiResult<Language>> getMe() {
+    return ApiRepository.instance.request<Language>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.user,
         method: ApiMethod.get,
       ),
-      fromJson: (json) => MeApi.fromJson(json),
+      fromJson: (json) => Language.fromJson(json),
     );
   }
 }

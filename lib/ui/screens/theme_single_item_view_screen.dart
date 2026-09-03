@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/theme_single_model.dart';
+import '../../component/network_image.dart';
 import '../../core/api/api_endpoints.dart';
 
 import '../../network/provider/theme_single_provider.dart';
@@ -427,10 +428,15 @@ class _MockupSliderWidgetState extends State<MockupSliderWidget> {
                 item is Template ? item.thumbnailS3Key : item?.toString();
 
                 return thumbnail != null && thumbnail.isNotEmpty
-                    ? Image.network(
-                  "${ApiEndpoints.cdnImageUrl}/$thumbnail",
+                    ? NetworkAssetImage(
+                  url:
+                  "${ApiEndpoints.cdnImageUrl}/${thumbnail ?? ''}",
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
+                  errorWidget: const Icon(
+                    Icons.category,
+                    size: 16,
+                    color: Colors.white,
+                  ),
                 )
                     : _buildPlaceholderImage();
               },

@@ -910,12 +910,98 @@ class HomeScreen extends StatelessWidget {
   Widget _buildMyFrameHeader(bool isDark) {
     return Row(
       children: [
+        // =========================
+        // TITLE
+        // =========================
         Text(
           "MY FRAME - 1",
           style: TextStyle(
-            color: isDark ? Colors.white : AppColors.darkBlack,
+            color: isDark
+                ? Colors.white
+                : AppColors.darkBlack,
             fontSize: 18.sp,
             fontWeight: FontWeight.w800,
+          ),
+        ),
+
+        SizedBox(width: 8.w),
+
+        // =========================
+        // MORE BUTTON
+        // =========================
+        Container(
+          width: 28.w,
+          height: 28.w,
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF3A2929)
+                : const Color(0xFFFFE5E5),
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              // More options
+            },
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: Colors.red,
+              size: 19.sp,
+            ),
+          ),
+        ),
+
+        const Spacer(),
+
+        // =========================
+        // EDIT BUTTON
+        // =========================
+        Container(
+          width: 38.w,
+          height: 38.w,
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF3A2929)
+                : const Color(0xFFFFE5E5),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              // Edit action
+            },
+            icon: Icon(
+              Icons.edit_outlined,
+              color: Colors.red,
+              size: 19.sp,
+            ),
+          ),
+        ),
+
+        SizedBox(width: 8.w),
+
+        // =========================
+        // DOWNLOAD / EXPORT
+        // =========================
+        Container(
+          width: 38.w,
+          height: 38.w,
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF3A2929)
+                : const Color(0xFFFFE5E5),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              // Download / Export action
+            },
+            icon: Icon(
+              Icons.download_outlined,
+              color: Colors.red,
+              size: 20.sp,
+            ),
           ),
         ),
       ],
@@ -927,137 +1013,206 @@ class HomeScreen extends StatelessWidget {
       bool isDark, {
         required bool isBusinessUser,
       }) {
-    if (!isBusinessUser) {
-      return SizedBox(
-        height: 140.h,
-        child: PageView.builder(
-          controller: homeScreenProvider.leadPageController,
-          itemCount: homeScreenProvider.leadBanners.length,
-          itemBuilder: (context, index) {
-            return Container(
-              padding: EdgeInsets.all(16.r),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEEEE),
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AppText(
-                    "Grow Your Business",
-                    style: TextStyle(
-                      color: AppColors.gold,
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w900,
-                    ),
+    final controller = homeScreenProvider.leadPageController;
+
+    // 3 different slides
+    final banners = [
+      {
+        "title": "Grow Your Business",
+        "description":
+        "List your business on MMB and get discovered by potential customers.",
+        "button": "GO PREMIUM",
+        "gradient": const [
+          Color(0xFFFFEEEE),
+          Color(0xFFFFF9EA),
+        ],
+      },
+      {
+        "title": "2000+ Business Templates",
+        "description":
+        "Find ready-made templates designed for your industry",
+        "button": "LIST YOUR BUSINESS",
+        "gradient": const [
+          Color(0xFFFFF1F1),
+          Color(0xFFFFE4E4),
+        ],
+      },
+      {
+        "title": "Grow With MMB",
+        "description":
+        "Get more visibility, promote your business and grow faster with MMB.",
+        "button": "GET STARTED",
+        "gradient": const [
+          Color(0xFFF3F0FF),
+          Color(0xFFE8E1FF),
+        ],
+      },
+    ];
+
+    return SizedBox(
+      height: 165.h,
+      child: Column(
+        children: [
+          // =========================
+          // BANNER SLIDER
+          // =========================
+          Expanded(
+            child: PageView.builder(
+              controller: controller,
+              itemCount: banners.length,
+              physics: const BouncingScrollPhysics(),
+              itemBuilder: (context, index) {
+                final banner = banners[index];
+
+                final title = banner["title"] as String;
+                final description = banner["description"] as String;
+                final button = banner["button"] as String;
+                final gradient =
+                banner["gradient"] as List<Color>;
+
+                return Container(
+                  margin: EdgeInsets.symmetric(
+                    horizontal: 4.w,
                   ),
-                  AppText(
-                    "List your business on MMB and get discovered by potential customers.",
-                    style: TextStyle(
-                      color: AppColors.appBlack,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 12.h,
                   ),
-                  Row(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: gradient,
+                    ),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    mainAxisAlignment:
+                    MainAxisAlignment.center,
                     children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          // 🚀 Button Action இங்கே எழுதவும்
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                          AppColors.gold, // மிகவும் எளிய மற்றும் சரியான வழி
-                          foregroundColor:
-                          Colors.white, // உரையின் நிறம் (Text color)
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              12.r,
-                            ), // விளிம்புகளை வளைக்க
-                          ),
+                      // TITLE
+                      AppText(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.gold,
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.w900,
                         ),
-                        child: AppText(
-                          "GO PREMIUM",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                      ),
+
+                      SizedBox(height: 3.h),
+
+                      // DESCRIPTION
+                      AppText(
+                        description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.appBlack,
+                          fontSize: 13.sp,
+                          height: 1.15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+
+                      SizedBox(height: 7.h),
+
+                      // BUTTON
+                      SizedBox(
+                        height: 28.h,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // TODO:
+                            // Premium / Business action
+                          },
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor:
+                            AppColors.gold,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 14.w,
+                            ),
+                            shape:
+                            RoundedRectangleBorder(
+                              borderRadius:
+                              BorderRadius.circular(
+                                8.r,
+                              ),
+                            ),
+                          ),
+                          child: AppText(
+                            button,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10.sp,
+                              fontWeight:
+                              FontWeight.w800,
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-    }
+                );
+              },
+            ),
+          ),
 
-    return SizedBox(
-      height: 140.h,
-      child: PageView.builder(
-        controller: homeScreenProvider.leadPageController,
-        itemCount: homeScreenProvider.leadBanners.length,
-        itemBuilder: (context, index) {
-          return Container(
-            padding: EdgeInsets.all(16.r),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFEEEE),
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AppText(
-                  "Grow Your Business",
-                  style: TextStyle(
-                    color: AppColors.gold,
-                    fontSize: 20.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                AppText(
-                  "List your business on MMB and get discovered by potential customers.",
-                  style: TextStyle(
-                    color: AppColors.appBlack,
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        // 🚀 Button Action இங்கே எழுதவும்
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                        AppColors.gold, // மிகவும் எளிய மற்றும் சரியான வழி
-                        foregroundColor:
-                        Colors.white, // உரையின் நிறம் (Text color)
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            12.r,
-                          ), // விளிம்புகளை வளைக்க
-                        ),
+          SizedBox(height: 7.h),
+
+          // =========================
+          // 3 DOT INDICATOR
+          // =========================
+          AnimatedBuilder(
+            animation: controller,
+            builder: (context, child) {
+              int currentIndex = 0;
+
+              if (controller.hasClients &&
+                  controller.page != null) {
+                currentIndex =
+                    controller.page!.round().clamp(
+                      0,
+                      banners.length - 1,
+                    );
+              }
+
+              return Row(
+                mainAxisAlignment:
+                MainAxisAlignment.center,
+                children: List.generate(
+                  banners.length,
+                      (index) {
+                    final isActive =
+                        currentIndex == index;
+
+                    return AnimatedContainer(
+                      duration:
+                      const Duration(milliseconds: 250),
+                      margin: EdgeInsets.symmetric(
+                        horizontal: 3.w,
                       ),
-                      child: AppText(
-                        "GO PREMIUM",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      width: isActive ? 24.w : 7.w,
+                      height: 7.h,
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? const Color(0xFF17295C)
+                            : Colors.grey.shade300,
+                        borderRadius:
+                        BorderRadius.circular(10.r),
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              ],
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ],
       ),
     );
   }

@@ -45,4 +45,6 @@ class ApiEndpoints {
   static const String businessUpdate = '/businesses';
 
   static const String user = '/users/me';
+
+  static const String language = '/languages';
 }

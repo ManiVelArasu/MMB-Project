@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'dart:convert';
+import 'package:project_mmb/core/api/api_endpoints.dart';
 
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -16,6 +17,44 @@ import '../../core/app_provider/my_notifier.dart';
 class EditorProvider extends ChangeNotifier with MyNotifier {
   final List<EditorItem> _items = [];
   List<EditorItem> get items => _items;
+
+  // Selected API mask for each image. This is separate from EditorItem so
+  // existing template JSON remains compatible.
+  final Map<String, String> _imageMaskUrls = {};
+  final Map<String, String> _imageMaskNames = {};
+
+  String? imageMaskUrl(String id) => _imageMaskUrls[id];
+  String? imageMaskName(String id) => _imageMaskNames[id];
+
+  String assetCdnUrl(String? key) {
+    if (key == null || key.trim().isEmpty) return '';
+    final value = key.trim();
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value;
+    }
+    final base = ApiEndpoints.cdnImageUrl.replaceFirst(RegExp(r'/$'), '');
+    return '$base/${value.replaceFirst(RegExp(r'^/'), '')}';
+  }
+
+  void setImageMask(
+      String id, {
+        required String name,
+        required String url,
+      }) {
+    if (!_items.any((e) => e.id == id)) return;
+    _saveState();
+    _imageMaskNames[id] = name;
+    _imageMaskUrls[id] = assetCdnUrl(url);
+    notifyListeners();
+  }
+
+  void clearImageMask(String id) {
+    _saveState();
+    _imageMaskNames.remove(id);
+    _imageMaskUrls.remove(id);
+    notifyListeners();
+  }
+
 
   final List<List<EditorItem>> _history = [];
   int _historyIndex = -1;
@@ -434,7 +473,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         // Shapes, masks, social media and e-commerce all come from the
         // backend assets API. Keep records without an S3 source so the UI
         // can show LOCKED instead of incorrectly saying "No data found".
-        final apiCategory = normalized == 'masks' ? 'mask' : normalized;
+        final apiCategory = normalized;
         final result = await FreePikService.fetchAssetsByCategory(
           apiCategory,
           page: page,

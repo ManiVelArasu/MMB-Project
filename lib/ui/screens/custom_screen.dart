@@ -282,7 +282,7 @@ class _CustomCreateBody extends StatelessWidget {
 
   String buildTemplateImage(int width, int height) {
     if (width == 1080 && height == 1080) {
-      return "assets/images/post_566.png";
+      return "assets/images/landscape.png";
     } else if (width == 1080 && height == 1350) {
       return "assets/images/potrait.png";
     } else if (width == 1080 && height == 1920) {

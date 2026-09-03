@@ -261,13 +261,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           subtitle: "English, தமிழ், हिंदी",
                           iconAsset: "assets/images/lang_icon.png",
                           isDark: isDark,
-                          onTap: () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (context) =>
-                                  const LanguagesBottomSheet(),
+                          onTap: () async {
+                            await provider.fetchLanguage();
+
+                            if (!context.mounted) return;
+
+                            _showLanguagesBottomSheet(
+                              context,
+                              provider,
+                              isDark,
                             );
                           },
                         ),
@@ -573,4 +575,196 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+}
+
+void _showLanguagesBottomSheet(
+  BuildContext context,
+  ProfileScreenProvider provider,
+  bool isDark,
+) {
+  final languages = provider.plansData?.data ?? [];
+
+  final Set<String> selectedCodes = {"en", "ta", "hi"};
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) {
+      return StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            width: double.infinity,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.62,
+            ),
+            padding: EdgeInsets.only(
+              top: 10.h,
+              left: 18.w,
+              right: 18.w,
+              bottom: 24.h,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF181818) : Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                Center(
+                  child: Container(
+                    width: 82.w,
+                    height: 4.h,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: 10.h),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "Languages",
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black,
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                      },
+                      child: Container(
+                        width: 32.w,
+                        height: 32.w,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF3A2020)
+                              : const Color(0xFFFFE8E8),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: Colors.red,
+                          size: 20.sp,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 28.h),
+                Row(
+                  children: [
+                    Text(
+                      "Selected Languages",
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+
+                    SizedBox(width: 8.w),
+
+                    Container(
+                      width: 34.w,
+                      height: 34.w,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                      child: Text(
+                        "${selectedCodes.length}",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 17.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 16.h),
+
+                Text(
+                  "Your post, their language – connect better, reach wider!",
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
+                  ),
+                ),
+
+                SizedBox(height: 18.h),
+
+                Wrap(
+                  spacing: 10.w,
+                  runSpacing: 10.h,
+                  children: languages.map((language) {
+                    final isSelected = selectedCodes.contains(language.isActive);
+
+                    return GestureDetector(
+                      onTap: () {
+                        setModalState(() {
+                          if (isSelected) {
+                            selectedCodes.remove(language.code);
+                          } else {
+                            selectedCodes.add(language.code);
+                          }
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: 108.w,
+                        height: 40.h,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFFFFD1D5)
+                              : (isDark
+                                    ? const Color(0xFF181818)
+                                    : Colors.white),
+                          borderRadius: BorderRadius.circular(22.r),
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFFFFD1D5)
+                                : const Color(0xFFFFBFC4),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                           language.name,
+
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black,
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+                SizedBox(height: 20.h),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
 }
