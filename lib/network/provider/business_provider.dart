@@ -11,13 +11,13 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:project_mmb/Repository/business_repository.dart';
-import 'package:project_mmb/ui/industry/widgets/bg_remove_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../Repository/business_repository.dart';
 import '../../Repository/image_upload_repository.dart';
 import '../../core/api/api_handler.dart';
+import '../../ui/industry/widgets/bg_remove_sheet.dart';
 
 class BusinessProvider extends ChangeNotifier {
   BusinessProvider() {

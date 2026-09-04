@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:project_mmb/component/custom_widget.dart';
-import 'package:project_mmb/component/svg_loader.dart';
+import 'package:mmb_app/component/svg_loader.dart';
+
 
 
 import '../../utils/theme/app.colors.dart';
 import '../utils/theme/app.fonts.dart';
+import 'custom_widget.dart';
 
 
 class CustomElevatedButton extends StatefulWidget {

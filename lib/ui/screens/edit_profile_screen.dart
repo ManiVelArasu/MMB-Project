@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:project_mmb/component/custom_searchbar.dart';
-import 'package:project_mmb/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 import '../../component/appbar_widget.dart';
+import '../../component/custom_searchbar.dart';
+import '../../component/custom_widget.dart';
 import '../../network/provider/edit_photo_provider.dart';
 import '../../utils/theme/app.colors.dart';
 

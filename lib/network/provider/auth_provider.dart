@@ -1,11 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:project_mmb/core/app_provider/my_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Repository/auth_repository.dart';
 import '../../core/api/api_handler.dart';
+import '../../core/app_provider/my_notifier.dart';
 import 'business_provider.dart';
 
 class AuthProvider extends ChangeNotifier with MyNotifier {
@@ -131,36 +131,56 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  Future<String?> apiSendOtp(String phone, String purpose) async {
+  Future<bool> apiSendOtp(
+      String phone,
+      String purpose,
+      ) async {
+    debugPrint("🚀 apiSendOtp START");
+
     _isLoginLoading = true;
     _errorMessage = null;
-
     _mobileNumber = phone.trim();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('saved_mobile_number', _mobileNumber);
 
     notifyListeners();
 
     try {
-      final result = await AuthRepository.instance.sendOtp(phone, purpose);
+      debugPrint("📡 Calling AuthRepository.sendOtp...");
+
+      final result = await AuthRepository.instance.sendOtp(
+        phone,
+        purpose,
+      );
+
+      debugPrint("📡 AuthRepository.sendOtp COMPLETED");
 
       _isLoginLoading = false;
       notifyListeners();
 
-      return await result.when(
-        success: (data) => data.otp,
+      return result.when(
+        success: (data) {
+          debugPrint("✅ OTP API SUCCESS");
+          debugPrint("📦 Message: ${data.message}");
+          return true;
+        },
         failure: (error) {
+          debugPrint("❌ OTP API FAILURE: $error");
+
           _errorMessage = error.toString();
           notifyListeners();
-          return null;
+
+          return false;
         },
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint("❌ OTP EXCEPTION: $e");
+      debugPrint("$stackTrace");
+
       _isLoginLoading = false;
       _errorMessage = e.toString();
+
       notifyListeners();
-      return null;
+
+      return false;
     }
   }
 
@@ -182,7 +202,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       notifyListeners();
 
       return await result.when(
-        success: (data) => data.otp,
+        success: (data) => data.message,
         failure: (error) {
           _errorMessage = error.toString();
           notifyListeners();

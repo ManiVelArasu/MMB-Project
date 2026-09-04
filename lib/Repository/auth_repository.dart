@@ -21,9 +21,11 @@ class AuthRepository {
 
         body: {"phone": phone, "purpose": purpose},
       ),
+
       fromJson: (json) =>
           OtpResponseModel.fromJson(json['data'] as Map<String, dynamic>),
     );
+
     return result;
   }
 

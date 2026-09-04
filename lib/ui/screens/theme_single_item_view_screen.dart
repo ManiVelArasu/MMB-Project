@@ -6,9 +6,10 @@ import '../../Api Model/theme_single_model.dart';
 import '../../component/network_image.dart';
 import '../../core/api/api_endpoints.dart';
 
+import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/theme_single_provider.dart';
 
-import 'package:project_mmb/network/provider/custom_theme_provider.dart';
+
 
 
 class ThemeSingleitemViewScreen extends StatelessWidget {

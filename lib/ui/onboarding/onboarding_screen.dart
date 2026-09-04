@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:project_mmb/component/custom_widget.dart';
-import 'package:project_mmb/helper/shared_preference.dart';
-import 'package:project_mmb/network/provider/custom_theme_provider.dart';
-import 'package:project_mmb/utils/theme/app.fonts.dart';
-import 'package:project_mmb/widgets/custom_sized_box.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../component/custom_widget.dart';
+import '../../network/provider/custom_theme_provider.dart';
+import '../../utils/theme/app.fonts.dart';
+import '../../widgets/custom_sized_box.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});

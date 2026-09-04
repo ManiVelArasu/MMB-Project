@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:project_mmb/Repository/feedBack_Repository.dart';
+
+import '../../Repository/feedBack_Repository.dart';
 import '../../model/feedback_model.dart';
 
 class FeedbackProvider extends ChangeNotifier {

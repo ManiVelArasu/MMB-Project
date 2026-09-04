@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:project_mmb/Repository/industry_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Api Model/industries.dart';
+import '../../Repository/industry_repository.dart';
 import '../../core/app_provider/my_notifier.dart';
 
 import 'package:flutter/material.dart';

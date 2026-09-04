@@ -1,5 +1,7 @@
-import 'package:project_mmb/widgets/custom_sized_box.dart';
+
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import '../widgets/custom_sized_box.dart';
 
 final height4 = CustomSizedBox(height: 4.h);
 final height6 = CustomSizedBox(height: 6.h);

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-
-import 'package:project_mmb/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
+import '../../component/custom_widget.dart';
 import '../../network/provider/faq_provider.dart';
 
 import '../../network/provider/custom_theme_provider.dart';

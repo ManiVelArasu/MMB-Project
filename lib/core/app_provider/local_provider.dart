@@ -1,14 +1,16 @@
 import 'package:flutter/cupertino.dart';
-import 'package:project_mmb/network/provider/business_provider.dart';
-import 'package:project_mmb/network/provider/industry_provider.dart';
 
+
+import '../../network/provider/auth_provider.dart';
+import '../../network/provider/business_provider.dart';
+import '../../network/provider/industry_provider.dart';
 import '../rout_config/app_navigator.dart';
 import '../rout_config/app_routs.dart' hide AppRouter;
 import 'my_notifier.dart';
 
 import 'package:flutter/material.dart';
 
-import 'package:project_mmb/network/provider/auth_provider.dart';
+
 
 class LocaleProvider extends ChangeNotifier with MyNotifier {
   late final AuthProvider authProvider = AuthProvider();

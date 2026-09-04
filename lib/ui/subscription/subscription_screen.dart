@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:project_mmb/component/custom_widget.dart';
-import 'package:project_mmb/ui/industry/business_category_choose_screen.dart';
-import 'package:project_mmb/ui/subscription/plan_detail_screen.dart';
-import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../Api Model/plans_type.dart';
+import '../../component/custom_widget.dart';
 import '../../network/provider/plan_provider.dart';
+import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
 
 class PlansAndPricingScreen extends StatelessWidget {

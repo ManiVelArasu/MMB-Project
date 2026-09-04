@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:project_mmb/utils/theme/app.colors.dart';
-import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
 import '../../network/provider/feedback_provider.dart';
+import '../../utils/theme/app.colors.dart';
+import '../../widgets/button_widget.dart';
 import '../../widgets/emoji_rating.dart';
 import '../../widgets/feedback_textfield.dart';
 

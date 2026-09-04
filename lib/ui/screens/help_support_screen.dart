@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:project_mmb/widgets/support_ticket_card.dart';
 import 'package:provider/provider.dart';
-
 import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
 import '../../network/provider/support_provider.dart';
 
 import '../../network/provider/custom_theme_provider.dart';
+import '../../widgets/support_ticket_card.dart';
 
 
 class HelpSupportScreen extends StatelessWidget {

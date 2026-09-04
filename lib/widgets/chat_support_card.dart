@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:project_mmb/component/custom_widget.dart';
-import 'package:project_mmb/ui/screens/feedback_screen.dart';
+
+
+import '../component/custom_widget.dart';
 
 class ChatSupportCard extends StatelessWidget {
   final VoidCallback? onTap;

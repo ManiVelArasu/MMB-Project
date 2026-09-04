@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:project_mmb/core/app_provider/my_notifier.dart';
+
+
+import '../../core/app_provider/my_notifier.dart';
 
 class SocialCalendarProvider extends ChangeNotifier with MyNotifier {
   String selectedMonth = 'August';

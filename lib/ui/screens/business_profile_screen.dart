@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:project_mmb/component/custom_widget.dart';
 import 'package:provider/provider.dart';
+import '../../component/custom_widget.dart';
 import '../../network/provider/business_provider.dart';
 import '../../network/provider/businessprofile_provider.dart';
 

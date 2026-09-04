@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import 'package:project_mmb/network/provider/business_provider.dart';
-import 'package:project_mmb/network/provider/custom_theme_provider.dart';
+
+import '../../../network/provider/business_provider.dart';
+import '../../../network/provider/custom_theme_provider.dart';
 
 class UpdateBusinessSheet extends StatefulWidget {
   const UpdateBusinessSheet({super.key});

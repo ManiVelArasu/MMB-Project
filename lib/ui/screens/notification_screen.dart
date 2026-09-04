@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:project_mmb/component/custom_widget.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../Api Model/notification_model.dart';
+import '../../component/custom_widget.dart';
 import '../../model/notification_model.dart';
 import '../../network/provider/notification_provider.dart';
 import '../../widgets/notification_section.dart';

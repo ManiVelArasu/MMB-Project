@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pro_image_editor/plugins/emoji_picker_flutter/src/config.dart' hide Config;
 import 'package:pro_image_editor/plugins/emoji_picker_flutter/src/emoji_picker.dart' hide EmojiPicker;
-import 'package:project_mmb/utils/theme/app.colors.dart';
 import 'package:provider/provider.dart';
 import '../../Api Model/editor_model.dart';
 import '../../network/provider/editor_provider.dart';

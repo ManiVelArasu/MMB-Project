@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:project_mmb/Api%20Model/template_size_model.dart';
 import 'package:provider/provider.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/custom_widget.dart';

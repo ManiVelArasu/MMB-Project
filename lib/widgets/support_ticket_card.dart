@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:project_mmb/utils/theme/app.colors.dart';
 import '../component/status_widget.dart';
 import '../model/support_ticket_model.dart';
+import '../utils/theme/app.colors.dart';
 
 class SupportTicketCard extends StatelessWidget {
   final SupportTicketModel ticket;

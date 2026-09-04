@@ -4,7 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 import 'package:google_fonts/google_fonts.dart';
-import 'package:project_mmb/utils/constants.dart';
+
+import '../utils/constants.dart';
+
 
 class Widgets {
   AppBar loginAppbar(

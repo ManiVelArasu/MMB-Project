@@ -1,11 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:project_mmb/core/api/api_handler.dart';
+
 
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:project_mmb/core/api/api_endpoints.dart';
+
+
+import 'api_endpoints.dart';
+import 'api_handler.dart';
 
 class TokenRefreshInterceptor extends Interceptor {
   final Dio dio;
@@ -76,7 +79,9 @@ class TokenRefreshInterceptor extends Interceptor {
     }
   }
 
-  Future<void> _performRefresh(String refreshToken) async {
+  Future<void> _performRefresh(
+      String refreshToken,
+      ) async {
     final refreshDio = Dio(
       BaseOptions(
         baseUrl: ApiEndpoints.baseUrl,
@@ -95,38 +100,33 @@ class TokenRefreshInterceptor extends Interceptor {
 
     final data = response.data;
 
+    if (data is! Map) {
+      throw Exception(
+        'Invalid refresh response',
+      );
+    }
+
     final newAccessToken =
         data['access_token'] ??
             data['accessToken'];
 
     final newRefreshToken =
         data['refresh_token'] ??
-            data['refreshToken'];
+            data['refreshToken'] ??
+            refreshToken;
 
     if (newAccessToken == null ||
         newAccessToken.toString().isEmpty) {
-      throw Exception('Refresh API did not return access token');
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.setString(
-      'auth_token',
-      newAccessToken.toString(),
-    );
-
-    // IMPORTANT:
-    // If backend rotates refresh token,
-    // save the NEW refresh token.
-    if (newRefreshToken != null &&
-        newRefreshToken.toString().isNotEmpty) {
-      await prefs.setString(
-        'refresh_token',
-        newRefreshToken.toString(),
+      throw Exception(
+        'Refresh API did not return access token',
       );
     }
 
+    await ApiHandler.instance.setTokens(
+      token: newAccessToken.toString(),
+      refreshToken: newRefreshToken.toString(),
+    );
+
     debugPrint('✅ Access token refreshed');
-    debugPrint('✅ Refresh token updated');
   }
 }

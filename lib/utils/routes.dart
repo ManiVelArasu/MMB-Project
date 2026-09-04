@@ -1,14 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:project_mmb/ui/industry/account_type_screen.dart';
-import 'package:project_mmb/ui/industry/business_category_choose_screen.dart'
-    hide BusinessCategoryChooseView;
-import 'package:project_mmb/ui/industry/business_details_screen.dart';
-import 'package:project_mmb/ui/industry/edit_photo_screen.dart';
-import 'package:project_mmb/ui/login/login_screen.dart';
-import 'package:project_mmb/ui/onboarding/onboarding_screen.dart';
-import 'package:project_mmb/ui/screens/faq_screen.dart';
-import 'package:project_mmb/ui/splash/splash_screen.dart';
-import 'package:project_mmb/ui/verification/otp_screen.dart';
 import 'package:provider/provider.dart';
 import '../Api Model/plans_type.dart';
 import '../Api Model/theme_screen_model.dart';
@@ -16,11 +6,18 @@ import '../component/bottom_navigation.dart';
 import '../network/provider/auth_provider.dart';
 import '../network/provider/business_provider.dart';
 import '../network/provider/smcalender_form_provider.dart';
-import '../ui/industry/business_category_choose_view.dart';
+import '../ui/industry/account_type_screen.dart';
+import '../ui/industry/business_category_choose_screen.dart';
+import '../ui/industry/business_category_choose_view.dart' hide BusinessCategoryChooseView;
+import '../ui/industry/business_details_screen.dart';
 import '../ui/industry/business_frame_screen.dart';
+import '../ui/industry/edit_photo_screen.dart';
+import '../ui/login/login_screen.dart';
+import '../ui/onboarding/onboarding_screen.dart';
 import '../ui/screens/business_profile_screen.dart';
 import '../ui/screens/download_screen.dart';
 import '../ui/screens/edit_profile_screen.dart';
+import '../ui/screens/faq_screen.dart';
 import '../ui/screens/notification_screen.dart';
 import '../ui/screens/help_support_screen.dart';
 import '../ui/screens/profile_screen.dart';
@@ -32,6 +29,7 @@ import '../ui/screens/template_edit.dart';
 import '../ui/screens/theme_detail_screen.dart';
 import '../ui/screens/theme_single_item_view_screen.dart';
 
+import '../ui/splash/splash_screen.dart';
 import '../ui/subscription/change_plan_screen.dart';
 import '../ui/subscription/confirm_plan.dart';
 
@@ -42,6 +40,7 @@ import '../ui/subscription/subscription_activate_screen.dart';
 import '../ui/subscription/subscription_screen.dart';
 import '../ui/screens/feedback_screen.dart';
 import '../ui/subscription/usage_screen.dart';
+import '../ui/verification/otp_screen.dart';
 
 class RouteGenerator {
   Route<dynamic>? generateRoute(RouteSettings settings) {

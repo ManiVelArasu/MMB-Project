@@ -3,19 +3,19 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:project_mmb/component/custom_widget.dart';
-import 'package:project_mmb/core/api/api_endpoints.dart';
-import 'package:project_mmb/network/provider/home_screen_provider.dart';
-import 'package:project_mmb/Api Model/Template_model.dart';
-import 'package:project_mmb/ui/screens/template_edit.dart';
-import 'package:project_mmb/ui/screens/video_widget/video_widget.dart';
-import 'package:project_mmb/utils/theme/app.colors.dart';
-import 'package:project_mmb/utils/theme/app.fonts.dart';
+import 'package:mmb_app/ui/screens/template_edit.dart';
+import 'package:mmb_app/ui/screens/video_widget/video_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../Api Model/Template_model.dart';
 import '../../component/custom_searchbar.dart';
+import '../../component/custom_widget.dart';
 import '../../component/home_appbar.dart';
+import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
+import '../../network/provider/home_screen_provider.dart';
+import '../../utils/theme/app.colors.dart';
+import '../../utils/theme/app.fonts.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});

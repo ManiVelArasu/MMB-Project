@@ -1,13 +1,21 @@
 class OtpResponseModel {
-  final String message;
-  final String otp;
+  final String? message;
 
-  OtpResponseModel({required this.message, required this.otp});
+  OtpResponseModel({
+    this.message,
+  });
 
-  factory OtpResponseModel.fromJson(Map<String, dynamic> json) {
+  factory OtpResponseModel.fromJson(
+      Map<String, dynamic> json,
+      ) {
     return OtpResponseModel(
-      message: json['message'] ?? "",
-      otp: json['otp'] ?? "",
+      message: json['message']?.toString(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'message': message,
+    };
   }
 }

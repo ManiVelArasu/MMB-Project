@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:project_mmb/network/provider/business_provider.dart';
-import 'package:project_mmb/network/provider/custom_theme_provider.dart';
-import 'package:project_mmb/utils/height_measure.dart';
-import 'package:project_mmb/widgets/button_widget.dart';
-import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
 
+import '../../network/provider/business_provider.dart';
+import '../../network/provider/custom_theme_provider.dart';
+import '../../utils/height_measure.dart';
+import '../../widgets/button_widget.dart';
+import '../../widgets/title_value_widget.dart';
 import 'choose_image_sheet.dart';
 
 class PersonalDetailsScreen extends StatelessWidget {

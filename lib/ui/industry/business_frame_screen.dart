@@ -1,13 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:project_mmb/ui/industry/widgets/Business_frame_bottom_sheet.dart';
-
+import 'package:mmb_app/ui/industry/widgets/Business_frame_bottom_sheet.dart';
 import '../../component/appbar_widget.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import 'package:project_mmb/network/provider/custom_theme_provider.dart';
+
 
 import '../../network/provider/business_provider.dart';
+import '../../network/provider/custom_theme_provider.dart';
 
 class BusinessFramesScreen extends StatelessWidget {
   const BusinessFramesScreen({super.key});

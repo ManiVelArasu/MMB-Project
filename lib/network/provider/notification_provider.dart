@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:project_mmb/Api%20Model/notification_model.dart';
-import 'package:project_mmb/model/notification_model.dart';
 
+
+import '../../Api Model/notification_model.dart';
 import '../../Repository/notification_repository.dart';
 
 class NotificationProvider extends ChangeNotifier {

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:project_mmb/component/custom_widget.dart';
-import 'package:project_mmb/utils/theme/app.fonts.dart';
+
+import '../utils/theme/app.fonts.dart';
+import 'custom_widget.dart';
+
 
 class StatusWidget extends StatelessWidget {
   const StatusWidget({

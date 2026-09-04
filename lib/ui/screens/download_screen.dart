@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:project_mmb/ui/screens/video_widget/video_widget.dart';
+import 'package:mmb_app/ui/screens/video_widget/video_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/custom_widget.dart';

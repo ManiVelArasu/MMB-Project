@@ -13,8 +13,9 @@ import '../../../Api Model/editor_model.dart';
 import '../../../network/provider/editor_provider.dart';
 import 'package:image/image.dart' as img;
 
+import '../../screens/video_widget/editor_video.dart';
 import '../../screens/video_widget/video_widget.dart';
-import 'package:project_mmb/ui/screens/video_widget/editor_video.dart';
+
 
 class EditableItemWidget extends StatelessWidget {
   final EditorItem item;

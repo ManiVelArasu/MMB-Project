@@ -1,16 +1,15 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:project_mmb/component/custom_widget.dart';
-import 'package:project_mmb/network/provider/auth_provider.dart';
-import 'package:project_mmb/network/provider/custom_theme_provider.dart';
-import 'package:project_mmb/ui/verification/otp_screen.dart';
-import 'package:project_mmb/utils/height_measure.dart';
-import 'package:project_mmb/widgets/button_widget.dart';
-import 'package:project_mmb/widgets/title_value_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../component/custom_widget.dart';
+import '../../network/provider/auth_provider.dart';
+import '../../network/provider/custom_theme_provider.dart';
+import '../../utils/height_measure.dart';
+import '../../widgets/button_widget.dart';
+import '../../widgets/title_value_widget.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -165,29 +164,39 @@ class LoginScreen extends StatelessWidget {
                       ButtonWidget(
                         isLoading: authProvider.isLoginLoading,
                         buttonPress: () async {
-                          if (authProvider.submitLogin()) {
-                            String? otp = await authProvider.apiSendOtp(
+                          debugPrint("🔥 GET OTP clicked");
+
+                          final isValid = authProvider.submitLogin();
+
+                          debugPrint("🔥 submitLogin result: $isValid");
+
+                          if (!isValid) {
+                            debugPrint("❌ submitLogin returned FALSE");
+                            return;
+                          }
+
+                          debugPrint("✅ Calling apiSendOtp...");
+
+                          final otpSent = await authProvider.apiSendOtp(
+                            authProvider.mobileNumber,
+                            "login",
+                          );
+
+                          if (otpSent && context.mounted) {
+                            final prefs = await SharedPreferences.getInstance();
+
+                            await prefs.setString(
+                              'saved_mobile_number',
                               authProvider.mobileNumber,
-                              "login",
                             );
 
-                            if (otp != null && context.mounted) {
-                              final prefs =
-                                  await SharedPreferences.getInstance();
-                              await prefs.setString(
-                                'saved_mobile_number',
-                                authProvider.mobileNumber,
-                              );
-
-                              Navigator.pushNamed(
-                                context,
-                                "/OtpScreen",
-                                arguments: {
-                                  'otp': otp,
-                                  'phone': authProvider.mobileNumber,
-                                },
-                              );
-                            } else {}
+                            Navigator.pushNamed(
+                              context,
+                              "/OtpScreen",
+                              arguments: {
+                                'phone': authProvider.mobileNumber,
+                              },
+                            );
                           }
                         },
                         title: "GET OTP",

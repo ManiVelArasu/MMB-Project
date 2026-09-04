@@ -1,13 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:project_mmb/component/custom_widget.dart';
-import 'package:project_mmb/utils/theme/app.colors.dart';
-import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
 
+import '../../component/custom_widget.dart';
 import '../../network/provider/business_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/industry_provider.dart';
+import '../../utils/theme/app.colors.dart';
+import '../../widgets/button_widget.dart';
 
 class BusinessCategoryChooseView extends StatelessWidget {
   const BusinessCategoryChooseView({super.key});

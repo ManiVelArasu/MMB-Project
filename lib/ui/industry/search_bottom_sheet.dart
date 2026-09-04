@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:project_mmb/component/custom_widget.dart';
-import 'package:project_mmb/utils/theme/app.colors.dart';
-import 'package:project_mmb/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
 
-import 'package:project_mmb/network/provider/industry_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../component/custom_widget.dart';
+import '../../network/provider/industry_provider.dart';
+import '../../utils/theme/app.colors.dart';
+import '../../widgets/button_widget.dart';
 
 class SearchBottomSheet extends StatefulWidget {
   final ScrollController scrollController;
