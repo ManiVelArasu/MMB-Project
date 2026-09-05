@@ -2,11 +2,13 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/ui/screens/video_widget/video_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../Api Model/Template_model.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/custom_widget.dart';
@@ -226,7 +228,7 @@ class HomeScreen extends StatelessWidget {
 
                       SizedBox(height: 24.h),
 
-                      _buildMyFrameHeader(isDark),
+                      _buildMyFrameHeader(isDark, context),
 
                       SizedBox(height: 16.h),
 
@@ -238,7 +240,6 @@ class HomeScreen extends StatelessWidget {
 
                       SizedBox(height: 20.h),
 
-                      // 🚀 My Brand Posts (பிசினஸ் யூசர்களுக்கு மட்டும்)
                       if (isBusinessUser) ...[
                         _buildSectionHeader(
                           title: "My Brand Posts",
@@ -253,13 +254,13 @@ class HomeScreen extends StatelessWidget {
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount:
-                            homeScreenProvider.videoCategories.length,
+                                homeScreenProvider.videoCategories.length,
                             physics: const BouncingScrollPhysics(),
                             itemBuilder: (context, index) {
                               bool isSelected =
                                   homeScreenProvider
                                       .selectedVideoCategoryIndex ==
-                                      index;
+                                  index;
                               return GestureDetector(
                                 onTap: () => homeScreenProvider
                                     .updateVideoCategoryIndex(index),
@@ -273,15 +274,15 @@ class HomeScreen extends StatelessWidget {
                                     color: isSelected
                                         ? const Color(0xFF555555)
                                         : (isDark
-                                        ? const Color(0xFF1E1E1E)
-                                        : Colors.white),
+                                              ? const Color(0xFF1E1E1E)
+                                              : Colors.white),
                                     borderRadius: BorderRadius.circular(30.r),
                                     border: Border.all(
                                       color: isSelected
                                           ? Colors.transparent
                                           : (isDark
-                                          ? Colors.grey.shade700
-                                          : Colors.grey.shade400),
+                                                ? Colors.grey.shade700
+                                                : Colors.grey.shade400),
                                       width: 1.5,
                                     ),
                                   ),
@@ -292,8 +293,8 @@ class HomeScreen extends StatelessWidget {
                                         color: isSelected
                                             ? Colors.white
                                             : (isDark
-                                            ? Colors.white70
-                                            : Colors.grey.shade800),
+                                                  ? Colors.white70
+                                                  : Colors.grey.shade800),
                                         fontSize: 14.sp,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -311,16 +312,16 @@ class HomeScreen extends StatelessWidget {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount:
-                          homeScreenProvider.brandVideoPostsList.isNotEmpty
+                              homeScreenProvider.brandVideoPostsList.isNotEmpty
                               ? homeScreenProvider.brandVideoPostsList.length
                               : 4,
                           gridDelegate:
-                          SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12.w,
-                            mainAxisSpacing: 12.h,
-                            childAspectRatio: 1.0,
-                          ),
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12.w,
+                                mainAxisSpacing: 12.h,
+                                childAspectRatio: 1.0,
+                              ),
                           itemBuilder: (context, index) {
                             return InkWell(
                               onTap: () {
@@ -388,13 +389,13 @@ class HomeScreen extends StatelessWidget {
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount:
-                            homeScreenProvider.videoCategories.length,
+                                homeScreenProvider.videoCategories.length,
                             physics: const BouncingScrollPhysics(),
                             itemBuilder: (context, index) {
                               bool isSelected =
                                   homeScreenProvider
                                       .selectedVideoCategoryIndex ==
-                                      index;
+                                  index;
                               return GestureDetector(
                                 onTap: () => homeScreenProvider
                                     .updateVideoCategoryIndex(index),
@@ -408,15 +409,15 @@ class HomeScreen extends StatelessWidget {
                                     color: isSelected
                                         ? const Color(0xFF555555)
                                         : (isDark
-                                        ? const Color(0xFF1E1E1E)
-                                        : Colors.white),
+                                              ? const Color(0xFF1E1E1E)
+                                              : Colors.white),
                                     borderRadius: BorderRadius.circular(20.r),
                                     border: Border.all(
                                       color: isSelected
                                           ? Colors.transparent
                                           : (isDark
-                                          ? Colors.grey.shade700
-                                          : Colors.grey.shade400),
+                                                ? Colors.grey.shade700
+                                                : Colors.grey.shade400),
                                       width: 1.2,
                                     ),
                                   ),
@@ -427,8 +428,8 @@ class HomeScreen extends StatelessWidget {
                                         color: isSelected
                                             ? Colors.white
                                             : (isDark
-                                            ? Colors.white70
-                                            : Colors.grey.shade800),
+                                                  ? Colors.white70
+                                                  : Colors.grey.shade800),
                                         fontSize: 12.sp,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -445,17 +446,17 @@ class HomeScreen extends StatelessWidget {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount:
-                          homeScreenProvider.brandVideoPostsList.length,
+                              homeScreenProvider.brandVideoPostsList.length,
                           gridDelegate:
-                          SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12.w,
-                            mainAxisSpacing: 12.h,
-                            childAspectRatio: 1.0,
-                          ),
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12.w,
+                                mainAxisSpacing: 12.h,
+                                childAspectRatio: 1.0,
+                              ),
                           itemBuilder: (context, index) {
                             final videoData =
-                            homeScreenProvider.brandVideoPostsList[index];
+                                homeScreenProvider.brandVideoPostsList[index];
                             return BrandVideoCard(
                               thumbnailUrl: videoData["thumbnail"] ?? '',
                               videoUrl: videoData["videoUrl"] ?? '',
@@ -472,7 +473,7 @@ class HomeScreen extends StatelessWidget {
                         itemCount: homeScreenProvider.templateCategories.length,
                         itemBuilder: (context, index) {
                           final category =
-                          homeScreenProvider.templateCategories[index];
+                              homeScreenProvider.templateCategories[index];
                           final categoryName = category.name?.trim() ?? '';
                           final slug = category.slug?.trim() ?? '';
 
@@ -481,7 +482,7 @@ class HomeScreen extends StatelessWidget {
                           }
 
                           final categoryIcon =
-                          (category.iconS3Key?.trim().isNotEmpty ?? false)
+                              (category.iconS3Key?.trim().isNotEmpty ?? false)
                               ? '${ApiEndpoints.cdnImageUrl}/${category.iconS3Key}'
                               : '';
 
@@ -560,10 +561,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildDateBox(
-      BuildContext context,
-      HomeScreenProvider provider,
-      String date,
-      ) {
+    BuildContext context,
+    HomeScreenProvider provider,
+    String date,
+  ) {
     final isSelected = provider.selectedDates == date;
 
     return GestureDetector(
@@ -592,27 +593,22 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildApiTemplateCard(
-      BuildContext context,
-      TemplateModel template,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateModel template,
+    bool isDark,
+  ) {
     final key = template.thumbnailS3Key?.trim() ?? '';
 
-    final imageUrl = key.isEmpty
-        ? ''
-        : '${ApiEndpoints.cdnImageUrl}/$key';
+    final imageUrl = key.isEmpty ? '' : '${ApiEndpoints.cdnImageUrl}/$key';
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
-        final templateUid =
-            (template as dynamic).uid?.toString().trim() ?? '';
+        final templateUid = (template as dynamic).uid?.toString().trim() ?? '';
 
         if (templateUid.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Template UID not available'),
-            ),
+            const SnackBar(content: Text('Template UID not available')),
           );
           return;
         }
@@ -630,14 +626,10 @@ class HomeScreen extends StatelessWidget {
       child: Container(
         margin: EdgeInsets.only(right: 12.w),
         decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF1E1E1E)
-              : Colors.white,
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.circular(16.r),
           border: Border.all(
-            color: isDark
-                ? Colors.grey.shade800
-                : Colors.grey.shade200,
+            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
             width: 1.2,
           ),
         ),
@@ -646,17 +638,15 @@ class HomeScreen extends StatelessWidget {
           child: imageUrl.isEmpty
               ? _templateImagePlaceholder(isDark)
               : CachedNetworkImage(
-            imageUrl: imageUrl,
-            fit: BoxFit.contain,
-            placeholder: (context, url) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            },
-            errorWidget: (context, url, error) {
-              return _templateImagePlaceholder(isDark);
-            },
-          ),
+                  imageUrl: imageUrl,
+                  fit: BoxFit.contain,
+                  placeholder: (context, url) {
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                  errorWidget: (context, url, error) {
+                    return _templateImagePlaceholder(isDark);
+                  },
+                ),
         ),
       ),
     );
@@ -723,10 +713,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildMySpaceList(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark,
-      void Function(dynamic item) onTap,
-      ) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+    void Function(dynamic item) onTap,
+  ) {
     return SizedBox(
       height: 90.h,
       child: ListView.builder(
@@ -747,8 +737,8 @@ class HomeScreen extends StatelessWidget {
                   colors: item.gradientColors.isNotEmpty
                       ? item.gradientColors
                       : (isDark
-                      ? [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)]
-                      : [Colors.white, Colors.grey.shade200]),
+                            ? [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)]
+                            : [Colors.white, Colors.grey.shade200]),
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -785,9 +775,9 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildSpecialDaysList(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark,
-      ) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+  ) {
     return SizedBox(
       height: 160.h,
       child: ListView.builder(
@@ -823,10 +813,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildMyZoneSlider(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark, {
-        required bool isBusinessUser,
-      }) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark, {
+    required bool isBusinessUser,
+  }) {
     return FutureBuilder<SharedPreferences>(
       future: SharedPreferences.getInstance(),
       builder: (context, snapshot) {
@@ -859,9 +849,9 @@ class HomeScreen extends StatelessWidget {
                       savedImagePath != null && savedImagePath.isNotEmpty
                           ? Image.file(File(savedImagePath), fit: BoxFit.cover)
                           : Image.asset(
-                        homeScreenProvider.myZoneBanners[index],
-                        fit: BoxFit.cover,
-                      ),
+                              homeScreenProvider.myZoneBanners[index],
+                              fit: BoxFit.cover,
+                            ),
                       if (isBusinessUser)
                         Positioned(
                           left: 0,
@@ -907,7 +897,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMyFrameHeader(bool isDark) {
+  Widget _buildMyFrameHeader(bool isDark, BuildContext context) {
     return Row(
       children: [
         // =========================
@@ -916,9 +906,7 @@ class HomeScreen extends StatelessWidget {
         Text(
           "MY FRAME - 1",
           style: TextStyle(
-            color: isDark
-                ? Colors.white
-                : AppColors.darkBlack,
+            color: isDark ? Colors.white : AppColors.darkBlack,
             fontSize: 18.sp,
             fontWeight: FontWeight.w800,
           ),
@@ -933,9 +921,7 @@ class HomeScreen extends StatelessWidget {
           width: 28.w,
           height: 28.w,
           decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF3A2929)
-                : const Color(0xFFFFE5E5),
+            color: isDark ? const Color(0xFF3A2929) : const Color(0xFFFFE5E5),
             borderRadius: BorderRadius.circular(8.r),
           ),
           child: IconButton(
@@ -943,11 +929,7 @@ class HomeScreen extends StatelessWidget {
             onPressed: () {
               // More options
             },
-            icon: Icon(
-              Icons.more_vert_rounded,
-              color: Colors.red,
-              size: 19.sp,
-            ),
+            icon: Icon(Icons.more_vert_rounded, color: Colors.red, size: 19.sp),
           ),
         ),
 
@@ -960,9 +942,7 @@ class HomeScreen extends StatelessWidget {
           width: 38.w,
           height: 38.w,
           decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF3A2929)
-                : const Color(0xFFFFE5E5),
+            color: isDark ? const Color(0xFF3A2929) : const Color(0xFFFFE5E5),
             shape: BoxShape.circle,
           ),
           child: IconButton(
@@ -970,11 +950,7 @@ class HomeScreen extends StatelessWidget {
             onPressed: () {
               // Edit action
             },
-            icon: Icon(
-              Icons.edit_outlined,
-              color: Colors.red,
-              size: 19.sp,
-            ),
+            icon: Icon(Icons.edit_outlined, color: Colors.red, size: 19.sp),
           ),
         ),
 
@@ -987,21 +963,15 @@ class HomeScreen extends StatelessWidget {
           width: 38.w,
           height: 38.w,
           decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF3A2929)
-                : const Color(0xFFFFE5E5),
+            color: isDark ? const Color(0xFF3A2929) : const Color(0xFFFFE5E5),
             shape: BoxShape.circle,
           ),
           child: IconButton(
             padding: EdgeInsets.zero,
             onPressed: () {
-              // Download / Export action
+              _showShareBottomSheet(context, isDark);
             },
-            icon: Icon(
-              Icons.download_outlined,
-              color: Colors.red,
-              size: 20.sp,
-            ),
+            icon: Icon(Icons.download_outlined, color: Colors.red, size: 20.sp),
           ),
         ),
       ],
@@ -1009,10 +979,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildLeadBannerSlider(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark, {
-        required bool isBusinessUser,
-      }) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark, {
+    required bool isBusinessUser,
+  }) {
     final controller = homeScreenProvider.leadPageController;
 
     // 3 different slides
@@ -1020,32 +990,22 @@ class HomeScreen extends StatelessWidget {
       {
         "title": "Grow Your Business",
         "description":
-        "List your business on MMB and get discovered by potential customers.",
+            "List your business on MMB and get discovered by potential customers.",
         "button": "GO PREMIUM",
-        "gradient": const [
-          Color(0xFFFFEEEE),
-          Color(0xFFFFF9EA),
-        ],
+        "gradient": const [Color(0xFFFFEEEE), Color(0xFFFFF9EA)],
       },
       {
         "title": "2000+ Business Templates",
-        "description":
-        "Find ready-made templates designed for your industry",
+        "description": "Find ready-made templates designed for your industry",
         "button": "LIST YOUR BUSINESS",
-        "gradient": const [
-          Color(0xFFFFF1F1),
-          Color(0xFFFFE4E4),
-        ],
+        "gradient": const [Color(0xFFFFF1F1), Color(0xFFFFE4E4)],
       },
       {
         "title": "Grow With MMB",
         "description":
-        "Get more visibility, promote your business and grow faster with MMB.",
+            "Get more visibility, promote your business and grow faster with MMB.",
         "button": "GET STARTED",
-        "gradient": const [
-          Color(0xFFF3F0FF),
-          Color(0xFFE8E1FF),
-        ],
+        "gradient": const [Color(0xFFF3F0FF), Color(0xFFE8E1FF)],
       },
     ];
 
@@ -1067,13 +1027,10 @@ class HomeScreen extends StatelessWidget {
                 final title = banner["title"] as String;
                 final description = banner["description"] as String;
                 final button = banner["button"] as String;
-                final gradient =
-                banner["gradient"] as List<Color>;
+                final gradient = banner["gradient"] as List<Color>;
 
                 return Container(
-                  margin: EdgeInsets.symmetric(
-                    horizontal: 4.w,
-                  ),
+                  margin: EdgeInsets.symmetric(horizontal: 4.w),
                   padding: EdgeInsets.symmetric(
                     horizontal: 16.w,
                     vertical: 12.h,
@@ -1087,10 +1044,8 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                    mainAxisAlignment:
-                    MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // TITLE
                       AppText(
@@ -1131,18 +1086,11 @@ class HomeScreen extends StatelessWidget {
                           },
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
-                            backgroundColor:
-                            AppColors.gold,
+                            backgroundColor: AppColors.gold,
                             foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 14.w,
-                            ),
-                            shape:
-                            RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(
-                                8.r,
-                              ),
+                            padding: EdgeInsets.symmetric(horizontal: 14.w),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.r),
                             ),
                           ),
                           child: AppText(
@@ -1150,8 +1098,7 @@ class HomeScreen extends StatelessWidget {
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 10.sp,
-                              fontWeight:
-                              FontWeight.w800,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
@@ -1173,42 +1120,31 @@ class HomeScreen extends StatelessWidget {
             builder: (context, child) {
               int currentIndex = 0;
 
-              if (controller.hasClients &&
-                  controller.page != null) {
-                currentIndex =
-                    controller.page!.round().clamp(
-                      0,
-                      banners.length - 1,
-                    );
+              if (controller.hasClients && controller.page != null) {
+                currentIndex = controller.page!.round().clamp(
+                  0,
+                  banners.length - 1,
+                );
               }
 
               return Row(
-                mainAxisAlignment:
-                MainAxisAlignment.center,
-                children: List.generate(
-                  banners.length,
-                      (index) {
-                    final isActive =
-                        currentIndex == index;
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(banners.length, (index) {
+                  final isActive = currentIndex == index;
 
-                    return AnimatedContainer(
-                      duration:
-                      const Duration(milliseconds: 250),
-                      margin: EdgeInsets.symmetric(
-                        horizontal: 3.w,
-                      ),
-                      width: isActive ? 24.w : 7.w,
-                      height: 7.h,
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? const Color(0xFF17295C)
-                            : Colors.grey.shade300,
-                        borderRadius:
-                        BorderRadius.circular(10.r),
-                      ),
-                    );
-                  },
-                ),
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: EdgeInsets.symmetric(horizontal: 3.w),
+                    width: isActive ? 24.w : 7.w,
+                    height: 7.h,
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? const Color(0xFF17295C)
+                          : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  );
+                }),
               );
             },
           ),
@@ -1216,4 +1152,376 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
+  void _showShareBottomSheet(BuildContext context, bool isDark) {
+    final shareItems = <_ShareItem>[
+      _ShareItem("Download", Icons.download_rounded),
+      _ShareItem("Instagram", Icons.camera_alt_rounded),
+      _ShareItem("Facebook", Icons.facebook_rounded),
+      _ShareItem("X (Twitter)", Icons.close_rounded),
+      _ShareItem("LinkedIn", Icons.link_rounded),
+      _ShareItem("Pinterest", Icons.push_pin_rounded),
+      _ShareItem("Boost", Icons.rocket_launch_rounded),
+    ];
+
+    final messageItems = <_ShareItem>[
+      _ShareItem("WhatsApp", Icons.chat_rounded),
+      _ShareItem("Messenger", Icons.message_rounded),
+      _ShareItem("Drive", Icons.drive_file_move_rounded),
+      _ShareItem("Link", Icons.link_rounded),
+    ];
+
+    final manageItems = <_ShareItem>[
+      _ShareItem("Caption", Icons.description_rounded),
+      _ShareItem("Schedule", Icons.calendar_month_rounded),
+      _ShareItem("Link", Icons.link_rounded),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          top: false,
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.92,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+            ),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 22.w,
+                  right: 22.w,
+                  top: 10.h,
+                  bottom: 20.h,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Drag handle
+                    Center(
+                      child: Container(
+                        width: 70.w,
+                        height: 5.h,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade400,
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 14.h),
+
+                    // Header
+                    Row(
+                      children: [
+                        Text(
+                          "Share",
+                          style: TextStyle(
+                            color: isDark ? Colors.white : AppColors.darkBlack,
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+
+                        const Spacer(),
+
+                        InkWell(
+                          borderRadius: BorderRadius.circular(30.r),
+                          onTap: () {
+                            Navigator.pop(sheetContext);
+                          },
+                          child: Container(
+                            width: 38.w,
+                            height: 38.w,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF3A2929)
+                                  : const Color(0xFFFFF1F1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close,
+                              color: Colors.red,
+                              size: 22.sp,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 20.h),
+
+                    // SHARE
+                    _buildShareSection(
+                      context: sheetContext,
+                      title: null,
+                      items: shareItems,
+                      isDark: isDark,
+                    ),
+
+                    SizedBox(height: 16.h),
+
+                    // MESSAGE
+                    _buildShareSection(
+                      context: sheetContext,
+                      title: "Message",
+                      items: messageItems,
+                      isDark: isDark,
+                    ),
+
+                    SizedBox(height: 16.h),
+
+                    // MANAGE
+                    _buildShareSection(
+                      context: sheetContext,
+                      title: "Manage",
+                      items: manageItems,
+                      isDark: isDark,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildShareSection({
+    required BuildContext context,
+    required String? title,
+    required List<_ShareItem> items,
+    required bool isDark,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title != null) ...[
+          Text(
+            title,
+            style: TextStyle(
+              color: isDark ? Colors.white : AppColors.darkBlack,
+              fontSize: 22.sp,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 12.h),
+        ],
+
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          itemCount: items.length,
+
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+
+            // 🔥 Equal spacing
+            crossAxisSpacing: 12.w,
+            mainAxisSpacing: 18.h,
+
+            // 🔥 Consistent card size
+            childAspectRatio: 0.82,
+          ),
+
+          itemBuilder: (context, index) {
+            final item = items[index];
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(12.r),
+              onTap: () {
+                _handleShareItem(context, item);
+              },
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF302020)
+                      : const Color(0xFFFFF5F5),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.12)),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 30.w,
+                      height: 30.w,
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(item.icon, color: Colors.red, size: 20.sp),
+                    ),
+
+                    SizedBox(height: 8.h),
+
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4.w),
+                      child: Text(
+                        item.title,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppColors.darkBlack,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  void _handleShareItem(BuildContext context, _ShareItem item) {
+    switch (item.title) {
+      case "Download":
+        Navigator.pop(context);
+
+        _downloadFrame();
+
+        break;
+
+      case "Instagram":
+        Navigator.pop(context);
+
+        // Instagram share
+        _openInstagram();
+
+        break;
+
+      case "Facebook":
+        Navigator.pop(context);
+
+        break;
+
+      case "X (Twitter)":
+        Navigator.pop(context);
+
+        break;
+
+      case "LinkedIn":
+        Navigator.pop(context);
+
+        break;
+
+      case "Pinterest":
+        Navigator.pop(context);
+
+        break;
+
+      case "Boost":
+        Navigator.pop(context);
+
+        break;
+
+      case "WhatsApp":
+        Navigator.pop(context);
+
+        _openWhatsApp();
+
+        break;
+
+      case "Messenger":
+        Navigator.pop(context);
+
+        break;
+
+      case "Drive":
+        Navigator.pop(context);
+
+        break;
+
+      case "Link":
+        Navigator.pop(context);
+
+        break;
+
+      case "Caption":
+        Navigator.pop(context);
+
+        break;
+
+      case "Schedule":
+        Navigator.pop(context);
+
+        break;
+      case "copy":
+        _copyLink(context);
+        Navigator.pop(context);
+
+        break;
+    }
+  }
+
+  Future<void> _openInstagram() async {
+    final appUrl = Uri.parse("instagram://app");
+
+    final webUrl = Uri.parse("https://www.instagram.com/");
+
+    if (await canLaunchUrl(appUrl)) {
+      await launchUrl(appUrl);
+    } else {
+      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _openWhatsApp() async {
+    final url = Uri.parse("whatsapp://send");
+
+    final webUrl = Uri.parse("https://www.whatsapp.com/");
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _copyLink(BuildContext context) async {
+    const link = "https://your-mmb-app-link.com";
+
+    await Clipboard.setData(const ClipboardData(text: link));
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Link copied")));
+    }
+  }
+
+  Future<void> _downloadFrame() async {
+    // existing PNG export / save / share logic
+  }
+}
+
+class _ShareItem {
+  final String title;
+  final IconData icon;
+
+  _ShareItem(this.title, this.icon);
 }

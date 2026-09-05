@@ -131,12 +131,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  Future<bool> apiSendOtp(
-      String phone,
-      String purpose,
-      ) async {
-    debugPrint("🚀 apiSendOtp START");
-
+  Future<bool> apiSendOtp(String phone, String purpose) async {
     _isLoginLoading = true;
     _errorMessage = null;
     _mobileNumber = phone.trim();
@@ -144,27 +139,15 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
 
     try {
-      debugPrint("📡 Calling AuthRepository.sendOtp...");
-
-      final result = await AuthRepository.instance.sendOtp(
-        phone,
-        purpose,
-      );
-
-      debugPrint("📡 AuthRepository.sendOtp COMPLETED");
-
+      final result = await AuthRepository.instance.sendOtp(phone, purpose);
       _isLoginLoading = false;
       notifyListeners();
 
-      return result.when(
+      return await result.when(
         success: (data) {
-          debugPrint("✅ OTP API SUCCESS");
-          debugPrint("📦 Message: ${data.message}");
           return true;
         },
         failure: (error) {
-          debugPrint("❌ OTP API FAILURE: $error");
-
           _errorMessage = error.toString();
           notifyListeners();
 
@@ -172,7 +155,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
         },
       );
     } catch (e, stackTrace) {
-      debugPrint("❌ OTP EXCEPTION: $e");
       debugPrint("$stackTrace");
 
       _isLoginLoading = false;
@@ -242,48 +224,133 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
       return await result.when(
         success: (data) async {
-          final accessToken = data['access_token'];
-          final refreshToken = data['refresh_token'];
+          final accessToken = data['access_token']?.toString();
+          final refreshToken = data['refresh_token']?.toString();
+
           final bool isNewUser =
-              data['is_new_user'] ?? data['data']?['is_new_user'] ?? false;
+              data['is_new_user'] ??
+                  data['data']?['is_new_user'] ??
+                  false;
 
           final onboardingData =
-              data['onboarding'] ?? data['data']?['onboarding'];
+              data['onboarding'] ??
+                  data['data']?['onboarding'];
 
-          debugPrint("📦 Onboarding Raw Data: $onboardingData");
+          final String accountType =
+              onboardingData?['account_type']?.toString() ?? "";
 
-          final String accountType = onboardingData?['account_type'] ?? "";
-          final bool hasBusiness = onboardingData?['has_business'] ?? false;
-          final bool completed = onboardingData?['completed'] ?? false;
+          final bool hasBusiness =
+              onboardingData?['has_business'] ?? false;
 
-          debugPrint(
-            "🔍 Parsed -> AccountType: $accountType, HasBusiness: $hasBusiness, Completed: $completed",
-          );
+          final bool completed =
+              onboardingData?['completed'] ?? false;
 
-          if (accessToken != null) {
-            await ApiHandler.instance.setTokens(
-              token: accessToken,
-              refreshToken: refreshToken,
-            );
+          // 🔥 Token must exist
+          if (accessToken == null || accessToken.isEmpty) {
+            debugPrint("❌ Access token missing after OTP verification");
+
+            _errorMessage = "Login token missing";
+            _isVerifyLoading = false;
+            notifyListeners();
+
+            return null;
           }
 
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('saved_mobile_number', _mobileNumber.trim());
-          await prefs.setBool('is_new_user', isNewUser);
-          await prefs.setBool('is_logged_in', true);
-          await prefs.setBool('is_business_completed', completed);
-          await prefs.setString('account_type', accountType);
+          // 🔥 Refresh token must exist
+          if (refreshToken == null || refreshToken.isEmpty) {
+            debugPrint("❌ Refresh token missing after OTP verification");
 
+            _errorMessage = "Refresh token missing";
+            _isVerifyLoading = false;
+            notifyListeners();
+
+            return null;
+          }
+
+          // 🔥 Save tokens permanently
+          final prefs = await SharedPreferences.getInstance();
+
+          await prefs.setString(
+            'auth_token',
+            accessToken,
+          );
+
+          await prefs.setString(
+            'refresh_token',
+            refreshToken,
+          );
+
+          await prefs.setString(
+            'saved_mobile_number',
+            _mobileNumber.trim(),
+          );
+
+          await prefs.setBool(
+            'is_new_user',
+            isNewUser,
+          );
+
+          await prefs.setBool(
+            'is_logged_in',
+            true,
+          );
+
+          await prefs.setBool(
+            'is_business_completed',
+            completed,
+          );
+
+          await prefs.setString(
+            'account_type',
+            accountType,
+          );
+
+          // 🔥 Also update ApiHandler
+          await ApiHandler.instance.setTokens(
+            token: accessToken,
+            refreshToken: refreshToken,
+          );
+
+          // 🔥 Verify that SharedPreferences actually saved them
+          final savedAccessToken =
+          prefs.getString('auth_token');
+
+          final savedRefreshToken =
+          prefs.getString('refresh_token');
+
+          debugPrint(
+            '✅ Access token saved: '
+                '${savedAccessToken != null && savedAccessToken.isNotEmpty}',
+          );
+
+          debugPrint(
+            '✅ Refresh token saved: '
+                '${savedRefreshToken != null && savedRefreshToken.isNotEmpty}',
+          );
+
+          _isVerifyLoading = false;
           notifyListeners();
 
           if (context.mounted) {
-            if (completed == true ||
-                (accountType == "business" && hasBusiness == true)) {
-              debugPrint("👉 Navigating to CustomBottomNavScreen");
-              Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
+            if (completed ||
+                (accountType == "business" && hasBusiness)) {
+              debugPrint(
+                "👉 Navigating to CustomBottomNavScreen",
+              );
+
+              Navigator.pushReplacementNamed(
+                context,
+                "/CustomBottomNavScreen",
+              );
             } else {
-              debugPrint("👉 Navigating to BusinessDetailsScreen");
-              Navigator.pushReplacementNamed(context, "/BusinessDetailsScreen");
+              debugPrint(
+                "👉 Navigating to BusinessDetailsScreen",
+              );
+
+              Navigator.pushReplacementNamed(
+                context,
+                "/BusinessDetailsScreen",
+              );
             }
           }
 

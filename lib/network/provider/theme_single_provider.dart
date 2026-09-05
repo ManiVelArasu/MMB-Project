@@ -1,9 +1,6 @@
 import 'package:flutter/foundation.dart';
-
 import '../../Api Model/theme_single_model.dart';
 import '../../Repository/theme_repoaitory.dart';
-
-import 'package:flutter/foundation.dart';
 
 class ThemeSingleItemProvider extends ChangeNotifier {
   bool _isFavorite = false;
