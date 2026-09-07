@@ -202,20 +202,31 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final extentX = _rotationExtentX(item, scale);
     final extentY = _rotationExtentY(item, scale);
 
-    var centerX = position.dx + baseW / 2.0;
-    var centerY = position.dy + baseH / 2.0;
+    // `position` is the top-left of the item's unscaled layout box, while
+    // EditableItemWidget scales that box around its center.  Therefore the
+    // visual center is still `position + baseSize / 2`, but the allowed
+    // center range must be based on the *scaled/rotated* visual extents.
+    //
+    // This is important when an item is smaller than its original box: the
+    // position is allowed to become slightly negative so the visible image
+    // can actually touch the canvas edges.  Clamping to 0..canvas-baseSize
+    // made a dragged/resized item jump away from the finger.
+    final minCenterX = extentX;
+    final maxCenterX = canvasWidth - extentX;
+    final minCenterY = extentY;
+    final maxCenterY = canvasHeight - extentY;
 
-    if (extentX * 2.0 >= canvasWidth) {
-      centerX = canvasWidth / 2.0;
-    } else {
-      centerX = centerX.clamp(extentX, canvasWidth - extentX).toDouble();
-    }
+    final centerX = minCenterX >= maxCenterX
+        ? canvasWidth / 2.0
+        : (position.dx + baseW / 2.0)
+        .clamp(minCenterX, maxCenterX)
+        .toDouble();
 
-    if (extentY * 2.0 >= canvasHeight) {
-      centerY = canvasHeight / 2.0;
-    } else {
-      centerY = centerY.clamp(extentY, canvasHeight - extentY).toDouble();
-    }
+    final centerY = minCenterY >= maxCenterY
+        ? canvasHeight / 2.0
+        : (position.dy + baseH / 2.0)
+        .clamp(minCenterY, maxCenterY)
+        .toDouble();
 
     return Offset(centerX - baseW / 2.0, centerY - baseH / 2.0);
   }
@@ -245,16 +256,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final limitX = extentXAtOne <= 0
         ? 10.0
         : math.min(
-            centerX / extentXAtOne,
-            (canvasWidth - centerX) / extentXAtOne,
-          );
+      centerX / extentXAtOne,
+      (canvasWidth - centerX) / extentXAtOne,
+    );
 
     final limitY = extentYAtOne <= 0
         ? 10.0
         : math.min(
-            centerY / extentYAtOne,
-            (canvasHeight - centerY) / extentYAtOne,
-          );
+      centerY / extentYAtOne,
+      (canvasHeight - centerY) / extentYAtOne,
+    );
 
     final maxAllowed = math.max(0.05, math.min(10.0, math.min(limitX, limitY)));
 
@@ -317,10 +328,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool isEcommerceLoading = false;
 
   Future<List<String>> _fetchFreepikCategory(
-    String query, {
-    required void Function(bool) setLoading,
-    required void Function(List<String>) setData,
-  }) async {
+      String query, {
+        required void Function(bool) setLoading,
+        required void Function(List<String>) setData,
+      }) async {
     setLoading(true);
     notifyListeners();
     try {
@@ -426,11 +437,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Loads one element category without touching backgroundAssets or the
   /// generic freePikAssets list.
   Future<void> fetchElementCategory(
-    String query, {
-    int page = 1,
-    int limit = 4,
-    bool append = false,
-  }) async {
+      String query, {
+        int page = 1,
+        int limit = 4,
+        bool append = false,
+      }) async {
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) return;
 
@@ -485,7 +496,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         for (final item in merged) {
           final key =
               item.id?.toString() ??
-              '${item.name}|${item.s3Key}|${item.s3Key ?? ''}';
+                  '${item.name}|${item.s3Key}|${item.s3Key ?? ''}';
           unique[key] = item;
         }
 
@@ -498,9 +509,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             .map((e) => e.previewKey)
             .where(
               (e) =>
-                  e.trim().isNotEmpty &&
-                  !items.any((x) => x.previewKey == e && x.isLocked),
-            )
+          e.trim().isNotEmpty &&
+              !items.any((x) => x.previewKey == e && x.isLocked),
+        )
             .toSet()
             .toList();
       } else {
@@ -598,7 +609,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           for (final item in allAssetItems) {
             final key =
                 item.id?.toString() ??
-                '${item.name}|${item.s3Key}|${item.s3Key ?? ''}';
+                    '${item.name}|${item.s3Key}|${item.s3Key ?? ''}';
             unique[key] = item;
           }
 
@@ -681,10 +692,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Loads the template detail API and converts its Fabric JSON `content`
   /// into the editor's existing EditorItem list.
   Future<bool> loadTemplateByUid(
-    String uid, {
-    double? canvasWidth,
-    double? canvasHeight,
-  }) async {
+      String uid, {
+        double? canvasWidth,
+        double? canvasHeight,
+      }) async {
     final safeUid = uid.trim();
     if (safeUid.isEmpty) {
       _templateDetailError = 'Template UID is empty';
@@ -751,7 +762,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       if (objects == null) {
         throw Exception(
           'Template content has no supported objects array '
-          '(expected objects or pages[0].fabric.objects)',
+              '(expected objects or pages[0].fabric.objects)',
         );
       }
 
@@ -770,11 +781,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             .whereType<Map>()
             .map((e) => Map<String, dynamic>.from(e))
             .toList(),
+        templateUid: safeUid,
       );
 
       debugPrint(
         '✅ Template loaded: ${detail.data.name} | '
-        '${_items.length} objects',
+            '${_items.length} objects',
       );
       return true;
     } catch (e, stackTrace) {
@@ -830,7 +842,38 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   bool isTemplateLoaded = false;
 
-  void loadItemsFromJson(List<Map<String, dynamic>> jsonList) {
+  String _resolveTemplateImageUrl(String src, String? templateUid) {
+    final value = src.trim();
+    if (value.isEmpty) return '';
+
+    // Already an absolute URL (CDN, S3, etc.).
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value;
+    }
+
+    final cdnBase = ApiEndpoints.cdnImageUrl.replaceFirst(RegExp(r'\\/$'), '');
+    final clean = value.replaceFirst(RegExp(r'^/+'), '');
+
+    // If the JSON already stores the full templates path, don't add it twice.
+    if (clean.startsWith('templates/')) {
+      return '$cdnBase/$clean';
+    }
+
+    // Admin-uploaded template images are stored as:
+    // CDN_URL/templates/<template_uid>/<src>
+    final uid = templateUid?.trim() ?? '';
+    if (uid.isNotEmpty) {
+      return '$cdnBase/templates/$uid/$clean';
+    }
+
+    // Backward compatibility for older templates that stored a CDN-relative key.
+    return '$cdnBase/$clean';
+  }
+
+  void loadItemsFromJson(
+      List<Map<String, dynamic>> jsonList, {
+        String? templateUid,
+      }) {
     try {
       _items.clear();
       _textLetterSpacing.clear();
@@ -886,7 +929,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               : FontStyle.normal;
           _textUnderline[id] = json['underline'] == true;
         } else if (type == 'image') {
-          final imageUrl = json['src']?.toString().trim() ?? '';
+          final imageSrc = json['src']?.toString().trim() ?? '';
+          final imageUrl = _resolveTemplateImageUrl(imageSrc, templateUid);
           if (imageUrl.isNotEmpty) {
             _items.add(
               EditorItem(
@@ -987,6 +1031,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         type: 'text',
         text: initialText,
         position: const Offset(120, 200),
+        // Manual text starts at 100, matching the editor's default text size.
+        fontSize: 100.0,
         width: 600,
         height: 180,
         color: Colors.black87,
@@ -1284,7 +1330,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           r'''\bviewBox\s*=\s*["']([^"']+)["']''',
           caseSensitive: false,
         ).firstMatch(attrs)?.group(1) ??
-        '0 0 512 512';
+            '0 0 512 512';
 
     final root = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="$viewBox">';
     final tokens = RegExp(
@@ -1390,11 +1436,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void addVideo(
-    String videoUrl, {
-    bool isLocal = false,
-    double width = 600,
-    double height = 400,
-  }) {
+      String videoUrl, {
+        bool isLocal = false,
+        double width = 600,
+        double height = 400,
+      }) {
     if (videoUrl.trim().isEmpty) return;
 
     _saveState();
@@ -1422,10 +1468,15 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     if (index == -1) return;
 
     final item = _items[index];
-    final bounded = _clampPositionForFrame(item, newPos);
+
+    // Position is intentionally not hard-clamped here. The interactive
+    // canvas calculates the valid drag range in canvas coordinates. A second
+    // provider-level clamp caused the element to fight the finger, especially
+    // after scaling/rotation.
+    final safePosition = newPos;
 
     _items[index] = item.copyWith(
-      position: _isBackgroundLayer(item) ? Offset.zero : bounded,
+      position: _isBackgroundLayer(item) ? Offset.zero : safePosition,
     );
     notifyListeners();
   }
@@ -1513,11 +1564,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void updateImageColorAdjustments(
-    String id, {
-    double? brightness,
-    double? contrast,
-    double? saturation,
-  }) {
+      String id, {
+        double? brightness,
+        double? contrast,
+        double? saturation,
+      }) {
     final index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _saveState();
@@ -1908,17 +1959,17 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       debugPrint("Searching Pexels videos: $searchQuery");
 
       _pexelsVideoAssets =
-          await FreePikService.searchPexelsVideoAssets(
-            searchQuery,
-            page: 1,
-            limit: 24,
-          ).timeout(
-            const Duration(seconds: 15),
-            onTimeout: () {
-              debugPrint("Pexels video search timeout");
-              return <PexelsVideoAsset>[];
-            },
-          );
+      await FreePikService.searchPexelsVideoAssets(
+        searchQuery,
+        page: 1,
+        limit: 24,
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          debugPrint("Pexels video search timeout");
+          return <PexelsVideoAsset>[];
+        },
+      );
 
       debugPrint("Pexels videos found: ${_pexelsVideoAssets.length}");
     } catch (e, stackTrace) {
@@ -1933,12 +1984,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setBackgroundImage(
-    String imageUrl, {
-    double canvasWidth = 1080.0,
-    double canvasHeight = 1080.0,
-    double? sourceWidth,
-    double? sourceHeight,
-  }) {
+      String imageUrl, {
+        double canvasWidth = 1080.0,
+        double canvasHeight = 1080.0,
+        double? sourceWidth,
+        double? sourceHeight,
+      }) {
     _saveState();
     _removeBackgroundLayers();
     _backgroundColor = Colors.transparent;
@@ -1948,7 +1999,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         ? sourceWidth
         : canvasWidth;
     final sh =
-        (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
+    (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
         ? sourceHeight
         : canvasHeight;
 
@@ -1982,12 +2033,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setBackgroundVideo(
-    String videoUrl, {
-    double canvasWidth = 1080.0,
-    double canvasHeight = 1080.0,
-    double? sourceWidth,
-    double? sourceHeight,
-  }) {
+      String videoUrl, {
+        double canvasWidth = 1080.0,
+        double canvasHeight = 1080.0,
+        double? sourceWidth,
+        double? sourceHeight,
+      }) {
     _saveState();
     _removeBackgroundLayers();
     _backgroundColor = Colors.transparent;
@@ -1997,7 +2048,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         ? sourceWidth
         : canvasWidth;
     final sh =
-        (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
+    (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
         ? sourceHeight
         : canvasHeight;
 
@@ -2032,8 +2083,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   String? get backgroundImageUrl {
     final bgItem = _items.firstWhere(
-      (item) =>
-          item.position.dx == 0 &&
+          (item) =>
+      item.position.dx == 0 &&
           item.position.dy == 0 &&
           item.type == 'image',
       orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
@@ -2043,8 +2094,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   String? get backgroundVideoUrl {
     final bgItem = _items.firstWhere(
-      (item) =>
-          item.position.dx == 0 &&
+          (item) =>
+      item.position.dx == 0 &&
           item.position.dy == 0 &&
           item.type == 'video',
       orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
@@ -2053,13 +2104,13 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void replaceBackgroundImage(
-    String imageUrl,
-    String selectedItemIdToRemove, {
-    double canvasWidth = 1080.0,
-    double canvasHeight = 1080.0,
-    double? sourceWidth,
-    double? sourceHeight,
-  }) {
+      String imageUrl,
+      String selectedItemIdToRemove, {
+        double canvasWidth = 1080.0,
+        double canvasHeight = 1080.0,
+        double? sourceWidth,
+        double? sourceHeight,
+      }) {
     _saveState();
     _removeBackgroundLayers();
     _items.removeWhere((item) => item.id == selectedItemIdToRemove);
@@ -2070,7 +2121,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         ? sourceWidth
         : canvasWidth;
     final sh =
-        (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
+    (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
         ? sourceHeight
         : canvasHeight;
     final coverScale = math.max(canvasWidth / sw, canvasHeight / sh);
@@ -2113,21 +2164,44 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
+  // Flip state is kept for every editable layer (image + text + shape/SVG/video).
+  // The old implementation only stored image flip state and the canvas never
+  // applied it to the rendered widget.
   final Map<String, bool> _imageFlipX = {};
   final Map<String, bool> _imageFlipY = {};
+  final Map<String, bool> _itemFlipX = {};
+  final Map<String, bool> _itemFlipY = {};
 
-  bool isImageFlippedX(String id) => _imageFlipX[id] ?? false;
-  bool isImageFlippedY(String id) => _imageFlipY[id] ?? false;
+  bool isImageFlippedX(String id) => _itemFlipX[id] ?? _imageFlipX[id] ?? false;
+  bool isImageFlippedY(String id) => _itemFlipY[id] ?? _imageFlipY[id] ?? false;
+  bool isItemFlippedX(String id) => _itemFlipX[id] ?? false;
+  bool isItemFlippedY(String id) => _itemFlipY[id] ?? false;
 
   void flipImageHorizontal(String id) {
     _saveState();
-    _imageFlipX[id] = !(_imageFlipX[id] ?? false);
+    final next = !(_itemFlipX[id] ?? _imageFlipX[id] ?? false);
+    _itemFlipX[id] = next;
+    _imageFlipX[id] = next;
     notifyListeners();
   }
 
   void flipImageVertical(String id) {
     _saveState();
-    _imageFlipY[id] = !(_imageFlipY[id] ?? false);
+    final next = !(_itemFlipY[id] ?? _imageFlipY[id] ?? false);
+    _itemFlipY[id] = next;
+    _imageFlipY[id] = next;
+    notifyListeners();
+  }
+
+  void flipItemHorizontal(String id) {
+    _saveState();
+    _itemFlipX[id] = !(_itemFlipX[id] ?? false);
+    notifyListeners();
+  }
+
+  void flipItemVertical(String id) {
+    _saveState();
+    _itemFlipY[id] = !(_itemFlipY[id] ?? false);
     notifyListeners();
   }
 
@@ -2187,12 +2261,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _syncCurrentPage();
     final source = duplicateCurrent
         ? _items
-              .map(
-                (e) => e.copyWith(
-                  id: '${DateTime.now().microsecondsSinceEpoch}_${e.id}',
-                ),
-              )
-              .toList()
+        .map(
+          (e) => e.copyWith(
+        id: '${DateTime.now().microsecondsSinceEpoch}_${e.id}',
+      ),
+    )
+        .toList()
         : <EditorItem>[];
     _pages.add(source);
     _currentPageIndex = _pages.length - 1;
@@ -2321,7 +2395,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     debugPrint(
       'FULL PAGE PASTED: ${pastedItems.length} items -> '
-      'Page ${_currentPageIndex + 1}',
+          'Page ${_currentPageIndex + 1}',
     );
 
     return true;
@@ -2372,11 +2446,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Updates position, scale and rotation in a single provider notification.
   /// Used by interactive canvas/background gestures.
   void updateItemTransform(
-    String id, {
-    Offset? position,
-    double? scale,
-    double? rotation,
-  }) {
+      String id, {
+        Offset? position,
+        double? scale,
+        double? rotation,
+        bool clampToFrame = true,
+      }) {
     final index = _items.indexWhere((item) => item.id == id);
     if (index == -1) return;
 
@@ -2398,13 +2473,22 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final requestedScale = (scale ?? current.scale).isFinite
         ? (scale ?? current.scale)
         : current.scale;
-    final safeScale = _maxScaleForFrame(rotated, requestedScale);
+
+    // Interactive resize must be free-form. The old implementation always
+    // passed the scale through _maxScaleForFrame(), which silently reduced
+    // the scale whenever the element approached/exceeded the canvas bounds.
+    // That made the resize handle feel stuck and also prevented an element
+    // from being moved to many valid positions. Only clamp when the caller
+    // explicitly asks for frame clamping.
+    final safeScale = clampToFrame
+        ? _maxScaleForFrame(rotated, requestedScale)
+        : requestedScale.clamp(0.02, 10.0).toDouble();
     final transformed = rotated.copyWith(scale: safeScale);
 
-    final nextPosition = _clampPositionForFrame(
-      transformed,
-      position ?? current.position,
-    );
+    final requestedPosition = position ?? current.position;
+    final nextPosition = clampToFrame
+        ? _clampPositionForFrame(transformed, requestedPosition)
+        : requestedPosition;
 
     _items[index] = transformed.copyWith(position: nextPosition);
     notifyListeners();
