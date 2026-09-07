@@ -66,9 +66,13 @@ class TemplateEditScreen extends StatelessWidget {
         body: SafeArea(
           child: EditorView(
             resizeSize: resolvedResizeSize,
-            templateUid:
-            templateUid ??
-                (args is Map ? args['templateUid']?.toString() : null),
+            templateUid: templateUid ??
+                (args is Map
+                    ? (args['templateUid'] ??
+                    args['template_uid'] ??
+                    args['uid'])
+                    ?.toString()
+                    : null),
           ),
         ),
       ),
@@ -106,8 +110,18 @@ class _EditorViewState extends State<EditorView> {
   }
 
   bool _isCanvasBackground(EditorItem item) {
-    return item.id?.startsWith('bg_') == true &&
-        (item.type == 'image' || item.type == 'video' || item.type == 'shape');
+    if (item.id?.startsWith('bg_') == true &&
+        (item.type == 'image' || item.type == 'video' || item.type == 'shape')) {
+      return true;
+    }
+
+    // Admin-uploaded Fabric templates can store the full-canvas background
+    // as an ordinary image object instead of an editor-generated bg_* item.
+    return item.type == 'image' &&
+        item.position.dx.abs() < 1.0 &&
+        item.position.dy.abs() < 1.0 &&
+        (item.width - 1080.0).abs() < 2.0 &&
+        (item.height - 1080.0).abs() < 2.0;
   }
 
   Widget _buildCanvasBackground(EditorProvider provider) {
@@ -2949,7 +2963,7 @@ class _EditorViewState extends State<EditorView> {
                             },
                           ),
                       ],
-
+                    
                     );
                   },
                 ),
@@ -3224,18 +3238,6 @@ class _EditorViewState extends State<EditorView> {
                   Icons.format_size_rounded,
                   'SIZE',
                       () => _showTextSizeBottomSheet(context, provider, id, isDark),
-                ),
-                _bottomTool(
-                  Icons.flip_rounded,
-                  'FLIP H',
-                      () => provider.flipItemHorizontal(id),
-                  selected: provider.isItemFlippedX(id),
-                ),
-                _bottomTool(
-                  Icons.flip_rounded,
-                  'FLIP V',
-                      () => provider.flipItemVertical(id),
-                  selected: provider.isItemFlippedY(id),
                 ),
                 ...fonts.map(
                       (font) => _bottomTool(
@@ -3931,12 +3933,6 @@ class _EditorViewState extends State<EditorView> {
                   Icons.flip_rounded,
                   'FLIP',
                       () => provider.flipImageHorizontal(id),
-                ),
-                _bottomTool(
-                  Icons.flip_rounded,
-                  'FLIP V',
-                      () => provider.flipImageVertical(id),
-                  selected: provider.isImageFlippedY(id),
                 ),
                 _bottomTool(
                   Icons.flip_to_front_rounded,
@@ -4902,12 +4898,10 @@ class _TransformSelectionOverlayState
                   // inside an outer Transform.scale, so global finger delta
                   // must first be converted by the canvas scale.
                   //
-                  // The stored position is the top-left of the unscaled
-                  // layout box, while the widget scales around its center.
-                  // Therefore the valid position range is shifted by half of
-                  // the scale delta. This keeps the entire visual element
-                  // inside the canvas while still allowing it to be placed
-                  // at every edge/corner.
+                  // The stored position is the top-left of the layout box,
+                  // matching Fabric's originX/originY. The item widget now
+                  // scales from that top-left point, so no half-scale offset
+                  // must be added to the drag position.
                   final scale = widget.item.scale.isFinite
                       ? widget.item.scale.clamp(0.02, 10.0).toDouble()
                       : 1.0;
@@ -4917,20 +4911,19 @@ class _TransformSelectionOverlayState
                   final visualW = baseW * scale;
                   final visualH = baseH * scale;
 
-                  final minX = (visualW - baseW) / 2.0;
-                  final minY = (visualH - baseH) / 2.0;
-                  final maxX = widget.canvasWidth - baseW - minX;
-                  final maxY = widget.canvasHeight - baseH - minY;
+                  final minX = math.min(0.0, widget.canvasWidth - visualW);
+                  final maxX = math.max(0.0, widget.canvasWidth - visualW);
+                  final minY = math.min(0.0, widget.canvasHeight - visualH);
+                  final maxY = math.max(0.0, widget.canvasHeight - visualH);
 
                   final rawX = _startPosition.dx + dx;
                   final rawY = _startPosition.dy + dy;
 
-                  final nextX = maxX >= minX
-                      ? rawX.clamp(minX, maxX).toDouble()
-                      : widget.canvasWidth / 2.0 - baseW / 2.0;
-                  final nextY = maxY >= minY
-                      ? rawY.clamp(minY, maxY).toDouble()
-                      : widget.canvasHeight / 2.0 - baseH / 2.0;
+                  // Allow the object to be moved anywhere over the canvas,
+                  // including touching an edge. Do not use the unscaled base
+                  // size for the clamp because the visual size is base*scale.
+                  final nextX = rawX.clamp(minX, maxX).toDouble();
+                  final nextY = rawY.clamp(minY, maxY).toDouble();
 
                   _provider.updateItemTransform(
                     widget.item.id ?? '',
@@ -5213,24 +5206,15 @@ class _TransformSelectionOverlayState
                 .toDouble();
             final scaleDelta = newScale - _resizeStartScale;
 
-            // EditableItemWidget scales around its CENTER. Therefore, when
-            // resizing from one side, move the stored unscaled top-left by
-            // HALF of the size change in the opposite direction. This keeps
-            // the opposite edge locked exactly where it was.
-            //
-            // Example: drag bottom upward -> scale decreases -> position
-            // moves upward? No: visual top must remain fixed, so the stored
-            // position moves DOWN by half the size reduction. The formula
-            // below produces exactly that behavior.
-            final anchorX = alignment.x == 1
-                ? baseWidth * scaleDelta / 2.0
-                : alignment.x == -1
-                ? -baseWidth * scaleDelta / 2.0
+            // The item is rendered with a top-left scale origin, matching
+            // Fabric's originX/originY. Keep the opposite edge/corner fixed:
+            // right/bottom handles leave position unchanged; left/top
+            // handles move the top-left by the amount the size changed.
+            final anchorX = alignment.x == -1
+                ? -baseWidth * scaleDelta
                 : 0.0;
-            final anchorY = alignment.y == 1
-                ? baseHeight * scaleDelta / 2.0
-                : alignment.y == -1
-                ? -baseHeight * scaleDelta / 2.0
+            final anchorY = alignment.y == -1
+                ? -baseHeight * scaleDelta
                 : 0.0;
 
             // Rotate the position correction back into canvas coordinates.
@@ -5440,19 +5424,11 @@ class _InteractiveBackgroundLayerState
           children: [
             Transform.rotate(
               angle: item.rotation,
-              child: Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.diagonal3Values(
-                  context.read<EditorProvider>().isImageFlippedX(item.id ?? '') ? -1.0 : 1.0,
-                  context.read<EditorProvider>().isImageFlippedY(item.id ?? '') ? -1.0 : 1.0,
-                  1.0,
-                ),
-                child: Opacity(
-                  opacity: item.opacity.clamp(0.0, 1.0),
-                  child: EditableItemWidget.buildStandaloneMediaContent(
-                    context,
-                    item,
-                  ),
+              child: Opacity(
+                opacity: item.opacity.clamp(0.0, 1.0),
+                child: EditableItemWidget.buildStandaloneMediaContent(
+                  context,
+                  item,
                 ),
               ),
             ),

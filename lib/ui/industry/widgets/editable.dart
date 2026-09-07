@@ -74,12 +74,9 @@ class EditableItemWidget extends StatelessWidget {
     final bodyWidth = naturalTextSize?.width ?? (currentItem.width ?? 220);
     final bodyHeight = naturalTextSize?.height ?? (currentItem.height ?? 220);
 
-    final flipX = provider.isItemFlippedX(currentItem.id ?? '');
-    final flipY = provider.isItemFlippedY(currentItem.id ?? '');
-
     return KeyedSubtree(
       key: ValueKey(
-        "${currentItem.id}_${currentItem.filterType}_${currentItem.rotation}_${currentItem.scale}_${currentItem.opacity}_${currentItem.position}_${currentItem.fontFamily}_${currentItem.fontSize}_${flipX}_${flipY}",
+        "${currentItem.id}_${currentItem.filterType}_${currentItem.rotation}_${currentItem.scale}_${currentItem.opacity}_${currentItem.position}_${currentItem.fontFamily}_${currentItem.fontSize}",
       ),
       child: GestureDetector(
         // IMPORTANT: only the actual item body moves. Resize/rotate handles
@@ -99,13 +96,14 @@ class EditableItemWidget extends StatelessWidget {
         },
         child: Transform.rotate(
           angle: currentItem.rotation,
-          child: Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.diagonal3Values(
-              currentItem.scale.clamp(0.01, 10.0).toDouble() * (flipX ? -1.0 : 1.0),
-              currentItem.scale.clamp(0.01, 10.0).toDouble() * (flipY ? -1.0 : 1.0),
-              1.0,
-            ),
+          child: Transform.scale(
+            scale: currentItem.scale.clamp(0.01, 10.0),
+            // Fabric stores `left` / `top` as the object's origin. For the
+            // template JSON used by the admin panel the origin is usually
+            // top-left, so scaling must grow from that same top-left point.
+            // Scaling around the center shifts every imported object and was
+            // the reason template assets appeared in the wrong position.
+            alignment: Alignment.topLeft,
             child: SizedBox(
               width: bodyWidth,
               height: bodyHeight,

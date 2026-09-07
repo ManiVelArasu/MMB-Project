@@ -842,32 +842,39 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   bool isTemplateLoaded = false;
 
-  String _resolveTemplateImageUrl(String src, String? templateUid) {
-    final value = src.trim();
-    if (value.isEmpty) return '';
+  String _resolveTemplateSrc(String rawSrc, String? templateUid) {
+    final src = rawSrc.trim();
+    if (src.isEmpty) return '';
 
-    // Already an absolute URL (CDN, S3, etc.).
-    if (value.startsWith('http://') || value.startsWith('https://')) {
-      return value;
+    final uid = (templateUid ?? '').trim();
+
+    // Fabric JSON `src` is the source asset identifier. Admin-uploaded
+    // template assets are stored at templates/<uid>/<filename> in S3.
+    // Always use the filename from JSON and inject the current template UID.
+    String fileName = src;
+    try {
+      final uri = Uri.tryParse(src);
+      if (uri != null && uri.pathSegments.isNotEmpty) {
+        fileName = uri.pathSegments.last;
+      } else {
+        fileName = src.split('/').last;
+      }
+    } catch (_) {
+      fileName = src.split('/').last;
     }
 
-    final cdnBase = ApiEndpoints.cdnImageUrl.replaceFirst(RegExp(r'\\/$'), '');
-    final clean = value.replaceFirst(RegExp(r'^/+'), '');
-
-    // If the JSON already stores the full templates path, don't add it twice.
-    if (clean.startsWith('templates/')) {
-      return '$cdnBase/$clean';
+    fileName = fileName.split('?').first.split('#').first.trim();
+    try {
+      fileName = Uri.decodeComponent(fileName);
+    } catch (_) {}
+    fileName = fileName.trim();
+    if (fileName.isEmpty || uid.isEmpty) {
+      debugPrint('⚠️ Template image URL could not be resolved. uid=$uid src=$src');
+      return '';
     }
 
-    // Admin-uploaded template images are stored as:
-    // CDN_URL/templates/<template_uid>/<src>
-    final uid = templateUid?.trim() ?? '';
-    if (uid.isNotEmpty) {
-      return '$cdnBase/templates/$uid/$clean';
-    }
-
-    // Backward compatibility for older templates that stored a CDN-relative key.
-    return '$cdnBase/$clean';
+    return 'https://temp-m2b-assets.s3.ap-south-1.amazonaws.com/'
+        'templates/$uid/$fileName';
   }
 
   void loadItemsFromJson(
@@ -929,8 +936,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               : FontStyle.normal;
           _textUnderline[id] = json['underline'] == true;
         } else if (type == 'image') {
-          final imageSrc = json['src']?.toString().trim() ?? '';
-          final imageUrl = _resolveTemplateImageUrl(imageSrc, templateUid);
+          final imageUrl = _resolveTemplateSrc(
+            json['src']?.toString() ?? '',
+            templateUid,
+          );
           if (imageUrl.isNotEmpty) {
             _items.add(
               EditorItem(
@@ -2164,44 +2173,21 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
-  // Flip state is kept for every editable layer (image + text + shape/SVG/video).
-  // The old implementation only stored image flip state and the canvas never
-  // applied it to the rendered widget.
   final Map<String, bool> _imageFlipX = {};
   final Map<String, bool> _imageFlipY = {};
-  final Map<String, bool> _itemFlipX = {};
-  final Map<String, bool> _itemFlipY = {};
 
-  bool isImageFlippedX(String id) => _itemFlipX[id] ?? _imageFlipX[id] ?? false;
-  bool isImageFlippedY(String id) => _itemFlipY[id] ?? _imageFlipY[id] ?? false;
-  bool isItemFlippedX(String id) => _itemFlipX[id] ?? false;
-  bool isItemFlippedY(String id) => _itemFlipY[id] ?? false;
+  bool isImageFlippedX(String id) => _imageFlipX[id] ?? false;
+  bool isImageFlippedY(String id) => _imageFlipY[id] ?? false;
 
   void flipImageHorizontal(String id) {
     _saveState();
-    final next = !(_itemFlipX[id] ?? _imageFlipX[id] ?? false);
-    _itemFlipX[id] = next;
-    _imageFlipX[id] = next;
+    _imageFlipX[id] = !(_imageFlipX[id] ?? false);
     notifyListeners();
   }
 
   void flipImageVertical(String id) {
     _saveState();
-    final next = !(_itemFlipY[id] ?? _imageFlipY[id] ?? false);
-    _itemFlipY[id] = next;
-    _imageFlipY[id] = next;
-    notifyListeners();
-  }
-
-  void flipItemHorizontal(String id) {
-    _saveState();
-    _itemFlipX[id] = !(_itemFlipX[id] ?? false);
-    notifyListeners();
-  }
-
-  void flipItemVertical(String id) {
-    _saveState();
-    _itemFlipY[id] = !(_itemFlipY[id] ?? false);
+    _imageFlipY[id] = !(_imageFlipY[id] ?? false);
     notifyListeners();
   }
 
