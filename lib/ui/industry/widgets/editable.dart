@@ -50,7 +50,7 @@ class EditableItemWidget extends StatelessWidget {
           text: currentItem.text ?? '',
           style: TextStyle(
             fontSize: currentItem.fontSize,
-            color: currentItem.color ?? Colors.white,
+            color: currentItem.color ?? Colors.black,
             fontWeight: provider.textWeight(id),
             fontStyle: provider.textStyle(id),
             decoration: provider.textUnderline(id)
@@ -63,7 +63,7 @@ class EditableItemWidget extends StatelessWidget {
                 : currentItem.fontFamily!.trim(),
           ),
         ),
-        maxLines: 1,
+        maxLines: null,
         textDirection: TextDirection.ltr,
       )..layout();
       naturalTextSize = Size(
@@ -71,8 +71,14 @@ class EditableItemWidget extends StatelessWidget {
         math.max(1.0, painter.height),
       );
     }
-    final bodyWidth = naturalTextSize?.width ?? (currentItem.width ?? 220);
-    final bodyHeight = naturalTextSize?.height ?? (currentItem.height ?? 220);
+    final textValueForBounds = currentItem.text ?? '';
+    final isMultilineForBounds = textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
+    final bodyWidth = isMultilineForBounds
+        ? (currentItem.width ?? naturalTextSize?.width ?? 220)
+        : (naturalTextSize?.width ?? (currentItem.width ?? 220));
+    final bodyHeight = isMultilineForBounds
+        ? (currentItem.height ?? naturalTextSize?.height ?? 220)
+        : (naturalTextSize?.height ?? (currentItem.height ?? 220));
 
     return KeyedSubtree(
       key: ValueKey(
@@ -97,12 +103,13 @@ class EditableItemWidget extends StatelessWidget {
         child: Transform.rotate(
           angle: currentItem.rotation,
           child: Transform.scale(
-            scale: currentItem.scale.clamp(0.01, 10.0),
+            scaleX: (currentItem.scale.clamp(0.01, 10.0)) *
+                (provider.templateFlipX(currentItem.id ?? '') ? -1 : 1),
+            scaleY: (currentItem.scale.clamp(0.01, 10.0)) *
+                (provider.templateFlipY(currentItem.id ?? '') ? -1 : 1),
             // Fabric stores `left` / `top` as the object's origin. For the
             // template JSON used by the admin panel the origin is usually
             // top-left, so scaling must grow from that same top-left point.
-            // Scaling around the center shifts every imported object and was
-            // the reason template assets appeared in the wrong position.
             alignment: Alignment.topLeft,
             child: SizedBox(
               width: bodyWidth,
@@ -113,14 +120,14 @@ class EditableItemWidget extends StatelessWidget {
                   Container(
                     width: bodyWidth,
                     height: bodyHeight,
-                    decoration: BoxDecoration(
-                      border: isSelected
-                          ? Border.all(color: const Color(0xFF2196F3), width: 2)
-                          : Border.all(color: Colors.transparent, width: 2),
-                    ),
+                    // Selection visuals are rendered by the single
+                    // _TransformSelectionOverlay in template_edit.dart.
+                    // Do not draw another border here; that creates a second
+                    // selection rectangle offset from the real touch target.
+                    decoration: const BoxDecoration(),
                     child: Opacity(
                       opacity: currentItem.opacity.clamp(0.0, 1.0),
-                      child: _buildItemContent(currentItem, context),
+                      child: _buildItemContent(currentItem, context, isBackground: isBackground),
                     ),
                   ),
 
@@ -269,7 +276,7 @@ class EditableItemWidget extends StatelessWidget {
       EditorItem item,
       ) {
     final widget = EditableItemWidget(item: item, onItemSelected: (_, __) {});
-    return widget._buildItemContent(item, context);
+    return widget._buildItemContent(item, context, isBackground: true);
   }
 
   Widget _buildFilteredImage(
@@ -755,7 +762,11 @@ class EditableItemWidget extends StatelessWidget {
     ]);
   }
 
-  Widget _buildItemContent(EditorItem item, BuildContext context) {
+  Widget _buildItemContent(
+      EditorItem item,
+      BuildContext context, {
+        bool isBackground = false,
+      }) {
     if (item.type == 'video') {
       return SizedBox(
         width: item.width,
@@ -831,59 +842,59 @@ class EditableItemWidget extends StatelessWidget {
       );
     }
 
-    if (item.type == 'image' || item.type == 'shape') {
-      final url = item.contentUrl ?? '';
-      final isLocalFile =
-          item.isLocal || url.startsWith('file://') || url.startsWith('/data/');
+    if (item.type == 'shape') {
+      final editorProvider = context.read<EditorProvider>();
+      final raw = editorProvider.templateRawObject(item.id ?? '') ?? const <String, dynamic>{};
 
-      final isSvg = url.toLowerCase().split('?').first.endsWith('.svg');
+      // Shapes selected from the bottom Shapes API are image/SVG assets, not
+      // Fabric geometry objects. They have no raw Fabric object, but their
+      // contentUrl contains the actual API asset URL. Render that asset here
+      // instead of falling through to a transparent/empty geometric shape.
+      if (raw.isEmpty && (item.contentUrl ?? '').trim().isNotEmpty) {
+        final url = item.contentUrl!.trim();
+        final isLocalFile = item.isLocal ||
+            url.startsWith('file://') ||
+            url.startsWith('/data/');
+        final isSvg = url.toLowerCase().split('?').first.endsWith('.svg') ||
+            url.trimLeft().startsWith('<svg');
 
-      Widget imageWidget;
-
-      if (url.trim().isEmpty) {
-        imageWidget = const Center(
-          child: Icon(Icons.image_not_supported_outlined, color: Colors.grey),
-        );
-      } else if (isLocalFile) {
-        final localPath = url.replaceFirst('file://', '');
-        imageWidget = isSvg
-            ? SvgPicture.file(
-          File(localPath),
-          fit: BoxFit.contain,
-          placeholderBuilder: (_) => const Center(
-            child: CircularProgressIndicator(strokeWidth: 1.5),
-          ),
-        )
-            : Image.file(
-          File(localPath),
-          width: item.width,
-          height: item.height,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const Center(
-            child: Icon(Icons.broken_image_outlined, color: Colors.grey),
-          ),
-        );
-      } else if (isSvg) {
-        // Image.network cannot decode SVG. Freepik/category APIs can return
-        // SVG URLs, so SVG assets must use flutter_svg.
-        imageWidget = SvgPicture.network(
-          url,
-          width: item.width,
-          height: item.height,
-          fit: BoxFit.contain,
-          placeholderBuilder: (_) => const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 1.5),
+        if (isSvg && !isLocalFile) {
+          return SvgPicture.network(
+            url,
+            width: item.width,
+            height: item.height,
+            fit: BoxFit.contain,
+            placeholderBuilder: (_) => const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 1.5),
+              ),
             ),
-          ),
-          errorBuilder: (_, __, ___) => const Center(
-            child: Icon(Icons.broken_image_outlined, color: Colors.grey),
-          ),
-        );
-      } else {
-        imageWidget = Image.network(
+            errorBuilder: (_, __, ___) => const Center(
+              child: Icon(Icons.broken_image_outlined, color: Colors.grey),
+            ),
+          );
+        }
+
+        if (isSvg && isLocalFile) {
+          final localPath = url.replaceFirst('file://', '');
+          return SvgPicture.file(
+            File(localPath),
+            width: item.width,
+            height: item.height,
+            fit: BoxFit.contain,
+            placeholderBuilder: (_) => const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 1.5),
+              ),
+            ),
+          );
+        }
+
+        return Image.network(
           url,
           width: item.width,
           height: item.height,
@@ -904,10 +915,156 @@ class EditableItemWidget extends StatelessWidget {
         );
       }
 
-      // A remote shape already contains its own shape. Do not apply the
-      // normal image rounded-mask to it.
-      if (item.type == 'shape') {
-        return _buildFilteredImage(item, imageWidget, context);
+      final shapeType = (raw['type']?.toString() ?? item.text ?? 'rect').toLowerCase();
+      final fillValue = raw['fill'];
+      final fillColor = _templateColor(fillValue) ?? item.color ?? Colors.transparent;
+      final gradient = _templateGradient(fillValue);
+      final stroke = _templateColor(raw['stroke']) ?? item.outlineColor;
+      final strokeWidth = _toFiniteDouble(raw['strokeWidth']) ?? item.outlineWidth;
+      final rx = _toFiniteDouble(raw['rx']) ?? item.borderRadius;
+      final ry = _toFiniteDouble(raw['ry']) ?? rx;
+
+      // Keep the original Fabric object type and geometry. This avoids
+      // turning every unknown shape/path into a plain rectangle.
+      if (shapeType == 'path' || shapeType == 'line' ||
+          shapeType == 'polygon' || shapeType == 'polyline') {
+        return CustomPaint(
+          size: Size(item.width, item.height),
+          painter: FabricGeometryPainter(
+            type: shapeType,
+            raw: raw,
+            fill: fillColor,
+            gradient: gradient,
+            stroke: stroke,
+            strokeWidth: strokeWidth,
+          ),
+        );
+      }
+
+      final decoration = BoxDecoration(
+        color: gradient == null ? fillColor : null,
+        gradient: gradient,
+        shape: shapeType == 'circle' ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: shapeType == 'circle'
+            ? null
+            : BorderRadius.only(
+          topLeft: Radius.circular(rx),
+          topRight: Radius.circular(rx),
+          bottomLeft: Radius.circular(ry),
+          bottomRight: Radius.circular(ry),
+        ),
+        border: stroke != null && strokeWidth > 0
+            ? Border.all(color: stroke, width: strokeWidth)
+            : null,
+      );
+
+      // Fabric's ellipse is not a rounded rectangle; use an oval path.
+      if (shapeType == 'ellipse' || shapeType == 'oval') {
+        return CustomPaint(
+          size: Size(item.width, item.height),
+          painter: FabricEllipsePainter(
+            fill: fillColor,
+            gradient: gradient,
+            stroke: stroke,
+            strokeWidth: strokeWidth,
+          ),
+        );
+      }
+
+      // Built-in/custom polygon shapes use the same shape clipper used by
+      // image masks, so triangle/star/heart/etc. remain editable.
+      if (const {
+        'triangle', 'diamond', 'pentagon', 'hexagon', 'octagon', 'star',
+        'heart', 'arch', 'shield', 'crescent'
+      }.contains(shapeType)) {
+        return ClipPath(
+          clipper: ShapeClipper(shapeType, radius: rx),
+          child: Container(
+            width: item.width,
+            height: item.height,
+            decoration: decoration,
+          ),
+        );
+      }
+
+      return Container(
+        width: item.width,
+        height: item.height,
+        decoration: decoration,
+      );
+    }
+
+    if (item.type == 'image') {
+      final url = item.contentUrl ?? '';
+      final isLocalFile =
+          item.isLocal || url.startsWith('file://') || url.startsWith('/data/');
+
+      final isSvg = url.toLowerCase().split('?').first.endsWith('.svg');
+
+      Widget imageWidget;
+
+      if (url.trim().isEmpty) {
+        imageWidget = const Center(
+          child: Icon(Icons.image_not_supported_outlined, color: Colors.grey),
+        );
+      } else if (isLocalFile) {
+        final localPath = url.replaceFirst('file://', '');
+        imageWidget = isSvg
+            ? SvgPicture.file(
+          File(localPath),
+          fit: isBackground ? BoxFit.cover : BoxFit.contain,
+          placeholderBuilder: (_) => const Center(
+            child: CircularProgressIndicator(strokeWidth: 1.5),
+          ),
+        )
+            : Image.file(
+          File(localPath),
+          width: item.width,
+          height: item.height,
+          fit: isBackground ? BoxFit.cover : BoxFit.contain,
+          errorBuilder: (_, __, ___) => const Center(
+            child: Icon(Icons.broken_image_outlined, color: Colors.grey),
+          ),
+        );
+      } else if (isSvg) {
+        // Image.network cannot decode SVG. Freepik/category APIs can return
+        // SVG URLs, so SVG assets must use flutter_svg.
+        imageWidget = SvgPicture.network(
+          url,
+          width: item.width,
+          height: item.height,
+          fit: isBackground ? BoxFit.cover : BoxFit.contain,
+          placeholderBuilder: (_) => const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 1.5),
+            ),
+          ),
+          errorBuilder: (_, __, ___) => const Center(
+            child: Icon(Icons.broken_image_outlined, color: Colors.grey),
+          ),
+        );
+      } else {
+        imageWidget = Image.network(
+          url,
+          width: item.width,
+          height: item.height,
+          fit: isBackground ? BoxFit.cover : BoxFit.contain,
+          errorBuilder: (_, __, ___) => const Center(
+            child: Icon(Icons.broken_image_outlined, color: Colors.grey),
+          ),
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 1.5),
+              ),
+            );
+          },
+        );
       }
 
       final editorProvider = context.read<EditorProvider>();
@@ -918,7 +1075,7 @@ class EditableItemWidget extends StatelessWidget {
       // When a mask is selected, use the mask asset's alpha channel to clip
       // only this image. Do not use the mask name as a ShapeClipper name:
       // API mask names are arbitrary and are not built-in shapes.
-      final Widget maskedImage = hasApiMask
+      Widget maskedImage = hasApiMask
           ? _ApiMaskImage(
         image: imageWidget,
         maskUrl: apiMaskUrl!,
@@ -932,6 +1089,18 @@ class EditableItemWidget extends StatelessWidget {
         ),
         child: imageWidget,
       );
+
+      final rawTemplate = editorProvider.templateRawObject(item.id ?? '');
+      final clipPath = rawTemplate?['clipPath'];
+      if (!hasApiMask && clipPath is Map) {
+        final clipType = clipPath['type']?.toString().toLowerCase() ?? 'rect';
+        final clipRadius = _toFiniteDouble(clipPath['rx']) ??
+            _toFiniteDouble(clipPath['ry']) ?? item.borderRadius;
+        maskedImage = ClipPath(
+          clipper: ShapeClipper(clipType, radius: clipRadius),
+          child: imageWidget,
+        );
+      }
 
       final filteredImage = _buildFilteredImage(item, maskedImage, context);
 
@@ -954,29 +1123,44 @@ class EditableItemWidget extends StatelessWidget {
     final editorProvider = context.read<EditorProvider>();
     final id = item.id ?? '';
 
-    // Natural-size text: the widget and selection box are exactly as wide
-    // and tall as the painted text (for example, just "My Heading").
-    return Text(
-      item.text ?? "",
-      maxLines: 1,
-      softWrap: false,
+    // Preserve Fabric multiline text exactly. Newlines from JSON (\n) are
+    // real line breaks after json.decode(), so never force maxLines: 1.
+    // For multiline text use the Fabric object dimensions; for one-line text
+    // keep the natural painted width.
+    final textValue = item.text ?? "";
+    final isMultiline = textValue.contains("\n") || textValue.contains("\r");
+    final textStyle = TextStyle(
+      fontSize: item.fontSize,
+      color: item.color ?? Colors.black,
+      fontWeight: editorProvider.textWeight(id),
+      fontStyle: editorProvider.textStyle(id),
+      decoration: editorProvider.textUnderline(id)
+          ? TextDecoration.underline
+          : TextDecoration.none,
+      letterSpacing: editorProvider.textLetterSpacing(id),
+      height: editorProvider.textLineSpacing(id),
+      fontFamily: (item.fontFamily ?? '').trim().isEmpty
+          ? null
+          : item.fontFamily!.trim(),
+    );
+
+    final textWidget = Text(
+      textValue,
+      maxLines: null,
+      softWrap: isMultiline,
       textAlign: editorProvider.textAlignment(id),
       overflow: TextOverflow.visible,
-      style: TextStyle(
-        fontSize: item.fontSize,
-        color: item.color ?? Colors.white,
-        fontWeight: editorProvider.textWeight(id),
-        fontStyle: editorProvider.textStyle(id),
-        decoration: editorProvider.textUnderline(id)
-            ? TextDecoration.underline
-            : TextDecoration.none,
-        letterSpacing: editorProvider.textLetterSpacing(id),
-        height: editorProvider.textLineSpacing(id),
-        fontFamily: (item.fontFamily ?? '').trim().isEmpty
-            ? null
-            : item.fontFamily!.trim(),
-      ),
+      style: textStyle,
     );
+
+    if (isMultiline) {
+      return SizedBox(
+        width: item.width,
+        height: item.height,
+        child: textWidget,
+      );
+    }
+    return textWidget;
   }
 
   void _showProActionSheet(
@@ -2677,6 +2861,216 @@ class StarClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+
+double? _toFiniteDouble(dynamic value) {
+  if (value is num) {
+    final d = value.toDouble();
+    return d.isFinite ? d : null;
+  }
+  final d = double.tryParse(value?.toString() ?? '');
+  return d != null && d.isFinite ? d : null;
+}
+
+Color? _templateColor(dynamic value) {
+  if (value == null) return null;
+  if (value is Color) return value;
+  if (value is num) return Color(value.toInt());
+  if (value is Map) {
+    return _templateColor(value['color'] ?? value['value'] ?? value['fill']);
+  }
+  var s = value.toString().trim().toLowerCase();
+  if (s.isEmpty || s == 'none' || s == 'transparent') return Colors.transparent;
+  if (s.startsWith('0x')) s = s.substring(2);
+  if (s.startsWith('#')) s = s.substring(1);
+  if (RegExp(r'^[0-9a-f]{3}$').hasMatch(s)) {
+    s = s.split('').map((c) => '$c$c').join();
+  }
+  if (RegExp(r'^[0-9a-f]{6}$').hasMatch(s)) {
+    return Color(int.parse('FF$s', radix: 16));
+  }
+  if (RegExp(r'^[0-9a-f]{8}$').hasMatch(s)) {
+    return Color(int.parse(s, radix: 16));
+  }
+  final rgb = RegExp(r'^rgba?\s*\(([^)]+)\)$').firstMatch(s);
+  if (rgb != null) {
+    try {
+      final parts = rgb.group(1)!.split(',').map((e) => e.trim()).toList();
+      if (parts.length >= 3) {
+        double ch(String x) => x.endsWith('%')
+            ? double.parse(x.substring(0, x.length - 1)) * 2.55
+            : double.parse(x);
+        final r = ch(parts[0]).round().clamp(0, 255);
+        final g = ch(parts[1]).round().clamp(0, 255);
+        final b = ch(parts[2]).round().clamp(0, 255);
+        var a = 1.0;
+        if (parts.length > 3) {
+          a = parts[3].endsWith('%')
+              ? double.parse(parts[3].substring(0, parts[3].length - 1)) / 100
+              : double.parse(parts[3]);
+        }
+        return Color.fromRGBO(r, g, b, a.clamp(0.0, 1.0));
+      }
+    } catch (_) {}
+  }
+  const named = <String, Color>{
+    'white': Colors.white, 'black': Colors.black, 'red': Colors.red,
+    'green': Colors.green, 'blue': Colors.blue, 'yellow': Colors.yellow,
+    'orange': Colors.orange, 'purple': Colors.purple, 'pink': Colors.pink,
+    'brown': Colors.brown, 'grey': Colors.grey, 'gray': Colors.grey,
+    'cyan': Colors.cyan, 'magenta': Color(0xFFFF00FF),
+  };
+  return named[s];
+}
+
+Gradient? _templateGradient(dynamic value) {
+  if (value is! Map) return null;
+  final stopsRaw = value['colorStops'];
+  if (stopsRaw is! List) return null;
+  final colors = <Color>[];
+  final stops = <double>[];
+  for (final entry in stopsRaw) {
+    if (entry is! Map) continue;
+    final c = _templateColor(entry['color']);
+    final o = _toFiniteDouble(entry['offset']);
+    if (c != null && o != null) {
+      colors.add(c);
+      stops.add(o.clamp(0.0, 1.0));
+    }
+  }
+  if (colors.length < 2) return null;
+  final type = value['type']?.toString().toLowerCase();
+  if (type == 'radial') {
+    return RadialGradient(
+      center: Alignment.center,
+      radius: 1.0,
+      colors: colors,
+      stops: stops,
+    );
+  }
+  final coords = value['coords'];
+  Alignment begin = Alignment.centerLeft;
+  Alignment end = Alignment.centerRight;
+  if (coords is Map) {
+    final x1 = _toFiniteDouble(coords['x1']);
+    final y1 = _toFiniteDouble(coords['y1']);
+    final x2 = _toFiniteDouble(coords['x2']);
+    final y2 = _toFiniteDouble(coords['y2']);
+    if (x1 != null && y1 != null && x2 != null && y2 != null) {
+      final normX = (v) => (v as double).clamp(0.0, 1.0) * 2 - 1;
+      begin = Alignment(normX(x1), normX(y1));
+      end = Alignment(normX(x2), normX(y2));
+    }
+  }
+  return LinearGradient(begin: begin, end: end, colors: colors, stops: stops);
+}
+
+class FabricEllipsePainter extends CustomPainter {
+  final Color fill;
+  final Gradient? gradient;
+  final Color? stroke;
+  final double strokeWidth;
+  FabricEllipsePainter({required this.fill, this.gradient, this.stroke, this.strokeWidth = 0});
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final paint = Paint()..style = PaintingStyle.fill;
+    if (gradient != null) paint.shader = gradient!.createShader(rect); else paint.color = fill;
+    canvas.drawOval(rect, paint);
+    if (stroke != null && strokeWidth > 0) {
+      canvas.drawOval(rect, Paint()..style = PaintingStyle.stroke..strokeWidth = strokeWidth..color = stroke!);
+    }
+  }
+  @override bool shouldRepaint(covariant FabricEllipsePainter old) =>
+      old.fill != fill || old.gradient != gradient || old.stroke != stroke || old.strokeWidth != strokeWidth;
+}
+
+class FabricGeometryPainter extends CustomPainter {
+  final String type;
+  final Map<String, dynamic> raw;
+  final Color fill;
+  final Gradient? gradient;
+  final Color? stroke;
+  final double strokeWidth;
+  FabricGeometryPainter({required this.type, required this.raw, required this.fill, this.gradient, this.stroke, this.strokeWidth = 0});
+
+  Path _pathFromFabric(Size size) {
+    final path = Path();
+    final data = raw['path'];
+    if (data is! List) return path..addRect(Offset.zero & size);
+    final points = <Offset>[];
+    for (final command in data) {
+      if (command is! List || command.isEmpty) continue;
+      final cmd = command[0].toString().toUpperCase();
+      double n(int i) => _toFiniteDouble(command.length > i ? command[i] : null) ?? 0;
+      switch (cmd) {
+        case 'M': path.moveTo(n(1), n(2)); points.add(Offset(n(1), n(2))); break;
+        case 'L': path.lineTo(n(1), n(2)); points.add(Offset(n(1), n(2))); break;
+        case 'C': path.cubicTo(n(1),n(2),n(3),n(4),n(5),n(6)); points.add(Offset(n(5),n(6))); break;
+        case 'Q': path.quadraticBezierTo(n(1),n(2),n(3),n(4)); points.add(Offset(n(3),n(4))); break;
+        case 'H': path.lineTo(n(1), 0); break;
+        case 'V': path.lineTo(0, n(1)); break;
+        case 'Z': path.close(); break;
+      }
+    }
+    if (points.isEmpty) return path..addRect(Offset.zero & size);
+    // Fabric path coordinates may be centered/negative. Normalize the path
+    // into the object's width/height so the imported bounds remain intact.
+    final minX = points.map((p) => p.dx).reduce(math.min);
+    final maxX = points.map((p) => p.dx).reduce(math.max);
+    final minY = points.map((p) => p.dy).reduce(math.min);
+    final maxY = points.map((p) => p.dy).reduce(math.max);
+    final w = math.max(1.0, maxX - minX);
+    final h = math.max(1.0, maxY - minY);
+    final sx = size.width / w;
+    final sy = size.height / h;
+    final tx = -minX * sx;
+    final ty = -minY * sy;
+    // dart:ui Path.transform expects a column-major 4x4 matrix.
+    final matrix = Float64List.fromList(<double>[
+      sx, 0, 0, 0,
+      0, sy, 0, 0,
+      0, 0, 1, 0,
+      tx, ty, 0, 1,
+    ]);
+    return path.transform(matrix);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Path path;
+    if (type == 'line') {
+      final x1 = _toFiniteDouble(raw['x1']) ?? 0;
+      final y1 = _toFiniteDouble(raw['y1']) ?? 0;
+      final x2 = _toFiniteDouble(raw['x2']) ?? size.width;
+      final y2 = _toFiniteDouble(raw['y2']) ?? size.height;
+      path = Path()..moveTo(x1, y1)..lineTo(x2, y2);
+    } else if (type == 'polygon' || type == 'polyline') {
+      path = Path();
+      final pts = raw['points'];
+      if (pts is List && pts.isNotEmpty) {
+        for (var i = 0; i < pts.length; i++) {
+          final pt = pts[i];
+          if (pt is! Map) continue;
+          final x = _toFiniteDouble(pt['x']) ?? 0;
+          final y = _toFiniteDouble(pt['y']) ?? 0;
+          if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
+        }
+        if (type == 'polygon') path.close();
+      }
+    } else {
+      path = _pathFromFabric(size);
+    }
+    final bounds = Offset.zero & size;
+    final fillPaint = Paint()..style = PaintingStyle.fill;
+    if (gradient != null) fillPaint.shader = gradient!.createShader(bounds); else fillPaint.color = fill;
+    if (type != 'line' && type != 'polyline') canvas.drawPath(path, fillPaint);
+    if (stroke != null && strokeWidth > 0) {
+      canvas.drawPath(path, Paint()..style = PaintingStyle.stroke..strokeWidth = strokeWidth..color = stroke!);
+    }
+  }
+  @override bool shouldRepaint(covariant FabricGeometryPainter old) => true;
 }
 
 class ShapeClipper extends CustomClipper<Path> {

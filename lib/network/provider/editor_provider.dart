@@ -21,6 +21,15 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   final Map<String, String> _imageMaskUrls = {};
   final Map<String, String> _imageMaskNames = {};
 
+  // Raw Fabric object data is kept alongside EditorItem so the renderer can
+  // support new Fabric properties without losing them during import.
+  final Map<String, Map<String, dynamic>> _templateRawObjects = {};
+  final Map<String, bool> _templateFlipX = {};
+  final Map<String, bool> _templateFlipY = {};
+  Map<String, dynamic>? templateRawObject(String id) => _templateRawObjects[id];
+  bool templateFlipX(String id) => _templateFlipX[id] ?? false;
+  bool templateFlipY(String id) => _templateFlipY[id] ?? false;
+
   String? imageMaskUrl(String id) => _imageMaskUrls[id];
   String? imageMaskName(String id) => _imageMaskNames[id];
 
@@ -52,6 +61,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   final List<List<EditorItem>> _history = [];
   int _historyIndex = -1;
   Color _backgroundColor = Colors.white;
+  Gradient? _importedBackgroundGradient;
+  Gradient? get importedBackgroundGradient => _importedBackgroundGradient;
+  bool _hasImportedRootBackground = false;
+
   final Map<String, double> _textLetterSpacing = {};
   final Map<String, double> _textLineSpacing = {};
   final Map<String, TextAlign> _textAlignment = {};
@@ -149,26 +162,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final w = width.isFinite && width > 0 ? width : 1080.0;
     final h = height.isFinite && height > 0 ? height : 1080.0;
 
-    if ((canvasWidth - w).abs() < 0.01 && (canvasHeight - h).abs() < 0.01) {
-      return;
-    }
-
+    // Canvas size must never rewrite imported Fabric coordinates.
+    // The JSON `left`, `top`, `scaleX`, `scaleY` are authoritative and must
+    // remain unchanged when the canvas is initialized or rebuilt.
     canvasWidth = w;
     canvasHeight = h;
-
-    for (var i = 0; i < _items.length; i++) {
-      final item = _items[i];
-      if (_isBackgroundLayer(item)) {
-        _items[i] = item.copyWith(position: Offset.zero);
-        continue;
-      }
-
-      final safeScale = _maxScaleForFrame(item, item.scale);
-      final scaled = item.copyWith(scale: safeScale);
-      _items[i] = scaled.copyWith(
-        position: _clampPositionForFrame(scaled, scaled.position),
-      );
-    }
   }
 
   double _rotationExtentX(EditorItem item, double scale) {
@@ -731,6 +729,26 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       }
 
       final root = Map<String, dynamic>.from(decoded);
+
+      // Fabric templates can keep the real page/background colour on the
+      // root object. The `clip` rectangle is only a clipping boundary and
+      // must NOT be painted as a black/transparent shape on top of the page.
+      // Use the root background first, then fall back to the page/fill below.
+      final rootBackgroundValue =
+          root['backgroundColor'] ?? root['background'] ?? root['background_color'];
+      final rootBackgroundGradient = _parseGradient(rootBackgroundValue);
+      if (rootBackgroundGradient != null) {
+        _importedBackgroundGradient = rootBackgroundGradient;
+        _backgroundColor = Colors.transparent;
+        _hasImportedRootBackground = true;
+      } else {
+        final rootBackground = _parseColor(rootBackgroundValue);
+        _hasImportedRootBackground = rootBackground != null && rootBackground.alpha > 0;
+        if (_hasImportedRootBackground) {
+          _backgroundColor = rootBackground!;
+        }
+      }
+
       List<dynamic>? objects;
 
       final directObjects = root['objects'];
@@ -877,12 +895,29 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         'templates/$uid/$fileName';
   }
 
+  EditorItem _normalizeImportedItem(EditorItem item) {
+    if (_isBackgroundLayer(item)) {
+      return item.copyWith(position: Offset.zero);
+    }
+
+    final safeScale = _maxScaleForFrame(item, item.scale);
+    final scaled = item.copyWith(scale: safeScale);
+    return scaled.copyWith(
+      position: _clampPositionForFrame(scaled, scaled.position),
+    );
+  }
+
   void loadItemsFromJson(
       List<Map<String, dynamic>> jsonList, {
         String? templateUid,
       }) {
     try {
       _items.clear();
+      _templateRawObjects.clear();
+      _templateFlipX.clear();
+      _templateFlipY.clear();
+      _importedBackgroundGradient = null;
+      _backgroundColor = Colors.white;
       _textLetterSpacing.clear();
       _textLineSpacing.clear();
       _textAlignment.clear();
@@ -893,6 +928,20 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       var idIndex = 0;
       for (final json in jsonList) {
         final type = (json['type']?.toString() ?? '').trim().toLowerCase();
+        final objectName = (json['name']?.toString() ?? '').trim().toLowerCase();
+
+        // Admin Fabric JSON commonly contains a full-page `clip` rect. It is
+        // a clipping definition, not a visible design layer. Painting it
+        // causes the editor to show a black/solid canvas instead of the same
+        // background seen in the template preview.
+        if (objectName == 'clip') {
+          final fill = _parseColor(json['fill']);
+          if ((_backgroundColor == Colors.white || _backgroundColor.alpha == 0) &&
+              fill != null && fill.alpha > 0) {
+            _backgroundColor = fill;
+          }
+          continue;
+        }
         final left = _toDouble(json['left']) ?? 0.0;
         final top = _toDouble(json['top']) ?? 0.0;
         final width = _toDouble(json['width']) ?? 100.0;
@@ -921,8 +970,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             opacity: opacity,
             fontSize: fontSize,
             color: _parseColor(json['fill']),
+            fontFamily: json['fontFamily']!.toString(),
           );
           _items.add(item);
+          _templateRawObjects[id] = Map<String, dynamic>.from(json);
+          _templateFlipX[id] = json['flipX'] == true;
+          _templateFlipY[id] = json['flipY'] == true;
           _textLetterSpacing[id] =
               (_toDouble(json['charSpacing']) ?? 0.0) / 10.0;
           _textLineSpacing[id] = (_toDouble(json['lineHeight']) ?? 1.0).clamp(
@@ -941,38 +994,138 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             templateUid,
           );
           if (imageUrl.isNotEmpty) {
-            _items.add(
-              EditorItem(
-                id: id,
-                type: 'image',
-                contentUrl: imageUrl,
-                position: Offset(left, top),
-                width: width,
-                height: height,
-                scale: scale.clamp(0.05, 10.0).toDouble(),
-                rotation: rotation,
-                opacity: opacity,
-                isLocal: false,
-              ),
-            );
-          }
-        } else if (type == 'rect' ||
-            type == 'circle' ||
-            type == 'ellipse' ||
-            type == 'path') {
-          _items.add(
-            EditorItem(
+            final imageItem = EditorItem(
               id: id,
-              type: 'shape',
+              type: 'image',
+              contentUrl: imageUrl,
               position: Offset(left, top),
               width: width,
               height: height,
               scale: scale.clamp(0.05, 10.0).toDouble(),
               rotation: rotation,
               opacity: opacity,
-              color: _parseColor(json['fill']),
-            ),
+              isLocal: false,
+            );
+            _items.add(imageItem);
+            _templateRawObjects[id] = Map<String, dynamic>.from(json);
+            _templateFlipX[id] = json['flipX'] == true;
+            _templateFlipY[id] = json['flipY'] == true;
+          }
+        } else if (type == 'rect' ||
+            type == 'roundrect' ||
+            type == 'roundedrect' ||
+            type == 'circle' ||
+            type == 'ellipse' ||
+            type == 'triangle' ||
+            type == 'diamond' ||
+            type == 'pentagon' ||
+            type == 'hexagon' ||
+            type == 'octagon' ||
+            type == 'star' ||
+            type == 'heart' ||
+            type == 'arch' ||
+            type == 'shield' ||
+            type == 'crescent' ||
+            type == 'polygon' ||
+            type == 'polyline' ||
+            type == 'line' ||
+            type == 'path') {
+          final isFullCanvasRect =
+              type == 'rect' &&
+                  left.abs() < 1.0 &&
+                  top.abs() < 1.0 &&
+                  (width - canvasWidth).abs() < 2.0 &&
+                  (height - canvasHeight).abs() < 2.0;
+
+          // A full-canvas rect in Fabric templates is often the clip/page
+          // background. Treat its fill as the page background instead of
+          // adding another giant editable object over every layer.
+          if (isFullCanvasRect) {
+            final gradient = _parseGradient(json['fill']);
+            if (gradient != null) {
+              _importedBackgroundGradient = gradient;
+            } else {
+              final fill = _parseColor(json['fill']);
+              if (fill != null && fill.alpha > 0) {
+                _backgroundColor = fill;
+              }
+            }
+            continue;
+          }
+
+          final shapeItem = EditorItem(
+            id: id,
+            type: 'shape',
+            text: type,
+            position: Offset(left, top),
+            width: width,
+            height: height,
+            scale: scale.clamp(0.05, 10.0).toDouble(),
+            rotation: rotation,
+            opacity: opacity,
+            color: _parseColor(json['fill']),
           );
+          _items.add(shapeItem);
+          _templateRawObjects[id] = Map<String, dynamic>.from(json);
+          _templateFlipX[id] = json['flipX'] == true;
+          _templateFlipY[id] = json['flipY'] == true;
+
+          final isFullCanvas =
+              left.abs() < 1.0 &&
+                  top.abs() < 1.0 &&
+                  (width - canvasWidth).abs() < 2.0 &&
+                  (height - canvasHeight).abs() < 2.0;
+          final fill = _parseColor(json['fill']);
+          if (isFullCanvas && fill != null && fill.alpha > 0) {
+            _backgroundColor = fill;
+          }
+        } else {
+          final rawSrc = json['src']?.toString() ?? '';
+          final rawText = json['text']?.toString() ?? '';
+          final rawPath = json['path'];
+          final inferredType = rawSrc.trim().isNotEmpty
+              ? 'image'
+              : (rawText.trim().isNotEmpty ? 'text' : 'shape');
+          if (inferredType == 'image') {
+            final imageUrl = _resolveTemplateSrc(rawSrc, templateUid);
+            if (imageUrl.isNotEmpty) {
+              final imageItem = EditorItem(
+                id: id, type: 'image', contentUrl: imageUrl,
+                position: Offset(left, top), width: width, height: height,
+                scale: scale.clamp(0.05, 10.0).toDouble(),
+                rotation: rotation, opacity: opacity, isLocal: false,
+              );
+              _items.add(imageItem);
+              _templateRawObjects[id] = Map<String, dynamic>.from(json);
+              _templateFlipX[id] = json['flipX'] == true;
+              _templateFlipY[id] = json['flipY'] == true;
+            }
+          } else if (inferredType == 'text') {
+            final item = EditorItem(
+              id: id, type: 'text', text: rawText, position: Offset(left, top),
+              width: width, height: height,
+              scale: scale.clamp(0.05, 10.0).toDouble(), rotation: rotation,
+              opacity: opacity, fontSize: _toDouble(json['fontSize']) ?? 36.0,
+              color: _parseColor(json['fill']),
+              fontFamily: json['fontFamily']!.toString(),
+            );
+            _items.add(item);
+            _templateRawObjects[id] = Map<String, dynamic>.from(json);
+            _templateFlipX[id] = json['flipX'] == true;
+            _templateFlipY[id] = json['flipY'] == true;
+          } else if (rawPath is List || json['points'] is List ||
+              type.isNotEmpty) {
+            final item = EditorItem(
+              id: id, type: 'shape', text: type.isEmpty ? 'rect' : type,
+              position: Offset(left, top), width: width, height: height,
+              scale: scale.clamp(0.05, 10.0).toDouble(), rotation: rotation,
+              opacity: opacity, color: _parseColor(json['fill']),
+            );
+            _items.add(item);
+            _templateRawObjects[id] = Map<String, dynamic>.from(json);
+            _templateFlipX[id] = json['flipX'] == true;
+            _templateFlipY[id] = json['flipY'] == true;
+          }
         }
       }
 
@@ -1008,27 +1161,120 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     return weight >= 700 ? FontWeight.bold : FontWeight.normal;
   }
 
-  Color _parseColor(dynamic fillColor) {
-    if (fillColor is String) {
-      if (fillColor == 'white') return Colors.white;
-      if (fillColor == 'black') return Colors.black;
-      if (fillColor.startsWith('rgba')) {
-        try {
-          final cleaned = fillColor.replaceAll(RegExp(r'rgba\(|\)'), '');
-          final parts = cleaned
-              .split(',')
-              .map((e) => double.parse(e.trim()))
-              .toList();
-          return Color.fromRGBO(
-            parts[0].toInt(),
-            parts[1].toInt(),
-            parts[2].toInt(),
-            parts[3],
-          );
-        } catch (_) {}
+  Gradient? _parseGradient(dynamic fill) {
+    if (fill is! Map) return null;
+
+    final type = fill['type']?.toString().toLowerCase();
+    final stopsRaw = fill['colorStops'];
+    if (stopsRaw is! List || stopsRaw.isEmpty) return null;
+
+    final colors = <Color>[];
+    final stops = <double>[];
+    for (final raw in stopsRaw) {
+      if (raw is! Map) continue;
+      final color = _parseColor(raw['color']);
+      final offset = _toDouble(raw['offset']);
+      if (color != null && offset != null) {
+        colors.add(color);
+        stops.add(offset.clamp(0.0, 1.0).toDouble());
       }
     }
-    return Colors.black;
+    if (colors.length < 2) return null;
+
+    if (type == 'linear') {
+      return LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: colors,
+        stops: stops,
+      );
+    }
+    return RadialGradient(
+      center: Alignment.center,
+      radius: 1.0,
+      colors: colors,
+      stops: stops,
+    );
+  }
+
+  Color? _parseColor(dynamic fillColor) {
+    if (fillColor == null) return null;
+
+    if (fillColor is Color) return fillColor;
+
+    if (fillColor is num) {
+      final value = fillColor.toInt();
+      return Color(value);
+    }
+
+    if (fillColor is Map) {
+      final value = fillColor['color'] ?? fillColor['value'] ?? fillColor['fill'];
+      final parsed = _parseColor(value);
+      if (parsed != null) return parsed;
+    }
+
+    final raw = fillColor.toString().trim();
+    if (raw.isEmpty || raw.toLowerCase() == 'transparent' ||
+        raw.toLowerCase() == 'none') {
+      return Colors.transparent;
+    }
+
+    final value = raw.toLowerCase();
+    const named = <String, Color>{
+      'white': Colors.white,
+      'black': Colors.black,
+      'red': Colors.red,
+      'green': Colors.green,
+      'blue': Colors.blue,
+      'yellow': Colors.yellow,
+      'orange': Colors.orange,
+      'grey': Colors.grey,
+      'gray': Colors.grey,
+    };
+    final namedColor = named[value];
+    if (namedColor != null) return namedColor;
+    var hex = value;
+    if (hex.startsWith('0x')) hex = hex.substring(2);
+    if (hex.startsWith('#')) hex = hex.substring(1);
+    if (RegExp(r'^[0-9a-f]{3}$').hasMatch(hex)) {
+      hex = hex.split('').map((c) => '$c$c').join();
+    }
+    if (RegExp(r'^[0-9a-f]{6}$').hasMatch(hex)) {
+      return Color(int.parse('FF$hex', radix: 16));
+    }
+    if (RegExp(r'^[0-9a-f]{8}$').hasMatch(hex)) {
+      return Color(int.parse(hex, radix: 16));
+    }
+
+    final rgb = RegExp(
+      r'^rgba?\s*\(([^)]+)\)$',
+      caseSensitive: false,
+    ).firstMatch(value);
+    if (rgb != null) {
+      try {
+        final parts = rgb.group(1)!.split(',').map((e) => e.trim()).toList();
+        if (parts.length >= 3) {
+          double channel(String s) {
+            if (s.endsWith('%')) {
+              return (double.parse(s.substring(0, s.length - 1)) * 2.55);
+            }
+            return double.parse(s);
+          }
+          final r = channel(parts[0]).round().clamp(0, 255);
+          final g = channel(parts[1]).round().clamp(0, 255);
+          final b = channel(parts[2]).round().clamp(0, 255);
+          var a = 1.0;
+          if (parts.length >= 4) {
+            a = parts[3].endsWith('%')
+                ? double.parse(parts[3].substring(0, parts[3].length - 1)) / 100
+                : double.parse(parts[3]);
+          }
+          return Color.fromRGBO(r, g, b, a.clamp(0.0, 1.0));
+        }
+      } catch (_) {}
+    }
+
+    return null;
   }
 
   void addText({String initialText = "New Text"}) {
@@ -1040,7 +1286,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         type: 'text',
         text: initialText,
         position: const Offset(120, 200),
-        // Manual text starts at 100, matching the editor's default text size.
         fontSize: 100.0,
         width: 600,
         height: 180,
@@ -1995,7 +2240,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void setBackgroundImage(
       String imageUrl, {
         double canvasWidth = 1080.0,
-        double canvasHeight = 1080.0,
+        double canvasHeight = 1350.0,
         double? sourceWidth,
         double? sourceHeight,
       }) {
@@ -2004,32 +2249,18 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _backgroundColor = Colors.transparent;
 
     final bgId = 'bg_${DateTime.now().millisecondsSinceEpoch}';
-    final sw = (sourceWidth != null && sourceWidth.isFinite && sourceWidth > 0)
-        ? sourceWidth
-        : canvasWidth;
-    final sh =
-    (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
-        ? sourceHeight
-        : canvasHeight;
-
-    // Keep the fetched asset's native aspect ratio and scale it just enough
-    // to cover the current canvas (Canva-style background cover).
-    final coverScale = math.max(canvasWidth / sw, canvasHeight / sh);
-    final safeScale = coverScale.isFinite && coverScale > 0 ? coverScale : 1.0;
-    final renderedWidth = sw * safeScale;
-    final renderedHeight = sh * safeScale;
-    final left = (canvasWidth - renderedWidth) / 2.0;
-    final top = (canvasHeight - renderedHeight) / 2.0;
-
+    // Backgrounds are always anchored to the CURRENT editor canvas.
+    // The source bitmap is rendered with BoxFit.cover, so every background
+    // fills the full 1080x1350 default canvas (or the API template size).
     _items.insert(
       0,
       EditorItem(
         id: bgId,
         type: 'image',
-        position: Offset(left, top),
-        width: sw,
-        height: sh,
-        scale: safeScale,
+        position: Offset.zero,
+        width: canvasWidth,
+        height: canvasHeight,
+        scale: 1.0,
         contentUrl: imageUrl,
         isLocal: !imageUrl.startsWith('http'),
       ),
@@ -2090,6 +2321,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   Color get backgroundColor => _backgroundColor;
 
+
+
   String? get backgroundImageUrl {
     final bgItem = _items.firstWhere(
           (item) =>
@@ -2116,7 +2349,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       String imageUrl,
       String selectedItemIdToRemove, {
         double canvasWidth = 1080.0,
-        double canvasHeight = 1080.0,
+        double canvasHeight = 1350.0,
         double? sourceWidth,
         double? sourceHeight,
       }) {
@@ -2126,30 +2359,18 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _backgroundColor = Colors.transparent;
 
     final bgId = 'bg_${DateTime.now().millisecondsSinceEpoch}';
-    final sw = (sourceWidth != null && sourceWidth.isFinite && sourceWidth > 0)
-        ? sourceWidth
-        : canvasWidth;
-    final sh =
-    (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
-        ? sourceHeight
-        : canvasHeight;
-    final coverScale = math.max(canvasWidth / sw, canvasHeight / sh);
-    final safeScale = coverScale.isFinite && coverScale > 0 ? coverScale : 1.0;
-    final renderedWidth = sw * safeScale;
-    final renderedHeight = sh * safeScale;
-
+    // Keep the background layer exactly the current canvas size.
+    // The renderer uses BoxFit.cover, so sourceWidth/sourceHeight never
+    // shrink the background layer itself.
     _items.insert(
       0,
       EditorItem(
         id: bgId,
         type: 'image',
-        position: Offset(
-          (canvasWidth - renderedWidth) / 2.0,
-          (canvasHeight - renderedHeight) / 2.0,
-        ),
-        width: sw,
-        height: sh,
-        scale: safeScale,
+        position: Offset.zero,
+        width: canvasWidth,
+        height: canvasHeight,
+        scale: 1.0,
         rotation: 0.0,
         contentUrl: imageUrl,
         isLocal: !imageUrl.startsWith('http'),
