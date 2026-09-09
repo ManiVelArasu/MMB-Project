@@ -193,8 +193,8 @@ class OtpScreen extends StatelessWidget {
                                                 .isNotEmpty);
 
                                     return Container(
-                                      width: 52.w,
-                                      height: 64.h,
+                                      width: 50.w,
+                                      height: 50.h,
                                       decoration: BoxDecoration(
                                         color: const Color(0xffF8F8F8),
                                         borderRadius: BorderRadius.circular(

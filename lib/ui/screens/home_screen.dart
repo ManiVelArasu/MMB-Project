@@ -117,91 +117,79 @@ class HomeScreen extends StatelessWidget {
 
                       // 🚀 2. Special Days-க்கு கீழே வர வேண்டிய டேட் ஸ்க்ரோலர் பாக்ஸ் (இருவருக்கும் பொதுவானது)
                       Container(
-                        height: 50.h,
-                        padding: EdgeInsets.all(4.w),
+                        height: 40.h,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFEEEE),
-                          borderRadius: BorderRadius.circular(12.r),
+                          color: const Color(0xFFFFE9E9),
+                          borderRadius: BorderRadius.circular(14.r),
                         ),
+                        clipBehavior: Clip.antiAlias,
                         child: Row(
                           children: [
-                            // Month
+                            // =========================
+                            // MONTH
+                            // =========================
                             Container(
                               width: 74.w,
                               height: double.infinity,
                               alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE53935),
-                                borderRadius: BorderRadius.circular(10.r),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFED1C24),
                               ),
                               child: AppText(
                                 "AUG",
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 14.sp,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
 
-                            SizedBox(width: 4.w),
-
-                            // Dates
+                            // =========================
+                            // DATE LIST
+                            // =========================
                             Expanded(
-                              child: ListView(
+                              child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
                                 physics: const BouncingScrollPhysics(),
-                                padding: EdgeInsets.zero,
-                                children: [
-                                  _buildDateBox(
-                                    context,
-                                    homeScreenProvider,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 6.w,
+                                  vertical: 5.h,
+                                ),
+                                itemCount: 8,
+                                separatorBuilder: (_, __) => SizedBox(width: 10.w),
+                                itemBuilder: (context, index) {
+                                  final dates = [
                                     "2",
-                                  ),
-                                  _buildDateBox(
-                                    context,
-                                    homeScreenProvider,
                                     "7",
-                                  ),
-                                  _buildDateBox(
-                                    context,
-                                    homeScreenProvider,
                                     "15",
-                                  ),
-                                  _buildDateBox(
-                                    context,
-                                    homeScreenProvider,
                                     "17",
-                                  ),
-                                  _buildDateBox(
-                                    context,
-                                    homeScreenProvider,
+                                    "19",
                                     "26",
-                                  ),
-                                  _buildDateBox(
-                                    context,
-                                    homeScreenProvider,
                                     "29",
-                                  ),
-                                  _buildDateBox(
+                                    "30",
+                                  ];
+
+                                  // Last item = arrow
+                                  if (index == dates.length - 1) {
+                                    return SizedBox(
+                                      width: 32.w,
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.arrow_forward_ios_rounded,
+                                          size: 17.sp,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  return _buildDateBox(
                                     context,
                                     homeScreenProvider,
-                                    "30",
-                                  ),
-
-                                  SizedBox(width: 2.w),
-
-                                  SizedBox(
-                                    width: 34.w,
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.arrow_forward_ios_rounded,
-                                        size: 16.sp,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                    dates[index],
+                                  );
+                                },
                               ),
                             ),
                           ],

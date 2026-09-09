@@ -1070,6 +1070,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           _templateFlipX[id] = json['flipX'] == true;
           _templateFlipY[id] = json['flipY'] == true;
 
+          // The Fabric `clip` object represents the canvas background.
+          // Keep its fill as the editor canvas color so the template does not
+          // become a blank white canvas while loading.
           final isFullCanvas =
               left.abs() < 1.0 &&
                   top.abs() < 1.0 &&
@@ -1080,6 +1083,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             _backgroundColor = fill;
           }
         } else {
+          // Forward-compatible Fabric import: preserve any object carrying
+          // text, src, path, points or geometry instead of silently dropping
+          // it when the admin adds a new Fabric type.
           final rawSrc = json['src']?.toString() ?? '';
           final rawText = json['text']?.toString() ?? '';
           final rawPath = json['path'];
@@ -1189,6 +1195,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         stops: stops,
       );
     }
+
+    // Fabric radial gradients used by the admin templates are centered on
+    // the page. Radius 1.0 maps the outer stop to the canvas edge.
     return RadialGradient(
       center: Alignment.center,
       radius: 1.0,
@@ -1203,6 +1212,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     if (fillColor is Color) return fillColor;
 
     if (fillColor is num) {
+      // Fabric can serialize colors as packed ARGB integers.
       final value = fillColor.toInt();
       return Color(value);
     }
@@ -1233,6 +1243,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     };
     final namedColor = named[value];
     if (namedColor != null) return namedColor;
+
+    // CSS/Fabric colour variants. Accept 0x-prefixed packed values too.
     var hex = value;
     if (hex.startsWith('0x')) hex = hex.substring(2);
     if (hex.startsWith('#')) hex = hex.substring(1);
@@ -1246,6 +1258,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       return Color(int.parse(hex, radix: 16));
     }
 
+    // rgb(...) / rgba(...), including percentage RGB values.
     final rgb = RegExp(
       r'^rgba?\s*\(([^)]+)\)$',
       caseSensitive: false,
@@ -1274,6 +1287,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       } catch (_) {}
     }
 
+    // Never silently turn an unknown/missing template color into black.
     return null;
   }
 
@@ -1286,6 +1300,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         type: 'text',
         text: initialText,
         position: const Offset(120, 200),
+        // Manual text starts at 100, matching the editor's default text size.
         fontSize: 100.0,
         width: 600,
         height: 180,
@@ -2320,7 +2335,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   Color get backgroundColor => _backgroundColor;
-
 
 
   String? get backgroundImageUrl {
