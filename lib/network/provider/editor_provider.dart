@@ -2415,14 +2415,23 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool isImageFlippedY(String id) => _imageFlipY[id] ?? false;
 
   void flipImageHorizontal(String id) {
+    if (id.isEmpty) return;
     _saveState();
-    _imageFlipX[id] = !(_imageFlipX[id] ?? false);
+    // The renderer uses templateFlipX/FlipY for both API and user-added
+    // images. Toggle the same state used by the actual paint layer.
+    _templateFlipX[id] = !(_templateFlipX[id] ?? false);
+    _imageFlipX[id] = _templateFlipX[id]!;
+    _syncCurrentPage();
     notifyListeners();
   }
 
   void flipImageVertical(String id) {
+    if (id.isEmpty) return;
     _saveState();
-    _imageFlipY[id] = !(_imageFlipY[id] ?? false);
+    // Keep vertical flip in the same state consumed by the renderer.
+    _templateFlipY[id] = !(_templateFlipY[id] ?? false);
+    _imageFlipY[id] = _templateFlipY[id]!;
+    _syncCurrentPage();
     notifyListeners();
   }
 

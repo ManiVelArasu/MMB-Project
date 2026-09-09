@@ -91,6 +91,8 @@ class EditorView extends StatefulWidget {
 }
 
 class _EditorViewState extends State<EditorView> {
+  bool _showFlipOptions = false;
+
   Size _getCanvasSize() {
     final size = widget.resizeSize.toLowerCase();
 
@@ -329,26 +331,24 @@ class _EditorViewState extends State<EditorView> {
         // Media image -> full-size background.
         // This also removes the selected media item so it is not rendered twice.
         final canvasSize = Size(provider.canvasWidth, provider.canvasHeight);
-        final sourceSize = await _resolveNetworkImageSize(imageUrl);
+        // Replace immediately. Do NOT wait for the remote image dimensions.
+        // The provider already sizes the background to the current canvas and
+        // the renderer uses cover behavior.
         provider.replaceBackgroundImage(
           imageUrl,
           selectedItemId,
           canvasWidth: canvasSize.width,
           canvasHeight: canvasSize.height,
-          sourceWidth: sourceSize?.width,
-          sourceHeight: sourceSize?.height,
         );
       } else {
         // Background/stock image -> full-size background.
         // setBackgroundImage creates/selects the new bg_ layer.
         final canvasSize = Size(provider.canvasWidth, provider.canvasHeight);
-        final sourceSize = await _resolveNetworkImageSize(imageUrl);
+        // Replace immediately. Do NOT wait for the remote image dimensions.
         provider.setBackgroundImage(
           imageUrl,
           canvasWidth: canvasSize.width,
           canvasHeight: canvasSize.height,
-          sourceWidth: sourceSize?.width,
-          sourceHeight: sourceSize?.height,
         );
       }
 
@@ -4007,7 +4007,8 @@ class _EditorViewState extends State<EditorView> {
                 _bottomTool(
                   Icons.flip_rounded,
                   'FLIP',
-                      () => provider.flipImageHorizontal(id),
+                      () => setState(() => _showFlipOptions = !_showFlipOptions),
+                  selected: _showFlipOptions,
                 ),
                 _bottomTool(
                   Icons.flip_to_front_rounded,
@@ -4038,6 +4039,45 @@ class _EditorViewState extends State<EditorView> {
               ],
             ),
           ),
+          if (_showFlipOptions)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(14, 2, 14, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      'Flip',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _flipOption(
+                          Icons.flip_rounded,
+                          'Flip Horizontal',
+                              () => provider.flipImageHorizontal(id),
+                        ),
+                      ),
+                      Expanded(
+                        child: _flipOption(
+                          Icons.flip_rounded,
+                          'Flip Vertical',
+                              () => provider.flipImageVertical(id),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           SizedBox(
             height: 64,
             child: ListView(
@@ -4125,6 +4165,38 @@ class _EditorViewState extends State<EditorView> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _flipOption(
+      IconData icon,
+      String label,
+      VoidCallback onTap,
+      ) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 19, color: Colors.white70),
+            const SizedBox(width: 7),
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -5015,18 +5087,15 @@ class _TransformSelectionOverlayState
 
             // Three-dot action button. Text gets it too; its size/length is
             // not changed by the transform box.
-            // Keep the three-dot button clearly outside the text bounds
-            // and above the selection layer.
-            // Keep the three-dot button inside the overlay width so it is
-            // never clipped by the canvas ClipRect. It overlaps the right
-            // edge of the text box, matching the reference UI.
+            // Three-dot action button is anchored to the SELECTED OBJECT'S
+            // right-center edge. It must follow the image/text box size while
+            // the object is dragged/resized/rotated; it must not be positioned
+            // relative to the canvas or at a fixed screen location.
             Positioned(
-              // Center the menu on the right edge, so it stays visible and
-              // does not cover the text itself.
-              left: width - 28.0,
-              top: -28.0,
-              width: 56.0,
-              height: 56.0,
+              left: width - 26.0,
+              top: (height / 2.0) - 26.0,
+              width: 52.0,
+              height: 52.0,
               child: Material(
                 color: Colors.transparent,
                 shape: const CircleBorder(),

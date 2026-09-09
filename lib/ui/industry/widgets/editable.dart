@@ -81,68 +81,74 @@ class EditableItemWidget extends StatelessWidget {
         : (naturalTextSize?.height ?? (currentItem.height ?? 220));
 
     return KeyedSubtree(
-      key: ValueKey(
-        "${currentItem.id}_${currentItem.filterType}_${currentItem.rotation}_${currentItem.scale}_${currentItem.opacity}_${currentItem.position}_${currentItem.fontFamily}_${currentItem.fontSize}",
-      ),
-      child: GestureDetector(
-        // IMPORTANT: only the actual item body moves. Resize/rotate handles
-        // below have their own gesture detectors, so touching a handle never
-        // bubbles into this pan handler.
-        onPanUpdate: (details) {
-          provider.updatePosition(
-            currentItem.id!,
-            currentItem.position + details.delta,
-          );
-        },
-        onTapDown: (_) {
-          onItemSelected(currentItem.type ?? '', currentItem.id!);
-        },
-        onTap: () {
-          onItemSelected(currentItem.type ?? '', currentItem.id!);
-        },
-        child: Transform.rotate(
-          angle: currentItem.rotation,
-          child: Transform.scale(
-            scaleX: (currentItem.scale.clamp(0.01, 10.0)) *
-                (provider.templateFlipX(currentItem.id ?? '') ? -1 : 1),
-            scaleY: (currentItem.scale.clamp(0.01, 10.0)) *
-                (provider.templateFlipY(currentItem.id ?? '') ? -1 : 1),
-            // Fabric stores `left` / `top` as the object's origin. For the
-            // template JSON used by the admin panel the origin is usually
-            // top-left, so scaling must grow from that same top-left point.
-            alignment: Alignment.topLeft,
-            child: SizedBox(
-              width: bodyWidth,
-              height: bodyHeight,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: bodyWidth,
-                    height: bodyHeight,
-                    // Selection visuals are rendered by the single
-                    // _TransformSelectionOverlay in template_edit.dart.
-                    // Do not draw another border here; that creates a second
-                    // selection rectangle offset from the real touch target.
-                    decoration: const BoxDecoration(),
-                    child: Opacity(
-                      opacity: currentItem.opacity.clamp(0.0, 1.0),
-                      child: _buildItemContent(currentItem, context, isBackground: isBackground),
-                    ),
-                  ),
+        key: ValueKey(
+          "${currentItem.id}_${currentItem.filterType}_${currentItem.rotation}_${currentItem.scale}_${currentItem.opacity}_${currentItem.position}_${currentItem.fontFamily}_${currentItem.fontSize}",
+        ),
+        child: GestureDetector(
+          // IMPORTANT: only the actual item body moves. Resize/rotate handles
+          // below have their own gesture detectors, so touching a handle never
+          // bubbles into this pan handler.
+          onPanUpdate: (details) {
+            provider.updatePosition(
+              currentItem.id!,
+              currentItem.position + details.delta,
+            );
+          },
+          onTapDown: (_) {
+            onItemSelected(currentItem.type ?? '', currentItem.id!);
+          },
+          onTap: () {
+            onItemSelected(currentItem.type ?? '', currentItem.id!);
+          },
+          child: Transform.rotate(
+            angle: currentItem.rotation,
+            child: Transform.scale(
+              // Keep the object's real scale anchored to its top-left origin.
+              // Flip is intentionally handled by a SECOND transform below.
+              // Combining a negative scale with top-left alignment moves the
+              // visual image to the opposite side of its box. The reference
+              // editor flips the pixels in-place, so the image must stay at the
+              // exact same x/y, width and height.
+              scale: currentItem.scale.clamp(0.01, 10.0),
+              alignment: Alignment.topLeft,
+              child: Transform.scale(
+                scaleX: provider.templateFlipX(currentItem.id ?? '') ? -1 : 1,
+                scaleY: provider.templateFlipY(currentItem.id ?? '') ? -1 : 1,
+                // Flip around the CENTER of the object's own box. This keeps
+                // the same image bounds and therefore the same position.
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: bodyWidth,
+                  height: bodyHeight,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: bodyWidth,
+                        height: bodyHeight,
+                        // Selection visuals are rendered by the single
+                        // _TransformSelectionOverlay in template_edit.dart.
+                        // Do not draw another border here; that creates a second
+                        // selection rectangle offset from the real touch target.
+                        decoration: const BoxDecoration(),
+                        child: Opacity(
+                          opacity: currentItem.opacity.clamp(0.0, 1.0),
+                          child: _buildItemContent(currentItem, context, isBackground: isBackground),
+                        ),
+                      ),
 
-                  // Selection border, resize handles and three-dot control are
-                  // rendered by _TransformSelectionOverlay in template_edit.dart.
-                  // Keeping a second set here creates the unwanted small red dots
-                  // and the oversized hidden selection box.
-                ],
+                      // Selection border, resize handles and three-dot control are
+                      // rendered by _TransformSelectionOverlay in template_edit.dart.
+                      // Keeping a second set here creates the unwanted small red dots
+                      // and the oversized hidden selection box.
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
+        ));
+    }
 
   Widget _buildResizeHandle(
       BuildContext context,
