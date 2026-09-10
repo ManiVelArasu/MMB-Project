@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/ui/screens/video_widget/video_widget.dart';
 import 'package:provider/provider.dart';
@@ -659,39 +660,67 @@ class HomeScreen extends StatelessWidget {
   }) {
     return Row(
       children: [
-        Image.network(
-          iconAsset,
-          height: 32.h,
+        // =====================================================
+        // CATEGORY ICON
+        // =====================================================
+
+        SizedBox(
           width: 32.w,
-          errorBuilder: (_, _, _) => Container(
-            height: 32.h,
-            width: 32.w,
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.flash_on,
-              color: const Color(0xFFE53935),
-              size: 18.sp,
-            ),
+          height: 32.w,
+          child: ClipOval(
+            child: iconAsset.trim().isNotEmpty
+                ? SvgPicture.network(
+              iconAsset,
+              width: 32.w,
+              height: 32.w,
+              fit: BoxFit.cover,
+              placeholderBuilder: (context) {
+                return _buildDefaultCategoryIcon(isDark);
+              },
+              errorBuilder: (
+                  context,
+                  error,
+                  stackTrace,
+                  ) {
+                return _buildDefaultCategoryIcon(isDark);
+              },
+            )
+                : _buildDefaultCategoryIcon(isDark),
           ),
         ),
+
         SizedBox(width: 8.w),
-        AppText(
-          title,
-          style: TextStyle(
-            color: isDark ? Colors.white : AppColors.darkBlack,
-            fontSize: AppFontSize.fontSize18,
-            fontWeight: FontWeight.w800,
+
+        // =====================================================
+        // CATEGORY NAME
+        // =====================================================
+
+        Expanded(
+          child: AppText(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isDark
+                  ? Colors.white
+                  : AppColors.darkBlack,
+              fontSize: AppFontSize.fontSize18,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
-        const Spacer(),
+
+        // =====================================================
+        // VIEW ALL
+        // =====================================================
+
         if (hasViewAll)
           Text(
             "VIEW ALL",
             style: TextStyle(
-              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              color: isDark
+                  ? Colors.grey.shade400
+                  : Colors.grey.shade600,
               fontSize: 12.sp,
               fontWeight: FontWeight.w700,
             ),
@@ -699,7 +728,23 @@ class HomeScreen extends StatelessWidget {
       ],
     );
   }
-
+  Widget _buildDefaultCategoryIcon(bool isDark) {
+    return Container(
+      width: 32.w,
+      height: 32.w,
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF2A1A1C)
+            : const Color(0xFFFFECEE),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.flash_on,
+        color: const Color(0xFFE53935),
+        size: 18.sp,
+      ),
+    );
+  }
   Widget _buildMySpaceList(
     HomeScreenProvider homeScreenProvider,
     bool isDark,

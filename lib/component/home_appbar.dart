@@ -40,42 +40,56 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Row(
           children: [
             // 1. BUSINESS LOGO
-            Container(
-              height: 48.h,
-              width: 48.w,
-              decoration: const BoxDecoration(shape: BoxShape.circle),
+            // 1. BUSINESS LOGO
+            SizedBox(
+              width: 50.w,
+              height: 50.w,
               child: ClipOval(
-                child:
-                    savedImagePath != null &&
-                        savedImagePath.isNotEmpty &&
-                        File(savedImagePath).existsSync()
+                child: savedImagePath != null &&
+                    savedImagePath.isNotEmpty &&
+                    File(savedImagePath).existsSync()
                     ? Image.file(
-                        File(savedImagePath),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Image.asset(
-                              "assets/images/BName.png",
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                color: const Color(0xFFE91E63),
-                                child: const Icon(
-                                  Icons.business,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                      )
-                    : Image.asset(
-                        "assets/images/BName.png",
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
+                  File(savedImagePath),
+                  width: 50.w,
+                  height: 50.w,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Image.asset(
+                      "assets/images/BName.png",
+                      width: 50.w,
+                      height: 50.w,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) {
+                        return Container(
+                          width: 50.w,
+                          height: 50.w,
                           color: const Color(0xFFE91E63),
                           child: const Icon(
                             Icons.business,
                             color: Colors.white,
                           ),
-                        ),
+                        );
+                      },
+                    );
+                  },
+                )
+                    : Image.asset(
+                  "assets/images/BName.png",
+                  width: 50.w,
+                  height: 50.w,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: 50.w,
+                      height: 50.w,
+                      color: const Color(0xFFE91E63),
+                      child: const Icon(
+                        Icons.business,
+                        color: Colors.white,
                       ),
+                    );
+                  },
+                ),
               ),
             ),
 
@@ -114,7 +128,7 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
 
             // 3. MAGIC WAND ICON
-            InkWell(
+            /*InkWell(
               onTap: onMagicWandTap,
               borderRadius: BorderRadius.circular(24.r),
               child: Container(
@@ -135,7 +149,7 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               ),
-            ),
+            ),*/
 
             SizedBox(width: 10.w),
 
