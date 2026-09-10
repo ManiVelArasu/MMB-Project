@@ -151,10 +151,7 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (context) => SocialCalendarResultScreen(provider: provider),
         );
-      case "/NotificationScreen":
-        return MaterialPageRoute(
-          builder: (context) => const NotificationScreen(),
-        );
+
       case "/BusinessCategoryChooseView":
         return MaterialPageRoute(
           builder: (context) => const BusinessCategoryChooseView(),

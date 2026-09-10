@@ -19,13 +19,13 @@ class BusinessCategoryChooseScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => IndustryProvider()..fetchAssetCategories(),
-      child: const BusinessCategoryChooseView(),
+      child: const BusinessCategoryChooseViewScreen(),
     );
   }
 }
 
-class BusinessCategoryChooseView extends StatelessWidget {
-  const BusinessCategoryChooseView({super.key});
+class BusinessCategoryChooseViewScreen extends StatelessWidget {
+  const BusinessCategoryChooseViewScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -141,79 +141,76 @@ class BusinessCategoryChooseView extends StatelessWidget {
               Expanded(
                 child: industryProvider.isLoading
                     ? const Center(
-                  child: CircularProgressIndicator(color: Colors.red),
-                )
+                        child: CircularProgressIndicator(color: Colors.red),
+                      )
                     : industryProvider.categories.isEmpty
-                    ? _buildEmptyCategoryState(
-                  context,
-                  industryProvider,
-                )
+                    ? _buildEmptyCategoryState(context, industryProvider)
                     : ListView.separated(
-                  itemCount: industryProvider.categories.length > 10
-                      ? 10
-                      : industryProvider.categories.length,
-                  separatorBuilder: (context, index) =>
-                      Divider(color: Colors.grey.shade200),
-                  itemBuilder: (context, index) {
-                    final category = industryProvider.categories[index];
-                    final categoryName = category.name ?? "";
+                        itemCount: industryProvider.categories.length > 10
+                            ? 10
+                            : industryProvider.categories.length,
+                        separatorBuilder: (context, index) =>
+                            Divider(color: Colors.grey.shade200),
+                        itemBuilder: (context, index) {
+                          final category = industryProvider.categories[index];
+                          final categoryName = category.name ?? "";
 
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: AppText(
-                        categoryName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: AppText(
+                              categoryName,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            trailing: const Icon(
+                              Icons.north_east,
+                              size: 18,
+                              color: Colors.grey,
+                            ),
+                            onTap: () async {
+                              industryProvider.selectCategory(category);
+
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              final selectedCat =
+                                  industryProvider.selectedCategory;
+
+                              if (selectedCat != null) {
+                                await prefs.setString(
+                                  'saved_category_id',
+                                  selectedCat.id.toString(),
+                                );
+                                await prefs.setString(
+                                  'saved_category_name',
+                                  selectedCat.name ?? "",
+                                );
+                                // IMPORTANT: save the exact slug of the item
+                                // the user clicked. Do not use a fixed index/name.
+                                await prefs.setString(
+                                  'saved_category_slug',
+                                  selectedCat.slug ?? "",
+                                );
+
+                                debugPrint(
+                                  '✅ Selected industry: '
+                                  '${selectedCat.name} '
+                                  '(slug: ${selectedCat.slug})',
+                                );
+                              }
+
+                              if (!context.mounted) return;
+
+                              Navigator.pushNamed(
+                                context,
+                                "/BusinessCategoryChooseView",
+                              );
+                            },
+                          );
+                        },
                       ),
-                      trailing: const Icon(
-                        Icons.north_east,
-                        size: 18,
-                        color: Colors.grey,
-                      ),
-                      onTap: () async {
-                        industryProvider.selectCategory(category);
-
-                        final prefs =
-                        await SharedPreferences.getInstance();
-                        final selectedCat =
-                            industryProvider.selectedCategory;
-
-                        if (selectedCat != null) {
-                          await prefs.setString(
-                            'saved_category_id',
-                            selectedCat.id.toString(),
-                          );
-                          await prefs.setString(
-                            'saved_category_name',
-                            selectedCat.name ?? "",
-                          );
-                          // IMPORTANT: save the exact slug of the item
-                          // the user clicked. Do not use a fixed index/name.
-                          await prefs.setString(
-                            'saved_category_slug',
-                            selectedCat.slug ?? "",
-                          );
-
-                          debugPrint(
-                            '✅ Selected industry: '
-                                '${selectedCat.name} '
-                                '(slug: ${selectedCat.slug})',
-                          );
-                        }
-
-                        if (!context.mounted) return;
-
-                        Navigator.pushNamed(
-                          context,
-                          "/BusinessCategoryChooseView",
-                        );
-                      },
-                    );
-                  },
-                ),
               ),
             ],
           ),
@@ -223,9 +220,9 @@ class BusinessCategoryChooseView extends StatelessWidget {
   }
 
   Widget _buildEmptyCategoryState(
-      BuildContext context,
-      IndustryProvider industryProvider,
-      ) {
+    BuildContext context,
+    IndustryProvider industryProvider,
+  ) {
     return Column(
       children: [
         const SizedBox(height: 4),
@@ -241,8 +238,8 @@ class BusinessCategoryChooseView extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           "Choose Other and enter your business type. We'll review new "
-              "requests and continuously expand our industry database to "
-              "improve template recommendations.",
+          "requests and continuously expand our industry database to "
+          "improve template recommendations.",
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 15,
@@ -292,7 +289,7 @@ class BusinessCategoryChooseView extends StatelessWidget {
   void searchCategorySheet(BuildContext context) {
     final industryProvider = context.read<IndustryProvider>();
     final DraggableScrollableController sheetController =
-    DraggableScrollableController();
+        DraggableScrollableController();
 
     showModalBottomSheet(
       context: context,

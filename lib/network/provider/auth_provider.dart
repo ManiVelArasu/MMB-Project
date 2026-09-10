@@ -340,7 +340,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
               Navigator.pushReplacementNamed(
                 context,
-                "/CustomBottomNavScreen",
+                "/AccountTypeScreen",
               );
             } else {
               debugPrint(
