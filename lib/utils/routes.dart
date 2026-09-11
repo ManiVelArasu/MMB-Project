@@ -8,7 +8,7 @@ import '../network/provider/business_provider.dart';
 import '../network/provider/smcalender_form_provider.dart';
 import '../ui/industry/account_type_screen.dart';
 import '../ui/industry/business_category_choose_screen.dart';
-import '../ui/industry/business_category_choose_view.dart' hide BusinessCategoryChooseView;
+import '../ui/industry/business_category_choose_view.dart';
 import '../ui/industry/business_details_screen.dart';
 import '../ui/industry/business_frame_screen.dart';
 import '../ui/industry/edit_photo_screen.dart';

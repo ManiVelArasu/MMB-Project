@@ -148,7 +148,7 @@ class EditableItemWidget extends StatelessWidget {
             ),
           ),
         ));
-    }
+  }
 
   Widget _buildResizeHandle(
       BuildContext context,
@@ -297,6 +297,11 @@ class EditableItemWidget extends StatelessWidget {
       saturation: item.saturation,
     );
 
+    final editorProvider = context.read<EditorProvider>();
+    final id = item.id ?? '';
+    final tint = editorProvider.imageTint(id);
+    final blur = editorProvider.imageBlur(id);
+
     Widget filtered = imageWidget;
 
     if (filter != null) {
@@ -305,6 +310,23 @@ class EditableItemWidget extends StatelessWidget {
 
     if (adjusted != null) {
       filtered = ColorFiltered(colorFilter: adjusted, child: filtered);
+    }
+
+    if (tint.abs() > 0.001) {
+      filtered = ColorFiltered(
+        colorFilter: _tintFilter(tint),
+        child: filtered,
+      );
+    }
+
+    if (blur > 0.001) {
+      filtered = ImageFiltered(
+        imageFilter: ui.ImageFilter.blur(
+          sigmaX: blur,
+          sigmaY: blur,
+        ),
+        child: filtered,
+      );
     }
 
     final intensity = _readFilterIntensity(item, context);
@@ -320,6 +342,40 @@ class EditableItemWidget extends StatelessWidget {
     }
 
     return filtered;
+  }
+
+  ColorFilter _tintFilter(double value) {
+    // Tint is implemented as a hue rotation so the full -100..100 range
+    // remains visible while preserving image luminance.
+    final angle = value.clamp(-100.0, 100.0) * math.pi / 100.0;
+    final cosA = math.cos(angle);
+    final sinA = math.sin(angle);
+    const lumR = 0.213;
+    const lumG = 0.715;
+    const lumB = 0.072;
+
+    return ColorFilter.matrix([
+      lumR + cosA * (1 - lumR) + sinA * (-lumR),
+      lumG + cosA * (-lumG) + sinA * (-lumG),
+      lumB + cosA * (-lumB) + sinA * (1 - lumB),
+      0,
+      0,
+      lumR + cosA * (-lumR) + sinA * 0.143,
+      lumG + cosA * (1 - lumG) + sinA * 0.140,
+      lumB + cosA * (-lumB) + sinA * (-0.283),
+      0,
+      0,
+      lumR + cosA * (-lumR) + sinA * (-(1 - lumR)),
+      lumG + cosA * (-lumG) + sinA * lumG,
+      lumB + cosA * (1 - lumB) + sinA * lumB,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+    ]);
   }
 
   double _readFilterIntensity(EditorItem item, BuildContext context) {
@@ -1011,12 +1067,20 @@ class EditableItemWidget extends StatelessWidget {
       // When a mask is selected, use the mask asset's alpha channel to clip
       // only this image. Do not use the mask name as a ShapeClipper name:
       // API mask names are arbitrary and are not built-in shapes.
+      final outlineStyle = editorProvider.outlineStyle(item.id ?? '');
+      final outlineWidth = item.outlineWidth.isFinite
+          ? item.outlineWidth.clamp(0.0, 20.0).toDouble()
+          : 0.0;
+
       Widget maskedImage = hasApiMask
           ? _ApiMaskImage(
         image: imageWidget,
         maskUrl: apiMaskUrl!,
         width: item.width ?? 220,
         height: item.height ?? 220,
+        outlineStyle: outlineStyle,
+        outlineColor: item.outlineColor,
+        outlineWidth: outlineWidth,
       )
           : ClipPath(
         clipper: ShapeClipper(
@@ -1040,17 +1104,15 @@ class EditableItemWidget extends StatelessWidget {
 
       final filteredImage = _buildFilteredImage(item, maskedImage, context);
 
-      // API masks already define the final shape, so the normal shape border
-      // painter is only used when no API mask is selected.
-      if (hasApiMask) return filteredImage;
-
       final shape = (item.text ?? 'rounded').toLowerCase();
+
       return CustomPaint(
         foregroundPainter: ShapeBorderPainter(
           shape: shape,
           radius: item.borderRadius,
           color: item.outlineColor,
-          width: item.outlineWidth,
+          width: outlineStyle == 'none' ? 0 : outlineWidth,
+          style: outlineStyle,
         ),
         child: filteredImage,
       );
@@ -2141,6 +2203,9 @@ class EditableItemWidget extends StatelessWidget {
         ? item.saturation.clamp(0.0, 2.0)
         : 1.0;
 
+    double tint = provider.imageTint(itemId).clamp(-100.0, 100.0);
+    double blur = provider.imageBlur(itemId).clamp(0.0, 20.0);
+
     const filters = <String>[
       'none',
       'festive',
@@ -2180,6 +2245,8 @@ class EditableItemWidget extends StatelessWidget {
               contrast: contrast.clamp(.5, 2.0),
               saturation: saturation.clamp(0.0, 2.0),
             );
+            provider.updateImageTint(itemId, tint);
+            provider.updateImageBlur(itemId, blur);
           }
 
           return SafeArea(
@@ -2211,6 +2278,8 @@ class EditableItemWidget extends StatelessWidget {
                             brightness = 0;
                             contrast = 1;
                             saturation = 1;
+                            tint = 0;
+                            blur = 0;
                             apply();
                             setModalState(() {});
                           },
@@ -2303,18 +2372,74 @@ class EditableItemWidget extends StatelessWidget {
                           },
                           '${(filterIntensity * 100).round()}',
                         ),
-                        _imageEditSlider('Brightness', brightness, -1, 1, (v) {
-                          setModalState(() => brightness = v.clamp(-1.0, 1.0));
-                          apply();
-                        }, '${((brightness + 1) * 50).round()}'),
-                        _imageEditSlider('Contrast', contrast, .5, 2, (v) {
-                          setModalState(() => contrast = v.clamp(.5, 2.0));
-                          apply();
-                        }, '${(contrast * 50).round()}'),
-                        _imageEditSlider('Saturation', saturation, 0, 2, (v) {
-                          setModalState(() => saturation = v.clamp(0.0, 2.0));
-                          apply();
-                        }, '${(saturation * 50).round()}'),
+                        const Padding(
+                          padding: EdgeInsets.only(top: 8, bottom: 8),
+                          child: Text(
+                            'Advanced Settings',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        _imageEditSlider(
+                          'Brightness',
+                          brightness,
+                          -1,
+                          1,
+                              (v) {
+                            setModalState(() => brightness = v.clamp(-1.0, 1.0));
+                            apply();
+                          },
+                          '${((brightness + 1) * 50).round()}',
+                        ),
+                        _imageEditSlider(
+                          'Contrast',
+                          contrast,
+                          .5,
+                          2,
+                              (v) {
+                            setModalState(() => contrast = v.clamp(.5, 2.0));
+                            apply();
+                          },
+                          '${(contrast * 50).round()}',
+                        ),
+                        _imageEditSlider(
+                          'Tint',
+                          tint,
+                          -100,
+                          100,
+                              (v) {
+                            setModalState(() => tint = v.clamp(-100.0, 100.0));
+                            apply();
+                          },
+                          tint >= 0
+                              ? '+${tint.round()}'
+                              : '${tint.round()}',
+                          gradient: true,
+                        ),
+                        _imageEditSlider(
+                          'Saturation',
+                          saturation,
+                          0,
+                          2,
+                              (v) {
+                            setModalState(() => saturation = v.clamp(0.0, 2.0));
+                            apply();
+                          },
+                          '${(saturation * 50).round()}',
+                        ),
+                        _imageEditSlider(
+                          'Blur',
+                          blur,
+                          0,
+                          20,
+                              (v) {
+                            setModalState(() => blur = v.clamp(0.0, 20.0));
+                            apply();
+                          },
+                          '${blur.round()}',
+                        ),
                         const SizedBox(height: 14),
                         Center(
                           child: OutlinedButton(
@@ -2324,6 +2449,8 @@ class EditableItemWidget extends StatelessWidget {
                               brightness = 0;
                               contrast = 1;
                               saturation = 1;
+                              tint = 0;
+                              blur = 0;
                               apply();
                               setModalState(() {});
                             },
@@ -2348,8 +2475,9 @@ class EditableItemWidget extends StatelessWidget {
       double min,
       double max,
       ValueChanged<double> onChanged,
-      String valueText,
-      ) {
+      String valueText, {
+        bool gradient = false,
+      }) {
     final safeValue = value.isFinite ? value.clamp(min, max) : min;
 
     return Column(
@@ -2365,7 +2493,33 @@ class EditableItemWidget extends StatelessWidget {
             Text(valueText),
           ],
         ),
-        Slider(min: min, max: max, value: safeValue, onChanged: onChanged),
+        if (gradient)
+          SizedBox(
+            height: 6,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(99),
+                gradient: const LinearGradient(
+                  colors: [
+                    Colors.red,
+                    Colors.orange,
+                    Colors.yellow,
+                    Colors.green,
+                    Colors.cyan,
+                    Colors.blue,
+                    Colors.purple,
+                    Colors.pink,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        Slider(
+          min: min,
+          max: max,
+          value: safeValue,
+          onChanged: onChanged,
+        ),
       ],
     );
   }
@@ -3147,12 +3301,18 @@ class _ApiMaskImage extends StatefulWidget {
   final String maskUrl;
   final double width;
   final double height;
+  final String outlineStyle;
+  final Color outlineColor;
+  final double outlineWidth;
 
   const _ApiMaskImage({
     required this.image,
     required this.maskUrl,
     required this.width,
     required this.height,
+    this.outlineStyle = 'none',
+    this.outlineColor = Colors.white,
+    this.outlineWidth = 0,
   });
 
   @override
@@ -3162,6 +3322,7 @@ class _ApiMaskImage extends StatefulWidget {
 class _ApiMaskImageState extends State<_ApiMaskImage> {
   ui.Image? _maskImage;
   bool _maskImageOwned = false;
+  List<Offset> _outlinePoints = const [];
 
   @override
   void initState() {
@@ -3172,14 +3333,21 @@ class _ApiMaskImageState extends State<_ApiMaskImage> {
   @override
   void didUpdateWidget(covariant _ApiMaskImage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.maskUrl != widget.maskUrl) {
-      if (_maskImageOwned) {
-        _maskImage?.dispose();
-      }
-      _maskImage = null;
-      _maskImageOwned = false;
+    if (oldWidget.maskUrl != widget.maskUrl ||
+        oldWidget.width != widget.width ||
+        oldWidget.height != widget.height) {
+      _disposeMask();
       _loadMask();
     }
+  }
+
+  void _disposeMask() {
+    if (_maskImageOwned) {
+      _maskImage?.dispose();
+    }
+    _maskImage = null;
+    _maskImageOwned = false;
+    _outlinePoints = const [];
   }
 
   bool _looksLikeSvg(String url) {
@@ -3187,23 +3355,185 @@ class _ApiMaskImageState extends State<_ApiMaskImage> {
     return value.endsWith('.svg') || value.endsWith('.svgz');
   }
 
+  /// Converts a normal black/white mask image into a real alpha mask.
+  ///
+  /// Many API mask assets are opaque JPG/PNG/SVG previews rather than files
+  /// with transparency. A simple BlendMode.dstIn therefore has no visible
+  /// effect because their alpha is 1.0 everywhere. We keep the original alpha
+  /// and multiply it by luminance, so white becomes visible and black becomes
+  /// transparent. If the asset is predominantly white, we invert luminance
+  /// so black-on-white mask assets work too.
+  Future<ui.Image> _createAlphaMask(
+      ui.Image source,
+      int targetWidth,
+      int targetHeight,
+      ) async {
+    final src = Rect.fromLTWH(
+      0,
+      0,
+      source.width.toDouble(),
+      source.height.toDouble(),
+    );
+    final dst = Rect.fromLTWH(
+      0,
+      0,
+      targetWidth.toDouble(),
+      targetHeight.toDouble(),
+    );
+
+    bool invert = false;
+    try {
+      final bytes = await source.toByteData(format: ui.ImageByteFormat.rawRgba);
+      if (bytes != null && bytes.lengthInBytes >= 4) {
+        final data = bytes.buffer.asUint8List();
+        double sum = 0;
+        int count = 0;
+        int opaqueCount = 0;
+        for (int i = 0; i + 3 < data.length; i += 4) {
+          final a = data[i + 3];
+          if (a < 8) continue;
+          final r = data[i];
+          final g = data[i + 1];
+          final b = data[i + 2];
+          sum += (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
+          count++;
+          if (a > 245) opaqueCount++;
+        }
+        if (count > 0) {
+          final average = sum / count;
+          // White-background/black-shape assets need inversion.
+          invert = average > 0.62 && opaqueCount / count > 0.90;
+        }
+      }
+    } catch (_) {
+      // Fall back to normal white=visible behavior.
+    }
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final bounds = Rect.fromLTWH(
+      0,
+      0,
+      targetWidth.toDouble(),
+      targetHeight.toDouble(),
+    );
+
+    // Everything below is rendered into one off-screen layer so dstIn only
+    // affects the mask layer, never the editor canvas/background.
+    canvas.saveLayer(bounds, Paint());
+    canvas.drawImageRect(
+      source,
+      src,
+      dst,
+      Paint()..filterQuality = FilterQuality.high,
+    );
+
+    final luminanceMatrix = invert
+        ? const <double>[
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      -0.299, -0.587, -0.114, 0, 255,
+    ]
+        : const <double>[
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
+      0.299, 0.587, 0.114, 0, 0,
+    ];
+
+    final alphaPaint = Paint()
+      ..isAntiAlias = true
+      ..filterQuality = FilterQuality.high
+      ..colorFilter = ColorFilter.matrix(luminanceMatrix)
+      ..blendMode = BlendMode.dstIn;
+
+    canvas.drawImageRect(source, src, dst, alphaPaint);
+    canvas.restore();
+
+    return recorder.endRecording().toImage(targetWidth, targetHeight);
+  }
+
+  Future<List<Offset>> _buildMaskOutlinePoints(ui.Image mask) async {
+    if (widget.outlineStyle == 'none' || widget.outlineWidth <= 0) {
+      return const [];
+    }
+
+    final data = await mask.toByteData(format: ui.ImageByteFormat.rawRgba);
+    if (data == null) return const [];
+
+    final bytes = data.buffer.asUint8List();
+    final w = mask.width;
+    final h = mask.height;
+    final alpha = Uint8List(w * h);
+
+    for (int i = 0, p = 0; i < alpha.length && p + 3 < bytes.length; i++, p += 4) {
+      alpha[i] = bytes[p + 3];
+    }
+
+    final edges = <Offset>[];
+    bool inside(int x, int y) =>
+        x >= 0 && y >= 0 && x < w && y < h && alpha[y * w + x] > 20;
+
+    // Find the outside edge of the actual mask silhouette.
+    for (int y = 1; y < h - 1; y++) {
+      for (int x = 1; x < w - 1; x++) {
+        if (!inside(x, y)) continue;
+        if (!inside(x - 1, y) ||
+            !inside(x + 1, y) ||
+            !inside(x, y - 1) ||
+            !inside(x, y + 1)) {
+          edges.add(Offset(x.toDouble(), y.toDouble()));
+        }
+      }
+    }
+
+    if (edges.isEmpty) return const [];
+
+    final spacing = widget.outlineStyle == 'fine_dotted'
+        ? math.max(2.0, widget.outlineWidth * 2.0)
+        : widget.outlineStyle == 'dotted'
+        ? math.max(3.0, widget.outlineWidth * 2.8)
+        : widget.outlineStyle == 'dashed'
+        ? math.max(5.0, widget.outlineWidth * 4.0)
+        : math.max(0.8, widget.outlineWidth * 0.45);
+
+    final selected = <Offset>[];
+    final minDistanceSquared = spacing * spacing;
+    for (final point in edges) {
+      if (selected.every((p) => (p - point).distanceSquared >= minDistanceSquared)) {
+        selected.add(point);
+      }
+    }
+    return selected;
+  }
+
   Future<void> _loadMask() async {
     final url = widget.maskUrl.trim();
     if (url.isEmpty) return;
 
-    try {
-      if (_looksLikeSvg(url)) {
-        final pictureInfo = await vg.loadPicture(SvgNetworkLoader(url), null);
+    final targetWidth = math.max(1, widget.width.round());
+    final targetHeight = math.max(1, widget.height.round());
 
-        final targetWidth = math.max(1, widget.width.round());
-        final targetHeight = math.max(1, widget.height.round());
+    try {
+      ui.Image sourceImage;
+
+      if (_looksLikeSvg(url)) {
+        final pictureInfo = await vg.loadPicture(
+          SvgNetworkLoader(url),
+          null,
+        );
 
         final recorder = ui.PictureRecorder();
         final canvas = Canvas(
           recorder,
-          Rect.fromLTWH(0, 0, targetWidth.toDouble(), targetHeight.toDouble()),
+          Rect.fromLTWH(
+            0,
+            0,
+            targetWidth.toDouble(),
+            targetHeight.toDouble(),
+          ),
         );
-
         final sourceWidth = pictureInfo.size.width <= 0
             ? targetWidth.toDouble()
             : pictureInfo.size.width;
@@ -3211,48 +3541,65 @@ class _ApiMaskImageState extends State<_ApiMaskImage> {
             ? targetHeight.toDouble()
             : pictureInfo.size.height;
 
-        canvas.scale(targetWidth / sourceWidth, targetHeight / sourceHeight);
+        canvas.scale(
+          targetWidth / sourceWidth,
+          targetHeight / sourceHeight,
+        );
         canvas.drawPicture(pictureInfo.picture);
 
-        final image = await recorder.endRecording().toImage(
+        sourceImage = await recorder.endRecording().toImage(
           targetWidth,
           targetHeight,
         );
-
         pictureInfo.picture.dispose();
+      } else {
+        final stream = NetworkImage(url).resolve(
+          const ImageConfiguration(),
+        );
+        final completer = Completer<ui.Image>();
+        late final ImageStreamListener listener;
 
-        if (!mounted) {
-          image.dispose();
-          return;
-        }
+        listener = ImageStreamListener(
+              (ImageInfo info, bool _) {
+            if (!completer.isCompleted) {
+              completer.complete(info.image);
+            }
+            stream.removeListener(listener);
+          },
+          onError: (Object error, StackTrace? stack) {
+            if (!completer.isCompleted) {
+              completer.completeError(error, stack);
+            }
+            stream.removeListener(listener);
+          },
+        );
+        stream.addListener(listener);
+        sourceImage = await completer.future;
+      }
 
-        setState(() {
-          _maskImage = image;
-          _maskImageOwned = true;
-        });
+      final alphaMask = await _createAlphaMask(
+        sourceImage,
+        targetWidth,
+        targetHeight,
+      );
+
+      // SVG source images are owned by us. Network ImageStream images are
+      // framework-owned and must not be disposed here.
+      if (_looksLikeSvg(url)) {
+        sourceImage.dispose();
+      }
+
+      if (!mounted) {
+        alphaMask.dispose();
         return;
       }
-      final stream = NetworkImage(url).resolve(const ImageConfiguration());
-      final completer = Completer<ui.Image>();
-      late final ImageStreamListener listener;
 
-      listener = ImageStreamListener(
-            (ImageInfo info, bool _) {
-          if (!completer.isCompleted) completer.complete(info.image);
-          stream.removeListener(listener);
-        },
-        onError: (Object error, StackTrace? stack) {
-          if (!completer.isCompleted) completer.completeError(error, stack);
-          stream.removeListener(listener);
-        },
-      );
-      stream.addListener(listener);
+      final outlinePoints = await _buildMaskOutlinePoints(alphaMask);
 
-      final image = await completer.future;
-      if (!mounted) return;
       setState(() {
-        _maskImage = image;
-        _maskImageOwned = false;
+        _maskImage = alphaMask;
+        _maskImageOwned = true;
+        _outlinePoints = outlinePoints;
       });
     } catch (e, st) {
       debugPrint('API mask load failed: ${widget.maskUrl} - $e');
@@ -3263,9 +3610,7 @@ class _ApiMaskImageState extends State<_ApiMaskImage> {
 
   @override
   void dispose() {
-    if (_maskImageOwned) {
-      _maskImage?.dispose();
-    }
+    _disposeMask();
     super.dispose();
   }
 
@@ -3274,7 +3619,6 @@ class _ApiMaskImageState extends State<_ApiMaskImage> {
     final mask = _maskImage;
 
     if (mask == null) {
-      // Keep the selected image visible while the mask loads/fails.
       return SizedBox(
         width: widget.width,
         height: widget.height,
@@ -3282,45 +3626,103 @@ class _ApiMaskImageState extends State<_ApiMaskImage> {
       );
     }
 
+    final masked = ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (bounds) {
+        return ui.ImageShader(
+          mask,
+          TileMode.clamp,
+          TileMode.clamp,
+          Float64List.fromList(const <double>[
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1,
+          ]),
+        );
+      },
+      child: widget.image,
+    );
+
     return SizedBox(
       width: widget.width,
       height: widget.height,
-      child: CustomPaint(
-        foregroundPainter: _ApiMaskPainter(mask),
-        child: widget.image,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (_outlinePoints.isNotEmpty)
+            CustomPaint(
+              painter: _MaskOutlinePainter(
+                points: _outlinePoints,
+                imageWidth: mask.width.toDouble(),
+                imageHeight: mask.height.toDouble(),
+                color: widget.outlineColor,
+                width: widget.outlineWidth,
+                style: widget.outlineStyle,
+              ),
+            ),
+          masked,
+        ],
       ),
     );
   }
 }
 
-class _ApiMaskPainter extends CustomPainter {
-  final ui.Image maskImage;
+class _MaskOutlinePainter extends CustomPainter {
+  final List<Offset> points;
+  final double imageWidth;
+  final double imageHeight;
+  final Color color;
+  final double width;
+  final String style;
 
-  const _ApiMaskPainter(this.maskImage);
+  const _MaskOutlinePainter({
+    required this.points,
+    required this.imageWidth,
+    required this.imageHeight,
+    required this.color,
+    required this.width,
+    required this.style,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw the image first (CustomPaint child), then use the mask as dstIn.
-    // This leaves the image visible only where the mask has alpha.
-    final src = Rect.fromLTWH(
-      0,
-      0,
-      maskImage.width.toDouble(),
-      maskImage.height.toDouble(),
-    );
-    final dst = Offset.zero & size;
+    if (points.isEmpty || width <= 0 || style == 'none') return;
 
+    final sx = size.width / imageWidth;
+    final sy = size.height / imageHeight;
+    final scale = math.min(sx, sy);
     final paint = Paint()
-      ..isAntiAlias = true
-      ..filterQuality = FilterQuality.high
-      ..blendMode = BlendMode.dstIn;
+      ..color = color
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
 
-    canvas.drawImageRect(maskImage, src, dst, paint);
+    final radius = style == 'fine_dotted'
+        ? math.max(0.8, width * .42) * scale
+        : style == 'dotted'
+        ? math.max(1.0, width * .62) * scale
+        : math.max(1.0, width * .50) * scale;
+
+    // The points come from the actual alpha-mask silhouette, so the outline
+    // follows the cut-out image rather than the rectangular selection box.
+    for (int i = 0; i < points.length; i++) {
+      if (style == 'dashed') {
+        final cycle = (i ~/ 3) % 2;
+        if (cycle == 1) continue;
+      }
+      final p = Offset(points[i].dx * sx, points[i].dy * sy);
+      canvas.drawCircle(p, radius, paint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _ApiMaskPainter oldDelegate) =>
-      oldDelegate.maskImage != maskImage;
+  bool shouldRepaint(covariant _MaskOutlinePainter oldDelegate) =>
+      oldDelegate.points != points ||
+          oldDelegate.imageWidth != imageWidth ||
+          oldDelegate.imageHeight != imageHeight ||
+          oldDelegate.color != color ||
+          oldDelegate.width != width ||
+          oldDelegate.style != style;
 }
 
 class ShapeBorderPainter extends CustomPainter {
@@ -3328,22 +3730,59 @@ class ShapeBorderPainter extends CustomPainter {
   final double radius;
   final Color color;
   final double width;
+  final String style;
+
   ShapeBorderPainter({
     required this.shape,
     required this.radius,
     required this.color,
     required this.width,
+    this.style = 'solid',
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (width <= 0) return;
+    if (width <= 0 || style == 'none') return;
     final path = ShapeClipper(shape, radius: radius).getClip(size);
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = width
+      ..strokeCap = style == 'dotted' || style == 'fine_dotted'
+          ? StrokeCap.round
+          : StrokeCap.butt
       ..color = color;
-    canvas.drawPath(path, paint);
+
+    if (style == 'solid') {
+      canvas.drawPath(path, paint);
+      return;
+    }
+
+    for (final metric in path.computeMetrics()) {
+      final length = metric.length;
+      double pos = 0;
+      final bool dotted = style == 'dotted' || style == 'fine_dotted';
+      final double dash = style == 'dashed'
+          ? width * 4.5
+          : width * (style == 'fine_dotted' ? 0.9 : 1.4);
+      final double gap = style == 'dashed'
+          ? width * 2.5
+          : width * (style == 'fine_dotted' ? 1.6 : 2.2);
+
+      while (pos < length) {
+        final end = math.min(pos + dash, length);
+        if (dotted) {
+          final mid = (pos + end) / 2;
+          final dot = metric.extractPath(
+            math.max(0, mid - width * .45),
+            math.min(length, mid + width * .45),
+          );
+          canvas.drawPath(dot, paint);
+        } else {
+          canvas.drawPath(metric.extractPath(pos, end), paint);
+        }
+        pos += dash + gap;
+      }
+    }
   }
 
   @override
@@ -3351,5 +3790,7 @@ class ShapeBorderPainter extends CustomPainter {
       oldDelegate.shape != shape ||
           oldDelegate.radius != radius ||
           oldDelegate.color != color ||
-          oldDelegate.width != width;
+          oldDelegate.width != width ||
+          oldDelegate.style != style;
 }
+

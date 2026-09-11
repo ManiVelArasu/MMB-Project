@@ -157,7 +157,7 @@ class BusinessProvider extends ChangeNotifier {
 
             updateSavedImagePath(imageFile.path);
             if (context.mounted) {
-              Navigator.pushNamed(context, "/CustomBottomNavScreen");
+              //  Navigator.pushNamed(context, "/CustomBottomNavScreen");
             }
           },
           failure: (error) {
@@ -215,7 +215,7 @@ class BusinessProvider extends ChangeNotifier {
         _email,
         _savedCategorySlug,
       );
-
+      print('categoryslug${_savedCategorySlug}');
       _isUploading = false;
       notifyListeners();
 

@@ -63,7 +63,7 @@ class HomeScreen extends StatelessWidget {
                       CustomSearchBar(
                         hintText: "Find your Industry",
                         prefixAsset: "assets/images/search.png",
-                        suffixAsset: "assets/images/search.png",
+                        suffixAsset: "assets/images/mic.png",
                         borderColor: AppColors.searchBorderColor,
                         onChanged: (query) {},
                       ),
@@ -86,7 +86,7 @@ class HomeScreen extends StatelessWidget {
                       Row(
                         children: [
                           Image.asset(
-                            "assets/images/special_days.png",
+                            "assets/images/calendar.png",
                             height: 32.h,
                             width: 32.w,
                           ),
@@ -116,7 +116,6 @@ class HomeScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 12.h),
 
-                      // 🚀 2. Special Days-க்கு கீழே வர வேண்டிய டேட் ஸ்க்ரோலர் பாக்ஸ் (இருவருக்கும் பொதுவானது)
                       Container(
                         height: 40.h,
                         decoration: BoxDecoration(
@@ -126,9 +125,6 @@ class HomeScreen extends StatelessWidget {
                         clipBehavior: Clip.antiAlias,
                         child: Row(
                           children: [
-                            // =========================
-                            // MONTH
-                            // =========================
                             Container(
                               width: 74.w,
                               height: double.infinity,
@@ -146,9 +142,6 @@ class HomeScreen extends StatelessWidget {
                               ),
                             ),
 
-                            // =========================
-                            // DATE LIST
-                            // =========================
                             Expanded(
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
@@ -158,7 +151,8 @@ class HomeScreen extends StatelessWidget {
                                   vertical: 5.h,
                                 ),
                                 itemCount: 8,
-                                separatorBuilder: (_, __) => SizedBox(width: 10.w),
+                                separatorBuilder: (_, __) =>
+                                    SizedBox(width: 10.w),
                                 itemBuilder: (context, index) {
                                   final dates = [
                                     "2",
@@ -202,10 +196,26 @@ class HomeScreen extends StatelessWidget {
 
                       SizedBox(height: 20.h),
 
-                      _buildSectionHeader(
-                        title: "My Zone",
-                        iconAsset: "assets/images/my_zone.png",
-                        isDark: isDark,
+                      Row(
+                        children: [
+                          Image.asset(
+                            "assets/images/myzone.png",
+                            height: 32.h,
+                            width: 32.w,
+                          ),
+                          SizedBox(width: 8.w),
+                          AppText(
+                            "My Zone",
+                            style: TextStyle(
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.darkBlack,
+                              fontSize: AppFontSize.fontSize18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+
+                        ],
                       ),
                       SizedBox(height: 12.h),
 
@@ -463,6 +473,7 @@ class HomeScreen extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final category =
                               homeScreenProvider.templateCategories[index];
+
                           final categoryName = category.name?.trim() ?? '';
                           final slug = category.slug?.trim() ?? '';
 
@@ -477,8 +488,15 @@ class HomeScreen extends StatelessWidget {
 
                           final templates = homeScreenProvider
                               .templatesForCategory(slug);
+
                           final isLoading = homeScreenProvider
                               .isTemplateLoading(slug);
+
+                          // YouTube category check
+                          final bool isYoutubeThumbnail =
+                              slug.toLowerCase() == 'youtube-thumbnails' ||
+                              categoryName.toLowerCase() ==
+                                  'youtube thumbnails';
 
                           return Padding(
                             padding: EdgeInsets.only(top: 24.h),
@@ -491,10 +509,12 @@ class HomeScreen extends StatelessWidget {
                                   hasViewAll: true,
                                   isDark: isDark,
                                 ),
+
                                 SizedBox(height: 12.h),
+
                                 if (isLoading)
                                   SizedBox(
-                                    height: 165.h,
+                                    height: isYoutubeThumbnail ? 310.h : 165.h,
                                     child: const Center(
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
@@ -502,9 +522,12 @@ class HomeScreen extends StatelessWidget {
                                       ),
                                     ),
                                   )
+                                // =========================
+                                // EMPTY
+                                // =========================
                                 else if (templates.isEmpty)
                                   SizedBox(
-                                    height: 110.h,
+                                    height: isYoutubeThumbnail ? 250.h : 110.h,
                                     child: Center(
                                       child: AppText(
                                         'No templates available',
@@ -515,6 +538,139 @@ class HomeScreen extends StatelessWidget {
                                           fontSize: 13.sp,
                                         ),
                                       ),
+                                    ),
+                                  )
+                                else if (isYoutubeThumbnail)
+                                  SizedBox(
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        final double pageWidth =
+                                            constraints.maxWidth;
+
+                                        final double horizontalGap = 16.w;
+                                        final double verticalGap = 16.h;
+
+                                        final double cardWidth =
+                                            (pageWidth - horizontalGap) / 2;
+
+                                        // 16:9 thumbnail
+                                        final double cardHeight =
+                                            cardWidth * 9 / 16;
+
+                                        // Each page contains 4 templates
+                                        final int pageCount =
+                                            (templates.length / 4).ceil();
+
+                                        return ListView.builder(
+                                          scrollDirection: Axis.horizontal,
+                                          physics:
+                                              const BouncingScrollPhysics(),
+                                          itemCount: pageCount,
+                                          itemBuilder: (context, pageIndex) {
+                                            final int startIndex =
+                                                pageIndex * 4;
+
+                                            return SizedBox(
+                                              width: pageWidth,
+                                              child: Padding(
+                                                padding: EdgeInsets.only(
+                                                  right:
+                                                      pageIndex == pageCount - 1
+                                                      ? 0
+                                                      : 16.w,
+                                                ),
+                                                child: Column(
+                                                  children: [
+                                                    // =========================
+                                                    // ROW 1
+                                                    // =========================
+                                                    SizedBox(
+                                                      height: cardHeight,
+                                                      child: Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child: _buildApiTemplateCard(
+                                                              context,
+                                                              templates[startIndex],
+                                                              isDark,
+                                                            ),
+                                                          ),
+
+                                                          SizedBox(
+                                                            width:
+                                                                horizontalGap,
+                                                          ),
+
+                                                          if (startIndex + 1 <
+                                                              templates.length)
+                                                            Expanded(
+                                                              child: _buildApiTemplateCard(
+                                                                context,
+                                                                templates[startIndex +
+                                                                    1],
+                                                                isDark,
+                                                              ),
+                                                            )
+                                                          else
+                                                            const Expanded(
+                                                              child: SizedBox(),
+                                                            ),
+                                                        ],
+                                                      ),
+                                                    ),
+
+                                                    SizedBox(
+                                                      height: verticalGap,
+                                                    ),
+
+                                                    SizedBox(
+                                                      height: cardHeight,
+                                                      child: Row(
+                                                        children: [
+                                                          if (startIndex + 2 <
+                                                              templates.length)
+                                                            Expanded(
+                                                              child: _buildApiTemplateCard(
+                                                                context,
+                                                                templates[startIndex +
+                                                                    2],
+                                                                isDark,
+                                                              ),
+                                                            )
+                                                          else
+                                                            const Expanded(
+                                                              child: SizedBox(),
+                                                            ),
+
+                                                          SizedBox(
+                                                            width:
+                                                                horizontalGap,
+                                                          ),
+
+                                                          if (startIndex + 3 <
+                                                              templates.length)
+                                                            Expanded(
+                                                              child: _buildApiTemplateCard(
+                                                                context,
+                                                                templates[startIndex +
+                                                                    3],
+                                                                isDark,
+                                                              ),
+                                                            )
+                                                          else
+                                                            const Expanded(
+                                                              child: SizedBox(),
+                                                            ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
                                     ),
                                   )
                                 else
@@ -670,21 +826,17 @@ class HomeScreen extends StatelessWidget {
           child: ClipOval(
             child: iconAsset.trim().isNotEmpty
                 ? SvgPicture.network(
-              iconAsset,
-              width: 32.w,
-              height: 32.w,
-              fit: BoxFit.cover,
-              placeholderBuilder: (context) {
-                return _buildDefaultCategoryIcon(isDark);
-              },
-              errorBuilder: (
-                  context,
-                  error,
-                  stackTrace,
-                  ) {
-                return _buildDefaultCategoryIcon(isDark);
-              },
-            )
+                    iconAsset,
+                    width: 32.w,
+                    height: 32.w,
+                    fit: BoxFit.cover,
+                    placeholderBuilder: (context) {
+                      return _buildDefaultCategoryIcon(isDark);
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildDefaultCategoryIcon(isDark);
+                    },
+                  )
                 : _buildDefaultCategoryIcon(isDark),
           ),
         ),
@@ -694,16 +846,13 @@ class HomeScreen extends StatelessWidget {
         // =====================================================
         // CATEGORY NAME
         // =====================================================
-
         Expanded(
           child: AppText(
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: isDark
-                  ? Colors.white
-                  : AppColors.darkBlack,
+              color: isDark ? Colors.white : AppColors.darkBlack,
               fontSize: AppFontSize.fontSize18,
               fontWeight: FontWeight.w800,
             ),
@@ -713,14 +862,11 @@ class HomeScreen extends StatelessWidget {
         // =====================================================
         // VIEW ALL
         // =====================================================
-
         if (hasViewAll)
           Text(
             "VIEW ALL",
             style: TextStyle(
-              color: isDark
-                  ? Colors.grey.shade400
-                  : Colors.grey.shade600,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               fontSize: 12.sp,
               fontWeight: FontWeight.w700,
             ),
@@ -728,23 +874,19 @@ class HomeScreen extends StatelessWidget {
       ],
     );
   }
+
   Widget _buildDefaultCategoryIcon(bool isDark) {
     return Container(
       width: 32.w,
       height: 32.w,
       decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF2A1A1C)
-            : const Color(0xFFFFECEE),
+        color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
         shape: BoxShape.circle,
       ),
-      child: Icon(
-        Icons.flash_on,
-        color: const Color(0xFFE53935),
-        size: 18.sp,
-      ),
+      child: Icon(Icons.flash_on, color: const Color(0xFFE53935), size: 18.sp),
     );
   }
+
   Widget _buildMySpaceList(
     HomeScreenProvider homeScreenProvider,
     bool isDark,
@@ -933,9 +1075,6 @@ class HomeScreen extends StatelessWidget {
   Widget _buildMyFrameHeader(bool isDark, BuildContext context) {
     return Row(
       children: [
-        // =========================
-        // TITLE
-        // =========================
         Text(
           "MY FRAME - 1",
           style: TextStyle(
@@ -947,9 +1086,6 @@ class HomeScreen extends StatelessWidget {
 
         SizedBox(width: 8.w),
 
-        // =========================
-        // MORE BUTTON
-        // =========================
         Container(
           width: 28.w,
           height: 28.w,
@@ -968,9 +1104,6 @@ class HomeScreen extends StatelessWidget {
 
         const Spacer(),
 
-        // =========================
-        // EDIT BUTTON
-        // =========================
         Container(
           width: 38.w,
           height: 38.w,
@@ -978,12 +1111,9 @@ class HomeScreen extends StatelessWidget {
             color: isDark ? const Color(0xFF3A2929) : const Color(0xFFFFE5E5),
             shape: BoxShape.circle,
           ),
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            onPressed: () {
-              // Edit action
-            },
-            icon: Icon(Icons.edit_outlined, color: Colors.red, size: 19.sp),
+          child: InkWell(
+            onTap: () {},
+            child: Image.asset('assets/images/frame_edit.png'),
           ),
         ),
 
@@ -999,12 +1129,11 @@ class HomeScreen extends StatelessWidget {
             color: isDark ? const Color(0xFF3A2929) : const Color(0xFFFFE5E5),
             shape: BoxShape.circle,
           ),
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            onPressed: () {
+          child: InkWell(
+            onTap: () {
               _showShareBottomSheet(context, isDark);
             },
-            icon: Icon(Icons.download_outlined, color: Colors.red, size: 20.sp),
+            child: Image.asset('assets/images/download.png'),
           ),
         ),
       ],
@@ -1018,7 +1147,6 @@ class HomeScreen extends StatelessWidget {
   }) {
     final controller = homeScreenProvider.leadPageController;
 
-    // 3 different slides
     final banners = [
       {
         "title": "Grow Your Business",
@@ -1026,19 +1154,25 @@ class HomeScreen extends StatelessWidget {
             "List your business on MMB and get discovered by potential customers.",
         "button": "GO PREMIUM",
         "gradient": const [Color(0xFFFFEEEE), Color(0xFFFFF9EA)],
+        "titleColor": const Color(0xFFD4A017),
+        "descriptionColor": const Color(0xFF333333),
       },
       {
         "title": "2000+ Business Templates",
         "description": "Find ready-made templates designed for your industry",
-        "button": "LIST YOUR BUSINESS",
-        "gradient": const [Color(0xFFFFF1F1), Color(0xFFFFE4E4)],
+        "button": "BROWSE TEMPLATES",
+        "gradient": const [Color(0xFFEEF4FF), Color(0xFFEEEAFF)],
+        "titleColor": const Color(0xFF8D77FB),
+        "descriptionColor": const Color(0xFF343434),
       },
       {
-        "title": "Grow With MMB",
+        "title": "Powerful AI Tools",
         "description":
-            "Get more visibility, promote your business and grow faster with MMB.",
-        "button": "GET STARTED",
-        "gradient": const [Color(0xFFF3F0FF), Color(0xFFE8E1FF)],
+            "Generate logos,remove backgrounds, create images, and write caption instantly",
+        "button": "EXPLORE AI",
+        "gradient": const [Color(0xFFFFFBEE), Color(0xFFEAFEFF)],
+        "titleColor": const Color(0xFF26A3D9),
+        "descriptionColor": const Color(0xFF303030),
       },
     ];
 
@@ -1046,9 +1180,6 @@ class HomeScreen extends StatelessWidget {
       height: 165.h,
       child: Column(
         children: [
-          // =========================
-          // BANNER SLIDER
-          // =========================
           Expanded(
             child: PageView.builder(
               controller: controller,
@@ -1060,7 +1191,12 @@ class HomeScreen extends StatelessWidget {
                 final title = banner["title"] as String;
                 final description = banner["description"] as String;
                 final button = banner["button"] as String;
+
                 final gradient = banner["gradient"] as List<Color>;
+
+                final titleColor = banner["titleColor"] as Color;
+
+                final descriptionColor = banner["descriptionColor"] as Color;
 
                 return Container(
                   margin: EdgeInsets.symmetric(horizontal: 4.w),
@@ -1080,13 +1216,15 @@ class HomeScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // =========================
                       // TITLE
+                      // =========================
                       AppText(
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: AppColors.gold,
+                          color: titleColor,
                           fontSize: 20.sp,
                           fontWeight: FontWeight.w900,
                         ),
@@ -1094,13 +1232,15 @@ class HomeScreen extends StatelessWidget {
 
                       SizedBox(height: 3.h),
 
+                      // =========================
                       // DESCRIPTION
+                      // =========================
                       AppText(
                         description,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: AppColors.appBlack,
+                          color: descriptionColor,
                           fontSize: 13.sp,
                           height: 1.15,
                           fontWeight: FontWeight.w500,
@@ -1109,17 +1249,18 @@ class HomeScreen extends StatelessWidget {
 
                       SizedBox(height: 7.h),
 
+                      // =========================
                       // BUTTON
+                      // =========================
                       SizedBox(
                         height: 28.h,
                         child: ElevatedButton(
                           onPressed: () {
-                            // TODO:
-                            // Premium / Business action
+                            // TODO
                           },
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
-                            backgroundColor: AppColors.gold,
+                            backgroundColor: titleColor,
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(horizontal: 14.w),
                             shape: RoundedRectangleBorder(
@@ -1146,7 +1287,7 @@ class HomeScreen extends StatelessWidget {
           SizedBox(height: 7.h),
 
           // =========================
-          // 3 DOT INDICATOR
+          // DOT INDICATOR
           // =========================
           AnimatedBuilder(
             animation: controller,
@@ -1357,11 +1498,9 @@ class HomeScreen extends StatelessWidget {
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 4,
 
-            // 🔥 Equal spacing
             crossAxisSpacing: 12.w,
             mainAxisSpacing: 18.h,
 
-            // 🔥 Consistent card size
             childAspectRatio: 0.82,
           ),
 

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/theme_screen_model.dart';
@@ -11,8 +14,6 @@ import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/theme_screen_provider.dart';
 
 import 'package:flutter/material.dart';
-
-
 
 class ThemesScreen extends StatefulWidget {
   const ThemesScreen({super.key});
@@ -80,76 +81,64 @@ class _ThemesScreenState extends State<ThemesScreen> {
                   vertical: 12.h,
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    AppText(
+                      "Brand Series",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: AppFontSize.fontSize20,
+                      ),
+                    ),
+
+                    SizedBox(height: 2),
+
+                    // DESCRIPTION
+                    AppText(
+                      "Create a consistent brand identity with\n"
+                      "professionally designed template collections.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: AppFontSize.fontSize15,
+                        color: AppColors.appGrey,
+                        height: 1.15,
+                      ),
+                    ),
+
+                    SizedBox(height: 4),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _brandBadge("2,500+ TEMPLATES"),
+
+                        SizedBox(width: 3),
+
+                        _brandBadge("60+ INDUSTRIES"),
+
+                        SizedBox(width: 3),
+
+                        _brandBadge("FULLY CUSTOMIZABLE"),
+                      ],
+                    ),
+
+                    SizedBox(height: 3),
+
+                    // BOTTOM BADGE
+                    _brandBadge("INDUSTRY-SPECIFIC COLLECTIONS"),
+                    SizedBox(height: 10),
+
                     /// Search
                     CustomSearchBar(
                       hintText: "Find your Industry",
                       prefixAsset: "assets/images/search.png",
-                      suffixAsset: "assets/images/search.png",
+                      suffixAsset: "assets/images/mic.png",
                       borderColor: const Color(0xFFFFCDD2),
                       onChanged: (value) {},
                     ),
 
                     SizedBox(height: 20.h),
-
-                    /// Banner
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(18.r),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20.r),
-                        gradient: LinearGradient(
-                          colors: isDark
-                              ? [
-                                  const Color(0xFF1E1E2C),
-                                  const Color(0xFF2D2B42),
-                                ]
-                              : [
-                                  const Color(0xFFE8EAF6),
-                                  const Color(0xFFD1C4E9),
-                                ],
-                        ),
-                      ),
-                      child: Stack(
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Level Up your SM with\nour Themes",
-                                style: TextStyle(
-                                  fontSize: 20.sp,
-                                  fontWeight: FontWeight.w900,
-                                  color: isDark
-                                      ? const Color(0xFF9FA8DA)
-                                      : const Color(0xFF303F9F),
-                                ),
-                              ),
-
-                              SizedBox(height: 8.h),
-
-                              Text(
-                                "Select, Customize, and Publish.\nAll in One Place!",
-                                style: TextStyle(
-                                  fontSize: 11.sp,
-                                  color: isDark
-                                      ? Colors.white70
-                                      : Colors.black87,
-                                ),
-                              ),
-
-                              SizedBox(height: 14.h),
-
-                              ElevatedButton(
-                                onPressed: () {},
-                                child: const Text("ACTIVATE NOW"),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
 
                     SizedBox(height: 25.h),
 
@@ -170,6 +159,26 @@ class _ThemesScreenState extends State<ThemesScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _brandBadge(String text) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF0F2),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: const Color(0xFFFFB8C0), width: 0.6),
+      ),
+      child: AppText(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: const Color(0xFFFF3B4D),
+          fontSize: 6.5,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
@@ -201,7 +210,7 @@ class ThemeGroupSection extends StatelessWidget {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8.r),
-                child:NetworkAssetImage(
+                child: NetworkAssetImage(
                   url: "${ApiEndpoints.cdnImageUrl}/${iconUrl ?? ''}",
                   fit: BoxFit.cover,
                   errorWidget: const Icon(

@@ -20,6 +20,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   List<EditorItem> get items => _items;
   final Map<String, String> _imageMaskUrls = {};
   final Map<String, String> _imageMaskNames = {};
+  final Map<String, String> _outlineStyles = {};
 
   // Raw Fabric object data is kept alongside EditorItem so the renderer can
   // support new Fabric properties without losing them during import.
@@ -32,6 +33,22 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   String? imageMaskUrl(String id) => _imageMaskUrls[id];
   String? imageMaskName(String id) => _imageMaskNames[id];
+
+  String outlineStyle(String id) => _outlineStyles[id] ?? 'none';
+
+  void updateOutlineStyle(String id, String style) {
+    if (!_items.any((e) => e.id == id)) return;
+    _saveState();
+    _outlineStyles[id] = style;
+    // Selecting an outline style should visibly enable the outline.
+    if (style != 'none') {
+      final index = _items.indexWhere((e) => e.id == id);
+      if (index != -1 && _items[index].outlineWidth <= 0) {
+        _items[index] = _items[index].copyWith(outlineWidth: 3.0);
+      }
+    }
+    notifyListeners();
+  }
 
   String assetCdnUrl(String? key) {
     if (key == null || key.trim().isEmpty) return '';
@@ -1927,11 +1944,15 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _saveState();
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
+      final sourceId = _items[index].id ?? '';
+      final newId = DateTime.now().millisecondsSinceEpoch.toString();
       EditorItem newItem = _items[index].copyWith(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: newId,
         position: _items[index].position + const Offset(20, 20),
       );
       _items.add(newItem);
+      final outline = _outlineStyles[sourceId];
+      if (outline != null) _outlineStyles[newId] = outline;
       notifyListeners();
     }
   }
@@ -1988,6 +2009,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           'borderRadius': item.borderRadius,
           'outlineWidth': item.outlineWidth,
           'outlineColor': colorToHex(item.outlineColor),
+          'outlineStyle': outlineStyle(id),
           'textFormatting': {
             'letterSpacing': textLetterSpacing(id),
             'lineSpacing': textLineSpacing(id),
@@ -2398,12 +2420,30 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   final Map<String, double> _imageFilterIntensity = {};
+  final Map<String, double> _imageTint = {};
+  final Map<String, double> _imageBlur = {};
 
   double imageFilterIntensity(String id) => _imageFilterIntensity[id] ?? 1.0;
+  double imageTint(String id) => _imageTint[id] ?? 0.0;
+  double imageBlur(String id) => _imageBlur[id] ?? 0.0;
 
   void updateImageFilterIntensity(String id, double value) {
     _saveState();
     _imageFilterIntensity[id] = value.clamp(0.0, 1.0);
+    _syncCurrentPage();
+    notifyListeners();
+  }
+
+  void updateImageTint(String id, double value) {
+    _saveState();
+    _imageTint[id] = value.clamp(-100.0, 100.0);
+    _syncCurrentPage();
+    notifyListeners();
+  }
+
+  void updateImageBlur(String id, double value) {
+    _saveState();
+    _imageBlur[id] = value.clamp(0.0, 20.0);
     _syncCurrentPage();
     notifyListeners();
   }
@@ -2606,6 +2646,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       _textStyle[newId] = _copiedStyle[oldId] ?? FontStyle.normal;
       _textUnderline[newId] = _copiedUnderline[oldId] ?? false;
       _imageFilterIntensity[newId] = _copiedFilterIntensity[oldId] ?? 1.0;
+      _imageTint[newId] = _imageTint[oldId] ?? 0.0;
+      _imageBlur[newId] = _imageBlur[oldId] ?? 0.0;
     }
 
     // Paste means duplicate into the current page. Do not wipe existing

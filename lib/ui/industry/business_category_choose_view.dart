@@ -254,7 +254,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
 
               const SizedBox(height: 10),
 
-              AppText(
+    if (industryProvider.childCategories.isNotEmpty) ...[     AppText(
                 "We’ll review your industry details and add them to your profile once approved.",
                 style: TextStyle(color: AppColors.appGrey),
               ),
@@ -271,7 +271,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                   ),
                   AppText(" Skip", style: TextStyle(color: AppColors.appRed)),
                 ],
-              ),
+              )],
               const SizedBox(height: 20),
               ButtonWidget(
                 buttonPress: () {

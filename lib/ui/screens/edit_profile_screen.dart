@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../component/appbar_widget.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/custom_widget.dart';
+import '../../network/provider/business_provider.dart';
 import '../../network/provider/edit_photo_provider.dart';
 import '../../utils/theme/app.colors.dart';
 
@@ -12,6 +15,13 @@ class EditProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final businessProvider = context.watch<BusinessProvider>();
+
+    String businessName = businessProvider.businessName.isNotEmpty
+        ? businessProvider.businessName
+        : "Business Name";
+
+    String? savedImagePath = businessProvider.savedImagePath;
     return ChangeNotifierProvider(
       create: (_) => EditPhotoProvider(),
       child: Consumer<EditPhotoProvider>(
@@ -40,7 +50,7 @@ class EditProfileScreen extends StatelessWidget {
                     CustomSearchBar(
                       hintText: "Find your Industry",
                       prefixAsset: "assets/images/search.png",
-                      suffixAsset: "assets/images/search.png",
+                      suffixAsset: "assets/images/mic.png",
                       borderColor: AppColors.searchBorderColor,
                       onChanged: (query) {},
                     ),
@@ -81,11 +91,52 @@ class EditProfileScreen extends StatelessWidget {
                             ),
                           ),
                           child: Center(
-                            child: Icon(
-                              Icons.storefront_rounded,
-                              size: 40.sp,
-                              color: Colors.blueAccent,
-                            ),
+                            child:
+                                savedImagePath != null &&
+                                    savedImagePath.isNotEmpty &&
+                                    File(savedImagePath).existsSync()
+                                ? Image.file(
+                                    File(savedImagePath),
+                                    width: 50.w,
+                                    height: 50.w,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        "assets/images/BName.png",
+                                        width: 50.w,
+                                        height: 50.w,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) {
+                                          return Container(
+                                            width: 50.w,
+                                            height: 50.w,
+                                            color: const Color(0xFFE91E63),
+                                            child: const Icon(
+                                              Icons.business,
+                                              color: Colors.white,
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  )
+                                : Image.asset(
+                                    "assets/images/BName.png",
+                                    width: 50.w,
+                                    height: 50.w,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: 50.w,
+                                        height: 50.w,
+                                        color: const Color(0xFFE91E63),
+                                        child: const Icon(
+                                          Icons.business,
+                                          color: Colors.white,
+                                        ),
+                                      );
+                                    },
+                                  ),
                           ),
                         ),
                         Positioned(
@@ -112,15 +163,21 @@ class EditProfileScreen extends StatelessWidget {
 
                     _buildCustomInputField(
                       label: "Business Name",
-                      controller: provider.businessNameController,
+                      controller: businessProvider.nameController.text.isEmpty
+                          ? provider.businessNameController
+                          : businessProvider.nameController,
                     ),
                     _buildCustomInputField(
                       label: "Email ID",
-                      controller: provider.emailController,
+                      controller: businessProvider.email.isEmpty
+                          ? provider.emailController
+                          : businessProvider.emailController,
                     ),
                     _buildCustomInputField(
                       label: "Contact Number",
-                      controller: provider.contactController,
+                      controller: businessProvider.mobileController.text.isEmpty
+                          ? provider.contactController
+                          : businessProvider.mobileController,
                     ),
 
                     SizedBox(height: 16.h),
@@ -153,7 +210,10 @@ class EditProfileScreen extends StatelessWidget {
                       SizedBox(height: 12.h),
                       _buildCustomInputField(
                         label: "Contact Number",
-                        controller: provider.altContactController,
+                        controller:
+                            businessProvider.mobileController.text.isEmpty
+                            ? provider.contactController
+                            : businessProvider.mobileController,
                       ),
                       _buildCustomInputField(
                         label: "Website",

@@ -6,7 +6,6 @@ import 'package:mmb_app/ui/industry/widgets/rotation_slider.dart';
 import 'package:mmb_app/ui/industry/widgets/scale_slider.dart';
 import 'package:provider/provider.dart';
 
-
 import '../../component/custom_widget.dart';
 import '../../network/provider/business_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';

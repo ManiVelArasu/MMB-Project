@@ -142,7 +142,7 @@ class LoginScreen extends StatelessWidget {
                       height12,
 
                       // Google Button
-                      ButtonWidget(
+                      /*ButtonWidget(
                         buttonPress: () {},
                         title: "Continue with Google",
                         textStyle: theme.titleLarge!.copyWith(
@@ -157,9 +157,9 @@ class LoginScreen extends StatelessWidget {
                           border: Border.all(color: customColor.borderColor),
                         ),
                         height: 54.h,
-                      ),
+                      ),*/
 
-                      height12,
+                    /*  height12,*/
 
                       ButtonWidget(
                         isLoading: authProvider.isLoginLoading,

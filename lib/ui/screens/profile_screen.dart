@@ -577,13 +577,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 void _showLanguagesBottomSheet(
-  BuildContext context,
-  ProfileScreenProvider provider,
-  bool isDark,
-) {
+    BuildContext context,
+    ProfileScreenProvider provider,
+    bool isDark,
+    ) {
   final languages = provider.plansData?.data ?? [];
 
-  final Set<String> selectedCodes = {"en", "ta", "hi"};
+  // Initially selected languages
+  final Set<String> selectedCodes = {
+    "en",
+    "ta",
+    "hi",
+  };
 
   showModalBottomSheet(
     context: context,
@@ -595,7 +600,8 @@ void _showLanguagesBottomSheet(
           return Container(
             width: double.infinity,
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.62,
+              maxHeight:
+              MediaQuery.of(context).size.height * 0.62,
             ),
             padding: EdgeInsets.only(
               top: 10.h,
@@ -604,35 +610,50 @@ void _showLanguagesBottomSheet(
               bottom: 24.h,
             ),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF181818) : Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+              color: isDark
+                  ? const Color(0xFF181818)
+                  : Colors.white,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(24.r),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
               children: [
+                // =========================
+                // DRAG HANDLE
+                // =========================
                 Center(
                   child: Container(
                     width: 82.w,
                     height: 4.h,
                     decoration: BoxDecoration(
                       color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(10.r),
+                      borderRadius:
+                      BorderRadius.circular(10.r),
                     ),
                   ),
                 ),
 
                 SizedBox(height: 10.h),
 
+                // =========================
+                // HEADER
+                // =========================
                 Row(
                   children: [
                     Expanded(
                       child: Text(
                         "Languages",
                         style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
+                          color: isDark
+                              ? Colors.white
+                              : Colors.black,
                           fontSize: 18.sp,
-                          fontWeight: FontWeight.w800,
+                          fontWeight:
+                          FontWeight.w800,
                         ),
                       ),
                     ),
@@ -661,14 +682,21 @@ void _showLanguagesBottomSheet(
                 ),
 
                 SizedBox(height: 28.h),
+
+                // =========================
+                // SELECTED LANGUAGES + COUNT
+                // =========================
                 Row(
                   children: [
                     Text(
                       "Selected Languages",
                       style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black,
+                        color: isDark
+                            ? Colors.white
+                            : Colors.black,
                         fontSize: 17.sp,
-                        fontWeight: FontWeight.w800,
+                        fontWeight:
+                        FontWeight.w800,
                       ),
                     ),
 
@@ -680,14 +708,16 @@ void _showLanguagesBottomSheet(
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: Colors.red,
-                        borderRadius: BorderRadius.circular(6.r),
+                        borderRadius:
+                        BorderRadius.circular(6.r),
                       ),
                       child: Text(
                         "${selectedCodes.length}",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 17.sp,
-                          fontWeight: FontWeight.w800,
+                          fontWeight:
+                          FontWeight.w800,
                         ),
                       ),
                     ),
@@ -699,7 +729,9 @@ void _showLanguagesBottomSheet(
                 Text(
                   "Your post, their language – connect better, reach wider!",
                   style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black,
+                    color: isDark
+                        ? Colors.white
+                        : Colors.black,
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w500,
                     height: 1.4,
@@ -708,50 +740,103 @@ void _showLanguagesBottomSheet(
 
                 SizedBox(height: 18.h),
 
+                // =========================
+                // LANGUAGES
+                // =========================
                 Wrap(
                   spacing: 10.w,
                   runSpacing: 10.h,
                   children: languages.map((language) {
-                    final isSelected = selectedCodes.contains(
-                      language.isActive,
-                    );
+
+                    // IMPORTANT:
+                    // selectedCodes contains language.code
+                    final String code =
+                        language.code ?? "";
+
+                    final bool isSelected =
+                    selectedCodes.contains(code);
+
+                    // API is_active == 1
+                    final bool isActive =
+                        language.isActive == 1;
 
                     return GestureDetector(
                       onTap: () {
+
+                        // Optional:
+                        // inactive languages cannot be selected
+                        if (!isActive) {
+                          return;
+                        }
+
                         setModalState(() {
+
                           if (isSelected) {
-                            selectedCodes.remove(language.code);
+                            // REMOVE
+                            selectedCodes.remove(code);
                           } else {
-                            selectedCodes.add(language.code);
+                            // ADD
+                            selectedCodes.add(code);
                           }
+
                         });
                       },
+
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
+                        duration:
+                        const Duration(
+                          milliseconds: 180,
+                        ),
                         width: 108.w,
                         height: 40.h,
                         alignment: Alignment.center,
-                        decoration: BoxDecoration(
+
+                        decoration:
+                        BoxDecoration(
+
+                          // =========================
+                          // SELECTED = RED
+                          // =========================
                           color: isSelected
-                              ? const Color(0xFFFFD1D5)
+                              ? const Color(
+                            0xFFFFD1D5,
+                          )
                               : (isDark
-                                    ? const Color(0xFF181818)
-                                    : Colors.white),
-                          borderRadius: BorderRadius.circular(22.r),
+                              ? const Color(
+                            0xFF181818,
+                          )
+                              : Colors.white),
+
+                          borderRadius:
+                          BorderRadius.circular(
+                            22.r,
+                          ),
+
                           border: Border.all(
                             color: isSelected
-                                ? const Color(0xFFFFD1D5)
-                                : const Color(0xFFFFBFC4),
-                            width: 1,
+                                ? Colors.red
+                                : const Color(
+                              0xFFFFBFC4,
+                            ),
+                            width: isSelected
+                                ? 1.5
+                                : 1,
                           ),
                         ),
-                        child: Text(
-                          language.name,
 
+                        child: Text(
+                          language.name ?? "",
                           style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black,
+                            color: isSelected
+                                ? Colors.red
+                                : (isDark
+                                ? Colors.white
+                                : Colors.black),
                             fontSize: 15.sp,
-                            fontWeight: FontWeight.w500,
+                            fontWeight:
+                            isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                           ),
                         ),
                       ),

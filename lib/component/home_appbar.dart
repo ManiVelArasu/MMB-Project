@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/component/custom_widget.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
@@ -45,51 +46,52 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               width: 50.w,
               height: 50.w,
               child: ClipOval(
-                child: savedImagePath != null &&
-                    savedImagePath.isNotEmpty &&
-                    File(savedImagePath).existsSync()
+                child:
+                    savedImagePath != null &&
+                        savedImagePath.isNotEmpty &&
+                        File(savedImagePath).existsSync()
                     ? Image.file(
-                  File(savedImagePath),
-                  width: 50.w,
-                  height: 50.w,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Image.asset(
-                      "assets/images/BName.png",
-                      width: 50.w,
-                      height: 50.w,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) {
-                        return Container(
-                          width: 50.w,
-                          height: 50.w,
-                          color: const Color(0xFFE91E63),
-                          child: const Icon(
-                            Icons.business,
-                            color: Colors.white,
-                          ),
-                        );
-                      },
-                    );
-                  },
-                )
+                        File(savedImagePath),
+                        width: 50.w,
+                        height: 50.w,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image.asset(
+                            "assets/images/BName.png",
+                            width: 50.w,
+                            height: 50.w,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) {
+                              return Container(
+                                width: 50.w,
+                                height: 50.w,
+                                color: const Color(0xFFE91E63),
+                                child: const Icon(
+                                  Icons.business,
+                                  color: Colors.white,
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      )
                     : Image.asset(
-                  "assets/images/BName.png",
-                  width: 50.w,
-                  height: 50.w,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 50.w,
-                      height: 50.w,
-                      color: const Color(0xFFE91E63),
-                      child: const Icon(
-                        Icons.business,
-                        color: Colors.white,
+                        "assets/images/BName.png",
+                        width: 50.w,
+                        height: 50.w,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 50.w,
+                            height: 50.w,
+                            color: const Color(0xFFE91E63),
+                            child: const Icon(
+                              Icons.business,
+                              color: Colors.white,
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
               ),
             ),
 
@@ -100,7 +102,7 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  AppText(
                     businessName,
                     style: TextStyle(
                       color: isDark ? Colors.white : Colors.black,
@@ -111,7 +113,7 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: 2.h),
-                  Text(
+                  AppText(
                     businessCategory,
                     style: TextStyle(
                       color: isDark
@@ -150,7 +152,6 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
             ),*/
-
             SizedBox(width: 10.w),
 
             // 4. NOTIFICATION BELL ICON WITH RED BADGE
@@ -197,7 +198,7 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                           minHeight: 18.h,
                         ),
                         child: Center(
-                          child: Text(
+                          child: AppText(
                             notificationCount,
                             style: TextStyle(
                               color: Colors.white,

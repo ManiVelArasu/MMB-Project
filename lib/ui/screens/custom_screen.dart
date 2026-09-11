@@ -77,7 +77,7 @@ class _CustomCreateBody extends StatelessWidget {
                     CustomSearchBar(
                       hintText: "Find your Industry",
                       prefixAsset: "assets/images/search.png",
-                      suffixAsset: "assets/images/search.png",
+                      suffixAsset: "assets/images/mic.png",
                       borderColor: const Color(0xFFFFCDD2),
                       onChanged: (query) {},
                     ),

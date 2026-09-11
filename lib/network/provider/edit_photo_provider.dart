@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 class EditPhotoProvider extends ChangeNotifier {
+
+
+
+
   // Search Controller
   final TextEditingController searchController = TextEditingController();
 
