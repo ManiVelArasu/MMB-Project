@@ -254,28 +254,34 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
 
               const SizedBox(height: 10),
 
-    if (industryProvider.childCategories.isNotEmpty) ...[     AppText(
-                "We’ll review your industry details and add them to your profile once approved.",
-                style: TextStyle(color: AppColors.appGrey),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AppText(
-                    "Nothing Matched?",
-                    style: TextStyle(
-                      color: AppColors.appBlack,
-                      fontWeight: FontWeight.bold,
+              if (industryProvider.childCategories.isNotEmpty) ...[
+                AppText(
+                  "We’ll review your industry details and add them to your profile once approved.",
+                  style: TextStyle(color: AppColors.appGrey),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AppText(
+                      "Nothing Matched?",
+                      style: TextStyle(
+                        color: AppColors.appBlack,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  AppText(" Skip", style: TextStyle(color: AppColors.appRed)),
-                ],
-              )],
+                    AppText(" Skip", style: TextStyle(color: AppColors.appRed)),
+                  ],
+                ),
+              ],
               const SizedBox(height: 20),
               ButtonWidget(
+                isLoading: accountProvider.isUploading,
                 buttonPress: () {
-                  Navigator.pushNamed(context, "/BusinessDetailsScreen");
+                  accountProvider.businessUpdateApi(
+                    context,
+                    '${industryProvider.selectedCategorySlug}',
+                  );
                 },
                 title: "Continue",
                 decoration: BoxDecoration(

@@ -52,7 +52,23 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
-  // 🚀 புதிய மொபைல் எண்ணை சேமிக்கும் மெத்தட்
+  String _formatIndianMobile(String phone) {
+    String number = phone.trim();
+
+    number = number.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    if (number.startsWith('+91')) {
+      return number;
+    }
+    if (number.startsWith('91') && number.length == 12) {
+      return '+$number';
+    }
+    if (number.length == 10) {
+      return '+91$number';
+    }
+
+    return number;
+  }
+
   Future<bool> updateAndSaveNewMobile() async {
     if (newMobileInput.trim().length != 10) {
       mobileError = "Enter a valid 10-digit number";
@@ -134,12 +150,21 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
   Future<bool> apiSendOtp(String phone, String purpose) async {
     _isLoginLoading = true;
     _errorMessage = null;
-    _mobileNumber = phone.trim();
+
+    final formattedPhone = _formatIndianMobile(phone);
+    _mobileNumber = formattedPhone;
 
     notifyListeners();
 
     try {
-      final result = await AuthRepository.instance.sendOtp(phone, purpose);
+      final result = await AuthRepository.instance.sendOtp(
+        formattedPhone,
+        purpose,
+      );
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setString('saved_mobile_number', formattedPhone);
+
       _isLoginLoading = false;
       notifyListeners();
 
@@ -150,7 +175,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
         failure: (error) {
           _errorMessage = error.toString();
           notifyListeners();
-
           return false;
         },
       );
@@ -170,15 +194,23 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     _isReSendLoading = true;
     _errorMessage = null;
 
-    _mobileNumber = phone.trim();
+    final formattedPhone = _formatIndianMobile(phone);
 
+    _mobileNumber = formattedPhone;
+
+    // Save +91 number
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('saved_mobile_number', _mobileNumber);
+
+    await prefs.setString('saved_mobile_number', formattedPhone);
 
     notifyListeners();
 
     try {
-      final result = await AuthRepository.instance.sendOtp(phone, purpose);
+      // Send +91 number
+      final result = await AuthRepository.instance.sendOtp(
+        formattedPhone,
+        purpose,
+      );
 
       _isReSendLoading = false;
       notifyListeners();
@@ -194,7 +226,9 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     } catch (e) {
       _isReSendLoading = false;
       _errorMessage = e.toString();
+
       notifyListeners();
+
       return null;
     }
   }
@@ -228,22 +262,17 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
           final refreshToken = data['refresh_token']?.toString();
 
           final bool isNewUser =
-              data['is_new_user'] ??
-                  data['data']?['is_new_user'] ??
-                  false;
+              data['is_new_user'] ?? data['data']?['is_new_user'] ?? false;
 
           final onboardingData =
-              data['onboarding'] ??
-                  data['data']?['onboarding'];
+              data['onboarding'] ?? data['data']?['onboarding'];
 
           final String accountType =
               onboardingData?['account_type']?.toString() ?? "";
 
-          final bool hasBusiness =
-              onboardingData?['has_business'] ?? false;
+          final bool hasBusiness = onboardingData?['has_business'] ?? false;
 
-          final bool completed =
-              onboardingData?['completed'] ?? false;
+          final bool completed = onboardingData?['completed'] ?? false;
 
           // 🔥 Token must exist
           if (accessToken == null || accessToken.isEmpty) {
@@ -270,40 +299,19 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
           // 🔥 Save tokens permanently
           final prefs = await SharedPreferences.getInstance();
 
-          await prefs.setString(
-            'auth_token',
-            accessToken,
-          );
+          await prefs.setString('auth_token', accessToken);
 
-          await prefs.setString(
-            'refresh_token',
-            refreshToken,
-          );
+          await prefs.setString('refresh_token', refreshToken);
 
-          await prefs.setString(
-            'saved_mobile_number',
-            _mobileNumber.trim(),
-          );
+          await prefs.setString('saved_mobile_number', _mobileNumber.trim());
 
-          await prefs.setBool(
-            'is_new_user',
-            isNewUser,
-          );
+          await prefs.setBool('is_new_user', isNewUser);
 
-          await prefs.setBool(
-            'is_logged_in',
-            true,
-          );
+          await prefs.setBool('is_logged_in', true);
 
-          await prefs.setBool(
-            'is_business_completed',
-            completed,
-          );
+          await prefs.setBool('is_business_completed', completed);
 
-          await prefs.setString(
-            'account_type',
-            accountType,
-          );
+          await prefs.setString('account_type', accountType);
 
           // 🔥 Also update ApiHandler
           await ApiHandler.instance.setTokens(
@@ -312,45 +320,32 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
           );
 
           // 🔥 Verify that SharedPreferences actually saved them
-          final savedAccessToken =
-          prefs.getString('auth_token');
+          final savedAccessToken = prefs.getString('auth_token');
 
-          final savedRefreshToken =
-          prefs.getString('refresh_token');
+          final savedRefreshToken = prefs.getString('refresh_token');
 
           debugPrint(
             '✅ Access token saved: '
-                '${savedAccessToken != null && savedAccessToken.isNotEmpty}',
+            '${savedAccessToken != null && savedAccessToken.isNotEmpty}',
           );
 
           debugPrint(
             '✅ Refresh token saved: '
-                '${savedRefreshToken != null && savedRefreshToken.isNotEmpty}',
+            '${savedRefreshToken != null && savedRefreshToken.isNotEmpty}',
           );
 
           _isVerifyLoading = false;
           notifyListeners();
 
           if (context.mounted) {
-            if (completed ||
-                (accountType == "business" && hasBusiness)) {
-              debugPrint(
-                "👉 Navigating to CustomBottomNavScreen",
-              );
+            if (completed || (accountType == "business" && hasBusiness)) {
+              debugPrint("👉 Navigating to CustomBottomNavScreen");
 
-              Navigator.pushReplacementNamed(
-                context,
-                "/AccountTypeScreen",
-              );
+              Navigator.pushReplacementNamed(context, "/AccountTypeScreen");
             } else {
-              debugPrint(
-                "👉 Navigating to BusinessDetailsScreen",
-              );
+              debugPrint("👉 Navigating to BusinessDetailsScreen");
 
-              Navigator.pushReplacementNamed(
-                context,
-                "/BusinessDetailsScreen",
-              );
+              Navigator.pushReplacementNamed(context, "/BusinessDetailsScreen");
             }
           }
 

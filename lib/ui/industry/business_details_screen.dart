@@ -13,7 +13,9 @@ import '../../widgets/title_value_widget.dart';
 import 'choose_image_sheet.dart';
 
 class BusinessDetailsScreen extends StatefulWidget {
-  const BusinessDetailsScreen({super.key});
+  final String businessUid;
+
+  const BusinessDetailsScreen({super.key, required this.businessUid});
 
   @override
   State<BusinessDetailsScreen> createState() => _BusinessDetailsScreenState();
@@ -276,13 +278,17 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                 ),
               ),
               SizedBox(height: 15),
-
-              // CONTINUE BUTTON
               ButtonWidget(
                 isLoading: businessProvider.isUploading,
                 buttonPress: () async {
-                  await businessProvider.uploadAndSaveBusinessDetails(context);
-                  await businessProvider.businessUpdateApi(context);
+                  final success = await businessProvider.updateBusinessDetails(
+                    context,
+                    widget.businessUid,
+                  );
+
+                  if (success && context.mounted) {
+                    Navigator.pushNamed(context, "/CustomBottomNavScreen");
+                  }
                 },
                 title: "CONTINUE",
                 textStyle: theme.titleLarge!.copyWith(
@@ -295,6 +301,23 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                 ),
                 height: 54.h,
               ),
+              // CONTINUE BUTTON
+              /*  ButtonWidget(
+                isLoading: businessProvider.isUploading,
+                buttonPress: () async {
+                  await businessProvider.uploadAndSaveBusinessDetails(context);
+                },
+                title: "CONTINUE",
+                textStyle: theme.titleLarge!.copyWith(
+                  color: customColor.whiteColor,
+                  fontWeight: FontWeight.w700,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: customColor.redColor,
+                ),
+                height: 54.h,
+              ),*/
             ],
           ),
         ),

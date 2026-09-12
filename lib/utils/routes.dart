@@ -64,9 +64,12 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (context) => const BusinessCategoryChooseScreen(),
         );
+
       case "/BusinessDetailsScreen":
+        final String variantId = settings.arguments as String? ?? '';
         return MaterialPageRoute(
-          builder: (context) => const BusinessDetailsScreen(),
+          builder: (context) =>
+              BusinessDetailsScreen(businessUid: variantId),
         );
       case "/EditPhotoScreen":
         final businessProvider = settings.arguments as BusinessProvider;
@@ -177,16 +180,13 @@ class RouteGenerator {
       case "/SubscriptionActivatedScreen":
         return MaterialPageRoute(
           builder: (context) => SubscriptionActivatedScreen(),
-        ); case "/MySubscriptionScreen":
-        return MaterialPageRoute(
-          builder: (context) => MySubscriptionScreen(),
-        );case "/ChangePlanScreen":
-        return MaterialPageRoute(
-          builder: (context) => ChangePlanScreen(),
-        );case "/UsageScreen":
-        return MaterialPageRoute(
-          builder: (context) => UsageScreen(),
         );
+      case "/MySubscriptionScreen":
+        return MaterialPageRoute(builder: (context) => MySubscriptionScreen());
+      case "/ChangePlanScreen":
+        return MaterialPageRoute(builder: (context) => ChangePlanScreen());
+      case "/UsageScreen":
+        return MaterialPageRoute(builder: (context) => UsageScreen());
     }
     return null;
   }

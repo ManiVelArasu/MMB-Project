@@ -20,4 +20,15 @@ class GetMeRepository {
       fromJson: (json) => Language.fromJson(json),
     );
   }
+
+  Future<ApiResult<dynamic>> updateMe({required String accountType}) {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.user,
+        method: ApiMethod.patch,
+        body: {"account_type": accountType},
+      ),
+      fromJson: (json) => json,
+    );
+  }
 }

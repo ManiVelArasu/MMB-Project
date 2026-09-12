@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Repository/business_repository.dart';
+import '../../Repository/get_me_repository.dart';
 import '../../Repository/image_upload_repository.dart';
 import '../../core/api/api_handler.dart';
 import '../../ui/industry/widgets/bg_remove_sheet.dart';
@@ -25,6 +26,7 @@ class BusinessProvider extends ChangeNotifier {
     loadSavedData();
     loadSavedBusinessImage();
   }
+
   String? _savedImagePath;
   String? get savedImagePath => _savedImagePath;
   int _currentIndex = 0;
@@ -108,6 +110,61 @@ class BusinessProvider extends ChangeNotifier {
     await prefs.remove('saved_business_image_path');
 
     notifyListeners();
+  }
+
+  bool _isAccountTypeUpdating = false;
+
+  bool get isAccountTypeUpdating => _isAccountTypeUpdating;
+
+  Future<bool> updateAccountType() async {
+    _isAccountTypeUpdating = true;
+    notifyListeners();
+
+    try {
+      final selectedTitle = accountTypeList[currentIndex].title;
+
+      final accountType = selectedTitle == "Personal Use"
+          ? "personal"
+          : "business";
+
+      final result = await GetMeRepository.instance.updateMe(
+        accountType: accountType,
+      );
+
+      return await result.when(
+        success: (data) async {
+          final prefs = await SharedPreferences.getInstance();
+
+          // UI selection save
+          await prefs.setString('selected_account_type', selectedTitle);
+
+          // Business / Personal flag
+          await prefs.setBool('is_personal_use', accountType == "personal");
+
+          _isAccountTypeUpdating = false;
+          notifyListeners();
+
+          return true;
+        },
+        failure: (error) {
+          _errorMessage = error.message;
+
+          _isAccountTypeUpdating = false;
+          notifyListeners();
+
+          return false;
+        },
+      );
+    } catch (e) {
+      debugPrint("❌ updateAccountType error: $e");
+
+      _errorMessage = e.toString();
+
+      _isAccountTypeUpdating = false;
+      notifyListeners();
+
+      return false;
+    }
   }
 
   Future<void> loadSavedBusinessImage() async {
@@ -197,49 +254,67 @@ class BusinessProvider extends ChangeNotifier {
   String _savedCategorySlug = "";
   String get savedCategorySlug => _savedCategorySlug;
 
-  Future<Map<String, dynamic>?> businessUpdateApi(BuildContext context) async {
-    if (!validateForm()) return null;
-
+  Future<Map<String, dynamic>?> businessUpdateApi(
+    BuildContext context,
+    String subIndustry,
+  ) async {
     _isUploading = true;
     _errorMessage = null;
     notifyListeners();
-
+    Navigator.pushNamed(context, "/BusinessDetailsScreen");
     try {
       final prefs = await SharedPreferences.getInstance();
       _savedCategorySlug = prefs.getString('saved_category_slug') ?? '';
-      bool isImageUploaded = await uploadAndSaveBusinessDetails(context);
-      if (!isImageUploaded) return null;
+
+      final mobileNumber = prefs.getString('saved_mobile_number') ?? '';
+
+      debugPrint("Industry: $_savedCategorySlug");
+      debugPrint("Sub Industry: $subIndustry");
+      debugPrint("Saved Mobile Number: $mobileNumber");
+
+      if (mobileNumber.isEmpty) {
+        _isUploading = false;
+        _errorMessage = "Saved mobile number not found";
+        notifyListeners();
+        return null;
+      }
+
       final result = await BusinessRepository.instance.businessUpdate(
-        _businessName,
-        _mobileNumber,
-        _email,
         _savedCategorySlug,
+        subIndustry,
+        mobileNumber,
       );
-      print('categoryslug${_savedCategorySlug}');
+
       _isUploading = false;
       notifyListeners();
 
       return await result.when(
         success: (data) async {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('is_business_completed', true);
-          await prefs.setString('saved_business_name', _businessName);
-          await prefs.setString('saved_email', _email);
-          await prefs.setString('saved_mobile_number', _mobileNumber);
+          final uid = data['uid']?.toString();
+          if (uid == null || uid.isEmpty) {
+            _errorMessage = "Business UID not found";
+            _isUploading = false;
+            notifyListeners();
+            return null;
+          }
 
-          if (_savedImagePath != null && _savedImagePath!.isNotEmpty) {
-            await prefs.setString(
-              'saved_business_image_path',
-              _savedImagePath!,
+          _isUploading = false;
+          notifyListeners();
+
+          if (context.mounted) {
+            Navigator.pushNamed(
+              context,
+              "/BusinessDetailsScreen",
+              arguments: uid,
             );
           }
-          if (context.mounted) {
-            Navigator.pushNamed(context, "/CustomBottomNavScreen");
-          }
+
           return data;
         },
+
         failure: (error) {
           _errorMessage = error.message;
+          _isUploading = false;
           notifyListeners();
           return null;
         },
@@ -248,14 +323,69 @@ class BusinessProvider extends ChangeNotifier {
       _isUploading = false;
       _errorMessage = e.toString();
       notifyListeners();
+
+      debugPrint("❌ businessUpdateApi error: $e");
+
       return null;
+    }
+  }
+
+  Future<bool> updateBusinessDetails(
+    BuildContext context,
+    String businessUid,
+  ) async {
+    _isUploading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final name = nameController.text.trim();
+      final email = emailController.text.trim();
+      final phone = mobileController.text.trim();
+
+      debugPrint("Business UID: $businessUid");
+      debugPrint("Name: $name");
+      debugPrint("Email: $email");
+      debugPrint("Phone: $phone");
+
+      final result = await BusinessRepository.instance.updateBusinessDetails(
+        businessUid: businessUid,
+        name: name,
+        email: email,
+        phone: phone,
+      );
+
+      return await result.when(
+        success: (data) async {
+          _isUploading = false;
+          notifyListeners();
+
+          debugPrint("✅ Business details updated");
+
+          return true;
+        },
+        failure: (error) {
+          _isUploading = false;
+          _errorMessage = error.message;
+          notifyListeners();
+
+          return false;
+        },
+      );
+    } catch (e) {
+      _isUploading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+
+      debugPrint("❌ Update business details error: $e");
+
+      return false;
     }
   }
 
   Future<void> loadSavedData() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 1. மொபைல் நம்பர் / காண்டாக்ட் நம்பர்
     final savedNumber = prefs.getString('saved_mobile_number');
     if (savedNumber != null && savedNumber.isNotEmpty) {
       _mobileNumber = savedNumber;

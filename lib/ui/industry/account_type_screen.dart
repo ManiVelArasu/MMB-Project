@@ -122,46 +122,59 @@ class AccountTypeScreen extends StatelessWidget {
                         ),
                       ),
                       ButtonWidget(
-                        buttonPress: () async {
-                          final selectedTitle = accountTypeProvider
-                              .accountTypeList[accountTypeProvider.currentIndex]
-                              .title;
+                        buttonPress: accountTypeProvider.isAccountTypeUpdating
+                            ? null
+                            : () async {
+                                final success = await accountTypeProvider
+                                    .updateAccountType();
 
-                          final prefs = await SharedPreferences.getInstance();
+                                if (!context.mounted) return;
 
-                          await prefs.setString(
-                            'selected_account_type',
-                            selectedTitle,
-                          );
-                          if (selectedTitle == "Personal Use") {
-                            await prefs.setBool('is_personal_use', true);
-                          } else {
-                            await prefs.setBool('is_personal_use', false);
-                          }
+                                if (!success) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        accountTypeProvider.errorMessage ??
+                                            "Something went wrong. Please try again.",
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                          if (!context.mounted) return;
+                                final selectedTitle = accountTypeProvider
+                                    .accountTypeList[accountTypeProvider
+                                        .currentIndex]
+                                    .title;
 
-                          if (selectedTitle == "Personal Use") {
-                            Navigator.pushNamed(
-                              context,
-                              "/CustomBottomNavScreen",
-                            );
-                          } else {
-                            Navigator.pushNamed(
-                              context,
-                              "/BusinessCategoryChooseScreen",
-                            );
-                          }
-                        },
-                        title: "CONTINUE",
+                                if (selectedTitle == "Personal Use") {
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/CustomBottomNavScreen",
+                                  );
+                                } else {
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/BusinessCategoryChooseScreen",
+                                  );
+                                }
+                              },
+
+                        title: accountTypeProvider.isAccountTypeUpdating
+                            ? "UPDATING..."
+                            : "CONTINUE",
+
                         textStyle: theme.titleLarge!.copyWith(
                           color: customColor.whiteColor,
                           fontWeight: FontWeight.w700,
                         ),
+
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
                           color: customColor.redColor,
                         ),
+
                         height: 54.h,
                       ),
                     ],

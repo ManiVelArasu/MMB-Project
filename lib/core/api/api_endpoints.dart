@@ -43,7 +43,7 @@ class ApiEndpoints {
   static const String logout = '/auth/logout';
 
   static const String businessUpdate = '/businesses';
-
+  static String businessDetail(String varientId) => '/businesses/$varientId';
   static const String user = '/users/me';
 
   static const String language = '/languages';
