@@ -341,7 +341,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             if (completed || (accountType == "business" && hasBusiness)) {
               debugPrint("👉 Navigating to CustomBottomNavScreen");
 
-              Navigator.pushReplacementNamed(context, "/AccountTypeScreen");
+              Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
             } else {
               debugPrint("👉 Navigating to BusinessDetailsScreen");
 

@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum EditorItemType {
-  text,
-  sticker,
-  shape,
-}
-
-
+enum EditorItemType { text, sticker, shape }
 
 class EditorItem {
   final String? id;

@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:mmb_app/Repository/get_me_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../Api Model/special_days.dart';
 import '../../Api Model/templatecategories.dart';
 import '../../Api Model/Template_model.dart';
 import '../../Repository/home_repository.dart';
 import '../../model/my_space_model.dart';
 
 class HomeScreenProvider extends ChangeNotifier {
-  HomeScreenProvider() {
+  HomeScreenProvider({bool loadSpecialDaysOnInit = true}) {
     fetchTemplateCategories();
     loadSavedBusinessData();
+    if (loadSpecialDaysOnInit) {
+      fetchSpecialDays(range: 'month');
+    }
   }
 
   String _businessName = "";
   String get businessName => _businessName;
   String selectedDate = "2";
+  final GetMeRepository getMeRepository = GetMeRepository.instance;
   Future<void> loadSavedBusinessData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -30,14 +36,24 @@ class HomeScreenProvider extends ChangeNotifier {
       debugPrint("Error loading business name: $e");
     }
   }
+
   String? _selectedDates;
 
   String? get selectedDates => _selectedDates;
 
-  void setSelectedDate(String date) {
-    _selectedDates = date;
+  Future<void> setSelectedDate(DateTime date) async {
+    final selected = _formatApiDate(date);
+    _selectedDates = selected;
     notifyListeners();
+
+    // Keep the month date strip on Home, but fetch only the tapped date data.
+    await fetchSpecialDays(
+      from: selected,
+      to: selected,
+      preserveCalendarRange: true,
+    );
   }
+
   void updateSelectedDate(String date) {
     selectedDate = date;
     notifyListeners();
@@ -53,6 +69,25 @@ class HomeScreenProvider extends ChangeNotifier {
   List<TemplateCategories> get templateCategories => _templateCategories;
   bool get isLoadingCategories => _isLoadingCategories;
   String? get categoryErrorMessage => _categoryErrorMessage;
+
+  List<Datum> _specialDays = [];
+
+  bool _isLoadingSpecialDays = false;
+  String? _specialDaysError;
+
+  String _selectedSpecialDaysRange = "month";
+
+  List<Datum> get specialDays => _specialDays;
+
+  bool get isLoadingSpecialDays => _isLoadingSpecialDays;
+
+  String? get specialDaysError => _specialDaysError;
+
+  String get selectedSpecialDaysRange => _selectedSpecialDaysRange;
+
+  Range? _specialDaysRange;
+
+  Range? get specialDaysRange => _specialDaysRange;
 
   // ============================================================
   // CATEGORY -> TEMPLATES
@@ -129,6 +164,107 @@ class HomeScreenProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> fetchSpecialDays({
+    String? range,
+    String? from,
+    String? to,
+    bool preserveCalendarRange = false,
+  }) async {
+    _isLoadingSpecialDays = true;
+    _specialDaysError = null;
+
+    if (range != null && range.isNotEmpty) {
+      _selectedSpecialDaysRange = range;
+    }
+    notifyListeners();
+
+    try {
+      final result = await HomeRepository.instance.specialDaysApi(
+        range: range,
+        from: from,
+        to: to,
+      );
+
+      if (result.isSuccess && result.data != null) {
+        final response = result.data!;
+        if (response.success == true) {
+          _specialDays = response.data;
+          if (!preserveCalendarRange) {
+            _specialDaysRange = response.meta?.range;
+          }
+        } else {
+          _specialDays = [];
+          if (!preserveCalendarRange) _specialDaysRange = null;
+        }
+      } else {
+        _specialDays = [];
+        _specialDaysError = result.error?.message ?? "No data found";
+      }
+    } catch (e) {
+      debugPrint("❌ Special Days API Error: $e");
+      _specialDays = [];
+      _specialDaysError = "No data found";
+    } finally {
+      _isLoadingSpecialDays = false;
+      notifyListeners();
+    }
+  }
+
+  /// Applies the range selected from the Special Days filter.
+  /// The first home-screen request intentionally remains `range=week`
+  /// without from/to; these values are only sent after the user applies
+  /// a filter/date range.
+  Future<void> applySpecialDaysFilter({
+    required String range,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final safeFrom = DateTime(from.year, from.month, from.day);
+    final safeTo = DateTime(to.year, to.month, to.day);
+
+    await fetchSpecialDays(
+      from: _formatApiDate(safeFrom),
+      to: _formatApiDate(safeTo),
+    );
+  }
+
+  Future<void> loadNextSpecialDaysRange() async {
+    final current = _specialDaysRange;
+    if (current == null) return;
+
+    final currentFrom = DateTime(
+      current.from.year,
+      current.from.month,
+      current.from.day,
+    );
+    final currentTo = DateTime(
+      current.to.year,
+      current.to.month,
+      current.to.day,
+    );
+
+    late DateTime from;
+    late DateTime to;
+
+    if (_selectedSpecialDaysRange == 'month') {
+      // Move exactly one calendar month forward.
+      final nextMonth = DateTime(currentTo.year, currentTo.month + 1, 1);
+      from = nextMonth;
+      to = DateTime(nextMonth.year, nextMonth.month + 1, 0);
+    } else {
+      from = currentTo.add(const Duration(days: 1));
+      to = from.add(const Duration(days: 6));
+    }
+
+    _selectedDates = null;
+    await fetchSpecialDays(from: _formatApiDate(from), to: _formatApiDate(to));
+  }
+
+  String _formatApiDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 
   Future<void> fetchTemplatesByCategory(String slug) async {
     final categorySlug = slug.trim();

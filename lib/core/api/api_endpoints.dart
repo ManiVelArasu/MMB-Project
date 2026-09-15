@@ -49,4 +49,6 @@ class ApiEndpoints {
   static const String language = '/languages';
 
   static const String notification = '/notifications';
+
+  static const String specialDays = '/special-events';
 }

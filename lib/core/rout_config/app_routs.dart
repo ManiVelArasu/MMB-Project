@@ -100,9 +100,9 @@ class AppRouter {
       case '/SmCalendarScreen':
         return _page(const SmCalendarScreen(), settings: settings);
 
-      case '/EditProfileScreen':
+    /*  case '/EditProfileScreen':
         return _page(const EditProfileScreen(), settings: settings);
-
+*/
       default:
         return _page(
           const Scaffold(body: Center(child: Text('404 - Page Not Found'))),

@@ -16,6 +16,7 @@ import '../../component/custom_widget.dart';
 import '../../component/home_appbar.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
+import '../../network/provider/getMe_provider.dart';
 import '../../network/provider/home_screen_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
@@ -27,6 +28,9 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
     final themeProvider = context.watch<CustomThemeProvider>();
+    final commonProvider = context.watch<CommonProvider>();
+
+    final me = commonProvider.me;
     final isDark = themeProvider.isDarkMode;
 
     const bool isBusinessUser = true;
@@ -102,99 +106,54 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           const Spacer(),
-                          Text(
-                            "VIEW ALL",
-                            style: TextStyle(
-                              color: isDark
-                                  ? Colors.grey.shade400
-                                  : Colors.grey.shade600,
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w700,
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(18.r),
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  "/SpecialDaysScreen",
+                                  arguments: homeScreenProvider.selectedDates,
+                                );
+                              },
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 4.w,
+                                  vertical: 5.h,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'VIEW ALL',
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? Colors.grey.shade300
+                                            : Colors.grey.shade600,
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    SizedBox(width: 2.w),
+                                    Icon(
+                                      Icons.chevron_right_rounded,
+                                      size: 19.sp,
+                                      color: isDark
+                                          ? Colors.grey.shade300
+                                          : Colors.grey.shade600,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
                       SizedBox(height: 12.h),
 
-                      Container(
-                        height: 40.h,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFE9E9),
-                          borderRadius: BorderRadius.circular(14.r),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 74.w,
-                              height: double.infinity,
-                              alignment: Alignment.center,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFED1C24),
-                              ),
-                              child: AppText(
-                                "AUG",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-
-                            Expanded(
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 6.w,
-                                  vertical: 5.h,
-                                ),
-                                itemCount: 8,
-                                separatorBuilder: (_, __) =>
-                                    SizedBox(width: 10.w),
-                                itemBuilder: (context, index) {
-                                  final dates = [
-                                    "2",
-                                    "7",
-                                    "15",
-                                    "17",
-                                    "19",
-                                    "26",
-                                    "29",
-                                    "30",
-                                  ];
-
-                                  // Last item = arrow
-                                  if (index == dates.length - 1) {
-                                    return SizedBox(
-                                      width: 32.w,
-                                      child: Center(
-                                        child: Icon(
-                                          Icons.arrow_forward_ios_rounded,
-                                          size: 17.sp,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                    );
-                                  }
-
-                                  return _buildDateBox(
-                                    context,
-                                    homeScreenProvider,
-                                    dates[index],
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _buildSpecialDaysCalendar(homeScreenProvider),
                       SizedBox(height: 12.h),
-
-                      _buildSpecialDaysList(homeScreenProvider, isDark),
-
-                      SizedBox(height: 20.h),
 
                       Row(
                         children: [
@@ -221,6 +180,7 @@ class HomeScreen extends StatelessWidget {
                       _buildMyZoneSlider(
                         homeScreenProvider,
                         isDark,
+                        me: me,
                         isBusinessUser: isBusinessUser,
                       ),
 
@@ -541,6 +501,8 @@ class HomeScreen extends StatelessWidget {
                                   )
                                 else if (isYoutubeThumbnail)
                                   SizedBox(
+                                    height: 300.h,
+                                    width: double.infinity,
                                     child: LayoutBuilder(
                                       builder: (context, constraints) {
                                         final double pageWidth =
@@ -552,11 +514,9 @@ class HomeScreen extends StatelessWidget {
                                         final double cardWidth =
                                             (pageWidth - horizontalGap) / 2;
 
-                                        // 16:9 thumbnail
                                         final double cardHeight =
                                             cardWidth * 9 / 16;
 
-                                        // Each page contains 4 templates
                                         final int pageCount =
                                             (templates.length / 4).ceil();
 
@@ -580,9 +540,7 @@ class HomeScreen extends StatelessWidget {
                                                 ),
                                                 child: Column(
                                                   children: [
-                                                    // =========================
                                                     // ROW 1
-                                                    // =========================
                                                     SizedBox(
                                                       height: cardHeight,
                                                       child: Row(
@@ -600,20 +558,19 @@ class HomeScreen extends StatelessWidget {
                                                                 horizontalGap,
                                                           ),
 
-                                                          if (startIndex + 1 <
-                                                              templates.length)
-                                                            Expanded(
-                                                              child: _buildApiTemplateCard(
-                                                                context,
-                                                                templates[startIndex +
-                                                                    1],
-                                                                isDark,
-                                                              ),
-                                                            )
-                                                          else
-                                                            const Expanded(
-                                                              child: SizedBox(),
-                                                            ),
+                                                          Expanded(
+                                                            child:
+                                                                startIndex + 1 <
+                                                                    templates
+                                                                        .length
+                                                                ? _buildApiTemplateCard(
+                                                                    context,
+                                                                    templates[startIndex +
+                                                                        1],
+                                                                    isDark,
+                                                                  )
+                                                                : const SizedBox(),
+                                                          ),
                                                         ],
                                                       ),
                                                     ),
@@ -622,44 +579,43 @@ class HomeScreen extends StatelessWidget {
                                                       height: verticalGap,
                                                     ),
 
+                                                    // ROW 2
                                                     SizedBox(
                                                       height: cardHeight,
                                                       child: Row(
                                                         children: [
-                                                          if (startIndex + 2 <
-                                                              templates.length)
-                                                            Expanded(
-                                                              child: _buildApiTemplateCard(
-                                                                context,
-                                                                templates[startIndex +
-                                                                    2],
-                                                                isDark,
-                                                              ),
-                                                            )
-                                                          else
-                                                            const Expanded(
-                                                              child: SizedBox(),
-                                                            ),
+                                                          Expanded(
+                                                            child:
+                                                                startIndex + 2 <
+                                                                    templates
+                                                                        .length
+                                                                ? _buildApiTemplateCard(
+                                                                    context,
+                                                                    templates[startIndex +
+                                                                        2],
+                                                                    isDark,
+                                                                  )
+                                                                : const SizedBox(),
+                                                          ),
 
                                                           SizedBox(
                                                             width:
                                                                 horizontalGap,
                                                           ),
 
-                                                          if (startIndex + 3 <
-                                                              templates.length)
-                                                            Expanded(
-                                                              child: _buildApiTemplateCard(
-                                                                context,
-                                                                templates[startIndex +
-                                                                    3],
-                                                                isDark,
-                                                              ),
-                                                            )
-                                                          else
-                                                            const Expanded(
-                                                              child: SizedBox(),
-                                                            ),
+                                                          Expanded(
+                                                            child:
+                                                                startIndex + 3 <
+                                                                    templates
+                                                                        .length
+                                                                ? _buildApiTemplateCard(
+                                                                    context,
+                                                                    templates[startIndex +
+                                                                        3],
+                                                                    isDark,
+                                                                  )
+                                                                : const SizedBox(),
+                                                          ),
                                                         ],
                                                       ),
                                                     ),
@@ -704,35 +660,292 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDateBox(
-    BuildContext context,
+  Widget _buildDateContainer(
     HomeScreenProvider provider,
-    String date,
+    List<DateTime> dates,
+    int month,
   ) {
-    final isSelected = provider.selectedDates == date;
+    final now = DateTime.now();
+    final selected = provider.selectedDates;
 
-    return GestureDetector(
-      onTap: () {
-        provider.setSelectedDate(date);
-      },
-      child: Container(
-        width: 44.w,
-        height: 42.h,
-        margin: EdgeInsets.only(right: 5.w),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFE53935) : const Color(0xFFFFF8F8),
-          borderRadius: BorderRadius.circular(9.r),
-        ),
-        child: AppText(
-          date,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black,
-            fontSize: 13.sp,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+    int selectedIndex = dates.indexWhere((date) {
+      if (selected == null || selected.isEmpty) return false;
+      final parsed = DateTime.tryParse(selected);
+      return parsed != null &&
+          parsed.year == date.year &&
+          parsed.month == date.month &&
+          parsed.day == date.day;
+    });
+
+    if (selectedIndex < 0) {
+      selectedIndex = dates.indexWhere(
+        (date) =>
+            date.year == now.year &&
+            date.month == now.month &&
+            date.day == now.day,
+      );
+    }
+    if (selectedIndex < 0 && dates.isNotEmpty) selectedIndex = 0;
+
+    return Container(
+      height: 40.h,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFE5E5),
+        borderRadius: BorderRadius.circular(20.r),
       ),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        children: [
+          Container(
+            width: 62.w,
+            height: double.infinity,
+            color: const Color(0xFFF51B23),
+            alignment: Alignment.center,
+            child: Text(
+              _monthName(month),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+              physics: const BouncingScrollPhysics(),
+              itemCount: dates.length,
+              separatorBuilder: (_, __) => SizedBox(width: 8.w),
+              itemBuilder: (context, index) {
+                final date = dates[index];
+                final isSelected = index == selectedIndex;
+
+                return GestureDetector(
+                  onTap: () => provider.setSelectedDate(date),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 48.w,
+                    height: 44.h,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFFFFF7F7),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFFF51B23)
+                            : Colors.transparent,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Text(
+                      '${date.day}',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(right: 12.w, left: 2.w),
+            child: GestureDetector(
+              onTap: provider.specialDaysRange == null
+                  ? null
+                  : provider.loadNextSpecialDaysRange,
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 19.sp,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    if (month < 1 || month > 12) {
+      return '';
+    }
+
+    return months[month - 1];
+  }
+
+  Widget _buildSpecialDaysApiList(HomeScreenProvider provider) {
+    final days = provider.specialDays;
+
+    if (days.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.only(left: 4.w, top: 2.h),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AppText(
+              'No special days for this date',
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 150.h,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: days.length,
+        separatorBuilder: (_, __) => SizedBox(width: 10.w),
+        itemBuilder: (context, index) {
+          final item = days[index];
+
+          final thumbnail = item.thumbnailS3Key?.trim() ?? '';
+
+          final banner = item.bannerS3Key?.trim() ?? '';
+
+          final key = thumbnail.isNotEmpty ? thumbnail : banner;
+
+          final imageUrl = key.isEmpty
+              ? ''
+              : key.startsWith('http://') || key.startsWith('https://')
+              ? key
+              : '${ApiEndpoints.cdnImageUrl}/$key';
+
+          return Container(
+            width: 150.w,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16.r),
+              border: Border.all(color: const Color(0xFFF0E1E1)),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: imageUrl.isEmpty
+                      ? Container(
+                          width: double.infinity,
+                          color: const Color(0xFFFFE5E5),
+                          child: const Icon(
+                            Icons.event_rounded,
+                            color: Color(0xFFE53935),
+                          ),
+                        )
+                      : InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    TemplateEditScreen(templateUid: item.uid),
+                              ),
+                            );
+                          },
+                          child: CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) {
+                              return Container(
+                                color: const Color(0xFFFFE5E5),
+                                child: const Icon(
+                                  Icons.image_not_supported_rounded,
+                                  color: Color(0xFFE53935),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSpecialDaysCalendar(HomeScreenProvider provider) {
+    final range = provider.specialDaysRange;
+
+    if (range == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildDateContainer(provider, [DateTime.now()], DateTime.now().month),
+          SizedBox(height: 12.h),
+          if (provider.isLoadingSpecialDays)
+            const Center(
+              child: SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            _buildSpecialDaysApiList(provider),
+        ],
+      );
+    }
+
+    final DateTime from = DateTime(
+      range.from.year,
+      range.from.month,
+      range.from.day,
+    );
+    final DateTime to = DateTime(range.to.year, range.to.month, range.to.day);
+
+    final List<DateTime> dates = [];
+    DateTime current = from;
+    while (!current.isAfter(to)) {
+      dates.add(current);
+      current = current.add(const Duration(days: 1));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildDateContainer(provider, dates, from.month),
+        SizedBox(height: 12.h),
+        if (provider.isLoadingSpecialDays)
+          const Center(
+            child: SizedBox(
+              height: 22,
+              width: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        else
+          _buildSpecialDaysApiList(provider),
+      ],
     );
   }
 
@@ -760,10 +973,7 @@ class HomeScreen extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => TemplateEditScreen(
-              templateUid: templateUid,
-              resizeSize: 'Post Square (1:1)',
-            ),
+            builder: (_) => TemplateEditScreen(templateUid: templateUid),
           ),
         );
       },
@@ -813,38 +1023,60 @@ class HomeScreen extends StatelessWidget {
     bool hasViewAll = false,
     required bool isDark,
   }) {
+    final icon = iconAsset.trim();
+
+    final isNetwork = icon.startsWith('http://') || icon.startsWith('https://');
+
+    final isSvg = icon.toLowerCase().endsWith('.svg');
+
     return Row(
       children: [
-        // =====================================================
-        // CATEGORY ICON
-        // =====================================================
-
         SizedBox(
           width: 32.w,
           height: 32.w,
           child: ClipOval(
-            child: iconAsset.trim().isNotEmpty
-                ? SvgPicture.network(
-                    iconAsset,
-                    width: 32.w,
-                    height: 32.w,
-                    fit: BoxFit.cover,
-                    placeholderBuilder: (context) {
-                      return _buildDefaultCategoryIcon(isDark);
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildDefaultCategoryIcon(isDark);
-                    },
-                  )
-                : _buildDefaultCategoryIcon(isDark),
+            child: icon.isEmpty
+                ? _buildDefaultCategoryIcon(isDark)
+                : isNetwork
+                ? (isSvg
+                      ? SvgPicture.network(
+                          icon,
+                          width: 32.w,
+                          height: 32.w,
+                          fit: BoxFit.cover,
+                          placeholderBuilder: (_) =>
+                              _buildDefaultCategoryIcon(isDark),
+                        )
+                      : CachedNetworkImage(
+                          imageUrl: icon,
+                          width: 32.w,
+                          height: 32.w,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) =>
+                              _buildDefaultCategoryIcon(isDark),
+                          errorWidget: (_, __, ___) =>
+                              _buildDefaultCategoryIcon(isDark),
+                        ))
+                : (isSvg
+                      ? SvgPicture.asset(
+                          icon,
+                          width: 32.w,
+                          height: 32.w,
+                          fit: BoxFit.cover,
+                        )
+                      : Image.asset(
+                          icon,
+                          width: 32.w,
+                          height: 32.w,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _buildDefaultCategoryIcon(isDark),
+                        )),
           ),
         ),
 
         SizedBox(width: 8.w),
 
-        // =====================================================
-        // CATEGORY NAME
-        // =====================================================
         Expanded(
           child: AppText(
             title,
@@ -858,11 +1090,8 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
 
-        // =====================================================
-        // VIEW ALL
-        // =====================================================
         if (hasViewAll)
-          Text(
+          AppText(
             "VIEW ALL",
             style: TextStyle(
               color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -948,48 +1177,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSpecialDaysList(
-    HomeScreenProvider homeScreenProvider,
-    bool isDark,
-  ) {
-    return SizedBox(
-      height: 160.h,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: homeScreenProvider.mySpecialDaysList.length,
-        physics: const BouncingScrollPhysics(),
-        itemBuilder: (context, index) {
-          final item = homeScreenProvider.mySpecialDaysList[index];
-          return Container(
-            width: 150.w,
-            margin: EdgeInsets.only(right: 12.w),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16.r),
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16.r),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: InkWell(
-                      onTap: () async {},
-                      child: Image.asset(item["icon"] ?? "", fit: BoxFit.cover),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   Widget _buildMyZoneSlider(
     HomeScreenProvider homeScreenProvider,
     bool isDark, {
     required bool isBusinessUser,
+    required dynamic me,
   }) {
     return FutureBuilder<SharedPreferences>(
       future: SharedPreferences.getInstance(),
@@ -1041,19 +1233,20 @@ class HomeScreen extends StatelessWidget {
                             ),
                             child: Row(
                               children: [
-                                Text(
-                                  '+91 98765 43210',
+                                AppText(
+                                  me?.data.name ?? '',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 11.sp,
                                   ),
                                 ),
                                 const Spacer(),
-                                Text(
-                                  'Sarah Gym & Fitness',
+                                AppText(
+                                  me?.data.name ?? '',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 11.sp,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],

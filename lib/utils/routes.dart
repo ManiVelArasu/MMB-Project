@@ -24,6 +24,7 @@ import '../ui/screens/profile_screen.dart';
 import '../ui/screens/smcalender_form_sceen.dart';
 import '../ui/screens/smcalender_screen.dart';
 import '../ui/screens/social_calender_result_screen.dart';
+import '../ui/screens/special_days_screen.dart';
 import '../ui/screens/template_detail_screen.dart';
 import '../ui/screens/template_edit.dart';
 import '../ui/screens/theme_detail_screen.dart';
@@ -68,8 +69,7 @@ class RouteGenerator {
       case "/BusinessDetailsScreen":
         final String variantId = settings.arguments as String? ?? '';
         return MaterialPageRoute(
-          builder: (context) =>
-              BusinessDetailsScreen(businessUid: variantId),
+          builder: (context) => BusinessDetailsScreen(businessUid: variantId),
         );
       case "/EditPhotoScreen":
         final businessProvider = settings.arguments as BusinessProvider;
@@ -187,6 +187,12 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (context) => ChangePlanScreen());
       case "/UsageScreen":
         return MaterialPageRoute(builder: (context) => UsageScreen());
+      case "/SpecialDaysScreen":
+        final selectedDate = settings.arguments as String?;
+
+        return MaterialPageRoute(
+          builder: (context) => SpecialDaysScreen(selectedDate: selectedDate),
+        );
     }
     return null;
   }

@@ -15,16 +15,14 @@ import 'core/api/enums/api_content_type.dart';
 import 'core/api/enums/toast_position.dart';
 import 'network/provider/business_provider.dart';
 import 'network/provider/custom_theme_provider.dart';
+import 'network/provider/getMe_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.manual,
-    overlays: [
-      SystemUiOverlay.top,
-      SystemUiOverlay.bottom,
-    ],
+    overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
   );
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -47,45 +45,30 @@ Future<void> _initializeApp() async {
   final accessToken = prefs.getString('auth_token');
   final refreshToken = prefs.getString('refresh_token');
 
-  debugPrint(
-    '🔐 Stored access token: ${accessToken != null}',
-  );
+  debugPrint('🔐 Stored access token: ${accessToken != null}');
 
-  debugPrint(
-    '🔄 Stored refresh token: ${refreshToken != null}',
-  );
+  debugPrint('🔄 Stored refresh token: ${refreshToken != null}');
 
   if (refreshToken != null && refreshToken.isNotEmpty) {
     try {
-
       final refreshDio = Dio(
         BaseOptions(
           baseUrl: ApiEndpoints.baseUrl,
           connectTimeout: const Duration(seconds: 30),
           receiveTimeout: const Duration(seconds: 30),
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: {'Content-Type': 'application/json'},
         ),
       );
 
       final repository = RefreshRepository(refreshDio);
-      final result = await repository.refreshToken(
-        refreshToken: refreshToken,
-      );
+      final result = await repository.refreshToken(refreshToken: refreshToken);
 
       if (result != null) {
         // Save NEW access token
-        await prefs.setString(
-          'auth_token',
-          result.accessToken,
-        );
+        await prefs.setString('auth_token', result.accessToken);
 
         // Save NEW refresh token
-        await prefs.setString(
-          'refresh_token',
-          result.refreshToken,
-        );
+        await prefs.setString('refresh_token', result.refreshToken);
 
         debugPrint('✅ Startup refresh successful');
 
@@ -103,76 +86,9 @@ Future<void> _initializeApp() async {
 
   // Continue app initialization
 }
-Future<bool> _refreshSessionOnStartup(
-    String refreshToken,
-    ) async {
-  try {
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: ApiEndpoints.baseUrl,
-        connectTimeout: const Duration(seconds: 20),
-        receiveTimeout: const Duration(seconds: 20),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      ),
-    );
 
-    final response = await dio.post(
-      ApiEndpoints.refreshToken,
-      data: {
-        'refresh_token': refreshToken,
-      },
-    );
-
-    final data = response.data;
-
-    if (data is! Map) {
-      return false;
-    }
-
-    final newAccessToken =
-        data['access_token'] ??
-            data['accessToken'];
-
-    final newRefreshToken =
-        data['refresh_token'] ??
-            data['refreshToken'] ??
-            refreshToken;
-
-    if (newAccessToken == null ||
-        newAccessToken.toString().isEmpty) {
-      return false;
-    }
-
-    final access = newAccessToken.toString();
-    final refresh = newRefreshToken.toString();
-
-    // SharedPreferences + ApiHandler இரண்டிலும் update
-    await ApiHandler.instance.setTokens(
-      token: access,
-      refreshToken: refresh,
-    );
-
-    debugPrint('✅ Startup token refresh success');
-
-    return true;
-  } on DioException catch (e) {
-    debugPrint(
-      '❌ Startup refresh error: ${e.response?.statusCode}',
-    );
-
-    return false;
-  } catch (e) {
-    debugPrint('❌ Startup refresh error: $e');
-
-    return false;
-  }
-}
 Future<void> _initApi() async {
-  final dioForInterceptor = Dio(
-    BaseOptions(baseUrl: ApiEndpoints.baseUrl),
-  );
+  final dioForInterceptor = Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl));
 
   ApiHandler.init(
     baseUrl: ApiEndpoints.baseUrl,
@@ -207,6 +123,9 @@ class _MyAppState extends State<MyApp> {
           providers: [
             ChangeNotifierProvider(create: (_) => CustomThemeProvider()),
             ChangeNotifierProvider(create: (_) => BusinessProvider()),
+            ChangeNotifierProvider<CommonProvider>(
+              create: (_) => CommonProvider.instance..loadMe(),
+            ),
           ],
           child: Consumer<CustomThemeProvider>(
             builder: (context, themeProvider, child) {
