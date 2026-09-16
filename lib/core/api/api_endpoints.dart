@@ -51,4 +51,6 @@ class ApiEndpoints {
   static const String notification = '/notifications';
 
   static const String specialDays = '/special-events';
+
+  static const String frames = '/frames';
 }

@@ -501,7 +501,7 @@ class HomeScreen extends StatelessWidget {
                                   )
                                 else if (isYoutubeThumbnail)
                                   SizedBox(
-                                    height: 300.h,
+                                    height: 200.h,
                                     width: double.infinity,
                                     child: LayoutBuilder(
                                       builder: (context, constraints) {

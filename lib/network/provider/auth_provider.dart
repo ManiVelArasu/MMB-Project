@@ -313,13 +313,10 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
           await prefs.setString('account_type', accountType);
 
-          // 🔥 Also update ApiHandler
           await ApiHandler.instance.setTokens(
             token: accessToken,
             refreshToken: refreshToken,
           );
-
-          // 🔥 Verify that SharedPreferences actually saved them
           final savedAccessToken = prefs.getString('auth_token');
 
           final savedRefreshToken = prefs.getString('refresh_token');

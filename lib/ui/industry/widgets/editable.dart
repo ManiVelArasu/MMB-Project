@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -48,7 +49,8 @@ class EditableItemWidget extends StatelessWidget {
       final painter = TextPainter(
         text: TextSpan(
           text: currentItem.text ?? '',
-          style: TextStyle(
+          style: _buildGoogleFontTextStyle(
+            fontFamily: currentItem.fontFamily,
             fontSize: currentItem.fontSize,
             color: currentItem.color ?? Colors.black,
             fontWeight: provider.textWeight(id),
@@ -58,9 +60,6 @@ class EditableItemWidget extends StatelessWidget {
                 : TextDecoration.none,
             letterSpacing: provider.textLetterSpacing(id),
             height: provider.textLineSpacing(id),
-            fontFamily: (currentItem.fontFamily ?? '').trim().isEmpty
-                ? null
-                : currentItem.fontFamily!.trim(),
           ),
         ),
         maxLines: null,
@@ -81,24 +80,48 @@ class EditableItemWidget extends StatelessWidget {
         : (naturalTextSize?.height ?? (currentItem.height ?? 220));
 
     return KeyedSubtree(
-        key: ValueKey(
-          "${currentItem.id}_${currentItem.filterType}_${currentItem.rotation}_${currentItem.scale}_${currentItem.opacity}_${currentItem.position}_${currentItem.fontFamily}_${currentItem.fontSize}",
-        ),
+      // Keep the element stable while position/scale changes. Re-keying on
+      // every drag/resize recreates the GestureDetector and makes editing
+      // feel sticky or causes the wrong item to receive the gesture.
+        key: ValueKey(currentItem.id),
         child: GestureDetector(
-          // IMPORTANT: only the actual item body moves. Resize/rotate handles
-          // below have their own gesture detectors, so touching a handle never
-          // bubbles into this pan handler.
-          onPanUpdate: (details) {
-            provider.updatePosition(
-              currentItem.id!,
-              currentItem.position + details.delta,
-            );
+          behavior: HitTestBehavior.deferToChild,
+          // Selecting an item and moving an already-selected item are two
+          // separate responsibilities. If the user touches another item,
+          // select THAT item first. Never move the previously selected item.
+          onPanStart: (_) {
+            if (provider.selectedItemId != currentItem.id) {
+              onItemSelected(currentItem.type ?? '', currentItem.id!);
+            }
           },
-          onTapDown: (_) {
-            onItemSelected(currentItem.type ?? '', currentItem.id!);
+          onPanUpdate: (details) {
+            // Always read the latest item position from the provider. The
+            // widget rebuilds after every drag update, so using the build-time
+            // `currentItem.position` makes the object jump/stick because that
+            // value becomes stale during the gesture.
+            if (provider.selectedItemId != currentItem.id) return;
+
+            final latest = provider.items.where((e) => e.id == currentItem.id);
+            if (latest.isEmpty) return;
+
+            final latestItem = latest.first;
+            provider.updatePosition(
+              latestItem.id!,
+              latestItem.position + details.delta,
+            );
           },
           onTap: () {
             onItemSelected(currentItem.type ?? '', currentItem.id!);
+          },
+          onDoubleTap: () {
+            if (isTextItem && !isBackground) {
+              _showTextEditorDialog(
+                context,
+                provider,
+                currentItem.id!,
+                currentItem.text ?? '',
+              );
+            }
           },
           child: Transform.rotate(
             angle: currentItem.rotation,
@@ -118,7 +141,11 @@ class EditableItemWidget extends StatelessWidget {
                 // the same image bounds and therefore the same position.
                 alignment: Alignment.center,
                 child: SizedBox(
-                  width: bodyWidth,
+                  // Extra hit area on the right is intentional: the 3-dot
+                  // control is visually outside the image. A RenderBox cannot
+                  // hit-test a child that is outside its own size, so the
+                  // selection layer gets a small right-side hit area.
+                  width: bodyWidth + 64,
                   height: bodyHeight,
                   child: Stack(
                     clipBehavior: Clip.none,
@@ -137,10 +164,19 @@ class EditableItemWidget extends StatelessWidget {
                         ),
                       ),
 
-                      // Selection border, resize handles and three-dot control are
-                      // rendered by _TransformSelectionOverlay in template_edit.dart.
-                      // Keeping a second set here creates the unwanted small red dots
-                      // and the oversized hidden selection box.
+                      // Selection controls live INSIDE the exact same transform
+                      // as the image. This keeps the border, handles and 3-dot
+                      // menu locked to the image instead of a second canvas-level
+                      // coordinate system.
+                      if (isSelected && !isBackground)
+                        Positioned.fill(
+                          child: _EditorSelectionControls(
+                            item: currentItem,
+                            bodyWidth: bodyWidth,
+                            bodyHeight: bodyHeight,
+                            provider: provider,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -1127,7 +1163,8 @@ class EditableItemWidget extends StatelessWidget {
     // keep the natural painted width.
     final textValue = item.text ?? "";
     final isMultiline = textValue.contains("\n") || textValue.contains("\r");
-    final textStyle = TextStyle(
+    final textStyle = _buildGoogleFontTextStyle(
+      fontFamily: item.fontFamily,
       fontSize: item.fontSize,
       color: item.color ?? Colors.black,
       fontWeight: editorProvider.textWeight(id),
@@ -1137,9 +1174,6 @@ class EditableItemWidget extends StatelessWidget {
           : TextDecoration.none,
       letterSpacing: editorProvider.textLetterSpacing(id),
       height: editorProvider.textLineSpacing(id),
-      fontFamily: (item.fontFamily ?? '').trim().isEmpty
-          ? null
-          : item.fontFamily!.trim(),
     );
 
     final textWidget = Text(
@@ -1467,6 +1501,22 @@ class EditableItemWidget extends StatelessWidget {
                                     ),
                                   ],
                                 ),
+                              ),
+                            ],
+
+                            if (currentItem.type == 'text' ||
+                                currentItem.type == 'textbox') ...[
+                              const SizedBox(height: 20),
+                              _premiumSectionTitle(
+                                'FONT FAMILY',
+                                Icons.font_download_rounded,
+                              ),
+                              const SizedBox(height: 10),
+                              _fontFamilyControl(
+                                  currentItem,
+                                  provider,
+                                  setModalState,
+                                  context
                               ),
                             ],
 
@@ -1804,6 +1854,286 @@ class EditableItemWidget extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  TextStyle _buildGoogleFontTextStyle({
+    required String? fontFamily,
+    required double fontSize,
+    required Color color,
+    required FontWeight fontWeight,
+    required FontStyle fontStyle,
+    required TextDecoration decoration,
+    required double letterSpacing,
+    required double height,
+  }) {
+    final base = TextStyle(
+      fontSize: fontSize,
+      color: color,
+      fontWeight: fontWeight,
+      fontStyle: fontStyle,
+      decoration: decoration,
+      letterSpacing: letterSpacing,
+      height: height,
+    );
+
+    final family = (fontFamily ?? '').trim();
+    if (family.isEmpty) return base;
+
+    try {
+      return GoogleFonts.getFont(family, textStyle: base);
+    } catch (_) {
+      return base.copyWith(fontFamily: family);
+    }
+  }
+
+  Widget _fontFamilyControl(
+      EditorItem currentItem,
+      EditorProvider provider,
+      StateSetter setModalState,
+      BuildContext context
+      ) {
+    final currentFont = (currentItem.fontFamily ?? '').trim().isEmpty
+        ? 'Roboto'
+        : currentItem.fontFamily.trim();
+
+    return Material(
+      color: const Color(0xFF1B1F27),
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(15),
+        onTap: () {
+          _showFontPicker(
+            context,
+            provider,
+            currentItem.id ?? '',
+            currentFont,
+            setModalState,
+          );
+        },
+        child: Container(
+          height: 62,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.font_download_rounded, color: Colors.white70),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Font',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      currentFont,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _buildGoogleFontTextStyle(
+                        fontFamily: currentFont,
+                        fontSize: 16,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontStyle: FontStyle.normal,
+                        decoration: TextDecoration.none,
+                        letterSpacing: 0,
+                        height: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showFontPicker(
+      BuildContext parentContext,
+      EditorProvider provider,
+      String itemId,
+      String selectedFont,
+      StateSetter setParentModalState,
+      ) {
+    final fonts = GoogleFonts.asMap().keys.toList()..sort();
+    final searchController = TextEditingController();
+
+    showModalBottomSheet(
+      context: parentContext,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF111318),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (fontContext) {
+        return StatefulBuilder(
+          builder: (fontContext, setFontState) {
+            final query = searchController.text.trim().toLowerCase();
+            final filtered = query.isEmpty
+                ? fonts
+                : fonts.where((font) => font.toLowerCase().contains(query)).toList();
+
+            return SafeArea(
+              child: SizedBox(
+                height: MediaQuery.of(fontContext).size.height * .86,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 10, 12),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Choose Font',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${filtered.length} fonts',
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 11,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(fontContext),
+                            icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        controller: searchController,
+                        onChanged: (_) => setFontState(() {}),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Search all Google Fonts...',
+                          hintStyle: const TextStyle(color: Colors.white38),
+                          prefixIcon: const Icon(Icons.search_rounded, color: Colors.white54),
+                          suffixIcon: searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                            onPressed: () {
+                              searchController.clear();
+                              setFontState(() {});
+                            },
+                            icon: const Icon(Icons.clear_rounded, color: Colors.white54),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF1B1F27),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 7),
+                        itemBuilder: (_, index) {
+                          final font = filtered[index];
+                          final selected = font == selectedFont;
+                          return Material(
+                            color: selected
+                                ? const Color(0x33FFC107)
+                                : const Color(0xFF1B1F27),
+                            borderRadius: BorderRadius.circular(13),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(13),
+                              onTap: () {
+                                provider.updateFontFamily(itemId, font);
+                                setParentModalState(() {});
+                                Navigator.pop(fontContext);
+                              },
+                              child: Container(
+                                constraints: const BoxConstraints(minHeight: 58),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(13),
+                                  border: Border.all(
+                                    color: selected
+                                        ? const Color(0xFFFFC107)
+                                        : Colors.white10,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        font,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: _buildGoogleFontTextStyle(
+                                          fontFamily: font,
+                                          fontSize: 21,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                          fontStyle: FontStyle.normal,
+                                          decoration: TextDecoration.none,
+                                          letterSpacing: 0,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      selected ? 'SELECTED' : 'Aa',
+                                      style: TextStyle(
+                                        color: selected
+                                            ? const Color(0xFFFFC107)
+                                            : Colors.white38,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -2790,6 +3120,507 @@ class EditableItemWidget extends StatelessWidget {
       return null;
     }
   }
+}
+
+
+class _EditorSelectionControls extends StatefulWidget {
+  final EditorItem item;
+  final double bodyWidth;
+  final double bodyHeight;
+  final EditorProvider provider;
+
+  const _EditorSelectionControls({
+    required this.item,
+    required this.bodyWidth,
+    required this.bodyHeight,
+    required this.provider,
+  });
+
+  @override
+  State<_EditorSelectionControls> createState() =>
+      _EditorSelectionControlsState();
+}
+
+class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
+  double _startScale = 1.0;
+  double _startWidth = 1.0;
+  double _startHeight = 1.0;
+  Offset _startPosition = Offset.zero;
+  Offset _startGlobal = Offset.zero;
+  double _startPixelsPerLocalUnit = 1.0;
+  bool _resizing = false;
+
+  double _startRotation = 0.0;
+  double _startAngle = 0.0;
+  Offset _rotationCenter = Offset.zero;
+
+  static const double _minScale = 0.05;
+  static const double _maxScale = 10.0;
+
+  Offset _toObjectDelta(Offset globalDelta) {
+    // Convert the finger movement from canvas/global axes into the object's
+    // unrotated axes. This is important when an image has been rotated.
+    final c = math.cos(-_startRotation);
+    final s = math.sin(-_startRotation);
+    return Offset(
+      globalDelta.dx * c - globalDelta.dy * s,
+      globalDelta.dx * s + globalDelta.dy * c,
+    );
+  }
+
+  Offset _rotateVector(Offset value, double angle) {
+    final c = math.cos(angle);
+    final s = math.sin(angle);
+    return Offset(
+      value.dx * c - value.dy * s,
+      value.dx * s + value.dy * c,
+    );
+  }
+
+  double _globalPixelsPerLocalUnit() {
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) return 1.0;
+
+    final localWidth = math.max(1.0, widget.bodyWidth);
+    final p0 = renderObject.localToGlobal(Offset.zero);
+    final p1 = renderObject.localToGlobal(Offset(localWidth, 0));
+    final dx = p1.dx - p0.dx;
+    final dy = p1.dy - p0.dy;
+    final distance = math.sqrt(dx * dx + dy * dy);
+    if (!distance.isFinite || distance <= 0.0001) return 1.0;
+    return distance / localWidth;
+  }
+
+  void _startResize(Alignment alignment, Offset global) {
+    _resizing = true;
+    _startScale = widget.item.scale.isFinite ? widget.item.scale : 1.0;
+    _startWidth = math.max(20.0, widget.bodyWidth);
+    _startHeight = math.max(20.0, widget.bodyHeight);
+    _startPosition = widget.item.position;
+    _startGlobal = global;
+    _startPixelsPerLocalUnit = _globalPixelsPerLocalUnit();
+    _startRotation = widget.item.rotation.isFinite ? widget.item.rotation : 0.0;
+    widget.provider.setSelectedItem(widget.item.type, widget.item.id);
+  }
+
+  void _resize(Alignment alignment, Offset global) {
+    if (!_resizing) return;
+
+    final pixelsPerLocalUnit = _startPixelsPerLocalUnit <= 0.0001
+        ? 1.0
+        : _startPixelsPerLocalUnit;
+
+    // Finger movement -> unrotated editor coordinates. Because the selected
+    // item is already inside Transform.scale, _globalPixelsPerLocalUnit()
+    // includes both the canvas preview scale and the item's current scale.
+    final globalDelta = global - _startGlobal;
+    final localDelta = _toObjectDelta(globalDelta);
+    final dx = localDelta.dx / pixelsPerLocalUnit;
+    final dy = localDelta.dy / pixelsPerLocalUnit;
+
+    // Text is represented by its font size/natural text bounds in this
+    // editor, so keep the existing proportional scale behavior for text.
+    // Images/shapes/videos use real width/height resizing, matching the
+    // reference editor where the aspect ratio can change with each handle.
+    final isText = widget.item.type == 'text' || widget.item.type == 'textbox';
+    if (isText) {
+      final horizontal = alignment.x == 0
+          ? 0.0
+          : alignment.x == 1
+          ? dx / _startWidth
+          : -dx / _startWidth;
+      final vertical = alignment.y == 0
+          ? 0.0
+          : alignment.y == 1
+          ? dy / _startHeight
+          : -dy / _startHeight;
+      final deltaScale = alignment.x != 0 && alignment.y != 0
+          ? (horizontal.abs() >= vertical.abs() ? horizontal : vertical)
+          : (alignment.x != 0 ? horizontal : vertical);
+
+      final nextScale = (_startScale + deltaScale)
+          .clamp(0.05, 10.0)
+          .toDouble();
+      final scaleDelta = nextScale - _startScale;
+      final shiftLocal = Offset(
+        alignment.x < 0
+            ? -_startWidth * scaleDelta
+            : alignment.x == 0
+            ? -_startWidth * scaleDelta / 2
+            : 0.0,
+        alignment.y < 0
+            ? -_startHeight * scaleDelta
+            : alignment.y == 0
+            ? -_startHeight * scaleDelta / 2
+            : 0.0,
+      );
+      final shift = _rotateVector(shiftLocal, _startRotation);
+      widget.provider.updateItemTransform(
+        widget.item.id ?? '',
+        scale: nextScale,
+        position: _startPosition + shift,
+        clampToFrame: false,
+      );
+      return;
+    }
+
+    double newWidth = _startWidth;
+    double newHeight = _startHeight;
+
+    if (alignment.x < 0) {
+      newWidth = _startWidth - dx;
+    } else if (alignment.x > 0) {
+      newWidth = _startWidth + dx;
+    }
+
+    if (alignment.y < 0) {
+      newHeight = _startHeight - dy;
+    } else if (alignment.y > 0) {
+      newHeight = _startHeight + dy;
+    }
+
+    const minSize = 20.0;
+    newWidth = math.max(minSize, newWidth);
+    newHeight = math.max(minSize, newHeight);
+
+    // Anchor the opposite edge/corner exactly like the reference editor.
+    // The correction is calculated in the item's unrotated coordinate system
+    // and then rotated back into canvas coordinates.
+    final consumedX = newWidth - _startWidth;
+    final consumedY = newHeight - _startHeight;
+    final shiftLocal = Offset(
+      alignment.x < 0
+          ? -consumedX
+          : alignment.x == 0
+          ? -consumedX / 2
+          : 0.0,
+      alignment.y < 0
+          ? -consumedY
+          : alignment.y == 0
+          ? -consumedY / 2
+          : 0.0,
+    );
+    final shift = _rotateVector(shiftLocal, _startRotation);
+
+    widget.provider.updateItemSize(
+      widget.item.id ?? '',
+      width: newWidth,
+      height: newHeight,
+      position: _startPosition + shift,
+    );
+  }
+
+  void _endResize() {
+    _resizing = false;
+  }
+
+  void _beginRotation(Offset global) {
+    // Rotation center is derived directly from the current rendered item.
+    // No GlobalKey/local transform conversion is needed, so resizing cannot
+    // make the rotation center drift.
+    final renderObject = context.findRenderObject();
+    if (renderObject is RenderBox && renderObject.hasSize) {
+      _rotationCenter = renderObject.localToGlobal(
+        Offset(widget.bodyWidth / 2, widget.bodyHeight / 2),
+      );
+    } else {
+      return;
+    }
+
+    _startRotation = widget.item.rotation.isFinite ? widget.item.rotation : 0.0;
+    _startAngle = math.atan2(
+      global.dy - _rotationCenter.dy,
+      global.dx - _rotationCenter.dx,
+    );
+  }
+
+  void _rotate(Offset global) {
+    final angle = math.atan2(
+      global.dy - _rotationCenter.dy,
+      global.dx - _rotationCenter.dx,
+    );
+    var delta = angle - _startAngle;
+    if (delta > math.pi) delta -= math.pi * 2;
+    if (delta < -math.pi) delta += math.pi * 2;
+
+    widget.provider.updateItemTransform(
+      widget.item.id ?? '',
+      rotation: _startRotation + delta,
+      clampToFrame: false,
+    );
+  }
+
+  Widget _handle(Alignment alignment) {
+    // IMPORTANT: the visible dot is small, but the touch target must be large.
+    // The old 16x16 target was too difficult to grab on a phone, especially
+    // after the image was scaled down. Keep the visual dot at the exact edge
+    // while giving the finger a 44x44 hit area.
+    const double hitSize = 44.0;
+    const double visualSize = 10.0;
+
+    final double left;
+    final double top;
+
+    if (alignment.x < 0) {
+      left = 0;
+    } else if (alignment.x > 0) {
+      left = math.max(0.0, widget.bodyWidth - hitSize);
+    } else {
+      left = math.max(0.0, widget.bodyWidth / 2 - hitSize / 2);
+    }
+
+    if (alignment.y < 0) {
+      top = 0;
+    } else if (alignment.y > 0) {
+      top = math.max(0.0, widget.bodyHeight - hitSize);
+    } else {
+      top = math.max(0.0, widget.bodyHeight / 2 - hitSize / 2);
+    }
+
+    return Positioned(
+      left: left,
+      top: top,
+      width: hitSize,
+      height: hitSize,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onPanStart: (d) => _startResize(alignment, d.globalPosition),
+        onPanUpdate: (d) => _resize(alignment, d.globalPosition),
+        onPanEnd: (_) => _endResize(),
+        onPanCancel: _endResize,
+        child: Center(
+          child: Transform.translate(
+            // Keep the visual circle exactly on the corresponding outline
+            // while the larger invisible touch target stays inside the item.
+            offset: Offset(
+              alignment.x < 0
+                  ? -hitSize / 2 + visualSize / 2
+                  : alignment.x > 0
+                  ? hitSize / 2 - visualSize / 2
+                  : 0,
+              alignment.y < 0
+                  ? -hitSize / 2 + visualSize / 2
+                  : alignment.y > 0
+                  ? hitSize / 2 - visualSize / 2
+                  : 0,
+            ),
+            child: Container(
+              width: visualSize,
+              height: visualSize,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFF2196F3),
+                  width: 2,
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final w = widget.bodyWidth;
+    final h = widget.bodyHeight;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Border is exactly the same size as the image/text body.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: CustomPaint(
+              painter: _EditorSelectionBorderPainter(
+                width: widget.bodyWidth,
+                height: widget.bodyHeight,
+              ),
+            ),
+          ),
+        ),
+
+        _handle(Alignment.topLeft),
+        _handle(Alignment.topCenter),
+        _handle(Alignment.topRight),
+        _handle(Alignment.centerLeft),
+        _handle(Alignment.centerRight),
+        _handle(Alignment.bottomLeft),
+        _handle(Alignment.bottomCenter),
+        _handle(Alignment.bottomRight),
+
+        // Rotation handle. Keep the gesture target INSIDE the selection box.
+        // This is important on Flutter: a widget painted outside its parent's
+        // bounds can be visible but will not reliably receive pointer events.
+        // The 44px target occupies only the upper 22px of the box, so the
+        // remaining top-center area is still available for resize.
+        Positioned(
+          left: w / 2 - 1,
+          top: 0,
+          width: 2,
+          height: 24,
+          child: IgnorePointer(
+            child: Transform.translate(
+              offset: const Offset(0, 20),
+              child: const SizedBox(
+                width: 2,
+                height: 24,
+                child: ColoredBox(color: Color(0xFF2196F3)),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: w / 2 - 22,
+          top: 0,
+          width: 44,
+          height: 22,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onPanStart: (d) => _beginRotation(d.globalPosition),
+            onPanUpdate: (d) => _rotate(d.globalPosition),
+            onPanEnd: (_) {},
+            child: Center(
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF2196F3),
+                    width: 2,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x22000000),
+                      blurRadius: 2,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.rotate_right_rounded,
+                  size: 13,
+                  color: Color(0xFF2196F3),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // IMPORTANT: the visual 3-dot button may sit just outside the image,
+        // but its hit target must remain INSIDE this Stack's bounds. Otherwise
+        // Flutter's RenderBox hit testing sends the tap to the item underneath.
+        // Keep the 3-dot button INSIDE the selected item's actual box.
+        // If it is placed outside, the canvas ClipRect can hide it when a
+        // large image reaches the canvas edge. The hit target is also kept
+        // inside the same box so an overlapping item cannot steal the tap.
+        Positioned(
+          left: math.max(0.0, w - 56.0),
+          top: math.max(0.0, math.min(h - 60.0, h / 2.0 - 30.0)),
+          width: 56,
+          height: 60,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              widget.provider.setSelectedItem(
+                widget.item.type,
+                widget.item.id,
+              );
+              // Open the complete item editor from the exact selected item.
+              // Schedule it after the tap callback so the selection rebuild
+              // cannot replace the hit-test tree while the tap is resolving.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!context.mounted) return;
+                final latest = widget.provider.items.where(
+                      (e) => e.id == widget.item.id,
+                );
+                if (latest.isEmpty) return;
+
+                final host = EditableItemWidget(
+                  item: latest.first,
+                  onItemSelected: (_, __) {},
+                );
+                host._showProActionSheet(
+                  context,
+                  widget.provider,
+                  latest.first,
+                  isBackground: false,
+                );
+              });
+            },
+            child: Center(
+              child: Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF2196F3),
+                    width: 2.5,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.more_horiz_rounded,
+                  color: Color(0xFF222222),
+                  size: 25,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EditorSelectionBorderPainter extends CustomPainter {
+  final double width;
+  final double height;
+
+  const _EditorSelectionBorderPainter({
+    required this.width,
+    required this.height,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF2196F3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    canvas.drawRect(
+      Rect.fromLTWH(
+        1,
+        1,
+        math.max(0, width - 2),
+        math.max(0, height - 2),
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _EditorSelectionBorderPainter oldDelegate) =>
+      oldDelegate.width != width || oldDelegate.height != height;
 }
 
 class _RotateThreeDotHandle extends StatefulWidget {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:provider/provider.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/custom_widget.dart';
@@ -103,48 +104,63 @@ class _CustomCreateBody extends StatelessWidget {
                           final width = int.tryParse(item.width ?? "0") ?? 0;
                           final height = int.tryParse(item.height ?? "0") ?? 0;
 
-                          return Container(
-                            width: 95.w,
-                            margin: EdgeInsets.only(right: 12.w),
-                            child: Column(
-                              children: [
-                                /// Fixed Preview Area
-                                SizedBox(
-                                  height: 130.h,
-                                  child: Align(
-                                    alignment: Alignment.bottomCenter,
-                                    child: Image.asset(
-                                      buildTemplateImage(width, height),
-                                      height: getImageHeight(width, height),
-                                      fit: BoxFit.contain,
+                          return InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TemplateEditScreen(
+                                    canvasWidth: width > 0 ? width.toDouble() : null,
+                                    canvasHeight: height > 0 ? height.toDouble() : null,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: 95.w,
+                              margin: EdgeInsets.only(right: 12.w),
+                              child: Column(
+                                children: [
+                                  /// Fixed Preview Area
+                                  SizedBox(
+                                    height: 130.h,
+                                    child: Align(
+                                      alignment: Alignment.bottomCenter,
+                                      child: Image.asset(
+                                        buildTemplateImage(width, height),
+                                        height: getImageHeight(width, height),
+                                        fit: BoxFit.contain,
+                                      ),
                                     ),
                                   ),
-                                ),
 
-                                SizedBox(height: 8.h),
+                                  SizedBox(height: 8.h),
 
-                                AppText(
-                                  item.name ?? "",
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  style: TextStyle(
-                                    fontSize: 11.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark ? Colors.white : Colors.black,
+                                  AppText(
+                                    item.name ?? "",
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    style: TextStyle(
+                                      fontSize: 11.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
                                   ),
-                                ),
 
-                                SizedBox(height: 2.h),
+                                  SizedBox(height: 2.h),
 
-                                AppText(
-                                  "${item.width} × ${item.height}",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 9.sp,
-                                    color: Colors.grey,
+                                  AppText(
+                                    "${item.width} × ${item.height}",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 9.sp,
+                                      color: Colors.grey,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -205,12 +221,12 @@ class _CustomCreateBody extends StatelessWidget {
                                 width: 52.w,
                                 child: tool.imagePath.trim().isNotEmpty
                                     ? Image.asset(
-                                        tool.imagePath,
-                                        fit: BoxFit.contain,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                _buildFallbackIcon(),
-                                      )
+                                  tool.imagePath,
+                                  fit: BoxFit.contain,
+                                  errorBuilder:
+                                      (context, error, stackTrace) =>
+                                      _buildFallbackIcon(),
+                                )
                                     : _buildFallbackIcon(),
                               ),
 

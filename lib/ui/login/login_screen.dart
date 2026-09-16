@@ -107,59 +107,8 @@ class LoginScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-
                       height12,
 
-                      // OR Divider
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: 2,
-                              color: customColor.borderColor,
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8.0,
-                            ),
-                            child: Text(
-                              "or continue with".toUpperCase(),
-                              style: theme.bodyLarge!.copyWith(
-                                color: customColor.borderColor,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Container(
-                              height: 2,
-                              color: customColor.borderColor,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      height12,
-
-                      // Google Button
-                      /*ButtonWidget(
-                        buttonPress: () {},
-                        title: "Continue with Google",
-                        textStyle: theme.titleLarge!.copyWith(
-                          color: customColor.blackColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        isLeftIconVisible: true,
-                        icon: "assets/icons/google_ic.svg",
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: customColor.whiteColor,
-                          border: Border.all(color: customColor.borderColor),
-                        ),
-                        height: 54.h,
-                      ),*/
-
-                    /*  height12,*/
 
                       ButtonWidget(
                         isLoading: authProvider.isLoginLoading,

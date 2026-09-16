@@ -14,7 +14,6 @@ class BusinessFramesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🚀 FIX: Removed local ChangeNotifierProvider so it reads from the global BusinessProvider properly
     return const BusinessFramesView();
   }
 }

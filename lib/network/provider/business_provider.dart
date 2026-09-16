@@ -14,10 +14,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../Api Model/me_api.dart';
 import '../../Repository/business_repository.dart';
 import '../../Repository/get_me_repository.dart';
 import '../../Repository/image_upload_repository.dart';
-import '../../core/api/api_handler.dart';
 import '../../ui/industry/widgets/bg_remove_sheet.dart';
 
 class BusinessProvider extends ChangeNotifier {
@@ -86,6 +86,16 @@ class BusinessProvider extends ChangeNotifier {
   final emailController = TextEditingController();
   bool _isUploading = false;
   bool get isUploading => _isUploading;
+  String? _businessUid;
+  String? get businessUid => _businessUid;
+
+  String? _logoS3Key;
+  String? get logoS3Key => _logoS3Key;
+
+  void setBusinessUid(String uid) {
+    _businessUid = uid;
+    notifyListeners();
+  }
 
   Future<void> clearBusinessDataForNewLogin() async {
     _businessName = "";
@@ -134,11 +144,7 @@ class BusinessProvider extends ChangeNotifier {
       return await result.when(
         success: (data) async {
           final prefs = await SharedPreferences.getInstance();
-
-          // UI selection save
           await prefs.setString('selected_account_type', selectedTitle);
-
-          // Business / Personal flag
           await prefs.setBool('is_personal_use', accountType == "personal");
 
           _isAccountTypeUpdating = false;
@@ -213,9 +219,7 @@ class BusinessProvider extends ChangeNotifier {
             await prefs.setString('saved_business_image_path', imageFile.path);
 
             updateSavedImagePath(imageFile.path);
-            if (context.mounted) {
-              //  Navigator.pushNamed(context, "/CustomBottomNavScreen");
-            }
+            if (context.mounted) {}
           },
           failure: (error) {
             isUploadSuccess = false;
@@ -261,7 +265,7 @@ class BusinessProvider extends ChangeNotifier {
     _isUploading = true;
     _errorMessage = null;
     notifyListeners();
-    Navigator.pushNamed(context, "/BusinessDetailsScreen");
+    /* Navigator.pushNamed(context, "/BusinessDetailsScreen");*/
     try {
       final prefs = await SharedPreferences.getInstance();
       _savedCategorySlug = prefs.getString('saved_category_slug') ?? '';
@@ -407,6 +411,27 @@ class BusinessProvider extends ChangeNotifier {
     if (savedEmail != null && savedEmail.isNotEmpty) {
       _email = savedEmail;
       emailController.text = savedEmail;
+    }
+
+    notifyListeners();
+  }
+
+  void setGetMeData(Language me) {
+    _businessUid = me.data.uid;
+
+    if (me.data.name != null) {
+      _businessName = me.data.name!;
+      nameController.text = me.data.name!;
+    }
+
+    if (me.data.email != null) {
+      _email = me.data.email!;
+      emailController.text = me.data.email!;
+    }
+
+    if (me.data.phone != null) {
+      _mobileNumber = me.data.phone!;
+      mobileController.text = me.data.phone!;
     }
 
     notifyListeners();

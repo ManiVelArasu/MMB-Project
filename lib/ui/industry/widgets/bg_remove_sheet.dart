@@ -213,8 +213,23 @@ class BgRemoveSheet extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           ButtonWidget(
-                            buttonPress: () {
+                            buttonPress: () async {
                               Navigator.pop(context);
+
+                              final success = await businessProvider
+                                  .uploadAndSaveBusinessDetails(context);
+
+                              if (!success && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      businessProvider.errorMessage ??
+                                          "Logo update failed",
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
                             },
                             title: "NO",
                             decoration: BoxDecoration(
