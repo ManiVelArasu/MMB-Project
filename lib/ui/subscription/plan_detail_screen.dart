@@ -189,7 +189,18 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                   height: 52,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, "/ConfirmPlanScreen");
+                      final selectedBilling = isMonthlySelected
+                          ? monthlyBilling
+                          : annualBilling;
+
+                      Navigator.pushNamed(
+                        context,
+                        "/ConfirmPlanScreen",
+                        arguments: {
+                          "plan": widget.plan,
+                          "billing": selectedBilling,
+                        },
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,

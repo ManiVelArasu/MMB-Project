@@ -20,11 +20,21 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkUserStatusAndNavigate() async {
-    await Future.delayed(const Duration(seconds: 2)); // ஸ்பிளாஷ் டிலே
+    await Future.delayed(const Duration(seconds: 2));
 
     final prefs = await SharedPreferences.getInstance();
     final bool isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+    final bool isOnboarded = prefs.getBool('isOnboarded') ?? false;
 
+    if (!isOnboarded) {
+      debugPrint("🆕 First launch → OnboardingScreen");
+
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(context, '/OnboardingScreen');
+
+      return;
+    }
     if (!isLoggedIn) {
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/LoginScreen');
@@ -38,7 +48,6 @@ class _SplashScreenState extends State<SplashScreen> {
         token: savedAccessToken,
         refreshToken: savedRefreshToken,
       );
-      debugPrint("✅ Restored Saved Token Successfully");
     }
 
     final result = await GetMeRepository.instance.getMe();
@@ -48,19 +57,37 @@ class _SplashScreenState extends State<SplashScreen> {
     result.when(
       success: (meApiData) async {
         final onboarding = meApiData.data.onboarding;
-        final String accountType = onboarding?.accountType ?? "business";
-        final bool hasBusiness = onboarding?.hasBusiness ?? false;
-        final bool completed = onboarding?.completed ?? false;
 
+        final String? accountType = onboarding?.accountType;
+
+        final bool hasBusiness = onboarding?.hasBusiness ?? false;
+
+        final bool completed = onboarding?.completed ?? false;
         await prefs.setBool('is_business_completed', completed);
-        await prefs.setString('account_type', accountType);
+
+        if (accountType != null && accountType.isNotEmpty) {
+          await prefs.setString('account_type', accountType);
+        }
 
         if (!mounted) return;
-        if (completed || (accountType == "business" && hasBusiness)) {
-          Navigator.pushReplacementNamed(context, '/CustomBottomNavScreen');
-        } else {
-          Navigator.pushReplacementNamed(context, '/BusinessDetailsScreen');
+
+        if (!completed && !hasBusiness && accountType == null) {
+          debugPrint("🆕 New/Incomplete User → PlanDetailScreen");
+
+          Navigator.pushReplacementNamed(context, '/PlansAndPricingScreen');
+
+          return;
         }
+        if (completed || (accountType == "business" && hasBusiness)) {
+          debugPrint("✅ Onboarding completed → Home");
+
+          Navigator.pushReplacementNamed(context, '/CustomBottomNavScreen');
+
+          return;
+        }
+        debugPrint("⚠️ Incomplete onboarding → BusinessDetailsScreen");
+
+        Navigator.pushReplacementNamed(context, '/BusinessDetailsScreen');
       },
       failure: (error) {
         _tryRefreshingTokenOrLogin(prefs, savedRefreshToken);
@@ -78,13 +105,6 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     try {
-      // உங்கள் AuthRepository-ல் உள்ள Refresh Token API-ஐ இங்கே கால் செய்ய வேண்டும்
-      // உதாரணத்திற்கு:
-      // final newTokenResult = await AuthRepository.instance.refreshToken(refreshToken);
-
-      // புதிய டோக்கன் வெற்றிகரமாக கிடைத்தால் அதை செட் செய்துவிட்டு மீண்டும் ஹோம் ஸ்கிரீனுக்கு செல்லலாம்.
-      // இல்லையெனில் மட்டும் கீழ்க்கண்டவாறு லாகின் ஸ்கிரீனுக்கு அனுப்பலாம்:
-
       await prefs.clear();
       await ApiHandler.instance.clearTokens();
 
@@ -93,20 +113,6 @@ class _SplashScreenState extends State<SplashScreen> {
     } catch (e) {
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/LoginScreen');
-    }
-  }
-
-  void _fallbackNavigation(SharedPreferences prefs) {
-    final bool isBusinessCompleted =
-        prefs.getBool('is_business_completed') ?? false;
-    final bool isPersonalUse = prefs.getBool('is_personal_use') ?? false;
-
-    if (!mounted) return;
-
-    if (isBusinessCompleted || isPersonalUse) {
-      Navigator.pushReplacementNamed(context, '/CustomBottomNavScreen');
-    } else {
-      Navigator.pushReplacementNamed(context, '/BusinessDetailsScreen');
     }
   }
 

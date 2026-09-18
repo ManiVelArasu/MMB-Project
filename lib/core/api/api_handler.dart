@@ -51,12 +51,6 @@ import 'models/multipart_file_entry.dart';
 ///   ),
 /// );
 /// ```
-import 'dart:io';
-import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 class ApiHandler {
   ApiHandler._();
 
@@ -64,8 +58,8 @@ class ApiHandler {
 
   static ApiHandler get instance {
     assert(
-      _instance != null,
-      'ApiHandler.init() must be called before accessing ApiHandler.instance.',
+    _instance != null,
+    'ApiHandler.init() must be called before accessing ApiHandler.instance.',
     );
     return _instance!;
   }
@@ -125,139 +119,6 @@ class ApiHandler {
       );
     }
 
-    _instance!._dio.interceptors.add(
-      QueuedInterceptorsWrapper(
-        onError: (
-            DioException error,
-            ErrorInterceptorHandler handler,
-            ) async {
-          // Only handle 401
-          if (error.response?.statusCode != 401) {
-            return handler.next(error);
-          }
-
-          // Don't refresh the refresh request itself
-          if (error.requestOptions.path.contains('/auth/refresh')) {
-            return handler.next(error);
-          }
-
-          try {
-            final prefs =
-            await SharedPreferences.getInstance();
-
-            final refreshToken =
-            prefs.getString('refresh_token');
-
-            if (refreshToken == null ||
-                refreshToken.isEmpty) {
-              return handler.next(error);
-            }
-
-            debugPrint(
-              '🔄 Access token expired. Refreshing...',
-            );
-            final refreshDio = Dio(
-              BaseOptions(
-                baseUrl: _instance!._dio.options.baseUrl,
-                connectTimeout:
-                const Duration(seconds: 30),
-                receiveTimeout:
-                const Duration(seconds: 30),
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                },
-              ),
-            );
-
-            final refreshResponse = await refreshDio.post(
-              '/auth/refresh',
-              data: {
-                'refresh_token': refreshToken,
-              },
-            );
-
-            if (refreshResponse.statusCode != 200 &&
-                refreshResponse.statusCode != 201) {
-              debugPrint(
-                '❌ Refresh failed: '
-                    '${refreshResponse.statusCode}',
-              );
-
-              return handler.next(error);
-            }
-
-            final data = refreshResponse.data;
-
-            final newAccessToken =
-                data['access_token'] ??
-                    data['accessToken'] ??
-                    data['token'];
-
-            final newRefreshToken =
-                data['refresh_token'] ??
-                    data['refreshToken'];
-
-            if (newAccessToken == null ||
-                newAccessToken.toString().isEmpty) {
-              debugPrint(
-                '❌ Refresh response has no access token',
-              );
-
-              return handler.next(error);
-            }
-
-            // If backend rotates refresh token,
-            // use the new one.
-            final String finalRefreshToken =
-            newRefreshToken != null &&
-                newRefreshToken
-                    .toString()
-                    .isNotEmpty
-                ? newRefreshToken.toString()
-                : refreshToken;
-
-            // Save BOTH tokens.
-            await _instance!.setTokens(
-              token: newAccessToken.toString(),
-              refreshToken: finalRefreshToken,
-            );
-
-            debugPrint(
-              '✅ New access token saved',
-            );
-
-            debugPrint(
-              '✅ New refresh token saved',
-            );
-
-            // Retry original request
-            final requestOptions =
-                error.requestOptions;
-
-            requestOptions.headers['Authorization'] =
-            'Bearer ${newAccessToken.toString()}';
-
-            final retryResponse =
-            await _instance!._dio.fetch(
-              requestOptions,
-            );
-
-            return handler.resolve(retryResponse);
-          } catch (e, stackTrace) {
-            debugPrint(
-              '❌ Refresh token failed: $e',
-            );
-            debugPrintStack(
-              stackTrace: stackTrace,
-            );
-
-            return handler.next(error);
-          }
-        },
-      ),
-    );
-
     // Add your custom interceptor AFTER refresh interceptor.
     if (interceptor != null) {
       _instance!._dio.interceptors.add(interceptor);
@@ -266,19 +127,35 @@ class ApiHandler {
 
   String get baseUrl => _dio.options.baseUrl;
 
+  /// Exposes the single Dio instance used by the app.
+  /// The refresh interceptor must use this instance so refreshed tokens
+  /// and retried requests stay on the same client.
+  Dio get dio => _dio;
+
   void updateBaseUrl(String newBaseUrl) {
     _dio.options.baseUrl = newBaseUrl;
   }
 
   Future<void> setTokens({required String token, String? refreshToken}) async {
     _token = token;
-    _refreshToken = refreshToken;
-    print("dsdfsdfsdf${token}");
+
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      _refreshToken = refreshToken;
+    }
+
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
-    print("auth_token${token}");
-    if (refreshToken != null) {
+
+    if (token.isNotEmpty) {
+      await prefs.setString('auth_token', token);
+    }
+
+    if (refreshToken != null && refreshToken.isNotEmpty) {
       await prefs.setString('refresh_token', refreshToken);
+    }
+
+    debugPrint('✅ Access token stored');
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      debugPrint('✅ Refresh token stored');
     }
   }
 
@@ -377,9 +254,9 @@ class ApiHandler {
   }
 
   Map<String, String> _buildHeaders(
-    ApiContentType contentType,
-    Map<String, String>? extra,
-  ) {
+      ApiContentType contentType,
+      Map<String, String>? extra,
+      ) {
     final headers = <String, String>{};
     if (_token != null) {
       headers[ApiHeaderKey.authorization.value] = 'Bearer $_token';
@@ -405,9 +282,9 @@ class ApiHandler {
   }
 
   ApiResult<T> _parseResponse<T>(
-    Response<dynamic> response,
-    T Function(dynamic json)? fromJson,
-  ) {
+      Response<dynamic> response,
+      T Function(dynamic json)? fromJson,
+      ) {
     final statusCode = response.statusCode ?? 0;
     if (statusCode >= 200 && statusCode < 300) {
       try {
@@ -431,7 +308,7 @@ class ApiHandler {
       ApiError(
         type: ApiErrorType.serverError,
         message:
-            _extractServerMessage(response.data) ??
+        _extractServerMessage(response.data) ??
             'Server error ($statusCode)',
         statusCode: statusCode,
         serverData: response.data,
@@ -467,7 +344,7 @@ class ApiHandler {
         return ApiError(
           type: ApiErrorType.serverError,
           message:
-              _extractServerMessage(e.response?.data) ??
+          _extractServerMessage(e.response?.data) ??
               'Server error (${statusCode ?? 'unknown'})',
           statusCode: statusCode,
           serverData: e.response?.data,
@@ -486,7 +363,7 @@ class ApiHandler {
           serverData: e.response?.data,
         );
       case DioExceptionType.transformTimeout:
-        // TODO: Handle this case.
+      // TODO: Handle this case.
         throw UnimplementedError();
     }
   }

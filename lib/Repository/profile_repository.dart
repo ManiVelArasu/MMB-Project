@@ -19,6 +19,14 @@ class ProfileRepository {
       fromJson: (json) => LanguageModel.fromJson(json),
     );
   }
-
+  Future<ApiResult<dynamic>> accountDeactivate() {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.accountDeactivate,
+        method: ApiMethod.post,
+      ),
+      fromJson: (json) => json,
+    );
+  }
 
 }

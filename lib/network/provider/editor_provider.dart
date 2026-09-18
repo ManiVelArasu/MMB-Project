@@ -403,7 +403,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   Future<void> fetchMediaImages(String query) async {
-    final normalized = query.trim().isEmpty ? 'background' : query.trim();
+    // Media > Images initial load must call the Pexels proxy WITHOUT a term.
+    // Category/search clicks add their own term (e.g. Nature -> nature landscape).
+    final normalized = query.trim();
     final requestId = ++_mediaImagesRequestId;
 
     _mediaImagesQuery = normalized;

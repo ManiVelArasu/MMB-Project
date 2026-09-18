@@ -302,7 +302,7 @@ class FreePikService {
   /// Each category is searched against Pexels through the backend proxy.
   static const Map<String, String> pexelsImageCategories = {
     'Nature': 'nature landscape',
-    'People': 'people portrait',
+    'People': 'people lifestyle',
     'Business': 'business',
     'Technology': 'technology',
     'Travel': 'travel',
@@ -388,6 +388,12 @@ class FreePikService {
       for (final item in items) {
         if (item is! Map) continue;
 
+        // Pexels photo responses normally contain the actual image URLs in
+        // `src`. Only use wrapper-level fields when `src` did not provide
+        // an image URL. In particular, `item['url']` is the Pexels WEB PAGE
+        // URL, not an image URL. Adding it here caused the grid to alternate
+        // between a real image and a blank/error tile.
+        bool imageUrlAdded = false;
         final src = item['src'];
         if (src is Map) {
           for (final key in const [
@@ -399,27 +405,36 @@ class FreePikService {
             'original',
           ]) {
             final value = src[key]?.toString().trim();
-            if (value != null && value.isNotEmpty) {
+            if (value != null &&
+                value.isNotEmpty &&
+                (value.startsWith('http://') ||
+                    value.startsWith('https://'))) {
               urls.add(value);
+              imageUrlAdded = true;
               break;
             }
           }
         }
 
-        // Support backend wrappers.
-        for (final key in const [
-          'image',
-          'image_url',
-          'imageUrl',
-          'thumbnail',
-          'thumbnail_url',
-          'thumbnailUrl',
-          'url',
-        ]) {
-          final value = item[key]?.toString().trim();
-          if (value != null && value.isNotEmpty) {
-            urls.add(value);
-            break;
+        // Support backend wrappers only when `src` had no usable image URL.
+        // Never use Pexels photo-page `url` as an image source.
+        if (!imageUrlAdded) {
+          for (final key in const [
+            'image',
+            'image_url',
+            'imageUrl',
+            'thumbnail',
+            'thumbnail_url',
+            'thumbnailUrl',
+          ]) {
+            final value = item[key]?.toString().trim();
+            if (value != null &&
+                value.isNotEmpty &&
+                (value.startsWith('http://') ||
+                    value.startsWith('https://'))) {
+              urls.add(value);
+              break;
+            }
           }
         }
       }

@@ -19,6 +19,45 @@ class ProfileScreenProvider extends ChangeNotifier {
 
   String? _plansErrorMessage;
   String? get plansErrorMessage => _plansErrorMessage;
+  bool _isDeactivateLoading = false;
+
+  bool get isDeactivateLoading => _isDeactivateLoading;
+
+  Future<bool> deactivateAccount() async {
+    _isDeactivateLoading = true;
+    notifyListeners();
+
+    try {
+      final result = await _repository.accountDeactivate();
+
+      if (result.isSuccess) {
+        debugPrint("✅ Account deactivate API success");
+
+        _isDeactivateLoading = false;
+        notifyListeners();
+
+        return true;
+      }
+
+      debugPrint(
+        "❌ Account deactivate failed: "
+            "${result.error?.message}",
+      );
+
+      _isDeactivateLoading = false;
+      notifyListeners();
+
+      return false;
+    } catch (e) {
+      debugPrint("❌ Account deactivate error: $e");
+
+      _isDeactivateLoading = false;
+      notifyListeners();
+
+      return false;
+    }
+  }
+
   void toggleDarkMode(bool value) {
     isDarkMode = value;
     notifyListeners();
@@ -107,6 +146,103 @@ class ProfileScreenProvider extends ChangeNotifier {
       }
     } finally {
       notifyListeners();
+    }
+  }
+  Future<void> showDeactivateDialog(
+      BuildContext context,
+      ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            "Delete Account?",
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: const Text(
+            "Are you sure you want to delete your account?\n\n"
+                "Your account will be permanently deleted within 24 hours.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text(
+                "NO",
+                style: TextStyle(
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              onPressed: _isDeactivateLoading
+                  ? null
+                  : () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text(
+                "YES",
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    final success = await deactivateAccount();
+
+    if (!context.mounted) return;
+
+    if (success) {
+      // Clear local data
+      await ApiHandler.instance.clearTokens();
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Account deletion requested. Your account will be deleted within 24 hours.",
+          ),
+        ),
+      );
+
+      await Future.delayed(
+        const Duration(milliseconds: 800),
+      );
+
+      if (!context.mounted) return;
+
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        "/LoginScreen",
+            (route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Unable to delete account. Please try again.",
+          ),
+        ),
+      );
     }
   }
 }

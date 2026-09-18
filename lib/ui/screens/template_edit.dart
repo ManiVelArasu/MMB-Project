@@ -6,6 +6,8 @@ import 'dart:ui' as ui;
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/flutter_svg.dart' as svg;
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -62,7 +64,7 @@ class TemplateEditScreen extends StatelessWidget {
           double.tryParse(widthValue?.toString() ?? '') ?? resolvedCanvasWidth;
       resolvedCanvasHeight =
           double.tryParse(heightValue?.toString() ?? '') ??
-          resolvedCanvasHeight;
+              resolvedCanvasHeight;
     }
 
     return ChangeNotifierProvider(
@@ -74,12 +76,12 @@ class TemplateEditScreen extends StatelessWidget {
             canvasWidth: resolvedCanvasWidth,
             canvasHeight: resolvedCanvasHeight,
             templateUid:
-                templateUid ??
+            templateUid ??
                 (args is Map
                     ? (args['templateUid'] ??
-                              args['template_uid'] ??
-                              args['uid'])
-                          ?.toString()
+                    args['template_uid'] ??
+                    args['uid'])
+                    ?.toString()
                     : null),
           ),
         ),
@@ -160,7 +162,7 @@ class _EditorViewState extends State<EditorView> {
       if (response.statusCode != 200) return null;
       final bytes = await response.fold<List<int>>(
         <int>[],
-        (buffer, data) => buffer..addAll(data),
+            (buffer, data) => buffer..addAll(data),
       );
       client.close();
       final dir = await getTemporaryDirectory();
@@ -175,10 +177,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _cropSelectedImage(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-  ) async {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      ) async {
     final item = provider.items.where((e) => e.id == itemId).isEmpty
         ? null
         : provider.items.firstWhere((e) => e.id == itemId);
@@ -233,11 +235,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<bool> _confirmReplaceBackground(
-    BuildContext context,
-    EditorProvider provider,
-    String imageUrl, {
-    String? selectedItemId,
-  }) async {
+      BuildContext context,
+      EditorProvider provider,
+      String imageUrl, {
+        String? selectedItemId,
+      }) async {
     final replace = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -344,13 +346,131 @@ class _EditorViewState extends State<EditorView> {
     provider.fetchFreePikStickers("stickers");
   }
 
-  Future<void> _addLocalShape(
-    BuildContext context,
-    EditorProvider provider,
-    String assetPath,
-  ) async {
+  Future<void> _addRemoteShape(
+      BuildContext context,
+      EditorProvider provider,
+      String url,
+      ) async {
     try {
-      final pictureInfo = await vg.loadPicture(SvgAssetLoader(assetPath), null);
+      final uri = Uri.tryParse(url);
+      if (uri == null || !uri.hasScheme) {
+        throw Exception('Invalid shape URL');
+      }
+
+      final client = HttpClient();
+      try {
+        final request = await client.getUrl(uri);
+        request.headers.set(HttpHeaders.acceptHeader, '*/*');
+        final response = await request.close().timeout(
+          const Duration(seconds: 20),
+        );
+
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw Exception('Shape request failed: ${response.statusCode}');
+        }
+
+        final bytes = await response.fold<List<int>>(
+          <int>[],
+              (buffer, data) => buffer..addAll(data),
+        );
+
+        final contentType =
+            response.headers.contentType?.mimeType.toLowerCase() ?? '';
+        final pathPart = uri.path.toLowerCase();
+        final isSvg = contentType.contains('svg') || pathPart.endsWith('.svg');
+
+        if (!isSvg) {
+          final dir = await getTemporaryDirectory();
+          final ext = contentType.contains('webp')
+              ? 'webp'
+              : contentType.contains('jpeg') || contentType.contains('jpg')
+              ? 'jpg'
+              : 'png';
+          final file = File(
+            '${dir.path}/shape_${DateTime.now().microsecondsSinceEpoch}.$ext',
+          );
+          await file.writeAsBytes(bytes, flush: true);
+          provider.addImage(file.path, isLocal: true);
+          if (context.mounted) Navigator.pop(context);
+          return;
+        }
+
+        final svgText = utf8.decode(bytes, allowMalformed: true);
+        final pictureInfo = await vg.loadPicture(
+          svg.SvgStringLoader(svgText),
+          null,
+        );
+
+        const outputSize = 512.0;
+        final sourceWidth =
+        pictureInfo.size.width > 0 ? pictureInfo.size.width : outputSize;
+        final sourceHeight =
+        pictureInfo.size.height > 0 ? pictureInfo.size.height : outputSize;
+
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(recorder);
+        final scale = math.min(
+          outputSize / sourceWidth,
+          outputSize / sourceHeight,
+        );
+
+        canvas.translate(
+          (outputSize - sourceWidth * scale) / 2,
+          (outputSize - sourceHeight * scale) / 2,
+        );
+        canvas.scale(scale);
+        canvas.drawPicture(pictureInfo.picture);
+
+        final picture = recorder.endRecording();
+        final image = await picture.toImage(
+          outputSize.toInt(),
+          outputSize.toInt(),
+        );
+        final byteData = await image.toByteData(
+          format: ui.ImageByteFormat.png,
+        );
+
+        pictureInfo.picture.dispose();
+        picture.dispose();
+        image.dispose();
+
+        if (byteData == null) {
+          throw Exception('Unable to render SVG shape');
+        }
+
+        final dir = await getTemporaryDirectory();
+        final file = File(
+          '${dir.path}/shape_${DateTime.now().microsecondsSinceEpoch}.png',
+        );
+        await file.writeAsBytes(
+          byteData.buffer.asUint8List(),
+          flush: true,
+        );
+
+        // Render remote SVG as a real local PNG image layer. The existing
+        // canvas renderer supports image layers, so the selected shape is
+        // immediately visible on the canvas.
+        provider.addImage(file.path, isLocal: true);
+
+        if (context.mounted) Navigator.pop(context);
+      } finally {
+        client.close(force: true);
+      }
+    } catch (e) {
+      debugPrint('Unable to add remote shape: $e');
+      if (context.mounted) {
+        Fluttertoast.showToast(msg: 'Unable to add shape');
+      }
+    }
+  }
+
+  Future<void> _addLocalShape(
+      BuildContext context,
+      EditorProvider provider,
+      String assetPath,
+      ) async {
+    try {
+      final pictureInfo = await vg.loadPicture(svg.SvgAssetLoader(assetPath), null);
 
       const outputSize = 512.0;
 
@@ -418,10 +538,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showFramesBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -511,10 +631,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTemplatesBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -661,7 +781,7 @@ class _EditorViewState extends State<EditorView> {
                                       scrollDirection: Axis.horizontal,
                                       itemCount: 3,
                                       separatorBuilder: (_, __) =>
-                                          const SizedBox(width: 10),
+                                      const SizedBox(width: 10),
                                       itemBuilder: (_, __) => Container(
                                         width: 108,
                                         decoration: BoxDecoration(
@@ -683,10 +803,10 @@ class _EditorViewState extends State<EditorView> {
                                       physics: const BouncingScrollPhysics(),
                                       itemCount: templates.length,
                                       separatorBuilder: (_, __) =>
-                                          const SizedBox(width: 10),
+                                      const SizedBox(width: 10),
                                       itemBuilder: (_, templateIndex) {
                                         final template =
-                                            templates[templateIndex];
+                                        templates[templateIndex];
                                         final uid = _templateStringValue(
                                           template,
                                           const [
@@ -718,14 +838,14 @@ class _EditorViewState extends State<EditorView> {
                                           onTap: uid.isEmpty
                                               ? null
                                               : () async {
-                                                  Navigator.pop(modalContext);
-                                                  await provider
-                                                      .loadTemplateByUid(uid);
+                                            Navigator.pop(modalContext);
+                                            await provider
+                                                .loadTemplateByUid(uid);
 
-                                                  if (mounted) {
-                                                    setState(() {});
-                                                  }
-                                                },
+                                            if (mounted) {
+                                              setState(() {});
+                                            }
+                                          },
                                           child: Container(
                                             width: 108,
                                             decoration: BoxDecoration(
@@ -733,7 +853,7 @@ class _EditorViewState extends State<EditorView> {
                                                   ? const Color(0xFF25272D)
                                                   : Colors.grey.shade100,
                                               borderRadius:
-                                                  BorderRadius.circular(14),
+                                              BorderRadius.circular(14),
                                               border: Border.all(
                                                 color: isDark
                                                     ? Colors.grey.shade800
@@ -742,33 +862,34 @@ class _EditorViewState extends State<EditorView> {
                                             ),
                                             child: ClipRRect(
                                               borderRadius:
-                                                  BorderRadius.circular(14),
+                                              BorderRadius.circular(14),
                                               child: imageUrl.isEmpty
                                                   ? const Center(
-                                                      child: Icon(
-                                                        Icons.image_outlined,
-                                                        color: Colors.grey,
-                                                        size: 30,
-                                                      ),
-                                                    )
+                                                child: Icon(
+                                                  Icons.image_outlined,
+                                                  color: Colors.grey,
+                                                  size: 30,
+                                                ),
+                                              )
                                                   : Image.network(
-                                                      imageUrl,
-                                                      fit: BoxFit.cover,
-                                                      errorBuilder:
-                                                          (
-                                                            _,
-                                                            __,
-                                                            ___,
-                                                          ) => const Center(
-                                                            child: Icon(
-                                                              Icons
-                                                                  .broken_image_outlined,
-                                                              color:
-                                                                  Colors.grey,
-                                                              size: 30,
-                                                            ),
-                                                          ),
-                                                    ),
+                                                imageUrl,
+                                                cacheWidth: 800,
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (
+                                                    _,
+                                                    __,
+                                                    ___,
+                                                    ) => const Center(
+                                                  child: Icon(
+                                                    Icons
+                                                        .broken_image_outlined,
+                                                    color:
+                                                    Colors.grey,
+                                                    size: 30,
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         );
@@ -864,10 +985,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTextStylesBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1024,13 +1145,15 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showMediaBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     int selectedTab = 1; // 0 uploads, 1 elements, 2 images
     String? expandedCategory;
     bool sheetOpen = true;
+    bool elementsInitialLoadScheduled = false;
+    bool imagesInitialLoadScheduled = false;
     final searchController = TextEditingController();
 
     const categories = <Map<String, String>>[
@@ -1041,8 +1164,8 @@ class _EditorViewState extends State<EditorView> {
     ];
 
     const imageCategories = <Map<String, String>>[
-      {'title': 'Nature', 'query': 'nature'},
-      {'title': 'People', 'query': 'people'},
+      {'title': 'Nature', 'query': 'nature landscape'},
+      {'title': 'People', 'query': 'people lifestyle'},
       {'title': 'Business', 'query': 'business'},
       {'title': 'Animals', 'query': 'animals'},
       {'title': 'Travel', 'query': 'travel'},
@@ -1054,11 +1177,11 @@ class _EditorViewState extends State<EditorView> {
     ];
 
     void loadCategory(
-      String query,
-      void Function(void Function()) setState, {
-      int limit = 4,
-      bool force = false,
-    }) {
+        String query,
+        void Function(void Function()) setState, {
+          int limit = 4,
+          bool force = false,
+        }) {
       if (query == 'shapes') {
         if (!force && provider.elementCategoryAssets(query).isNotEmpty) return;
         if (provider.isElementCategoryLoading(query)) return;
@@ -1098,17 +1221,44 @@ class _EditorViewState extends State<EditorView> {
       builder: (modalContext) {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
-            if (selectedTab == 1 && expandedCategory == null) {
-              for (final category in categories) {
-                loadCategory(category['query']!, setSheetState);
-              }
+            // Never start provider requests or call setSheetState directly
+            // from the StatefulBuilder build method. fetchElementCategory()
+            // calls notifyListeners(), which otherwise causes
+            // "setState()/markNeedsBuild() called during build".
+            if (selectedTab == 1 &&
+                expandedCategory == null &&
+                !elementsInitialLoadScheduled) {
+              elementsInitialLoadScheduled = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!sheetOpen || !sheetContext.mounted) return;
+
+                for (final category in categories) {
+                  loadCategory(
+                    category['query']!,
+                    setSheetState,
+                  );
+                }
+              });
+            }
+
+            // Initial Images request must also happen after the current
+            // StatefulBuilder frame, not while it is building.
+            if (selectedTab == 2 && !imagesInitialLoadScheduled) {
+              imagesInitialLoadScheduled = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!sheetOpen || !sheetContext.mounted) return;
+                if (provider.mediaImageAssets.isEmpty &&
+                    !provider.isMediaImagesLoading) {
+                  provider.fetchMediaImages('');
+                }
+              });
             }
 
             Widget elementCard(
-              String url, {
-              bool locked = false,
-              VoidCallback? onTap,
-            }) {
+                String url, {
+                  bool locked = false,
+                  VoidCallback? onTap,
+                }) {
               final isLocalShape = url.startsWith('assets/shapes/');
               final bool isSvg = url
                   .toLowerCase()
@@ -1118,70 +1268,71 @@ class _EditorViewState extends State<EditorView> {
 
               final Widget preview = url.isEmpty
                   ? const Icon(
-                      Icons.image_not_supported_outlined,
-                      color: Colors.grey,
-                    )
+                Icons.image_not_supported_outlined,
+                color: Colors.grey,
+              )
                   : isLocalShape
                   ? SvgPicture.asset(
-                      url,
-                      fit: BoxFit.contain,
-                      width: 58,
-                      height: 58,
-                      placeholderBuilder: (_) => const Center(
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 1.5),
-                        ),
-                      ),
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.broken_image_outlined,
-                        color: Colors.grey,
-                      ),
-                    )
+                url,
+                fit: BoxFit.contain,
+                width: 58,
+                height: 58,
+                placeholderBuilder: (_) => const Center(
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 1.5),
+                  ),
+                ),
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.broken_image_outlined,
+                  color: Colors.grey,
+                ),
+              )
                   : isSvg
                   ? SvgPicture.network(
-                      url,
-                      fit: BoxFit.contain,
-                      placeholderBuilder: (_) => const Center(
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 1.5),
-                        ),
-                      ),
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.image_outlined, color: Colors.grey),
-                    )
+                url,
+                fit: BoxFit.contain,
+                placeholderBuilder: (_) => const Center(
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 1.5),
+                  ),
+                ),
+                errorBuilder: (_, __, ___) =>
+                const Icon(Icons.image_outlined, color: Colors.grey),
+              )
                   : Image.network(
-                      url,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.image_outlined, color: Colors.grey),
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return const Center(
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 1.5),
-                          ),
-                        );
-                      },
-                    );
+                url,
+                cacheWidth: 800,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) =>
+                const Icon(Icons.image_outlined, color: Colors.grey),
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return const Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 1.5),
+                    ),
+                  );
+                },
+              );
 
               return GestureDetector(
                 onTap: locked
                     ? null
                     : onTap ??
-                          () {
-                            if (isLocalShape) {
-                              _addLocalShape(modalContext, provider, url);
-                            } else {
-                              provider.addFreePikElement(url);
-                              Navigator.pop(modalContext);
-                            }
-                          },
+                        () {
+                      if (isLocalShape) {
+                        _addLocalShape(modalContext, provider, url);
+                      } else {
+                        provider.addFreePikElement(url);
+                        Navigator.pop(modalContext);
+                      }
+                    },
                 child: Stack(
                   children: [
                     Container(
@@ -1195,11 +1346,11 @@ class _EditorViewState extends State<EditorView> {
                         border: Border.all(
                           color: locked
                               ? (isDark
-                                    ? Colors.orange.withValues(alpha: .55)
-                                    : Colors.orange.shade200)
+                              ? Colors.orange.withValues(alpha: .55)
+                              : Colors.orange.shade200)
                               : (isDark
-                                    ? Colors.white12
-                                    : const Color(0xFFE8E8E8)),
+                              ? Colors.white12
+                              : const Color(0xFFE8E8E8)),
                         ),
                       ),
                       clipBehavior: Clip.antiAlias,
@@ -1239,9 +1390,9 @@ class _EditorViewState extends State<EditorView> {
             }
 
             Widget assetCategoryCard(
-              AssetCategoryItem item, {
-              bool isShape = false,
-            }) {
+                AssetCategoryItem item, {
+                  bool isShape = false,
+                }) {
               final url = item.previewKey;
               final isLocalShape = url.startsWith('assets/shapes/');
 
@@ -1251,24 +1402,22 @@ class _EditorViewState extends State<EditorView> {
                 onTap: item.isLocked
                     ? null
                     : () async {
-                        if (isLocalShape) {
-                          await _addLocalShape(modalContext, provider, url);
-                        } else if (isShape) {
-                          // Shapes and masks must become real shape layers.
-                          provider.addShape(url, isLocal: false);
+                  if (isLocalShape) {
+                    await _addLocalShape(modalContext, provider, url);
+                  } else if (isShape) {
+                    // Remote shapes can be SVGs. Rasterize them to a
+                    // local PNG image so the existing canvas renderer
+                    // displays them immediately after selection.
+                    await _addRemoteShape(modalContext, provider, url);
+                  } else {
+                    // Other API assets are normal image layers.
+                    provider.addImage(url, isLocal: false);
 
-                          if (modalContext.mounted) {
-                            Navigator.pop(modalContext);
-                          }
-                        } else {
-                          // Other API assets are normal image layers.
-                          provider.addImage(url, isLocal: false);
-
-                          if (modalContext.mounted) {
-                            Navigator.pop(modalContext);
-                          }
-                        }
-                      },
+                    if (modalContext.mounted) {
+                      Navigator.pop(modalContext);
+                    }
+                  }
+                },
               );
             }
 
@@ -1345,50 +1494,50 @@ class _EditorViewState extends State<EditorView> {
                     height: 58,
                     child: isLoading
                         ? const Center(
-                            child: SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 1.8,
-                              ),
-                            ),
-                          )
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.8,
+                        ),
+                      ),
+                    )
                         : !hasItems
                         ? const Center(
-                            child: Text(
-                              'No items found',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 11,
-                              ),
-                            ),
-                          )
+                      child: Text(
+                        'No items found',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 11,
+                        ),
+                      ),
+                    )
                         : Row(
-                            children: stickerProxy
-                                ? previewStickers.map((url) {
-                                    return Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 8,
-                                        ),
-                                        child: elementCard(url),
-                                      ),
-                                    );
-                                  }).toList()
-                                : previewAssets.map((item) {
-                                    return Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 8,
-                                        ),
-                                        child: assetCategoryCard(
-                                          item,
-                                          isShape: query == 'shapes',
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
+                      children: stickerProxy
+                          ? previewStickers.map((url) {
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              right: 8,
+                            ),
+                            child: elementCard(url),
                           ),
+                        );
+                      }).toList()
+                          : previewAssets.map((item) {
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              right: 8,
+                            ),
+                            child: assetCategoryCard(
+                              item,
+                              isShape: query == 'shapes',
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
 
                   const SizedBox(height: 18),
@@ -1400,7 +1549,7 @@ class _EditorViewState extends State<EditorView> {
               if (expandedCategory != null) {
                 final query = expandedCategory!;
                 final title = categories.firstWhere(
-                  (e) => e['query'] == query,
+                      (e) => e['query'] == query,
                 )['title']!;
                 final bool stickerProxy = isStickerProxyCategory(query);
                 final List<AssetCategoryItem> assetItems = stickerProxy
@@ -1431,33 +1580,33 @@ class _EditorViewState extends State<EditorView> {
                     ),
                     Expanded(
                       child:
-                          (isStickerProxyCategory(query)
-                              ? (provider
-                                        .isFreePikStickerCategoryLoading[query] ??
-                                    false)
-                              : provider.isElementCategoryLoading(query))
+                      (isStickerProxyCategory(query)
+                          ? (provider
+                          .isFreePikStickerCategoryLoading[query] ??
+                          false)
+                          : provider.isElementCategoryLoading(query))
                           ? const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                           : GridView.builder(
-                              padding: const EdgeInsets.fromLTRB(4, 4, 4, 20),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 4,
-                                    crossAxisSpacing: 10,
-                                    mainAxisSpacing: 10,
-                                  ),
-                              itemCount: isStickerProxyCategory(query)
-                                  ? stickerItems.length
-                                  : assetItems.length,
-                              itemBuilder: (_, index) =>
-                                  isStickerProxyCategory(query)
-                                  ? elementCard(stickerItems[index])
-                                  : assetCategoryCard(
-                                      assetItems[index],
-                                      isShape: query == 'shapes',
-                                    ),
-                            ),
+                        padding: const EdgeInsets.fromLTRB(4, 4, 4, 20),
+                        gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                        ),
+                        itemCount: isStickerProxyCategory(query)
+                            ? stickerItems.length
+                            : assetItems.length,
+                        itemBuilder: (_, index) =>
+                        isStickerProxyCategory(query)
+                            ? elementCard(stickerItems[index])
+                            : assetCategoryCard(
+                          assetItems[index],
+                          isShape: query == 'shapes',
+                        ),
+                      ),
                     ),
                   ],
                 );
@@ -1504,14 +1653,12 @@ class _EditorViewState extends State<EditorView> {
             }
 
             Widget imagesView() {
-              const defaultQuery = 'background';
+              const defaultQuery = '';
               final images = provider.mediaImageAssets;
 
-              if (!provider.isMediaImagesLoading &&
-                  images.isEmpty &&
-                  provider.mediaImageAssets.isEmpty) {
-                Future.microtask(() => provider.fetchMediaImages(defaultQuery));
-              }
+              // Initial loading is scheduled from the bottom-sheet builder
+              // with addPostFrameCallback. Do not notify the provider from
+              // this build method.
 
               Widget imageChip(String title, String query) {
                 final selected = provider.mediaImagesQuery == query;
@@ -1537,8 +1684,8 @@ class _EditorViewState extends State<EditorView> {
                         color: selected
                             ? Colors.redAccent
                             : (isDark
-                                  ? Colors.white24
-                                  : const Color(0xFFE0E0E0)),
+                            ? Colors.white24
+                            : const Color(0xFFE0E0E0)),
                       ),
                     ),
                     child: Text(
@@ -1621,69 +1768,70 @@ class _EditorViewState extends State<EditorView> {
                   Expanded(
                     child: provider.isMediaImagesLoading
                         ? const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                         : images.isEmpty
                         ? const Center(
-                            child: Text(
-                              'No images found',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          )
+                      child: Text(
+                        'No images found',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
                         : GridView.builder(
-                            padding: const EdgeInsets.only(bottom: 20),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 10,
-                                  mainAxisSpacing: 10,
-                                  childAspectRatio: 0.92,
-                                ),
-                            itemCount: images.length,
-                            itemBuilder: (_, index) {
-                              return GestureDetector(
-                                onTap: () {
-                                  provider.addImage(
-                                    images[index],
-                                    isLocal: false,
-                                  );
-                                  Navigator.pop(modalContext);
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? const Color(0xFF24262B)
-                                        : const Color(0xFFF7F7F7),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? Colors.white12
-                                          : const Color(0xFFE6E6E6),
+                      padding: const EdgeInsets.only(bottom: 20),
+                      gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: 0.92,
+                      ),
+                      itemCount: images.length,
+                      itemBuilder: (_, index) {
+                        return GestureDetector(
+                          onTap: () {
+                            provider.addImage(
+                              images[index],
+                              isLocal: false,
+                            );
+                            Navigator.pop(modalContext);
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF24262B)
+                                  : const Color(0xFFF7F7F7),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.white12
+                                    : const Color(0xFFE6E6E6),
+                              ),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Image.network(
+                              images[index],
+                              cacheWidth: 800,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                              const SizedBox.shrink(),
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return const Center(
+                                  child: SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 1.6,
                                     ),
                                   ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: Image.network(
-                                    images[index],
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                        const SizedBox.shrink(),
-                                    loadingBuilder: (context, child, progress) {
-                                      if (progress == null) return child;
-                                      return const Center(
-                                        child: SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 1.6,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
+                        );
+                      },
+                    ),
                   ),
                 ],
               );
@@ -1758,7 +1906,21 @@ class _EditorViewState extends State<EditorView> {
                             _backgroundTab(
                               title: 'ELEMENTS',
                               selected: selectedTab == 1,
-                              onTap: () => setSheetState(() => selectedTab = 1),
+                              onTap: () {
+                                setSheetState(() => selectedTab = 1);
+                                if (!elementsInitialLoadScheduled) {
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    if (!sheetOpen || !sheetContext.mounted) return;
+                                    elementsInitialLoadScheduled = true;
+                                    for (final category in categories) {
+                                      loadCategory(
+                                        category['query']!,
+                                        setSheetState,
+                                      );
+                                    }
+                                  });
+                                }
+                              },
                             ),
                             const SizedBox(width: 24),
                             _backgroundTab(
@@ -1766,10 +1928,13 @@ class _EditorViewState extends State<EditorView> {
                               selected: selectedTab == 2,
                               onTap: () {
                                 setSheetState(() => selectedTab = 2);
-                                if (provider.mediaImageAssets.isEmpty &&
-                                    !provider.isMediaImagesLoading) {
-                                  provider.fetchMediaImages('background');
-                                }
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  if (!sheetOpen || !sheetContext.mounted) return;
+                                  if (provider.mediaImageAssets.isEmpty &&
+                                      !provider.isMediaImagesLoading) {
+                                    provider.fetchMediaImages('');
+                                  }
+                                });
                               },
                             ),
                           ],
@@ -1829,10 +1994,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showBackgroundBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     int selectedTab = 0; // 0 images, 1 videos, 2 colors
     String searchQuery = 'background';
     String videoSearchQuery = 'background';
@@ -1965,8 +2130,8 @@ class _EditorViewState extends State<EditorView> {
                   decoration: BoxDecoration(
                     color: selected
                         ? (isDark
-                              ? const Color(0xFF4A2024)
-                              : const Color(0xFFFFE7E7))
+                        ? const Color(0xFF4A2024)
+                        : const Color(0xFFFFE7E7))
                         : (isDark ? const Color(0xFF24262B) : Colors.white),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
@@ -2006,8 +2171,8 @@ class _EditorViewState extends State<EditorView> {
                   decoration: BoxDecoration(
                     color: selected
                         ? (isDark
-                              ? const Color(0xFF4A2024)
-                              : const Color(0xFFFFE7E7))
+                        ? const Color(0xFF4A2024)
+                        : const Color(0xFFFFE7E7))
                         : (isDark ? const Color(0xFF24262B) : Colors.white),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
@@ -2053,6 +2218,7 @@ class _EditorViewState extends State<EditorView> {
                   clipBehavior: Clip.antiAlias,
                   child: Image.network(
                     url,
+                    cacheWidth: 800,
                     fit: BoxFit.cover,
                     width: double.infinity,
                     errorBuilder: (_, __, ___) => const SizedBox.shrink(),
@@ -2080,10 +2246,10 @@ class _EditorViewState extends State<EditorView> {
 
               final items = provider.backgroundAssets
                   .where((u) {
-                    final uri = Uri.tryParse(u);
-                    return uri != null &&
-                        (uri.scheme == 'http' || uri.scheme == 'https');
-                  })
+                final uri = Uri.tryParse(u);
+                return uri != null &&
+                    (uri.scheme == 'http' || uri.scheme == 'https');
+              })
                   .take(24)
                   .toList();
               if (items.isEmpty) {
@@ -2120,9 +2286,9 @@ class _EditorViewState extends State<EditorView> {
                         Expanded(
                           child: rightIndex < items.length
                               ? imageCard(
-                                  items[rightIndex],
-                                  rowHeight * (rowIndex.isEven ? .78 : 1.18),
-                                )
+                            items[rightIndex],
+                            rowHeight * (rowIndex.isEven ? .78 : 1.18),
+                          )
                               : const SizedBox.shrink(),
                         ),
                       ],
@@ -2182,7 +2348,7 @@ class _EditorViewState extends State<EditorView> {
               if (!provider.isVideosLoading &&
                   provider.pexelsVideoAssets.isEmpty) {
                 Future.microtask(
-                  () => provider.fetchFreePikVideos(videoSearchQuery),
+                      () => provider.fetchFreePikVideos(videoSearchQuery),
                 );
               }
               if (provider.isVideosLoading) {
@@ -2277,9 +2443,10 @@ class _EditorViewState extends State<EditorView> {
                           if (asset.thumbnailUrl != null)
                             Image.network(
                               asset.thumbnailUrl!,
+                              cacheWidth: 800,
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) =>
-                                  const SizedBox.shrink(),
+                              const SizedBox.shrink(),
                             ),
                           Container(color: Colors.black26),
                           const Center(
@@ -2498,9 +2665,9 @@ class _EditorViewState extends State<EditorView> {
     // resizeSize is only used for a blank/new editor.
     final Size canvasSize = hasTemplateUid
         ? Size(
-            provider.canvasWidth > 0 ? provider.canvasWidth : 1080.0,
-            provider.canvasHeight > 0 ? provider.canvasHeight : 1080.0,
-          )
+      provider.canvasWidth > 0 ? provider.canvasWidth : 1080.0,
+      provider.canvasHeight > 0 ? provider.canvasHeight : 1080.0,
+    )
         : _getCanvasSize();
 
     final double aspectRatio = canvasSize.width / canvasSize.height;
@@ -2558,14 +2725,14 @@ class _EditorViewState extends State<EditorView> {
             onPressed: !provider.canPasteCopiedPage
                 ? null
                 : () {
-                    final pasted = provider.pasteCopiedPage();
-                    if (pasted) {
-                      Fluttertoast.showToast(
-                        msg:
-                            'Copied page pasted to Page ${provider.currentPageIndex + 1}',
-                      );
-                    }
-                  },
+              final pasted = provider.pasteCopiedPage();
+              if (pasted) {
+                Fluttertoast.showToast(
+                  msg:
+                  'Copied page pasted to Page ${provider.currentPageIndex + 1}',
+                );
+              }
+            },
           ),
           IconButton(
             tooltip: 'Download',
@@ -2644,16 +2811,16 @@ class _EditorViewState extends State<EditorView> {
                             final normalItems = provider.items
                                 .where(
                                   (item) =>
-                                      !_isCanvasBackground(item) &&
-                                      item.id != provider.selectedItemId,
-                                )
+                              !_isCanvasBackground(item) &&
+                                  item.id != provider.selectedItemId,
+                            )
                                 .toList();
                             final selectedItems = provider.items
                                 .where(
                                   (item) =>
-                                      !_isCanvasBackground(item) &&
-                                      item.id == provider.selectedItemId,
-                                )
+                              !_isCanvasBackground(item) &&
+                                  item.id == provider.selectedItemId,
+                            )
                                 .toList();
                             final orderedItems = [
                               ...normalItems,
@@ -2688,7 +2855,7 @@ class _EditorViewState extends State<EditorView> {
                                 final selected = provider.items
                                     .where(
                                       (e) => e.id == provider.selectedItemId,
-                                    )
+                                )
                                     .toList();
 
                                 if (selected.isEmpty ||
@@ -2731,10 +2898,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildEditorBottomBar(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     final type = (provider.selectedItemType ?? '').toLowerCase();
     if (type == 'text' || type == 'textbox') {
       return _buildTextEditorToolbar(context, provider, isDark);
@@ -2781,12 +2948,12 @@ class _EditorViewState extends State<EditorView> {
             _bottomTool(
               Image.asset("assets/images/templates.png"),
               'TEMPLATES',
-              () => _showTemplatesBottomSheet(context, provider, isDark),
+                  () => _showTemplatesBottomSheet(context, provider, isDark),
             ),
             _bottomTool(
               Image.asset("assets/images/brush.png"),
               'FRAMES',
-              () => _showFramesBottomSheet(context, provider, isDark),
+                  () => _showFramesBottomSheet(context, provider, isDark),
             ),
             /*_bottomTool(
              Image.asset("assets/images/text.png"),
@@ -2796,17 +2963,17 @@ class _EditorViewState extends State<EditorView> {
             _bottomTool(
               Image.asset("assets/images/text.png"),
               'TEXT',
-              () => _showTextStylesBottomSheet(context, provider, isDark),
+                  () => _showTextStylesBottomSheet(context, provider, isDark),
             ),
             _bottomTool(
               Image.asset("assets/images/gallery.png"),
               'MEDIA',
-              () => _showMediaBottomSheet(context, provider, isDark),
+                  () => _showMediaBottomSheet(context, provider, isDark),
             ),
             _bottomTool(
               Image.asset("assets/images/gallery.png"),
               'BACKGROUND',
-              () => _showBackgroundBottomSheet(context, provider, isDark),
+                  () => _showBackgroundBottomSheet(context, provider, isDark),
             ),
           ],
         ),
@@ -2815,11 +2982,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _showTextColorPicker(
-    BuildContext context,
-    EditorProvider provider,
-    String id,
-    bool isDark,
-  ) async {
+      BuildContext context,
+      EditorProvider provider,
+      String id,
+      bool isDark,
+      ) async {
     var hsv = HSVColor.fromColor(provider.textColor(id));
 
     final picked = await showDialog<Color>(
@@ -2933,10 +3100,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildTextEditorToolbar(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     final id = provider.selectedItemId;
     if (id == null) return const SizedBox.shrink();
 
@@ -2998,53 +3165,53 @@ class _EditorViewState extends State<EditorView> {
                 _bottomTool(
                   Icons.edit_rounded,
                   'EDIT',
-                  () => _showTextEditDialog(context, provider, id),
+                      () => _showTextEditDialog(context, provider, id),
                 ),
                 _bottomTool(
                   Icons.format_size_rounded,
                   'SIZE',
-                  () => _showTextSizeBottomSheet(context, provider, id, isDark),
+                      () => _showTextSizeBottomSheet(context, provider, id, isDark),
                 ),
                 ...fonts.map(
-                  (font) => _bottomTool(
+                      (font) => _bottomTool(
                     Icons.font_download_rounded,
                     font,
-                    () => provider.updateFontFamily(id, font),
+                        () => provider.updateFontFamily(id, font),
                     selected:
-                        (provider.items
-                                .firstWhere(
-                                  (e) => e.id == id,
-                                  orElse: () => provider.items.first,
-                                )
-                                .fontFamily)
-                            .trim()
-                            .toLowerCase() ==
+                    (provider.items
+                        .firstWhere(
+                          (e) => e.id == id,
+                      orElse: () => provider.items.first,
+                    )
+                        .fontFamily)
+                        .trim()
+                        .toLowerCase() ==
                         font.toLowerCase(),
                   ),
                 ),
                 _bottomTool(
                   Icons.format_bold_rounded,
                   'BOLD',
-                  () => provider.toggleTextBold(id),
+                      () => provider.toggleTextBold(id),
                   selected: provider.textWeight(id) == FontWeight.bold,
                 ),
                 _bottomTool(
                   Icons.format_italic_rounded,
                   'ITALIC',
-                  () => provider.toggleTextItalic(id),
+                      () => provider.toggleTextItalic(id),
                   selected: provider.textStyle(id) == FontStyle.italic,
                 ),
                 _bottomTool(
                   Icons.format_underlined_rounded,
                   'UNDERLINE',
-                  () => provider.toggleTextUnderline(id),
+                      () => provider.toggleTextUnderline(id),
                   selected: provider.textUnderline(id),
                 ),
                 ...alignments.map(
-                  (item) => _bottomTool(
+                      (item) => _bottomTool(
                     item['icon'] as IconData,
                     item['label'] as String,
-                    () => provider.updateTextAlignment(
+                        () => provider.updateTextAlignment(
                       id,
                       item['value'] as TextAlign,
                     ),
@@ -3054,33 +3221,33 @@ class _EditorViewState extends State<EditorView> {
                 _bottomTool(
                   Icons.colorize_rounded,
                   'COLOR',
-                  () => _showTextColorPicker(context, provider, id, isDark),
+                      () => _showTextColorPicker(context, provider, id, isDark),
                 ),
                 ...palette.map(
-                  (color) => _colorTool(
+                      (color) => _colorTool(
                     color,
-                    () => provider.updateTextColor(id, color),
+                        () => provider.updateTextColor(id, color),
                   ),
                 ),
                 _bottomTool(
                   Icons.flip_to_front_rounded,
                   'FRONT',
-                  () => provider.bringToFront(id),
+                      () => provider.bringToFront(id),
                 ),
                 _bottomTool(
                   Icons.flip_to_back_rounded,
                   'BACK',
-                  () => provider.sendToBack(id),
+                      () => provider.sendToBack(id),
                 ),
                 _bottomTool(
                   Icons.copy_rounded,
                   'DUPLICATE',
-                  () => provider.duplicateItem(id),
+                      () => provider.duplicateItem(id),
                 ),
                 _bottomTool(
                   Icons.delete_outline_rounded,
                   'DELETE',
-                  () => provider.removeItem(id),
+                      () => provider.removeItem(id),
                   danger: true,
                 ),
                 _bottomTool(
@@ -3101,26 +3268,26 @@ class _EditorViewState extends State<EditorView> {
                   provider.items
                       .firstWhere(
                         (e) => e.id == id,
-                        orElse: () => provider.items.first,
-                      )
+                    orElse: () => provider.items.first,
+                  )
                       .fontSize,
                   8,
                   300,
-                  (v) => provider.updateFontSize(id, v),
+                      (v) => provider.updateFontSize(id, v),
                 ),
                 _bottomSliderTool(
                   'LETTER SPACING',
                   provider.textLetterSpacing(id),
                   -2,
                   20,
-                  (v) => provider.updateTextLetterSpacing(id, v),
+                      (v) => provider.updateTextLetterSpacing(id, v),
                 ),
                 _bottomSliderTool(
                   'LINE SPACING',
                   provider.textLineSpacing(id),
                   .7,
                   3,
-                  (v) => provider.updateTextLineSpacing(id, v),
+                      (v) => provider.updateTextLineSpacing(id, v),
                 ),
               ],
             ),
@@ -3131,13 +3298,13 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTextSizeBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    String id,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      String id,
+      bool isDark,
+      ) {
     final item = provider.items.firstWhere(
-      (e) => e.id == id,
+          (e) => e.id == id,
       orElse: () => provider.items.first,
     );
 
@@ -3153,7 +3320,7 @@ class _EditorViewState extends State<EditorView> {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
             final current = provider.items.firstWhere(
-              (e) => e.id == id,
+                  (e) => e.id == id,
               orElse: () => item,
             );
             final currentSize = current.fontSize.isFinite
@@ -3271,15 +3438,16 @@ class _EditorViewState extends State<EditorView> {
           ),
         ),
         errorBuilder: (_, __, ___) =>
-            const Icon(Icons.broken_image_outlined, color: Colors.grey),
+        const Icon(Icons.broken_image_outlined, color: Colors.grey),
       );
     }
 
     return Image.network(
       url,
+      cacheWidth: 800,
       fit: BoxFit.contain,
       errorBuilder: (_, __, ___) =>
-          const Icon(Icons.broken_image_outlined, color: Colors.grey),
+      const Icon(Icons.broken_image_outlined, color: Colors.grey),
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
         return const Center(
@@ -3294,10 +3462,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showApiMaskSheet(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      ) {
     String query = '';
     bool requested = false;
 
@@ -3387,48 +3555,48 @@ class _EditorViewState extends State<EditorView> {
                         : filtered.isEmpty
                         ? const Center(child: Text('No mask found'))
                         : GridView.builder(
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  crossAxisSpacing: 10,
-                                  mainAxisSpacing: 10,
-                                  childAspectRatio: 1,
-                                ),
-                            itemCount: filtered.length,
-                            itemBuilder: (_, index) {
-                              final mask = filtered[index];
-                              final url = provider.assetCdnUrl(mask.previewKey);
-                              return InkWell(
-                                borderRadius: BorderRadius.circular(14),
-                                onTap: url.isEmpty
-                                    ? null
-                                    : () {
-                                        // Apply the selected mask only to the image
-                                        // whose Image > MASK toolbar opened this sheet.
-                                        provider.setImageMask(
-                                          itemId,
-                                          name: mask.name,
-                                          url: url,
-                                        );
-                                        Navigator.pop(sheetContext);
-                                      },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: Colors.black12),
-                                  ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: url.isEmpty
-                                      ? const Icon(
-                                          Icons.image_not_supported_outlined,
-                                        )
-                                      : _buildMaskPreview(url),
-                                ),
-                              );
-                            },
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                      gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: 1,
+                      ),
+                      itemCount: filtered.length,
+                      itemBuilder: (_, index) {
+                        final mask = filtered[index];
+                        final url = provider.assetCdnUrl(mask.previewKey);
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: url.isEmpty
+                              ? null
+                              : () {
+                            // Apply the selected mask only to the image
+                            // whose Image > MASK toolbar opened this sheet.
+                            provider.setImageMask(
+                              itemId,
+                              name: mask.name,
+                              url: url,
+                            );
+                            Navigator.pop(sheetContext);
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Colors.black12),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: url.isEmpty
+                                ? const Icon(
+                              Icons.image_not_supported_outlined,
+                            )
+                                : _buildMaskPreview(url),
                           ),
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -3440,15 +3608,15 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildImageEditorToolbar(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     final id = provider.selectedItemId;
     if (id == null) return const SizedBox.shrink();
 
     final item = provider.items.firstWhere(
-      (e) => e.id == id,
+          (e) => e.id == id,
       orElse: () => provider.items.first,
     );
 
@@ -3501,7 +3669,7 @@ class _EditorViewState extends State<EditorView> {
                 _bottomTool(
                   Icons.crop_rounded,
                   'CROP',
-                  () => _cropSelectedImage(context, provider, id),
+                      () => _cropSelectedImage(context, provider, id),
                 ),
                 _bottomTool(Icons.photo_library_rounded, 'PHOTO', () async {
                   final image = await ImagePicker().pickImage(
@@ -3513,28 +3681,28 @@ class _EditorViewState extends State<EditorView> {
                 _bottomTool(
                   Icons.flip_rounded,
                   'FLIP',
-                  () => setState(() => _showFlipOptions = !_showFlipOptions),
+                      () => setState(() => _showFlipOptions = !_showFlipOptions),
                   selected: _showFlipOptions,
                 ),
                 _bottomTool(
                   Icons.flip_to_front_rounded,
                   'FRONT',
-                  () => provider.bringToFront(id),
+                      () => provider.bringToFront(id),
                 ),
                 _bottomTool(
                   Icons.flip_to_back_rounded,
                   'BACK',
-                  () => provider.sendToBack(id),
+                      () => provider.sendToBack(id),
                 ),
                 _bottomTool(
                   Icons.copy_rounded,
                   'DUPLICATE',
-                  () => provider.duplicateItem(id),
+                      () => provider.duplicateItem(id),
                 ),
                 _bottomTool(
                   Icons.delete_outline_rounded,
                   'DELETE',
-                  () => provider.removeItem(id),
+                      () => provider.removeItem(id),
                   danger: true,
                 ),
                 _bottomTool(
@@ -3569,14 +3737,14 @@ class _EditorViewState extends State<EditorView> {
                         child: _flipOption(
                           Icons.flip_rounded,
                           'Flip Horizontal',
-                          () => provider.flipImageHorizontal(id),
+                              () => provider.flipImageHorizontal(id),
                         ),
                       ),
                       Expanded(
                         child: _flipOption(
                           Icons.flip_rounded,
                           'Flip Vertical',
-                          () => provider.flipImageVertical(id),
+                              () => provider.flipImageVertical(id),
                         ),
                       ),
                     ],
@@ -3594,15 +3762,15 @@ class _EditorViewState extends State<EditorView> {
                 _labelledHorizontalList(
                   'FILTER',
                   filters,
-                  (value) => provider.setImageFilter(id, value),
+                      (value) => provider.setImageFilter(id, value),
                   selected: item.filterType,
                 ),
                 _bottomTool(
                   Icons.category_rounded,
                   'MASK',
-                  () => _showApiMaskSheet(context, provider, id),
+                      () => _showApiMaskSheet(context, provider, id),
                   selected:
-                      provider.imageMaskUrl(id) != null ||
+                  provider.imageMaskUrl(id) != null ||
                       (item.text != null &&
                           item.text!.trim().isNotEmpty &&
                           item.text != 'image'),
@@ -3621,14 +3789,14 @@ class _EditorViewState extends State<EditorView> {
                   provider.imageFilterIntensity(id),
                   0,
                   1,
-                  (v) => provider.updateImageFilterIntensity(id, v),
+                      (v) => provider.updateImageFilterIntensity(id, v),
                 ),
                 _bottomSliderTool(
                   'BRIGHTNESS',
                   item.brightness,
                   -1,
                   1,
-                  (v) =>
+                      (v) =>
                       provider.updateImageColorAdjustments(id, brightness: v),
                 ),
                 _bottomSliderTool(
@@ -3636,21 +3804,21 @@ class _EditorViewState extends State<EditorView> {
                   item.contrast,
                   .5,
                   2,
-                  (v) => provider.updateImageColorAdjustments(id, contrast: v),
+                      (v) => provider.updateImageColorAdjustments(id, contrast: v),
                 ),
                 _bottomSliderTool(
                   'TINT',
                   provider.imageTint(id),
                   -100,
                   100,
-                  (v) => provider.updateImageTint(id, v),
+                      (v) => provider.updateImageTint(id, v),
                 ),
                 _bottomSliderTool(
                   'SATURATION',
                   item.saturation,
                   0,
                   2,
-                  (v) =>
+                      (v) =>
                       provider.updateImageColorAdjustments(id, saturation: v),
                 ),
                 _bottomSliderTool(
@@ -3658,39 +3826,39 @@ class _EditorViewState extends State<EditorView> {
                   provider.imageBlur(id),
                   0,
                   20,
-                  (v) => provider.updateImageBlur(id, v),
+                      (v) => provider.updateImageBlur(id, v),
                 ),
                 _bottomSliderTool(
                   'SCALE',
                   item.scale.clamp(.5, 3.0),
                   .5,
                   3,
-                  (v) => provider.updateScale(id, v),
+                      (v) => provider.updateScale(id, v),
                 ),
                 _bottomSliderTool(
                   'ROTATION',
                   item.rotation.clamp(0.0, math.pi * 2),
                   0,
                   math.pi * 2,
-                  (v) => provider.updateRotation(id, v),
+                      (v) => provider.updateRotation(id, v),
                 ),
                 _bottomSliderTool(
                   'OPACITY',
                   item.opacity.clamp(0.0, 1.0),
                   0,
                   1,
-                  (v) => provider.updateOpacity(id, v),
+                      (v) => provider.updateOpacity(id, v),
                 ),
                 _outlineStyleTools(
                   provider.outlineStyle(id),
-                  (style) => provider.updateOutlineStyle(id, style),
+                      (style) => provider.updateOutlineStyle(id, style),
                 ),
                 _bottomSliderTool(
                   'OUTLINE WIDTH',
                   item.outlineWidth.clamp(0.0, 20.0),
                   0,
                   20,
-                  (v) => provider.updateOutline(id, v, Colors.white),
+                      (v) => provider.updateOutline(id, v, Colors.white),
                 ),
               ],
             ),
@@ -3809,12 +3977,12 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _bottomTool(
-    dynamic icon,
-    String label,
-    VoidCallback onTap, {
-    bool selected = false,
-    bool danger = false,
-  }) {
+      dynamic icon,
+      String label,
+      VoidCallback onTap, {
+        bool selected = false,
+        bool danger = false,
+      }) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: InkWell(
@@ -3902,11 +4070,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _labelledHorizontalList(
-    String title,
-    List<String> values,
-    ValueChanged<String> onSelected, {
-    String? selected,
-  }) {
+      String title,
+      List<String> values,
+      ValueChanged<String> onSelected, {
+        String? selected,
+      }) {
     return Container(
       margin: const EdgeInsets.only(right: 10),
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
@@ -3929,7 +4097,7 @@ class _EditorViewState extends State<EditorView> {
             ),
           ),
           ...values.map(
-            (value) => Padding(
+                (value) => Padding(
               padding: const EdgeInsets.only(left: 4),
               child: InkWell(
                 onTap: () => onSelected(value),
@@ -3966,12 +4134,12 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _bottomSliderTool(
-    String title,
-    double value,
-    double min,
-    double max,
-    ValueChanged<double> onChanged,
-  ) {
+      String title,
+      double value,
+      double min,
+      double max,
+      ValueChanged<double> onChanged,
+      ) {
     final safeValue = value.isFinite ? value.clamp(min, max).toDouble() : min;
     return Container(
       width: 175,
@@ -4021,12 +4189,12 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _showTextEditDialog(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-  ) async {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      ) async {
     final item = provider.items.firstWhere(
-      (e) => e.id == itemId,
+          (e) => e.id == itemId,
       orElse: () => provider.items.first,
     );
     final controller = TextEditingController(text: item.text ?? '');
@@ -4317,10 +4485,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showPagesSheet(
-    BuildContext context,
-    EditorProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -4399,12 +4567,12 @@ class _EditorViewState extends State<EditorView> {
                   Expanded(
                     child: GridView.builder(
                       gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: .82,
-                          ),
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: .82,
+                      ),
                       itemCount: provider.pageCount,
                       itemBuilder: (_, index) {
                         final selected = index == provider.currentPageIndex;
@@ -4556,8 +4724,8 @@ class _TransformSelectionOverlayState
 
   double get _height =>
       _baseVisualHeight *
-      widget.item.scale *
-      (widget.isBackground ? widget.scaleY : widget.scaleX);
+          widget.item.scale *
+          (widget.isBackground ? widget.scaleY : widget.scaleX);
 
   // Text now has a natural-size layout box, so its selection rectangle starts
   // exactly at item.position and only compensates for center scaling using the
@@ -4596,7 +4764,7 @@ class _TransformSelectionOverlayState
       final stream = provider.resolve(const ImageConfiguration());
       late final ImageStreamListener listener;
       listener = ImageStreamListener(
-        (info, _) {
+            (info, _) {
           final w = info.image.width.toDouble();
           final h = info.image.height.toDouble();
           if (w > 0 && h > 0 && mounted) {
@@ -4622,8 +4790,8 @@ class _TransformSelectionOverlayState
 
   double get _baseBoxHeight =>
       _baseVisualHeight *
-      widget.item.scale *
-      (widget.isBackground ? widget.scaleY : widget.scaleX);
+          widget.item.scale *
+          (widget.isBackground ? widget.scaleY : widget.scaleX);
 
   // Exact visible rectangle produced by BoxFit.contain inside the item's
   // layout box. This is the rectangle the selection UI must surround.
@@ -4669,10 +4837,10 @@ class _TransformSelectionOverlayState
                 onPanUpdate: (details) {
                   final dx =
                       (details.globalPosition.dx - _startFocalPoint.dx) /
-                      widget.scaleX;
+                          widget.scaleX;
                   final dy =
                       (details.globalPosition.dy - _startFocalPoint.dy) /
-                      widget.scaleY;
+                          widget.scaleY;
 
                   // Drag in CANVAS coordinates. The item itself is rendered
                   // inside an outer Transform.scale, so global finger delta
@@ -4891,7 +5059,7 @@ class _TransformSelectionOverlayState
             final canvasDx = globalDelta.dx / widget.scaleX;
             final canvasDy =
                 globalDelta.dy /
-                (widget.isBackground ? widget.scaleY : widget.scaleX);
+                    (widget.isBackground ? widget.scaleY : widget.scaleX);
             final angle = widget.item.rotation.isFinite
                 ? widget.item.rotation
                 : 0.0;
@@ -5281,19 +5449,19 @@ class _InteractiveBackgroundLayerState
                   sheetContext,
                   Icons.flip_to_front_rounded,
                   'Front',
-                  () => provider.bringToFront(id),
+                      () => provider.bringToFront(id),
                 ),
                 _backgroundAction(
                   sheetContext,
                   Icons.copy_rounded,
                   'Duplicate',
-                  () => provider.duplicateItem(id),
+                      () => provider.duplicateItem(id),
                 ),
                 _backgroundAction(
                   sheetContext,
                   Icons.delete_outline_rounded,
                   'Delete',
-                  () => provider.removeItem(id),
+                      () => provider.removeItem(id),
                   destructive: true,
                 ),
               ],
@@ -5305,12 +5473,12 @@ class _InteractiveBackgroundLayerState
   }
 
   Widget _backgroundAction(
-    BuildContext context,
-    IconData icon,
-    String label,
-    VoidCallback onTap, {
-    bool destructive = false,
-  }) {
+      BuildContext context,
+      IconData icon,
+      String label,
+      VoidCallback onTap, {
+        bool destructive = false,
+      }) {
     return InkWell(
       onTap: () {
         Navigator.pop(context);

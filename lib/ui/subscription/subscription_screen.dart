@@ -247,13 +247,35 @@ class PlansAndPricingScreen extends StatelessWidget {
         ? plan.planBillingOptions.first
         : null;
 
-    String rawPrice = '${billing != null ? billing.price : "0"}';
-    if (rawPrice.contains('.')) {
-      rawPrice = rawPrice.split('.').first;
+    final String actualPrice = billing?.price?.toString() ?? "0";
+
+    final String? discountedPrice = billing?.discountedPrice?.toString();
+
+    final bool hasDiscount =
+        discountedPrice != null &&
+        discountedPrice.isNotEmpty &&
+        discountedPrice != "null" &&
+        discountedPrice != "0" &&
+        discountedPrice != actualPrice;
+
+    String formatPrice(String value) {
+      if (value.contains(".")) {
+        return value.split(".").first;
+      }
+      return value;
     }
 
-    final priceText = "₹$rawPrice";
-    final periodText = billing == null ? "/month" : "/${billing.billingCycle}";
+    final String actualPriceText = "₹${formatPrice(actualPrice)}";
+
+    final String discountPriceText = hasDiscount
+        ? "₹${formatPrice(discountedPrice)}"
+        : actualPriceText;
+
+    final String periodText = billing == null
+        ? "/month"
+        : "/${billing.billingCycle}";
+
+    final String discountLabel = billing?.discountLabel?.toString() ?? "";
 
     Color cardBgColor;
     Color borderColor;
@@ -267,7 +289,7 @@ class PlansAndPricingScreen extends StatelessWidget {
       cardBgColor = const Color(0xFFFCFFF6);
       borderColor = const Color(0xFFBBE5ED);
       buttonColor = const Color(0xFF43CBD9);
-      buttonText = "CONTINUE WITH\nFREE PLAN";
+      buttonText = "START BASIC";
       staticDescription = "Perfect for exploring MMB before upgrading";
       staticIncludes =
           "10 Business Templates | 2 Video Templates | 10 AI Credits | Watermarked Downloads";
@@ -275,14 +297,14 @@ class PlansAndPricingScreen extends StatelessWidget {
       cardBgColor = const Color(0xFFFCFFF6);
       borderColor = const Color(0xFFD4ED91);
       buttonColor = const Color(0xFF8BC34A);
-      buttonText = "START BASIC";
+      buttonText = "START PREMIUM";
       staticDescription = "Perfect for individuals & small businesses.";
       staticIncludes = "500 Templates | 200 Videos | 2 AI Logo Credits";
     } else if (index == 2) {
       cardBgColor = const Color(0xFFFFECEE);
       borderColor = const Color(0xFFFFCDD2);
       buttonColor = const Color(0xFFFF6FB5);
-      buttonText = "START PREMIUM";
+      buttonText = "START ELITE";
       staticDescription = "Perfect for growing businesses.";
       staticIncludes = "2000 Templates | 500 Videos | 5 AI Logo Credits";
     } else {
@@ -313,28 +335,83 @@ class PlansAndPricingScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppText(
-                      plan.name ?? "Plan",
-                      style: TextStyle(
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.black,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        AppText(
+                          plan.name ?? "Plan",
+                          style: TextStyle(
+                            fontSize: 17.sp,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black,
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+
+                              Navigator.pushNamed(
+                                context,
+                                '/PlanDetailScreen',
+                                arguments: plan,
+                              );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: buttonColor,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 14.w,
+                              vertical: 8.h,
+                            ),
+                          ),
+                          child: AppText(
+                            buttonText,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: index == 0 ? 10.sp : 11.sp,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 2.h),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
                       children: [
+                        // Actual price
+                        if (hasDiscount)
+                          Padding(
+                            padding: EdgeInsets.only(right: 6.w),
+                            child: AppText(
+                              actualPriceText,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey.shade500,
+                                decoration: TextDecoration.lineThrough,
+                                decorationThickness: 1.5,
+                              ),
+                            ),
+                          ),
+
+                        // Discounted price / Normal price
                         AppText(
-                          priceText, //
+                          discountPriceText,
                           style: TextStyle(
                             fontSize: 26.sp,
                             fontWeight: FontWeight.w900,
                             color: Colors.black,
                           ),
                         ),
-                        SizedBox(width: 2.w),
+
+                        SizedBox(width: 3.w),
+
                         AppText(
                           periodText,
                           style: TextStyle(
@@ -343,43 +420,23 @@ class PlansAndPricingScreen extends StatelessWidget {
                             color: Colors.black54,
                           ),
                         ),
+
+                        // Save percentage
+                        if (hasDiscount && discountLabel.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(left: 5.w),
+                            child: AppText(
+                              "($discountLabel)",
+                              style: TextStyle(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ],
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (index > 0) {
-                    Navigator.pushNamed(
-                      context,
-                      '/PlanDetailScreen',
-                      arguments: plan,
-                    );
-                  } else {
-                    Navigator.pushNamed(context, "/AccountTypeScreen");
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: buttonColor,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 14.w,
-                    vertical: 8.h,
-                  ),
-                ),
-                child: AppText(
-                  buttonText,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: index == 0 ? 10.sp : 11.sp,
-                    height: 1.1,
-                  ),
                 ),
               ),
             ],
@@ -416,9 +473,6 @@ class PlansAndPricingScreen extends StatelessWidget {
           ),
 
           SizedBox(height: 8.h),
-
-          // 🚀 VIEW FEATURES பகுதி (Free பிளானைத் தவிர மற்றவைகளுக்கு மட்டும்)
-          if (index > 0)
             InkWell(
               onTap: () {
                 Navigator.pushNamed(

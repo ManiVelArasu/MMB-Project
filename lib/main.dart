@@ -46,45 +46,52 @@ Future<void> _initializeApp() async {
   final refreshToken = prefs.getString('refresh_token');
 
   debugPrint('🔐 Stored access token: ${accessToken != null}');
-
   debugPrint('🔄 Stored refresh token: ${refreshToken != null}');
 
-  if (refreshToken != null && refreshToken.isNotEmpty) {
-    try {
-      final refreshDio = Dio(
-        BaseOptions(
-          baseUrl: ApiEndpoints.baseUrl,
-          connectTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 30),
-          headers: {'Content-Type': 'application/json'},
-        ),
-      );
+  // Load the persisted tokens into the SAME ApiHandler Dio before the app
+  // starts. This also keeps the old access token available if refresh fails.
+  await ApiHandler.instance.setTokens(
+    token: accessToken ?? '',
+    refreshToken: refreshToken,
+  );
 
-      final repository = RefreshRepository(refreshDio);
-      final result = await repository.refreshToken(refreshToken: refreshToken);
-
-      if (result != null) {
-        // Save NEW access token
-        await prefs.setString('auth_token', result.accessToken);
-
-        // Save NEW refresh token
-        await prefs.setString('refresh_token', result.refreshToken);
-
-        debugPrint('✅ Startup refresh successful');
-
-        await ApiHandler.instance.setTokens(
-          token: result.accessToken,
-          refreshToken: result.refreshToken,
-        );
-      } else {
-        debugPrint('❌ Startup refresh failed');
-      }
-    } catch (e) {
-      debugPrint('❌ Startup refresh exception: $e');
-    }
+  if (refreshToken == null || refreshToken.isEmpty) {
+    return;
   }
 
-  // Continue app initialization
+  try {
+    // Separate Dio for startup refresh so this request cannot trigger the
+    // normal 401 interceptor recursively.
+    final refreshDio = Dio(
+      BaseOptions(
+        baseUrl: ApiEndpoints.baseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: const {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
+    final repository = RefreshRepository(refreshDio);
+    final result = await repository.refreshToken(refreshToken: refreshToken);
+
+    if (result != null) {
+      // Save BOTH tokens and update ApiHandler's in-memory token.
+      await ApiHandler.instance.setTokens(
+        token: result.accessToken,
+        refreshToken: result.refreshToken,
+      );
+
+      debugPrint('✅ Startup refresh successful');
+    } else {
+      debugPrint('❌ Startup refresh failed; keeping stored access token');
+    }
+  } catch (e, stackTrace) {
+    debugPrint('❌ Startup refresh exception: $e');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 }
 
 Future<void> _initApi() async {
@@ -100,6 +107,59 @@ Future<void> _initApi() async {
     defaultToastPosition: ApiToastPosition.bottom,
     interceptor: TokenRefreshInterceptor(dioForInterceptor),
   );
+
+  // 2. THEN access ApiHandler.instance
+  final prefs = await SharedPreferences.getInstance();
+
+  final accessToken = prefs.getString('auth_token');
+  final refreshToken = prefs.getString('refresh_token');
+
+  // 3. Load stored tokens
+  if (accessToken != null && accessToken.isNotEmpty) {
+    await ApiHandler.instance.setTokens(
+      token: accessToken,
+      refreshToken: refreshToken,
+    );
+  }
+
+  // 4. Refresh using stored refresh token
+  if (refreshToken == null || refreshToken.isEmpty) {
+    return;
+  }
+
+  try {
+    final refreshDio = Dio(
+      BaseOptions(
+        baseUrl: ApiEndpoints.baseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
+    final repository = RefreshRepository(refreshDio);
+
+    final result = await repository.refreshToken(refreshToken: refreshToken);
+
+    if (result == null) {
+      debugPrint('❌ Startup refresh failed');
+      return;
+    }
+
+    // 5. Save NEW access + refresh token
+    await ApiHandler.instance.setTokens(
+      token: result.accessToken,
+      refreshToken: result.refreshToken,
+    );
+
+    debugPrint('✅ Startup token refresh completed');
+  } catch (e, stackTrace) {
+    debugPrint('❌ Startup refresh error: $e');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 }
 
 class MyApp extends StatefulWidget {

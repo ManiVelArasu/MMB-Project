@@ -18,7 +18,10 @@ import '../../Api Model/me_api.dart';
 import '../../Repository/business_repository.dart';
 import '../../Repository/get_me_repository.dart';
 import '../../Repository/image_upload_repository.dart';
+import '../../ui/industry/edit_photo_screen.dart';
 import '../../ui/industry/widgets/bg_remove_sheet.dart';
+import '../../ui/industry/widgets/crop_sheet.dart';
+import '../../ui/industry/widgets/remove_sheet.dart';
 
 class BusinessProvider extends ChangeNotifier {
   BusinessProvider() {
@@ -184,73 +187,128 @@ class BusinessProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> uploadAndSaveBusinessDetails(BuildContext context) async {
+  /// Uploads the CURRENT image only.
+  ///
+  /// This is intentionally separated from the final business-details save.
+  /// Image upload happens immediately after selecting/cropping/BG removal.
+  Future<bool> uploadCurrentImage() async {
+    final imageFile = _selectedImage;
+
+    if (imageFile == null || !imageFile.existsSync()) {
+      debugPrint("❌ No image available for upload");
+      return false;
+    }
+
     _isUploading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
-      final imageFile = _isImageSelected == true
-          ? _originalImage
-          : (_selectedImage ?? _originalImage);
+      final filename = imageFile.path.split(Platform.pathSeparator).last;
 
-      if (imageFile != null && imageFile.existsSync()) {
-        final filename = imageFile.path.split('/').last;
+      final uploadResult = await MediaUploadRepository.instance
+          .uploadImageAndConfirm(
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+          );
 
-        final uploadResult = await MediaUploadRepository.instance
-            .uploadImageAndConfirm(
-              imageFile: imageFile,
-              filename: filename,
-              width: 1080,
-              height: 1080,
-            );
+      bool success = false;
 
-        bool isUploadSuccess = false;
+      await uploadResult.when(
+        success: (data) async {
+          success = true;
 
-        await uploadResult.when(
-          success: (data) async {
-            isUploadSuccess = true;
-            _savedImagePath = imageFile.path;
+          // Store the REMOTE path/key returned by the upload API.
+          // Fall back to the local file path only when the API does not return
+          // a usable remote value.
+          String? apiPath;
+          String? apiKey;
 
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setBool('is_business_completed', true);
-            await prefs.setString('saved_business_name', _businessName);
-            await prefs.setString('saved_email', _email);
-            await prefs.setString('saved_mobile_number', _mobileNumber);
-            await prefs.setString('saved_business_image_path', imageFile.path);
+          if (data is Map) {
+            final dynamic rootPath =
+                data['path'] ?? data['filePath'] ?? data['url'];
+            final dynamic rootKey =
+                data['key'] ?? data['s3Key'] ?? data['logoS3Key'];
 
-            updateSavedImagePath(imageFile.path);
-            if (context.mounted) {}
-          },
-          failure: (error) {
-            isUploadSuccess = false;
-          },
-        );
+            apiPath = rootPath?.toString();
+            apiKey = rootKey?.toString();
 
-        if (!isUploadSuccess) {
-          _isUploading = false;
-          notifyListeners();
-
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Logo upload failed. Please try again."),
-                backgroundColor: Colors.red,
-              ),
-            );
+            // Support APIs that wrap the result inside `data`.
+            final nested = data['data'];
+            if (nested is Map) {
+              apiPath ??=
+                  (nested['path'] ?? nested['filePath'] ?? nested['url'])
+                      ?.toString();
+              apiKey ??=
+                  (nested['key'] ?? nested['s3Key'] ?? nested['logoS3Key'])
+                      ?.toString();
+            }
           }
-          return false;
-        }
-      }
+
+          _savedImagePath = (apiPath != null && apiPath.isNotEmpty)
+              ? apiPath
+              : imageFile.path;
+
+          if (apiKey != null && apiKey.isNotEmpty) {
+            _logoS3Key = apiKey;
+          }
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('saved_business_image_path', _savedImagePath!);
+
+          debugPrint("✅ Image uploaded: $_savedImagePath");
+          debugPrint("✅ Logo key: $_logoS3Key");
+        },
+        failure: (error) {
+          success = false;
+          _errorMessage = error.message;
+          debugPrint("❌ Image upload failed: ${error.message}");
+        },
+      );
 
       _isUploading = false;
+      notifyListeners();
+      return success;
+    } catch (e) {
+      _isUploading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      debugPrint("❌ uploadCurrentImage error: $e");
+      return false;
+    }
+  }
+
+  /// Final Business Details save. No image upload is performed here.
+  Future<bool> uploadAndSaveBusinessDetails(BuildContext context) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_business_completed', true);
+      await prefs.setString('saved_business_name', _businessName);
+      await prefs.setString('saved_email', _email);
+      await prefs.setString('saved_mobile_number', _mobileNumber);
+
+      if (_savedImagePath != null && _savedImagePath!.isNotEmpty) {
+        await prefs.setString('saved_business_image_path', _savedImagePath!);
+      }
+
       notifyListeners();
       return true;
     } catch (e) {
-      _isUploading = false;
-      notifyListeners();
       debugPrint("❌ Exception in uploadAndSaveBusinessDetails: $e");
       return false;
     }
+  }
+
+  /// Called after the crop screen saves the cropped image.
+  /// Uploads the cropped image and then opens the BG-remove question.
+  Future<bool> onCropSaved(BuildContext context) async {
+    final uploaded = await uploadCurrentImage();
+    if (!uploaded || !context.mounted) return false;
+
+    await bgRemoveSheet(context);
+    return true;
   }
 
   String? _errorMessage;
@@ -265,7 +323,6 @@ class BusinessProvider extends ChangeNotifier {
     _isUploading = true;
     _errorMessage = null;
     notifyListeners();
-    /* Navigator.pushNamed(context, "/BusinessDetailsScreen");*/
     try {
       final prefs = await SharedPreferences.getInstance();
       _savedCategorySlug = prefs.getString('saved_category_slug') ?? '';
@@ -295,13 +352,15 @@ class BusinessProvider extends ChangeNotifier {
       return await result.when(
         success: (data) async {
           final uid = data['uid']?.toString();
+
           if (uid == null || uid.isEmpty) {
             _errorMessage = "Business UID not found";
             _isUploading = false;
             notifyListeners();
             return null;
           }
-
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('business_uid', uid);
           _isUploading = false;
           notifyListeners();
 
@@ -597,6 +656,245 @@ class BusinessProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> uploadEditedImage() async {
+    if (_selectedImage == null) {
+      debugPrint("No image selected for upload");
+      return false;
+    }
+
+    final imageFile = _selectedImage!;
+
+    if (!await imageFile.exists()) {
+      debugPrint("Image file does not exist");
+      return false;
+    }
+
+    _isUploading = true;
+    notifyListeners();
+
+    try {
+      final filename = imageFile.path.split('/').last;
+
+      final uploadResult = await MediaUploadRepository.instance
+          .uploadImageAndConfirm(
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+          );
+
+      bool success = false;
+
+      await uploadResult.when(
+        success: (data) async {
+          success = true;
+          _selectedImage = imageFile;
+          _originalImage = imageFile;
+
+          // Store the remote path/key returned by the upload API.
+          String? apiPath;
+          String? apiKey;
+
+          if (data is Map) {
+            apiPath = (data['path'] ?? data['filePath'] ?? data['url'])
+                ?.toString();
+            apiKey = (data['key'] ?? data['s3Key'] ?? data['logoS3Key'])
+                ?.toString();
+
+            final nested = data['data'];
+            if (nested is Map) {
+              apiPath ??=
+                  (nested['path'] ?? nested['filePath'] ?? nested['url'])
+                      ?.toString();
+              apiKey ??=
+                  (nested['key'] ?? nested['s3Key'] ?? nested['logoS3Key'])
+                      ?.toString();
+            }
+          }
+
+          _savedImagePath = (apiPath != null && apiPath.isNotEmpty)
+              ? apiPath
+              : imageFile.path;
+
+          if (apiKey != null && apiKey.isNotEmpty) {
+            _logoS3Key = apiKey;
+          }
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('saved_business_image_path', _savedImagePath!);
+
+          debugPrint("✅ Cropped image uploaded. API PATH: $_savedImagePath");
+          debugPrint("✅ API KEY: $_logoS3Key");
+
+          notifyListeners();
+        },
+        failure: (error) {
+          success = false;
+
+          debugPrint("Image upload failed: ${error.message}");
+        },
+      );
+
+      _isUploading = false;
+      notifyListeners();
+
+      return success;
+    } catch (e) {
+      _isUploading = false;
+      notifyListeners();
+
+      debugPrint("uploadEditedImage error: $e");
+
+      return false;
+    }
+  }
+
+  Future<void> showUploadImageSheet(BuildContext context) async {
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return ChangeNotifierProvider.value(
+          value: this,
+          child: const UploadImageAfterCropSheet(),
+        );
+      },
+    );
+
+    if (result == true) {
+      await showBgRemoveScreen(context);
+    }
+  }
+
+  Future<bool> uploadBgRemovedImage() async {
+    final file = _selectedImage;
+
+    if (file == null || !await file.exists()) {
+      _errorMessage = "BG removed image is not available";
+      debugPrint("❌ BG removed file doesn't exist");
+      notifyListeners();
+      return false;
+    }
+
+    _isUploading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final filename = file.path.split(Platform.pathSeparator).last;
+
+      final result = await MediaUploadRepository.instance.uploadImageAndConfirm(
+        imageFile: file,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+      );
+
+      bool success = false;
+
+      await result.when(
+        success: (data) async {
+          success = true;
+
+          String? apiPath;
+          String? apiKey;
+
+          if (data is Map) {
+            apiPath = (data['path'] ?? data['filePath'] ?? data['url'])
+                ?.toString();
+            apiKey = (data['key'] ?? data['s3Key'] ?? data['logoS3Key'])
+                ?.toString();
+
+            // Also support: { data: { path: ..., key: ... } }
+            final nested = data['data'];
+            if (nested is Map) {
+              apiPath ??=
+                  (nested['path'] ?? nested['filePath'] ?? nested['url'])
+                      ?.toString();
+              apiKey ??=
+                  (nested['key'] ?? nested['s3Key'] ?? nested['logoS3Key'])
+                      ?.toString();
+            }
+          }
+
+          // IMPORTANT: this is the API path, not the local temp path.
+          if (apiPath != null && apiPath.isNotEmpty) {
+            _savedImagePath = apiPath;
+          } else {
+            // Keep the local path only as a fallback for preview.
+            _savedImagePath = file.path;
+            debugPrint(
+              "⚠️ Upload succeeded but API path was not found in response: $data",
+            );
+          }
+
+          if (apiKey != null && apiKey.isNotEmpty) {
+            _logoS3Key = apiKey;
+          }
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('saved_business_image_path', _savedImagePath!);
+
+          debugPrint("✅ BG removed image uploaded. API PATH: $_savedImagePath");
+          debugPrint("✅ API KEY: $_logoS3Key");
+
+          notifyListeners();
+        },
+        failure: (error) {
+          success = false;
+          _errorMessage = error.message;
+          debugPrint("❌ BG removed image upload failed: ${error.message}");
+        },
+      );
+
+      _isUploading = false;
+      notifyListeners();
+      return success;
+    } catch (e, stackTrace) {
+      _isUploading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+
+      debugPrint("❌ uploadBgRemovedImage error: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      return false;
+    }
+  }
+
+  Future<void> showRemoveBackgroundQuestion(BuildContext context) async {
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return ChangeNotifierProvider.value(
+          value: this,
+          child: const RemoveBackgroundQuestionSheet(),
+        );
+      },
+    );
+
+    if (result == true && context.mounted) {
+      // YES → second screen
+      await bgRemoveSheet(context);
+    }
+  }
+
+  Future<void> showBgRemoveScreen(BuildContext context) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return ChangeNotifierProvider.value(
+          value: this,
+          child: const BgRemoveSheet(),
+        );
+      },
+    );
+  }
+
   Future<void> pickImage(
     BuildContext context, {
     ImageSource source = ImageSource.gallery,
@@ -607,21 +905,107 @@ class BusinessProvider extends ChangeNotifier {
         imageQuality: 90,
       );
 
-      if (image != null) {
-        selectedImage = File(image.path);
-        notifyListeners();
+      if (image == null) return;
 
-        if (context.mounted) {
-          Navigator.pop(context);
-          await Future.delayed(const Duration(milliseconds: 100));
+      _selectedImage = File(image.path);
+      _originalImage = File(image.path);
 
-          if (context.mounted) {
-            Navigator.pushNamed(context, "/EditPhotoScreen", arguments: this);
-          }
-        }
-      }
+      _hasChanges = false;
+      _isApplied = false;
+
+      notifyListeners();
+
+      final navigator = Navigator.of(context, rootNavigator: true);
+
+      // Close ChooseImageSheet
+      navigator.pop();
+
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (!navigator.mounted) return;
+
+      // Go to Crop/Edit screen
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider.value(
+            value: this,
+            child: const EditPhotoScreen(),
+          ),
+        ),
+      );
     } catch (e) {
-      debugPrint("Error picking image: $e");
+      debugPrint("pickImage error: $e");
+    }
+  }
+
+  Future<void> showEditImageQuestion(BuildContext context) async {
+    if (!context.mounted) return;
+
+    final shouldEdit = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 70,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.black12,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Edit Image',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                const Text('Do you want to crop/edit this image?'),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(sheetContext, false),
+                        child: const Text('No'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(sheetContext, true),
+                        child: const Text('Yes'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!context.mounted) return;
+
+    if (shouldEdit == true) {
+      Navigator.pushNamed(context, "/EditPhotoScreen", arguments: this);
+    } else if (shouldEdit == false) {
+      // Image was already uploaded in STEP 1. Do not upload again.
+      await bgRemoveSheet(context);
     }
   }
 
@@ -868,10 +1252,10 @@ class BusinessProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void bgRemoveSheet(BuildContext context) {
+  Future<void> bgRemoveSheet(BuildContext context) async {
     final businessProvider = this;
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -952,6 +1336,9 @@ class BusinessProvider extends ChangeNotifier {
         debugPrint(
           "Background removed successfully and _selectedImage updated",
         );
+
+        // Upload is intentionally handled by the BG Remove sheet's
+        // CONTINUE button. This prevents an unintended duplicate upload.
         return true;
       } else {
         _isProcessingBackground = false;

@@ -233,8 +233,10 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  Future<Map<String, dynamic>?> verifyOtpApi(BuildContext context) async {
-    String enteredOtp = getOtp();
+  Future<Map<String, dynamic>?> verifyOtpApi(
+      BuildContext context,
+      ) async {
+    final String enteredOtp = getOtp();
 
     if (enteredOtp.length < 6) {
       _errorMessage = "Please enter complete 6-digit OTP";
@@ -253,111 +255,235 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
         enteredOtp,
         "android",
       );
-      _isVerifyLoading = false;
-      notifyListeners();
 
       return await result.when(
         success: (data) async {
-          final accessToken = data['access_token']?.toString();
-          final refreshToken = data['refresh_token']?.toString();
+          try {
+            // =========================================================
+            // RESPONSE DATA
+            // =========================================================
 
-          final bool isNewUser =
-              data['is_new_user'] ?? data['data']?['is_new_user'] ?? false;
+            final accessToken =
+            data['access_token']?.toString();
 
-          final onboardingData =
-              data['onboarding'] ?? data['data']?['onboarding'];
+            final refreshToken =
+            data['refresh_token']?.toString();
 
-          final String accountType =
-              onboardingData?['account_type']?.toString() ?? "";
+            final bool isNewUser =
+                data['is_new_user'] == true ||
+                    data['data']?['is_new_user'] == true;
 
-          final bool hasBusiness = onboardingData?['has_business'] ?? false;
+            final onboardingData =
+                data['onboarding'] ??
+                    data['data']?['onboarding'];
 
-          final bool completed = onboardingData?['completed'] ?? false;
+            final String accountType =
+                onboardingData?['account_type']
+                    ?.toString() ??
+                    "";
 
-          // 🔥 Token must exist
-          if (accessToken == null || accessToken.isEmpty) {
-            debugPrint("❌ Access token missing after OTP verification");
+            final bool hasBusiness =
+                onboardingData?['has_business'] == true;
 
-            _errorMessage = "Login token missing";
-            _isVerifyLoading = false;
-            notifyListeners();
+            final bool completed =
+                onboardingData?['completed'] == true;
 
-            return null;
-          }
+            debugPrint("================================");
+            debugPrint("✅ OTP VERIFY SUCCESS");
+            debugPrint("isNewUser      : $isNewUser");
+            debugPrint("accountType    : $accountType");
+            debugPrint("hasBusiness    : $hasBusiness");
+            debugPrint("completed      : $completed");
+            debugPrint("================================");
 
-          // 🔥 Refresh token must exist
-          if (refreshToken == null || refreshToken.isEmpty) {
-            debugPrint("❌ Refresh token missing after OTP verification");
+            // =========================================================
+            // ACCESS TOKEN CHECK
+            // =========================================================
 
-            _errorMessage = "Refresh token missing";
-            _isVerifyLoading = false;
-            notifyListeners();
+            if (accessToken == null ||
+                accessToken.isEmpty) {
+              debugPrint(
+                "❌ Access token missing after OTP verification",
+              );
 
-            return null;
-          }
+              _errorMessage = "Login token missing";
+              _isVerifyLoading = false;
+              notifyListeners();
 
-          // 🔥 Save tokens permanently
-          final prefs = await SharedPreferences.getInstance();
-
-          await prefs.setString('auth_token', accessToken);
-
-          await prefs.setString('refresh_token', refreshToken);
-
-          await prefs.setString('saved_mobile_number', _mobileNumber.trim());
-
-          await prefs.setBool('is_new_user', isNewUser);
-
-          await prefs.setBool('is_logged_in', true);
-
-          await prefs.setBool('is_business_completed', completed);
-
-          await prefs.setString('account_type', accountType);
-
-          await ApiHandler.instance.setTokens(
-            token: accessToken,
-            refreshToken: refreshToken,
-          );
-          final savedAccessToken = prefs.getString('auth_token');
-
-          final savedRefreshToken = prefs.getString('refresh_token');
-
-          debugPrint(
-            '✅ Access token saved: '
-            '${savedAccessToken != null && savedAccessToken.isNotEmpty}',
-          );
-
-          debugPrint(
-            '✅ Refresh token saved: '
-            '${savedRefreshToken != null && savedRefreshToken.isNotEmpty}',
-          );
-
-          _isVerifyLoading = false;
-          notifyListeners();
-
-          if (context.mounted) {
-            if (completed || (accountType == "business" && hasBusiness)) {
-              debugPrint("👉 Navigating to CustomBottomNavScreen");
-
-              Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
-            } else {
-              debugPrint("👉 Navigating to BusinessDetailsScreen");
-
-              Navigator.pushReplacementNamed(context, "/BusinessDetailsScreen");
+              return null;
             }
-          }
 
-          return data;
+            // =========================================================
+            // REFRESH TOKEN CHECK
+            // =========================================================
+
+            if (refreshToken == null ||
+                refreshToken.isEmpty) {
+              debugPrint(
+                "❌ Refresh token missing after OTP verification",
+              );
+
+              _errorMessage = "Refresh token missing";
+              _isVerifyLoading = false;
+              notifyListeners();
+
+              return null;
+            }
+
+            // =========================================================
+            // SAVE LOGIN DATA
+            // =========================================================
+
+            final prefs =
+            await SharedPreferences.getInstance();
+
+            // IMPORTANT:
+            // Splash should use the SAME key.
+            await prefs.setString(
+              'access_token',
+              accessToken,
+            );
+
+            await prefs.setString(
+              'refresh_token',
+              refreshToken,
+            );
+
+            await prefs.setString(
+              'saved_mobile_number',
+              _mobileNumber.trim(),
+            );
+
+            await prefs.setBool(
+              'is_new_user',
+              isNewUser,
+            );
+
+            await prefs.setBool(
+              'is_logged_in',
+              true,
+            );
+
+            await prefs.setBool(
+              'is_business_completed',
+              completed,
+            );
+
+            await prefs.setString(
+              'account_type',
+              accountType,
+            );
+
+            // =========================================================
+            // SET API HANDLER TOKENS
+            // =========================================================
+
+            await ApiHandler.instance.setTokens(
+              token: accessToken,
+              refreshToken: refreshToken,
+            );
+
+            debugPrint(
+              "✅ Access token saved: "
+                  "${prefs.getString('access_token') != null}",
+            );
+
+            debugPrint(
+              "✅ Refresh token saved: "
+                  "${prefs.getString('refresh_token') != null}",
+            );
+
+            _isVerifyLoading = false;
+            notifyListeners();
+
+            // =========================================================
+            // NAVIGATION
+            // =========================================================
+
+            if (!context.mounted) {
+              return data;
+            }
+
+            // =========================================================
+            // 🆕 NEW USER FLOW
+            // =========================================================
+
+            if (isNewUser) {
+              debugPrint(
+                "🆕 NEW USER → PlanDetailScreen",
+              );
+
+              Navigator.pushReplacementNamed(
+                context,
+                "/PlanDetailScreen",
+              );
+
+              return data;
+            }
+
+            // =========================================================
+            // EXISTING USER
+            // =========================================================
+
+            if (completed ||
+                (accountType == "business" &&
+                    hasBusiness)) {
+              debugPrint(
+                "👉 Existing user → CustomBottomNavScreen",
+              );
+
+              Navigator.pushReplacementNamed(
+                context,
+                "/CustomBottomNavScreen",
+              );
+            } else {
+              debugPrint(
+                "👉 Existing incomplete user → BusinessDetailsScreen",
+              );
+
+              Navigator.pushReplacementNamed(
+                context,
+                "/BusinessDetailsScreen",
+              );
+            }
+
+            return data;
+          } catch (e) {
+            debugPrint(
+              "❌ OTP success handling error: $e",
+            );
+
+            _isVerifyLoading = false;
+            _errorMessage = e.toString();
+            notifyListeners();
+
+            return null;
+          }
         },
+
         failure: (error) {
+          _isVerifyLoading = false;
           _errorMessage = error.message;
+
+          debugPrint(
+            "❌ OTP verification failed: ${error.message}",
+          );
+
           notifyListeners();
+
           return null;
         },
       );
     } catch (e) {
       _isVerifyLoading = false;
       _errorMessage = e.toString();
+
+      debugPrint(
+        "❌ OTP API exception: $e",
+      );
+
       notifyListeners();
+
       return null;
     }
   }

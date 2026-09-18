@@ -37,11 +37,6 @@ class _EditProfileView extends StatefulWidget {
 
 class _EditProfileViewState
     extends State<_EditProfileView> {
-
-  // =========================================================
-  // GETME -> EDIT PROVIDER
-  // =========================================================
-
   bool _getMeInitialized = false;
 
   @override
@@ -61,115 +56,23 @@ class _EditProfileViewState
       });
     }
   }
-
-
-  // =========================================================
-  // SAVE BUSINESS DETAILS
-  // =========================================================
-
   Future<void> _saveBusiness() async {
+    final provider = context.read<EditPhotoProvider>();
 
-    final provider =
-    context.read<EditPhotoProvider>();
+    final success = await provider.saveBusinessDetails();
 
-    final uid = provider.businessUid;
-
-    if (uid == null ||
-        uid.trim().isEmpty) {
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Business UID not found",
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-
-      return;
-    }
-
-    // =======================================================
-    // DON'T SAVE WHILE IMAGE UPLOAD IS RUNNING
-    // =======================================================
-
-    if (provider.isUploadingImage) {
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Please wait for logo upload to finish",
-          ),
-        ),
-      );
-
-      return;
-    }
-
-    debugPrint(
-      "======================================",
-    );
-
-    debugPrint(
-      "🚀 SAVE BUSINESS",
-    );
-
-    debugPrint(
-      "UID: $uid",
-    );
-
-    debugPrint(
-      "Logo S3 Key: ${provider.logoS3Key}",
-    );
-
-    debugPrint(
-      "======================================",
-    );
-
-    // =======================================================
-    // BUSINESS PATCH API
-    // =======================================================
-
-    final success =
-    await provider.saveBusinessDetails(
-      businessUid: uid,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    // =======================================================
-    // SUCCESS
-    // =======================================================
+    if (!mounted) return;
 
     if (success) {
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
             "Business details updated successfully",
           ),
         ),
       );
-
-      /*
-       * Optional:
-       *
-       * Navigator.pop(context);
-       */
-
     } else {
-
-      // =====================================================
-      // ERROR
-      // =====================================================
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             provider.saveError ??
@@ -180,11 +83,6 @@ class _EditProfileViewState
       );
     }
   }
-
-
-  // =========================================================
-  // BUILD
-  // =========================================================
 
   @override
   Widget build(BuildContext context) {
@@ -197,18 +95,11 @@ class _EditProfileViewState
       Theme.of(context)
           .scaffoldBackgroundColor,
 
-      // =====================================================
-      // APP BAR
-      // =====================================================
 
       appBar: CustomAppBar(
         title: "Edit Photo",
         showRightIcon: false,
       ),
-
-      // =====================================================
-      // BODY
-      // =====================================================
 
       body: SafeArea(
         child: SingleChildScrollView(
@@ -226,11 +117,6 @@ class _EditProfileViewState
             CrossAxisAlignment.start,
 
             children: [
-
-              // =================================================
-              // INDUSTRY SEARCH
-              // =================================================
-
               AppText(
                 "Find business category that matches your Products/Services",
                 style: TextStyle(
@@ -693,11 +579,6 @@ class _EditProfileViewState
     );
   }
 
-
-  // =========================================================
-  // LOGO SECTION
-  // =========================================================
-
   Widget _buildLogoSection(
       EditPhotoProvider provider,
       ) {
@@ -707,11 +588,6 @@ class _EditProfileViewState
       Clip.none,
 
       children: [
-
-        // =====================================================
-        // IMAGE BOX
-        // =====================================================
-
         GestureDetector(
           onTap: provider.isUploadingImage
               ? null

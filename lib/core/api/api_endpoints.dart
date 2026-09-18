@@ -53,4 +53,6 @@ class ApiEndpoints {
   static const String specialDays = '/special-events';
 
   static const String frames = '/frames';
+
+  static const String accountDeactivate = '/users/me/deactivate';
 }

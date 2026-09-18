@@ -427,46 +427,79 @@ class _EditPhotoScreenState extends State<EditPhotoScreen> {
   ) async {
     if (_isProcessing) return;
 
-    setState(() => _isProcessing = true);
+    setState(() {
+      _isProcessing = true;
+    });
 
     try {
+      // =========================
+      // 1. APPLY CROP / ROTATE / SCALE
+      // =========================
+
       if (provider.hasChanges) {
         switch (provider.selectedTool) {
           case "Crop":
             await provider.applyCrop();
             break;
+
           case "Rotate":
             await provider.applyRotate();
             break;
+
           case "Scale":
             await provider.applyScale();
             break;
         }
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("${provider.selectedTool} applied!"),
-              duration: const Duration(seconds: 1),
-            ),
-          );
-        }
-      } else {
-        if (context.mounted) {
-          Navigator.pop(context);
-          provider.bgRemoveSheet(context);
-        }
       }
-    } catch (e) {
-      debugPrint("Error applying transformation: $e");
+
+      // =========================
+      // 2. UPLOAD API
+      // =========================
+
+      final uploadSuccess = await provider.uploadEditedImage();
+
+      if (!uploadSuccess) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Image upload failed")));
+        }
+
+        return;
+      }
+
+      // Save navigator before closing this screen
+      final navigator = Navigator.of(context, rootNavigator: true);
+
+      // =========================
+      // 3. CLOSE CROP SCREEN
+      // =========================
+
+      navigator.pop();
+
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (!navigator.mounted) return;
+
+      // =========================
+      // 4. OPEN UPLOAD IMAGE SHEET
+      // =========================
+
+      await provider.showUploadImageSheet(navigator.context);
+    } catch (e, stackTrace) {
+      debugPrint("Apply error: $e");
+      debugPrintStack(stackTrace: stackTrace);
+
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
       }
     } finally {
       if (mounted) {
-        setState(() => _isProcessing = false);
+        setState(() {
+          _isProcessing = false;
+        });
       }
     }
   }

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Api Model/me_api.dart';
 import '../../Repository/update_profile.dart';
@@ -362,8 +363,13 @@ class EditPhotoProvider extends ChangeNotifier {
   }
 
 
-  Future<bool> saveBusinessDetails({required String businessUid}) async {
-    if (businessUid.trim().isEmpty) {
+  Future<bool> saveBusinessDetails() async {
+    // Business UID is owned/read by the Provider from SharedPreferences.
+    final prefs = await SharedPreferences.getInstance();
+    final savedUid = prefs.getString('business_uid');
+    final businessUid = savedUid?.trim();
+
+    if (businessUid == null || businessUid.isEmpty) {
       saveError = 'Business UID not found';
 
       notifyListeners();

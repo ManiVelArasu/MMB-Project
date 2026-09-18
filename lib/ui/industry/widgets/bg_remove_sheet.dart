@@ -80,7 +80,7 @@ class BgRemoveSheet extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color:
-                                      businessProvider.isImageSelected == true
+                                  businessProvider.isImageSelected == true
                                       ? customColor.redColor
                                       : customColor.greyColor.withAlpha(50),
                                   width: 2.w,
@@ -107,14 +107,14 @@ class BgRemoveSheet extends StatelessWidget {
                           ),
                           businessProvider.isImageSelected == true
                               ? Positioned(
-                                  top: -8,
-                                  left: -8,
-                                  child: SvgPicture.asset(
-                                    "assets/icons/check_ic.svg",
-                                    height: 30,
-                                    width: 30,
-                                  ),
-                                )
+                            top: -8,
+                            left: -8,
+                            child: SvgPicture.asset(
+                              "assets/icons/check_ic.svg",
+                              height: 30,
+                              width: 30,
+                            ),
+                          )
                               : SizedBox.shrink(),
                         ],
                       ),
@@ -137,7 +137,7 @@ class BgRemoveSheet extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color:
-                                      businessProvider.isImageSelected == false
+                                  businessProvider.isImageSelected == false
                                       ? customColor.redColor
                                       : customColor.greyColor.withAlpha(50),
                                   width: 2.w,
@@ -164,14 +164,14 @@ class BgRemoveSheet extends StatelessWidget {
                           ),
                           businessProvider.isImageSelected == false
                               ? Positioned(
-                                  top: -8,
-                                  left: -8,
-                                  child: SvgPicture.asset(
-                                    "assets/icons/check_ic.svg",
-                                    height: 30,
-                                    width: 30,
-                                  ),
-                                )
+                            top: -8,
+                            left: -8,
+                            child: SvgPicture.asset(
+                              "assets/icons/check_ic.svg",
+                              height: 30,
+                              width: 30,
+                            ),
+                          )
                               : SizedBox.shrink(),
                         ],
                       ),
@@ -180,23 +180,23 @@ class BgRemoveSheet extends StatelessWidget {
                 else
                   businessProvider.isProcessingBackground
                       ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: customColor.baseColor,
-                          ),
-                        )
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: customColor.baseColor,
+                    ),
+                  )
                       : ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          clipBehavior: Clip.hardEdge,
-                          child: Image.file(
-                            businessProvider.selectedImage!,
-                            fit:
-                                BoxFit.cover, // cover clips better than contain
-                            height: 100.h,
-                            width: 100.w,
-                          ),
-                        ),
+                    borderRadius: BorderRadius.circular(12),
+                    clipBehavior: Clip.hardEdge,
+                    child: Image.file(
+                      businessProvider.selectedImage!,
+                      fit:
+                      BoxFit.cover, // cover clips better than contain
+                      height: 100.h,
+                      width: 100.w,
+                    ),
+                  ),
                 height12,
                 Text(
                   businessProvider.originalImage == null
@@ -210,83 +210,121 @@ class BgRemoveSheet extends StatelessWidget {
                 height12,
                 businessProvider.originalImage == null
                     ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ButtonWidget(
-                            buttonPress: () async {
-                              Navigator.pop(context);
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ButtonWidget(
+                      buttonPress: () async {
+                        Navigator.pop(context);
 
-                              final success = await businessProvider
-                                  .uploadAndSaveBusinessDetails(context);
+                        final success = await businessProvider
+                            .uploadAndSaveBusinessDetails(context);
 
-                              if (!success && context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      businessProvider.errorMessage ??
-                                          "Logo update failed",
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            },
-                            title: "NO",
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: Color(0xffE0E0E0),
+                        if (!success && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                businessProvider.errorMessage ??
+                                    "Logo update failed",
+                              ),
+                              backgroundColor: Colors.red,
                             ),
-                            height: 40.h,
-                            width: 100.w,
-                            textStyle: theme.bodyLarge!.copyWith(
-                              color: customColor.blackColor,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          width12,
-                          ButtonWidget(
-                            buttonPress: () {
-                              businessProvider.removeBackground();
-                            },
-                            title: "YES",
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: customColor.redColor,
-                            ),
-                            height: 40.h,
-                            width: 100.w,
-
-                            textStyle: theme.bodyLarge!.copyWith(
-                              color: customColor.whiteColor,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      )
-                    : ButtonWidget(
-                        buttonPress: () {
-                          if (businessProvider.originalImage == null) {
-                            businessProvider.removeBackground();
-                          } else {
-                            Navigator.pushNamed(
-                              context,
-                              "/BusinessDetailsScreen",
-                            );
-                          }
-                        },
-                        title: "CONTINUE",
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: customColor.redColor,
-                        ),
-                        height: 40.h,
-                        width: 150.w,
-
-                        textStyle: theme.bodyLarge!.copyWith(
-                          color: customColor.whiteColor,
-                          fontWeight: FontWeight.w700,
-                        ),
+                          );
+                        }
+                      },
+                      title: "NO",
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Color(0xffE0E0E0),
                       ),
+                      height: 40.h,
+                      width: 100.w,
+                      textStyle: theme.bodyLarge!.copyWith(
+                        color: customColor.blackColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    width12,
+                    ButtonWidget(
+                      buttonPress: () {
+                        businessProvider.removeBackground();
+                      },
+                      title: "YES",
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: customColor.redColor,
+                      ),
+                      height: 40.h,
+                      width: 100.w,
+
+                      textStyle: theme.bodyLarge!.copyWith(
+                        color: customColor.whiteColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                )
+                    : ButtonWidget(
+                  buttonPress: () async {
+                    if (businessProvider.isProcessingBackground ||
+                        businessProvider.isUploading) {
+                      return;
+                    }
+
+                    // STEP 1: remove the background.
+                    final removed = await businessProvider
+                        .removeBackground();
+
+                    if (!removed) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              businessProvider.errorMessage ??
+                                  "Background removal failed",
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                      return;
+                    }
+
+                    // STEP 2: upload the BG-removed file.
+                    final uploaded = await businessProvider
+                        .uploadBgRemovedImage();
+
+                    if (!uploaded) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              businessProvider.errorMessage ??
+                                  "Image upload failed",
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                      return;
+                    }
+
+                    // STEP 3: close after the API path is stored.
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  title: "CONTINUE",
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: customColor.redColor,
+                  ),
+                  height: 40.h,
+                  width: 150.w,
+                  textStyle: theme.bodyLarge!.copyWith(
+                    color: customColor.whiteColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
           ),

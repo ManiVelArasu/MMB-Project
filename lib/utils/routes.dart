@@ -176,7 +176,40 @@ class RouteGenerator {
           builder: (context) => PlanDetailScreen(plan: plan),
         );
       case "/ConfirmPlanScreen":
-        return MaterialPageRoute(builder: (context) => ConfirmPlanScreen());
+        final args = settings.arguments;
+
+        if (args is! Map<String, dynamic>) {
+          return MaterialPageRoute(
+            builder: (_) => const Scaffold(
+              body: Center(
+                child: Text("Plan details not found"),
+              ),
+            ),
+          );
+        }
+
+        final plan = args["plan"];
+
+        if (plan is! Plan) {
+          return MaterialPageRoute(
+            builder: (_) => const Scaffold(
+              body: Center(
+                child: Text("Invalid plan details"),
+              ),
+            ),
+          );
+        }
+
+        final billing = args["billing"];
+
+        return MaterialPageRoute(
+          builder: (_) => ConfirmPlanScreen(
+            plan: plan,
+            billing: billing is PlanBillingOption
+                ? billing
+                : null,
+          ),
+        );
       case "/SubscriptionActivatedScreen":
         return MaterialPageRoute(
           builder: (context) => SubscriptionActivatedScreen(),

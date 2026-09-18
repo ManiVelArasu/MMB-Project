@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/helper/shared_preference.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../network/provider/business_provider.dart';
+import '../network/provider/getMe_provider.dart';
 
 class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String businessCategory;
@@ -32,7 +34,8 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         : "Business Name";
 
     String? savedImagePath = businessProvider.savedImagePath;
-
+    final commonProvider = context.watch<CommonProvider>();
+    final me = commonProvider.me;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
       decoration: const BoxDecoration(color: Colors.transparent),
@@ -103,7 +106,7 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText(
-                    businessName,
+                    me?.data.name ?? businessName,
                     style: TextStyle(
                       color: isDark ? Colors.white : Colors.black,
                       fontSize: 18.sp,

@@ -371,9 +371,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: "Delete my Account",
                         iconAsset: "assets/images/delete_icon.png",
                         isDark: isDark,
-                        onTap: () {},
+                        onTap: provider.isDeactivateLoading
+                            ? null
+                            : () {
+                                provider.showDeactivateDialog(context);
+                              },
+                        trailingWidget: provider.isDeactivateLoading
+                            ? SizedBox(
+                                width: 20.w,
+                                height: 20.w,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.red,
+                                ),
+                              )
+                            : Icon(
+                                Icons.chevron_right_rounded,
+                                color: isDark ? Colors.white70 : Colors.black87,
+                                size: 20.sp,
+                              ),
                       ),
-
                       SizedBox(height: 24.h),
 
                       Container(
@@ -532,7 +549,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
-      color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF9F9FB),
+     
       child: ListTile(
         contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 2.h),
         leading: Image.asset(
@@ -577,18 +594,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 void _showLanguagesBottomSheet(
-    BuildContext context,
-    ProfileScreenProvider provider,
-    bool isDark,
-    ) {
+  BuildContext context,
+  ProfileScreenProvider provider,
+  bool isDark,
+) {
   final languages = provider.plansData?.data ?? [];
 
   // Initially selected languages
-  final Set<String> selectedCodes = {
-    "en",
-    "ta",
-    "hi",
-  };
+  final Set<String> selectedCodes = {"en", "ta", "hi"};
 
   showModalBottomSheet(
     context: context,
@@ -600,8 +613,7 @@ void _showLanguagesBottomSheet(
           return Container(
             width: double.infinity,
             constraints: BoxConstraints(
-              maxHeight:
-              MediaQuery.of(context).size.height * 0.62,
+              maxHeight: MediaQuery.of(context).size.height * 0.62,
             ),
             padding: EdgeInsets.only(
               top: 10.h,
@@ -610,17 +622,12 @@ void _showLanguagesBottomSheet(
               bottom: 24.h,
             ),
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF181818)
-                  : Colors.white,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(24.r),
-              ),
+              color: isDark ? const Color(0xFF181818) : Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // =========================
                 // DRAG HANDLE
@@ -631,8 +638,7 @@ void _showLanguagesBottomSheet(
                     height: 4.h,
                     decoration: BoxDecoration(
                       color: Colors.grey.shade400,
-                      borderRadius:
-                      BorderRadius.circular(10.r),
+                      borderRadius: BorderRadius.circular(10.r),
                     ),
                   ),
                 ),
@@ -648,12 +654,9 @@ void _showLanguagesBottomSheet(
                       child: Text(
                         "Languages",
                         style: TextStyle(
-                          color: isDark
-                              ? Colors.white
-                              : Colors.black,
+                          color: isDark ? Colors.white : Colors.black,
                           fontSize: 18.sp,
-                          fontWeight:
-                          FontWeight.w800,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
@@ -691,12 +694,9 @@ void _showLanguagesBottomSheet(
                     Text(
                       "Selected Languages",
                       style: TextStyle(
-                        color: isDark
-                            ? Colors.white
-                            : Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                         fontSize: 17.sp,
-                        fontWeight:
-                        FontWeight.w800,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
 
@@ -708,16 +708,14 @@ void _showLanguagesBottomSheet(
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: Colors.red,
-                        borderRadius:
-                        BorderRadius.circular(6.r),
+                        borderRadius: BorderRadius.circular(6.r),
                       ),
                       child: Text(
                         "${selectedCodes.length}",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 17.sp,
-                          fontWeight:
-                          FontWeight.w800,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
@@ -729,9 +727,7 @@ void _showLanguagesBottomSheet(
                 Text(
                   "Your post, their language – connect better, reach wider!",
                   style: TextStyle(
-                    color: isDark
-                        ? Colors.white
-                        : Colors.black,
+                    color: isDark ? Colors.white : Colors.black,
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w500,
                     height: 1.4,
@@ -747,22 +743,17 @@ void _showLanguagesBottomSheet(
                   spacing: 10.w,
                   runSpacing: 10.h,
                   children: languages.map((language) {
-
                     // IMPORTANT:
                     // selectedCodes contains language.code
-                    final String code =
-                        language.code ?? "";
+                    final String code = language.code ?? "";
 
-                    final bool isSelected =
-                    selectedCodes.contains(code);
+                    final bool isSelected = selectedCodes.contains(code);
 
                     // API is_active == 1
-                    final bool isActive =
-                        language.isActive == 1;
+                    final bool isActive = language.isActive == 1;
 
                     return GestureDetector(
                       onTap: () {
-
                         // Optional:
                         // inactive languages cannot be selected
                         if (!isActive) {
@@ -770,7 +761,6 @@ void _showLanguagesBottomSheet(
                         }
 
                         setModalState(() {
-
                           if (isSelected) {
                             // REMOVE
                             selectedCodes.remove(code);
@@ -778,49 +768,32 @@ void _showLanguagesBottomSheet(
                             // ADD
                             selectedCodes.add(code);
                           }
-
                         });
                       },
 
                       child: AnimatedContainer(
-                        duration:
-                        const Duration(
-                          milliseconds: 180,
-                        ),
+                        duration: const Duration(milliseconds: 180),
                         width: 108.w,
                         height: 40.h,
                         alignment: Alignment.center,
 
-                        decoration:
-                        BoxDecoration(
-
+                        decoration: BoxDecoration(
                           // =========================
                           // SELECTED = RED
                           // =========================
                           color: isSelected
-                              ? const Color(
-                            0xFFFFD1D5,
-                          )
+                              ? const Color(0xFFFFD1D5)
                               : (isDark
-                              ? const Color(
-                            0xFF181818,
-                          )
-                              : Colors.white),
+                                    ? const Color(0xFF181818)
+                                    : Colors.white),
 
-                          borderRadius:
-                          BorderRadius.circular(
-                            22.r,
-                          ),
+                          borderRadius: BorderRadius.circular(22.r),
 
                           border: Border.all(
                             color: isSelected
                                 ? Colors.red
-                                : const Color(
-                              0xFFFFBFC4,
-                            ),
-                            width: isSelected
-                                ? 1.5
-                                : 1,
+                                : const Color(0xFFFFBFC4),
+                            width: isSelected ? 1.5 : 1,
                           ),
                         ),
 
@@ -829,12 +802,9 @@ void _showLanguagesBottomSheet(
                           style: TextStyle(
                             color: isSelected
                                 ? Colors.red
-                                : (isDark
-                                ? Colors.white
-                                : Colors.black),
+                                : (isDark ? Colors.white : Colors.black),
                             fontSize: 15.sp,
-                            fontWeight:
-                            isSelected
+                            fontWeight: isSelected
                                 ? FontWeight.w700
                                 : FontWeight.w500,
                           ),
