@@ -50,8 +50,7 @@ class CommonProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result =
-      await GetMeRepository.instance.getMe();
+      final result = await GetMeRepository.instance.getMe();
 
       final data = result.data;
 
@@ -77,14 +76,7 @@ class CommonProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  // =========================
-  // LOAD BUSINESS
-  // =========================
-
-  Future<bool> loadBusiness({
-    bool forceRefresh = false,
-  }) async {
+  Future<bool> loadBusiness({bool forceRefresh = false}) async {
     if (_business != null && !forceRefresh) {
       return true;
     }
@@ -94,8 +86,7 @@ class CommonProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result =
-      await GetMeRepository.instance.businessApi();
+      final result = await GetMeRepository.instance.businessApi();
 
       final data = result.data;
 
@@ -103,8 +94,6 @@ class CommonProvider extends ChangeNotifier {
         _businessError = "Business data not found";
         return false;
       }
-
-      // First business
       _business = data.data.first;
 
       debugPrint("================================");
@@ -112,12 +101,8 @@ class CommonProvider extends ChangeNotifier {
       debugPrint("Business UID : ${_business?.uid}");
       debugPrint("Business Name : ${_business?.name}");
       debugPrint("Logo S3 Key : ${_business?.logoS3Key}");
-      debugPrint(
-        "Industry : ${_business?.businessCategory?.name}",
-      );
-      debugPrint(
-        "Industry Slug : ${_business?.businessCategory?.slug}",
-      );
+      debugPrint("Industry : ${_business?.businessCategory?.name}");
+      debugPrint("Industry Slug : ${_business?.businessCategory?.slug}");
       debugPrint("================================");
 
       return true;

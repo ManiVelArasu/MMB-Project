@@ -2802,30 +2802,15 @@ class _EditorViewState extends State<EditorView> {
                               },
                             ),
 
-                          // Render the selected item last. Its selection
-                          // controls (especially the 3-dot menu) extend a
-                          // little outside the image bounds; keeping the
-                          // selected item on top prevents another overlapping
-                          // image/text layer from stealing that touch.
+                          // IMPORTANT: selecting an item must NOT change its
+                          // layer/z-order. Keep the provider's original order.
+                          // A click only selects the item; Bring To Front /
+                          // Send To Back are the only actions that should change
+                          // the actual layer order.
                           ...(() {
-                            final normalItems = provider.items
-                                .where(
-                                  (item) =>
-                              !_isCanvasBackground(item) &&
-                                  item.id != provider.selectedItemId,
-                            )
+                            final orderedItems = provider.items
+                                .where((item) => !_isCanvasBackground(item))
                                 .toList();
-                            final selectedItems = provider.items
-                                .where(
-                                  (item) =>
-                              !_isCanvasBackground(item) &&
-                                  item.id == provider.selectedItemId,
-                            )
-                                .toList();
-                            final orderedItems = [
-                              ...normalItems,
-                              ...selectedItems,
-                            ];
 
                             return orderedItems.map((item) {
                               return Positioned(
@@ -4794,14 +4779,47 @@ class _TransformSelectionOverlayState
           (widget.isBackground ? widget.scaleY : widget.scaleX);
 
   // Exact visible rectangle produced by BoxFit.contain inside the item's
-  // layout box. This is the rectangle the selection UI must surround.
-  // Selection bounds MUST match the exact rendered editor item bounds.
-  // Do not calculate a second rectangle from the source image aspect ratio;
-  // the image widget is already laid out inside this editor box.
+  // layout box. The API/template item width/height is the layout box, not
+  // necessarily the visible image rectangle. For example, a landscape image
+  // inside a tall box leaves empty space above/below. The selection border
+  // and handles must surround only the rendered image area.
   Rect get _visualRect {
     final boxW = _baseBoxWidth;
     final boxH = _baseBoxHeight;
-    return Rect.fromLTWH(0, 0, boxW, boxH);
+
+    if (!_imageAspectReady ||
+        !_imageAspectRatio.isFinite ||
+        _imageAspectRatio <= 0 ||
+        boxW <= 0 ||
+        boxH <= 0) {
+      return Rect.fromLTWH(0, 0, boxW, boxH);
+    }
+
+    final boxAspect = boxW / boxH;
+    double visibleW;
+    double visibleH;
+
+    if (_imageAspectRatio > boxAspect) {
+      // Image is wider than the layout box. BoxFit.contain uses full width
+      // and centers the remaining vertical space.
+      visibleW = boxW;
+      visibleH = boxW / _imageAspectRatio;
+    } else {
+      // Image is taller/narrower than the layout box. BoxFit.contain uses
+      // full height and centers the remaining horizontal space.
+      visibleH = boxH;
+      visibleW = boxH * _imageAspectRatio;
+    }
+
+    visibleW = visibleW.clamp(0.0, boxW).toDouble();
+    visibleH = visibleH.clamp(0.0, boxH).toDouble();
+
+    return Rect.fromLTWH(
+      (boxW - visibleW) / 2,
+      (boxH - visibleH) / 2,
+      visibleW,
+      visibleH,
+    );
   }
 
   @override

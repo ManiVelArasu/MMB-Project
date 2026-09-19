@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../network/provider/getMe_provider.dart';
 
-class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+class HomeCustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String notificationCount;
   final VoidCallback? onMagicWandTap;
   final VoidCallback? onNotificationTap;
@@ -18,6 +18,50 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onMagicWandTap,
     this.onNotificationTap,
   });
+
+  @override
+  State<HomeCustomAppBar> createState() => _HomeCustomAppBarState();
+
+  @override
+  Size get preferredSize => Size.fromHeight(65.h);
+}
+
+class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Screen open aagumbothu Business API call
+    _loadBusiness();
+  }
+
+  Future<void> _loadBusiness() async {
+    debugPrint("🏢 HOME APP BAR → Loading Business API...");
+
+    final success = await CommonProvider.instance.loadBusiness(
+      forceRefresh: true,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      final business = CommonProvider.instance.business;
+
+      debugPrint("======================================");
+      debugPrint("✅ HOME BUSINESS API SUCCESS");
+      debugPrint("Business UID  : ${business?.uid}");
+      debugPrint("Business Name : ${business?.name}");
+      debugPrint("Logo S3 Key   : ${business?.logoS3Key}");
+      debugPrint("Industry      : ${business?.businessCategory?.name}");
+      debugPrint("Industry Slug : ${business?.businessCategory?.slug}");
+      debugPrint("======================================");
+    } else {
+      debugPrint(
+        "❌ HOME BUSINESS API FAILED: "
+        "${CommonProvider.instance.businessError}",
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +86,9 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     debugPrint("🏢 Business Name : $businessName");
 
-    debugPrint("🏷️ Industry      : $businessCategory");
+    debugPrint("🏷️ Industry : $businessCategory");
 
-    debugPrint("🖼️ Logo S3 Key   : $logoS3Key");
+    debugPrint("🖼️ Logo S3 Key : $logoS3Key");
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
@@ -53,6 +97,10 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         bottom: false,
         child: Row(
           children: [
+            // =================================================
+            // BUSINESS LOGO
+            // =================================================
+
             SizedBox(
               width: 50.w,
               height: 50.w,
@@ -62,9 +110,12 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: logoS3Key != null && logoS3Key.isNotEmpty
                     ? CachedNetworkImage(
                         imageUrl: getS3ImageUrl(logoS3Key),
+
                         cacheKey: logoS3Key,
+
                         width: 50.w,
                         height: 50.w,
+
                         fit: BoxFit.cover,
 
                         placeholder: (context, url) {
@@ -73,6 +124,7 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
                         errorWidget: (context, url, error) {
                           debugPrint("❌ Logo load failed: $error");
+
                           debugPrint("Logo URL: $url");
 
                           return _defaultLogo();
@@ -84,6 +136,9 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
             SizedBox(width: 12.w),
 
+            // =================================================
+            // BUSINESS NAME + INDUSTRY
+            // =================================================
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,9 +175,12 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
             SizedBox(width: 10.w),
 
+            // =================================================
+            // NOTIFICATION
+            // =================================================
             InkWell(
               onTap:
-                  onNotificationTap ??
+                  widget.onNotificationTap ??
                   () {
                     Navigator.pushNamed(context, "/NotificationScreen");
                   },
@@ -149,7 +207,7 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
 
-                  if (notificationCount.isNotEmpty)
+                  if (widget.notificationCount.isNotEmpty)
                     Positioned(
                       top: -2.h,
                       left: -2.w,
@@ -165,7 +223,7 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                         ),
                         child: Center(
                           child: AppText(
-                            notificationCount,
+                            widget.notificationCount,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 10.sp,
@@ -200,9 +258,6 @@ class HomeCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       },
     );
   }
-
-  @override
-  Size get preferredSize => Size.fromHeight(65.h);
 }
 
 String getS3ImageUrl(String key) {

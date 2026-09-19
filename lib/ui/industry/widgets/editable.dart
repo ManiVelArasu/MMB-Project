@@ -85,7 +85,7 @@ class EditableItemWidget extends StatelessWidget {
       // feel sticky or causes the wrong item to receive the gesture.
         key: ValueKey(currentItem.id),
         child: GestureDetector(
-          behavior: HitTestBehavior.deferToChild,
+          behavior: HitTestBehavior.opaque,
           // Selecting an item and moving an already-selected item are two
           // separate responsibilities. If the user touches another item,
           // select THAT item first. Never move the previously selected item.
@@ -95,12 +95,15 @@ class EditableItemWidget extends StatelessWidget {
             }
           },
           onPanUpdate: (details) {
-            // Always read the latest item position from the provider. The
-            // widget rebuilds after every drag update, so using the build-time
-            // `currentItem.position` makes the object jump/stick because that
-            // value becomes stale during the gesture.
-            if (provider.selectedItemId != currentItem.id) return;
-
+            // Move the ITEM THAT RECEIVED THIS GESTURE. Do not check
+            // selectedItemId here: when the user starts dragging an item that
+            // was behind another item, onPanStart selects it and the provider
+            // rebuild can happen before the first pan update. Checking the
+            // selected id at that point can make the drag appear to move the
+            // previously selected item or require a second drag.
+            //
+            // Always read the latest position so every update is applied to
+            // the item that the finger actually touched.
             final latest = provider.items.where((e) => e.id == currentItem.id);
             if (latest.isEmpty) return;
 
@@ -145,7 +148,7 @@ class EditableItemWidget extends StatelessWidget {
                   // control is visually outside the image. A RenderBox cannot
                   // hit-test a child that is outside its own size, so the
                   // selection layer gets a small right-side hit area.
-                  width: bodyWidth + 64,
+                  width: bodyWidth,
                   height: bodyHeight,
                   child: Stack(
                     clipBehavior: Clip.none,
@@ -3370,7 +3373,9 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
     }
 
     if (alignment.y < 0) {
-      top = 0;
+      // Keep the top-center resize hit target below the rotation handle.
+      // Its visible dot is translated back onto the selection border.
+      top = alignment.x == 0 ? 22.0 : 0.0;
     } else if (alignment.y > 0) {
       top = math.max(0.0, widget.bodyHeight - hitSize);
     } else {
@@ -3399,7 +3404,9 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
                   ? hitSize / 2 - visualSize / 2
                   : 0,
               alignment.y < 0
-                  ? -hitSize / 2 + visualSize / 2
+                  ? (alignment.x == 0
+                  ? -hitSize / 2 + visualSize / 2 - 22
+                  : -hitSize / 2 + visualSize / 2)
                   : alignment.y > 0
                   ? hitSize / 2 - visualSize / 2
                   : 0,
@@ -3439,10 +3446,14 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
         // Border is exactly the same size as the image/text body.
         Positioned.fill(
           child: IgnorePointer(
-            child: CustomPaint(
-              painter: _EditorSelectionBorderPainter(
-                width: widget.bodyWidth,
-                height: widget.bodyHeight,
+            child: SizedBox(
+              width: widget.bodyWidth,
+              height: widget.bodyHeight,
+              child: CustomPaint(
+                painter: _EditorSelectionBorderPainter(
+                  width: widget.bodyWidth,
+                  height: widget.bodyHeight,
+                ),
               ),
             ),
           ),
@@ -3523,11 +3534,15 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
         // If it is placed outside, the canvas ClipRect can hide it when a
         // large image reaches the canvas edge. The hit target is also kept
         // inside the same box so an overlapping item cannot steal the tap.
+        // Canva-style Edit menu. Keep it inside the selected item so it
+        // stays visible/tappable even when the item touches the canvas edge.
+        // The top-right resize handle occupies the first 44px, so the menu
+        // starts below it and does not steal the resize gesture.
         Positioned(
-          left: math.max(0.0, w - 56.0),
-          top: math.max(0.0, math.min(h - 60.0, h / 2.0 - 30.0)),
-          width: 56,
-          height: 60,
+          right: 4,
+          top: math.max(48.0, math.min(h - 56.0, h / 2.0 - 24.0)),
+          width: 52,
+          height: 52,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
@@ -3578,9 +3593,9 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
                 ),
                 alignment: Alignment.center,
                 child: const Icon(
-                  Icons.more_horiz_rounded,
+                  Icons.more_vert_rounded,
                   color: Color(0xFF222222),
-                  size: 25,
+                  size: 26,
                 ),
               ),
             ),
@@ -3600,27 +3615,78 @@ class _EditorSelectionBorderPainter extends CustomPainter {
     required this.height,
   });
 
+  void _drawDottedLine(
+      Canvas canvas,
+      Offset start,
+      Offset end,
+      Paint paint, {
+        double spacing = 5.0,
+      }) {
+    final vector = end - start;
+    final distance = vector.distance;
+    if (distance <= 0.0) return;
+
+    final direction = vector / distance;
+    final count = math.max(1, (distance / spacing).floor());
+    final actualSpacing = distance / count;
+
+    for (int i = 0; i <= count; i++) {
+      final point = start + direction * math.min(i * actualSpacing, distance);
+      canvas.drawCircle(point, 1.45, paint);
+    }
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
+    // IMPORTANT:
+    // Draw the selection border from the ACTUAL painter size, not only from
+    // the incoming width/height. This makes the dotted border visible even
+    // when Flutter lays out the Positioned.fill CustomPaint with constraints.
+    final w = math.max(1.0, size.width);
+    final h = math.max(1.0, size.height);
+
     final paint = Paint()
       ..color = const Color(0xFF2196F3)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
 
-    canvas.drawRect(
-      Rect.fromLTWH(
-        1,
-        1,
-        math.max(0, width - 2),
-        math.max(0, height - 2),
-      ),
+    const inset = 1.0;
+    final left = inset;
+    final top = inset;
+    final right = math.max(left, w - inset);
+    final bottom = math.max(top, h - inset);
+
+    _drawDottedLine(
+      canvas,
+      Offset(left, top),
+      Offset(right, top),
+      paint,
+    );
+    _drawDottedLine(
+      canvas,
+      Offset(right, top),
+      Offset(right, bottom),
+      paint,
+    );
+    _drawDottedLine(
+      canvas,
+      Offset(right, bottom),
+      Offset(left, bottom),
+      paint,
+    );
+    _drawDottedLine(
+      canvas,
+      Offset(left, bottom),
+      Offset(left, top),
       paint,
     );
   }
 
   @override
-  bool shouldRepaint(covariant _EditorSelectionBorderPainter oldDelegate) =>
-      oldDelegate.width != width || oldDelegate.height != height;
+  bool shouldRepaint(covariant _EditorSelectionBorderPainter oldDelegate) {
+    return oldDelegate.width != width ||
+        oldDelegate.height != height;
+  }
 }
 
 class _RotateThreeDotHandle extends StatefulWidget {

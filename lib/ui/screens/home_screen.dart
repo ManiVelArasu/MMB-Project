@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../Api Model/Template_model.dart';
+import '../../Api Model/special_days.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/custom_widget.dart';
 import '../../component/home_appbar.dart';
@@ -49,9 +50,7 @@ class HomeScreen extends StatelessWidget {
           }
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            appBar: const HomeCustomAppBar(
-              notificationCount: "2",
-            ),
+            appBar: const HomeCustomAppBar(notificationCount: "2"),
             body: SafeArea(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -794,9 +793,59 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildSpecialDaysApiList(HomeScreenProvider provider) {
-    final days = provider.specialDays;
+    final events = provider.specialDays;
 
-    if (days.isEmpty) {
+    debugPrint("==========================================");
+
+    debugPrint("SPECIAL DAYS COUNT : ${events.length}");
+
+    // ============================================================
+    // FLATTEN ALL TEMPLATES
+    // ============================================================
+
+    final List<Template> allTemplates = [];
+
+    final Set<String> addedTemplateIds = {};
+
+    for (final event in events) {
+      debugPrint("EVENT : ${event.name}");
+
+      debugPrint("EVENT UID : ${event.uid}");
+
+      debugPrint("TEMPLATE COUNT : ${event.templates.length}");
+
+      for (final template in event.templates) {
+        debugPrint("------------------------------------------");
+
+        debugPrint("Template Name : ${template.name}");
+
+        debugPrint("Template UID : ${template.uid}");
+
+        debugPrint("Thumbnail : ${template.thumbnailS3Key}");
+
+        debugPrint("Premium : ${template.isPremium}");
+
+        debugPrint("Locked : ${template.isLocked}");
+
+        final uid = template.uid?.trim() ?? '';
+
+        if (uid.isNotEmpty && !addedTemplateIds.contains(uid)) {
+          addedTemplateIds.add(uid);
+
+          allTemplates.add(template);
+        }
+      }
+    }
+
+    debugPrint("==========================================");
+
+    debugPrint("TOTAL TEMPLATES : ${allTemplates.length}");
+
+    // ============================================================
+    // NO TEMPLATE
+    // ============================================================
+
+    if (allTemplates.isEmpty) {
       return Padding(
         padding: EdgeInsets.only(left: 4.w, top: 2.h),
         child: Row(
@@ -815,79 +864,219 @@ class HomeScreen extends StatelessWidget {
       );
     }
 
+    // ============================================================
+    // TEMPLATE LIST
+    // ============================================================
+
     return SizedBox(
-      height: 150.h,
+      height: 180.h,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+
         physics: const BouncingScrollPhysics(),
-        itemCount: days.length,
-        separatorBuilder: (_, __) => SizedBox(width: 10.w),
-        itemBuilder: (context, index) {
-          final item = days[index];
 
-          final thumbnail = item.thumbnailS3Key?.trim() ?? '';
+        padding: EdgeInsets.only(left: 2.w, right: 12.w),
 
-          final banner = item.bannerS3Key?.trim() ?? '';
+        itemCount: allTemplates.length,
 
-          final key = thumbnail.isNotEmpty ? thumbnail : banner;
-
-          final imageUrl = key.isEmpty
-              ? ''
-              : key.startsWith('http://') || key.startsWith('https://')
-              ? key
-              : '${ApiEndpoints.cdnImageUrl}/$key';
-
-          return Container(
-            width: 150.w,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(color: const Color(0xFFF0E1E1)),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: imageUrl.isEmpty
-                      ? Container(
-                          width: double.infinity,
-                          color: const Color(0xFFFFE5E5),
-                          child: const Icon(
-                            Icons.event_rounded,
-                            color: Color(0xFFE53935),
-                          ),
-                        )
-                      : InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    TemplateEditScreen(templateUid: item.uid),
-                              ),
-                            );
-                          },
-                          child: CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) {
-                              return Container(
-                                color: const Color(0xFFFFE5E5),
-                                child: const Icon(
-                                  Icons.image_not_supported_rounded,
-                                  color: Color(0xFFE53935),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                ),
-              ],
-            ),
-          );
+        separatorBuilder: (context, index) {
+          return SizedBox(width: 12.w);
         },
+
+        itemBuilder: (context, index) {
+          final template = allTemplates[index];
+
+          return _buildSpecialDayTemplateCard(context, template);
+        },
+      ),
+    );
+  }
+
+  Widget _buildSpecialDayTemplateCard(BuildContext context, Template template) {
+    final key = template.thumbnailS3Key?.trim() ?? '';
+
+    final imageUrl = key.isEmpty
+        ? ''
+        : key.startsWith('http://') || key.startsWith('https://')
+        ? key
+        : '${ApiEndpoints.cdnImageUrl}/$key';
+
+    debugPrint("TEMPLATE IMAGE URL : $imageUrl");
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+
+      onTap: () {
+        final templateUid = template.uid?.trim() ?? '';
+
+        if (templateUid.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Template UID not available')),
+          );
+
+          return;
+        }
+
+        // ========================================================
+        // LOCKED TEMPLATE
+        // ========================================================
+
+        if (template.isLocked) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('This template is locked')),
+          );
+
+          return;
+        }
+
+        // ========================================================
+        // OPEN TEMPLATE EDITOR
+        // ========================================================
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TemplateEditScreen(templateUid: templateUid),
+          ),
+        );
+      },
+
+      child: Container(
+        width: 145.w,
+
+        decoration: BoxDecoration(
+          color: Colors.white,
+
+          borderRadius: BorderRadius.circular(16.r),
+
+          border: Border.all(color: Colors.grey.shade200, width: 1),
+
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+
+        clipBehavior: Clip.antiAlias,
+
+        child: Stack(
+          children: [
+            // ====================================================
+            // IMAGE
+            // ====================================================
+
+            Positioned.fill(
+              child: imageUrl.isEmpty
+                  ? _specialDayPlaceholder()
+                  : CachedNetworkImage(
+                      imageUrl: imageUrl,
+
+                      width: double.infinity,
+
+                      height: double.infinity,
+
+                      fit: BoxFit.cover,
+
+                      placeholder: (context, url) {
+                        return Container(
+                          color: Colors.grey.shade100,
+
+                          child: const Center(
+                            child: SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        );
+                      },
+
+                      errorWidget: (context, url, error) {
+                        debugPrint("❌ Template image failed");
+
+                        debugPrint("URL : $url");
+
+                        debugPrint("ERROR : $error");
+
+                        return _specialDayPlaceholder();
+                      },
+                    ),
+            ),
+
+            // ====================================================
+            // LOCK OVERLAY
+            // ====================================================
+            if (template.isLocked)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.40),
+
+                  child: const Center(
+                    child: Icon(
+                      Icons.lock_rounded,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                ),
+              ),
+
+            // ====================================================
+            // TEMPLATE NAME
+            // ====================================================
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
+
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.75),
+                    ],
+                  ),
+                ),
+
+                child: AppText(
+                  template.name ?? 'Template',
+
+                  maxLines: 1,
+
+                  overflow: TextOverflow.ellipsis,
+
+                  style: TextStyle(
+                    color: Colors.white,
+
+                    fontSize: 11.sp,
+
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _specialDayPlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: const Color(0xFFFFE5E5),
+
+      child: const Center(
+        child: Icon(Icons.image_outlined, color: Color(0xFFE53935), size: 35),
       ),
     );
   }
@@ -895,12 +1084,18 @@ class HomeScreen extends StatelessWidget {
   Widget _buildSpecialDaysCalendar(HomeScreenProvider provider) {
     final range = provider.specialDaysRange;
 
+    // ============================================================
+    // NO RANGE
+    // ============================================================
+
     if (range == null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildDateContainer(provider, [DateTime.now()], DateTime.now().month),
+
           SizedBox(height: 12.h),
+
           if (provider.isLoadingSpecialDays)
             const Center(
               child: SizedBox(
@@ -915,17 +1110,25 @@ class HomeScreen extends StatelessWidget {
       );
     }
 
+    // ============================================================
+    // RANGE
+    // ============================================================
+
     final DateTime from = DateTime(
       range.from.year,
       range.from.month,
       range.from.day,
     );
+
     final DateTime to = DateTime(range.to.year, range.to.month, range.to.day);
 
     final List<DateTime> dates = [];
+
     DateTime current = from;
+
     while (!current.isAfter(to)) {
       dates.add(current);
+
       current = current.add(const Duration(days: 1));
     }
 
@@ -933,7 +1136,9 @@ class HomeScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildDateContainer(provider, dates, from.month),
+
         SizedBox(height: 12.h),
+
         if (provider.isLoadingSpecialDays)
           const Center(
             child: SizedBox(

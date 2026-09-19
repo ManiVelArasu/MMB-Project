@@ -21,6 +21,7 @@ class HomeScreenProvider extends ChangeNotifier {
   String get businessName => _businessName;
   String selectedDate = "2";
   final GetMeRepository getMeRepository = GetMeRepository.instance;
+
   Future<void> loadSavedBusinessData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -36,6 +37,8 @@ class HomeScreenProvider extends ChangeNotifier {
       debugPrint("Error loading business name: $e");
     }
   }
+
+
 
   String? _selectedDates;
 
