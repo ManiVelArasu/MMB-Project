@@ -1,3 +1,5 @@
+import 'package:mmb_app/Api%20Model/business_model.dart';
+
 import '../Api Model/me_api.dart';
 import '../Api Model/template_size_model.dart';
 import '../core/api/api_endpoints.dart';
@@ -32,5 +34,13 @@ class GetMeRepository {
     );
   }
 
-
+  Future<ApiResult<BusinessModel>> businessApi() {
+    return ApiRepository.instance.request<BusinessModel>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.Business,
+        method: ApiMethod.get,
+      ),
+      fromJson: (json) => BusinessModel.fromJson(json),
+    );
+  }
 }

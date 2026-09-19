@@ -184,7 +184,7 @@ class _MyAppState extends State<MyApp> {
             ChangeNotifierProvider(create: (_) => CustomThemeProvider()),
             ChangeNotifierProvider(create: (_) => BusinessProvider()),
             ChangeNotifierProvider<CommonProvider>(
-              create: (_) => CommonProvider.instance..loadMe(),
+              create: (_) => CommonProvider.instance,
             ),
           ],
           child: Consumer<CustomThemeProvider>(

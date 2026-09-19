@@ -50,7 +50,6 @@ class HomeScreen extends StatelessWidget {
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             appBar: const HomeCustomAppBar(
-              businessCategory: "Cake and Sweets",
               notificationCount: "2",
             ),
             body: SafeArea(

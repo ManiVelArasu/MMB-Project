@@ -175,29 +175,30 @@ class BusinessCategoryChooseViewScreen extends StatelessWidget {
 
                               final prefs =
                                   await SharedPreferences.getInstance();
+
                               final selectedCat =
                                   industryProvider.selectedCategory;
 
                               if (selectedCat != null) {
+                                final industrySlug =
+                                    selectedCat.slug?.trim() ?? "";
+
                                 await prefs.setString(
                                   'saved_category_id',
                                   selectedCat.id.toString(),
                                 );
+
                                 await prefs.setString(
                                   'saved_category_name',
                                   selectedCat.name ?? "",
                                 );
-                                // IMPORTANT: save the exact slug of the item
-                                // the user clicked. Do not use a fixed index/name.
-                                await prefs.setString(
-                                  'saved_category_slug',
-                                  selectedCat.slug ?? "",
-                                );
 
+                                await prefs.setString('industry', industrySlug);
+                                debugPrint('✅ Selected Industry');
+                                debugPrint('Name : ${selectedCat.name}');
+                                debugPrint('Slug : $industrySlug');
                                 debugPrint(
-                                  '✅ Selected industry: '
-                                  '${selectedCat.name} '
-                                  '(slug: ${selectedCat.slug})',
+                                  'Saved Industry : ${prefs.getString('industry')}',
                                 );
                               }
 

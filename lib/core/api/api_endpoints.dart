@@ -55,4 +55,6 @@ class ApiEndpoints {
   static const String frames = '/frames';
 
   static const String accountDeactivate = '/users/me/deactivate';
+
+  static const String Business = '/businesses';
 }

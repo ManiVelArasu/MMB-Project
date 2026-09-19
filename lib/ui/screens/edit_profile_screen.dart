@@ -11,7 +11,7 @@ import '../../component/custom_widget.dart';
 import '../../network/provider/edit_photo_provider.dart';
 import '../../network/provider/getMe_provider.dart';
 import '../../utils/theme/app.colors.dart';
-
+import '../../core/api/api_endpoints.dart';
 
 class EditProfileScreen extends StatelessWidget {
   const EditProfileScreen({super.key});
@@ -25,37 +25,52 @@ class EditProfileScreen extends StatelessWidget {
   }
 }
 
-
 class _EditProfileView extends StatefulWidget {
   const _EditProfileView();
 
   @override
-  State<_EditProfileView> createState() =>
-      _EditProfileViewState();
+  State<_EditProfileView> createState() => _EditProfileViewState();
 }
 
-
-class _EditProfileViewState
-    extends State<_EditProfileView> {
+class _EditProfileViewState extends State<_EditProfileView> {
   bool _getMeInitialized = false;
+  @override
+  void initState() {
+    super.initState();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      CommonProvider.instance.loadBusiness(
+        forceRefresh: true,
+      );
+    });
+  }
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
     final commonProvider = context.watch<CommonProvider>();
     final me = commonProvider.me;
+    final business = commonProvider.business;
 
-    if (me != null && !_getMeInitialized) {
+    if (!_getMeInitialized && (me != null || business != null)) {
       _getMeInitialized = true;
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
 
-        context.read<EditPhotoProvider>().setGetMeData(me);
+        final provider = context.read<EditPhotoProvider>();
+
+        // Business API is the source of business profile data.
+        if (business != null) {
+          await provider.setBusinessApiData(business);
+        } else if (me != null) {
+          // Fallback only when Business API data is not available.
+          provider.setGetMeData(me);
+        }
       });
     }
   }
+
   Future<void> _saveBusiness() async {
     final provider = context.read<EditPhotoProvider>();
 
@@ -65,18 +80,13 @@ class _EditProfileViewState
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Business details updated successfully",
-          ),
-        ),
+        const SnackBar(content: Text("Business details updated successfully")),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            provider.saveError ??
-                "Failed to update business details",
+            provider.saveError ?? "Failed to update business details",
           ),
           backgroundColor: Colors.red,
         ),
@@ -86,35 +96,21 @@ class _EditProfileViewState
 
   @override
   Widget build(BuildContext context) {
-
-    final provider =
-    context.watch<EditPhotoProvider>();
+    final provider = context.watch<EditPhotoProvider>();
 
     return Scaffold(
-      backgroundColor:
-      Theme.of(context)
-          .scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
-
-      appBar: CustomAppBar(
-        title: "Edit Photo",
-        showRightIcon: false,
-      ),
+      appBar: CustomAppBar(title: "Edit Photo", showRightIcon: false),
 
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
 
-          physics:
-          const BouncingScrollPhysics(),
-
-          padding: EdgeInsets.symmetric(
-            horizontal: 20.w,
-            vertical: 12.h,
-          ),
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
 
           child: Column(
-            crossAxisAlignment:
-            CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
               AppText(
@@ -122,31 +118,23 @@ class _EditProfileViewState
                 style: TextStyle(
                   fontSize: 13.sp,
                   color: Colors.black87,
-                  fontWeight:
-                  FontWeight.w600,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
 
               SizedBox(height: 10.h),
 
               CustomSearchBar(
-                hintText:
-                "Find your Industry",
+                hintText: "Find your Industry",
 
-                prefixAsset:
-                "assets/images/search.png",
+                prefixAsset: "assets/images/search.png",
 
-                suffixAsset:
-                "assets/images/mic.png",
+                suffixAsset: "assets/images/mic.png",
 
-                borderColor:
-                AppColors.searchBorderColor,
+                borderColor: AppColors.searchBorderColor,
 
                 onChanged: (query) {
-
-                  provider
-                      .industryController
-                      .text = query;
+                  provider.industryController.text = query;
                 },
               ),
 
@@ -155,17 +143,12 @@ class _EditProfileViewState
               // =================================================
               // BUSINESS DETAILS
               // =================================================
-
               AppText(
                 "Business Details",
                 style: TextStyle(
                   fontSize: 18.sp,
-                  fontWeight:
-                  FontWeight.w900,
-                  color:
-                  Theme.of(context)
-                      .colorScheme
-                      .onSurface,
+                  fontWeight: FontWeight.w900,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
 
@@ -175,10 +158,8 @@ class _EditProfileViewState
                 "Please provide your business details to help us personalize your experience.",
                 style: TextStyle(
                   fontSize: 12.5.sp,
-                  color:
-                  Colors.grey.shade600,
-                  fontWeight:
-                  FontWeight.w500,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
 
@@ -187,64 +168,47 @@ class _EditProfileViewState
               // =================================================
               // LOGO
               // =================================================
-
-              _buildLogoSection(
-                provider,
-              ),
+              _buildLogoSection(provider),
 
               SizedBox(height: 20.h),
 
               // =================================================
               // BASIC FIELDS
               // =================================================
-
               _buildCustomInputField(
                 label: "Business Name",
-                controller:
-                provider
-                    .businessNameController,
+                controller: provider.businessNameController,
               ),
 
               _buildCustomInputField(
                 label: "Industry",
-                controller:
-                provider
-                    .industryController,
+                controller: provider.industryController,
+                edit: false
+
               ),
 
               _buildCustomInputField(
                 label: "Description",
-                controller:
-                provider
-                    .descriptionController,
+                controller: provider.descriptionController,
                 maxLines: 3,
               ),
 
               _buildCustomInputField(
                 label: "Email ID",
-                controller:
-                provider
-                    .emailController,
-                keyboardType:
-                TextInputType.emailAddress,
+                controller: provider.emailController,
+                keyboardType: TextInputType.emailAddress,
               ),
 
               _buildCustomInputField(
                 label: "Contact Number",
-                controller:
-                provider
-                    .contactController,
-                keyboardType:
-                TextInputType.phone,
+                controller: provider.contactController,
+                keyboardType: TextInputType.phone,
               ),
 
               _buildCustomInputField(
                 label: "WhatsApp",
-                controller:
-                provider
-                    .whatsappController,
-                keyboardType:
-                TextInputType.phone,
+                controller: provider.whatsappController,
+                keyboardType: TextInputType.phone,
               ),
 
               SizedBox(height: 8.h),
@@ -252,41 +216,28 @@ class _EditProfileViewState
               // =================================================
               // MORE BUSINESS INFO
               // =================================================
-
               GestureDetector(
-                onTap:
-                provider.toggleMoreInfo,
+                onTap: provider.toggleMoreInfo,
 
                 child: Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment
-                      .spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
                   children: [
-
                     AppText(
                       "More Business Info",
                       style: TextStyle(
                         fontSize: 17.sp,
-                        fontWeight:
-                        FontWeight.w900,
-                        color:
-                        Theme.of(context)
-                            .colorScheme
-                            .onSurface,
+                        fontWeight: FontWeight.w900,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
 
                     Icon(
-                      provider
-                          .isMoreInfoExpanded
-                          ? Icons
-                          .keyboard_arrow_up_rounded
-                          : Icons
-                          .keyboard_arrow_down_rounded,
+                      provider.isMoreInfoExpanded
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
 
-                      color:
-                      Colors.black87,
+                      color: Colors.black87,
 
                       size: 24.sp,
                     ),
@@ -297,58 +248,41 @@ class _EditProfileViewState
               // =================================================
               // MORE INFO FIELDS
               // =================================================
-
-              if (provider
-                  .isMoreInfoExpanded) ...[
-
+              if (provider.isMoreInfoExpanded) ...[
                 SizedBox(height: 12.h),
 
                 _buildCustomInputField(
-                  label:
-                  "Alternate Contact Number",
-                  controller:
-                  provider
-                      .altContactController,
-                  keyboardType:
-                  TextInputType.phone,
+                  label: "Alternate Contact Number",
+                  controller: provider.altContactController,
+                  keyboardType: TextInputType.phone,
                 ),
 
                 _buildCustomInputField(
                   label: "Website",
-                  controller:
-                  provider
-                      .websiteController,
-                  keyboardType:
-                  TextInputType.url,
+                  controller: provider.websiteController,
+                  keyboardType: TextInputType.url,
                 ),
 
                 _buildCustomInputField(
                   label: "City",
-                  controller:
-                  provider.cityController,
+                  controller: provider.cityController,
                 ),
 
                 _buildCustomInputField(
                   label: "State",
-                  controller:
-                  provider.stateController,
+                  controller: provider.stateController,
                 ),
 
                 _buildCustomInputField(
                   label: "Address",
-                  controller:
-                  provider.addressController,
+                  controller: provider.addressController,
                   maxLines: 3,
                 ),
 
                 _buildCustomInputField(
                   label: "Latitude",
-                  controller:
-                  provider
-                      .latitudeController,
-                  keyboardType:
-                  const TextInputType
-                      .numberWithOptions(
+                  controller: provider.latitudeController,
+                  keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                     signed: true,
                   ),
@@ -356,12 +290,8 @@ class _EditProfileViewState
 
                 _buildCustomInputField(
                   label: "Longitude",
-                  controller:
-                  provider
-                      .longitudeController,
-                  keyboardType:
-                  const TextInputType
-                      .numberWithOptions(
+                  controller: provider.longitudeController,
+                  keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                     signed: true,
                   ),
@@ -373,41 +303,28 @@ class _EditProfileViewState
               // =================================================
               // SOCIAL
               // =================================================
-
               GestureDetector(
-                onTap:
-                provider.toggleSocial,
+                onTap: provider.toggleSocial,
 
                 child: Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment
-                      .spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
                   children: [
-
                     AppText(
                       "Social",
                       style: TextStyle(
                         fontSize: 17.sp,
-                        fontWeight:
-                        FontWeight.w900,
-                        color:
-                        Theme.of(context)
-                            .colorScheme
-                            .onSurface,
+                        fontWeight: FontWeight.w900,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
 
                     Icon(
-                      provider
-                          .isSocialExpanded
-                          ? Icons
-                          .keyboard_arrow_up_rounded
-                          : Icons
-                          .keyboard_arrow_down_rounded,
+                      provider.isSocialExpanded
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
 
-                      color:
-                      Colors.black87,
+                      color: Colors.black87,
 
                       size: 24.sp,
                     ),
@@ -418,55 +335,37 @@ class _EditProfileViewState
               // =================================================
               // SOCIAL FIELDS
               // =================================================
-
-              if (provider
-                  .isSocialExpanded) ...[
-
+              if (provider.isSocialExpanded) ...[
                 SizedBox(height: 12.h),
 
                 _buildCustomInputField(
                   label: "Facebook",
-                  controller:
-                  provider
-                      .facebookController,
-                  keyboardType:
-                  TextInputType.url,
+                  controller: provider.facebookController,
+                  keyboardType: TextInputType.url,
                 ),
 
                 _buildCustomInputField(
                   label: "Instagram",
-                  controller:
-                  provider
-                      .instagramController,
-                  keyboardType:
-                  TextInputType.url,
+                  controller: provider.instagramController,
+                  keyboardType: TextInputType.url,
                 ),
 
                 _buildCustomInputField(
                   label: "X (Twitter)",
-                  controller:
-                  provider
-                      .twitterController,
-                  keyboardType:
-                  TextInputType.url,
+                  controller: provider.twitterController,
+                  keyboardType: TextInputType.url,
                 ),
 
                 _buildCustomInputField(
                   label: "YouTube",
-                  controller:
-                  provider
-                      .youtubeController,
-                  keyboardType:
-                  TextInputType.url,
+                  controller: provider.youtubeController,
+                  keyboardType: TextInputType.url,
                 ),
 
                 _buildCustomInputField(
                   label: "LinkedIn",
-                  controller:
-                  provider
-                      .linkedinController,
-                  keyboardType:
-                  TextInputType.url,
+                  controller: provider.linkedinController,
+                  keyboardType: TextInputType.url,
                 ),
               ],
 
@@ -475,99 +374,68 @@ class _EditProfileViewState
               // =================================================
               // SAVE BUTTON
               // =================================================
-
               SizedBox(
-                width:
-                double.infinity,
+                width: double.infinity,
 
                 height: 52.h,
 
                 child: ElevatedButton(
-                  onPressed:
-                  provider.isSaving ||
-                      provider.isUploadingImage
+                  onPressed: provider.isSaving || provider.isUploadingImage
                       ? null
                       : _saveBusiness,
 
-                  style:
-                  ElevatedButton.styleFrom(
-                    backgroundColor:
-                    const Color(
-                      0xFFE91E63,
-                    ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE91E63),
 
-                    foregroundColor:
-                    Colors.white,
+                    foregroundColor: Colors.white,
 
-                    disabledBackgroundColor:
-                    Colors.grey.shade400,
+                    disabledBackgroundColor: Colors.grey.shade400,
 
                     elevation: 0,
 
-                    shape:
-                    RoundedRectangleBorder(
-                      borderRadius:
-                      BorderRadius.circular(
-                        16.r,
-                      ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.r),
                     ),
                   ),
 
                   child:
-
-                  // =================================================
-                  // SAVING
-                  // =================================================
-
-                  provider.isSaving
+                      // =================================================
+                      // SAVING
+                      // =================================================
+                      provider.isSaving
                       ? SizedBox(
-                    height: 22.h,
-                    width: 22.w,
+                          height: 22.h,
+                          width: 22.w,
 
-                    child:
-                    const CircularProgressIndicator(
-                      strokeWidth: 2.5,
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2.5,
 
-                      valueColor:
-                      AlwaysStoppedAnimation<
-                          Color>(
-                        Colors.white,
-                      ),
-                    ),
-                  )
-
-                  // =================================================
-                  // IMAGE UPLOADING
-                  // =================================================
-
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      // =================================================
+                      // IMAGE UPLOADING
+                      // =================================================
                       : provider.isUploadingImage
                       ? Text(
-                    "Uploading Logo...",
-                    style:
-                    TextStyle(
-                      fontSize:
-                      14.sp,
-                      fontWeight:
-                      FontWeight
-                          .w800,
-                    ),
-                  )
-
-                  // =================================================
-                  // NORMAL
-                  // =================================================
-
+                          "Uploading Logo...",
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        )
+                      // =================================================
+                      // NORMAL
+                      // =================================================
                       : Text(
-                    "Save Changes",
-                    style:
-                    TextStyle(
-                      fontSize:
-                      14.sp,
-                      fontWeight:
-                      FontWeight
-                          .w800,
-                    ),
-                  ),
+                          "Save Changes",
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                 ),
               ),
 
@@ -579,19 +447,13 @@ class _EditProfileViewState
     );
   }
 
-  Widget _buildLogoSection(
-      EditPhotoProvider provider,
-      ) {
-
+  Widget _buildLogoSection(EditPhotoProvider provider) {
     return Stack(
-      clipBehavior:
-      Clip.none,
+      clipBehavior: Clip.none,
 
       children: [
         GestureDetector(
-          onTap: provider.isUploadingImage
-              ? null
-              : provider.pickAndUploadImage,
+          onTap: provider.isUploadingImage ? null : provider.pickAndUploadImage,
 
           child: Container(
             height: 85.h,
@@ -599,44 +461,52 @@ class _EditProfileViewState
 
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius:
-              BorderRadius.circular(16.r),
-              border: Border.all(
-                color:
-                const Color(0xFFFFECEE),
-                width: 1.5,
-              ),
+              borderRadius: BorderRadius.circular(16.r),
+              border: Border.all(color: const Color(0xFFFFECEE), width: 1.5),
             ),
 
             child: Center(
               child: provider.isUploadingImage
                   ? SizedBox(
-                height: 24.h,
-                width: 24.w,
-                child:
-                const CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                ),
-              )
+                      height: 24.h,
+                      width: 24.w,
+                      child: const CircularProgressIndicator(strokeWidth: 2.5),
+                    )
                   : provider.selectedImage != null &&
-                  provider.selectedImage!
-                      .existsSync()
+                        provider.selectedImage!.existsSync()
                   ? ClipRRect(
-                borderRadius:
-                BorderRadius.circular(14.r),
-                child: Image.file(
-                  provider.selectedImage!,
-                  width: 50.w,
-                  height: 50.w,
-                  fit: BoxFit.cover,
-                ),
-              )
+                      borderRadius: BorderRadius.circular(14.r),
+                      child: Image.file(
+                        provider.selectedImage!,
+                        width: 50.w,
+                        height: 50.w,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : provider.logoS3Key.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(14.r),
+                      child: Image.network(
+                        getS3ImageUrl(provider.logoS3Key),
+                        width: 50.w,
+                        height: 50.w,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) {
+                          return Image.asset(
+                            "assets/images/BName.png",
+                            width: 50.w,
+                            height: 50.w,
+                            fit: BoxFit.cover,
+                          );
+                        },
+                      ),
+                    )
                   : Image.asset(
-                "assets/images/BName.png",
-                width: 50.w,
-                height: 50.w,
-                fit: BoxFit.cover,
-              ),
+                      "assets/images/BName.png",
+                      width: 50.w,
+                      height: 50.w,
+                      fit: BoxFit.cover,
+                    ),
             ),
           ),
         ),
@@ -644,7 +514,6 @@ class _EditProfileViewState
         // =====================================================
         // CLOSE ICON
         // =====================================================
-
         Positioned(
           top: -6.h,
           right: -6.w,
@@ -658,20 +527,15 @@ class _EditProfileViewState
               height: 22.h,
               width: 22.w,
 
-              decoration:
-              const BoxDecoration(
-                color:
-                Colors.red,
-                shape:
-                BoxShape.circle,
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
               ),
 
               child: Icon(
-                Icons
-                    .close_rounded,
+                Icons.close_rounded,
 
-                color:
-                Colors.white,
+                color: Colors.white,
 
                 size: 14.sp,
               ),
@@ -682,7 +546,6 @@ class _EditProfileViewState
     );
   }
 
-
   // =========================================================
   // CUSTOM INPUT
   // =========================================================
@@ -692,103 +555,63 @@ class _EditProfileViewState
     required TextEditingController controller,
     TextInputType? keyboardType,
     int maxLines = 1,
+    bool edit = true,
   }) {
-
     return Container(
-      margin:
-      EdgeInsets.only(
-        bottom: 12.h,
-      ),
-
-      padding:
-      EdgeInsets.symmetric(
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.symmetric(
         horizontal: 16.w,
         vertical: 8.h,
       ),
-
-      decoration:
-      BoxDecoration(
-        color:
-        Colors.white,
-
-        borderRadius:
-        BorderRadius.circular(
-          16.r,
-        ),
-
-        border:
-        Border.all(
-          color:
-          Colors.grey.shade200,
-
+      decoration: BoxDecoration(
+        color: edit ? Colors.white : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: edit
+              ? Colors.grey.shade200
+              : Colors.grey.shade300,
           width: 1.2,
         ),
       ),
-
-      child:
-      Column(
-        crossAxisAlignment:
-        CrossAxisAlignment
-            .start,
-
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           AppText(
             label,
-
-            style:
-            TextStyle(
-              fontSize:
-              10.5.sp,
-
-              color:
-              Colors.grey.shade600,
-
-              fontWeight:
-              FontWeight.w600,
+            style: TextStyle(
+              fontSize: 10.5.sp,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
             ),
           ),
 
-          SizedBox(
-            height: 2.h,
-          ),
+          SizedBox(height: 2.h),
 
           TextField(
-            controller:
-            controller,
-
-            keyboardType:
-            keyboardType,
-
-            maxLines:
-            maxLines,
-
-            style:
-            TextStyle(
-              fontSize:
-              13.5.sp,
-
-              fontWeight:
-              FontWeight.w800,
-
-              color:
-              Colors.black87,
+            controller: controller,
+            keyboardType: keyboardType,
+            maxLines: maxLines,
+            readOnly: !edit,
+            enabled: edit,
+            style: TextStyle(
+              fontSize: 13.5.sp,
+              fontWeight: FontWeight.w800,
+              color: edit
+                  ? Colors.black87
+                  : Colors.grey.shade600,
             ),
-
-            decoration:
-            const InputDecoration(
-              isDense:
-              true,
-
-              contentPadding:
-              EdgeInsets.zero,
-
-              border:
-              InputBorder.none,
+            decoration: const InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              border: InputBorder.none,
             ),
           ),
         ],
       ),
     );
   }
+}
+
+String getS3ImageUrl(String key) {
+  return "${ApiEndpoints.cdnImageUrl}/$key";
 }

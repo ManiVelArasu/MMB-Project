@@ -15,7 +15,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   final List<TextEditingController> _controllers = List.generate(
     6,
-    (index) => TextEditingController(),
+        (index) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
 
@@ -111,7 +111,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   bool isOtpComplete() {
     return _controllers.every(
-      (controller) => controller.text.trim().isNotEmpty,
+          (controller) => controller.text.trim().isNotEmpty,
     );
   }
 
@@ -233,9 +233,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  Future<Map<String, dynamic>?> verifyOtpApi(
-      BuildContext context,
-      ) async {
+  Future<Map<String, dynamic>?> verifyOtpApi(BuildContext context) async {
     final String enteredOtp = getOtp();
 
     if (enteredOtp.length < 6) {
@@ -263,30 +261,23 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             // RESPONSE DATA
             // =========================================================
 
-            final accessToken =
-            data['access_token']?.toString();
+            final accessToken = data['access_token']?.toString();
 
-            final refreshToken =
-            data['refresh_token']?.toString();
+            final refreshToken = data['refresh_token']?.toString();
 
             final bool isNewUser =
                 data['is_new_user'] == true ||
                     data['data']?['is_new_user'] == true;
 
             final onboardingData =
-                data['onboarding'] ??
-                    data['data']?['onboarding'];
+                data['onboarding'] ?? data['data']?['onboarding'];
 
             final String accountType =
-                onboardingData?['account_type']
-                    ?.toString() ??
-                    "";
+                onboardingData?['account_type']?.toString() ?? "";
 
-            final bool hasBusiness =
-                onboardingData?['has_business'] == true;
+            final bool hasBusiness = onboardingData?['has_business'] == true;
 
-            final bool completed =
-                onboardingData?['completed'] == true;
+            final bool completed = onboardingData?['completed'] == true;
 
             debugPrint("================================");
             debugPrint("✅ OTP VERIFY SUCCESS");
@@ -300,11 +291,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             // ACCESS TOKEN CHECK
             // =========================================================
 
-            if (accessToken == null ||
-                accessToken.isEmpty) {
-              debugPrint(
-                "❌ Access token missing after OTP verification",
-              );
+            if (accessToken == null || accessToken.isEmpty) {
+              debugPrint("❌ Access token missing after OTP verification");
 
               _errorMessage = "Login token missing";
               _isVerifyLoading = false;
@@ -317,11 +305,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             // REFRESH TOKEN CHECK
             // =========================================================
 
-            if (refreshToken == null ||
-                refreshToken.isEmpty) {
-              debugPrint(
-                "❌ Refresh token missing after OTP verification",
-              );
+            if (refreshToken == null || refreshToken.isEmpty) {
+              debugPrint("❌ Refresh token missing after OTP verification");
 
               _errorMessage = "Refresh token missing";
               _isVerifyLoading = false;
@@ -334,45 +319,23 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             // SAVE LOGIN DATA
             // =========================================================
 
-            final prefs =
-            await SharedPreferences.getInstance();
+            final prefs = await SharedPreferences.getInstance();
 
             // IMPORTANT:
             // Splash should use the SAME key.
-            await prefs.setString(
-              'access_token',
-              accessToken,
-            );
+            await prefs.setString('access_token', accessToken);
 
-            await prefs.setString(
-              'refresh_token',
-              refreshToken,
-            );
+            await prefs.setString('refresh_token', refreshToken);
 
-            await prefs.setString(
-              'saved_mobile_number',
-              _mobileNumber.trim(),
-            );
+            await prefs.setString('saved_mobile_number', _mobileNumber.trim());
 
-            await prefs.setBool(
-              'is_new_user',
-              isNewUser,
-            );
+            await prefs.setBool('is_new_user', isNewUser);
 
-            await prefs.setBool(
-              'is_logged_in',
-              true,
-            );
+            await prefs.setBool('is_logged_in', true);
 
-            await prefs.setBool(
-              'is_business_completed',
-              completed,
-            );
+            await prefs.setBool('is_business_completed', completed);
 
-            await prefs.setString(
-              'account_type',
-              accountType,
-            );
+            await prefs.setString('account_type', accountType);
 
             // =========================================================
             // SET API HANDLER TOKENS
@@ -409,14 +372,9 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             // =========================================================
 
             if (isNewUser) {
-              debugPrint(
-                "🆕 NEW USER → PlanDetailScreen",
-              );
+              debugPrint("🆕 NEW USER → PlanDetailScreen");
 
-              Navigator.pushReplacementNamed(
-                context,
-                "/PlanDetailScreen",
-              );
+              Navigator.pushReplacementNamed(context, "/PlansAndPricingScreen");
 
               return data;
             }
@@ -425,33 +383,19 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             // EXISTING USER
             // =========================================================
 
-            if (completed ||
-                (accountType == "business" &&
-                    hasBusiness)) {
-              debugPrint(
-                "👉 Existing user → CustomBottomNavScreen",
-              );
+            if (completed || (accountType == "business" && hasBusiness)) {
+              debugPrint("👉 Existing user → CustomBottomNavScreen");
 
-              Navigator.pushReplacementNamed(
-                context,
-                "/CustomBottomNavScreen",
-              );
+              Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
             } else {
-              debugPrint(
-                "👉 Existing incomplete user → BusinessDetailsScreen",
-              );
+              debugPrint("👉 Existing incomplete user → BusinessDetailsScreen");
 
-              Navigator.pushReplacementNamed(
-                context,
-                "/BusinessDetailsScreen",
-              );
+              Navigator.pushReplacementNamed(context, "/BusinessDetailsScreen");
             }
 
             return data;
           } catch (e) {
-            debugPrint(
-              "❌ OTP success handling error: $e",
-            );
+            debugPrint("❌ OTP success handling error: $e");
 
             _isVerifyLoading = false;
             _errorMessage = e.toString();
@@ -465,9 +409,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
           _isVerifyLoading = false;
           _errorMessage = error.message;
 
-          debugPrint(
-            "❌ OTP verification failed: ${error.message}",
-          );
+          debugPrint("❌ OTP verification failed: ${error.message}");
 
           notifyListeners();
 
@@ -478,9 +420,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       _isVerifyLoading = false;
       _errorMessage = e.toString();
 
-      debugPrint(
-        "❌ OTP API exception: $e",
-      );
+      debugPrint("❌ OTP API exception: $e");
 
       notifyListeners();
 

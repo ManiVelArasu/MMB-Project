@@ -187,6 +187,85 @@ class BusinessProvider extends ChangeNotifier {
     }
   }
 
+  /// Extract the confirmed remote S3 key/path from upload/confirm responses.
+  /// The confirm API returns:
+  /// { success: true, data: { keys: [...], results: [{ key: ..., status: ... }] } }
+  String? _extractUploadedS3Key(dynamic response) {
+    if (response is! Map) return null;
+
+    dynamic payload = response;
+
+    // ApiResult implementations may return either the API data directly
+    // or a wrapper containing `data`.
+    final nested = response['data'];
+    if (nested is Map) {
+      payload = nested;
+    }
+
+    if (payload is Map) {
+      final keys = payload['keys'];
+      if (keys is List && keys.isNotEmpty) {
+        final key = keys.first?.toString().trim();
+        if (key != null && key.isNotEmpty) return key;
+      }
+
+      final results = payload['results'];
+      if (results is List && results.isNotEmpty) {
+        final first = results.first;
+        if (first is Map) {
+          final key = first['key']?.toString().trim();
+          if (key != null && key.isNotEmpty) return key;
+        }
+      }
+
+      final key =
+          (payload['key'] ??
+                  payload['s3_key'] ??
+                  payload['s3Key'] ??
+                  payload['logo_s3_key'] ??
+                  payload['logoS3Key'])
+              ?.toString()
+              .trim();
+
+      if (key != null && key.isNotEmpty) return key;
+    }
+
+    return null;
+  }
+
+  String? _extractUploadedPath(dynamic response) {
+    if (response is! Map) return null;
+
+    dynamic payload = response;
+    final nested = response['data'];
+    if (nested is Map) payload = nested;
+
+    if (payload is Map) {
+      final path = (payload['path'] ?? payload['filePath'] ?? payload['url'])
+          ?.toString()
+          .trim();
+
+      if (path != null && path.isNotEmpty) return path;
+
+      final key = _extractUploadedS3Key(response);
+      if (key != null && key.isNotEmpty) return key;
+    }
+
+    return null;
+  }
+
+  Future<void> _saveLogoS3Key(String key) async {
+    final cleanKey = key.trim();
+    if (cleanKey.isEmpty) return;
+
+    _logoS3Key = cleanKey;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('logo_s3_key', cleanKey);
+
+    debugPrint("✅ Logo S3 Key saved: $cleanKey");
+  }
+
   /// Uploads the CURRENT image only.
   ///
   /// This is intentionally separated from the final business-details save.
@@ -406,24 +485,40 @@ class BusinessProvider extends ChangeNotifier {
       final email = emailController.text.trim();
       final phone = mobileController.text.trim();
 
-      debugPrint("Business UID: $businessUid");
-      debugPrint("Name: $name");
-      debugPrint("Email: $email");
-      debugPrint("Phone: $phone");
+      final prefs = await SharedPreferences.getInstance();
+      final String logoS3Key =
+          (_logoS3Key != null && _logoS3Key!.trim().isNotEmpty)
+          ? _logoS3Key!.trim()
+          : (prefs.getString('logo_s3_key') ?? '').trim();
+
+      debugPrint("======================================");
+      debugPrint("🚀 UPDATE BUSINESS");
+      debugPrint("Business UID : $businessUid");
+      debugPrint("Name         : $name");
+      debugPrint("Email        : $email");
+      debugPrint("Phone        : $phone");
+      debugPrint("Logo S3 Key  : $logoS3Key");
+      debugPrint("======================================");
 
       final result = await BusinessRepository.instance.updateBusinessDetails(
         businessUid: businessUid,
         name: name,
         email: email,
         phone: phone,
+        logo_s3_key: logoS3Key,
       );
 
       return await result.when(
         success: (data) async {
           _isUploading = false;
+          if (logoS3Key.isNotEmpty) {
+            _logoS3Key = logoS3Key;
+            await prefs.setString('logo_s3_key', logoS3Key);
+          }
+          await prefs.setString('business_uid', businessUid);
           notifyListeners();
-
           debugPrint("✅ Business details updated");
+          debugPrint("✅ logo_s3_key sent: $logoS3Key");
 
           return true;
         },
@@ -431,6 +526,8 @@ class BusinessProvider extends ChangeNotifier {
           _isUploading = false;
           _errorMessage = error.message;
           notifyListeners();
+
+          debugPrint("❌ Business update failed: ${error.message}");
 
           return false;
         },
@@ -457,6 +554,11 @@ class BusinessProvider extends ChangeNotifier {
 
     // 2. பிசினஸ் இமேஜ் பாத்
     _savedImagePath = prefs.getString('saved_business_image_path');
+
+    final savedLogoKey = prefs.getString('logo_s3_key');
+    if (savedLogoKey != null && savedLogoKey.trim().isNotEmpty) {
+      _logoS3Key = savedLogoKey.trim();
+    }
 
     // 3. பிசினஸ் பெயர்
     final savedName = prefs.getString('saved_business_name');
@@ -800,22 +902,16 @@ class BusinessProvider extends ChangeNotifier {
           String? apiPath;
           String? apiKey;
 
-          if (data is Map) {
-            apiPath = (data['path'] ?? data['filePath'] ?? data['url'])
+          apiPath = (data['path'] ?? data['filePath'] ?? data['url'])
+              ?.toString();
+          apiKey = (data['key'] ?? data['s3Key'] ?? data['logoS3Key'])
+              ?.toString();
+          final nested = data['data'];
+          if (nested is Map) {
+            apiPath ??= (nested['path'] ?? nested['filePath'] ?? nested['url'])
                 ?.toString();
-            apiKey = (data['key'] ?? data['s3Key'] ?? data['logoS3Key'])
+            apiKey ??= (nested['key'] ?? nested['s3Key'] ?? nested['logoS3Key'])
                 ?.toString();
-
-            // Also support: { data: { path: ..., key: ... } }
-            final nested = data['data'];
-            if (nested is Map) {
-              apiPath ??=
-                  (nested['path'] ?? nested['filePath'] ?? nested['url'])
-                      ?.toString();
-              apiKey ??=
-                  (nested['key'] ?? nested['s3Key'] ?? nested['logoS3Key'])
-                      ?.toString();
-            }
           }
 
           // IMPORTANT: this is the API path, not the local temp path.
@@ -874,9 +970,7 @@ class BusinessProvider extends ChangeNotifier {
         );
       },
     );
-
     if (result == true && context.mounted) {
-      // YES → second screen
       await bgRemoveSheet(context);
     }
   }
@@ -1336,9 +1430,6 @@ class BusinessProvider extends ChangeNotifier {
         debugPrint(
           "Background removed successfully and _selectedImage updated",
         );
-
-        // Upload is intentionally handled by the BG Remove sheet's
-        // CONTINUE button. This prevents an unintended duplicate upload.
         return true;
       } else {
         _isProcessingBackground = false;

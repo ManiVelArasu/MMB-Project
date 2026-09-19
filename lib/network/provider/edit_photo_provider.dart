@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -5,20 +6,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Api Model/me_api.dart';
+import '../../Api Model/business_model.dart';
 import '../../Repository/update_profile.dart';
 import '../../Repository/image_upload_repository.dart';
 import '../../network/provider/getMe_provider.dart';
 
 class EditPhotoProvider extends ChangeNotifier {
-  // =========================================================
-  // SEARCH
-  // =========================================================
-
   final TextEditingController searchController = TextEditingController();
-
-  // =========================================================
-  // BASIC BUSINESS INFO
-  // =========================================================
 
   final TextEditingController businessNameController = TextEditingController();
 
@@ -31,10 +25,6 @@ class EditPhotoProvider extends ChangeNotifier {
   final TextEditingController contactController = TextEditingController();
 
   final TextEditingController whatsappController = TextEditingController();
-
-  // =========================================================
-  // MORE BUSINESS INFO
-  // =========================================================
 
   final TextEditingController altContactController = TextEditingController();
 
@@ -50,10 +40,6 @@ class EditPhotoProvider extends ChangeNotifier {
 
   final TextEditingController longitudeController = TextEditingController();
 
-  // =========================================================
-  // SOCIAL
-  // =========================================================
-
   final TextEditingController facebookController = TextEditingController();
 
   final TextEditingController instagramController = TextEditingController();
@@ -63,10 +49,6 @@ class EditPhotoProvider extends ChangeNotifier {
   final TextEditingController youtubeController = TextEditingController();
 
   final TextEditingController linkedinController = TextEditingController();
-
-  // =========================================================
-  // BUSINESS UID
-  // =========================================================
 
   String? _businessUid;
 
@@ -128,12 +110,6 @@ class EditPhotoProvider extends ChangeNotifier {
 
   String? get uploadedImageKey => _uploadedImageKey;
 
-
-
-  // =========================================================
-  // GETME DATA
-  // =========================================================
-
   void setGetMeData(Language me) {
     _businessUid = me.data.uid;
 
@@ -143,6 +119,9 @@ class EditPhotoProvider extends ChangeNotifier {
     final profileKey = me.data.profilePhotoS3Key;
     if (profileKey != null && profileKey.isNotEmpty) {
       logoS3Key = profileKey;
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setString('logo_s3_key', profileKey);
+      });
     }
 
     notifyListeners();
@@ -152,7 +131,6 @@ class EditPhotoProvider extends ChangeNotifier {
     _businessUid = uid;
     notifyListeners();
   }
-
 
   Future<bool> pickAndUploadImage() async {
     if (_isUploadingImage) {
@@ -181,7 +159,6 @@ class EditPhotoProvider extends ChangeNotifier {
         return false;
       }
 
-      // Show selected image immediately
       _selectedImage = imageFile;
 
       _isUploadingImage = true;
@@ -194,35 +171,60 @@ class EditPhotoProvider extends ChangeNotifier {
 
       debugPrint('📷 Uploading image: $filename');
 
-
-
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-        imageFile: imageFile,
-        filename: filename,
-        width: 1080,
-        height: 1080,
-      );
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+          );
 
       bool success = false;
 
       await uploadResult.when(
-        success: (data) {
-          final key = data['key']?.toString();
+        success: (data) async {
+          String? key;
+
+          // Direct upload response
+          key = data['key']?.toString();
+
+          // /uploads/confirm response: data.keys[0]
+          if ((key == null || key.isEmpty) &&
+              data['keys'] is List &&
+              (data['keys'] as List).isNotEmpty) {
+            key = (data['keys'] as List).first?.toString();
+          }
+
+          // /uploads/confirm response: data.results[0].key
+          if ((key == null || key.isEmpty) &&
+              data['results'] is List &&
+              (data['results'] as List).isNotEmpty) {
+            final result = (data['results'] as List).first;
+            if (result is Map) {
+              key = result['key']?.toString();
+            }
+          }
 
           if (key != null && key.isNotEmpty) {
             _uploadedImageKey = key;
-
-
             logoS3Key = key;
+
+            // Save immediately after successful upload/confirm.
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('logo_s3_key', key);
 
             success = true;
 
-            debugPrint('✅ Image upload success');
-
+            debugPrint('================================');
+            debugPrint('✅ IMAGE UPLOAD SUCCESS');
             debugPrint('✅ Logo S3 Key: $key');
+            debugPrint(
+              '✅ Saved logo_s3_key: ${prefs.getString('logo_s3_key')}',
+            );
+            debugPrint('================================');
           } else {
             _imageUploadError = 'Image uploaded but S3 key not found';
+            debugPrint('❌ Upload response did not contain S3 key: $data');
           }
         },
 
@@ -231,7 +233,7 @@ class EditPhotoProvider extends ChangeNotifier {
 
           debugPrint(
             '❌ Image upload failed: '
-                '${error.message}',
+            '${error.message}',
           );
         },
       );
@@ -253,6 +255,7 @@ class EditPhotoProvider extends ChangeNotifier {
       return false;
     }
   }
+
   void removeSelectedImage() {
     _selectedImage = null;
     logoS3Key = '';
@@ -260,6 +263,73 @@ class EditPhotoProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  /// Fill the edit form from the Business API response.
+  /// This is the single source for business name, industry,
+  /// description, logo, contact, address and social data.
+  Future<void> setBusinessApiData(BusinessApiModel business) async {
+    print(business.whatsapp);
+    _businessUid = business.uid;
+
+    businessNameController.text = business.name ?? '';
+    industryController.text = business.businessCategory?.slug ?? '';
+    descriptionController.text = business.description ?? '';
+    emailController.text = business.email ?? '';
+    contactController.text = business.phone ?? '';
+    whatsappController.text = business.whatsapp ?? '';
+    websiteController.text = business.website ?? '';
+    cityController.text = business.city ?? '';
+    stateController.text = business.state ?? '';
+    addressController.text = business.address ?? '';
+    latitudeController.text = business.latitude ?? '';
+    longitudeController.text = business.longitude ?? '';
+
+    logoS3Key = business.logoS3Key ?? '';
+    coverS3Key = business.coverS3Key ?? '';
+    watermarkEnabled = int.tryParse(business.watermarkEnabled ?? '0') ?? 0;
+    headingFontId = business.headingFontId;
+    bodyFontId = business.bodyFontId;
+
+    if (business.socialLinks != null && business.socialLinks!.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(business.socialLinks!);
+        socialLinks = decoded is Map ? Map<String, dynamic>.from(decoded) : {};
+      } catch (_) {
+        socialLinks = {};
+      }
+    } else {
+      socialLinks = {};
+    }
+
+    final social = socialLinks;
+    facebookController.text = social['facebook']?.toString() ?? '';
+    instagramController.text = social['instagram']?.toString() ?? '';
+    twitterController.text = social['twitter']?.toString() ?? '';
+    youtubeController.text = social['youtube']?.toString() ?? '';
+    linkedinController.text = social['linkedin']?.toString() ?? '';
+
+    // Keep the business UID available to the existing save method.
+    final prefs = await SharedPreferences.getInstance();
+    if (_businessUid != null && _businessUid!.isNotEmpty) {
+      await prefs.setString('business_uid', _businessUid!);
+    }
+    if (logoS3Key.isNotEmpty) {
+      await prefs.setString('logo_s3_key', logoS3Key);
+    }
+
+    debugPrint('======================================');
+    debugPrint('📝 EDIT PROFILE FILLED FROM BUSINESS API');
+    debugPrint('Name     : ${business.name}');
+    debugPrint('Industry : ${business.businessCategory?.parent?.name}');
+    debugPrint('Email    : ${business.email}');
+    debugPrint('Phone    : ${business.phone}');
+    debugPrint('WhatsApp : ${business.whatsapp}');
+    debugPrint('Logo     : ${business.logoS3Key}');
+    debugPrint('======================================');
+
+    notifyListeners();
+  }
+
   void setBusinessData({
     required String? uid,
     String? name,
@@ -285,8 +355,6 @@ class EditPhotoProvider extends ChangeNotifier {
   }) {
     _businessUid = uid;
 
-
-
     businessNameController.text = name ?? '';
 
     industryController.text = industry ?? '';
@@ -299,8 +367,6 @@ class EditPhotoProvider extends ChangeNotifier {
 
     whatsappController.text = whatsapp ?? '';
 
-
-
     websiteController.text = website ?? '';
 
     cityController.text = city ?? '';
@@ -312,8 +378,6 @@ class EditPhotoProvider extends ChangeNotifier {
     latitudeController.text = latitude?.toString() ?? '';
 
     longitudeController.text = longitude?.toString() ?? '';
-
-
 
     this.logoS3Key = logoS3Key ?? '';
 
@@ -331,7 +395,6 @@ class EditPhotoProvider extends ChangeNotifier {
 
     this.operatingHours = operatingHours ?? {};
 
-
     final social = this.socialLinks;
 
     facebookController.text = social['facebook']?.toString() ?? '';
@@ -347,7 +410,6 @@ class EditPhotoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
   Map<String, dynamic> buildSocialLinks() {
     return {
       "facebook": facebookController.text.trim(),
@@ -362,7 +424,6 @@ class EditPhotoProvider extends ChangeNotifier {
     };
   }
 
-
   Future<bool> saveBusinessDetails() async {
     // Business UID is owned/read by the Provider from SharedPreferences.
     final prefs = await SharedPreferences.getInstance();
@@ -376,7 +437,11 @@ class EditPhotoProvider extends ChangeNotifier {
 
       return false;
     }
-
+    final savedLogoS3Key = prefs.getString('logo_s3_key')?.trim();
+    if (savedLogoS3Key != null && savedLogoS3Key.isNotEmpty) {
+      logoS3Key = savedLogoS3Key;
+      _uploadedImageKey = savedLogoS3Key;
+    }
 
     if (_isUploadingImage) {
       saveError = 'Please wait for image upload to finish';
@@ -393,14 +458,11 @@ class EditPhotoProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-
-
       final latitudeText = latitudeController.text.trim();
 
       final double? latitude = latitudeText.isEmpty
           ? null
           : double.tryParse(latitudeText);
-
 
       final longitudeText = longitudeController.text.trim();
 
@@ -408,12 +470,9 @@ class EditPhotoProvider extends ChangeNotifier {
           ? null
           : double.tryParse(longitudeText);
 
-
-
       final updatedSocialLinks = buildSocialLinks();
 
       socialLinks = updatedSocialLinks;
-
 
       debugPrint('====================================');
 
@@ -425,51 +484,45 @@ class EditPhotoProvider extends ChangeNotifier {
 
       debugPrint('====================================');
 
-
-
-      await UpdateProfileRepository.instance.updateBusinessDetails(
+      await UpdateProfileRepository.instance.updateBusiness(
         businessUid: businessUid,
-
         name: businessNameController.text.trim(),
-
         industry: industryController.text.trim(),
-
         description: descriptionController.text.trim(),
-
         logoS3Key: logoS3Key,
-
         coverS3Key: coverS3Key,
-
         brandColors: brandColors,
-
         watermarkEnabled: watermarkEnabled,
-
         headingFontId: headingFontId,
-
         bodyFontId: bodyFontId,
-
         city: cityController.text.trim(),
-
         state: stateController.text.trim(),
-
         address: addressController.text.trim(),
-
         latitude: latitude,
-
         longitude: longitude,
-
         phone: contactController.text.trim(),
-
         whatsapp: whatsappController.text.trim(),
-
         email: emailController.text.trim(),
-
         website: websiteController.text.trim(),
-
         socialLinks: updatedSocialLinks,
-
         operatingHours: operatingHours,
       );
+
+      // 🔥 IMPORTANT:
+      // PATCH success → GET latest Business data
+      debugPrint("🔄 Refreshing CommonProvider business...");
+
+      final commonProvider = CommonProvider.instance;
+
+      await commonProvider.loadBusiness(forceRefresh: true);
+
+      debugPrint("✅ CommonProvider business refreshed");
+
+      isSaving = false;
+
+      notifyListeners();
+
+      return true;
 
       isSaving = false;
 
@@ -501,7 +554,6 @@ class EditPhotoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
   void setLogoS3Key(String value) {
     logoS3Key = value;
 
@@ -510,13 +562,11 @@ class EditPhotoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
   void setCoverS3Key(String value) {
     coverS3Key = value;
 
     notifyListeners();
   }
-
 
   void setWatermarkEnabled(bool enabled) {
     watermarkEnabled = enabled ? 1 : 0;
@@ -530,14 +580,11 @@ class EditPhotoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
-
   void setBodyFontId(String? value) {
     bodyFontId = value;
 
     notifyListeners();
   }
-
 
   void toggleMoreInfo() {
     isMoreInfoExpanded = !isMoreInfoExpanded;
@@ -545,14 +592,11 @@ class EditPhotoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
-
   void toggleSocial() {
     isSocialExpanded = !isSocialExpanded;
 
     notifyListeners();
   }
-
 
   @override
   void dispose() {

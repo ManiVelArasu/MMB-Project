@@ -67,7 +67,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             appBar: PreferredSize(
               preferredSize: Size.fromHeight(70.h),
               child: HomeCustomAppBar(
-                businessCategory: "Cake and Sweets",
                 notificationCount: "2",
               ),
             ),

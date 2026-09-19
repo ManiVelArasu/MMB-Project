@@ -34,12 +34,18 @@ class BusinessRepository {
     required String name,
     required String email,
     required String phone,
+    required String logo_s3_key,
   }) {
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.businessDetail(businessUid),
         method: ApiMethod.patch,
-        body: {"name": name, "email": email, "phone": phone},
+        body: {
+          "name": name,
+          "email": email,
+          "phone": phone,
+          "logo_s3_key": logo_s3_key,
+        },
       ),
       fromJson: (json) => json,
     );

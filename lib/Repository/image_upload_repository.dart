@@ -27,7 +27,7 @@ class MediaUploadRepository {
               endpoint: ApiEndpoints.fileUpload,
               method: ApiMethod.post,
               body: {
-                "target": {"slot": "media_library"},
+                "target": {"slot": "business_logo"},
                 "filename": filename,
                 "content_type": "image/jpeg",
               },

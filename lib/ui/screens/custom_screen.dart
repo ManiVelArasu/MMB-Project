@@ -60,7 +60,6 @@ class _CustomCreateBody extends StatelessWidget {
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(
-              businessCategory: "Cake and Sweets",
               notificationCount: "2",
             ),
           ),

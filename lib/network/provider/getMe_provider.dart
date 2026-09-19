@@ -1,11 +1,18 @@
 import 'package:flutter/foundation.dart';
+
 import '../../Api Model/me_api.dart';
+import '../../Api Model/business_model.dart';
 import '../../Repository/get_me_repository.dart';
+import '../../Repository/business_repository.dart';
 
 class CommonProvider extends ChangeNotifier {
   CommonProvider._();
 
   static final CommonProvider instance = CommonProvider._();
+
+  // =========================
+  // ME
+  // =========================
 
   Language? _me;
   Language? get me => _me;
@@ -15,6 +22,23 @@ class CommonProvider extends ChangeNotifier {
 
   String? _meError;
   String? get meError => _meError;
+
+  // =========================
+  // BUSINESS
+  // =========================
+
+  BusinessApiModel? _business;
+  BusinessApiModel? get business => _business;
+
+  bool _isBusinessLoading = false;
+  bool get isBusinessLoading => _isBusinessLoading;
+
+  String? _businessError;
+  String? get businessError => _businessError;
+
+  // =========================
+  // LOAD ME
+  // =========================
 
   Future<bool> loadMe({bool forceRefresh = false}) async {
     if (_me != null && !forceRefresh) {
@@ -26,7 +50,8 @@ class CommonProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await GetMeRepository.instance.getMe();
+      final result =
+      await GetMeRepository.instance.getMe();
 
       final data = result.data;
 
@@ -53,9 +78,87 @@ class CommonProvider extends ChangeNotifier {
     }
   }
 
+  // =========================
+  // LOAD BUSINESS
+  // =========================
+
+  Future<bool> loadBusiness({
+    bool forceRefresh = false,
+  }) async {
+    if (_business != null && !forceRefresh) {
+      return true;
+    }
+
+    _isBusinessLoading = true;
+    _businessError = null;
+    notifyListeners();
+
+    try {
+      final result =
+      await GetMeRepository.instance.businessApi();
+
+      final data = result.data;
+
+      if (data == null || data.data.isEmpty) {
+        _businessError = "Business data not found";
+        return false;
+      }
+
+      // First business
+      _business = data.data.first;
+
+      debugPrint("================================");
+      debugPrint("✅ BUSINESS PROVIDER LOADED");
+      debugPrint("Business UID : ${_business?.uid}");
+      debugPrint("Business Name : ${_business?.name}");
+      debugPrint("Logo S3 Key : ${_business?.logoS3Key}");
+      debugPrint(
+        "Industry : ${_business?.businessCategory?.name}",
+      );
+      debugPrint(
+        "Industry Slug : ${_business?.businessCategory?.slug}",
+      );
+      debugPrint("================================");
+
+      return true;
+    } catch (e, stackTrace) {
+      _businessError = e.toString();
+
+      debugPrint("❌ Business API failed: $e");
+      debugPrint("$stackTrace");
+
+      return false;
+    } finally {
+      _isBusinessLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // =========================
+  // CLEAR
+  // =========================
+
   void clearMe() {
     _me = null;
     _meError = null;
+
+    notifyListeners();
+  }
+
+  void clearBusiness() {
+    _business = null;
+    _businessError = null;
+
+    notifyListeners();
+  }
+
+  void clearAll() {
+    _me = null;
+    _meError = null;
+
+    _business = null;
+    _businessError = null;
+
     notifyListeners();
   }
 }

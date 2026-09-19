@@ -67,10 +67,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
-            child: const HomeCustomAppBar(
-              businessCategory: "Cake and Sweets",
-              notificationCount: "2",
-            ),
+            child: const HomeCustomAppBar(notificationCount: "2"),
           ),
           body: SafeArea(
             child: SingleChildScrollView(
