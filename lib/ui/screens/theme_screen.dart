@@ -288,7 +288,13 @@ class ThemeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () {},
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                "/ThemeSingleitemViewScreen",
+                arguments: theme.uid,
+              );
+            },
             child: Container(
               height: 160.h,
               width: 150.w,

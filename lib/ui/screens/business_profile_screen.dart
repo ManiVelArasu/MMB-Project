@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../component/custom_widget.dart';
+import '../../core/api/api_endpoints.dart';
 import '../../network/provider/business_provider.dart';
 import '../../network/provider/businessprofile_provider.dart';
 
@@ -91,63 +92,34 @@ class BusinessProfileView extends StatelessWidget {
 
                         // Profile Logo
                         Container(
-                          height: 48.h,
                           width: 48.w,
-                          decoration: BoxDecoration(
+                          height: 48.w,
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2.0),
+                            color: Colors.white,
                           ),
                           child: ClipOval(
-                            child:
-                                savedImagePath != null &&
-                                    savedImagePath.isNotEmpty &&
-                                    File(savedImagePath).existsSync()
-                                ? InkWell(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              ImageViewerScreen(
-                                                imagePath: savedImagePath,
-                                              ),
-                                        ),
-                                      );
-                                    },
-                                    child: Image.file(
-                                      File(savedImagePath),
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              Image.asset(
-                                                "assets/images/BName.png",
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) =>
-                                                    Container(
-                                                      color: const Color(
-                                                        0xFFE91E63,
-                                                      ),
-                                                      child: const Icon(
-                                                        Icons.business,
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
-                                              ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ImageViewerScreen(
+                                        imagePath:
+                                            '${ApiEndpoints.cdnImageUrl}/${provider.commonProvider.business?.logoS3Key ?? ''}',
+                                      ),
                                     ),
-                                  )
-                                : Image.asset(
-                                    "assets/images/BName.png",
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Container(
-                                              color: const Color(0xFFE91E63),
-                                              child: const Icon(
-                                                Icons.business,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                  ),
+                                  );
+                                },
+                                child: Image.network(
+                                  '${ApiEndpoints.cdnImageUrl}/${provider.commonProvider.business?.logoS3Key ?? ''}',
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
 
@@ -155,7 +127,7 @@ class BusinessProfileView extends StatelessWidget {
 
                         AppText(
                           provider.businessName.isEmpty
-                              ? "Business Name"
+                              ? "${provider.commonProvider.business?.name}"
                               : provider.businessName,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface,
@@ -165,7 +137,7 @@ class BusinessProfileView extends StatelessWidget {
                         ),
                         SizedBox(height: 4.h),
                         AppText(
-                          "Pastry Kitchen",
+                          "${provider.commonProvider.business?.businessCategory?.parent?.slug}",
                           style: TextStyle(
                             color: isDark
                                 ? Colors.grey.shade400

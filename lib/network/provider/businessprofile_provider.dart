@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'getMe_provider.dart';
+
 class BusinessProfileProvider extends ChangeNotifier {
   BusinessProfileProvider() {
     loadSavedBusinessName();
@@ -8,7 +10,7 @@ class BusinessProfileProvider extends ChangeNotifier {
 
   String _mobileNumber = "+91 9876543210";
   String get mobileNumber => _mobileNumber;
-
+  final CommonProvider commonProvider = CommonProvider.instance;
   void updateMobileNumber(String newNumber) {
     _mobileNumber = newNumber;
     notifyListeners();

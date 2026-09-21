@@ -2901,17 +2901,23 @@ class _EditorViewState extends State<EditorView> {
     // and generic image/shape objects coming from Fabric) use the existing
     // Image editor toolbar. This keeps CROP/PHOTO/FLIP/FILTER/MASK and the
     // existing Front/Back/Duplicate/Delete controls visible.
-    if (type == 'image' ||
-        type == 'background' ||
-        type == 'video' ||
-        type == 'raster_group' ||
-        type == 'shape' ||
+    // Shapes have their own controls (Fill, Outline color, style,
+    // thickness and join). Do not route them through the image toolbar,
+    // otherwise the colour controls are never shown.
+    if (type == 'shape' ||
         type == 'rect' ||
         type == 'ellipse' ||
         type == 'circle' ||
         type == 'line' ||
         type == 'path' ||
-        type == 'polygon' ||
+        type == 'polygon') {
+      return _buildShapeEditorToolbar(context, provider, isDark);
+    }
+
+    if (type == 'image' ||
+        type == 'background' ||
+        type == 'video' ||
+        type == 'raster_group' ||
         type == 'svg_group' ||
         type == 'svg_element' ||
         type == 'group') {
@@ -3592,6 +3598,438 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
+  Widget _buildShapeEditorToolbar(
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
+    final id = provider.selectedItemId;
+    if (id == null) return const SizedBox.shrink();
+
+    final item = provider.items.firstWhere(
+          (e) => e.id == id,
+      orElse: () => provider.items.first,
+    );
+
+    final fillColor = item.color ?? Colors.white;
+    final outlineColor = item.outlineColor ?? const Color(0xFFD9D9D9);
+    final outlineStyle = provider.outlineStyle(id);
+    final outlineJoin = provider.outlineJoin(id);
+
+    return Container(
+      height: 220,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.black,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 64,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              children: [
+                _shapeColorTool(
+                  'FILL',
+                  fillColor,
+                      () => _showShapeColorPicker(
+                    context,
+                    provider,
+                    id,
+                    isOutline: false,
+                  ),
+                ),
+                _shapeColorTool(
+                  'OUTLINE',
+                  outlineColor,
+                      () => _showShapeColorPicker(
+                    context,
+                    provider,
+                    id,
+                    isOutline: true,
+                  ),
+                ),
+                _bottomTool(
+                  Icons.flip_to_front_rounded,
+                  'FRONT',
+                      () => provider.bringToFront(id),
+                ),
+                _bottomTool(
+                  Icons.flip_to_back_rounded,
+                  'BACK',
+                      () => provider.sendToBack(id),
+                ),
+                _bottomTool(
+                  Icons.copy_rounded,
+                  'DUPLICATE',
+                      () => provider.duplicateItem(id),
+                ),
+                _bottomTool(
+                  Icons.delete_outline_rounded,
+                  'DELETE',
+                      () => provider.removeItem(id),
+                  danger: true,
+                ),
+                _bottomTool(
+                  Icons.close_rounded,
+                  'CLOSE',
+                  provider.clearSelection,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Expanded(
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              children: [
+                _shapeOutlineStyleTools(
+                  outlineStyle,
+                      (style) => provider.updateOutlineStyle(id, style),
+                ),
+                _bottomSliderTool(
+                  'THICKNESS',
+                  item.outlineWidth.clamp(0.0, 20.0),
+                  0,
+                  20,
+                      (v) => provider.updateOutline(id, v, outlineColor),
+                ),
+                _shapeJoinTools(
+                  outlineJoin,
+                      (join) => provider.updateOutlineJoin(id, join),
+                ),
+                _bottomSliderTool(
+                  'ROTATION',
+                  item.rotation.clamp(0.0, math.pi * 2),
+                  0,
+                  math.pi * 2,
+                      (v) => provider.updateRotation(id, v),
+                ),
+                _bottomSliderTool(
+                  'OPACITY',
+                  item.opacity.clamp(0.0, 1.0),
+                  0,
+                  1,
+                      (v) => provider.updateOpacity(id, v),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _shapeColorTool(String label, Color color, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 72,
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1F232C),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(7),
+                  border: Border.all(color: Colors.white70),
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 7,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _shapeOutlineStyleTools(
+      String selected, ValueChanged<String> onChanged) {
+    const styles = <String>['none', 'solid', 'dashed', 'dotted', 'fine_dotted'];
+    const labels = <String>['NONE', 'SOLID', 'DASHED', 'DOTTED', 'FINE'];
+
+    return Container(
+      width: 330,
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'OUTLINE',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 46,
+            child: Row(
+              children: List.generate(styles.length, (index) {
+                final style = styles[index];
+                final selectedStyle = selected == style;
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: InkWell(
+                      onTap: () => onChanged(style),
+                      borderRadius: BorderRadius.circular(9),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: selectedStyle
+                              ? const Color(0xFFFFC107)
+                              : const Color(0xFF252A34),
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(
+                            color: selectedStyle
+                                ? const Color(0xFFFFC107)
+                                : Colors.white10,
+                          ),
+                        ),
+                        child: Center(
+                          child: CustomPaint(
+                            size: const Size(38, 16),
+                            painter: _OutlineStylePreviewPainter(style),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            children: labels.map((label) => Expanded(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 7,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _shapeJoinTools(String selected, ValueChanged<String> onChanged) {
+    const joins = <String>['miter', 'bevel', 'round'];
+    const labels = <String>['MITER', 'BEVEL', 'ROUND'];
+    return Container(
+      width: 190,
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'JOIN',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 46,
+            child: Row(
+              children: List.generate(joins.length, (index) {
+                final value = joins[index];
+                final active = selected == value;
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: InkWell(
+                      onTap: () => onChanged(value),
+                      borderRadius: BorderRadius.circular(9),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: active
+                              ? const Color(0xFFFFC107)
+                              : const Color(0xFF252A34),
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(
+                            color: active
+                                ? const Color(0xFFFFC107)
+                                : Colors.white10,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            value == 'round'
+                                ? Icons.rounded_corner
+                                : value == 'bevel'
+                                ? Icons.change_history_rounded
+                                : Icons.crop_square_rounded,
+                            size: 20,
+                            color: active ? Colors.black : Colors.white70,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showShapeColorPicker(
+      BuildContext context,
+      EditorProvider provider,
+      String id, {
+        required bool isOutline,
+      }) async {
+    final item = provider.items.firstWhere(
+          (e) => e.id == id,
+      orElse: () => provider.items.first,
+    );
+
+    Color current = isOutline
+        ? (item.outlineColor ?? const Color(0xFFD9D9D9))
+        : (item.color ?? Colors.white);
+
+    final picked = await showDialog<Color>(
+      context: context,
+      builder: (dialogContext) {
+        HSVColor hsv = HSVColor.fromColor(current);
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            current = hsv.toColor();
+            return AlertDialog(
+              backgroundColor: const Color(0xFF171A21),
+              title: Text(
+                isOutline ? 'Outline Color' : 'Fill Color',
+                style: const TextStyle(color: Colors.white),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      color: current,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _shapeColorSlider(
+                    'HUE',
+                    hsv.hue,
+                    360,
+                        (v) => setDialogState(() => hsv = hsv.withHue(v)),
+                  ),
+                  _shapeColorSlider(
+                    'SAT',
+                    hsv.saturation,
+                    1,
+                        (v) => setDialogState(() => hsv = hsv.withSaturation(v)),
+                  ),
+                  _shapeColorSlider(
+                    'VALUE',
+                    hsv.value,
+                    1,
+                        (v) => setDialogState(() => hsv = hsv.withValue(v)),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '#${current.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('CANCEL'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, current),
+                  child: const Text('APPLY'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (picked == null) return;
+
+    if (isOutline) {
+      provider.updateOutline(id, item.outlineWidth, picked);
+    } else {
+      provider.updateShapeFill(id, picked);
+    }
+  }
+
+  Widget _shapeColorSlider(
+      String label,
+      double value,
+      double max,
+      ValueChanged<double> onChanged,
+      ) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 42,
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 10),
+          ),
+        ),
+        Expanded(
+          child: Slider(
+            min: 0,
+            max: max,
+            value: value.clamp(0, max),
+            onChanged: onChanged,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildImageEditorToolbar(
       BuildContext context,
       EditorProvider provider,
@@ -3843,7 +4281,11 @@ class _EditorViewState extends State<EditorView> {
                   item.outlineWidth.clamp(0.0, 20.0),
                   0,
                   20,
-                      (v) => provider.updateOutline(id, v, Colors.white),
+                      (v) => provider.updateOutline(
+                    id,
+                    v,
+                    item.outlineColor ?? const Color(0xFFD9D9D9),
+                  ),
                 ),
               ],
             ),
@@ -4822,6 +5264,20 @@ class _TransformSelectionOverlayState
     );
   }
 
+  // Match the rounded/pill shape used by template buttons.  The dotted
+  // outline follows the visible object's rounded corners instead of drawing
+  // a plain square rectangle.
+  double _selectionBorderRadius(Size size) {
+    if (size.width <= 0 || size.height <= 0) return 0;
+
+    // Short button-like objects become pill shaped, while larger objects keep
+    // a smaller rounded corner. This matches the rounded white category
+    // buttons in the template (LIVING ROOM / BEDROOM / DINING / OFFICE).
+    final maxRadius = size.height / 2.0;
+    final proportionalRadius = size.height * 0.28;
+    return math.min(10.0, math.min(maxRadius, proportionalRadius));
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = _baseBoxWidth;
@@ -4898,7 +5354,14 @@ class _TransformSelectionOverlayState
                 children: [
                   Positioned.fill(
                     child: IgnorePointer(
-                      child: CustomPaint(painter: _ImageSelectionPainter()),
+                      child: CustomPaint(
+                        painter: _ImageSelectionPainter(
+                          style: _provider.outlineStyle(widget.item.id ?? ''),
+                          outlineWidth: widget.item.outlineWidth,
+                          outlineColor: widget.item.outlineColor ?? const Color(0xFFD9D9D9),
+                          borderRadius: _selectionBorderRadius(visual.size),
+                        ),
+                      ),
                     ),
                   ),
                   ...[
@@ -5256,8 +5719,63 @@ class _OutlineStylePreviewPainter extends CustomPainter {
 }
 
 class _ImageSelectionPainter extends CustomPainter {
+  final String style;
+  final double outlineWidth;
+  final Color outlineColor;
+  final double borderRadius;
+
+  const _ImageSelectionPainter({
+    this.style = 'none',
+    this.outlineWidth = 1.8,
+    this.outlineColor = const Color(0xFFD9D9D9),
+    this.borderRadius = 0,
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+
+    // The outline is an editor selection aid. It must follow the visible
+    // object's rounded shape, not a hard rectangular box. This is especially
+    // important for the template's category buttons where the selected
+    // LIVING ROOM / BEDROOM / DINING / OFFICE element has rounded corners.
+    if (style != 'none' && outlineWidth > 0) {
+      final width = outlineWidth.clamp(1.0, 20.0).toDouble();
+      final paint = Paint()
+        ..color = outlineColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = width
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+
+      final inset = width / 2.0;
+      final rect = Rect.fromLTWH(
+        inset,
+        inset,
+        math.max(0.0, size.width - width),
+        math.max(0.0, size.height - width),
+      );
+
+      final radius = borderRadius.clamp(0.0, math.min(rect.width, rect.height) / 2.0).toDouble();
+      final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+
+      if (style == 'solid') {
+        canvas.drawRRect(rrect, paint);
+      } else {
+        _drawDashedRRect(
+          canvas,
+          rrect,
+          paint,
+          dash: style == 'dashed' ? 8.0 : 1.5,
+          gap: style == 'dashed' ? 5.0 : 4.0,
+          dotted: style == 'dotted' || style == 'fine_dotted',
+        );
+      }
+
+      return;
+    }
+
+    // Default editor selection border.
     const selectionColor = Color(0xFF2196F3);
     const strokeWidth = 1.8;
 
@@ -5266,31 +5784,70 @@ class _ImageSelectionPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
 
-    canvas.drawRect(
-      Rect.fromLTWH(
-        strokeWidth / 2,
-        strokeWidth / 2,
-        size.width - strokeWidth,
-        size.height - strokeWidth,
-      ),
-      borderPaint,
+    final rect = Rect.fromLTWH(
+      strokeWidth / 2,
+      strokeWidth / 2,
+      math.max(0.0, size.width - strokeWidth),
+      math.max(0.0, size.height - strokeWidth),
     );
 
-    // Connector for rotation handle.
-    final connectorPaint = Paint()
-      ..color = selectionColor
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    canvas.drawLine(
-      Offset(size.width / 2, 0),
-      Offset(size.width / 2, -25),
-      connectorPaint,
+    final radius = borderRadius.clamp(0.0, math.min(rect.width, rect.height) / 2.0).toDouble();
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, Radius.circular(radius)),
+      borderPaint,
     );
   }
 
+  void _drawDashedRRect(
+      Canvas canvas,
+      RRect rrect,
+      Paint paint, {
+        required double dash,
+        required double gap,
+        required bool dotted,
+      }) {
+    final path = Path()..addRRect(rrect);
+    final metrics = path.computeMetrics();
+
+    for (final metric in metrics) {
+      double distance = 0.0;
+      while (distance < metric.length) {
+        final segmentLength = math.min(dash, metric.length - distance);
+        final p1 = metric.getTangentForOffset(distance);
+        final p2 = metric.getTangentForOffset(distance + segmentLength);
+        if (p1 == null || p2 == null) break;
+
+        if (dotted) {
+          // Draw a round dot at the centre of each dash segment. Because the
+          // path itself contains the rounded corners, the dots follow those
+          // corners naturally instead of cutting across them.
+          canvas.drawCircle(
+            p1.position + (p2.position - p1.position) / 2.0,
+            paint.strokeWidth / 2.0,
+            Paint()
+              ..color = paint.color
+              ..style = PaintingStyle.fill,
+          );
+        } else {
+          final segmentPath = metric.extractPath(
+            distance,
+            distance + segmentLength,
+          );
+          canvas.drawPath(segmentPath, paint);
+        }
+
+        distance += segmentLength + gap;
+      }
+    }
+  }
+
   @override
-  bool shouldRepaint(covariant _ImageSelectionPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ImageSelectionPainter oldDelegate) {
+    return oldDelegate.style != style ||
+        oldDelegate.outlineWidth != outlineWidth ||
+        oldDelegate.outlineColor != outlineColor ||
+        oldDelegate.borderRadius != borderRadius;
+  }
 }
 
 class _InteractiveBackgroundLayer extends StatefulWidget {

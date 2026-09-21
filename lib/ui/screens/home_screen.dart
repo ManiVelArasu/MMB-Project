@@ -795,38 +795,12 @@ class HomeScreen extends StatelessWidget {
   Widget _buildSpecialDaysApiList(HomeScreenProvider provider) {
     final events = provider.specialDays;
 
-    debugPrint("==========================================");
-
-    debugPrint("SPECIAL DAYS COUNT : ${events.length}");
-
-    // ============================================================
-    // FLATTEN ALL TEMPLATES
-    // ============================================================
-
     final List<Template> allTemplates = [];
 
     final Set<String> addedTemplateIds = {};
 
     for (final event in events) {
-      debugPrint("EVENT : ${event.name}");
-
-      debugPrint("EVENT UID : ${event.uid}");
-
-      debugPrint("TEMPLATE COUNT : ${event.templates.length}");
-
       for (final template in event.templates) {
-        debugPrint("------------------------------------------");
-
-        debugPrint("Template Name : ${template.name}");
-
-        debugPrint("Template UID : ${template.uid}");
-
-        debugPrint("Thumbnail : ${template.thumbnailS3Key}");
-
-        debugPrint("Premium : ${template.isPremium}");
-
-        debugPrint("Locked : ${template.isLocked}");
-
         final uid = template.uid?.trim() ?? '';
 
         if (uid.isNotEmpty && !addedTemplateIds.contains(uid)) {
@@ -836,14 +810,6 @@ class HomeScreen extends StatelessWidget {
         }
       }
     }
-
-    debugPrint("==========================================");
-
-    debugPrint("TOTAL TEMPLATES : ${allTemplates.length}");
-
-    // ============================================================
-    // NO TEMPLATE
-    // ============================================================
 
     if (allTemplates.isEmpty) {
       return Padding(
@@ -863,11 +829,6 @@ class HomeScreen extends StatelessWidget {
         ),
       );
     }
-
-    // ============================================================
-    // TEMPLATE LIST
-    // ============================================================
-
     return SizedBox(
       height: 180.h,
       child: ListView.separated(
@@ -901,8 +862,6 @@ class HomeScreen extends StatelessWidget {
         ? key
         : '${ApiEndpoints.cdnImageUrl}/$key';
 
-    debugPrint("TEMPLATE IMAGE URL : $imageUrl");
-
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
 
@@ -917,21 +876,10 @@ class HomeScreen extends StatelessWidget {
           return;
         }
 
-        // ========================================================
-        // LOCKED TEMPLATE
-        // ========================================================
-
         if (template.isLocked) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('This template is locked')),
-          );
-
+          _showPremiumTemplateDialog(context, template);
           return;
         }
-
-        // ========================================================
-        // OPEN TEMPLATE EDITOR
-        // ========================================================
 
         Navigator.push(
           context,
@@ -1069,6 +1017,136 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  void _showPremiumTemplateDialog(BuildContext context, dynamic template) {
+    final String templateName = (template.name?.toString().isNotEmpty ?? false)
+        ? template.name.toString()
+        : "This template";
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 3),
+                        child: const Icon(
+                          Icons.local_offer_rounded,
+                          color: Color(0xFFE91E63),
+                          size: 18,
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      Expanded(
+                        child: Text(
+                          'Premium template',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF202124),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '"$templateName" is part of the premium\n'
+                      'collection. Upgrade your plan to use it in your designs.',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.45,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                  ),
+                ),
+
+                Container(height: 1, color: const Color(0xFFE8E8E8)),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(dialogContext);
+                        },
+                        child: const Text(
+                          'Not now',
+                          style: TextStyle(
+                            color: Color(0xFF222222),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(dialogContext);
+
+                          // உங்கள் premium screen route
+                          Navigator.pushNamed(context, '/PremiumScreen');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF202020),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 11,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                        ),
+                        child: const Text(
+                          'Upgrade to premium',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _specialDayPlaceholder() {
     return Container(
       width: double.infinity,
@@ -1083,10 +1161,6 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildSpecialDaysCalendar(HomeScreenProvider provider) {
     final range = provider.specialDaysRange;
-
-    // ============================================================
-    // NO RANGE
-    // ============================================================
 
     if (range == null) {
       return Column(
@@ -1416,12 +1490,10 @@ class HomeScreen extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      savedImagePath != null && savedImagePath.isNotEmpty
-                          ? Image.file(File(savedImagePath), fit: BoxFit.cover)
-                          : Image.asset(
-                              homeScreenProvider.myZoneBanners[index],
-                              fit: BoxFit.cover,
-                            ),
+                      Image.network(
+                        '${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.provider.business?.logoS3Key ?? ''}',
+                        fit: BoxFit.cover,
+                      ),
                       if (isBusinessUser)
                         Positioned(
                           left: 0,

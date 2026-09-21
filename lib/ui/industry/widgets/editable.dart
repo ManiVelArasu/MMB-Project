@@ -972,6 +972,12 @@ class EditableItemWidget extends StatelessWidget {
         );
       }
 
+      final outlineStyle = editorProvider.outlineStyle(item.id ?? '');
+      final outlineColor = stroke ?? item.outlineColor ?? Colors.transparent;
+      final effectiveOutlineWidth = strokeWidth.isFinite
+          ? strokeWidth.clamp(0.0, 100.0).toDouble()
+          : 0.0;
+
       final decoration = BoxDecoration(
         color: gradient == null ? fillColor : null,
         gradient: gradient,
@@ -984,9 +990,6 @@ class EditableItemWidget extends StatelessWidget {
           bottomLeft: Radius.circular(ry),
           bottomRight: Radius.circular(ry),
         ),
-        border: stroke != null && strokeWidth > 0
-            ? Border.all(color: stroke, width: strokeWidth)
-            : null,
       );
 
       // Fabric's ellipse is not a rounded rectangle; use an oval path.
@@ -1018,10 +1021,25 @@ class EditableItemWidget extends StatelessWidget {
         );
       }
 
-      return Container(
+      final shapeWidget = Container(
         width: item.width,
         height: item.height,
         decoration: decoration,
+      );
+
+      // Render the outline independently from the fill. This is important:
+      // BoxDecoration can only draw a solid border, while the API/editor
+      // supports solid, dashed and dotted outlines.
+      return CustomPaint(
+        foregroundPainter: ShapeBorderPainter(
+          shape: shapeType,
+          radius: rx,
+          color: outlineColor,
+          width: outlineStyle == 'none' ? 0 : effectiveOutlineWidth,
+          style: outlineStyle,
+          join: editorProvider.outlineJoin(item.id ?? ''),
+        ),
+        child: shapeWidget,
       );
     }
 
@@ -1152,6 +1170,7 @@ class EditableItemWidget extends StatelessWidget {
           color: item.outlineColor,
           width: outlineStyle == 'none' ? 0 : outlineWidth,
           style: outlineStyle,
+          join: editorProvider.outlineJoin(item.id ?? ''),
         ),
         child: filteredImage,
       );
@@ -1628,6 +1647,123 @@ class EditableItemWidget extends StatelessWidget {
                                     Colors.white,
                                   ),
                                 ),
+                              ),
+                            ],
+
+                            if (currentItem.type == 'shape') ...[
+                              const SizedBox(height: 20),
+                              _premiumSectionTitle('SHAPE', Icons.category_rounded),
+                              const SizedBox(height: 10),
+                              _shapeColorSetting(
+                                label: 'FILL',
+                                color: _templateColor(
+                                  provider.templateRawObject(currentItem.id ?? '')?['fill'],
+                                ) ??
+                                    currentItem.color ??
+                                    Colors.transparent,
+                                onTap: () => _showShapeColorPicker(
+                                  context,
+                                  provider,
+                                  currentItem.id ?? '',
+                                  isOutline: false,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              _premiumSectionTitle(
+                                'OUTLINE',
+                                Icons.border_style_rounded,
+                              ),
+                              const SizedBox(height: 10),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    _outlineStyleButton(
+                                      'None', 'none', provider.outlineStyle(currentItem.id ?? ''),
+                                          () => setModalState(() => provider.updateOutlineStyle(currentItem.id ?? '', 'none')),
+                                    ),
+                                    _outlineStyleButton(
+                                      'Solid', 'solid', provider.outlineStyle(currentItem.id ?? ''),
+                                          () => setModalState(() => provider.updateOutlineStyle(currentItem.id ?? '', 'solid')),
+                                    ),
+                                    _outlineStyleButton(
+                                      'Dashed', 'dashed', provider.outlineStyle(currentItem.id ?? ''),
+                                          () => setModalState(() => provider.updateOutlineStyle(currentItem.id ?? '', 'dashed')),
+                                    ),
+                                    _outlineStyleButton(
+                                      'Dotted', 'dotted', provider.outlineStyle(currentItem.id ?? ''),
+                                          () => setModalState(() => provider.updateOutlineStyle(currentItem.id ?? '', 'dotted')),
+                                    ),
+                                    _outlineStyleButton(
+                                      'Fine', 'fine_dotted', provider.outlineStyle(currentItem.id ?? ''),
+                                          () => setModalState(() => provider.updateOutlineStyle(currentItem.id ?? '', 'fine_dotted')),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _shapeColorSetting(
+                                label: 'OUTLINE COLOR',
+                                color: currentItem.outlineColor ?? const Color(0xFFD9D9D9),
+                                onTap: () => _showShapeColorPicker(
+                                  context,
+                                  provider,
+                                  currentItem.id ?? '',
+                                  isOutline: true,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _premiumSliderCard(
+                                icon: Icons.line_weight_rounded,
+                                title: 'Thickness',
+                                valueText: '${safeOutline.round()}',
+                                value: safeOutline,
+                                min: 0,
+                                max: 20,
+                                onChanged: (v) => setModalState(() => provider.updateOutline(
+                                  currentItem.id ?? '',
+                                  v.clamp(0.0, 20.0),
+                                  currentItem.outlineColor ?? const Color(0xFFD9D9D9),
+                                )),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Join',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  _outlineJoinButton('miter', Icons.crop_square_rounded, provider.outlineJoin(currentItem.id ?? ''), () => setModalState(() => provider.updateOutlineJoin(currentItem.id ?? '', 'miter'))),
+                                  const SizedBox(width: 8),
+                                  _outlineJoinButton('bevel', Icons.rounded_corner_rounded, provider.outlineJoin(currentItem.id ?? ''), () => setModalState(() => provider.updateOutlineJoin(currentItem.id ?? '', 'bevel'))),
+                                  const SizedBox(width: 8),
+                                  _outlineJoinButton('round', Icons.rounded_corner, provider.outlineJoin(currentItem.id ?? ''), () => setModalState(() => provider.updateOutlineJoin(currentItem.id ?? '', 'round'))),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _premiumChoiceButton(
+                                      icon: Icons.flip_rounded,
+                                      label: 'Flip Horizontal',
+                                      onTap: () => provider.flipImageHorizontal(currentItem.id ?? ''),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _premiumChoiceButton(
+                                      icon: Icons.flip_rounded,
+                                      label: 'Flip Vertical',
+                                      onTap: () => provider.flipImageVertical(currentItem.id ?? ''),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
 
@@ -3126,6 +3262,203 @@ class EditableItemWidget extends StatelessWidget {
 }
 
 
+Widget _shapeColorSetting({
+  required String label,
+  required Color color,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF171A21),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Text(
+            '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white24),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _outlineStyleButton(
+    String label,
+    String value,
+    String selected,
+    VoidCallback onTap,
+    ) {
+  final active = value == selected;
+  return Padding(
+    padding: const EdgeInsets.only(right: 8),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFFFFC107) : const Color(0xFF1B1F27),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: active ? const Color(0xFFFFC107) : Colors.white12),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? Colors.black : Colors.white70,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _outlineJoinButton(
+    String value,
+    IconData icon,
+    String selected,
+    VoidCallback onTap,
+    ) {
+  final active = value == selected;
+  return Expanded(
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        height: 42,
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFFFFC107) : const Color(0xFF1B1F27),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: active ? const Color(0xFFFFC107) : Colors.white12),
+        ),
+        child: Icon(icon, color: active ? Colors.black : Colors.white70),
+      ),
+    ),
+  );
+}
+
+Future<void> _showShapeColorPicker(
+    BuildContext context,
+    EditorProvider provider,
+    String id, {
+      required bool isOutline,
+    }) async {
+  final item = provider.items.firstWhere(
+        (e) => e.id == id,
+    orElse: () => provider.items.first,
+  );
+  final raw = provider.templateRawObject(id);
+  Color current = isOutline
+      ? (_templateColor(raw?['stroke']) ?? item.outlineColor ?? const Color(0xFFD9D9D9))
+      : (_templateColor(raw?['fill']) ?? item.color ?? Colors.white);
+
+  final picked = await showDialog<Color>(
+    context: context,
+    builder: (dialogContext) {
+      HSVColor hsv = HSVColor.fromColor(current);
+      return StatefulBuilder(
+        builder: (context, setState) {
+          current = hsv.toColor();
+          return AlertDialog(
+            backgroundColor: const Color(0xFF171A21),
+            title: Text(
+              isOutline ? 'Outline Color' : 'Fill Color',
+              style: const TextStyle(color: Colors.white),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: current,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _colorSlider('Hue', hsv.hue, 360, (v) => setState(() => hsv = hsv.withHue(v))),
+                _colorSlider('Sat', hsv.saturation, 1, (v) => setState(() => hsv = hsv.withSaturation(v))),
+                _colorSlider('Val', hsv.value, 1, (v) => setState(() => hsv = hsv.withValue(v))),
+                const SizedBox(height: 4),
+                Text(
+                  '#${current.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
+                  style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('CANCEL'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, current),
+                child: const Text('APPLY'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+
+  if (picked == null) return;
+  if (isOutline) {
+    provider.updateOutline(id, item.outlineWidth, picked);
+  } else {
+    provider.updateShapeFill(id, picked);
+  }
+}
+
+Widget _colorSlider(
+    String label,
+    double value,
+    double max,
+    ValueChanged<double> onChanged,
+    ) {
+  return Row(
+    children: [
+      SizedBox(width: 38, child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11))),
+      Expanded(child: Slider(min: 0, max: max, value: value.clamp(0, max), onChanged: onChanged)),
+    ],
+  );
+}
+
+
 class _EditorSelectionControls extends StatefulWidget {
   final EditorItem item;
   final double bodyWidth;
@@ -3453,6 +3786,12 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
                 painter: _EditorSelectionBorderPainter(
                   width: widget.bodyWidth,
                   height: widget.bodyHeight,
+                  // Template pill/category buttons should get a rounded
+                  // selection path. For other objects, the painter falls back
+                  // to a small rounded rectangle.
+                  borderRadius: widget.item.borderRadius.isFinite
+                      ? widget.item.borderRadius
+                      : 0,
                 ),
               ),
             ),
@@ -3609,83 +3948,73 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
 class _EditorSelectionBorderPainter extends CustomPainter {
   final double width;
   final double height;
+  final double borderRadius;
 
   const _EditorSelectionBorderPainter({
     required this.width,
     required this.height,
+    this.borderRadius = 0,
   });
 
-  void _drawDottedLine(
-      Canvas canvas,
-      Offset start,
-      Offset end,
-      Paint paint, {
-        double spacing = 5.0,
-      }) {
-    final vector = end - start;
-    final distance = vector.distance;
-    if (distance <= 0.0) return;
+  void _drawDottedPath(Canvas canvas, Path path, Paint paint) {
+    for (final metric in path.computeMetrics()) {
+      final length = metric.length;
+      if (length <= 0) continue;
 
-    final direction = vector / distance;
-    final count = math.max(1, (distance / spacing).floor());
-    final actualSpacing = distance / count;
+      // Larger, darker dots so the selection is clearly visible on white
+      // template elements such as LIVING ROOM / BEDROOM / DINING / OFFICE.
+      const double dotRadius = 1.8;
+      const double step = 7.0;
+      double distance = 0;
 
-    for (int i = 0; i <= count; i++) {
-      final point = start + direction * math.min(i * actualSpacing, distance);
-      canvas.drawCircle(point, 1.45, paint);
+      while (distance <= length) {
+        final tangent = metric.getTangentForOffset(distance);
+        if (tangent != null) {
+          canvas.drawCircle(tangent.position, dotRadius, paint);
+        }
+        distance += step;
+      }
     }
   }
 
   @override
   void paint(Canvas canvas, Size size) {
-    // IMPORTANT:
-    // Draw the selection border from the ACTUAL painter size, not only from
-    // the incoming width/height. This makes the dotted border visible even
-    // when Flutter lays out the Positioned.fill CustomPaint with constraints.
     final w = math.max(1.0, size.width);
     final h = math.max(1.0, size.height);
 
+    // For wide/short template buttons use a pill/rounded shape. This is what
+    // makes the dotted selection follow the visible LIVING ROOM button instead
+    // of drawing a sharp rectangular box around it.
+    final radius = borderRadius > 0
+        ? borderRadius.clamp(0.0, math.min(w, h) / 2).toDouble()
+        : (w > h * 1.45 ? math.min(h / 2, 14.0) : 6.0);
+
+    final inset = 2.0;
+    final rect = Rect.fromLTWH(
+      inset,
+      inset,
+      math.max(1.0, w - inset * 2),
+      math.max(1.0, h - inset * 2),
+    );
+
+    final rrect = RRect.fromRectAndRadius(
+      rect,
+      Radius.circular(radius),
+    );
+
     final paint = Paint()
-      ..color = const Color(0xFF2196F3)
+      ..color = const Color(0xFF555555)
       ..style = PaintingStyle.fill
       ..isAntiAlias = true;
 
-    const inset = 1.0;
-    final left = inset;
-    final top = inset;
-    final right = math.max(left, w - inset);
-    final bottom = math.max(top, h - inset);
-
-    _drawDottedLine(
-      canvas,
-      Offset(left, top),
-      Offset(right, top),
-      paint,
-    );
-    _drawDottedLine(
-      canvas,
-      Offset(right, top),
-      Offset(right, bottom),
-      paint,
-    );
-    _drawDottedLine(
-      canvas,
-      Offset(right, bottom),
-      Offset(left, bottom),
-      paint,
-    );
-    _drawDottedLine(
-      canvas,
-      Offset(left, bottom),
-      Offset(left, top),
-      paint,
-    );
+    _drawDottedPath(canvas, Path()..addRRect(rrect), paint);
   }
 
   @override
   bool shouldRepaint(covariant _EditorSelectionBorderPainter oldDelegate) {
     return oldDelegate.width != width ||
-        oldDelegate.height != height;
+        oldDelegate.height != height ||
+        oldDelegate.borderRadius != borderRadius;
   }
 }
 
@@ -4628,6 +4957,7 @@ class ShapeBorderPainter extends CustomPainter {
   final Color color;
   final double width;
   final String style;
+  final String join;
 
   ShapeBorderPainter({
     required this.shape,
@@ -4635,6 +4965,7 @@ class ShapeBorderPainter extends CustomPainter {
     required this.color,
     required this.width,
     this.style = 'solid',
+    this.join = 'round',
   });
 
   @override
@@ -4647,6 +4978,9 @@ class ShapeBorderPainter extends CustomPainter {
       ..strokeCap = style == 'dotted' || style == 'fine_dotted'
           ? StrokeCap.round
           : StrokeCap.butt
+      ..strokeJoin = join == 'miter'
+          ? StrokeJoin.miter
+          : (join == 'bevel' ? StrokeJoin.bevel : StrokeJoin.round)
       ..color = color;
 
     if (style == 'solid') {

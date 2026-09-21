@@ -31,8 +31,6 @@ class _SplashScreenState extends State<SplashScreen> {
     final bool isOnboarded =
         prefs.getBool('isOnboarded') ?? false;
     if (!isOnboarded) {
-      debugPrint("🆕 First launch → OnboardingScreen");
-
       if (!mounted) return;
 
       Navigator.pushReplacementNamed(
@@ -130,10 +128,6 @@ class _SplashScreenState extends State<SplashScreen> {
             accountType,
           );
         }
-
-        // ========================================================
-        // 5. BUSINESS ACCOUNT → BUSINESS API
-        // ========================================================
         if (accountType == "business" && hasBusiness) {
           debugPrint("🏢 BUSINESS ACCOUNT DETECTED");
           debugPrint("📡 Loading Business into CommonProvider...");

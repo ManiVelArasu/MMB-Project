@@ -1,11 +1,8 @@
-// FIXED BUSINESS PROVIDER - Correct Logic Version
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:extended_image/extended_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -187,89 +184,6 @@ class BusinessProvider extends ChangeNotifier {
     }
   }
 
-  /// Extract the confirmed remote S3 key/path from upload/confirm responses.
-  /// The confirm API returns:
-  /// { success: true, data: { keys: [...], results: [{ key: ..., status: ... }] } }
-  String? _extractUploadedS3Key(dynamic response) {
-    if (response is! Map) return null;
-
-    dynamic payload = response;
-
-    // ApiResult implementations may return either the API data directly
-    // or a wrapper containing `data`.
-    final nested = response['data'];
-    if (nested is Map) {
-      payload = nested;
-    }
-
-    if (payload is Map) {
-      final keys = payload['keys'];
-      if (keys is List && keys.isNotEmpty) {
-        final key = keys.first?.toString().trim();
-        if (key != null && key.isNotEmpty) return key;
-      }
-
-      final results = payload['results'];
-      if (results is List && results.isNotEmpty) {
-        final first = results.first;
-        if (first is Map) {
-          final key = first['key']?.toString().trim();
-          if (key != null && key.isNotEmpty) return key;
-        }
-      }
-
-      final key =
-          (payload['key'] ??
-                  payload['s3_key'] ??
-                  payload['s3Key'] ??
-                  payload['logo_s3_key'] ??
-                  payload['logoS3Key'])
-              ?.toString()
-              .trim();
-
-      if (key != null && key.isNotEmpty) return key;
-    }
-
-    return null;
-  }
-
-  String? _extractUploadedPath(dynamic response) {
-    if (response is! Map) return null;
-
-    dynamic payload = response;
-    final nested = response['data'];
-    if (nested is Map) payload = nested;
-
-    if (payload is Map) {
-      final path = (payload['path'] ?? payload['filePath'] ?? payload['url'])
-          ?.toString()
-          .trim();
-
-      if (path != null && path.isNotEmpty) return path;
-
-      final key = _extractUploadedS3Key(response);
-      if (key != null && key.isNotEmpty) return key;
-    }
-
-    return null;
-  }
-
-  Future<void> _saveLogoS3Key(String key) async {
-    final cleanKey = key.trim();
-    if (cleanKey.isEmpty) return;
-
-    _logoS3Key = cleanKey;
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('logo_s3_key', cleanKey);
-
-    debugPrint("✅ Logo S3 Key saved: $cleanKey");
-  }
-
-  /// Uploads the CURRENT image only.
-  ///
-  /// This is intentionally separated from the final business-details save.
-  /// Image upload happens immediately after selecting/cropping/BG removal.
   Future<bool> uploadCurrentImage() async {
     final imageFile = _selectedImage;
 
@@ -287,11 +201,11 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-          );
+        imageFile: imageFile,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+      );
 
       bool success = false;
 
@@ -305,25 +219,23 @@ class BusinessProvider extends ChangeNotifier {
           String? apiPath;
           String? apiKey;
 
-          if (data is Map) {
-            final dynamic rootPath =
-                data['path'] ?? data['filePath'] ?? data['url'];
-            final dynamic rootKey =
-                data['key'] ?? data['s3Key'] ?? data['logoS3Key'];
+          final dynamic rootPath =
+              data['path'] ?? data['filePath'] ?? data['url'];
+          final dynamic rootKey =
+              data['key'] ?? data['s3Key'] ?? data['logoS3Key'];
 
-            apiPath = rootPath?.toString();
-            apiKey = rootKey?.toString();
+          apiPath = rootPath?.toString();
+          apiKey = rootKey?.toString();
 
-            // Support APIs that wrap the result inside `data`.
-            final nested = data['data'];
-            if (nested is Map) {
-              apiPath ??=
-                  (nested['path'] ?? nested['filePath'] ?? nested['url'])
-                      ?.toString();
-              apiKey ??=
-                  (nested['key'] ?? nested['s3Key'] ?? nested['logoS3Key'])
-                      ?.toString();
-            }
+          // Support APIs that wrap the result inside `data`.
+          final nested = data['data'];
+          if (nested is Map) {
+            apiPath ??=
+                (nested['path'] ?? nested['filePath'] ?? nested['url'])
+                    ?.toString();
+            apiKey ??=
+                (nested['key'] ?? nested['s3Key'] ?? nested['logoS3Key'])
+                    ?.toString();
           }
 
           _savedImagePath = (apiPath != null && apiPath.isNotEmpty)
@@ -396,9 +308,9 @@ class BusinessProvider extends ChangeNotifier {
   String get savedCategorySlug => _savedCategorySlug;
 
   Future<Map<String, dynamic>?> businessUpdateApi(
-    BuildContext context,
-    String subIndustry,
-  ) async {
+      BuildContext context,
+      String subIndustry,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
     notifyListeners();
@@ -473,9 +385,9 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<bool> updateBusinessDetails(
-    BuildContext context,
-    String businessUid,
-  ) async {
+      BuildContext context,
+      String businessUid,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
     notifyListeners();
@@ -485,11 +397,7 @@ class BusinessProvider extends ChangeNotifier {
       final email = emailController.text.trim();
       final phone = mobileController.text.trim();
 
-      final prefs = await SharedPreferences.getInstance();
-      final String logoS3Key =
-          (_logoS3Key != null && _logoS3Key!.trim().isNotEmpty)
-          ? _logoS3Key!.trim()
-          : (prefs.getString('logo_s3_key') ?? '').trim();
+      final logoS3Key = _logoS3Key?.trim() ?? '';
 
       debugPrint("======================================");
       debugPrint("🚀 UPDATE BUSINESS");
@@ -500,7 +408,8 @@ class BusinessProvider extends ChangeNotifier {
       debugPrint("Logo S3 Key  : $logoS3Key");
       debugPrint("======================================");
 
-      final result = await BusinessRepository.instance.updateBusinessDetails(
+      final result =
+      await BusinessRepository.instance.updateBusinessDetails(
         businessUid: businessUid,
         name: name,
         email: email,
@@ -511,33 +420,61 @@ class BusinessProvider extends ChangeNotifier {
       return await result.when(
         success: (data) async {
           _isUploading = false;
+
+          final prefs =
+          await SharedPreferences.getInstance();
+
           if (logoS3Key.isNotEmpty) {
-            _logoS3Key = logoS3Key;
-            await prefs.setString('logo_s3_key', logoS3Key);
+            await prefs.setString(
+              'logo_s3_key',
+              logoS3Key,
+            );
           }
-          await prefs.setString('business_uid', businessUid);
+
+          await prefs.setString(
+            'business_uid',
+            businessUid,
+          );
+
+          debugPrint(
+            "✅ BUSINESS UPDATE SUCCESS",
+          );
+
+          debugPrint(
+            "✅ SAVED LOGO KEY: $logoS3Key",
+          );
+
           notifyListeners();
-          debugPrint("✅ Business details updated");
-          debugPrint("✅ logo_s3_key sent: $logoS3Key");
 
           return true;
         },
+
         failure: (error) {
           _isUploading = false;
           _errorMessage = error.message;
-          notifyListeners();
 
-          debugPrint("❌ Business update failed: ${error.message}");
+          debugPrint(
+            "❌ Business update failed: ${error.message}",
+          );
+
+          notifyListeners();
 
           return false;
         },
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       _isUploading = false;
       _errorMessage = e.toString();
-      notifyListeners();
 
-      debugPrint("❌ Update business details error: $e");
+      debugPrint(
+        "❌ Update business details error: $e",
+      );
+
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
+
+      notifyListeners();
 
       return false;
     }
@@ -779,61 +716,118 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-          );
+        imageFile: imageFile,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+      );
 
       bool success = false;
 
       await uploadResult.when(
         success: (data) async {
-          success = true;
-          _selectedImage = imageFile;
-          _originalImage = imageFile;
+          String? key;
 
-          // Store the remote path/key returned by the upload API.
-          String? apiPath;
-          String? apiKey;
-
+          // Direct key
           if (data is Map) {
-            apiPath = (data['path'] ?? data['filePath'] ?? data['url'])
-                ?.toString();
-            apiKey = (data['key'] ?? data['s3Key'] ?? data['logoS3Key'])
-                ?.toString();
+            key = data['key']?.toString();
 
-            final nested = data['data'];
-            if (nested is Map) {
-              apiPath ??=
-                  (nested['path'] ?? nested['filePath'] ?? nested['url'])
-                      ?.toString();
-              apiKey ??=
-                  (nested['key'] ?? nested['s3Key'] ?? nested['logoS3Key'])
-                      ?.toString();
+            // Confirm response:
+            // { keys: [...] }
+            if ((key == null || key!.isEmpty) &&
+                data['keys'] is List &&
+                (data['keys'] as List).isNotEmpty) {
+              key = (data['keys'] as List).first?.toString();
+            }
+
+            // Confirm response:
+            // { results: [{ key: "...", status: "confirmed" }] }
+            if ((key == null || key!.isEmpty) &&
+                data['results'] is List &&
+                (data['results'] as List).isNotEmpty) {
+              final first = (data['results'] as List).first;
+
+              if (first is Map) {
+                key = first['key']?.toString();
+              }
+            }
+
+            // Nested data support
+            if ((key == null || key!.isEmpty) &&
+                data['data'] is Map) {
+              final nested = data['data'];
+
+              key = nested['key']?.toString();
+
+              if ((key == null || key!.isEmpty) &&
+                  nested['keys'] is List &&
+                  (nested['keys'] as List).isNotEmpty) {
+                key = (nested['keys'] as List).first?.toString();
+              }
+
+              if ((key == null || key!.isEmpty) &&
+                  nested['results'] is List &&
+                  (nested['results'] as List).isNotEmpty) {
+                final first = (nested['results'] as List).first;
+
+                if (first is Map) {
+                  key = first['key']?.toString();
+                }
+              }
             }
           }
 
-          _savedImagePath = (apiPath != null && apiPath.isNotEmpty)
-              ? apiPath
-              : imageFile.path;
+          if (key == null || key!.trim().isEmpty) {
+            debugPrint("❌ Upload succeeded but S3 key missing");
+            debugPrint("UPLOAD RESPONSE: $data");
 
-          if (apiKey != null && apiKey.isNotEmpty) {
-            _logoS3Key = apiKey;
+            success = false;
+            _errorMessage = "Image uploaded but S3 key not found";
+            return;
           }
 
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('saved_business_image_path', _savedImagePath!);
+          key = key!.trim();
 
-          debugPrint("✅ Cropped image uploaded. API PATH: $_savedImagePath");
-          debugPrint("✅ API KEY: $_logoS3Key");
+          // ⭐ VERY IMPORTANT
+          _logoS3Key = key;
+
+          final prefs = await SharedPreferences.getInstance();
+
+          await prefs.setString(
+            'logo_s3_key',
+            key,
+          );
+
+          debugPrint("======================================");
+          debugPrint("✅ IMAGE UPLOAD SUCCESS");
+          debugPrint("✅ NEW LOGO KEY:");
+          debugPrint(key);
+          debugPrint("======================================");
+
+          success = true;
+
+          _selectedImage = imageFile;
+          _originalImage = imageFile;
+
+          final localPath = imageFile.path;
+
+          _savedImagePath = localPath;
+
+          await prefs.setString(
+            'saved_business_image_path',
+            localPath,
+          );
 
           notifyListeners();
         },
+
         failure: (error) {
           success = false;
+          _errorMessage = error.message;
 
-          debugPrint("Image upload failed: ${error.message}");
+          debugPrint(
+            "❌ Image upload failed: ${error.message}",
+          );
         },
       );
 
@@ -990,9 +984,9 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<void> pickImage(
-    BuildContext context, {
-    ImageSource source = ImageSource.gallery,
-  }) async {
+      BuildContext context, {
+        ImageSource source = ImageSource.gallery,
+      }) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -1107,12 +1101,12 @@ class BusinessProvider extends ChangeNotifier {
     AccTypeModel(
       title: "For my Business",
       description:
-          "Create branded designs tailored to your business and industry.",
+      "Create branded designs tailored to your business and industry.",
     ),
     AccTypeModel(
       title: "Personal Use",
       description:
-          "Create designs for festivals, birthdays, quotes, social posts, and more.",
+      "Create designs for festivals, birthdays, quotes, social posts, and more.",
     ),
   ];
 

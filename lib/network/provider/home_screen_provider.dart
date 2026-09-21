@@ -7,6 +7,7 @@ import '../../Api Model/templatecategories.dart';
 import '../../Api Model/Template_model.dart';
 import '../../Repository/home_repository.dart';
 import '../../model/my_space_model.dart';
+import 'getMe_provider.dart';
 
 class HomeScreenProvider extends ChangeNotifier {
   HomeScreenProvider({bool loadSpecialDaysOnInit = true}) {
@@ -21,6 +22,7 @@ class HomeScreenProvider extends ChangeNotifier {
   String get businessName => _businessName;
   String selectedDate = "2";
   final GetMeRepository getMeRepository = GetMeRepository.instance;
+  final CommonProvider provider = CommonProvider.instance;
 
   Future<void> loadSavedBusinessData() async {
     try {
@@ -37,8 +39,6 @@ class HomeScreenProvider extends ChangeNotifier {
       debugPrint("Error loading business name: $e");
     }
   }
-
-
 
   String? _selectedDates;
 

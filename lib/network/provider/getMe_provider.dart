@@ -76,6 +76,7 @@ class CommonProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<bool> loadBusiness({bool forceRefresh = false}) async {
     if (_business != null && !forceRefresh) {
       return true;
