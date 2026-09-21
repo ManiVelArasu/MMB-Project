@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:mmb_app/Api%20Model/key_words_model.dart';
 
 import '../../Api Model/me_api.dart';
 import '../../Api Model/business_model.dart';
@@ -23,10 +24,6 @@ class CommonProvider extends ChangeNotifier {
   String? _meError;
   String? get meError => _meError;
 
-  // =========================
-  // BUSINESS
-  // =========================
-
   BusinessApiModel? _business;
   BusinessApiModel? get business => _business;
 
@@ -36,9 +33,15 @@ class CommonProvider extends ChangeNotifier {
   String? _businessError;
   String? get businessError => _businessError;
 
-  // =========================
-  // LOAD ME
-  // =========================
+  List<KeyWordsData> _keyWords = [];
+
+  List<KeyWordsData> get keyWords => _keyWords;
+
+  bool _isKeyWordsLoading = false;
+  bool get isKeyWordsLoading => _isKeyWordsLoading;
+
+  String? _keyWordsError;
+  String? get keyWordsError => _keyWordsError;
 
   Future<bool> loadMe({bool forceRefresh = false}) async {
     if (_me != null && !forceRefresh) {
@@ -60,9 +63,6 @@ class CommonProvider extends ChangeNotifier {
       }
 
       _me = data;
-
-      debugPrint('✅ GetMe data loaded');
-
       return true;
     } catch (e, stackTrace) {
       _meError = e.toString();
@@ -120,9 +120,52 @@ class CommonProvider extends ChangeNotifier {
     }
   }
 
-  // =========================
-  // CLEAR
-  // =========================
+  Future<bool> loadKeyWords({bool forceRefresh = false}) async {
+    // Already loaded
+    if (_keyWords.isNotEmpty && !forceRefresh) {
+      return true;
+    }
+
+    _isKeyWordsLoading = true;
+    _keyWordsError = null;
+    notifyListeners();
+
+    try {
+      final result = await GetMeRepository.instance.keyWords();
+
+      final KeyWordsModel? data = result.data;
+
+      if (data == null) {
+        _keyWordsError = "Keywords data not found";
+        return false;
+      }
+
+      // API model -> List<KeyWordsData>
+      _keyWords = data.data;
+
+      debugPrint("================================");
+      debugPrint("✅ KEYWORDS API SUCCESS");
+      debugPrint("Total Keywords : ${_keyWords.length}");
+
+      for (final keyword in _keyWords) {
+        debugPrint("Keyword : ${keyword.name} | Slug : ${keyword.slug}");
+      }
+
+      debugPrint("================================");
+
+      return true;
+    } catch (e, stackTrace) {
+      _keyWordsError = e.toString();
+
+      debugPrint("❌ Keywords API failed: $e");
+      debugPrint("$stackTrace");
+
+      return false;
+    } finally {
+      _isKeyWordsLoading = false;
+      notifyListeners();
+    }
+  }
 
   void clearMe() {
     _me = null;

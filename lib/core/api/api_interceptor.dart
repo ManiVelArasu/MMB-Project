@@ -5,141 +5,200 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api_endpoints.dart';
 import 'api_handler.dart';
 
-/// Refreshes an expired access token and retries the failed request.
-///
-/// A single refresh is shared by concurrent 401 responses so several API
-/// calls cannot trigger several refresh-token requests at the same time.
 class TokenRefreshInterceptor extends Interceptor {
   final Dio dio;
 
   bool _isRefreshing = false;
-  Future<void>? _refreshFuture;
+  Future<bool>? _refreshFuture;
 
   TokenRefreshInterceptor(this.dio);
 
   @override
   Future<void> onError(
-      DioException err,
-      ErrorInterceptorHandler handler,
-      ) async {
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
     if (err.response?.statusCode != 401) {
       return handler.next(err);
     }
 
-    // Never refresh the same request more than once.
-    if (err.requestOptions.extra['tokenRefreshRetried'] == true) {
+    final request = err.requestOptions;
+
+    if (request.extra['tokenRefreshRetried'] == true) {
+      debugPrint('❌ Request still returned 401 after token refresh');
+
       return handler.next(err);
     }
 
-    // Never try to refresh the refresh-token request itself.
-    if (err.requestOptions.path.contains(ApiEndpoints.refreshToken)) {
+    if (request.path.contains(ApiEndpoints.refreshToken)) {
+      debugPrint('❌ Refresh token API itself returned 401');
+
       return handler.next(err);
     }
 
     final prefs = await SharedPreferences.getInstance();
+
     final refreshToken = prefs.getString('refresh_token');
 
     if (refreshToken == null || refreshToken.isEmpty) {
+      debugPrint('❌ Refresh token missing');
+
       return handler.next(err);
     }
 
     try {
+      bool refreshSuccess;
+
       if (_isRefreshing && _refreshFuture != null) {
-        await _refreshFuture;
+        debugPrint('⏳ Token refresh already running → waiting...');
+
+        refreshSuccess = await _refreshFuture!;
       } else {
         _isRefreshing = true;
+
         final future = _performRefresh(refreshToken);
+
         _refreshFuture = future;
 
         try {
-          await future;
+          refreshSuccess = await future;
         } finally {
-          _refreshFuture = null;
           _isRefreshing = false;
+          _refreshFuture = null;
         }
       }
 
-      // Read the token again after refresh. Do not use the stale value that
-      // was read before _performRefresh().
-      final latestPrefs = await SharedPreferences.getInstance();
-      final newAccessToken = latestPrefs.getString('auth_token');
+      if (!refreshSuccess) {
+        debugPrint('❌ Token refresh failed');
 
-      if (newAccessToken == null || newAccessToken.isEmpty) {
         return handler.next(err);
       }
 
-      final requestOptions = err.requestOptions;
-      requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+      final latestPrefs = await SharedPreferences.getInstance();
 
-      // Retry through the same Dio instance, but mark it so a broken refresh
-      // cannot recursively trigger refresh forever.
-      requestOptions.extra['tokenRefreshRetried'] = true;
+      final newAccessToken =
+          latestPrefs.getString('access_token') ??
+          latestPrefs.getString('auth_token');
 
-      final response = await dio.fetch(requestOptions);
+      if (newAccessToken == null || newAccessToken.isEmpty) {
+        debugPrint('❌ New access token not found after refresh');
+
+        return handler.next(err);
+      }
+
+      debugPrint('🔄 Retrying original request with new access token');
+
+      request.headers['Authorization'] = 'Bearer $newAccessToken';
+
+      request.extra['tokenRefreshRetried'] = true;
+
+      final response = await dio.fetch(request);
+
+      debugPrint('✅ Original request succeeded after token refresh');
+
       return handler.resolve(response);
     } catch (e, stackTrace) {
-      debugPrint('❌ Token refresh failed: $e');
+      debugPrint('❌ Token refresh/retry exception: $e');
+
       debugPrintStack(stackTrace: stackTrace);
-      _refreshFuture = null;
-      _isRefreshing = false;
+
       return handler.next(err);
     }
   }
 
-  Future<void> _performRefresh(String refreshToken) async {
-    // Separate Dio: refresh API itself must not pass through this interceptor.
-    final refreshDio = Dio(
-      BaseOptions(
-        baseUrl: dio.options.baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
-        headers: const {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
+  Future<bool> _performRefresh(String refreshToken) async {
+    try {
+      debugPrint('🔄 ACCESS TOKEN EXPIRED');
 
-    final response = await refreshDio.post(
-      ApiEndpoints.refreshToken,
-      data: {'refresh_token': refreshToken},
-    );
+      debugPrint('📡 Calling Refresh Token API...');
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Refresh API failed: ${response.statusCode}');
+      final refreshDio = Dio(
+        BaseOptions(
+          baseUrl: dio.options.baseUrl,
+          connectTimeout: const Duration(seconds: 30),
+          sendTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+          headers: const {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      final response = await refreshDio.post(
+        ApiEndpoints.refreshToken,
+        data: {'refresh_token': refreshToken},
+      );
+
+      debugPrint('🔑 Refresh API status: ${response.statusCode}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        debugPrint('❌ Refresh API failed');
+
+        return false;
+      }
+
+      final body = response.data;
+
+      if (body is! Map) {
+        debugPrint('❌ Invalid refresh response');
+
+        return false;
+      }
+
+      final dynamic rawData = body['data'];
+
+      final Map<dynamic, dynamic> tokenData = rawData is Map ? rawData : body;
+
+      final dynamic accessToken =
+          tokenData['access_token'] ??
+          tokenData['accessToken'] ??
+          tokenData['token'];
+
+      final dynamic newRefreshToken =
+          tokenData['refresh_token'] ??
+          tokenData['refreshToken'] ??
+          refreshToken;
+
+      if (accessToken == null || accessToken.toString().isEmpty) {
+        debugPrint('❌ Refresh API did not return access token');
+
+        return false;
+      }
+
+      await ApiHandler.instance.setTokens(
+        token: accessToken.toString(),
+        refreshToken: newRefreshToken.toString(),
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setString('access_token', accessToken.toString());
+
+      await prefs.setString('auth_token', accessToken.toString());
+
+      await prefs.setString('refresh_token', newRefreshToken.toString());
+
+      debugPrint('================================================');
+      debugPrint('✅ NEW ACCESS TOKEN GENERATED');
+      debugPrint('✅ NEW REFRESH TOKEN SAVED');
+      debugPrint('================================================');
+
+      return true;
+    } on DioException catch (e) {
+      debugPrint('❌ Refresh API DioException');
+
+      debugPrint('Status: ${e.response?.statusCode}');
+
+      debugPrint('Response: ${e.response?.data}');
+
+      return false;
+    } catch (e, stackTrace) {
+      debugPrint('❌ Refresh API Exception: $e');
+
+      debugPrintStack(stackTrace: stackTrace);
+
+      return false;
     }
-
-    final body = response.data;
-    if (body is! Map) {
-      throw Exception('Invalid refresh response');
-    }
-
-    final data = body['data'];
-    final Map<dynamic, dynamic> tokenData =
-    data is Map ? data : body;
-
-    final newAccessToken =
-        tokenData['access_token'] ??
-            tokenData['accessToken'] ??
-            tokenData['token'];
-
-    final newRefreshToken =
-        tokenData['refresh_token'] ??
-            tokenData['refreshToken'] ??
-            refreshToken;
-
-    if (newAccessToken == null || newAccessToken.toString().isEmpty) {
-      throw Exception('Refresh API did not return access token');
-    }
-
-    // Save BOTH tokens. If backend does not rotate the refresh token, the
-    // old refresh token is retained.
-    await ApiHandler.instance.setTokens(
-      token: newAccessToken.toString(),
-      refreshToken: newRefreshToken.toString(),
-    );
-
-    debugPrint('✅ Access token refreshed');
-    debugPrint('✅ Refresh token saved');
   }
 }

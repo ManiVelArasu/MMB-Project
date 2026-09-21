@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../../component/custom_widget.dart';
 import '../../network/provider/business_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
-import '../../network/provider/getMe_provider.dart';
+import '../../network/provider/common_provider.dart';
 import '../../utils/height_measure.dart';
 import '../../widgets/button_widget.dart';
 import '../../widgets/title_value_widget.dart';

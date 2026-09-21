@@ -15,7 +15,7 @@ import 'core/api/enums/api_content_type.dart';
 import 'core/api/enums/toast_position.dart';
 import 'network/provider/business_provider.dart';
 import 'network/provider/custom_theme_provider.dart';
-import 'network/provider/getMe_provider.dart';
+import 'network/provider/common_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

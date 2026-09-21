@@ -9,7 +9,7 @@ import '../../component/custom_searchbar.dart';
 import '../../component/custom_widget.dart';
 
 import '../../network/provider/edit_photo_provider.dart';
-import '../../network/provider/getMe_provider.dart';
+import '../../network/provider/common_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../core/api/api_endpoints.dart';
 
@@ -60,11 +60,9 @@ class _EditProfileViewState extends State<_EditProfileView> {
 
         final provider = context.read<EditPhotoProvider>();
 
-        // Business API is the source of business profile data.
         if (business != null) {
           await provider.setBusinessApiData(business);
         } else if (me != null) {
-          // Fallback only when Business API data is not available.
           provider.setGetMeData(me);
         }
       });

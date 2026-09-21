@@ -1,5 +1,6 @@
 import 'package:mmb_app/Api%20Model/business_model.dart';
 
+import '../Api Model/key_words_model.dart';
 import '../Api Model/me_api.dart';
 import '../Api Model/template_size_model.dart';
 import '../core/api/api_endpoints.dart';
@@ -41,6 +42,15 @@ class GetMeRepository {
         method: ApiMethod.get,
       ),
       fromJson: (json) => BusinessModel.fromJson(json),
+    );
+  }
+  Future<ApiResult<KeyWordsModel>> keyWords() {
+    return ApiRepository.instance.request<KeyWordsModel>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.keyWords,
+        method: ApiMethod.get,
+      ),
+      fromJson: (json) => KeyWordsModel.fromJson(json),
     );
   }
 }

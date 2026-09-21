@@ -17,7 +17,7 @@ import '../../component/custom_widget.dart';
 import '../../component/home_appbar.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
-import '../../network/provider/getMe_provider.dart';
+import '../../network/provider/common_provider.dart';
 import '../../network/provider/home_screen_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
@@ -1114,7 +1114,10 @@ class HomeScreen extends StatelessWidget {
                           Navigator.pop(dialogContext);
 
                           // உங்கள் premium screen route
-                          Navigator.pushNamed(context, '/PremiumScreen');
+                          Navigator.pushNamed(
+                            context,
+                            '/PlansAndPricingScreen',
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF202020),

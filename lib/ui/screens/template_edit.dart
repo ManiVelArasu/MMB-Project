@@ -17,6 +17,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../Api Model/editor_model.dart';
 import '../../Repository/freePic.dart';
 import '../../component/custom_widget.dart';
@@ -110,6 +112,10 @@ class EditorView extends StatefulWidget {
 
 class _EditorViewState extends State<EditorView> {
   bool _showFlipOptions = false;
+  final AudioPlayer _musicPlayer = AudioPlayer();
+  StreamSubscription<Duration>? _musicPositionSubscription;
+  StreamSubscription<Duration>? _musicDurationSubscription;
+  StreamSubscription<void>? _musicCompleteSubscription;
 
   Size _getCanvasSize() {
     if (widget.canvasWidth != null &&
@@ -402,10 +408,12 @@ class _EditorViewState extends State<EditorView> {
         );
 
         const outputSize = 512.0;
-        final sourceWidth =
-        pictureInfo.size.width > 0 ? pictureInfo.size.width : outputSize;
-        final sourceHeight =
-        pictureInfo.size.height > 0 ? pictureInfo.size.height : outputSize;
+        final sourceWidth = pictureInfo.size.width > 0
+            ? pictureInfo.size.width
+            : outputSize;
+        final sourceHeight = pictureInfo.size.height > 0
+            ? pictureInfo.size.height
+            : outputSize;
 
         final recorder = ui.PictureRecorder();
         final canvas = Canvas(recorder);
@@ -426,9 +434,7 @@ class _EditorViewState extends State<EditorView> {
           outputSize.toInt(),
           outputSize.toInt(),
         );
-        final byteData = await image.toByteData(
-          format: ui.ImageByteFormat.png,
-        );
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
         pictureInfo.picture.dispose();
         picture.dispose();
@@ -442,10 +448,7 @@ class _EditorViewState extends State<EditorView> {
         final file = File(
           '${dir.path}/shape_${DateTime.now().microsecondsSinceEpoch}.png',
         );
-        await file.writeAsBytes(
-          byteData.buffer.asUint8List(),
-          flush: true,
-        );
+        await file.writeAsBytes(byteData.buffer.asUint8List(), flush: true);
 
         // Render remote SVG as a real local PNG image layer. The existing
         // canvas renderer supports image layers, so the selected shape is
@@ -470,7 +473,10 @@ class _EditorViewState extends State<EditorView> {
       String assetPath,
       ) async {
     try {
-      final pictureInfo = await vg.loadPicture(svg.SvgAssetLoader(assetPath), null);
+      final pictureInfo = await vg.loadPicture(
+        svg.SvgAssetLoader(assetPath),
+        null,
+      );
 
       const outputSize = 512.0;
 
@@ -1233,10 +1239,7 @@ class _EditorViewState extends State<EditorView> {
                 if (!sheetOpen || !sheetContext.mounted) return;
 
                 for (final category in categories) {
-                  loadCategory(
-                    category['query']!,
-                    setSheetState,
-                  );
+                  loadCategory(category['query']!, setSheetState);
                 }
               });
             }
@@ -1909,8 +1912,11 @@ class _EditorViewState extends State<EditorView> {
                               onTap: () {
                                 setSheetState(() => selectedTab = 1);
                                 if (!elementsInitialLoadScheduled) {
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    if (!sheetOpen || !sheetContext.mounted) return;
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                      _,
+                                      ) {
+                                    if (!sheetOpen || !sheetContext.mounted)
+                                      return;
                                     elementsInitialLoadScheduled = true;
                                     for (final category in categories) {
                                       loadCategory(
@@ -1928,8 +1934,11 @@ class _EditorViewState extends State<EditorView> {
                               selected: selectedTab == 2,
                               onTap: () {
                                 setSheetState(() => selectedTab = 2);
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  if (!sheetOpen || !sheetContext.mounted) return;
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                    ) {
+                                  if (!sheetOpen || !sheetContext.mounted)
+                                    return;
                                   if (provider.mediaImageAssets.isEmpty &&
                                       !provider.isMediaImagesLoading) {
                                     provider.fetchMediaImages('');
@@ -2627,6 +2636,37 @@ class _EditorViewState extends State<EditorView> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    _musicPositionSubscription = _musicPlayer.onPositionChanged.listen((position) {
+      if (!mounted) return;
+      context.read<EditorProvider>().setMusicPosition(position);
+    });
+
+    _musicDurationSubscription = _musicPlayer.onDurationChanged.listen((duration) {
+      if (!mounted) return;
+      context.read<EditorProvider>().setMusicDuration(duration);
+    });
+
+    _musicCompleteSubscription = _musicPlayer.onPlayerComplete.listen((_) {
+      if (!mounted) return;
+      final provider = context.read<EditorProvider>();
+      provider.setMusicPlaying(false);
+      provider.setMusicPosition(Duration.zero);
+    });
+  }
+
+  @override
+  void dispose() {
+    _musicPositionSubscription?.cancel();
+    _musicDurationSubscription?.cancel();
+    _musicCompleteSubscription?.cancel();
+    _musicPlayer.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final provider = context.watch<EditorProvider>();
     final themeProvider = context.watch<CustomThemeProvider>();
@@ -2738,7 +2778,7 @@ class _EditorViewState extends State<EditorView> {
             tooltip: 'Download',
 
             icon: const Icon(Icons.download_rounded, color: Colors.red),
-            onPressed: () => _showExportSheet(context),
+            onPressed: () => _showExportSheet(context,provider),
           ),
           IconButton(
             icon: const Icon(Icons.redo_rounded, color: Colors.grey),
@@ -2964,6 +3004,31 @@ class _EditorViewState extends State<EditorView> {
             _bottomTool(
               Image.asset("assets/images/gallery.png"),
               'BACKGROUND',
+                  () => _showBackgroundBottomSheet(context, provider, isDark),
+            ),
+            _bottomTool(
+              Image.asset("assets/images/elements.png"),
+              'ELEMENTS',
+                  () => _showBackgroundBottomSheet(context, provider, isDark),
+            ),
+            _bottomTool(
+              Image.asset("assets/images/magic_star.png"),
+              'AI TOOLS',
+                  () => _showBackgroundBottomSheet(context, provider, isDark),
+            ),
+            _bottomTool(
+              Image.asset("assets/images/music.png"),
+              provider.isEditorMusicPlaying ? 'PLAYING' : 'MUSIC',
+                  () => _showMusicBottomSheet(context, provider, isDark),
+            ),
+            _bottomTool(
+              Image.asset("assets/images/brand_kit.png"),
+              'BRAND KIT',
+                  () => _showBackgroundBottomSheet(context, provider, isDark),
+            ),
+            _bottomTool(
+              Image.asset("assets/images/heart.png"),
+              'FAVORITES',
                   () => _showBackgroundBottomSheet(context, provider, isDark),
             ),
           ],
@@ -3768,7 +3833,9 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _shapeOutlineStyleTools(
-      String selected, ValueChanged<String> onChanged) {
+      String selected,
+      ValueChanged<String> onChanged,
+      ) {
     const styles = <String>['none', 'solid', 'dashed', 'dotted', 'fine_dotted'];
     const labels = <String>['NONE', 'SOLID', 'DASHED', 'DOTTED', 'FINE'];
 
@@ -3827,17 +3894,21 @@ class _EditorViewState extends State<EditorView> {
           ),
           const SizedBox(height: 2),
           Row(
-            children: labels.map((label) => Expanded(
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 7,
-                  fontWeight: FontWeight.w600,
+            children: labels
+                .map(
+                  (label) => Expanded(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    fontSize: 7,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            )).toList(),
+            )
+                .toList(),
           ),
         ],
       ),
@@ -4672,6 +4743,376 @@ class _EditorViewState extends State<EditorView> {
     }
   }
 
+  Future<void> _toggleEditorMusic(EditorProvider provider) async {
+    try {
+      if (provider.selectedMusicPath == null) return;
+
+      if (provider.isEditorMusicPlaying) {
+        await _musicPlayer.pause();
+        provider.setMusicPlaying(false);
+      } else {
+        await _musicPlayer.resume();
+        provider.setMusicPlaying(true);
+      }
+    } catch (e) {
+      debugPrint('Music toggle error: $e');
+    }
+  }
+
+  Future<void> _pickMusicFile(EditorProvider provider) async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.audio,
+        allowMultiple: false,
+        withData: false,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      final path = file.path;
+      if (path == null || path.isEmpty) return;
+
+      provider.setSelectedMusic(
+        path: path,
+        title: file.name,
+      );
+
+      await _musicPlayer.stop();
+      await _musicPlayer.play(DeviceFileSource(path));
+      provider.setMusicPlaying(true);
+    } catch (e, stackTrace) {
+      debugPrint('Music upload error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      provider.setMusicPlaying(false);
+      Fluttertoast.showToast(msg: 'Unable to upload music');
+    }
+  }
+
+  Future<void> _playMusicPath(
+      EditorProvider provider,
+      String path,
+      String title,
+      ) async {
+    try {
+      provider.setSelectedMusic(path: path, title: title);
+      await _musicPlayer.stop();
+      await _musicPlayer.play(DeviceFileSource(path));
+      provider.setMusicPlaying(true);
+    } catch (e) {
+      debugPrint('Music play error: $e');
+      provider.setMusicPlaying(false);
+    }
+  }
+
+  void _showMusicBottomSheet(
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
+    final searchController = TextEditingController();
+    final tracks = <Map<String, String>>[
+      {'title': 'Corporate 12', 'duration': '00.30'},
+      {'title': 'Corporate 12', 'duration': '00.30'},
+      {'title': 'Corporate 12', 'duration': '00.30'},
+      {'title': 'Corporate 12', 'duration': '00.30'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final filtered = tracks.where((track) {
+              final q = searchController.text.trim().toLowerCase();
+              return q.isEmpty || track['title']!.toLowerCase().contains(q);
+            }).toList();
+
+            return SafeArea(
+              child: Container(
+                height: MediaQuery.of(context).size.height * .82,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF171717) : Colors.white,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(18),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            onPressed: () => Navigator.pop(sheetContext),
+                          ),
+                          const Expanded(
+                            child: Text(
+                              'Music',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.check_circle,
+                                color: Colors.green),
+                            onPressed: () => Navigator.pop(sheetContext),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: TextField(
+                        controller: searchController,
+                        onChanged: (_) => setSheetState(() {}),
+                        decoration: InputDecoration(
+                          hintText: 'Search by tags, keywords',
+                          prefixIcon: const Icon(Icons.search, size: 18),
+                          suffixIcon: const Icon(Icons.mic, size: 18),
+                          filled: true,
+                          fillColor: isDark
+                              ? const Color(0xFF242424)
+                              : const Color(0xFFF8F8F8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 40,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        children: [
+                          _musicChip('Super', true),
+                          _musicChip('Greetings', false),
+                          _musicChip('Thank You', false),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                        itemCount: filtered.length,
+                        itemBuilder: (_, index) {
+                          final track = filtered[index];
+                          final selected = provider.selectedMusicTitle ==
+                              track['title'];
+                          return GestureDetector(
+                            onTap: () async {
+                              // Demo list entries are placeholders. Real API
+                              // tracks should pass their local/downloaded path.
+                              if (provider.selectedMusicPath != null &&
+                                  selected) {
+                                await _toggleEditorMusic(provider);
+                              }
+                            },
+                            child: Container(
+                              height: 64,
+                              margin: const EdgeInsets.only(bottom: 7),
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF211A1B)
+                                    : const Color(0xFFFFF9F9),
+                                borderRadius: BorderRadius.circular(7),
+                                border: Border.all(
+                                  color: const Color(0xFFFFCACA),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFE7E7),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Icon(
+                                      provider.isEditorMusicPlaying && selected
+                                          ? Icons.pause_rounded
+                                          : Icons.play_arrow_rounded,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          track['title']!,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Duration: ${track['duration']}',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    selected
+                                        ? Icons.check_box_rounded
+                                        : Icons.check_box_outline_blank_rounded,
+                                    color: selected
+                                        ? const Color(0xFFFF8F8F)
+                                        : Colors.grey.shade300,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    if (provider.selectedMusicPath != null)
+                      _buildNowPlayingBar(context, provider),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _pickMusicFile(provider),
+                              icon: const Icon(Icons.upload_file, size: 16),
+                              label: const Text('UPLOAD MUSIC'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(sheetContext);
+                                Fluttertoast.showToast(
+                                  msg: 'Text to Audio coming soon',
+                                );
+                              },
+                              icon: const Icon(Icons.graphic_eq, size: 16),
+                              label: const Text('TEXT TO AUDIO'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.black,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(searchController.dispose);
+  }
+
+  Widget _musicChip(String title, bool selected) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+      decoration: BoxDecoration(
+        color: selected ? Colors.black87 : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.shade400),
+      ),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: selected ? Colors.white : Colors.black87,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNowPlayingBar(
+      BuildContext context,
+      EditorProvider provider,
+      ) {
+    final duration = provider.musicDuration.inMilliseconds;
+    final position = provider.musicPosition.inMilliseconds;
+    final progress = duration > 0
+        ? (position / duration).clamp(0.0, 1.0)
+        : 0.0;
+
+    return Container(
+      height: 58,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      color: const Color(0xFFFF2028),
+      child: Row(
+        children: [
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            onPressed: () => _toggleEditorMusic(provider),
+            icon: Icon(
+              provider.isEditorMusicPlaying
+                  ? Icons.pause_rounded
+                  : Icons.play_arrow_rounded,
+              color: Colors.white,
+            ),
+          ),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  provider.selectedMusicTitle ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 2,
+                  backgroundColor: Colors.white54,
+                  valueColor:
+                  const AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            onPressed: () async {
+              await _musicPlayer.stop();
+              provider.clearMusic();
+            },
+            icon: const Icon(Icons.close, color: Colors.white, size: 18),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<File?> _renderCurrentPagePng(EditorProvider provider) async {
     final boundary = _canvasKey.currentContext?.findRenderObject();
     if (boundary is! RenderRepaintBoundary) return null;
@@ -4768,6 +5209,26 @@ class _EditorViewState extends State<EditorView> {
         ),
       );
 
+      // Bundle the selected music file into the project ZIP. PNG itself cannot
+      // contain audio, so the audio is preserved as a separate project asset.
+      final musicPath = provider.selectedMusicPath;
+      if (musicPath != null && musicPath.isNotEmpty) {
+        final musicFile = File(musicPath);
+        if (await musicFile.exists()) {
+          final musicBytes = await musicFile.readAsBytes();
+          final musicName = provider.selectedMusicTitle?.trim().isNotEmpty == true
+              ? provider.selectedMusicTitle!.trim()
+              : 'selected_music.mp3';
+          archive.addFile(
+            ArchiveFile(
+              'music/$musicName',
+              musicBytes.length,
+              musicBytes,
+            ),
+          );
+        }
+      }
+
       final zipBytes = ZipEncoder().encode(archive);
 
       final dir = await getTemporaryDirectory();
@@ -4788,7 +5249,7 @@ class _EditorViewState extends State<EditorView> {
     }
   }
 
-  void _showExportSheet(BuildContext context) {
+  void _showExportSheet(BuildContext context,EditorProvider provider) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -4856,7 +5317,7 @@ class _EditorViewState extends State<EditorView> {
                       child: _exportTile(
                         icon: Icons.folder_zip_rounded,
                         title: 'ZIP',
-                        subtitle: 'JSON + PNG',
+                        subtitle: provider.selectedMusicPath != null ? 'JSON + PNG + Music' : 'JSON + PNG',
                         onTap: () {
                           Navigator.pop(modalContext);
                           _exportCurrentPageZip(context);
@@ -5358,7 +5819,9 @@ class _TransformSelectionOverlayState
                         painter: _ImageSelectionPainter(
                           style: _provider.outlineStyle(widget.item.id ?? ''),
                           outlineWidth: widget.item.outlineWidth,
-                          outlineColor: widget.item.outlineColor ?? const Color(0xFFD9D9D9),
+                          outlineColor:
+                          widget.item.outlineColor ??
+                              const Color(0xFFD9D9D9),
                           borderRadius: _selectionBorderRadius(visual.size),
                         ),
                       ),
@@ -5756,7 +6219,9 @@ class _ImageSelectionPainter extends CustomPainter {
         math.max(0.0, size.height - width),
       );
 
-      final radius = borderRadius.clamp(0.0, math.min(rect.width, rect.height) / 2.0).toDouble();
+      final radius = borderRadius
+          .clamp(0.0, math.min(rect.width, rect.height) / 2.0)
+          .toDouble();
       final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
 
       if (style == 'solid') {
@@ -5791,7 +6256,9 @@ class _ImageSelectionPainter extends CustomPainter {
       math.max(0.0, size.height - strokeWidth),
     );
 
-    final radius = borderRadius.clamp(0.0, math.min(rect.width, rect.height) / 2.0).toDouble();
+    final radius = borderRadius
+        .clamp(0.0, math.min(rect.width, rect.height) / 2.0)
+        .toDouble();
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, Radius.circular(radius)),
       borderPaint,

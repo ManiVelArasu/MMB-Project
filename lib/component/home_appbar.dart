@@ -5,10 +5,9 @@ import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/core/api/api_endpoints.dart';
 import 'package:provider/provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
-import '../network/provider/getMe_provider.dart';
+import '../network/provider/common_provider.dart';
 
-class HomeCustomAppBar extends StatefulWidget
-    implements PreferredSizeWidget {
+class HomeCustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String notificationCount;
   final VoidCallback? onMagicWandTap;
   final VoidCallback? onNotificationTap;
@@ -54,9 +53,7 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
         return;
       }
 
-      final success = await commonProvider.loadBusiness(
-        forceRefresh: true,
-      );
+      final success = await commonProvider.loadBusiness(forceRefresh: true);
 
       if (!mounted) return;
 
@@ -68,17 +65,13 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
         debugPrint("Business UID  : ${business?.uid}");
         debugPrint("Business Name : ${business?.name}");
         debugPrint("Logo S3 Key   : ${business?.logoS3Key}");
-        debugPrint(
-          "Industry      : ${business?.businessCategory?.name}",
-        );
-        debugPrint(
-          "Industry Slug : ${business?.businessCategory?.slug}",
-        );
+        debugPrint("Industry      : ${business?.businessCategory?.name}");
+        debugPrint("Industry Slug : ${business?.businessCategory?.slug}");
         debugPrint("======================================");
       } else {
         debugPrint(
           "❌ HOME BUSINESS API FAILED: "
-              "${commonProvider.businessError}",
+          "${commonProvider.businessError}",
         );
       }
     } catch (e, stackTrace) {
@@ -95,13 +88,12 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
     final commonProvider = context.watch<CommonProvider>();
     final business = commonProvider.business;
 
-    final String businessName =
-    business?.name?.isNotEmpty == true
+    final String businessName = business?.name?.isNotEmpty == true
         ? business!.name!
         : "Business Name";
 
     final String businessCategory =
-    business?.businessCategory?.name?.isNotEmpty == true
+        business?.businessCategory?.name?.isNotEmpty == true
         ? business!.businessCategory!.name!
         : "Business Category";
 
@@ -112,13 +104,8 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
     debugPrint("🖼️ Logo S3 Key   : $logoS3Key");
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 16.w,
-        vertical: 10.h,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.transparent,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+      decoration: const BoxDecoration(color: Colors.transparent),
       child: SafeArea(
         bottom: false,
         child: Row(
@@ -130,38 +117,27 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
               width: 50.w,
               height: 50.w,
               child: Container(
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                ),
+                decoration: const BoxDecoration(shape: BoxShape.circle),
                 clipBehavior: Clip.antiAlias,
-                child: logoS3Key != null &&
-                    logoS3Key.isNotEmpty
+                child: logoS3Key != null && logoS3Key.isNotEmpty
                     ? CachedNetworkImage(
-                  imageUrl: getS3ImageUrl(logoS3Key),
-                  cacheKey: logoS3Key,
-                  width: 50.w,
-                  height: 50.w,
-                  fit: BoxFit.cover,
+                        imageUrl: getS3ImageUrl(logoS3Key),
+                        cacheKey: logoS3Key,
+                        width: 50.w,
+                        height: 50.w,
+                        fit: BoxFit.cover,
 
-                  placeholder: (context, url) {
-                    return _defaultLogo();
-                  },
+                        placeholder: (context, url) {
+                          return _defaultLogo();
+                        },
 
-                  errorWidget: (
-                      context,
-                      url,
-                      error,
-                      ) {
-                    debugPrint(
-                      "❌ Logo load failed: $error",
-                    );
-                    debugPrint(
-                      "Logo URL: $url",
-                    );
+                        errorWidget: (context, url, error) {
+                          debugPrint("❌ Logo load failed: $error");
+                          debugPrint("Logo URL: $url");
 
-                    return _defaultLogo();
-                  },
-                )
+                          return _defaultLogo();
+                        },
+                      )
                     : _defaultLogo(),
               ),
             ),
@@ -173,22 +149,18 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
             // =====================================================
             Expanded(
               child: Column(
-                crossAxisAlignment:
-                CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText(
                     businessName,
                     style: TextStyle(
-                      color: isDark
-                          ? Colors.white
-                          : Colors.black,
+                      color: isDark ? Colors.white : Colors.black,
                       fontSize: 18.sp,
                       fontWeight: FontWeight.w800,
                     ),
                     maxLines: 1,
-                    overflow:
-                    TextOverflow.ellipsis,
+                    overflow: TextOverflow.ellipsis,
                   ),
 
                   SizedBox(height: 2.h),
@@ -203,8 +175,7 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
                       fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
-                    overflow:
-                    TextOverflow.ellipsis,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -217,15 +188,11 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
             // =====================================================
             InkWell(
               onTap:
-              widget.onNotificationTap ??
-                      () {
-                    Navigator.pushNamed(
-                      context,
-                      "/NotificationScreen",
-                    );
+                  widget.onNotificationTap ??
+                  () {
+                    Navigator.pushNamed(context, "/NotificationScreen");
                   },
-              borderRadius:
-              BorderRadius.circular(24.r),
+              borderRadius: BorderRadius.circular(24.r),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -242,41 +209,33 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
                     child: Center(
                       child: Icon(
                         Icons.notifications_rounded,
-                        color:
-                        const Color(0xFFE53935),
+                        color: const Color(0xFFE53935),
                         size: 22.sp,
                       ),
                     ),
                   ),
 
-                  if (widget.notificationCount
-                      .isNotEmpty)
+                  if (widget.notificationCount.isNotEmpty)
                     Positioned(
                       top: -2.h,
                       left: -2.w,
                       child: Container(
-                        padding:
-                        EdgeInsets.all(4.r),
-                        decoration:
-                        const BoxDecoration(
-                          color:
-                          Color(0xFFE53935),
+                        padding: EdgeInsets.all(4.r),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE53935),
                           shape: BoxShape.circle,
                         ),
-                        constraints:
-                        BoxConstraints(
+                        constraints: BoxConstraints(
                           minWidth: 18.w,
                           minHeight: 18.h,
                         ),
                         child: Center(
                           child: AppText(
-                            widget
-                                .notificationCount,
+                            widget.notificationCount,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 10.sp,
-                              fontWeight:
-                              FontWeight.bold,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
@@ -297,19 +256,12 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
       width: 50.w,
       height: 50.w,
       fit: BoxFit.cover,
-      errorBuilder: (
-          context,
-          error,
-          stackTrace,
-          ) {
+      errorBuilder: (context, error, stackTrace) {
         return Container(
           width: 50.w,
           height: 50.w,
           color: const Color(0xFFE91E63),
-          child: const Icon(
-            Icons.business,
-            color: Colors.white,
-          ),
+          child: const Icon(Icons.business, color: Colors.white),
         );
       },
     );

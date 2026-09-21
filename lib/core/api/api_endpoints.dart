@@ -57,4 +57,9 @@ class ApiEndpoints {
   static const String accountDeactivate = '/users/me/deactivate';
 
   static const String Business = '/businesses';
+
+  static const String keyWords = '/tags';
+
+  static String industryKeyWords(String industrySlug) =>
+      '/industries/${industrySlug}/keywords';
 }

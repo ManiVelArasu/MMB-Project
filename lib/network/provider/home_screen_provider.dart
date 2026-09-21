@@ -7,7 +7,7 @@ import '../../Api Model/templatecategories.dart';
 import '../../Api Model/Template_model.dart';
 import '../../Repository/home_repository.dart';
 import '../../model/my_space_model.dart';
-import 'getMe_provider.dart';
+import 'common_provider.dart';
 
 class HomeScreenProvider extends ChangeNotifier {
   HomeScreenProvider({bool loadSpecialDaysOnInit = true}) {

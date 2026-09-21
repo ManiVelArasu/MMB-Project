@@ -9,7 +9,7 @@ import '../../Api Model/me_api.dart';
 import '../../Api Model/business_model.dart';
 import '../../Repository/update_profile.dart';
 import '../../Repository/image_upload_repository.dart';
-import '../../network/provider/getMe_provider.dart';
+import '../../network/provider/common_provider.dart';
 
 class EditPhotoProvider extends ChangeNotifier {
   final TextEditingController searchController = TextEditingController();
