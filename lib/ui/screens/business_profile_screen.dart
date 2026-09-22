@@ -792,10 +792,24 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
     ),
   ];
 
-  final List<_BrandFont> fonts = const [
-    _BrandFont("Heading, Inter - 85", "AeBeeZ"),
-    _BrandFont("Subheading, Poppins - 42", "AeBeeZ"),
-    _BrandFont("Body text, Inter - 24", "AeBeeZ"),
+  final List<_BrandFont> fonts = [
+    _BrandFont("Heading", "Inter", 85),
+    _BrandFont("Subheading", "Poppins", 42),
+    _BrandFont("Body text", "Inter", 24),
+  ];
+
+  // Keep this list in sync with the Google Fonts already configured in the app.
+  // These names are also used by the existing editor font selector.
+  final List<String> availableFonts = const [
+    "Inter",
+    "Janda Manatee Solid",
+    "JekoVariable",
+    "Anton",
+    "Roboto",
+    "Poppins",
+    "Pacifico",
+    "Playfair Display",
+    "Montserrat",
   ];
 
   @override
@@ -980,144 +994,136 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
         ),
         SizedBox(height: 10.h),
 
-        ...palettes.map(
-          (palette) =>
-              _buildPaletteCard(context, palette, isDark, showDelete: true),
-        ),
-
-        SizedBox(height: 6.h),
-        Text(
-          "Popular Brand Color Palettes",
-          style: TextStyle(
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w700,
-            color: isDark ? Colors.white70 : Colors.grey.shade700,
+        // Only selected/custom colors are shown here.
+        // Every color is independent and can be selected separately.
+        if (palettes.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 12.w),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF171717) : Colors.white,
+              borderRadius: BorderRadius.circular(9.r),
+              border: Border.all(
+                color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+              ),
+            ),
+            child: Text(
+              "No brand colors added. Tap + to add a color.",
+              style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
+            ),
+          )
+        else
+          ...palettes.asMap().entries.map(
+            (entry) =>
+                _buildSingleColorCard(context, entry.key, entry.value, isDark),
           ),
-        ),
-        SizedBox(height: 8.h),
-
-        ...popularPalettes.map(
-          (palette) =>
-              _buildPaletteCard(context, palette, isDark, showDelete: false),
-        ),
       ],
     );
   }
 
-  Widget _buildPaletteCard(
+  Widget _buildSingleColorCard(
     BuildContext context,
+    int index,
     _BrandPalette palette,
-    bool isDark, {
-    required bool showDelete,
-  }) {
-    final selected = palettes.any(
-      (item) =>
-          item.name == palette.name &&
-          item.colors.length == palette.colors.length &&
-          _sameColors(item.colors, palette.colors),
-    );
+    bool isDark,
+  ) {
+    final color = palette.colors.isEmpty ? Colors.grey : palette.colors.first;
 
-    return GestureDetector(
-      onTap: () {
-        if (!palettes.contains(palette)) {
-          setState(() {
-            palettes.add(
-              _BrandPalette(
-                name: palette.name,
-                colors: List<Color>.from(palette.colors),
-              ),
-            );
-          });
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        margin: EdgeInsets.only(bottom: 8.h),
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF171717) : Colors.white,
-          borderRadius: BorderRadius.circular(9.r),
-          border: Border.all(
-            color: selected
-                ? const Color(0xFFE53935)
-                : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
-            width: selected ? 1.4 : 1,
-          ),
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF171717) : Colors.white,
+        borderRadius: BorderRadius.circular(9.r),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    palette.name,
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Wrap(
-                    spacing: 5.w,
-                    children: [
-                      ...palette.colors.map(
-                        (color) => Container(
-                          width: 24.w,
-                          height: 20.h,
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(4.r),
-                            border: Border.all(
-                              color: Colors.black.withValues(alpha: 0.08),
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (showDelete)
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              palettes.remove(palette);
-                            });
-                          },
-                          child: Container(
-                            width: 24.w,
-                            height: 20.h,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF2A2A2A)
-                                  : const Color(0xFFFFECEE),
-                              borderRadius: BorderRadius.circular(4.r),
-                            ),
-                            child: Icon(
-                              Icons.add,
-                              size: 15.sp,
-                              color: const Color(0xFFE53935),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32.w,
+            height: 32.w,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(6.r),
+              border: Border.all(color: Colors.black.withValues(alpha: .08)),
             ),
-            if (showDelete)
-              Icon(
-                Icons.delete_outline_rounded,
-                size: 17.sp,
-                color: const Color(0xFFE53935),
-              ),
-          ],
-        ),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  palette.name,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  _hex(color),
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (palette.isSelected)
+            Icon(
+              Icons.check_circle,
+              size: 18.sp,
+              color: const Color(0xFFE53935),
+            ),
+          SizedBox(width: 5.w),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                palettes.removeAt(index);
+              });
+            },
+            child: Icon(
+              Icons.delete_outline_rounded,
+              size: 18.sp,
+              color: const Color(0xFFE53935),
+            ),
+          ),
+        ],
       ),
     );
   }
 
+  Future<void> _selectSingleColor(BuildContext context, int index) async {
+    if (index < 0 || index >= palettes.length) return;
+
+    final palette = palettes[index];
+    if (palette.colors.isEmpty) return;
+
+    // Keep this color as the currently selected brand color.
+    // The selected color is independent from every other color.
+    setState(() {
+      for (int i = 0; i < palettes.length; i++) {
+        palettes[i] = _BrandPalette(
+          name: palettes[i].name,
+          colors: List<Color>.from(palettes[i].colors),
+          isSelected: i == index,
+        );
+      }
+    });
+  }
+
   Widget _buildFontsTab(BuildContext context, bool isDark) {
     return Column(
-      children: fonts.map((font) {
+      children: fonts.asMap().entries.map((entry) {
+        final index = entry.key;
+        final font = entry.value;
+
         return Container(
           margin: EdgeInsets.only(bottom: 8.h),
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
@@ -1135,8 +1141,9 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      font.title,
+                      '${font.title}, ${font.family} - ${font.size}',
                       style: TextStyle(
+                        fontFamily: font.family,
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w700,
                         color: isDark ? Colors.white : Colors.black87,
@@ -1146,6 +1153,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     Text(
                       font.family,
                       style: TextStyle(
+                        fontFamily: font.family,
                         fontSize: 10.sp,
                         color: Colors.grey.shade600,
                       ),
@@ -1153,15 +1161,204 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                   ],
                 ),
               ),
-              Icon(
-                Icons.edit_outlined,
-                size: 17.sp,
-                color: Colors.grey.shade600,
+              InkWell(
+                borderRadius: BorderRadius.circular(20.r),
+                onTap: () => _showFontEditDialog(context, index, isDark),
+                child: Padding(
+                  padding: EdgeInsets.all(6.r),
+                  child: Icon(
+                    Icons.edit_outlined,
+                    size: 17.sp,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
               ),
             ],
           ),
         );
       }).toList(),
+    );
+  }
+
+  Future<void> _showFontEditDialog(
+    BuildContext context,
+    int index,
+    bool isDark,
+  ) async {
+    final current = fonts[index];
+    String selectedFont = current.family;
+    double selectedSize = current.size.toDouble();
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Edit ${current.title} Font',
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Font Family',
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Container(
+                      constraints: BoxConstraints(maxHeight: 260.h),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade300,
+                        ),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: availableFonts.length,
+                        separatorBuilder: (_, __) => Divider(
+                          height: 1,
+                          color: isDark
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade200,
+                        ),
+                        itemBuilder: (_, fontIndex) {
+                          final fontName = availableFonts[fontIndex];
+                          final selected = selectedFont == fontName;
+
+                          return ListTile(
+                            dense: true,
+                            leading: Container(
+                              width: 34.w,
+                              height: 34.w,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? const Color(0xFFFFECEE)
+                                    : (isDark
+                                          ? const Color(0xFF252525)
+                                          : const Color(0xFFF5F5F5)),
+                                borderRadius: BorderRadius.circular(7.r),
+                              ),
+                              child: Text(
+                                'Aa',
+                                style: TextStyle(
+                                  fontFamily: fontName,
+                                  fontSize: 14.sp,
+                                  color: selected
+                                      ? const Color(0xFFE53935)
+                                      : (isDark
+                                            ? Colors.white
+                                            : Colors.black87),
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              fontName,
+                              style: TextStyle(
+                                fontFamily: fontName,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            trailing: selected
+                                ? const Icon(
+                                    Icons.check_circle,
+                                    color: Color(0xFFE53935),
+                                  )
+                                : null,
+                            onTap: () {
+                              setDialogState(() => selectedFont = fontName);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 14.h),
+                    Text(
+                      'Preview',
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 5.h),
+                    Text(
+                      'Aa ${current.title}',
+                      style: TextStyle(
+                        fontFamily: selectedFont,
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Row(
+                      children: [
+                        Text(
+                          'Size ${selectedSize.toInt()}',
+                          style: TextStyle(fontSize: 11.sp),
+                        ),
+                        Expanded(
+                          child: Slider(
+                            min: 8,
+                            max: 120,
+                            value: selectedSize,
+                            onChanged: (value) {
+                              setDialogState(() => selectedSize = value);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('CANCEL'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      fonts[index] = _BrandFont(
+                        current.title,
+                        selectedFont,
+                        selectedSize.round(),
+                      );
+                    });
+                    Navigator.pop(dialogContext);
+                  },
+                  child: const Text('SAVE'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1370,14 +1567,38 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                                 children: palette.colors
                                     .map(
                                       (color) => Expanded(
-                                        child: Container(
-                                          height: 18.h,
-                                          margin: EdgeInsets.only(right: 3.w),
-                                          decoration: BoxDecoration(
-                                            color: color,
-                                            borderRadius: BorderRadius.circular(
-                                              3.r,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setDialogState(() {
+                                              selectedColor = color;
+                                              controller.text = _hex(color);
+                                            });
+                                          },
+                                          child: Container(
+                                            height: 24.h,
+                                            margin: EdgeInsets.only(right: 3.w),
+                                            decoration: BoxDecoration(
+                                              color: color,
+                                              borderRadius:
+                                                  BorderRadius.circular(3.r),
+                                              border: Border.all(
+                                                color:
+                                                    selectedColor.value ==
+                                                        color.value
+                                                    ? const Color(0xFFE53935)
+                                                    : Colors.transparent,
+                                                width: 2,
+                                              ),
                                             ),
+                                            child:
+                                                selectedColor.value ==
+                                                    color.value
+                                                ? const Icon(
+                                                    Icons.check,
+                                                    color: Colors.white,
+                                                    size: 15,
+                                                  )
+                                                : null,
                                           ),
                                         ),
                                       ),
@@ -1406,8 +1627,9 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                       palettes.insert(
                         0,
                         _BrandPalette(
-                          name: "My first palette",
+                          name: "Brand Color ${palettes.length + 1}",
                           colors: [color],
+                          isSelected: true,
                         ),
                       );
                       selectedTab = 1;
@@ -1458,15 +1680,21 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
 class _BrandPalette {
   final String name;
   final List<Color> colors;
+  final bool isSelected;
 
-  const _BrandPalette({required this.name, required this.colors});
+  const _BrandPalette({
+    required this.name,
+    required this.colors,
+    this.isSelected = false,
+  });
 }
 
 class _BrandFont {
   final String title;
   final String family;
+  final int size;
 
-  const _BrandFont(this.title, this.family);
+  const _BrandFont(this.title, this.family, this.size);
 }
 
 Widget _buildOutlineBanner(BusinessProfileProvider businessProvider) {
