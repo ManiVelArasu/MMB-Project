@@ -111,8 +111,7 @@ class HomeScreen extends StatelessWidget {
                               onTap: () {
                                 Navigator.pushNamed(
                                   context,
-                                  "/SpecialDaysScreen",
-                                  arguments: homeScreenProvider.selectedDates,
+                                  "/SpecialDaysScreen"
                                 );
                               },
                               child: Padding(
@@ -175,12 +174,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 12.h),
 
-                      _buildMyZoneSlider(
-                        homeScreenProvider,
-                        isDark,
-                        me: me,
-                        isBusinessUser: isBusinessUser,
-                      ),
+                      _buildMyZoneSlider(homeScreenProvider, isDark, me: me),
 
                       SizedBox(height: 24.h),
 
@@ -191,12 +185,13 @@ class HomeScreen extends StatelessWidget {
                       _buildLeadBannerSlider(
                         homeScreenProvider,
                         isDark,
-                        isBusinessUser: isBusinessUser,
+                        me,
+                        context,
                       ),
 
                       SizedBox(height: 20.h),
 
-                      if (isBusinessUser) ...[
+                      if (me?.data.accountType != "personal") ...[
                         _buildSectionHeader(
                           title: "My Brand Posts",
                           iconAsset: "assets/images/my_brand_posts.png",
@@ -329,8 +324,7 @@ class HomeScreen extends StatelessWidget {
                         SizedBox(height: 12.h),
                       ],
 
-                      // 🚀 My Brand Video Posts (பிசினஸ் யூசர்களுக்கு மட்டும்)
-                      if (isBusinessUser) ...[
+                      if (me?.data.accountType != "personal") ...[
                         _buildSectionHeader(
                           title: "My Brand Video Posts",
                           iconAsset: "assets/images/my_brand_posts.png",
@@ -1175,10 +1169,6 @@ class HomeScreen extends StatelessWidget {
       );
     }
 
-    // ============================================================
-    // RANGE
-    // ============================================================
-
     final DateTime from = DateTime(
       range.from.year,
       range.from.month,
@@ -1449,7 +1439,6 @@ class HomeScreen extends StatelessWidget {
   Widget _buildMyZoneSlider(
     HomeScreenProvider homeScreenProvider,
     bool isDark, {
-    required bool isBusinessUser,
     required dynamic me,
   }) {
     return FutureBuilder<SharedPreferences>(
@@ -1481,47 +1470,49 @@ class HomeScreen extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        '${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.provider.business?.logoS3Key ?? ''}',
-                        fit: BoxFit.cover,
-                      ),
-                      if (isBusinessUser)
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 18.w,
-                              vertical: 12.h,
-                            ),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF246BFE),
-                            ),
-                            child: Row(
-                              children: [
-                                AppText(
-                                  homeScreenProvider.provider.business?.name ??
-                                      '',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11.sp,
-                                  ),
+                      homeScreenProvider.provider.business?.logoS3Key != null
+                          ? Image.network(
+                              '${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.provider.business?.logoS3Key ?? ''}',
+                              fit: BoxFit.cover,
+                            )
+                          : Image.asset("assets/images/BName.png"),
+
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 18.w,
+                            vertical: 12.h,
+                          ),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF246BFE),
+                          ),
+                          child: Row(
+                            children: [
+                              AppText(
+                                homeScreenProvider.provider.business?.name ??
+                                    '',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11.sp,
                                 ),
-                                const Spacer(),
-                                AppText(
-                                  homeScreenProvider.provider.business?.email ??
-                                      '',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11.sp,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              ),
+                              const Spacer(),
+                              AppText(
+                                homeScreenProvider.provider.business?.email ??
+                                    '',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11.sp,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
                     ],
                   ),
                 ),
@@ -1580,9 +1571,6 @@ class HomeScreen extends StatelessWidget {
 
         SizedBox(width: 8.w),
 
-        // =========================
-        // DOWNLOAD / EXPORT
-        // =========================
         Container(
           width: 38.w,
           height: 38.w,
@@ -1602,172 +1590,160 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildLeadBannerSlider(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark, {
-        required bool isBusinessUser,
-      }) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+    dynamic me,
+    BuildContext context,
+  ) {
     final controller = homeScreenProvider.leadPageController;
 
     final banners = [
       {
         "title": "Grow Your Business",
         "description":
-        "List your business on MMB and get discovered by potential customers.",
+            "List your business on MMB and get discovered by potential customers.",
         "button": "GO PREMIUM",
-        "gradient": const [
-          Color(0xFFFFEEEE),
-          Color(0xFFFFF9EA),
-        ],
+        "onTap": () {
+          Navigator.pushNamed(context, "/PlansAndPricingScreen");
+        },
+        "gradient": const [Color(0xFFFFEEEE), Color(0xFFFFF9EA)],
         "titleColor": const Color(0xFFD4A017),
         "descriptionColor": const Color(0xFF333333),
       },
       {
         "title": "2000+ Business Templates",
-        "description":
-        "Find ready-made templates designed for your industry",
+        "description": "Find ready-made templates designed for your industry",
         "button": "BROWSE TEMPLATES",
-        "gradient": const [
-          Color(0xFFEEF4FF),
-          Color(0xFFEEEAFF),
-        ],
+        "onTap": () {
+          // Navigator.pushNamed(context, "/TemplateScreen");
+        },
+        "gradient": const [Color(0xFFEEF4FF), Color(0xFFEEEAFF)],
         "titleColor": const Color(0xFF8D77FB),
         "descriptionColor": const Color(0xFF343434),
       },
       {
         "title": "Powerful AI Tools",
         "description":
-        "Generate logos, remove backgrounds, create images, and write caption instantly",
+            "Generate logos, remove backgrounds, create images, and write caption instantly",
         "button": "EXPLORE AI",
-        "gradient": const [
-          Color(0xFFFFFBEE),
-          Color(0xFFEAFEFF),
-        ],
+        "onTap": () {
+          // Navigator.pushNamed(context, "/AIScreen");
+        },
+        "gradient": const [Color(0xFFFFFBEE), Color(0xFFEAFEFF)],
         "titleColor": const Color(0xFF26A3D9),
         "descriptionColor": const Color(0xFF303030),
       },
     ];
 
-    // ============================================================
-    // PERSONAL USER → VERTICAL BANNER
-    // ============================================================
-    if (!isBusinessUser) {
-      return SizedBox(
-        height: 245.h,
+    final bool isPersonal =
+        me?.data?.accountType?.toString().toLowerCase() == "personal";
+
+    if (isPersonal) {
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4.w),
         child: Column(
-          children: [
-            Expanded(
-              child: PageView.builder(
-                controller: controller,
-                itemCount: banners.length,
-                physics: const BouncingScrollPhysics(),
-                itemBuilder: (context, index) {
-                  final banner = banners[index];
+          children: List.generate(banners.length, (index) {
+            final banner = banners[index];
 
-                  final title = banner["title"] as String;
-                  final description = banner["description"] as String;
-                  final button = banner["button"] as String;
-                  final gradient = banner["gradient"] as List<Color>;
-                  final titleColor = banner["titleColor"] as Color;
-                  final descriptionColor =
-                  banner["descriptionColor"] as Color;
+            final title = banner["title"] as String;
 
-                  return Container(
-                    margin: EdgeInsets.symmetric(horizontal: 4.w),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 18.w,
-                      vertical: 18.h,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: gradient,
-                      ),
-                      borderRadius: BorderRadius.circular(14.r),
-                    ),
+            final description = banner["description"] as String;
+
+            final button = banner["button"] as String;
+
+            final gradient = banner["gradient"] as List<Color>;
+
+            final titleColor = banner["titleColor"] as Color;
+
+            final descriptionColor = banner["descriptionColor"] as Color;
+
+            final onTap = banner["onTap"] as VoidCallback;
+
+            return Container(
+              width: double.infinity,
+              height: 48.h,
+              margin: EdgeInsets.only(
+                bottom: index == banners.length - 1 ? 0 : 6.h,
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: gradient,
+                ),
+                borderRadius: BorderRadius.circular(7.r),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // TITLE
                         AppText(
                           title,
-                          maxLines: 2,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: titleColor,
-                            fontSize: 21.sp,
+                            fontSize: 11.sp,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
 
-                        SizedBox(height: 8.h),
+                        SizedBox(height: 1.h),
 
-                        // DESCRIPTION
                         AppText(
                           description,
-                          maxLines: 4,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: descriptionColor,
-                            fontSize: 13.sp,
-                            height: 1.3,
+                            fontSize: 7.sp,
+                            height: 1.1,
                             fontWeight: FontWeight.w500,
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        // BUTTON
-                        SizedBox(
-                          height: 34.h,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // TODO
-                            },
-                            style: ElevatedButton.styleFrom(
-                              elevation: 0,
-                              backgroundColor: titleColor,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 18.w,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                BorderRadius.circular(8.r),
-                              ),
-                            ),
-                            child: AppText(
-                              button,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11.sp,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
                           ),
                         ),
                       ],
                     ),
-                  );
-                },
+                  ),
+
+                  SizedBox(width: 6.w),
+
+                  SizedBox(
+                    height: 19.h,
+                    child: ElevatedButton(
+                      onPressed: onTap,
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: titleColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: 7.w),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                      child: AppText(
+                        button,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 6.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-
-            SizedBox(height: 8.h),
-
-            // DOT INDICATOR
-            _buildBannerDots(
-              controller,
-              banners.length,
-            ),
-          ],
+            );
+          }),
         ),
       );
     }
 
-    // ============================================================
-    // BUSINESS USER → HORIZONTAL BANNER
-    // ============================================================
     return SizedBox(
       height: 165.h,
       child: Column(
@@ -1781,12 +1757,18 @@ class HomeScreen extends StatelessWidget {
                 final banner = banners[index];
 
                 final title = banner["title"] as String;
+
                 final description = banner["description"] as String;
+
                 final button = banner["button"] as String;
+
                 final gradient = banner["gradient"] as List<Color>;
+
                 final titleColor = banner["titleColor"] as Color;
-                final descriptionColor =
-                banner["descriptionColor"] as Color;
+
+                final descriptionColor = banner["descriptionColor"] as Color;
+
+                final onTap = banner["onTap"] as VoidCallback;
 
                 return Container(
                   margin: EdgeInsets.symmetric(horizontal: 4.w),
@@ -1836,19 +1818,14 @@ class HomeScreen extends StatelessWidget {
                       SizedBox(
                         height: 28.h,
                         child: ElevatedButton(
-                          onPressed: () {
-                            // TODO
-                          },
+                          onPressed: onTap,
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
                             backgroundColor: titleColor,
                             foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 14.w,
-                            ),
+                            padding: EdgeInsets.symmetric(horizontal: 14.w),
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(8.r),
+                              borderRadius: BorderRadius.circular(8.r),
                             ),
                           ),
                           child: AppText(
@@ -1870,55 +1847,45 @@ class HomeScreen extends StatelessWidget {
 
           SizedBox(height: 7.h),
 
-          _buildBannerDots(
-            controller,
-            banners.length,
-          ),
+          _buildBannerDots(controller, banners.length),
         ],
       ),
     );
   }
-  Widget _buildBannerDots(
-      PageController controller,
-      int itemCount,
-      ) {
+
+  Widget _buildBannerDots(PageController controller, int itemCount) {
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) {
         int currentIndex = 0;
 
         if (controller.hasClients && controller.page != null) {
-          currentIndex = controller.page!.round().clamp(
-            0,
-            itemCount - 1,
-          );
+          currentIndex = controller.page!.round().clamp(0, itemCount - 1);
         }
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            itemCount,
-                (index) {
-              final isActive = currentIndex == index;
+          children: List.generate(itemCount, (index) {
+            final isActive = currentIndex == index;
 
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                margin: EdgeInsets.symmetric(horizontal: 3.w),
-                width: isActive ? 24.w : 7.w,
-                height: 7.h,
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? const Color(0xFF17295C)
-                      : Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(10.r),
-                ),
-              );
-            },
-          ),
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              margin: EdgeInsets.symmetric(horizontal: 3.w),
+              width: isActive ? 24.w : 7.w,
+              height: 7.h,
+              decoration: BoxDecoration(
+                color: isActive
+                    ? const Color(0xFF17295C)
+                    : Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            );
+          }),
         );
       },
     );
   }
+
   void _showShareBottomSheet(BuildContext context, bool isDark) {
     final shareItems = <_ShareItem>[
       _ShareItem("Download", Icons.download_rounded),

@@ -43,6 +43,10 @@ class CommonProvider extends ChangeNotifier {
   String? _keyWordsError;
   String? get keyWordsError => _keyWordsError;
 
+  String? _accountType;
+
+  String? get accountType => _accountType;
+
   Future<bool> loadMe({bool forceRefresh = false}) async {
     if (_me != null && !forceRefresh) {
       return true;
@@ -63,6 +67,11 @@ class CommonProvider extends ChangeNotifier {
       }
 
       _me = data;
+
+      _accountType = data.data.accountType?.toLowerCase();
+
+      debugPrint("👤 ACCOUNT TYPE : $_accountType");
+
       return true;
     } catch (e, stackTrace) {
       _meError = e.toString();

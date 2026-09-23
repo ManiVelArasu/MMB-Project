@@ -1,6 +1,6 @@
 class SpecialDays {
   final bool? success;
-  final List<Datum> data;
+  final List<SpecialDaysList> data;
   final Meta? meta;
 
   SpecialDays({
@@ -14,9 +14,9 @@ class SpecialDays {
       success: json["success"] ?? false,
       data: json["data"] == null
           ? []
-          : List<Datum>.from(
+          : List<SpecialDaysList>.from(
         (json["data"] as List).map(
-              (x) => Datum.fromJson(
+              (x) => SpecialDaysList.fromJson(
             x as Map<String, dynamic>,
           ),
         ),
@@ -38,7 +38,7 @@ class SpecialDays {
   }
 }
 
-class Datum {
+class SpecialDaysList {
   final String? id;
   final String? uid;
   final String? name;
@@ -57,7 +57,7 @@ class Datum {
 
   final DateTime occursOn;
 
-  Datum({
+  SpecialDaysList({
     required this.id,
     required this.uid,
     required this.name,
@@ -75,8 +75,8 @@ class Datum {
     required this.occursOn,
   });
 
-  factory Datum.fromJson(Map<String, dynamic> json) {
-    return Datum(
+  factory SpecialDaysList.fromJson(Map<String, dynamic> json) {
+    return SpecialDaysList(
       id: json["id"]?.toString(),
       uid: json["uid"]?.toString(),
       name: json["name"]?.toString(),

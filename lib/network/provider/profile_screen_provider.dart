@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mmb_app/network/provider/common_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,6 +23,7 @@ class ProfileScreenProvider extends ChangeNotifier {
   bool _isDeactivateLoading = false;
 
   bool get isDeactivateLoading => _isDeactivateLoading;
+  final CommonProvider provider = CommonProvider.instance;
 
   Future<bool> deactivateAccount() async {
     _isDeactivateLoading = true;
@@ -72,7 +74,7 @@ class ProfileScreenProvider extends ChangeNotifier {
   final List<QuickActionModel> quickActions = [
     QuickActionModel(
       title: "Business\nProfile",
-      iconPath: "assets/images/business_profile.png",
+      iconPath: "assets/images/personalcard.png",
       backgroundColor: const Color(0xFFE0F7FA),
       onTap: (context) {
         Navigator.pushNamed(context, '/BusinessProfileScreen');
@@ -80,15 +82,15 @@ class ProfileScreenProvider extends ChangeNotifier {
     ),
     QuickActionModel(
       title: "My\nDownloads",
-      iconPath: "assets/images/my_downloads.png",
+      iconPath: "assets/images/document-download.png",
       backgroundColor: const Color(0xFFEDE7F6),
       onTap: (context) {
         Navigator.pushNamed(context, "/MyDownloadsScreen");
       },
     ),
     QuickActionModel(
-      title: "SM\nCalendar",
-      iconPath: "assets/images/sm_calendar.png",
+      title: "Festival\n Post",
+      iconPath: "assets/images/festival_calender.png",
       backgroundColor: const Color(0xFFFFECB3),
       onTap: (context) {
         Navigator.pushNamed(context, "/SmCalendarScreen");

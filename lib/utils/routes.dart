@@ -224,7 +224,7 @@ class RouteGenerator {
         final selectedDate = settings.arguments as String?;
 
         return MaterialPageRoute(
-          builder: (context) => SpecialDaysScreen(selectedDate: selectedDate),
+          builder: (context) => SpecialDaysScreen(),
         );
     }
     return null;

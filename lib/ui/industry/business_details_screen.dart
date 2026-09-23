@@ -281,18 +281,34 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
               SizedBox(height: 15),
               ButtonWidget(
                 isLoading: businessProvider.isUploading,
-                buttonPress: () async {
-                  final success = await businessProvider.updateBusinessDetails(
-                    context,
-                    widget.businessUid,
-                  );
-                  await CommonProvider.instance.loadBusiness(
-                    forceRefresh: true,
-                  );
-                  if (success && context.mounted) {
-                    Navigator.pushNamed(context, "/CustomBottomNavScreen");
-                  }
-                },
+                buttonPress:
+                    businessProvider.provider.me?.data.accountType == "personal"
+                    ? () async {
+                        final success = await businessProvider
+                            .updatePersonalDetails(context);
+                        await CommonProvider.instance.loadBusiness(
+                          forceRefresh: true,
+                        );
+                        if (success && context.mounted) {
+                          Navigator.pushNamed(
+                            context,
+                            "/CustomBottomNavScreen",
+                          );
+                        }
+                      }
+                    : () async {
+                        final success = await businessProvider
+                            .updateBusinessDetails(context, widget.businessUid);
+                        await CommonProvider.instance.loadBusiness(
+                          forceRefresh: true,
+                        );
+                        if (success && context.mounted) {
+                          Navigator.pushNamed(
+                            context,
+                            "/CustomBottomNavScreen",
+                          );
+                        }
+                      },
                 title: "CONTINUE",
                 textStyle: theme.titleLarge!.copyWith(
                   color: customColor.whiteColor,
@@ -304,23 +320,6 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                 ),
                 height: 54.h,
               ),
-              // CONTINUE BUTTON
-              /*  ButtonWidget(
-                isLoading: businessProvider.isUploading,
-                buttonPress: () async {
-                  await businessProvider.uploadAndSaveBusinessDetails(context);
-                },
-                title: "CONTINUE",
-                textStyle: theme.titleLarge!.copyWith(
-                  color: customColor.whiteColor,
-                  fontWeight: FontWeight.w700,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: customColor.redColor,
-                ),
-                height: 54.h,
-              ),*/
             ],
           ),
         ),

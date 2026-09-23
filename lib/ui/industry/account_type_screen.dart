@@ -151,7 +151,7 @@ class AccountTypeScreen extends StatelessWidget {
                                 if (selectedTitle == "Personal Use") {
                                   Navigator.pushNamed(
                                     context,
-                                    "/CustomBottomNavScreen",
+                                    "/BusinessDetailsScreen",
                                   );
                                 } else {
                                   Navigator.pushNamed(

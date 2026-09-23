@@ -30,15 +30,65 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
   @override
   void initState() {
     super.initState();
-
-    // ❌ Direct API call from initState
-    // _loadBusiness();
-
-    // ✅ Wait until current build is completed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _loadBusiness();
+      _loadAccountData();
     });
+  }
+
+  Future<void> _loadAccountData() async {
+    final commonProvider = context.read<CommonProvider>();
+
+    if (commonProvider.accountType == null) {
+      await commonProvider.loadMe(forceRefresh: true);
+    }
+    if (!mounted) return;
+    final accountType = commonProvider.accountType?.toLowerCase();
+
+    debugPrint("🏠 HOME ACCOUNT TYPE: $accountType");
+
+    if (accountType == "personal") {
+      await _loadPersonal();
+    } else if (accountType == "business") {
+      await _loadBusiness();
+    }
+  }
+
+  Future<void> _loadPersonal() async {
+    debugPrint("🏢 HOME APP BAR → Loading Business API...");
+
+    try {
+      final commonProvider = context.read<CommonProvider>();
+      if (commonProvider.isBusinessLoading) {
+        debugPrint("⏳ Business API already loading...");
+        return;
+      }
+
+      final success = await commonProvider.loadMe(forceRefresh: true);
+
+      if (!mounted) return;
+
+      if (success) {
+        final business = commonProvider.business;
+
+        debugPrint("======================================");
+        debugPrint("✅ HOME BUSINESS API SUCCESS");
+        debugPrint("Business UID  : ${business?.uid}");
+        debugPrint("Business Name : ${business?.name}");
+        debugPrint("Logo S3 Key   : ${business?.logoS3Key}");
+        debugPrint("Industry      : ${business?.businessCategory?.name}");
+        debugPrint("Industry Slug : ${business?.businessCategory?.slug}");
+        debugPrint("======================================");
+      } else {
+        debugPrint(
+          "❌ HOME BUSINESS API FAILED: "
+          "${commonProvider.businessError}",
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint("❌ HOME APP BAR BUSINESS ERROR: $e");
+      debugPrint("$stackTrace");
+    }
   }
 
   Future<void> _loadBusiness() async {
@@ -46,8 +96,6 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
 
     try {
       final commonProvider = context.read<CommonProvider>();
-
-      // Don't call again if already loading
       if (commonProvider.isBusinessLoading) {
         debugPrint("⏳ Business API already loading...");
         return;
@@ -87,15 +135,19 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
 
     final commonProvider = context.watch<CommonProvider>();
     final business = commonProvider.business;
+    final personal = commonProvider.me;
 
-    final String businessName = business?.name?.isNotEmpty == true
-        ? business!.name!
-        : "Business Name";
+    final String businessName = business?.name?.trim().isNotEmpty == true
+        ? business!.name!.trim()
+        : (personal?.data.name?.trim().isNotEmpty == true
+              ? personal!.data.name!.trim()
+
+              : "");
 
     final String businessCategory =
-        business?.businessCategory?.name?.isNotEmpty == true
-        ? business!.businessCategory!.name!
-        : "Business Category";
+        business?.businessCategory?.name?.trim().isNotEmpty == true
+        ? business!.businessCategory!.name!.trim()
+        : "";
 
     final String? logoS3Key = business?.logoS3Key;
 

@@ -24,12 +24,33 @@ class GetMeRepository {
     );
   }
 
-  Future<ApiResult<dynamic>> updateMe({required String accountType}) {
+  Future<ApiResult<dynamic>> updateMe(String? accountType) {
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.user,
         method: ApiMethod.patch,
         body: {"account_type": accountType},
+      ),
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResult<dynamic>> updateBusinessDetail(
+    String? name,
+    String? email,
+    String? profile_photo_s3_key,
+    String? number,
+  ) {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.user,
+        method: ApiMethod.patch,
+        body: {
+          "name": name,
+          "email": email,
+          "profile_photo_s3_key": profile_photo_s3_key,
+          "phone": number,
+        },
       ),
       fromJson: (json) => json,
     );
@@ -44,6 +65,7 @@ class GetMeRepository {
       fromJson: (json) => BusinessModel.fromJson(json),
     );
   }
+
   Future<ApiResult<KeyWordsModel>> keyWords() {
     return ApiRepository.instance.request<KeyWordsModel>(
       config: ApiRequestConfig(

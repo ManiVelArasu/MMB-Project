@@ -108,4 +108,6 @@ class AppColors {
   static const Color searchBorderColor = Color(0xFFFFE4E5);
   static const Color deepBlue = Color(0xFF1E2E5F);
   static const Color gold = Color(0xFFF0A81C);
+
+  static const Color lightedGrey = Color(0xFF525252);
 }

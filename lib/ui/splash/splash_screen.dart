@@ -214,11 +214,6 @@ class _SplashScreenState extends State<SplashScreen> {
     debugPrint(
       "======================================",
     );
-
-    // ==========================================================
-    // SAVE SERVER STATE
-    // ==========================================================
-
     await prefs.setBool(
       'is_business_completed',
       completed,
@@ -231,15 +226,6 @@ class _SplashScreenState extends State<SplashScreen> {
         accountType,
       );
     }
-
-    // ==========================================================
-    // VERY IMPORTANT
-    //
-    // SERVER completed=true
-    //
-    // Don't check local isOnboarded here.
-    // Server state is the source of truth.
-    // ==========================================================
 
     if (completed) {
       debugPrint(

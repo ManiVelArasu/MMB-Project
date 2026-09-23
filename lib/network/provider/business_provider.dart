@@ -6,6 +6,7 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mmb_app/network/provider/common_provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -91,7 +92,7 @@ class BusinessProvider extends ChangeNotifier {
 
   String? _logoS3Key;
   String? get logoS3Key => _logoS3Key;
-
+  final CommonProvider provider = CommonProvider.instance;
   void setBusinessUid(String uid) {
     _businessUid = uid;
     notifyListeners();
@@ -137,9 +138,7 @@ class BusinessProvider extends ChangeNotifier {
           ? "personal"
           : "business";
 
-      final result = await GetMeRepository.instance.updateMe(
-        accountType: accountType,
-      );
+      final result = await GetMeRepository.instance.updateMe(accountType);
 
       return await result.when(
         success: (data) async {
@@ -201,11 +200,11 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-        imageFile: imageFile,
-        filename: filename,
-        width: 1080,
-        height: 1080,
-      );
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+          );
 
       bool success = false;
 
@@ -230,12 +229,10 @@ class BusinessProvider extends ChangeNotifier {
           // Support APIs that wrap the result inside `data`.
           final nested = data['data'];
           if (nested is Map) {
-            apiPath ??=
-                (nested['path'] ?? nested['filePath'] ?? nested['url'])
-                    ?.toString();
-            apiKey ??=
-                (nested['key'] ?? nested['s3Key'] ?? nested['logoS3Key'])
-                    ?.toString();
+            apiPath ??= (nested['path'] ?? nested['filePath'] ?? nested['url'])
+                ?.toString();
+            apiKey ??= (nested['key'] ?? nested['s3Key'] ?? nested['logoS3Key'])
+                ?.toString();
           }
 
           _savedImagePath = (apiPath != null && apiPath.isNotEmpty)
@@ -308,9 +305,9 @@ class BusinessProvider extends ChangeNotifier {
   String get savedCategorySlug => _savedCategorySlug;
 
   Future<Map<String, dynamic>?> businessUpdateApi(
-      BuildContext context,
-      String subIndustry,
-      ) async {
+    BuildContext context,
+    String subIndustry,
+  ) async {
     _isUploading = true;
     _errorMessage = null;
     notifyListeners();
@@ -385,9 +382,9 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<bool> updateBusinessDetails(
-      BuildContext context,
-      String businessUid,
-      ) async {
+    BuildContext context,
+    String businessUid,
+  ) async {
     _isUploading = true;
     _errorMessage = null;
     notifyListeners();
@@ -408,8 +405,7 @@ class BusinessProvider extends ChangeNotifier {
       debugPrint("Logo S3 Key  : $logoS3Key");
       debugPrint("======================================");
 
-      final result =
-      await BusinessRepository.instance.updateBusinessDetails(
+      final result = await BusinessRepository.instance.updateBusinessDetails(
         businessUid: businessUid,
         name: name,
         email: email,
@@ -421,28 +417,17 @@ class BusinessProvider extends ChangeNotifier {
         success: (data) async {
           _isUploading = false;
 
-          final prefs =
-          await SharedPreferences.getInstance();
+          final prefs = await SharedPreferences.getInstance();
 
           if (logoS3Key.isNotEmpty) {
-            await prefs.setString(
-              'logo_s3_key',
-              logoS3Key,
-            );
+            await prefs.setString('logo_s3_key', logoS3Key);
           }
 
-          await prefs.setString(
-            'business_uid',
-            businessUid,
-          );
+          await prefs.setString('business_uid', businessUid);
 
-          debugPrint(
-            "✅ BUSINESS UPDATE SUCCESS",
-          );
+          debugPrint("✅ BUSINESS UPDATE SUCCESS");
 
-          debugPrint(
-            "✅ SAVED LOGO KEY: $logoS3Key",
-          );
+          debugPrint("✅ SAVED LOGO KEY: $logoS3Key");
 
           notifyListeners();
 
@@ -453,9 +438,7 @@ class BusinessProvider extends ChangeNotifier {
           _isUploading = false;
           _errorMessage = error.message;
 
-          debugPrint(
-            "❌ Business update failed: ${error.message}",
-          );
+          debugPrint("❌ Business update failed: ${error.message}");
 
           notifyListeners();
 
@@ -466,13 +449,76 @@ class BusinessProvider extends ChangeNotifier {
       _isUploading = false;
       _errorMessage = e.toString();
 
-      debugPrint(
-        "❌ Update business details error: $e",
+      debugPrint("❌ Update business details error: $e");
+
+      debugPrintStack(stackTrace: stackTrace);
+
+      notifyListeners();
+
+      return false;
+    }
+  }
+
+  Future<bool> updatePersonalDetails(BuildContext context) async {
+    _isUploading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final name = nameController.text.trim();
+      final email = emailController.text.trim();
+      final phone = mobileController.text.trim();
+
+      final logoS3Key = _logoS3Key?.trim() ?? '';
+
+      debugPrint("======================================");
+      debugPrint("🚀 UPDATE BUSINESS");
+      debugPrint("Business UID : $businessUid");
+      debugPrint("Name         : $name");
+      debugPrint("Email        : $email");
+      debugPrint("Phone        : $phone");
+      debugPrint("Logo S3 Key  : $logoS3Key");
+      debugPrint("======================================");
+
+      final result = await GetMeRepository.instance.updateBusinessDetail(
+        name,
+        email,
+        phone,
+        logoS3Key,
       );
 
-      debugPrintStack(
-        stackTrace: stackTrace,
+      return await result.when(
+        success: (data) async {
+          _isUploading = false;
+
+          final prefs = await SharedPreferences.getInstance();
+
+          if (logoS3Key.isNotEmpty) {
+            await prefs.setString('logo_s3_key', logoS3Key);
+          }
+          notifyListeners();
+
+          return true;
+        },
+
+        failure: (error) {
+          _isUploading = false;
+          _errorMessage = error.message;
+
+          debugPrint("❌ Business update failed: ${error.message}");
+
+          notifyListeners();
+
+          return false;
+        },
       );
+    } catch (e, stackTrace) {
+      _isUploading = false;
+      _errorMessage = e.toString();
+
+      debugPrint("❌ Update business details error: $e");
+
+      debugPrintStack(stackTrace: stackTrace);
 
       notifyListeners();
 
@@ -716,11 +762,11 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-        imageFile: imageFile,
-        filename: filename,
-        width: 1080,
-        height: 1080,
-      );
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+          );
 
       bool success = false;
 
@@ -753,8 +799,7 @@ class BusinessProvider extends ChangeNotifier {
             }
 
             // Nested data support
-            if ((key == null || key!.isEmpty) &&
-                data['data'] is Map) {
+            if ((key == null || key!.isEmpty) && data['data'] is Map) {
               final nested = data['data'];
 
               key = nested['key']?.toString();
@@ -793,10 +838,7 @@ class BusinessProvider extends ChangeNotifier {
 
           final prefs = await SharedPreferences.getInstance();
 
-          await prefs.setString(
-            'logo_s3_key',
-            key,
-          );
+          await prefs.setString('logo_s3_key', key);
 
           debugPrint("======================================");
           debugPrint("✅ IMAGE UPLOAD SUCCESS");
@@ -813,10 +855,7 @@ class BusinessProvider extends ChangeNotifier {
 
           _savedImagePath = localPath;
 
-          await prefs.setString(
-            'saved_business_image_path',
-            localPath,
-          );
+          await prefs.setString('saved_business_image_path', localPath);
 
           notifyListeners();
         },
@@ -825,9 +864,7 @@ class BusinessProvider extends ChangeNotifier {
           success = false;
           _errorMessage = error.message;
 
-          debugPrint(
-            "❌ Image upload failed: ${error.message}",
-          );
+          debugPrint("❌ Image upload failed: ${error.message}");
         },
       );
 
@@ -984,9 +1021,9 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<void> pickImage(
-      BuildContext context, {
-        ImageSource source = ImageSource.gallery,
-      }) async {
+    BuildContext context, {
+    ImageSource source = ImageSource.gallery,
+  }) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -1101,12 +1138,12 @@ class BusinessProvider extends ChangeNotifier {
     AccTypeModel(
       title: "For my Business",
       description:
-      "Create branded designs tailored to your business and industry.",
+          "Create branded designs tailored to your business and industry.",
     ),
     AccTypeModel(
       title: "Personal Use",
       description:
-      "Create designs for festivals, birthdays, quotes, social posts, and more.",
+          "Create designs for festivals, birthdays, quotes, social posts, and more.",
     ),
   ];
 

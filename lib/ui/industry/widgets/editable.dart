@@ -79,6 +79,13 @@ class EditableItemWidget extends StatelessWidget {
         ? (currentItem.height ?? naturalTextSize?.height ?? 220)
         : (naturalTextSize?.height ?? (currentItem.height ?? 220));
 
+    // One finger = move, two fingers = pinch zoom + pan. Keep the starting
+    // scale outside the GestureDetector callbacks so a rebuild during the
+    // gesture does not reset the pinch baseline.
+    double gestureStartScale = currentItem.scale.isFinite
+        ? currentItem.scale
+        : 1.0;
+
     return KeyedSubtree(
       // Keep the element stable while position/scale changes. Re-keying on
       // every drag/resize recreates the GestureDetector and makes editing
@@ -86,36 +93,41 @@ class EditableItemWidget extends StatelessWidget {
         key: ValueKey(currentItem.id),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          // Selecting an item and moving an already-selected item are two
-          // separate responsibilities. If the user touches another item,
-          // select THAT item first. Never move the previously selected item.
-          onPanStart: (_) {
-            if (provider.selectedItemId != currentItem.id) {
+          // Tapping an unselected item selects it instantly without moving it.
+          // Dragging/moving is only active when the item is already selected.
+          onTap: () {
+            if (!isSelected) {
               onItemSelected(currentItem.type ?? '', currentItem.id!);
             }
           },
-          onPanUpdate: (details) {
-            // Move the ITEM THAT RECEIVED THIS GESTURE. Do not check
-            // selectedItemId here: when the user starts dragging an item that
-            // was behind another item, onPanStart selects it and the provider
-            // rebuild can happen before the first pan update. Checking the
-            // selected id at that point can make the drag appear to move the
-            // previously selected item or require a second drag.
-            //
-            // Always read the latest position so every update is applied to
-            // the item that the finger actually touched.
+          onScaleStart: isSelected ? (details) {
+            final latest = provider.items.where((e) => e.id == currentItem.id);
+            gestureStartScale = latest.isNotEmpty && latest.first.scale.isFinite
+                ? latest.first.scale
+                : 1.0;
+          } : null,
+          onScaleUpdate: isSelected ? (details) {
             final latest = provider.items.where((e) => e.id == currentItem.id);
             if (latest.isEmpty) return;
 
             final latestItem = latest.first;
-            provider.updatePosition(
+            final nextScale = (gestureStartScale * details.scale)
+                .clamp(0.05, 10.0)
+                .toDouble();
+
+            // focalPointDelta works for both one-finger dragging and two-finger
+            // panning. Applying it to the latest provider position keeps the
+            // gesture smooth even while the provider is rebuilding.
+            final nextPosition =
+                latestItem.position + details.focalPointDelta;
+
+            provider.updateItemTransform(
               latestItem.id!,
-              latestItem.position + details.delta,
+              scale: nextScale,
+              position: nextPosition,
+              clampToFrame: false,
             );
-          },
-          onTap: () {
-            onItemSelected(currentItem.type ?? '', currentItem.id!);
-          },
+          } : null,
           onDoubleTap: () {
             if (isTextItem && !isBackground) {
               _showTextEditorDialog(
@@ -167,19 +179,10 @@ class EditableItemWidget extends StatelessWidget {
                         ),
                       ),
 
-                      // Selection controls live INSIDE the exact same transform
-                      // as the image. This keeps the border, handles and 3-dot
-                      // menu locked to the image instead of a second canvas-level
-                      // coordinate system.
-                      if (isSelected && !isBackground)
-                        Positioned.fill(
-                          child: _EditorSelectionControls(
-                            item: currentItem,
-                            bodyWidth: bodyWidth,
-                            bodyHeight: bodyHeight,
-                            provider: provider,
-                          ),
-                        ),
+                      // Selection visuals are rendered at canvas level by
+                      // _TransformSelectionOverlay in template_edit.dart so
+                      // selection handles and borders maintain a fixed, clear
+                      // screen size regardless of item scale or zoom.
                     ],
                   ),
                 ),
@@ -3619,6 +3622,16 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
     newWidth = math.max(minSize, newWidth);
     newHeight = math.max(minSize, newHeight);
 
+    // Canva-like behavior: When resizing from a corner handle, maintain
+    // aspect ratio proportionally to prevent image/shape distortion.
+    if (alignment.x != 0 && alignment.y != 0 && _startWidth > 0 && _startHeight > 0) {
+      final scaleX = newWidth / _startWidth;
+      final scaleY = newHeight / _startHeight;
+      final dominantScale = scaleX.abs() >= scaleY.abs() ? scaleX : scaleY;
+      newWidth = math.max(minSize, _startWidth * dominantScale);
+      newHeight = math.max(minSize, _startHeight * dominantScale);
+    }
+
     // Anchor the opposite edge/corner exactly like the reference editor.
     // The correction is calculated in the item's unrotated coordinate system
     // and then rotated back into canvas coordinates.
@@ -3687,33 +3700,22 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
   }
 
   Widget _handle(Alignment alignment) {
-    // IMPORTANT: the visible dot is small, but the touch target must be large.
-    // The old 16x16 target was too difficult to grab on a phone, especially
-    // after the image was scaled down. Keep the visual dot at the exact edge
-    // while giving the finger a 44x44 hit area.
+    // Large touch target kept strictly inside the bounding box so Flutter's
+    // hit-testing accurately registers the tap.
     const double hitSize = 44.0;
-    const double visualSize = 10.0;
+    const double visualSize = 14.0;
 
-    final double left;
-    final double top;
+    final double left = alignment.x < 0
+        ? 0.0
+        : alignment.x > 0
+            ? math.max(0.0, widget.bodyWidth - hitSize)
+            : math.max(0.0, (widget.bodyWidth - hitSize) / 2);
 
-    if (alignment.x < 0) {
-      left = 0;
-    } else if (alignment.x > 0) {
-      left = math.max(0.0, widget.bodyWidth - hitSize);
-    } else {
-      left = math.max(0.0, widget.bodyWidth / 2 - hitSize / 2);
-    }
-
-    if (alignment.y < 0) {
-      // Keep the top-center resize hit target below the rotation handle.
-      // Its visible dot is translated back onto the selection border.
-      top = alignment.x == 0 ? 22.0 : 0.0;
-    } else if (alignment.y > 0) {
-      top = math.max(0.0, widget.bodyHeight - hitSize);
-    } else {
-      top = math.max(0.0, widget.bodyHeight / 2 - hitSize / 2);
-    }
+    final double top = alignment.y < 0
+        ? (alignment.x == 0 ? 24.0 : 0.0)
+        : alignment.y > 0
+            ? math.max(0.0, widget.bodyHeight - hitSize)
+            : math.max(0.0, (widget.bodyHeight - hitSize) / 2);
 
     return Positioned(
       left: left,
@@ -3728,21 +3730,21 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
         onPanCancel: _endResize,
         child: Center(
           child: Transform.translate(
-            // Keep the visual circle exactly on the corresponding outline
-            // while the larger invisible touch target stays inside the item.
+            // Shift the visual dot exactly onto the selection line, while the
+            // invisible touch target stays safely inside the widget's bounds.
             offset: Offset(
               alignment.x < 0
                   ? -hitSize / 2 + visualSize / 2
                   : alignment.x > 0
-                  ? hitSize / 2 - visualSize / 2
-                  : 0,
+                      ? hitSize / 2 - visualSize / 2
+                      : 0,
               alignment.y < 0
                   ? (alignment.x == 0
-                  ? -hitSize / 2 + visualSize / 2 - 22
-                  : -hitSize / 2 + visualSize / 2)
+                      ? -hitSize / 2 + visualSize / 2 - 24
+                      : -hitSize / 2 + visualSize / 2)
                   : alignment.y > 0
-                  ? hitSize / 2 - visualSize / 2
-                  : 0,
+                      ? hitSize / 2 - visualSize / 2
+                      : 0,
             ),
             child: Container(
               width: visualSize,
@@ -3751,13 +3753,13 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
                 color: Colors.white,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFF2196F3),
-                  width: 2,
+                  color: const Color(0xFF0066FF),
+                  width: 2.5,
                 ),
                 boxShadow: const [
                   BoxShadow(
-                    color: Color(0x33000000),
-                    blurRadius: 2,
+                    color: Color(0x66000000),
+                    blurRadius: 3,
                   ),
                 ],
               ),
@@ -4003,11 +4005,12 @@ class _EditorSelectionBorderPainter extends CustomPainter {
     );
 
     final paint = Paint()
-      ..color = const Color(0xFF555555)
-      ..style = PaintingStyle.fill
+      ..color = const Color(0xFF0066FF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.0
       ..isAntiAlias = true;
 
-    _drawDottedPath(canvas, Path()..addRRect(rrect), paint);
+    canvas.drawRRect(rrect, paint);
   }
 
   @override

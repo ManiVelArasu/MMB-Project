@@ -73,14 +73,14 @@ class HomeScreenProvider extends ChangeNotifier {
   bool get isLoadingCategories => _isLoadingCategories;
   String? get categoryErrorMessage => _categoryErrorMessage;
 
-  List<Datum> _specialDays = [];
+  List<SpecialDaysList> _specialDays = [];
 
   bool _isLoadingSpecialDays = false;
   String? _specialDaysError;
 
   String _selectedSpecialDaysRange = "month";
 
-  List<Datum> get specialDays => _specialDays;
+  List<SpecialDaysList> get specialDays => _specialDays;
 
   bool get isLoadingSpecialDays => _isLoadingSpecialDays;
 

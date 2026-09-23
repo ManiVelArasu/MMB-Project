@@ -27,7 +27,7 @@ class SpecialDaysProvider extends ChangeNotifier {
           to: selectedDate!,
         );
       } else {
-        response = await HomeRepository.instance.specialDaysApi(range: 'month');
+        response = await HomeRepository.instance.specialDaysApi(range: 'all');
       }
 
       if (response.data != null) {
