@@ -60,6 +60,11 @@ class ApiEndpoints {
 
   static const String keyWords = '/tags';
 
+  static const String notificationReadAll = '/notifications/read-all';
+
   static String industryKeyWords(String industrySlug) =>
       '/industries/${industrySlug}/keywords';
+
+  static String notificationReadOne(String notificationUid) =>
+      '/notifications/${notificationUid}/read';
 }

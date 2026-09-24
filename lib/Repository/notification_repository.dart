@@ -19,4 +19,24 @@ class NotificationRepository {
       fromJson: (json) => NotificationModel.fromJson(json),
     );
   }
+
+  Future<ApiResult<dynamic>> notificationReadAll() {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.notificationReadAll,
+        method: ApiMethod.patch,
+      ),
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResult<dynamic>> notificationReadOne(String notificationUid) {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.notificationReadOne(notificationUid),
+        method: ApiMethod.patch,
+      ),
+      fromJson: (json) => json,
+    );
+  }
 }

@@ -137,7 +137,6 @@ class BusinessProvider extends ChangeNotifier {
       final accountType = selectedTitle == "Personal Use"
           ? "personal"
           : "business";
-
       final result = await GetMeRepository.instance.updateMe(accountType);
 
       return await result.when(
@@ -200,11 +199,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-          );
+          imageFile: imageFile,
+          filename: filename,
+          width: 1080,
+          height: 1080,
+          slot: 'business_logo'
+      );
 
       bool success = false;
 
@@ -305,9 +305,9 @@ class BusinessProvider extends ChangeNotifier {
   String get savedCategorySlug => _savedCategorySlug;
 
   Future<Map<String, dynamic>?> businessUpdateApi(
-    BuildContext context,
-    String subIndustry,
-  ) async {
+      BuildContext context,
+      String subIndustry,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
     notifyListeners();
@@ -382,9 +382,9 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<bool> updateBusinessDetails(
-    BuildContext context,
-    String businessUid,
-  ) async {
+      BuildContext context,
+      String businessUid,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
     notifyListeners();
@@ -528,7 +528,6 @@ class BusinessProvider extends ChangeNotifier {
 
   Future<void> loadSavedData() async {
     final prefs = await SharedPreferences.getInstance();
-
     final savedNumber = prefs.getString('saved_mobile_number');
     if (savedNumber != null && savedNumber.isNotEmpty) {
       _mobileNumber = savedNumber;
@@ -762,11 +761,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-          );
+          imageFile: imageFile,
+          filename: filename,
+          width: 1080,
+          height: 1080,
+          slot: "business_logo"
+      );
 
       bool success = false;
 
@@ -918,10 +918,11 @@ class BusinessProvider extends ChangeNotifier {
       final filename = file.path.split(Platform.pathSeparator).last;
 
       final result = await MediaUploadRepository.instance.uploadImageAndConfirm(
-        imageFile: file,
-        filename: filename,
-        width: 1080,
-        height: 1080,
+          imageFile: file,
+          filename: filename,
+          width: 1080,
+          height: 1080,
+          slot: "business_logo"
       );
 
       bool success = false;
@@ -1021,9 +1022,9 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<void> pickImage(
-    BuildContext context, {
-    ImageSource source = ImageSource.gallery,
-  }) async {
+      BuildContext context, {
+        ImageSource source = ImageSource.gallery,
+      }) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -1138,12 +1139,12 @@ class BusinessProvider extends ChangeNotifier {
     AccTypeModel(
       title: "For my Business",
       description:
-          "Create branded designs tailored to your business and industry.",
+      "Create branded designs tailored to your business and industry.",
     ),
     AccTypeModel(
       title: "Personal Use",
       description:
-          "Create designs for festivals, birthdays, quotes, social posts, and more.",
+      "Create designs for festivals, birthdays, quotes, social posts, and more.",
     ),
   ];
 

@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/network/provider/common_provider.dart';
 import 'package:provider/provider.dart';
+import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/business_provider.dart';
@@ -35,6 +37,18 @@ class BusinessProfileView extends StatelessWidget {
     return Consumer<BusinessProfileProvider>(
       builder: (context, provider, child) {
         final businessProvider = context.watch<BusinessProvider>();
+        final accountType = businessProvider.provider.me?.data.accountType;
+
+        // PERSONAL: only the personal design is shown.
+        // BUSINESS: the existing business UI below is untouched.
+        if (accountType == "personal") {
+          return _buildPersonalProfileScreen(
+            context,
+            isDark,
+            businessProvider.provider,
+          );
+        }
+
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: SafeArea(
@@ -624,6 +638,383 @@ class BusinessProfileView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  // ===========================================================================
+  // PERSONAL PROFILE DESIGN
+  // ===========================================================================
+
+  Widget _buildPersonalProfileScreen(
+    BuildContext context,
+    bool isDark,
+    CommonProvider provider,
+  ) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: CustomAppBar(
+        showRightIcon: false,
+        showTitle: true,
+        title: "Brand Hub",
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ----------------------------------------------------------------
+              // HEADER + PERSONAL PROFILE
+              // ----------------------------------------------------------------
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 12.h),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 70.w,
+                      height: 70.w,
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                      child: ClipOval(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ImageViewerScreen(
+                                    imagePath:
+                                        '${ApiEndpoints.cdnImageUrl}/${provider.me?.data.profilePhotoS3Key ?? ''}',
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Image.network(
+                              '${ApiEndpoints.cdnImageUrl}/${provider.me?.data.profilePhotoS3Key ?? ''}',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 10.h),
+
+                    AppText(
+                      "${provider.me!.data.name!.isEmpty ? "${provider.me?.data.name}" : provider.me?.data.name}",
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+
+                    SizedBox(height: 8.h),
+
+                    InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(context, "/EditProfileScreen");
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          AppText(
+                            "EDIT PERSONAL DETAILS",
+                            style: TextStyle(
+                              color: const Color(0xFFE53935),
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          SizedBox(width: 4.w),
+                          Icon(
+                            Icons.edit_note_rounded,
+                            color: const Color(0xFFE53935),
+                            size: 16.sp,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: 16.h),
+                  ],
+                ),
+              ),
+
+              // ----------------------------------------------------------------
+              // MY DOWNLOADS + MEDIA LIBRARY
+              // ----------------------------------------------------------------
+              Padding(
+                padding: EdgeInsets.fromLTRB(14.w, 10.h, 14.w, 12.h),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _personalActionCard(
+                        title: "My Downloads",
+                        icon: Icons.file_download_outlined,
+                        iconColor: const Color(0xFF8067E8),
+                        backgroundColor: const Color(0xFFF0EDFF),
+                        onTap: () {},
+                      ),
+                    ),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: _personalActionCard(
+                        title: "Media Library",
+                        icon: Icons.folder_copy_outlined,
+                        iconColor: const Color(0xFFE97955),
+                        backgroundColor: const Color(0xFFFFEEDB),
+                        onTap: () {},
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Divider(
+                height: 1,
+                color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+              ),
+
+              Padding(
+                padding: EdgeInsets.fromLTRB(14.w, 13.h, 14.w, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.layers_rounded,
+                              color: const Color(0xFFE53935),
+                              size: 21.sp,
+                            ),
+                            SizedBox(width: 7.w),
+                            Text(
+                              "Your Frames",
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          height: 30.w,
+                          width: 30.w,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF3A2022)
+                                : const Color(0xFFFFE1E4),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.add_rounded,
+                            color: const Color(0xFFE53935),
+                            size: 20.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 11.h),
+
+                    // Tabs exactly like the reference layout.
+                    Row(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Static Frames",
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 4.h),
+                            Container(
+                              height: 3.h,
+                              width: 88.w,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE53935),
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(width: 20.w),
+                        Text(
+                          "Animated Frames",
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 11.h),
+
+                    SizedBox(
+                      height: 145.h,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        children: [
+                          _personalFrameCard(isDark: isDark, price: "Free"),
+                          _personalFrameCard(
+                            isDark: isDark,
+                            price: "Rs.0 (Rs.100 Unlocked)",
+                          ),
+                          _personalFrameCard(isDark: isDark, price: "Free"),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 20.h),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _personalActionCard({
+    required String title,
+    required IconData icon,
+    required Color iconColor,
+    required Color backgroundColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 70.h,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: iconColor, size: 23.sp),
+            SizedBox(height: 4.h),
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 10.5.sp,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _personalFrameCard({required bool isDark, required String price}) {
+    return Container(
+      width: 100.w,
+      margin: EdgeInsets.only(right: 10.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(
+                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                  width: 1,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(7.r),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Padding(
+                        padding: EdgeInsets.all(5.w),
+                        child: Column(
+                          children: [
+                            Align(
+                              alignment: Alignment.topCenter,
+                              child: Icon(
+                                Icons.auto_awesome,
+                                size: 16.sp,
+                                color: const Color(0xFF3478E5),
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              height: 17.h,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0xFF3478E5),
+                                  width: 0.8,
+                                ),
+                                borderRadius: BorderRadius.circular(3.r),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 4.h,
+                      left: 4.w,
+                      child: Container(
+                        width: 10.w,
+                        height: 10.w,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE53935),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 7.sp,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 5.h),
+          Text(
+            price,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isDark ? Colors.white70 : Colors.black87,
+              fontSize: 8.5.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

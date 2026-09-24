@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/component/appbar_widget.dart';
 
 import 'package:provider/provider.dart';
 
@@ -25,91 +26,28 @@ class NotificationScreen extends StatelessWidget {
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
-            appBar: PreferredSize(
-              preferredSize: const Size.fromHeight(72),
+            appBar: CustomAppBar(
+              showTitle: true,
+              title: "Notification",
+              showActionText: true,
+              actionText: "Mark as All Read",
+              showRightIcon: false,
 
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+              onActionTextTap: () async {
+                final success = await provider.markAsAllNotifications();
 
-                  child: SizedBox(
-                    height: 72,
+                if (!context.mounted) return;
 
-                    child: Row(
-                      children: [
-                        InkWell(
-                          onTap: () => Navigator.pop(context),
-
-                          borderRadius: BorderRadius.circular(20),
-
-                          child: Container(
-                            width: 40,
-                            height: 40,
-
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF2A1A1C)
-                                  : const Color(0xFFFFF1F2),
-
-                              shape: BoxShape.circle,
-                            ),
-
-                            child: const Icon(
-                              Icons.arrow_back_rounded,
-                              color: Color(0xFFEF4444),
-                              size: 18,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 12),
-
-                        Expanded(
-                          child: Center(
-                            child: AppText(
-                              "Notifications",
-
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? Colors.white : Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        GestureDetector(
-                          onTap: provider.notifications.isEmpty
-                              ? null
-                              : () {
-                                  provider.markAllAsRead();
-                                },
-
-                          child: AppText(
-                            "Mark all as Read",
-
-                            style: TextStyle(
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.w600,
-
-                              color: provider.notifications.isEmpty
-                                  ? Colors.grey
-                                  : isDark
-                                  ? Colors.blueAccent
-                                  : const Color(0xFF1E3A8A),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+                if (!success && provider.errorMessage != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(provider.errorMessage!)),
+                  );
+                }
+              },
             ),
 
             body: SafeArea(
               top: false,
-
               child: _buildNotificationBody(context, provider, isDark),
             ),
           );
@@ -117,6 +55,10 @@ class NotificationScreen extends StatelessWidget {
       ),
     );
   }
+
+  // ============================================================
+  // BODY
+  // ============================================================
 
   Widget _buildNotificationBody(
     BuildContext context,
@@ -135,10 +77,8 @@ class NotificationScreen extends StatelessWidget {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-
           child: Column(
             mainAxisSize: MainAxisSize.min,
-
             children: [
               Icon(
                 Icons.notifications_off_outlined,
@@ -151,7 +91,6 @@ class NotificationScreen extends StatelessWidget {
               AppText(
                 provider.errorMessage!,
                 textAlign: TextAlign.center,
-
                 style: TextStyle(
                   color: isDark ? Colors.white70 : Colors.black54,
                   fontSize: 14,
@@ -164,12 +103,10 @@ class NotificationScreen extends StatelessWidget {
                 onPressed: () {
                   provider.fetchNotifications();
                 },
-
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                 ),
-
                 child: const Text("Retry"),
               ),
             ],
@@ -182,7 +119,6 @@ class NotificationScreen extends StatelessWidget {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-
           children: [
             Icon(
               Icons.notifications_none_rounded,
@@ -221,12 +157,30 @@ class NotificationScreen extends StatelessWidget {
           children: [
             const SizedBox(height: 20),
 
+            // ==================================================
+            // TODAY
+            // ==================================================
             if (provider.todayNotifications.isNotEmpty)
               NotificationSection(
                 title: "TODAY",
                 notifications: _convertNotifications(
                   provider.todayNotifications,
                 ),
+                onNotificationTap: (notification) async {
+                  print('${notification.uid}');
+                  if (notification.isRead) {
+                    return;
+                  }
+
+                  final uid = notification.uid;
+
+                  if (uid == null || uid.isEmpty) {
+                    debugPrint("❌ Notification UID is empty");
+                    return;
+                  }
+
+                  await provider.markNotificationAsRead(uid);
+                },
               ),
 
             if (provider.yesterdayNotifications.isNotEmpty)
@@ -235,12 +189,40 @@ class NotificationScreen extends StatelessWidget {
                 notifications: _convertNotifications(
                   provider.yesterdayNotifications,
                 ),
+                onNotificationTap: (notification) async {
+                  if (notification.isRead) {
+                    return;
+                  }
+
+                  final uid = notification.uid;
+
+                  if (uid == null || uid.isEmpty) {
+                    debugPrint("❌ Notification UID is empty");
+                    return;
+                  }
+
+                  await provider.markNotificationAsRead(uid);
+                },
               ),
 
             if (provider.oldNotifications.isNotEmpty)
               NotificationSection(
                 title: "OLD",
                 notifications: _convertNotifications(provider.oldNotifications),
+                onNotificationTap: (notification) async {
+                  if (notification.isRead) {
+                    return;
+                  }
+
+                  final uid = notification.uid;
+
+                  if (uid == null || uid.isEmpty) {
+                    debugPrint("❌ Notification UID is empty");
+                    return;
+                  }
+
+                  await provider.markNotificationAsRead(uid);
+                },
               ),
 
             const SizedBox(height: 20),
@@ -253,11 +235,18 @@ class NotificationScreen extends StatelessWidget {
   List<NotificationModels> _convertNotifications(List<NotificationList> items) {
     return items.map((item) {
       return NotificationModels(
+        uid: item.uid,
+
         title: item.title ?? "",
+
         description: item.body ?? "",
+
         category: item.category?.name ?? "",
+
         avatarUrl: item.imageS3Key ?? "",
+
         dateTime: item.createdAt ?? DateTime.now(),
+
         isRead: item.isRead ?? false,
       );
     }).toList();

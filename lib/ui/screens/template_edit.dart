@@ -1375,7 +1375,7 @@ class _EditorViewState extends State<EditorView> {
                                 color: Colors.orange,
                               ),
                               SizedBox(height: 2),
-                              Text(
+                              AppText(
                                 'LOCKED',
                                 style: TextStyle(
                                   color: Colors.orange,
@@ -1430,7 +1430,7 @@ class _EditorViewState extends State<EditorView> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(
+                      child: AppText(
                         title,
                         style: TextStyle(
                           fontSize: 15,
@@ -1449,7 +1449,7 @@ class _EditorViewState extends State<EditorView> {
                         });
                         setSheetState(() => expandedCategory = query);
                       },
-                      child: const Text(
+                      child: const AppText(
                         'View all',
                         style: TextStyle(
                           color: Colors.red,
@@ -1507,7 +1507,7 @@ class _EditorViewState extends State<EditorView> {
                           )
                         : !hasItems
                         ? const Center(
-                            child: Text(
+                            child: AppText(
                               'No items found',
                               style: TextStyle(
                                 color: Colors.grey,
@@ -1571,7 +1571,7 @@ class _EditorViewState extends State<EditorView> {
                           icon: const Icon(Icons.arrow_back_rounded),
                         ),
                         Expanded(
-                          child: Text(
+                          child: AppText(
                             title,
                             style: const TextStyle(
                               fontSize: 18,
@@ -1989,7 +1989,7 @@ class _EditorViewState extends State<EditorView> {
         children: [
           Icon(icon, color: Colors.red, size: 28),
           const SizedBox(height: 6),
-          Text(
+          AppText(
             title,
             style: const TextStyle(
               color: Colors.red,
@@ -2149,7 +2149,7 @@ class _EditorViewState extends State<EditorView> {
                           : (isDark ? Colors.white24 : const Color(0xFFE2E2E2)),
                     ),
                   ),
-                  child: Text(
+                  child: AppText(
                     title,
                     style: TextStyle(
                       fontSize: 11.5,
@@ -2190,7 +2190,7 @@ class _EditorViewState extends State<EditorView> {
                           : (isDark ? Colors.white24 : const Color(0xFFE2E2E2)),
                     ),
                   ),
-                  child: Text(
+                  child: AppText(
                     title,
                     style: TextStyle(
                       fontSize: 11.5,
@@ -2392,15 +2392,15 @@ class _EditorViewState extends State<EditorView> {
                       final replace = await showDialog<bool>(
                         context: context,
                         builder: (dialogContext) => AlertDialog(
-                          title: const Text('Replace Background?'),
-                          content: const Text(
+                          title: const AppText('Replace Background?'),
+                          content: const AppText(
                             'The current background will be replaced with this video.',
                           ),
                           actions: [
                             TextButton(
                               onPressed: () =>
                                   Navigator.pop(dialogContext, false),
-                              child: const Text('CANCEL'),
+                              child: const AppText('CANCEL'),
                             ),
                             FilledButton(
                               style: FilledButton.styleFrom(
@@ -2408,7 +2408,7 @@ class _EditorViewState extends State<EditorView> {
                               ),
                               onPressed: () =>
                                   Navigator.pop(dialogContext, true),
-                              child: const Text('REPLACE'),
+                              child: const AppText('REPLACE'),
                             ),
                           ],
                         ),
@@ -3150,7 +3150,7 @@ class _EditorViewState extends State<EditorView> {
                     ),
 
                     const SizedBox(height: 4),
-                    Text(
+                    AppText(
                       '#${current.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
@@ -3160,11 +3160,11 @@ class _EditorViewState extends State<EditorView> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('CANCEL'),
+                  child: const AppText('CANCEL'),
                 ),
                 FilledButton(
                   onPressed: () => Navigator.pop(dialogContext, current),
-                  child: const Text('APPLY'),
+                  child: const AppText('APPLY'),
                 ),
               ],
             );
@@ -3186,9 +3186,6 @@ class _EditorViewState extends State<EditorView> {
     final id = provider.selectedItemId;
     if (id == null) return const SizedBox.shrink();
 
-    // Use the complete Google Fonts catalog instead of a hard-coded
-    // seven-font list. The existing horizontal toolbar can scroll through
-    // the complete catalog.
     final fonts = GoogleFonts.asMap().keys.toList()..sort();
 
     final alignments = <Map<String, dynamic>>[
@@ -3436,7 +3433,7 @@ class _EditorViewState extends State<EditorView> {
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
+                          child: AppText(
                             'Text Size',
                             style: TextStyle(
                               color: isDark ? Colors.white : Colors.black87,
@@ -3445,7 +3442,7 @@ class _EditorViewState extends State<EditorView> {
                             ),
                           ),
                         ),
-                        Text(
+                        AppText(
                           currentSize.round().toString(),
                           style: const TextStyle(
                             color: Colors.amber,
@@ -3475,14 +3472,14 @@ class _EditorViewState extends State<EditorView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        AppText(
                           '8',
                           style: TextStyle(
                             color: isDark ? Colors.white54 : Colors.black54,
                             fontSize: 11,
                           ),
                         ),
-                        Text(
+                        AppText(
                           '300',
                           style: TextStyle(
                             color: isDark ? Colors.white54 : Colors.black54,
@@ -5668,9 +5665,12 @@ class _TransformSelectionOverlayState
 
   Size get _naturalTextSize {
     final id = widget.item.id ?? '';
+    final textValueForBounds = widget.item.text ?? '';
+    final isMultilineForBounds = textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
+
     final painter = TextPainter(
       text: TextSpan(
-        text: widget.item.text ?? '',
+        text: textValueForBounds,
         style: TextStyle(
           fontSize: widget.item.fontSize,
           color: widget.item.color ?? Colors.black,
@@ -5686,16 +5686,27 @@ class _TransformSelectionOverlayState
               : widget.item.fontFamily.trim(),
         ),
       ),
-      maxLines: 1,
+      maxLines: null,
       textDirection: TextDirection.ltr,
     )..layout();
     return Size(math.max(1.0, painter.width), math.max(1.0, painter.height));
   }
 
-  double get _baseVisualWidth =>
-      _isText ? _naturalTextSize.width : widget.item.width;
-  double get _baseVisualHeight =>
-      _isText ? _naturalTextSize.height : widget.item.height;
+  double get _baseVisualWidth {
+    if (!_isText) return widget.item.width;
+    final textValueForBounds = widget.item.text ?? '';
+    final isMultilineForBounds = textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
+    final w = widget.item.width;
+    return isMultilineForBounds ? (w > 0 ? w : _naturalTextSize.width) : _naturalTextSize.width;
+  }
+
+  double get _baseVisualHeight {
+    if (!_isText) return widget.item.height;
+    final textValueForBounds = widget.item.text ?? '';
+    final isMultilineForBounds = textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
+    final h = widget.item.height;
+    return isMultilineForBounds ? (h > 0 ? h : _naturalTextSize.height) : _naturalTextSize.height;
+  }
 
   double get _width => _baseVisualWidth * widget.item.scale * widget.scaleX;
 
@@ -6093,7 +6104,6 @@ class _TransformSelectionOverlayState
     required double width,
     required double height,
   }) {
-
     const handleSize = 48.0;
     final targetX = (alignment.x + 1) / 2 * width;
     final targetY = (alignment.y + 1) / 2 * height;
@@ -6130,13 +6140,10 @@ class _TransformSelectionOverlayState
 
           double deltaScale;
           if (alignment.x == 0) {
-
             deltaScale = alignment.y == 1 ? dy / baseHeight : -dy / baseHeight;
           } else if (alignment.y == 0) {
-
             deltaScale = alignment.x == 1 ? dx / baseWidth : -dx / baseWidth;
           } else {
-
             final sx = alignment.x == 1 ? dx / baseWidth : -dx / baseWidth;
             final sy = alignment.y == 1 ? dy / baseHeight : -dy / baseHeight;
             deltaScale = sx.abs() >= sy.abs() ? sx : sy;
@@ -6147,10 +6154,8 @@ class _TransformSelectionOverlayState
               .toDouble();
           final scaleDelta = newScale - _resizeStartScale;
 
-
           final anchorX = alignment.x == -1 ? -baseWidth * scaleDelta : 0.0;
           final anchorY = alignment.y == -1 ? -baseHeight * scaleDelta : 0.0;
-
 
           final correctedX = anchorX * cosA - anchorY * sinA;
           final correctedY = anchorX * sinA + anchorY * cosA;
@@ -6163,7 +6168,7 @@ class _TransformSelectionOverlayState
             widget.item.id ?? '',
             scale: newScale,
             position: nextPosition,
-          
+
             clampToFrame: false,
           );
         },

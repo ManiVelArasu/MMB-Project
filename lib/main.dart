@@ -48,8 +48,6 @@ Future<void> _initializeApp() async {
   debugPrint('🔐 Stored access token: ${accessToken != null}');
   debugPrint('🔄 Stored refresh token: ${refreshToken != null}');
 
-  // Load the persisted tokens into the SAME ApiHandler Dio before the app
-  // starts. This also keeps the old access token available if refresh fails.
   await ApiHandler.instance.setTokens(
     token: accessToken ?? '',
     refreshToken: refreshToken,
@@ -108,13 +106,11 @@ Future<void> _initApi() async {
     interceptor: TokenRefreshInterceptor(dioForInterceptor),
   );
 
-  // 2. THEN access ApiHandler.instance
   final prefs = await SharedPreferences.getInstance();
 
   final accessToken = prefs.getString('auth_token');
   final refreshToken = prefs.getString('refresh_token');
 
-  // 3. Load stored tokens
   if (accessToken != null && accessToken.isNotEmpty) {
     await ApiHandler.instance.setTokens(
       token: accessToken,

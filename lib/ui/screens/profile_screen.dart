@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/home_appbar.dart';
@@ -83,10 +84,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // =====================================================
-                      // PERSONAL ACCOUNT
-                      // =====================================================
-
                       if (isPersonalUse) ...[
                         Row(
                           children: [
@@ -98,7 +95,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 background: isDark
                                     ? const Color(0xFF18232D)
                                     : const Color(0xFFEAF5FF),
-                                onTap: () {},
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/BusinessProfileScreen",
+                                  );
+                                },
                                 isDark: isDark,
                               ),
                             ),
@@ -208,7 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         },
                                       ),
                                       SizedBox(height: 5.h),
-                                      Text(
+                                      AppText(
                                         item.title,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -234,38 +236,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           isDark: isDark,
                           children: [
                             _buildSettingsTile(
-                              title: 'Dashboard',
-                              icon: Icons.dashboard_outlined,
-                              isDark: isDark,
-                              onTap: () {},
-                            ),
-                            _buildSettingsTile(
-                              title: 'My Brand',
-                              icon: Icons.business_center_outlined,
-                              isDark: isDark,
-                              onTap: () {},
-                            ),
-                            _buildSettingsTile(
-                              title: 'My Pins',
-                              icon: Icons.push_pin_outlined,
+                              title: 'My Plan',
+                              iconAsset: "assets/images/my_plan.png",
                               isDark: isDark,
                               onTap: () {},
                             ),
                             _buildSettingsTile(
                               title: 'Brand Series',
-                              icon: Icons.collections_bookmark_outlined,
+                              iconAsset: "assets/images/direct.png",
                               isDark: isDark,
                               onTap: () {},
                             ),
+
                             _buildSettingsTile(
-                              title: 'My Files',
-                              icon: Icons.folder_open_outlined,
+                              title: 'Near Me',
+                              iconAsset: "assets/images/shop.png",
                               isDark: isDark,
                               onTap: () {},
                             ),
                             _buildSettingsTile(
                               title: 'AI Hub',
-                              icon: Icons.auto_awesome_outlined,
+                              iconAsset: "assets/images/ai_tool.png",
                               isDark: isDark,
                               onTap: () {},
                               isLast: true,
@@ -281,7 +272,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             _buildSettingsTile(
                               title: "Preferred Languages",
                               subtitle: "English, தமிழ், हिंदी",
-                              iconAsset: "assets/images/lang_icon.png",
+                              iconAsset: "assets/images/message_favorite.png",
                               isDark: isDark,
                               onTap: () async {
                                 await provider.fetchLanguage();
@@ -297,7 +288,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             _buildSettingsTile(
                               title: "Add Watermark",
-                              iconAsset: "assets/images/watermark_icon.png",
+                              iconAsset: "assets/images/pet.png",
                               isDark: isDark,
                               trailingWidget: Switch(
                                 value: provider.isWatermarkEnabled,
@@ -319,7 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           _buildSettingsTile(
                             title: "Help & Support",
-                            iconAsset: "assets/images/help_icon.png",
+                            iconAsset: "assets/images/help.png",
                             isDark: isDark,
                             onTap: () {
                               Navigator.pushNamed(
@@ -330,7 +321,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           _buildSettingsTile(
                             title: "FAQs",
-                            iconAsset: "assets/images/faq_icon.png",
+                            iconAsset: "assets/images/faq.png",
                             isDark: isDark,
                             onTap: () {
                               Navigator.pushNamed(context, "/FaqScreen");
@@ -352,7 +343,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           _buildSettingsTile(
                             title: "Dark Mode",
-                            iconAsset: "assets/images/dark_mode_icon.png",
+                            iconAsset: "assets/images/moon.png",
                             isDark: isDark,
                             trailingWidget: Switch(
                               value: isDark,
@@ -364,7 +355,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           _buildSettingsTile(
                             title: "Notifications",
-                            iconAsset: "assets/images/notification_icon.png",
+                            iconAsset: "assets/images/notification.png",
                             isDark: isDark,
                             onTap: () {
                               Navigator.pushNamed(
@@ -390,7 +381,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           _buildSettingsTile(
                             title: "Feedback",
-                            iconAsset: "assets/images/feedback_icon.png",
+                            iconAsset: "assets/images/feedback.png",
                             isDark: isDark,
                             onTap: () {
                               Navigator.pushNamed(context, "/FeedbackScreen");
@@ -398,31 +389,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           _buildSettingsTile(
                             title: "Privacy Policy",
-                            iconAsset: "assets/images/privacy_icon.png",
+                            iconAsset: "assets/images/document_text.png",
                             isDark: isDark,
                             onTap: () {},
                           ),
                           _buildSettingsTile(
                             title: "Terms & Conditions",
-                            iconAsset: "assets/images/terms_icon.png",
+                            iconAsset: "assets/images/document_text.png",
                             isDark: isDark,
                             onTap: () {},
                           ),
                           _buildSettingsTile(
                             title: "Refund Policy",
-                            iconAsset: "assets/images/refund_icon.png",
+                            iconAsset: "assets/images/bill.png",
                             isDark: isDark,
                             onTap: () {},
                           ),
                           _buildSettingsTile(
                             title: "Follow Us",
-                            iconAsset: "assets/images/follow_icon.png",
+                            iconAsset: "assets/images/people.png",
                             isDark: isDark,
                             onTap: () {},
                           ),
                           _buildSettingsTile(
                             title: "Delete my Account",
-                            iconAsset: "assets/images/delete_icon.png",
+                            iconAsset: "assets/images/user_remove.png",
                             isDark: isDark,
                             onTap: provider.isDeactivateLoading
                                 ? null
@@ -452,9 +443,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       SizedBox(height: 24.h),
 
-                      // =====================================================
-                      // OFFER BANNER
-                      // =====================================================
                       Container(
                         width: double.infinity,
                         padding: EdgeInsets.all(18.r),
@@ -468,7 +456,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            AppText(
                               "Level Up your SM with\nour Themes",
                               style: TextStyle(
                                 color: const Color(0xFF303F9F),
@@ -477,7 +465,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             SizedBox(height: 6.h),
-                            Text(
+                            AppText(
                               "Select, Customize, and Publish.\n"
                               "All in One Place!",
                               style: TextStyle(
@@ -494,7 +482,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   borderRadius: BorderRadius.circular(10.r),
                                 ),
                               ),
-                              child: const Text(
+                              child: const AppText(
                                 "ACTIVATE NOW",
                                 style: TextStyle(color: Colors.white),
                               ),
@@ -517,8 +505,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             context: parentContext,
                             builder: (dialogContext) {
                               return AlertDialog(
-                                title: const Text("Logout"),
-                                content: const Text(
+                                title: const AppText("Logout"),
+                                content: const AppText(
                                   "Are you sure you want to logout?",
                                 ),
                                 actions: [
@@ -526,7 +514,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     onPressed: () {
                                       Navigator.pop(dialogContext);
                                     },
-                                    child: const Text("Cancel"),
+                                    child: const AppText("Cancel"),
                                   ),
                                   TextButton(
                                     onPressed: () async {
@@ -534,7 +522,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                                       await provider.logoutApi(parentContext);
                                     },
-                                    child: const Text(
+                                    child: const AppText(
                                       "Logout",
                                       style: TextStyle(color: Colors.red),
                                     ),
@@ -560,7 +548,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       SizedBox(height: 12.h),
 
                       Center(
-                        child: Text(
+                        child: AppText(
                           "App Version 1.2",
                           style: TextStyle(color: Colors.grey, fontSize: 12.sp),
                         ),
@@ -577,10 +565,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
     );
   }
-
-  // ============================================================
-  // ACTION CARD
-  // ============================================================
 
   Widget _buildActionCard({
     required String title,
@@ -609,7 +593,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Icon(icon, color: iconColor, size: 26.sp),
             SizedBox(height: 5.h),
-            Text(
+            AppText(
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -654,12 +638,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   width: 27.w,
                   height: 27.w,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF2A2020)
-                        : const Color(0xFFFFF1F1),
-                    borderRadius: BorderRadius.circular(7.r),
-                  ),
                   child: iconAsset != null
                       ? Image.asset(
                           iconAsset,
@@ -686,7 +664,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      AppText(
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -699,7 +677,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       if (subtitle != null) ...[
                         SizedBox(height: 1.h),
-                        Text(
+                        AppText(
                           subtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -765,7 +743,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(12.w, 9.h, 12.w, 4.h),
-            child: Text(
+            child: AppText(
               title,
               style: TextStyle(
                 color: isDark ? Colors.white : Colors.black87,
@@ -780,10 +758,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ============================================================
-  // SECTION HEADER
-  // ============================================================
-
   Widget _buildSectionHeader(String title, bool isDark) {
     return Text(
       title,
@@ -795,10 +769,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
-
-// ================================================================
-// LOGOUT USER
-// ================================================================
 
 Future<void> logoutUser(BuildContext context, AuthProvider authProvider) async {
   final prefs = await SharedPreferences.getInstance();
@@ -816,10 +786,6 @@ Future<void> logoutUser(BuildContext context, AuthProvider authProvider) async {
 
   Navigator.pushNamedAndRemoveUntil(context, '/LoginScreen', (route) => false);
 }
-
-// ================================================================
-// LANGUAGE BOTTOM SHEET
-// ================================================================
 
 void _showLanguagesBottomSheet(
   BuildContext context,
@@ -874,7 +840,7 @@ void _showLanguagesBottomSheet(
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
+                      child: AppText(
                         "Languages",
                         style: TextStyle(
                           color: isDark ? Colors.white : Colors.black,
@@ -911,7 +877,7 @@ void _showLanguagesBottomSheet(
                 // Selected languages
                 Row(
                   children: [
-                    Text(
+                    AppText(
                       "Selected Languages",
                       style: TextStyle(
                         color: isDark ? Colors.white : Colors.black,
@@ -930,7 +896,7 @@ void _showLanguagesBottomSheet(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(6.r),
                       ),
-                      child: Text(
+                      child: AppText(
                         "${selectedCodes.length}",
                         style: TextStyle(
                           color: Colors.white,
@@ -944,7 +910,7 @@ void _showLanguagesBottomSheet(
 
                 SizedBox(height: 16.h),
 
-                Text(
+                AppText(
                   "Your post, their language – "
                   "connect better, reach wider!",
                   style: TextStyle(
@@ -998,7 +964,7 @@ void _showLanguagesBottomSheet(
                             width: isSelected ? 1.5 : 1,
                           ),
                         ),
-                        child: Text(
+                        child: AppText(
                           language.name ?? "",
                           style: TextStyle(
                             color: isSelected

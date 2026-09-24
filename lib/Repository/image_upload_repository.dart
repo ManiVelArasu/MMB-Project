@@ -12,28 +12,38 @@ import '../core/api/models/api_result.dart';
 class MediaUploadRepository {
   MediaUploadRepository._();
 
-  static final MediaUploadRepository instance = MediaUploadRepository._();
+  static final MediaUploadRepository instance =
+  MediaUploadRepository._();
+
   Future<ApiResult<Map<String, dynamic>>> uploadImageAndConfirm({
     required File imageFile,
     required String filename,
     required int width,
     required int height,
+
+    // 👇 Screen-ல் இருந்து pass செய்யப்படும்
+    required String slot,
   }) async {
     try {
       final dio = Dio();
-      final initResult = await ApiRepository.instance
-          .request<Map<String, dynamic>>(
-            config: ApiRequestConfig(
-              endpoint: ApiEndpoints.fileUpload,
-              method: ApiMethod.post,
-              body: {
-                "target": {"slot": "business_logo"},
-                "filename": filename,
-                "content_type": "image/jpeg",
-              },
-            ),
-            fromJson: (json) => json['data'] as Map<String, dynamic>,
-          );
+
+      final initResult =
+      await ApiRepository.instance.request<
+          Map<String, dynamic>>(
+        config: ApiRequestConfig(
+          endpoint: ApiEndpoints.fileUpload,
+          method: ApiMethod.post,
+          body: {
+            "target": {
+              "slot": slot,
+            },
+            "filename": filename,
+            "content_type": "image/jpeg",
+          },
+        ),
+        fromJson: (json) =>
+        json['data'] as Map<String, dynamic>,
+      );
 
       String? uploadUrl;
       String? uploadKey;
@@ -44,24 +54,41 @@ class MediaUploadRepository {
           uploadUrl = data['upload_url'];
           uploadKey = data['key'];
           requiredHeaders = data['required_headers'];
+
+          debugPrint(
+            "✅ Upload slot: $slot",
+          );
+
+          debugPrint(
+            "✅ Upload key: $uploadKey",
+          );
+
           return true;
         },
         failure: (error) {
-          debugPrint("Presign API Failed: ${error.message}");
+          debugPrint(
+            "❌ Presign API Failed: ${error.message}",
+          );
+
           return false;
         },
       );
 
-      if (!initSuccess || uploadUrl == null || uploadKey == null) {
+      if (!initSuccess ||
+          uploadUrl == null ||
+          uploadKey == null) {
         return ApiResult.failure(
           ApiError(
-            message: "Failed to get presign URL from server",
+            message:
+            "Failed to get presign URL from server",
             type: ApiErrorType.unknown,
           ),
         );
       }
 
-      final bytes = await imageFile.readAsBytes();
+      final bytes =
+      await imageFile.readAsBytes();
+
       final Map<String, dynamic> s3Headers = {
         Headers.contentLengthHeader: bytes.length,
         ...?requiredHeaders,
@@ -70,44 +97,60 @@ class MediaUploadRepository {
       final s3Response = await dio.put(
         uploadUrl!,
         data: Stream.fromIterable([bytes]),
-        options: Options(headers: s3Headers, contentType: 'image/jpeg'),
+        options: Options(
+          headers: s3Headers,
+          contentType: 'image/jpeg',
+        ),
       );
 
-      if (s3Response.statusCode != 200 && s3Response.statusCode != 204) {
+      if (s3Response.statusCode != 200 &&
+          s3Response.statusCode != 204) {
         return ApiResult.failure(
           ApiError(
             message:
-                "S3 Upload failed with status code: ${s3Response.statusCode}",
+            "S3 Upload failed with status code: "
+                "${s3Response.statusCode}",
             type: ApiErrorType.unknown,
           ),
         );
       }
 
-      debugPrint("✅ S3 Upload Successful!");
-      final confirmResult = await ApiRepository.instance
-          .request<Map<String, dynamic>>(
-            config: ApiRequestConfig(
-              endpoint: "/uploads/confirm",
-              method: ApiMethod.post,
-              body: {
-                "uploads": [
-                  {
-                    "key": uploadKey,
-                    "width": width,
-                    "height": height,
-                    "filename": filename,
-                  },
-                ],
+      debugPrint(
+        "✅ S3 Upload Successful!",
+      );
+
+      final confirmResult =
+      await ApiRepository.instance.request<
+          Map<String, dynamic>>(
+        config: ApiRequestConfig(
+          endpoint: "/uploads/confirm",
+          method: ApiMethod.post,
+          body: {
+            "uploads": [
+              {
+                "key": uploadKey,
+                "width": width,
+                "height": height,
+                "filename": filename,
               },
-            ),
-            fromJson: (json) => json['data'] as Map<String, dynamic>,
-          );
+            ],
+          },
+        ),
+        fromJson: (json) =>
+        json['data'] as Map<String, dynamic>,
+      );
 
       return confirmResult;
     } catch (e) {
-      debugPrint("Exception in uploadImageAndConfirm: $e");
+      debugPrint(
+        "❌ Exception in uploadImageAndConfirm: $e",
+      );
+
       return ApiResult.failure(
-        ApiError(message: e.toString(), type: ApiErrorType.unknown),
+        ApiError(
+          message: e.toString(),
+          type: ApiErrorType.unknown,
+        ),
       );
     }
   }

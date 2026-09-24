@@ -97,7 +97,6 @@ class MyDownloadsView extends StatelessWidget {
                             );
                           }
 
-
                           return GestureDetector(
                             onTap: () => _showFullScreenImage(
                               context,

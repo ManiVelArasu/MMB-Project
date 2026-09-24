@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Api Model/me_api.dart';
 import '../../Api Model/business_model.dart';
+import '../../Repository/get_me_repository.dart';
 import '../../Repository/update_profile.dart';
 import '../../Repository/image_upload_repository.dart';
 import '../../network/provider/common_provider.dart';
@@ -60,6 +61,9 @@ class EditPhotoProvider extends ChangeNotifier {
 
   String logoS3Key = '';
 
+  // Personal account profile photo S3 key.
+  String profilePhotoS3Key = '';
+
   String coverS3Key = '';
 
   int watermarkEnabled = 0;
@@ -110,18 +114,28 @@ class EditPhotoProvider extends ChangeNotifier {
 
   String? get uploadedImageKey => _uploadedImageKey;
 
+  final CommonProvider provider = CommonProvider.instance;
+
+  GetMeRepository getMeRepository = GetMeRepository.instance;
+
   void setGetMeData(Language me) {
     _businessUid = me.data.uid;
 
     businessNameController.text = me.data.name ?? '';
     emailController.text = me.data.email ?? '';
     contactController.text = me.data.phone ?? '';
+
+    final accountType = me.data.accountType;
     final profileKey = me.data.profilePhotoS3Key;
-    if (profileKey != null && profileKey.isNotEmpty) {
-      logoS3Key = profileKey;
-      SharedPreferences.getInstance().then((prefs) {
-        prefs.setString('logo_s3_key', profileKey);
-      });
+
+    if (accountType == 'personal') {
+      if (profileKey != null && profileKey.isNotEmpty) {
+        profilePhotoS3Key = profileKey;
+      }
+    } else {
+      if (profileKey != null && profileKey.isNotEmpty) {
+        logoS3Key = profileKey;
+      }
     }
 
     notifyListeners();
@@ -153,14 +167,11 @@ class EditPhotoProvider extends ChangeNotifier {
 
       if (!imageFile.existsSync()) {
         _imageUploadError = 'Selected image not found';
-
         notifyListeners();
-
         return false;
       }
 
       _selectedImage = imageFile;
-
       _isUploadingImage = true;
       _imageUploadError = null;
       _uploadedImageKey = null;
@@ -169,7 +180,28 @@ class EditPhotoProvider extends ChangeNotifier {
 
       final filename = imageFile.path.split(Platform.pathSeparator).last;
 
+      final accountType = provider.me?.data.accountType;
+
       debugPrint('📷 Uploading image: $filename');
+      debugPrint('👤 Account type: $accountType');
+
+      // The upload slot MUST match the account type.
+      // Business -> business_logo
+      // Personal -> profile_photo
+      final String uploadSlot;
+
+      if (accountType == 'personal') {
+        uploadSlot = 'profile_photo';
+      } else if (accountType == 'business') {
+        uploadSlot = 'business_logo';
+      } else {
+        _isUploadingImage = false;
+        _imageUploadError = 'Account type not found';
+        notifyListeners();
+        return false;
+      }
+
+      debugPrint('📌 Upload slot: $uploadSlot');
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
@@ -177,6 +209,7 @@ class EditPhotoProvider extends ChangeNotifier {
             filename: filename,
             width: 1080,
             height: 1080,
+            slot: uploadSlot,
           );
 
       bool success = false;
@@ -185,17 +218,14 @@ class EditPhotoProvider extends ChangeNotifier {
         success: (data) async {
           String? key;
 
-          // Direct upload response
           key = data['key']?.toString();
 
-          // /uploads/confirm response: data.keys[0]
           if ((key == null || key.isEmpty) &&
               data['keys'] is List &&
               (data['keys'] as List).isNotEmpty) {
             key = (data['keys'] as List).first?.toString();
           }
 
-          // /uploads/confirm response: data.results[0].key
           if ((key == null || key.isEmpty) &&
               data['results'] is List &&
               (data['results'] as List).isNotEmpty) {
@@ -205,61 +235,87 @@ class EditPhotoProvider extends ChangeNotifier {
             }
           }
 
-          if (key != null && key.isNotEmpty) {
-            _uploadedImageKey = key;
+          if (key == null || key.trim().isEmpty) {
+            _imageUploadError = 'Image uploaded but S3 key not found';
+
+            debugPrint('❌ Upload response did not contain S3 key: $data');
+            return;
+          }
+
+          key = key.trim();
+          _uploadedImageKey = key;
+
+          final prefs = await SharedPreferences.getInstance();
+
+          if (accountType == 'personal') {
+            // PERSONAL → profile_photo_s3_key
+            profilePhotoS3Key = key;
+
+            // Remove stale business key so it cannot be reused.
+            await prefs.remove('logo_s3_key');
+            await prefs.setString('profile_photo_s3_key', key);
+
+            debugPrint('👤 PERSONAL → profile_photo_s3_key: $key');
+          } else if (accountType == 'business') {
+            // BUSINESS → logo_s3_key
             logoS3Key = key;
 
-            // Save immediately after successful upload/confirm.
-            final prefs = await SharedPreferences.getInstance();
+            // Remove stale personal key so it cannot be reused.
+            await prefs.remove('profile_photo_s3_key');
             await prefs.setString('logo_s3_key', key);
 
-            success = true;
-
-            debugPrint('================================');
-            debugPrint('✅ IMAGE UPLOAD SUCCESS');
-            debugPrint('✅ Logo S3 Key: $key');
-            debugPrint(
-              '✅ Saved logo_s3_key: ${prefs.getString('logo_s3_key')}',
-            );
-            debugPrint('================================');
+            debugPrint('🏢 BUSINESS → logo_s3_key: $key');
           } else {
-            _imageUploadError = 'Image uploaded but S3 key not found';
-            debugPrint('❌ Upload response did not contain S3 key: $data');
-          }
-        },
+            _imageUploadError = 'Account type not found';
 
+            debugPrint(
+              '❌ Cannot assign S3 key. '
+              'Account type: $accountType',
+            );
+            return;
+          }
+
+          success = true;
+
+          debugPrint('================================');
+          debugPrint('✅ IMAGE UPLOAD SUCCESS');
+          debugPrint('✅ Account type: $accountType');
+          debugPrint('✅ S3 Key: $key');
+          debugPrint('================================');
+        },
         failure: (error) {
           _imageUploadError = error.message;
 
-          debugPrint(
-            '❌ Image upload failed: '
-            '${error.message}',
-          );
+          debugPrint('❌ Image upload failed: ${error.message}');
         },
       );
 
       _isUploadingImage = false;
-
       notifyListeners();
 
       return success;
     } catch (e) {
       _isUploadingImage = false;
-
       _imageUploadError = e.toString();
 
       debugPrint('❌ Image upload exception: $e');
 
       notifyListeners();
-
       return false;
     }
   }
 
   void removeSelectedImage() {
     _selectedImage = null;
-    logoS3Key = '';
     _imageUploadError = null;
+
+    final accountType = provider.me?.data.accountType;
+
+    if (accountType == 'personal') {
+      profilePhotoS3Key = '';
+    } else {
+      logoS3Key = '';
+    }
 
     notifyListeners();
   }
@@ -425,46 +481,42 @@ class EditPhotoProvider extends ChangeNotifier {
   }
 
   Future<bool> saveBusinessDetails() async {
-    // Business UID is owned/read by the Provider from SharedPreferences.
     final prefs = await SharedPreferences.getInstance();
+
     final savedUid = prefs.getString('business_uid');
     final businessUid = savedUid?.trim();
 
     if (businessUid == null || businessUid.isEmpty) {
       saveError = 'Business UID not found';
-
       notifyListeners();
-
       return false;
     }
+
+    if (_isUploadingImage) {
+      saveError = 'Please wait for image upload to finish';
+      notifyListeners();
+      return false;
+    }
+
+    // BUSINESS ONLY: use logo_s3_key.
     final savedLogoS3Key = prefs.getString('logo_s3_key')?.trim();
+
     if (savedLogoS3Key != null && savedLogoS3Key.isNotEmpty) {
       logoS3Key = savedLogoS3Key;
       _uploadedImageKey = savedLogoS3Key;
     }
 
-    if (_isUploadingImage) {
-      saveError = 'Please wait for image upload to finish';
-
-      notifyListeners();
-
-      return false;
-    }
-
     isSaving = true;
-
     saveError = null;
-
     notifyListeners();
 
     try {
       final latitudeText = latitudeController.text.trim();
+      final longitudeText = longitudeController.text.trim();
 
       final double? latitude = latitudeText.isEmpty
           ? null
           : double.tryParse(latitudeText);
-
-      final longitudeText = longitudeController.text.trim();
 
       final double? longitude = longitudeText.isEmpty
           ? null
@@ -475,16 +527,12 @@ class EditPhotoProvider extends ChangeNotifier {
       socialLinks = updatedSocialLinks;
 
       debugPrint('====================================');
-
       debugPrint('🚀 BUSINESS PATCH');
-
       debugPrint('UID: $businessUid');
-
-      debugPrint('Logo S3 Key: $logoS3Key');
-
+      debugPrint('logo_s3_key: $logoS3Key');
       debugPrint('====================================');
 
-      await UpdateProfileRepository.instance.updateBusiness(
+      final result = await UpdateProfileRepository.instance.updateBusiness(
         businessUid: businessUid,
         name: businessNameController.text.trim(),
         industry: industryController.text.trim(),
@@ -508,38 +556,190 @@ class EditPhotoProvider extends ChangeNotifier {
         operatingHours: operatingHours,
       );
 
-      // 🔥 IMPORTANT:
-      // PATCH success → GET latest Business data
-      debugPrint("🔄 Refreshing CommonProvider business...");
+      bool success = false;
 
-      final commonProvider = CommonProvider.instance;
+      await result.when(
+        success: (data) async {
+          success = true;
 
-      await commonProvider.loadBusiness(forceRefresh: true);
+          debugPrint('✅ BUSINESS PATCH SUCCESS: $data');
 
-      debugPrint("✅ CommonProvider business refreshed");
+          await CommonProvider.instance.loadBusiness(forceRefresh: true);
+
+          // Business API success also marks the flow complete.
+          await prefs.setBool('continue', true);
+        },
+        failure: (error) {
+          saveError = error.message;
+
+          debugPrint(
+            '❌ BUSINESS PATCH FAILED: '
+            '${error.message}',
+          );
+        },
+      );
 
       isSaving = false;
-
       notifyListeners();
 
-      return true;
-
-      isSaving = false;
-
-      notifyListeners();
-
-      return true;
+      return success;
     } catch (e) {
+      isSaving = false;
       saveError = e.toString();
 
       debugPrint('❌ Update Business Error: $e');
 
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> savePersonalDetails() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (_isUploadingImage) {
+      saveError = 'Please wait for image upload to finish';
+      notifyListeners();
+      return false;
+    }
+
+    // PERSONAL ONLY: use profile_photo_s3_key.
+    final savedProfilePhotoKey = prefs
+        .getString('profile_photo_s3_key')
+        ?.trim();
+
+    if (savedProfilePhotoKey != null && savedProfilePhotoKey.isNotEmpty) {
+      profilePhotoS3Key = savedProfilePhotoKey;
+      _uploadedImageKey = savedProfilePhotoKey;
+    }
+
+    isSaving = true;
+    saveError = null;
+    notifyListeners();
+
+    try {
+      final latitudeText = latitudeController.text.trim();
+      final longitudeText = longitudeController.text.trim();
+
+      final double? latitude = latitudeText.isEmpty
+          ? null
+          : double.tryParse(latitudeText);
+
+      final double? longitude = longitudeText.isEmpty
+          ? null
+          : double.tryParse(longitudeText);
+
+      debugPrint('====================================');
+      debugPrint('🚀 PERSONAL PATCH');
+      debugPrint('profile_photo_s3_key: $profilePhotoS3Key');
+      debugPrint('====================================');
+
+      // Do NOT send business-only fields here.
+      // The API validation already showed these are not
+      // allowed for the personal /user endpoint:
+      // brand_colors
+      // watermark_enabled
+      // phone
+      // social_links
+      // operating_hours
+
+      final result = await UpdateProfileRepository.instance.updatePersonal(
+        name: businessNameController.text.trim(),
+        industry: industryController.text.trim(),
+        profile_photo_s3_key: profilePhotoS3Key.trim().isEmpty
+            ? null
+            : profilePhotoS3Key.trim(),
+        coverS3Key: coverS3Key.trim().isEmpty ? null : coverS3Key.trim(),
+        city: cityController.text.trim(),
+        state: stateController.text.trim(),
+        address: addressController.text.trim(),
+        latitude: latitude,
+        longitude: longitude,
+        whatsapp: whatsappController.text.trim(),
+        email: emailController.text.trim(),
+        website: websiteController.text.trim(),
+      );
+
+      bool success = false;
+
+      await result.when(
+        success: (data) async {
+          success = true;
+
+          debugPrint('====================================');
+          debugPrint('✅ PERSONAL PATCH SUCCESS');
+          debugPrint('Response: $data');
+          debugPrint('====================================');
+
+          // The screen refreshes CommonProvider.me after success.
+          // Do not call the Business API for a personal account.
+
+          // Save ONLY after personal API success.
+          await prefs.setBool('continue', true);
+
+          debugPrint('✅ continue = true saved');
+        },
+        failure: (error) {
+          success = false;
+          saveError = error.message;
+
+          debugPrint(
+            '❌ PERSONAL PATCH FAILED: '
+            '${error.message}',
+          );
+        },
+      );
+
       isSaving = false;
+      notifyListeners();
+
+      return success;
+    } catch (e) {
+      isSaving = false;
+      saveError = e.toString();
+
+      debugPrint('❌ Personal Update Error: $e');
 
       notifyListeners();
 
       return false;
     }
+  }
+
+  Future<void> handleProfileImageUpload(String uploadedS3Key) async {
+    final key = uploadedS3Key.trim();
+
+    if (key.isEmpty) {
+      debugPrint('❌ Uploaded S3 key is empty');
+      return;
+    }
+
+    final accountType = provider.me?.data.accountType;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    if (accountType == 'business') {
+      logoS3Key = key;
+      _uploadedImageKey = key;
+
+      await prefs.remove('profile_photo_s3_key');
+      await prefs.setString('logo_s3_key', key);
+
+      debugPrint('🏢 BUSINESS → logo_s3_key = $key');
+    } else if (accountType == 'personal') {
+      profilePhotoS3Key = key;
+      _uploadedImageKey = key;
+
+      await prefs.remove('logo_s3_key');
+      await prefs.setString('profile_photo_s3_key', key);
+
+      debugPrint('👤 PERSONAL → profile_photo_s3_key = $key');
+    } else {
+      debugPrint('❌ Unknown account type: $accountType');
+      return;
+    }
+
+    notifyListeners();
   }
 
   void setBrandColors(List<Map<String, dynamic>> colors) {

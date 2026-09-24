@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../component/custom_widget.dart';
 import '../../network/provider/business_provider.dart';
@@ -37,6 +38,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
     final customColor = context.watch<CustomThemeProvider>().colors;
     final theme = Theme.of(context).textTheme;
     final businessProvider = context.watch<BusinessProvider>();
+    print("${{businessProvider.provider.me?.data.accountType}}");
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -126,37 +128,80 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                                         ),
                                       ),
                                     ),
-                                    Container(
-                                      height: 120.h,
-                                      width: 130.w,
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                        color: customColor.redColor.withAlpha(
-                                          25,
-                                        ),
-                                        border: Border.all(
-                                          color: customColor.redColor,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          SvgPicture.asset(
-                                            "assets/icons/create_logo_ic.svg",
-                                          ),
-                                          height8,
-                                          AppText(
-                                            "Create with AI",
-                                            style: theme.bodyMedium!.copyWith(
-                                              color: customColor.blackColor,
-                                              fontWeight: FontWeight.w700,
+                                    businessProvider
+                                                .provider
+                                                .me
+                                                ?.data
+                                                .accountType !=
+                                            "personal"
+                                        ? Container(
+                                            height: 120.h,
+                                            width: 130.w,
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              color: customColor.redColor
+                                                  .withAlpha(25),
+                                              border: Border.all(
+                                                color: customColor.redColor,
+                                              ),
+                                            ),
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                SvgPicture.asset(
+                                                  "assets/icons/create_logo_ic.svg",
+                                                ),
+                                                height8,
+                                                AppText(
+                                                  "Create with AI",
+                                                  style: theme.bodyMedium!
+                                                      .copyWith(
+                                                        color: customColor
+                                                            .blackColor,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : Container(
+                                            height: 120.h,
+                                            width: 130.w,
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              color: customColor.redColor
+                                                  .withAlpha(25),
+                                              border: Border.all(
+                                                color: customColor.redColor,
+                                              ),
+                                            ),
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                SvgPicture.asset(
+                                                  "assets/icons/create_logo_ic.svg",
+                                                ),
+                                                height8,
+                                                AppText(
+                                                  "From Library",
+                                                  style: theme.bodyMedium!
+                                                      .copyWith(
+                                                        color: customColor
+                                                            .blackColor,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
                                   ],
                                 ),
                                 if (businessProvider.imageError != null)
@@ -282,33 +327,51 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
               ButtonWidget(
                 isLoading: businessProvider.isUploading,
                 buttonPress:
-                    businessProvider.provider.me?.data.accountType == "personal"
+                businessProvider.provider.me?.data.accountType == "personal"
                     ? () async {
-                        final success = await businessProvider
-                            .updatePersonalDetails(context);
-                        await CommonProvider.instance.loadBusiness(
-                          forceRefresh: true,
-                        );
-                        if (success && context.mounted) {
-                          Navigator.pushNamed(
-                            context,
-                            "/CustomBottomNavScreen",
-                          );
-                        }
-                      }
+                  final success =
+                  await businessProvider.updatePersonalDetails(context);
+
+                  if (success) {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('continue', true);
+
+                    await CommonProvider.instance.loadBusiness(
+                      forceRefresh: true,
+                    );
+
+                    if (context.mounted) {
+                      Navigator.pushNamed(
+                        context,
+                        "/CustomBottomNavScreen",
+                      );
+                    }
+                  }
+                }
                     : () async {
-                        final success = await businessProvider
-                            .updateBusinessDetails(context, widget.businessUid);
-                        await CommonProvider.instance.loadBusiness(
-                          forceRefresh: true,
-                        );
-                        if (success && context.mounted) {
-                          Navigator.pushNamed(
-                            context,
-                            "/CustomBottomNavScreen",
-                          );
-                        }
-                      },
+                  final success =
+                  await businessProvider.updateBusinessDetails(
+                    context,
+                    widget.businessUid,
+                  );
+
+                  if (success) {
+                    // Save continue = true only after API success
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('continue', true);
+
+                    await CommonProvider.instance.loadBusiness(
+                      forceRefresh: true,
+                    );
+
+                    if (context.mounted) {
+                      Navigator.pushNamed(
+                        context,
+                        "/CustomBottomNavScreen",
+                      );
+                    }
+                  }
+                },
                 title: "CONTINUE",
                 textStyle: theme.titleLarge!.copyWith(
                   color: customColor.whiteColor,

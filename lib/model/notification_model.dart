@@ -1,22 +1,29 @@
 class NotificationModels {
+  final String? uid;
   final String title;
   final String description;
   final String category;
   final String? avatarUrl;
   final DateTime dateTime;
-  bool isRead;
+  final bool isRead;
 
-  NotificationModels({
+  const NotificationModels({
+    this.uid,
     required this.title,
     required this.description,
     required this.category,
     this.avatarUrl,
     required this.dateTime,
-    this.isRead = false,
+    required this.isRead,
   });
+
+  // ============================================================
+  // TO MAP
+  // ============================================================
 
   Map<String, dynamic> toMap() {
     return {
+      'uid': uid,
       'title': title,
       'description': description,
       'category': category,
@@ -26,30 +33,36 @@ class NotificationModels {
     };
   }
 
-  factory NotificationModels.fromMap(Map<String, dynamic> map) {
+  // ============================================================
+  // FROM MAP
+  // ============================================================
+
+  factory NotificationModels.fromMap(
+      Map<String, dynamic> map,
+      ) {
     return NotificationModels(
-      title: map['title'] ?? '',
-      description: map['description'] ?? '',
-      category: map['category'] ?? '',
-      avatarUrl: map['avatarUrl'],
-      dateTime: DateTime.parse(map['dateTime']),
+      uid: map['uid']?.toString(),
+      title: map['title']?.toString() ?? '',
+      description: map['description']?.toString() ?? '',
+      category: map['category']?.toString() ?? '',
+      avatarUrl: map['avatarUrl']?.toString(),
+
+      dateTime: map['dateTime'] != null
+          ? DateTime.parse(
+        map['dateTime'].toString(),
+      )
+          : DateTime.now(),
+
       isRead: map['isRead'] ?? false,
-
-
-
-
-
-
-
-
-
-
-
-      
     );
   }
 
+  // ============================================================
+  // COPY WITH
+  // ============================================================
+
   NotificationModels copyWith({
+    String? uid,
     String? title,
     String? description,
     String? category,
@@ -58,8 +71,10 @@ class NotificationModels {
     bool? isRead,
   }) {
     return NotificationModels(
+      uid: uid ?? this.uid,
       title: title ?? this.title,
-      description: description ?? this.description,
+      description:
+      description ?? this.description,
       category: category ?? this.category,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       dateTime: dateTime ?? this.dateTime,

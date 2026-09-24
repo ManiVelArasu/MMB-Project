@@ -82,4 +82,89 @@ class UpdateProfileRepository {
       },
     );
   }
+
+  Future<ApiResult<dynamic>> updatePersonal({
+    String? name,
+    String? industry,
+    String? description,
+    String? profile_photo_s3_key,
+    String? coverS3Key,
+    String? city,
+    String? state,
+    String? address,
+    double? latitude,
+    double? longitude,
+    String? whatsapp,
+    String? email,
+    String? website,
+  }) async {
+    final Map<String, dynamic> payload = {};
+
+    // Add only if value is available
+    if (name != null && name.trim().isNotEmpty) {
+      payload["name"] = name.trim();
+    }
+
+    if (industry != null && industry.trim().isNotEmpty) {
+      payload["industry"] = industry.trim();
+    }
+
+    if (description != null && description.trim().isNotEmpty) {
+      payload["description"] = description.trim();
+    }
+
+    if (profile_photo_s3_key != null &&
+        profile_photo_s3_key.trim().isNotEmpty) {
+      payload["profile_photo_s3_key"] =
+          profile_photo_s3_key.trim();
+    }
+
+    if (coverS3Key != null &&
+        coverS3Key.trim().isNotEmpty) {
+      payload["cover_s3_key"] = coverS3Key.trim();
+    }
+
+    if (city != null && city.trim().isNotEmpty) {
+      payload["city"] = city.trim();
+    }
+
+    if (state != null && state.trim().isNotEmpty) {
+      payload["state"] = state.trim();
+    }
+
+    if (address != null && address.trim().isNotEmpty) {
+      payload["address"] = address.trim();
+    }
+
+    if (latitude != null) {
+      payload["latitude"] = latitude;
+    }
+
+    if (longitude != null) {
+      payload["longitude"] = longitude;
+    }
+
+    if (whatsapp != null && whatsapp.trim().isNotEmpty) {
+      payload["whatsapp"] = whatsapp.trim();
+    }
+
+    if (email != null && email.trim().isNotEmpty) {
+      payload["email"] = email.trim();
+    }
+
+    if (website != null && website.trim().isNotEmpty) {
+      payload["website"] = website.trim();
+    }
+
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.user,
+        method: ApiMethod.patch,
+        body: payload,
+      ),
+      fromJson: (json) {
+        return json;
+      },
+    );
+  }
 }
