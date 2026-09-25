@@ -50,6 +50,77 @@ class BusinessProfileProvider extends ChangeNotifier {
   }
 
   // =========================================================
+  // REFRESH PROFILE AFTER EDIT
+  // =========================================================
+  //
+  // EditProfileScreen returns true after a successful save.
+  // The previous profile screen calls this method so the
+  // latest profile/business data is loaded before the user
+  // continues using this screen.
+  // =========================================================
+
+  Future<bool> refreshProfileAfterEdit() async {
+    try {
+      final accountType =
+      commonProvider.me?.data.accountType
+          ?.toString()
+          .trim()
+          .toLowerCase();
+
+      debugPrint("================================");
+      debugPrint("🔄 PROFILE REFRESH AFTER EDIT");
+      debugPrint("Account Type: $accountType");
+      debugPrint("================================");
+
+      if (accountType == 'personal') {
+        debugPrint("👤 PERSONAL → Calling GetMe API");
+
+        final success = await commonProvider.loadMe(
+          forceRefresh: true,
+        );
+
+        debugPrint(
+          "👤 PERSONAL GetMe refresh: $success",
+        );
+
+        return success;
+      }
+
+      if (accountType == 'business') {
+        debugPrint("🏢 BUSINESS → Calling Business API");
+
+        final success = await commonProvider.loadBusiness(
+          forceRefresh: true,
+        );
+
+        debugPrint(
+          "🏢 BUSINESS refresh: $success",
+        );
+
+        // Keep the provider's displayed business name in sync.
+        await loadSavedBusinessName();
+
+        return success;
+      }
+
+      debugPrint(
+        "⚠️ Unknown account type → Profile API skipped",
+      );
+
+      return false;
+    } catch (e, stackTrace) {
+      debugPrint(
+        "❌ Profile refresh failed: $e",
+      );
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
+
+      return false;
+    }
+  }
+
+  // =========================================================
   // MOBILE NUMBER
   // =========================================================
 

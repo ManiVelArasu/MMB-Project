@@ -67,7 +67,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
-            child: const HomeCustomAppBar(notificationCount: "2"),
+            child: const HomeCustomAppBar(),
           ),
           body: SafeArea(
             child: SingleChildScrollView(
@@ -139,7 +139,6 @@ class _ThemesScreenState extends State<ThemesScreen> {
 
                     SizedBox(height: 25.h),
 
-                    /// Dynamic Theme Groups
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),

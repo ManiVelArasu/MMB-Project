@@ -106,15 +106,10 @@ class _EditProfileViewState extends State<_EditProfileView> {
     if (success) {
       debugPrint("✅ Profile updated successfully");
 
-      if (accountType == "personal") {
-        debugPrint("👤 PERSONAL → Refreshing /users/me");
-
-        await provider.provider.loadMe(forceRefresh: true);
-      } else if (accountType == "business") {
-        debugPrint("🏢 BUSINESS → Refreshing business API");
-
-        await provider.provider.loadBusiness(forceRefresh: true);
-      }
+      // The previous BusinessProfileScreen is responsible for
+      // refreshing the API after this screen returns true.
+      // This keeps the refresh in the profile provider and avoids
+      // duplicate GetMe/Business API calls here.
 
       if (!mounted) return;
 
@@ -144,7 +139,6 @@ class _EditProfileViewState extends State<_EditProfileView> {
     final isPersonal = accountType == "personal";
 
     return Scaffold(
-
       appBar: CustomAppBar(title: "Edit Photo", showRightIcon: false),
 
       body: SafeArea(

@@ -1,4 +1,5 @@
 import '../Api Model/notification_model.dart';
+import '../Api Model/un_read_count.dart';
 import '../core/api/api_endpoints.dart';
 import '../core/api/api_repository.dart';
 import '../core/api/enums/api_method.dart';
@@ -27,6 +28,16 @@ class NotificationRepository {
         method: ApiMethod.patch,
       ),
       fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResult<UnReadCount>> notificationUnReadCount() {
+    return ApiRepository.instance.request<UnReadCount>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.unReadCount,
+        method: ApiMethod.get,
+      ),
+      fromJson: (json) => UnReadCount.fromJson(json),
     );
   }
 

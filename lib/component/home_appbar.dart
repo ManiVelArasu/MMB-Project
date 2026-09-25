@@ -36,6 +36,8 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
       if (!mounted) return;
 
       _loadAccountData();
+
+      _loadUnReadCount();
     });
   }
 
@@ -60,6 +62,29 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
       await _loadPersonal();
     } else if (accountType == "business") {
       await _loadBusiness();
+    }
+  }
+
+  Future<void> _loadUnReadCount() async {
+    final commonProvider = context.read<CommonProvider>();
+
+    try {
+      final success = await commonProvider.loadUnreadCount(forceRefresh: true);
+
+      if (!mounted) return;
+
+      if (success) {
+        debugPrint(
+          "🔔 HOME UNREAD COUNT : "
+          "${commonProvider.unreadCount}",
+        );
+      } else {
+        debugPrint("❌ HOME UNREAD COUNT API FAILED");
+      }
+    } catch (e, stackTrace) {
+      debugPrint("❌ HOME UNREAD COUNT ERROR: $e");
+
+      debugPrint("$stackTrace");
     }
   }
 
@@ -183,6 +208,8 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
     final accountType = commonProvider.accountType?.toLowerCase();
 
     final bool isPersonal = accountType == "personal";
+
+    final String unreadCount = commonProvider.unreadCount;
 
     // =========================================================
     // NAME
@@ -371,28 +398,23 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
                     ),
                   ),
 
-                  if (widget.notificationCount.isNotEmpty)
+                  if (unreadCount.isNotEmpty && unreadCount != "0")
                     Positioned(
                       top: -2.h,
                       left: -2.w,
-
                       child: Container(
                         padding: EdgeInsets.all(4.r),
-
                         decoration: const BoxDecoration(
                           color: Color(0xFFE53935),
                           shape: BoxShape.circle,
                         ),
-
                         constraints: BoxConstraints(
                           minWidth: 18.w,
                           minHeight: 18.h,
                         ),
-
                         child: Center(
                           child: AppText(
-                            widget.notificationCount,
-
+                            unreadCount,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 10.sp,

@@ -15,7 +15,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   final List<TextEditingController> _controllers = List.generate(
     6,
-        (index) => TextEditingController(),
+    (index) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
 
@@ -111,7 +111,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   bool isOtpComplete() {
     return _controllers.every(
-          (controller) => controller.text.trim().isNotEmpty,
+      (controller) => controller.text.trim().isNotEmpty,
     );
   }
 
@@ -255,41 +255,68 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       );
 
       return await result.when(
+        // ==========================================================
+        // SUCCESS
+        // ==========================================================
+
         success: (data) async {
           try {
-            // =========================================================
-            // RESPONSE DATA
-            // =========================================================
+            debugPrint("================================");
+            debugPrint("✅ OTP API SUCCESS");
+            debugPrint("API RESPONSE:");
+            debugPrint(data.toString());
+            debugPrint("================================");
 
-            final accessToken = data['access_token']?.toString();
+            final String? accessToken = data['access_token']?.toString();
 
-            final refreshToken = data['refresh_token']?.toString();
+            final String? refreshToken = data['refresh_token']?.toString();
 
             final bool isNewUser =
                 data['is_new_user'] == true ||
-                    data['data']?['is_new_user'] == true;
+                data['data']?['is_new_user'] == true;
 
-            final onboardingData =
+            final dynamic onboardingData =
                 data['onboarding'] ?? data['data']?['onboarding'];
 
-            final String accountType =
-                onboardingData?['account_type']?.toString() ?? "";
+            String? accountType;
 
-            final bool hasBusiness = onboardingData?['has_business'] == true;
+            if (onboardingData is Map) {
+              final dynamic value = onboardingData['account_type'];
 
-            final bool completed = onboardingData?['completed'] == true;
+              if (value != null && value.toString().trim().isNotEmpty) {
+                accountType = value.toString().trim().toLowerCase();
+              }
+            }
+
+            // ======================================================
+            // 8. HAS BUSINESS
+            // ======================================================
+
+            final bool hasBusiness =
+                onboardingData is Map && onboardingData['has_business'] == true;
+
+            // ======================================================
+            // 9. ONBOARDING COMPLETED
+            // ======================================================
+
+            final bool completed =
+                onboardingData is Map && onboardingData['completed'] == true;
+
+            // ======================================================
+            // DEBUG
+            // ======================================================
 
             debugPrint("================================");
             debugPrint("✅ OTP VERIFY SUCCESS");
-            debugPrint("isNewUser      : $isNewUser");
-            debugPrint("accountType    : $accountType");
-            debugPrint("hasBusiness    : $hasBusiness");
-            debugPrint("completed      : $completed");
+            debugPrint("isNewUser   : $isNewUser");
+            debugPrint("accountType : $accountType");
+            debugPrint("hasBusiness : $hasBusiness");
+            debugPrint("completed   : $completed");
             debugPrint("================================");
 
-            // =========================================================
-            // ACCESS TOKEN CHECK
-            // =========================================================
+            // ======================================================
+            // 10. ACCESS TOKEN VALIDATION
+            // ======================================================
 
             if (accessToken == null || accessToken.isEmpty) {
               debugPrint("❌ Access token missing after OTP verification");
@@ -301,10 +328,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               return null;
             }
 
-            // =========================================================
-            // REFRESH TOKEN CHECK
-            // =========================================================
-
             if (refreshToken == null || refreshToken.isEmpty) {
               debugPrint("❌ Refresh token missing after OTP verification");
 
@@ -315,14 +338,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               return null;
             }
 
-            // =========================================================
-            // SAVE LOGIN DATA
-            // =========================================================
-
             final prefs = await SharedPreferences.getInstance();
 
-            // IMPORTANT:
-            // Splash should use the SAME key.
             await prefs.setString('access_token', accessToken);
 
             await prefs.setString('refresh_token', refreshToken);
@@ -335,70 +352,103 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
             await prefs.setBool('is_business_completed', completed);
 
-            await prefs.setString('account_type', accountType);
+            if (accountType != null && accountType.isNotEmpty) {
+              await prefs.setString('account_type', accountType);
 
-            // =========================================================
-            // SET API HANDLER TOKENS
-            // =========================================================
+              debugPrint("✅ Account type saved: $accountType");
+            } else {
+              await prefs.remove('account_type');
+
+              debugPrint(
+                "🆕 Account type is NULL "
+                "→ First-time onboarding flow",
+              );
+            }
 
             await ApiHandler.instance.setTokens(
               token: accessToken,
               refreshToken: refreshToken,
             );
 
-            debugPrint(
-              "✅ Access token saved: "
-                  "${prefs.getString('access_token') != null}",
-            );
+            final bool isContinue = prefs.getBool('continue') ?? false;
 
-            debugPrint(
-              "✅ Refresh token saved: "
-                  "${prefs.getString('refresh_token') != null}",
-            );
+            debugPrint("================================");
+            debugPrint("🔐 OTP NAVIGATION DATA");
+            debugPrint("isNewUser   : $isNewUser");
+            debugPrint("accountType : $accountType");
+            debugPrint("continue    : $isContinue");
+            debugPrint("completed   : $completed");
+            debugPrint("hasBusiness : $hasBusiness");
+            debugPrint("================================");
 
             _isVerifyLoading = false;
             notifyListeners();
-
-            // =========================================================
-            // NAVIGATION
-            // =========================================================
 
             if (!context.mounted) {
               return data;
             }
 
-            // =========================================================
-            // 🆕 NEW USER FLOW
-            // =========================================================
-
-            if (isNewUser) {
-              debugPrint("🆕 NEW USER → PlanDetailScreen");
+            if (accountType == null || accountType.isEmpty) {
+              debugPrint(
+                "🆕 FIRST-TIME USER"
+                " → PlansAndPricingScreen",
+              );
 
               Navigator.pushReplacementNamed(context, "/PlansAndPricingScreen");
 
               return data;
             }
 
-            // =========================================================
-            // EXISTING USER
-            // =========================================================
-
-            if (completed || (accountType == "business" && hasBusiness)) {
-              debugPrint("👉 Existing user → CustomBottomNavScreen");
-
-              Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
-            } else {
-              debugPrint("👉 Existing incomplete user → BusinessDetailsScreen");
+            if (!isContinue) {
+              debugPrint(
+                "➡️ EXISTING USER"
+                " + CONTINUE = FALSE"
+                " → BusinessDetailsScreen",
+              );
 
               Navigator.pushReplacementNamed(context, "/BusinessDetailsScreen");
+
+              return data;
+            }
+            final bool onboardingFullyCompleted =
+                completed && (accountType == "business" ? hasBusiness : true);
+
+            debugPrint("================================");
+            debugPrint(
+              "ONBOARDING FULLY COMPLETED:"
+              " $onboardingFullyCompleted",
+            );
+            debugPrint("================================");
+
+            if (isContinue && onboardingFullyCompleted) {
+              debugPrint(
+                "✅ CONTINUE = TRUE"
+                " + ONBOARDING COMPLETE"
+                " → CustomBottomNavScreen",
+              );
+
+              Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
+
+              return data;
             }
 
+            debugPrint(
+              "⚠️ CONTINUE = TRUE"
+              " BUT ONBOARDING INCOMPLETE"
+              " → BusinessDetailsScreen",
+            );
+
+            Navigator.pushReplacementNamed(context, "/BusinessDetailsScreen");
+
             return data;
-          } catch (e) {
+          } catch (e, stackTrace) {
             debugPrint("❌ OTP success handling error: $e");
+
+            debugPrintStack(stackTrace: stackTrace);
 
             _isVerifyLoading = false;
             _errorMessage = e.toString();
+
             notifyListeners();
 
             return null;
@@ -409,18 +459,23 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
           _isVerifyLoading = false;
           _errorMessage = error.message;
 
-          debugPrint("❌ OTP verification failed: ${error.message}");
+          debugPrint(
+            "❌ OTP verification failed: "
+            "${error.message}",
+          );
 
           notifyListeners();
 
           return null;
         },
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       _isVerifyLoading = false;
       _errorMessage = e.toString();
 
       debugPrint("❌ OTP API exception: $e");
+
+      debugPrintStack(stackTrace: stackTrace);
 
       notifyListeners();
 

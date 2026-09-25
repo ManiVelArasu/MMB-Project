@@ -60,7 +60,7 @@ class _CustomCreateBody extends StatelessWidget {
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(
-              notificationCount: "2",
+
             ),
           ),
           body: SafeArea(

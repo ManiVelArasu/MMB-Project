@@ -62,6 +62,8 @@ class ApiEndpoints {
 
   static const String notificationReadAll = '/notifications/read-all';
 
+  static const String unReadCount = '/notifications/summary';
+
   static String industryKeyWords(String industrySlug) =>
       '/industries/${industrySlug}/keywords';
 

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/home_appbar.dart';
 import '../../component/language_bottom_sheet.dart';
 import '../../network/provider/auth_provider.dart';
+import '../../network/provider/common_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/profile_screen_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,7 +23,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool isPersonalUse = false;
+  String accountType = '';
   bool isLoading = true;
 
   @override
@@ -33,12 +35,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _checkAccountType() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final accountType = prefs.getString('selected_account_type') ?? "";
+    String type =
+        CommonProvider.instance.accountType?.trim().toLowerCase() ?? '';
+    if (type.isEmpty) {
+      await CommonProvider.instance.loadMe(forceRefresh: true);
+
+      type = CommonProvider.instance.accountType?.trim().toLowerCase() ?? '';
+    }
+
+    // Final fallback
+    if (type.isEmpty) {
+      type = (prefs.getString('account_type') ?? '').trim().toLowerCase();
+    }
+
+    debugPrint('================================');
+    debugPrint('PROFILE ACCOUNT TYPE = [$type]');
+    debugPrint('================================');
 
     if (!mounted) return;
 
     setState(() {
-      isPersonalUse = accountType == "Personal Use";
+      accountType = type;
       isLoading = false;
     });
   }
@@ -71,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             appBar: PreferredSize(
               preferredSize: Size.fromHeight(70.h),
-              child: HomeCustomAppBar(notificationCount: "2"),
+              child: HomeCustomAppBar(),
             ),
             body: SafeArea(
               child: SingleChildScrollView(
@@ -84,7 +101,243 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (isPersonalUse) ...[
+                      if (accountType == 'personal') ...[
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 10.h),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(28.r),
+                            border: Border.all(
+                              color: const Color(0xFFFFDADA),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // =====================================================
+                              // TITLE + GIFT IMAGE
+                              // =====================================================
+
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  AppText(
+                                    'Great News!',
+                                    style: TextStyle(
+                                      fontSize: 24.sp,
+                                      height: 1.1,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+
+                                  SizedBox(
+                                    width: 48.w,
+                                    height: 48.w,
+                                    child: Image.asset(
+                                      'assets/images/gift.png',
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              SizedBox(height: 4.h),
+
+                              // =====================================================
+                              // 20 + FREE AI CREDITS
+                              // =====================================================
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  AppText(
+                                    '20',
+                                    style: TextStyle(
+                                      fontSize: 52.sp,
+                                      height: 0.9,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFFF5222D),
+                                    ),
+                                  ),
+
+                                  SizedBox(width: 12.w),
+
+                                  Expanded(
+                                    child: AppText(
+                                      'Free AI Credits\nhave been added to your account',
+                                      style: TextStyle(
+                                        fontSize: 13.sp,
+                                        height: 1.18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              SizedBox(height: 4.h),
+
+                              // =====================================================
+                              // DESCRIPTION
+                              // =====================================================
+                              AppText(
+                                'Use your credits to explore AI tools and create\namazing content for yourself.',
+                                style: TextStyle(
+                                  fontSize: AppFontSize.fontSize13,
+                                  height: 1.25,
+                                  fontWeight: FontWeight.w400,
+                                  color: const Color(0xFF555555),
+                                ),
+                              ),
+
+                              SizedBox(height: 7.h),
+
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    height: 42.h,
+                                    child: ElevatedButton(
+                                      onPressed: () {},
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(
+                                          0xFFF5222D,
+                                        ),
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 12.w,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            10.r,
+                                          ),
+                                        ),
+                                      ),
+                                      child: AppText(
+                                        'EXPLORE AI TOOLS',
+                                        style: TextStyle(
+                                          fontSize: AppFontSize.fontSize13,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                  SizedBox(width: 10.w),
+
+                                  TextButton(
+                                    onPressed: () {
+                                      // Credit usage
+                                    },
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    child: AppText(
+                                      'CREDIT USAGE',
+                                      style: TextStyle(
+                                        fontSize: AppFontSize.fontSize13,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFFF5222D),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(height: 6.h),
+
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 18.h),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF700000),
+                            borderRadius: BorderRadius.circular(28.r),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppText(
+                                'Set Up Your Business',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 21.sp,
+                                  height: 1.15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+
+                              SizedBox(height: 5.h),
+
+                              AppText(
+                                accountType == 'personal'
+                                    ? 'Add your profile details, interests, and other information once, it makes your personal experience easier.'
+                                    : 'Add your business name, category, contact details, and other information once, it makes creating content for your business easier.',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13.sp,
+                                  height: 1.4,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+
+                              SizedBox(height: 10.h),
+
+                              SizedBox(
+                                height: 42.h,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    if (accountType == 'personal') {
+                                      Navigator.pushNamed(
+                                        context,
+                                        "/PersonalProfileScreen",
+                                      );
+                                    } else {
+                                      Navigator.pushNamed(
+                                        context,
+                                        "/BusinessDetailsScreen",
+                                      );
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFF5222D),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 16.w,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10.r),
+                                    ),
+                                  ),
+                                  child: AppText(
+                                    accountType == 'personal'
+                                        ? 'COMPLETE MY PROFILE →'
+                                        : 'SET UP MY BUSINESS →',
+                                    style: TextStyle(
+                                      fontSize: AppFontSize.fontSize13,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(height: 10.h),
                         Row(
                           children: [
                             Expanded(
@@ -122,46 +375,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         SizedBox(height: 10.h),
 
-                        // =================================================
-                        // MY ZONE
-                        // =================================================
                         _buildSectionCard(
                           title: 'My Zone',
                           isDark: isDark,
                           children: [
                             _buildSettingsTile(
-                              title: 'Dashboard',
-                              icon: Icons.dashboard_outlined,
+                              title: 'My Plan',
+                              iconAsset: "assets/images/my_plan.png",
                               isDark: isDark,
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  "/PlansAndPricingScreen",
+                                );
+                              },
                             ),
+
                             _buildSettingsTile(
-                              title: 'My Brand',
-                              icon: Icons.business_center_outlined,
+                              title: 'Near Me',
+                              iconAsset: "assets/images/shop.png",
                               isDark: isDark,
-                              onTap: () {},
-                            ),
-                            _buildSettingsTile(
-                              title: 'My Pins',
-                              icon: Icons.push_pin_outlined,
-                              isDark: isDark,
-                              onTap: () {},
-                            ),
-                            _buildSettingsTile(
-                              title: 'Brand Series',
-                              icon: Icons.collections_bookmark_outlined,
-                              isDark: isDark,
-                              onTap: () {},
-                            ),
-                            _buildSettingsTile(
-                              title: 'My Files',
-                              icon: Icons.folder_open_outlined,
-                              isDark: isDark,
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  "/PlansAndPricingScreen",
+                                );
+                              },
                             ),
                             _buildSettingsTile(
                               title: 'AI Hub',
-                              icon: Icons.auto_awesome_outlined,
+                              iconAsset: "assets/images/ai_tool.png",
                               isDark: isDark,
                               onTap: () {},
                               isLast: true,
@@ -170,11 +413,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
 
                         SizedBox(height: 20.h),
-                      ]
-                      // =====================================================
-                      // BUSINESS ACCOUNT
-                      // =====================================================
-                      else ...[
+                      ] else ...[
                         Row(
                           children: provider.quickActions.map((item) {
                             return Expanded(
@@ -457,7 +696,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             AppText(
-                              "Level Up your SM with\nour Themes",
+                              "Build Your Brand with Brand Series",
                               style: TextStyle(
                                 color: const Color(0xFF303F9F),
                                 fontSize: 18.sp,
@@ -466,24 +705,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             SizedBox(height: 6.h),
                             AppText(
-                              "Select, Customize, and Publish.\n"
-                              "All in One Place!",
+                              "Create consistent social media designs \nfor your business, all in one place.",
                               style: TextStyle(
                                 color: Colors.black87,
-                                fontSize: 11.sp,
+                                fontSize: 13.sp,
                               ),
                             ),
                             SizedBox(height: 12.h),
                             ElevatedButton(
                               onPressed: () {},
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF7C4DFF),
+                                backgroundColor: const Color(0xFF8C74F5),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10.r),
                                 ),
                               ),
                               child: const AppText(
-                                "ACTIVATE NOW",
+                                "Explore Now",
                                 style: TextStyle(color: Colors.white),
                               ),
                             ),
@@ -781,6 +1019,9 @@ Future<void> logoutUser(BuildContext context, AuthProvider authProvider) async {
   await prefs.remove('is_logged_in');
   await prefs.remove('auth_token');
   await prefs.remove('refresh_token');
+  await prefs.remove('logo_s3_key');
+  await prefs.remove('profile_s3_key');
+  await prefs.remove('profile_photo_s3_key');
 
   if (!context.mounted) return;
 

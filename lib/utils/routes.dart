@@ -32,11 +32,14 @@ import '../ui/screens/theme_single_item_view_screen.dart';
 
 import '../ui/splash/splash_screen.dart';
 import '../ui/subscription/change_plan_screen.dart';
+import '../ui/subscription/confirm_cancel.dart';
 import '../ui/subscription/confirm_plan.dart';
 
+import '../ui/subscription/manage_plan.dart';
 import '../ui/subscription/my_subscription.dart';
 import '../ui/subscription/plan_detail_screen.dart';
 
+import '../ui/subscription/plan_usage.dart';
 import '../ui/subscription/subscription_activate_screen.dart';
 import '../ui/subscription/subscription_screen.dart';
 import '../ui/screens/feedback_screen.dart';
@@ -181,9 +184,7 @@ class RouteGenerator {
         if (args is! Map<String, dynamic>) {
           return MaterialPageRoute(
             builder: (_) => const Scaffold(
-              body: Center(
-                child: Text("Plan details not found"),
-              ),
+              body: Center(child: Text("Plan details not found")),
             ),
           );
         }
@@ -193,9 +194,7 @@ class RouteGenerator {
         if (plan is! Plan) {
           return MaterialPageRoute(
             builder: (_) => const Scaffold(
-              body: Center(
-                child: Text("Invalid plan details"),
-              ),
+              body: Center(child: Text("Invalid plan details")),
             ),
           );
         }
@@ -205,9 +204,7 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (_) => ConfirmPlanScreen(
             plan: plan,
-            billing: billing is PlanBillingOption
-                ? billing
-                : null,
+            billing: billing is PlanBillingOption ? billing : null,
           ),
         );
       case "/SubscriptionActivatedScreen":
@@ -217,14 +214,32 @@ class RouteGenerator {
       case "/MySubscriptionScreen":
         return MaterialPageRoute(builder: (context) => MySubscriptionScreen());
       case "/ChangePlanScreen":
-        return MaterialPageRoute(builder: (context) => ChangePlanScreen());
+        final args = settings.arguments;
+
+        final bool openCancelSheet =
+            args is Map && args["openCancelSheet"] == true;
+
+        return MaterialPageRoute(
+          builder: (context) =>
+              ChangePlanScreen(openCancelSheet: openCancelSheet),
+        );
       case "/UsageScreen":
         return MaterialPageRoute(builder: (context) => UsageScreen());
       case "/SpecialDaysScreen":
         final selectedDate = settings.arguments as String?;
 
+        return MaterialPageRoute(builder: (context) => SpecialDaysScreen());
+
+      case "/ConfirmCancellationScreen":
         return MaterialPageRoute(
-          builder: (context) => SpecialDaysScreen(),
+          builder: (context) => const ConfirmCancellationScreen(),
+        );
+      case "/ManagePlanScreen":
+        return MaterialPageRoute(
+          builder: (context) => const ManagePlanScreen(),
+        );  case "/PlanUsageScreen":
+        return MaterialPageRoute(
+          builder: (context) => const PlanUsageScreen(),
         );
     }
     return null;

@@ -62,7 +62,7 @@ class ThemeDetailView extends StatelessWidget {
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(
 
-              notificationCount: "2",
+
             ),
           ),
           body: SafeArea(

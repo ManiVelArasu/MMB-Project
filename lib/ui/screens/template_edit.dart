@@ -20,6 +20,7 @@ import 'package:video_player/video_player.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../Api Model/editor_model.dart';
+import '../../Api Model/template_edit_model.dart';
 import '../../Repository/freePic.dart';
 import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
@@ -2780,9 +2781,20 @@ class _EditorViewState extends State<EditorView> {
           ),
           IconButton(
             tooltip: 'Download',
-
             icon: const Icon(Icons.download_rounded, color: Colors.red),
-            onPressed: () => _showExportSheet(context, provider),
+            onPressed: () {
+              if (provider.templateDetail?.data.isPremium == 1) {
+                // Premium user
+                _showExportSheet(context, provider);
+              } else {
+                // Non-premium user
+                final template = provider.templateDetail;
+
+                if (template != null) {
+                  _showPremiumTemplateDialog(context, template);
+                }
+              }
+            },
           ),
           IconButton(
             icon: const Icon(Icons.redo_rounded, color: Colors.grey),
@@ -3493,6 +3505,136 @@ class _EditorViewState extends State<EditorView> {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showPremiumTemplateDialog(BuildContext context, TemplateEdit template) {
+    final String templateName =
+        '${(template.data.name?.toString().isNotEmpty ?? false) ? template.data.name?.toString() : "This template"}';
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 3),
+                        child: const Icon(
+                          Icons.local_offer_rounded,
+                          color: Color(0xFFE91E63),
+                          size: 18,
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      Expanded(
+                        child: Text(
+                          'Premium template',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF202124),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '"$templateName" is part of the premium\n'
+                      'collection. Upgrade your plan to use it in your designs.',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.45,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                  ),
+                ),
+
+                Container(height: 1, color: const Color(0xFFE8E8E8)),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(dialogContext);
+                        },
+                        child: const Text(
+                          'Not now',
+                          style: TextStyle(
+                            color: Color(0xFF222222),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(dialogContext);
+                          Navigator.pushNamed(
+                            context,
+                            '/PlansAndPricingScreen',
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF202020),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 11,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                        ),
+                        child: const Text(
+                          'Upgrade to premium',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -5666,7 +5808,8 @@ class _TransformSelectionOverlayState
   Size get _naturalTextSize {
     final id = widget.item.id ?? '';
     final textValueForBounds = widget.item.text ?? '';
-    final isMultilineForBounds = textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
+    final isMultilineForBounds =
+        textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
 
     final painter = TextPainter(
       text: TextSpan(
@@ -5695,17 +5838,23 @@ class _TransformSelectionOverlayState
   double get _baseVisualWidth {
     if (!_isText) return widget.item.width;
     final textValueForBounds = widget.item.text ?? '';
-    final isMultilineForBounds = textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
+    final isMultilineForBounds =
+        textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
     final w = widget.item.width;
-    return isMultilineForBounds ? (w > 0 ? w : _naturalTextSize.width) : _naturalTextSize.width;
+    return isMultilineForBounds
+        ? (w > 0 ? w : _naturalTextSize.width)
+        : _naturalTextSize.width;
   }
 
   double get _baseVisualHeight {
     if (!_isText) return widget.item.height;
     final textValueForBounds = widget.item.text ?? '';
-    final isMultilineForBounds = textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
+    final isMultilineForBounds =
+        textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
     final h = widget.item.height;
-    return isMultilineForBounds ? (h > 0 ? h : _naturalTextSize.height) : _naturalTextSize.height;
+    return isMultilineForBounds
+        ? (h > 0 ? h : _naturalTextSize.height)
+        : _naturalTextSize.height;
   }
 
   double get _width => _baseVisualWidth * widget.item.scale * widget.scaleX;

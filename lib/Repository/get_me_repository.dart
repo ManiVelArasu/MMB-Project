@@ -35,11 +35,11 @@ class GetMeRepository {
     );
   }
 
-  Future<ApiResult<dynamic>> updateBusinessDetail(
+  Future<ApiResult<dynamic>> updatePersonalDetail(
     String? name,
     String? email,
     String? profile_photo_s3_key,
-    String? number,
+
   ) {
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
@@ -49,7 +49,7 @@ class GetMeRepository {
           "name": name,
           "email": email,
           "profile_photo_s3_key": profile_photo_s3_key,
-          "phone": number,
+
         },
       ),
       fromJson: (json) => json,

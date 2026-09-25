@@ -50,7 +50,7 @@ class HomeScreen extends StatelessWidget {
           }
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            appBar: const HomeCustomAppBar(notificationCount: "2"),
+            appBar: const HomeCustomAppBar(),
             body: SafeArea(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
