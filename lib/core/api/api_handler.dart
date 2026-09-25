@@ -58,8 +58,8 @@ class ApiHandler {
 
   static ApiHandler get instance {
     assert(
-    _instance != null,
-    'ApiHandler.init() must be called before accessing ApiHandler.instance.',
+      _instance != null,
+      'ApiHandler.init() must be called before accessing ApiHandler.instance.',
     );
     return _instance!;
   }
@@ -102,8 +102,7 @@ class ApiHandler {
         connectTimeout: Duration(milliseconds: connectTimeoutMs),
         receiveTimeout: Duration(milliseconds: receiveTimeoutMs),
         headers: {
-          ApiHeaderKey.accept.value:
-          ApiHeaderValue.applicationJson.value,
+          ApiHeaderKey.accept.value: ApiHeaderValue.applicationJson.value,
           ...extraDefaultHeaders,
         },
       ),
@@ -254,9 +253,9 @@ class ApiHandler {
   }
 
   Map<String, String> _buildHeaders(
-      ApiContentType contentType,
-      Map<String, String>? extra,
-      ) {
+    ApiContentType contentType,
+    Map<String, String>? extra,
+  ) {
     final headers = <String, String>{};
     if (_token != null) {
       headers[ApiHeaderKey.authorization.value] = 'Bearer $_token';
@@ -282,9 +281,9 @@ class ApiHandler {
   }
 
   ApiResult<T> _parseResponse<T>(
-      Response<dynamic> response,
-      T Function(dynamic json)? fromJson,
-      ) {
+    Response<dynamic> response,
+    T Function(dynamic json)? fromJson,
+  ) {
     final statusCode = response.statusCode ?? 0;
     if (statusCode >= 200 && statusCode < 300) {
       try {
@@ -308,7 +307,7 @@ class ApiHandler {
       ApiError(
         type: ApiErrorType.serverError,
         message:
-        _extractServerMessage(response.data) ??
+            _extractServerMessage(response.data) ??
             'Server error ($statusCode)',
         statusCode: statusCode,
         serverData: response.data,
@@ -344,7 +343,7 @@ class ApiHandler {
         return ApiError(
           type: ApiErrorType.serverError,
           message:
-          _extractServerMessage(e.response?.data) ??
+              _extractServerMessage(e.response?.data) ??
               'Server error (${statusCode ?? 'unknown'})',
           statusCode: statusCode,
           serverData: e.response?.data,
@@ -363,7 +362,7 @@ class ApiHandler {
           serverData: e.response?.data,
         );
       case DioExceptionType.transformTimeout:
-      // TODO: Handle this case.
+        // TODO: Handle this case.
         throw UnimplementedError();
     }
   }

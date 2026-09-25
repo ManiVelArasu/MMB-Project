@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../Repository/get_me_repository.dart';
 import '../../core/api/api_handler.dart';
 import '../../core/api/api_interceptor.dart';
+import '../../core/api/enums/refreh_result.dart';
 import '../../network/provider/common_provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -27,72 +28,86 @@ class _SplashScreenState extends State<SplashScreen> {
     });
   }
 
-
-
   Future<void> _checkUserStatusAndNavigate() async {
     if (_isChecking) return;
 
     _isChecking = true;
 
     try {
-
-
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(
+        const Duration(seconds: 2),
+      );
 
       if (!mounted) return;
 
-      final prefs = await SharedPreferences.getInstance();
+      final prefs =
+      await SharedPreferences.getInstance();
 
+      final bool isLoggedIn =
+          prefs.getBool('is_logged_in') ?? false;
 
+      debugPrint(
+        "======================================",
+      );
+      debugPrint(
+        "🔐 SPLASH LOGIN STATUS: $isLoggedIn",
+      );
+      debugPrint(
+        "======================================",
+      );
 
-      final bool isLoggedIn = prefs.getBool('is_logged_in') ?? false;
-
-      debugPrint("======================================");
-      debugPrint("🔐 SPLASH LOGIN STATUS: $isLoggedIn");
-      debugPrint("======================================");
-
-
+      // ========================================================
+      // NOT LOGGED IN
+      // ========================================================
 
       if (!isLoggedIn) {
-        debugPrint("🔐 USER NOT LOGGED IN → LoginScreen");
+        debugPrint(
+          "🔐 USER NOT LOGGED IN → LoginScreen",
+        );
 
         _goToLogin();
         return;
       }
 
-
+      // ========================================================
+      // GET SAVED TOKENS
+      // ========================================================
 
       String? accessToken =
-          prefs.getString('access_token') ?? prefs.getString('auth_token');
+          prefs.getString('access_token') ??
+              prefs.getString('auth_token');
 
-      String? refreshToken = prefs.getString('refresh_token');
+      String? refreshToken =
+      prefs.getString('refresh_token');
 
       debugPrint(
         "🔑 ACCESS TOKEN EXISTS: "
-        "${accessToken != null && accessToken!.isNotEmpty}",
+            "${accessToken != null && accessToken!.isNotEmpty}",
       );
 
       debugPrint(
         "🔄 REFRESH TOKEN EXISTS: "
-        "${refreshToken != null && refreshToken!.isNotEmpty}",
+            "${refreshToken != null && refreshToken!.isNotEmpty}",
       );
 
       // ========================================================
-      // TOKEN MISSING
+      // TOKENS MISSING
       // ========================================================
 
       if (accessToken == null ||
-          accessToken.trim().isEmpty ||
+          accessToken!.trim().isEmpty ||
           refreshToken == null ||
-          refreshToken.trim().isEmpty) {
-        debugPrint("❌ SAVED TOKENS MISSING → LoginScreen");
+          refreshToken!.trim().isEmpty) {
+        debugPrint(
+          "❌ SAVED TOKENS MISSING → LoginScreen",
+        );
 
         await _clearSessionAndLogin();
         return;
       }
 
       // ========================================================
-      // RESTORE TOKENS
+      // RESTORE SAVED TOKENS
       // ========================================================
 
       await ApiHandler.instance.setTokens(
@@ -100,84 +115,134 @@ class _SplashScreenState extends State<SplashScreen> {
         refreshToken: refreshToken,
       );
 
-      debugPrint("✅ SAVED TOKENS RESTORED");
+      debugPrint(
+        "✅ SAVED TOKENS RESTORED",
+      );
 
       // ========================================================
-      // REFRESH TOKEN ON APP START
-      // ========================================================
-      //
-      // IMPORTANT:
-      //
-      // App close/background → App open
-      //
-      // If access token is expired,
-      // refresh token API will generate
-      // a new access token.
-      //
-      // If refresh token is invalid,
-      // only then LoginScreen.
-      //
+      // STARTUP TOKEN REFRESH
       // ========================================================
 
-      debugPrint("🔍 CHECKING ACCESS TOKEN...");
+      debugPrint(
+        "🔍 CHECKING ACCESS TOKEN...",
+      );
 
-      final tokenInterceptor = TokenRefreshInterceptor(ApiHandler.instance.dio);
+      final tokenInterceptor =
+      TokenRefreshInterceptor(
+        ApiHandler.instance.dio,
+      );
 
-      final bool refreshSuccess = await tokenInterceptor
+      final RefreshResult refreshResult =
+      await tokenInterceptor
           .refreshAccessTokenOnAppStart();
 
-      if (!refreshSuccess) {
-        debugPrint("⚠️ TOKEN REFRESH FAILED");
+      // ========================================================
+      // REFRESH SUCCESS
+      // ========================================================
 
-        // ------------------------------------------------------
+      if (refreshResult ==
+          RefreshResult.success) {
+        debugPrint(
+          "======================================",
+        );
+        debugPrint(
+          "✅ ACCESS TOKEN REFRESH SUCCESS",
+        );
+        debugPrint(
+          "======================================",
+        );
+      }
+
+      // ========================================================
+      // NETWORK ERROR
+      // ========================================================
+
+      else if (refreshResult ==
+          RefreshResult.networkError) {
+        debugPrint(
+          "======================================",
+        );
+        debugPrint(
+          "🌐 REFRESH API NETWORK ERROR",
+        );
+        debugPrint(
+          "⚠️ KEEPING EXISTING SESSION",
+        );
+        debugPrint(
+          "======================================",
+        );
+
         // IMPORTANT:
         //
-        // If refresh token is invalid/expired,
-        // only then clear session.
-        // ------------------------------------------------------
+        // Do NOT clear session.
+        // Do NOT navigate to LoginScreen.
+        //
+        // Existing tokens are still kept.
+      }
 
-        final latestPrefs = await SharedPreferences.getInstance();
+      // ========================================================
+      // INVALID REFRESH TOKEN
+      // ========================================================
 
-        final latestRefreshToken = latestPrefs.getString('refresh_token');
+      else if (refreshResult ==
+          RefreshResult.invalidRefreshToken) {
+        debugPrint(
+          "======================================",
+        );
+        debugPrint(
+          "❌ REFRESH TOKEN INVALID / EXPIRED",
+        );
+        debugPrint(
+          "🔐 SESSION EXPIRED → LoginScreen",
+        );
+        debugPrint(
+          "======================================",
+        );
 
-        if (latestRefreshToken == null || latestRefreshToken.trim().isEmpty) {
-          debugPrint("❌ REFRESH TOKEN NOT AVAILABLE → LOGIN");
+        await _clearSessionAndLogin();
+        return;
+      }
 
-          await _clearSessionAndLogin();
-          return;
-        }
+      // ========================================================
+      // OTHER REFRESH FAILURE
+      // ========================================================
 
-        debugPrint("⚠️ REFRESH FAILED BUT REFRESH TOKEN EXISTS");
+      else {
+        debugPrint(
+          "⚠️ TOKEN REFRESH FAILED",
+        );
 
-        // GetMe will be allowed to determine
-        // the actual session state.
-      } else {
-        debugPrint("======================================");
-        debugPrint("✅ ACCESS TOKEN REFRESH SUCCESS");
-        debugPrint("======================================");
+        // IMPORTANT:
+        //
+        // Don't logout for unknown/server/network errors.
+        // Keep existing session.
       }
 
       // ========================================================
       // GET LATEST TOKENS
       // ========================================================
 
-      final latestPrefs = await SharedPreferences.getInstance();
+      final latestPrefs =
+      await SharedPreferences.getInstance();
 
       accessToken =
           latestPrefs.getString('access_token') ??
-          latestPrefs.getString('auth_token');
+              latestPrefs.getString('auth_token');
 
-      refreshToken = latestPrefs.getString('refresh_token');
+      refreshToken =
+          latestPrefs.getString('refresh_token');
 
       // ========================================================
-      // VERIFY TOKENS AFTER REFRESH
+      // VERIFY TOKENS
       // ========================================================
 
       if (accessToken == null ||
           accessToken!.trim().isEmpty ||
           refreshToken == null ||
           refreshToken!.trim().isEmpty) {
-        debugPrint("❌ TOKENS NOT AVAILABLE AFTER REFRESH");
+        debugPrint(
+          "❌ TOKENS NOT AVAILABLE AFTER REFRESH",
+        );
 
         await _clearSessionAndLogin();
         return;
@@ -188,19 +253,24 @@ class _SplashScreenState extends State<SplashScreen> {
       // ========================================================
 
       await ApiHandler.instance.setTokens(
-        token: accessToken!,
-        refreshToken: refreshToken!,
+        token: accessToken,
+        refreshToken: refreshToken,
       );
 
-      debugPrint("✅ LATEST TOKENS RESTORED");
+      debugPrint(
+        "✅ LATEST TOKENS RESTORED",
+      );
 
       // ========================================================
-      // GET ME
+      // GET ME API
       // ========================================================
 
-      debugPrint("📡 CALLING GET ME API...");
+      debugPrint(
+        "📡 CALLING GET ME API...",
+      );
 
-      final result = await GetMeRepository.instance.getMe();
+      final result =
+      await GetMeRepository.instance.getMe();
 
       if (!mounted) return;
 
@@ -209,35 +279,177 @@ class _SplashScreenState extends State<SplashScreen> {
       // ========================================================
 
       await result.when(
+        // ======================================================
+        // SUCCESS
+        // ======================================================
+
         success: (meApiData) async {
-          await _handleGetMeSuccess(latestPrefs, meApiData);
+          debugPrint(
+            "✅ GET ME API SUCCESS",
+          );
+
+          await _handleGetMeSuccess(
+            latestPrefs,
+            meApiData,
+          );
         },
+
+        // ======================================================
+        // FAILURE
+        // ======================================================
+
         failure: (error) async {
           debugPrint(
             "❌ GET ME API FAILED: "
-            "${error.message}",
+                "${error.message}",
           );
 
-          debugPrint("❌ GET ME FAILED → Checking session");
-
-          // ----------------------------------------------------
-          // DO NOT IMMEDIATELY LOGOUT.
+          // ====================================================
+          // IMPORTANT
+          // ====================================================
           //
-          // The interceptor should already have tried
-          // refresh + retry for 401.
+          // Do NOT logout immediately.
           //
-          // If it still fails, then session is invalid.
-          // ----------------------------------------------------
+          // We need to know whether this is:
+          //
+          // 1. Network error
+          // 2. Server error
+          // 3. Authentication error
+          //
+          // Network/server error must NOT clear session.
+          // ====================================================
 
-          await _clearSessionAndLogin();
+          final String message =
+          error.message
+              .toString()
+              .toLowerCase();
+
+          // ====================================================
+          // NETWORK ERROR CHECK
+          // ====================================================
+
+          final bool isNetworkError =
+              message.contains(
+                'no internet',
+              ) ||
+                  message.contains(
+                    'network',
+                  ) ||
+                  message.contains(
+                    'connection',
+                  ) ||
+                  message.contains(
+                    'failed host lookup',
+                  ) ||
+                  message.contains(
+                    'socketexception',
+                  ) ||
+                  message.contains(
+                    'timeout',
+                  ) ||
+                  message.contains(
+                    'timed out',
+                  );
+
+          if (isNetworkError) {
+            debugPrint(
+              "======================================",
+            );
+            debugPrint(
+              "🌐 GET ME NETWORK ERROR",
+            );
+            debugPrint(
+              "⚠️ KEEPING SESSION",
+            );
+            debugPrint(
+              "❌ NOT CLEARING TOKENS",
+            );
+            debugPrint(
+              "======================================",
+            );
+
+            return;
+          }
+
+          // ====================================================
+          // AUTHENTICATION ERROR
+          // ====================================================
+          //
+          // If GetMe reaches here after interceptor already
+          // tried refresh + retry, authentication is likely
+          // invalid.
+          //
+          // Only logout for actual 401/403.
+          // ====================================================
+
+          final int? statusCode =
+              error.statusCode;
+
+          if (statusCode == 401 ||
+              statusCode == 403) {
+            debugPrint(
+              "======================================",
+            );
+            debugPrint(
+              "🔐 GET ME AUTHENTICATION FAILED",
+            );
+            debugPrint(
+              "🔐 STATUS: $statusCode",
+            );
+            debugPrint(
+              "➡️ CLEARING SESSION",
+            );
+            debugPrint(
+              "======================================",
+            );
+
+            await _clearSessionAndLogin();
+            return;
+          }
+
+          // ====================================================
+          // OTHER SERVER ERROR
+          // ====================================================
+
+          debugPrint(
+            "======================================",
+          );
+          debugPrint(
+            "⚠️ GET ME SERVER/UNKNOWN ERROR",
+          );
+          debugPrint(
+            "⚠️ KEEPING SESSION",
+          );
+          debugPrint(
+            "======================================",
+          );
+
+          // DO NOT LOGOUT
         },
       );
     } catch (e, stackTrace) {
-      debugPrint("❌ SPLASH ERROR: $e");
+      debugPrint(
+        "❌ SPLASH ERROR: $e",
+      );
 
-      debugPrintStack(stackTrace: stackTrace);
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
 
-      await _clearSessionAndLogin();
+      // ========================================================
+      // IMPORTANT
+      // ========================================================
+      //
+      // Unexpected exception should NOT automatically
+      // clear the session.
+      //
+      // A temporary network / startup error should not
+      // send the user to LoginScreen.
+      // ========================================================
+
+      debugPrint(
+        "⚠️ Unexpected splash error → KEEP SESSION",
+      );
     } finally {
       _isChecking = false;
     }
