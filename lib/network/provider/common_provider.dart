@@ -396,21 +396,48 @@ class CommonProvider extends ChangeNotifier {
   // =========================================================
   // CLEAR ALL
   // =========================================================
-
   void clearAll() {
+    // =========================================================
+    // ME
+    // =========================================================
     _me = null;
+    _meError = null;
+    _isMeLoading = false;
 
+    // =========================================================
+    // ACCOUNT TYPE
+    // =========================================================
     _accountType = null;
 
-    _meError = null;
-
+    // =========================================================
+    // BUSINESS
+    // =========================================================
     _business = null;
-
     _businessError = null;
+    _isBusinessLoading = false;
 
-    _keyWords = [];
-
+    // =========================================================
+    // KEYWORDS
+    // =========================================================
+    _keyWords.clear();
     _keyWordsError = null;
+    _isKeyWordsLoading = false;
+
+    // =========================================================
+    // UNREAD COUNT
+    // =========================================================
+    _unReadCount = null;
+    _unreadError = null;
+    _isUnreadLoading = false;
+
+    debugPrint("================================");
+    debugPrint("🧹 COMMON PROVIDER CLEARED");
+    debugPrint("ME          : $_me");
+    debugPrint("ACCOUNT     : $_accountType");
+    debugPrint("BUSINESS    : $_business");
+    debugPrint("KEYWORDS    : ${_keyWords.length}");
+    debugPrint("UNREAD      : ${_unReadCount?.data?.unreadCount}");
+    debugPrint("================================");
 
     notifyListeners();
   }

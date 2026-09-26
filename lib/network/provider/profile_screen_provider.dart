@@ -8,6 +8,7 @@ import '../../Repository/auth_repository.dart';
 import '../../Repository/profile_repository.dart';
 import '../../core/api/api_handler.dart';
 import '../../model/profile_screen_model.dart';
+import '../../ui/screens/profile_screen.dart';
 import 'business_provider.dart';
 
 class ProfileScreenProvider extends ChangeNotifier {
@@ -43,7 +44,7 @@ class ProfileScreenProvider extends ChangeNotifier {
 
       debugPrint(
         "❌ Account deactivate failed: "
-            "${result.error?.message}",
+        "${result.error?.message}",
       );
 
       _isDeactivateLoading = false;
@@ -150,9 +151,8 @@ class ProfileScreenProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  Future<void> showDeactivateDialog(
-      BuildContext context,
-      ) async {
+
+  Future<void> showDeactivateDialog(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -163,42 +163,29 @@ class ProfileScreenProvider extends ChangeNotifier {
           ),
           title: const Text(
             "Delete Account?",
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w700),
           ),
           content: const Text(
             "Are you sure you want to delete your account?\n\n"
-                "Your account will be permanently deleted within 24 hours.",
+            "Your account will be permanently deleted within 24 hours.",
           ),
           actions: [
             TextButton(
               onPressed: () {
+                clearUserSession(context);
                 Navigator.pop(dialogContext, false);
               },
-              child: const Text(
-                "NO",
-                style: TextStyle(
-                  color: Colors.grey,
-                ),
-              ),
+              child: const Text("NO", style: TextStyle(color: Colors.grey)),
             ),
 
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: _isDeactivateLoading
                   ? null
                   : () {
-                Navigator.pop(dialogContext, true);
-              },
-              child: const Text(
-                "YES",
-                style: TextStyle(
-                  color: Colors.white,
-                ),
-              ),
+                      Navigator.pop(dialogContext, true);
+                    },
+              child: const Text("YES", style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -227,22 +214,17 @@ class ProfileScreenProvider extends ChangeNotifier {
         ),
       );
 
-      await Future.delayed(
-        const Duration(milliseconds: 800),
-      );
+      await Future.delayed(const Duration(milliseconds: 800));
 
       if (!context.mounted) return;
 
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        "/LoginScreen",
-            (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil("/LoginScreen", (route) => false);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            "Unable to delete account. Please try again.",
-          ),
+          content: Text("Unable to delete account. Please try again."),
         ),
       );
     }

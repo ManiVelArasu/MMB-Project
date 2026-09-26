@@ -243,7 +243,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: InkWell(
                           onTap: () async {
                             final prefs = await SharedPreferences.getInstance();
-                            await prefs.setBool('isOnboarded', true);
+
+                            await prefs.setBool('is_onboard', true);
+
+                            debugPrint(
+                              "✅ ONBOARDING COMPLETED",
+                            );
+
+                            debugPrint(
+                              "✅ is_onboard = ${prefs.getBool('is_onboard')}",
+                            );
                             if (context.mounted) {
                               Navigator.pushReplacementNamed(
                                 context,

@@ -34,8 +34,6 @@ class HomeScreen extends StatelessWidget {
     final me = commonProvider.me;
     final isDark = themeProvider.isDarkMode;
 
-    const bool isBusinessUser = true;
-
     return ChangeNotifierProvider(
       create: (_) => HomeScreenProvider(),
       builder: (context, provider) => Consumer<HomeScreenProvider>(
@@ -111,7 +109,7 @@ class HomeScreen extends StatelessWidget {
                               onTap: () {
                                 Navigator.pushNamed(
                                   context,
-                                  "/SpecialDaysScreen"
+                                  "/SpecialDaysScreen",
                                 );
                               },
                               child: Padding(

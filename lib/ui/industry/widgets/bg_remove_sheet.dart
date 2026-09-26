@@ -10,7 +10,9 @@ import '../../../utils/height_measure.dart';
 import '../../../widgets/button_widget.dart';
 
 class BgRemoveSheet extends StatelessWidget {
-  const BgRemoveSheet({super.key});
+  final VoidCallback onSuccess;
+
+  const BgRemoveSheet({super.key, required this.onSuccess});
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +82,7 @@ class BgRemoveSheet extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color:
-                                  businessProvider.isImageSelected == true
+                                      businessProvider.isImageSelected == true
                                       ? customColor.redColor
                                       : customColor.greyColor.withAlpha(50),
                                   width: 2.w,
@@ -107,14 +109,14 @@ class BgRemoveSheet extends StatelessWidget {
                           ),
                           businessProvider.isImageSelected == true
                               ? Positioned(
-                            top: -8,
-                            left: -8,
-                            child: SvgPicture.asset(
-                              "assets/icons/check_ic.svg",
-                              height: 30,
-                              width: 30,
-                            ),
-                          )
+                                  top: -8,
+                                  left: -8,
+                                  child: SvgPicture.asset(
+                                    "assets/icons/check_ic.svg",
+                                    height: 30,
+                                    width: 30,
+                                  ),
+                                )
                               : SizedBox.shrink(),
                         ],
                       ),
@@ -137,7 +139,7 @@ class BgRemoveSheet extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color:
-                                  businessProvider.isImageSelected == false
+                                      businessProvider.isImageSelected == false
                                       ? customColor.redColor
                                       : customColor.greyColor.withAlpha(50),
                                   width: 2.w,
@@ -164,14 +166,14 @@ class BgRemoveSheet extends StatelessWidget {
                           ),
                           businessProvider.isImageSelected == false
                               ? Positioned(
-                            top: -8,
-                            left: -8,
-                            child: SvgPicture.asset(
-                              "assets/icons/check_ic.svg",
-                              height: 30,
-                              width: 30,
-                            ),
-                          )
+                                  top: -8,
+                                  left: -8,
+                                  child: SvgPicture.asset(
+                                    "assets/icons/check_ic.svg",
+                                    height: 30,
+                                    width: 30,
+                                  ),
+                                )
                               : SizedBox.shrink(),
                         ],
                       ),
@@ -180,23 +182,23 @@ class BgRemoveSheet extends StatelessWidget {
                 else
                   businessProvider.isProcessingBackground
                       ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: customColor.baseColor,
-                    ),
-                  )
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: customColor.baseColor,
+                          ),
+                        )
                       : ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    clipBehavior: Clip.hardEdge,
-                    child: Image.file(
-                      businessProvider.selectedImage!,
-                      fit:
-                      BoxFit.cover, // cover clips better than contain
-                      height: 100.h,
-                      width: 100.w,
-                    ),
-                  ),
+                          borderRadius: BorderRadius.circular(12),
+                          clipBehavior: Clip.hardEdge,
+                          child: Image.file(
+                            businessProvider.selectedImage!,
+                            fit:
+                                BoxFit.cover, // cover clips better than contain
+                            height: 100.h,
+                            width: 100.w,
+                          ),
+                        ),
                 height12,
                 Text(
                   businessProvider.originalImage == null
@@ -210,108 +212,143 @@ class BgRemoveSheet extends StatelessWidget {
                 height12,
                 businessProvider.originalImage == null
                     ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ButtonWidget(
-                      buttonPress: () async {
-                        Navigator.pop(context);
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ButtonWidget(
+                            isLoading:
+                                businessProvider.isProcessingBackground ||
+                                businessProvider.isUploading,
+                            buttonPress: () async {
+                              print("asdsadsdd");
+                              if (businessProvider.isProcessingBackground ||
+                                  businessProvider.isUploading) {
+                                return;
+                              }
 
-                        final success = await businessProvider
-                            .uploadAndSaveBusinessDetails(context);
+                              // STEP 1: Remove Background
+                              final removed = await businessProvider
+                                  .removeBackground();
+                              if (!context.mounted) return; // மிக முக்கியம்
 
-                        if (!success && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                businessProvider.errorMessage ??
-                                    "Logo update failed",
-                              ),
-                              backgroundColor: Colors.red,
+                              if (!removed) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      businessProvider.errorMessage ??
+                                          "Background removal failed",
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              // STEP 2: Upload Image
+                              final uploaded = await businessProvider
+                                  .uploadBgRemovedImage();
+                              if (!context.mounted) return; // மிக முக்கியம்
+
+                              if (!uploaded) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      businessProvider.errorMessage ??
+                                          "Image upload failed",
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              // STEP 3: Success -> Close Bottom Sheet only once securely
+                              debugPrint(
+                                "✅ LOGO UPLOAD SUCCESS → CLOSING SHEET",
+                              );
+
+                              // onSuccess காலிபேக் இருந்தால் அதையும் இயக்கலாம்
+                              onSuccess();
+
+                              // ஷீட்டை மட்டும் க்ளோஸ் செய்ய (பின்னே செல்லாமல் இருக்க)
+                              Navigator.of(context).pop();
+                            },
+
+                            title: "CONTINUE",
+
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: customColor.redColor,
                             ),
-                          );
-                        }
-                      },
-                      title: "NO",
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Color(0xffE0E0E0),
-                      ),
-                      height: 40.h,
-                      width: 100.w,
-                      textStyle: theme.bodyLarge!.copyWith(
-                        color: customColor.blackColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    width12,
-                    ButtonWidget(
-                      buttonPress: () {
-                        businessProvider.removeBackground();
-                      },
-                      title: "YES",
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: customColor.redColor,
-                      ),
-                      height: 40.h,
-                      width: 100.w,
 
-                      textStyle: theme.bodyLarge!.copyWith(
-                        color: customColor.whiteColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                )
-                    : ButtonWidget(
+                            height: 40.h,
+                            width: 150.w,
+
+                            textStyle: theme.bodyLarge!.copyWith(
+                              color: customColor.whiteColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          width12,
+                          ButtonWidget(
+                            buttonPress: () {
+                              businessProvider.removeBackground();
+                            },
+                            title: "YES",
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: customColor.redColor,
+                            ),
+                            height: 40.h,
+                            width: 100.w,
+
+                            textStyle: theme.bodyLarge!.copyWith(
+                              color: customColor.whiteColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      )
+                    :// 1-வது CONTINUE பட்டன் (originalImage == null இருக்கும் போது)
+                ButtonWidget(
+                  isLoading: businessProvider.isProcessingBackground || businessProvider.isUploading,
                   buttonPress: () async {
-                    if (businessProvider.isProcessingBackground ||
-                        businessProvider.isUploading) {
+                    if (businessProvider.isProcessingBackground || businessProvider.isUploading) {
                       return;
                     }
 
-                    // STEP 1: remove the background.
-                    final removed = await businessProvider
-                        .removeBackground();
+                    final removed = await businessProvider.removeBackground();
+                    if (!context.mounted) return;
 
                     if (!removed) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              businessProvider.errorMessage ??
-                                  "Background removal failed",
-                            ),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(businessProvider.errorMessage ?? "Background removal failed"),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
                       return;
                     }
 
-                    // STEP 2: upload the BG-removed file.
-                    final uploaded = await businessProvider
-                        .uploadBgRemovedImage();
+                    final uploaded = await businessProvider.uploadBgRemovedImage();
+                    if (!context.mounted) return;
 
                     if (!uploaded) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              businessProvider.errorMessage ??
-                                  "Image upload failed",
-                            ),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(businessProvider.errorMessage ?? "Image upload failed"),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
                       return;
                     }
 
-                    // STEP 3: close after the API path is stored.
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                    }
+                    debugPrint("✅ LOGO UPLOAD SUCCESS → CLOSING SHEET ONLY");
+
+                    if (!context.mounted) return;
+
+                    // onSuccess-ஐயும் ஷீட் கன்டெக்ஸ்ட்டையும் சரியாக க்ளோஸ் செய்ய
+                    Navigator.of(context).pop();
+                    onSuccess();
                   },
                   title: "CONTINUE",
                   decoration: BoxDecoration(

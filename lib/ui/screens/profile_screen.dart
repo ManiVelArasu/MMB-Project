@@ -10,6 +10,7 @@ import '../../component/language_bottom_sheet.dart';
 import '../../network/provider/auth_provider.dart';
 import '../../network/provider/common_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
+import '../../network/provider/home_screen_provider.dart';
 import '../../network/provider/profile_screen_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -478,7 +479,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               title: 'My Plan',
                               iconAsset: "assets/images/my_plan.png",
                               isDark: isDark,
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.pushNamed(context, "/PlansAndPricingScreen");
+                              },
                             ),
                             _buildSettingsTile(
                               title: 'Brand Series',
@@ -1022,10 +1025,86 @@ Future<void> logoutUser(BuildContext context, AuthProvider authProvider) async {
   await prefs.remove('logo_s3_key');
   await prefs.remove('profile_s3_key');
   await prefs.remove('profile_photo_s3_key');
+  clearUserSession(context);
 
   if (!context.mounted) return;
 
   Navigator.pushNamedAndRemoveUntil(context, '/LoginScreen', (route) => false);
+}
+
+Future<void> clearUserSession(BuildContext context) async {
+  final prefs = await SharedPreferences.getInstance();
+
+  // =========================================================
+  // AUTH
+  // =========================================================
+
+  await prefs.remove('is_logged_in');
+  await prefs.remove('auth_token');
+  await prefs.remove('refresh_token');
+
+  // =========================================================
+  // USER
+  // =========================================================
+
+  await prefs.remove('user_id');
+  await prefs.remove('uid');
+  await prefs.remove('mobile_number');
+  await prefs.remove('phone_number');
+
+  // =========================================================
+  // ACCOUNT
+  // =========================================================
+
+  await prefs.remove('account_type');
+  await prefs.remove('role');
+
+  // =========================================================
+  // BUSINESS / PROFILE
+  // =========================================================
+
+  await prefs.remove('is_business_completed');
+  await prefs.remove('saved_business_name');
+  await prefs.remove('saved_email');
+  await prefs.remove('saved_mobile_number');
+  await prefs.remove('saved_business_image_path');
+
+  await prefs.remove('business_name');
+
+  await prefs.remove('logo_s3_key');
+  await prefs.remove('profile_s3_key');
+  await prefs.remove('profile_photo_s3_key');
+
+  // =========================================================
+  // ACCOUNT SELECTION / CONTINUE
+  // =========================================================
+
+  await prefs.remove('continue');
+  await prefs.remove('continue_status');
+  await prefs.remove('selected_account');
+  await prefs.remove('selected_account_type');
+
+  // =========================================================
+  // PROVIDER CLEAR
+  // =========================================================
+
+  CommonProvider.instance.clearAll();
+
+  try {
+    context.read<HomeScreenProvider>().clearUserData();
+  } catch (e) {
+    debugPrint('HomeScreenProvider clear error: $e');
+  }
+
+  try {
+    context.read<CommonProvider>().clearAll();
+  } catch (e) {
+    debugPrint('AuthProvider clear error: $e');
+  }
+
+  debugPrint("========================================");
+  debugPrint("✅ COMPLETE USER SESSION CLEARED");
+  debugPrint("========================================");
 }
 
 void _showLanguagesBottomSheet(

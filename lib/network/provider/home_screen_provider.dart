@@ -340,24 +340,60 @@ class HomeScreenProvider extends ChangeNotifier {
   // Existing Lists & Controllers
   final List<MySpaceModel> _mySpaceList = [
     MySpaceModel(
-      title: "MY OWN\nPOST",
-      icon: "assets/images/myownpost.png",
-      gradientColors: [const Color(0xFFE0F7FA), const Color(0xFF80DEEA)],
+      title: "CREATE NEW",
+      icon: "assets/images/for_you.png",
+      gradientColors: [
+        const Color(0xFFF2BA4E).withValues(alpha: 0.2),
+        const Color(0xFFF2BA4E),
+      ],
     ),
     MySpaceModel(
-      title: "MY OWN\nVIDEO",
-      icon: "assets/images/video.png",
-      gradientColors: [const Color(0xFFFFECEE), const Color(0xFFFF80AB)],
+      title: "FOR YOU",
+      icon: "assets/images/user_tag.png",
+      gradientColors: [
+        const Color(0xFF4ED8F2).withValues(alpha: 0.2),
+        const Color(0xFF4ED8F2),
+      ],
     ),
     MySpaceModel(
-      title: "WHATSAPP\nSTICKERS",
-      icon: "assets/images/whatsapp_sticker.png",
-      gradientColors: [const Color(0xFFFFF8E1), const Color(0xFFFFE082)],
+      title: "FESTIVAL",
+      icon: "assets/images/festival_calender.png",
+      gradientColors: [
+        const Color(0xFFF24E86).withValues(alpha: 0.2),
+        const Color(0xFFF24E86),
+      ],
     ),
     MySpaceModel(
-      title: "CORPORATE\nNEEDS",
+      title: "MY BRAND",
+      icon: "assets/images/briefcase.png",
+      gradientColors: [
+        const Color(0xFFE8F5E9).withValues(alpha: 0.2),
+        const Color(0xFFA5D6A7),
+      ],
+    ),
+    MySpaceModel(
+      title: "BRAND SERIES",
       icon: "assets/images/corporate.png",
-      gradientColors: [const Color(0xFFE8F5E9), const Color(0xFFA5D6A7)],
+      gradientColors: [
+        const Color(0xFFE8F5E9).withValues(alpha: 0.2),
+        const Color(0xFFA5D6A7),
+      ],
+    ),
+    MySpaceModel(
+      title: "BRAND FRAMES",
+      icon: "assets/images/corporate.png",
+      gradientColors: [
+        const Color(0xFFE8F5E9).withValues(alpha: 0.2),
+        const Color(0xFFA5D6A7),
+      ],
+    ),
+    MySpaceModel(
+      title: "AI HUB",
+      icon: "assets/images/corporate.png",
+      gradientColors: [
+        const Color(0xFFE8F5E9).withValues(alpha: 0.2),
+        const Color(0xFFA5D6A7),
+      ],
     ),
   ];
 
@@ -464,6 +500,38 @@ class HomeScreenProvider extends ChangeNotifier {
           "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
   ];
+  void clearUserData() {
+    // User-specific data
+    _businessName = "";
+
+    // Date / special days state
+    _selectedDates = null;
+    selectedDate = "2";
+    _specialDays = [];
+    _specialDaysRange = null;
+    _selectedSpecialDaysRange = "month";
+    _specialDaysError = null;
+    _isLoadingSpecialDays = false;
+
+    // Templates
+    _templateCategories = [];
+    _templatesByCategory.clear();
+    _templateLoadingByCategory.clear();
+    _templateErrorByCategory.clear();
+
+    _categoryErrorMessage = null;
+    _isLoadingCategories = false;
+
+    // Selection state
+    selectedCategoryIndex = 0;
+    selectedVideoCategoryIndex = 0;
+    currentZoneIndex = 0;
+    currentLeadBannerIndex = 0;
+
+    notifyListeners();
+
+    debugPrint("✅ HomeScreenProvider user data cleared");
+  }
 
   void updateVideoCategoryIndex(int index) {
     selectedVideoCategoryIndex = index;

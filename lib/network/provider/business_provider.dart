@@ -167,7 +167,7 @@ class BusinessProvider extends ChangeNotifier {
 
                 debugPrint(
                   "✅ ACCOUNT TYPE UPDATED = "
-                  "${language.data.accountType}",
+                      "${language.data.accountType}",
                 );
               }
             }
@@ -238,6 +238,7 @@ class BusinessProvider extends ChangeNotifier {
     await prefs.remove('saved_mobile_number');
     await prefs.remove('saved_business_image_path');
     await prefs.remove('profile_s3_key');
+    await prefs.remove('profile_photo_s3_key');
     await prefs.remove('logo_s3_key');
 
     notifyListeners();
@@ -315,12 +316,12 @@ class BusinessProvider extends ChangeNotifier {
 
       switch (accountType) {
         case 'personal':
-          // Personal -> users/{uid}/profile/...
+        // Personal -> users/{uid}/profile/...
           uploadSlot = 'profile_photo';
           break;
 
         case 'business':
-          // Business -> users/{uid}/logo/...
+        // Business -> users/{uid}/logo/...
           uploadSlot = 'business_logo';
           break;
 
@@ -352,12 +353,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-            slot: uploadSlot,
-          );
+        imageFile: imageFile,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+        slot: uploadSlot,
+      );
 
       bool success = false;
 
@@ -374,21 +375,51 @@ class BusinessProvider extends ChangeNotifier {
           // {results: [{key: "..."}]}
           // --------------------------------------------------------
 
+          // Supports all confirm response formats:
+          // {key: "..."}
+          // {keys: ["..."]}
+          // {results: [{key: "..."}]}
+          // {data: {key/keys/results: ...}}
           key = data['key']?.toString();
 
-          if ((key == null || key.isEmpty) &&
+          if ((key == null || key.trim().isEmpty) &&
               data['keys'] is List &&
               (data['keys'] as List).isNotEmpty) {
             key = (data['keys'] as List).first?.toString();
           }
 
-          if ((key == null || key.isEmpty) &&
+          if ((key == null || key.trim().isEmpty) &&
               data['results'] is List &&
               (data['results'] as List).isNotEmpty) {
             final result = (data['results'] as List).first;
 
             if (result is Map) {
               key = result['key']?.toString();
+            }
+          }
+
+          // Some repository implementations return the complete API
+          // response, so the actual upload data can be nested under data.
+          if ((key == null || key.trim().isEmpty) &&
+              data['data'] is Map) {
+            final nested = data['data'] as Map;
+
+            key = nested['key']?.toString();
+
+            if ((key == null || key.trim().isEmpty) &&
+                nested['keys'] is List &&
+                (nested['keys'] as List).isNotEmpty) {
+              key = (nested['keys'] as List).first?.toString();
+            }
+
+            if ((key == null || key.trim().isEmpty) &&
+                nested['results'] is List &&
+                (nested['results'] as List).isNotEmpty) {
+              final result = (nested['results'] as List).first;
+
+              if (result is Map) {
+                key = result['key']?.toString();
+              }
             }
           }
 
@@ -423,6 +454,7 @@ class BusinessProvider extends ChangeNotifier {
             await prefs.remove('logo_s3_key');
 
             // Save personal key
+            await prefs.setString('profile_s3_key', key);
             await prefs.setString('profile_photo_s3_key', key);
 
             debugPrint("👤 PERSONAL → profile_photo_s3_key");
@@ -545,9 +577,9 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<Map<String, dynamic>?> businessUpdateApi(
-    BuildContext context,
-    String subIndustry,
-  ) async {
+      BuildContext context,
+      String subIndustry,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -631,9 +663,9 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<bool> updateBusinessDetails(
-    BuildContext context,
-    String businessUid,
-  ) async {
+      BuildContext context,
+      String businessUid,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -811,7 +843,7 @@ class BusinessProvider extends ChangeNotifier {
     final savedLogoKey = prefs.getString('logo_s3_key');
     final savedProfileKey =
         prefs.getString('profile_s3_key') ??
-        prefs.getString('profile_photo_s3_key');
+            prefs.getString('profile_photo_s3_key');
 
     if (savedLogoKey != null && savedLogoKey.trim().isNotEmpty) {
       _logoS3Key = savedLogoKey.trim();
@@ -868,17 +900,17 @@ class BusinessProvider extends ChangeNotifier {
 
     debugPrint(
       "✅ ACCOUNT TYPE UPDATED = "
-      "${provider.me?.data.accountType}",
+          "${provider.me?.data.accountType}",
     );
 
     debugPrint(
       "COMMON ACCOUNT TYPE = "
-      "${provider.accountType}",
+          "${provider.accountType}",
     );
 
     debugPrint(
       "IS PERSONAL = "
-      "${provider.isPersonal}",
+          "${provider.isPersonal}",
     );
 
     debugPrint("================================");
@@ -979,8 +1011,6 @@ class BusinessProvider extends ChangeNotifier {
     return isValid;
   }
 
-
-
   void setCurrentIndex(int value) {
     _currentIndex = value;
     notifyListeners();
@@ -1063,7 +1093,6 @@ class BusinessProvider extends ChangeNotifier {
     _hasChanges = true;
     _isApplied = false;
   }
-
 
   Future<bool> requestPermissionIfNeeded() async {
     if (!Platform.isAndroid && !Platform.isIOS) {
@@ -1151,12 +1180,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-            slot: uploadSlot,
-          );
+        imageFile: imageFile,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+        slot: uploadSlot,
+      );
 
       bool success = false;
 
@@ -1220,6 +1249,7 @@ class BusinessProvider extends ChangeNotifier {
             _profileS3Key = key;
 
             await prefs.remove('logo_s3_key');
+            await prefs.setString('profile_s3_key', key);
             await prefs.setString('profile_s3_key', key);
             await prefs.setString('profile_photo_s3_key', key);
 
@@ -1301,9 +1331,9 @@ class BusinessProvider extends ChangeNotifier {
   // ============================================================
 
   Future<void> pickImage(
-    BuildContext context, {
-    ImageSource source = ImageSource.gallery,
-  }) async {
+      BuildContext context, {
+        ImageSource source = ImageSource.gallery,
+      }) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -1350,12 +1380,12 @@ class BusinessProvider extends ChangeNotifier {
     AccTypeModel(
       title: "For my Business",
       description:
-          "Create branded designs tailored to your business and industry.",
+      "Create branded designs tailored to your business and industry.",
     ),
     AccTypeModel(
       title: "Personal Use",
       description:
-          "Create designs for festivals, birthdays, quotes, social posts, and more.",
+      "Create designs for festivals, birthdays, quotes, social posts, and more.",
     ),
   ];
 
@@ -1675,28 +1705,35 @@ class BusinessProvider extends ChangeNotifier {
   Future<void> bgRemoveSheet(BuildContext context) async {
     final businessProvider = this;
 
-    await showModalBottomSheet(
+    await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
         return ChangeNotifierProvider.value(
           value: businessProvider,
-          child: const BgRemoveSheet(),
+          child: BgRemoveSheet(
+            onSuccess: () {
+              //Navigator.of(modalContext).pop(true);
+            },
+          ),
         );
       },
     );
   }
-
   Future<void> showBgRemoveScreen(BuildContext context) async {
-    await showModalBottomSheet(
+    await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
         return ChangeNotifierProvider.value(
           value: this,
-          child: const BgRemoveSheet(),
+          child: BgRemoveSheet(
+            onSuccess: () {
+            //  Navigator.of(modalContext).pop(true);
+            },
+          ),
         );
       },
     );
@@ -1843,7 +1880,7 @@ class BusinessProvider extends ChangeNotifier {
     } on PlatformException catch (e) {
       debugPrint(
         "Failed to remove background: "
-        "'${e.message}'",
+            "'${e.message}'",
       );
 
       _isProcessingBackground = false;
@@ -1975,103 +2012,72 @@ class BusinessProvider extends ChangeNotifier {
           debugPrint("✅ BG REMOVE UPLOAD SUCCESS");
           debugPrint("RESPONSE : $data");
           debugPrint("======================================");
-
-          // ========================================================
-          // GET KEY
-          // ========================================================
+          final responseData = data;
 
           String? s3Key;
 
-          if (data is Map) {
-            s3Key = data['key']?.toString();
+          final directKey = responseData['key'];
 
-            if ((s3Key == null || s3Key!.isEmpty) && data['s3Key'] != null) {
-              s3Key = data['s3Key'].toString();
-            }
+          if (directKey != null &&
+              directKey.toString().trim().isNotEmpty) {
+            s3Key = directKey.toString().trim();
+          }
 
-            if ((s3Key == null || s3Key!.isEmpty) &&
-                data['logoS3Key'] != null) {
-              s3Key = data['logoS3Key'].toString();
-            }
+          // 2. keys[]
+          if (s3Key == null) {
+            final keys = responseData['keys'];
 
-            if ((s3Key == null || s3Key!.isEmpty) &&
-                data['profileS3Key'] != null) {
-              s3Key = data['profileS3Key'].toString();
-            }
+            if (keys is List && keys.isNotEmpty) {
+              final key = keys.first;
 
-            final nested = data['data'];
-
-            if ((s3Key == null || s3Key!.isEmpty) && nested is Map) {
-              s3Key = nested['key']?.toString();
-
-              if ((s3Key == null || s3Key!.isEmpty) &&
-                  nested['s3Key'] != null) {
-                s3Key = nested['s3Key'].toString();
-              }
-
-              if ((s3Key == null || s3Key!.isEmpty) &&
-                  nested['logoS3Key'] != null) {
-                s3Key = nested['logoS3Key'].toString();
-              }
-
-              if ((s3Key == null || s3Key!.isEmpty) &&
-                  nested['profileS3Key'] != null) {
-                s3Key = nested['profileS3Key'].toString();
+              if (key != null &&
+                  key.toString().trim().isNotEmpty) {
+                s3Key = key.toString().trim();
               }
             }
           }
 
-          if (s3Key == null || s3Key!.trim().isEmpty) {
-            debugPrint("❌ Upload success but S3 key not found");
+          // 3. results[].key
+          if (s3Key == null) {
+            final results = responseData['results'];
 
-            _errorMessage = "Image uploaded but S3 key not found";
+            if (results is List && results.isNotEmpty) {
+              final firstResult = results.first;
+
+              if (firstResult is Map) {
+                final key = firstResult['key'];
+
+                if (key != null &&
+                    key.toString().trim().isNotEmpty) {
+                  s3Key = key.toString().trim();
+                }
+              }
+            }
+          }
+          debugPrint("======================================");
+          debugPrint("🔍 EXTRACTED S3 KEY");
+          debugPrint("S3 KEY : $s3Key");
+          debugPrint("======================================");
+
+          if (s3Key == null || s3Key.isEmpty) {
+            debugPrint(
+              "❌ Upload success but S3 key not found",
+            );
+
+            debugPrint(
+              "❌ Response was: $responseData",
+            );
 
             success = false;
-
             return;
           }
-
-          s3Key = s3Key.trim();
-
-          // ========================================================
-          // PERSONAL
-          // ========================================================
-
-          if (accountType == "personal") {
-            _profileS3Key = s3Key;
-
-            debugPrint("👤 PERSONAL PROFILE KEY : $_profileS3Key");
-          }
-          // ========================================================
-          // BUSINESS
-          // ========================================================
-          else if (accountType == "business") {
-            _logoS3Key = s3Key;
-
-            debugPrint("🏢 BUSINESS LOGO KEY : $_logoS3Key");
-          }
-
-          // ========================================================
-          // SAVE PREFS
-          // ========================================================
-
-          final prefs = await SharedPreferences.getInstance();
-
-          if (accountType == "personal") {
-            await prefs.setString('profile_s3_key', s3Key);
-          }
-
-          if (accountType == "business") {
-            await prefs.setString('logo_s3_key', s3Key);
-          }
-
-          await prefs.setString('saved_business_image_path', imageFile.path);
-
-          _savedImagePath = imageFile.path;
-
+          _logoS3Key = s3Key;
           success = true;
 
-          debugPrint("✅ FINAL S3 KEY : $s3Key");
+          debugPrint("======================================");
+          debugPrint("✅ S3 KEY SAVED");
+          debugPrint("$_logoS3Key");
+          debugPrint("======================================");
         },
 
         failure: (error) {
@@ -2082,7 +2088,6 @@ class BusinessProvider extends ChangeNotifier {
           success = false;
         },
       );
-
       _isUploading = false;
 
       notifyListeners();

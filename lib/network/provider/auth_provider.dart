@@ -233,7 +233,9 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  Future<Map<String, dynamic>?> verifyOtpApi(BuildContext context) async {
+  Future<Map<String, dynamic>?> verifyOtpApi(
+      BuildContext context,
+      ) async {
     final String enteredOtp = getOtp();
 
     if (enteredOtp.length < 6) {
@@ -255,10 +257,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       );
 
       return await result.when(
-        // ==========================================================
-        // SUCCESS
-        // ==========================================================
-
         success: (data) async {
           try {
             debugPrint("================================");
@@ -267,119 +265,322 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             debugPrint(data.toString());
             debugPrint("================================");
 
-            final String? accessToken = data['access_token']?.toString();
+            // ====================================================
+            // TOKENS
+            // ====================================================
 
-            final String? refreshToken = data['refresh_token']?.toString();
+            final String? accessToken =
+            data['access_token']?.toString();
 
-            final bool isNewUser =
-                data['is_new_user'] == true ||
-                data['data']?['is_new_user'] == true;
+            final String? refreshToken =
+            data['refresh_token']?.toString();
 
-            final dynamic onboardingData =
-                data['onboarding'] ?? data['data']?['onboarding'];
-
-            String? accountType;
-
-            if (onboardingData is Map) {
-              final dynamic value = onboardingData['account_type'];
-
-              if (value != null && value.toString().trim().isNotEmpty) {
-                accountType = value.toString().trim().toLowerCase();
-              }
-            }
-
-            // ======================================================
-            // 8. HAS BUSINESS
-            // ======================================================
-
-            final bool hasBusiness =
-                onboardingData is Map && onboardingData['has_business'] == true;
-
-            // ======================================================
-            // 9. ONBOARDING COMPLETED
-            // ======================================================
-
-            final bool completed =
-                onboardingData is Map && onboardingData['completed'] == true;
-
-            // ======================================================
-            // DEBUG
-            // ======================================================
-
-            debugPrint("================================");
-            debugPrint("✅ OTP VERIFY SUCCESS");
-            debugPrint("isNewUser   : $isNewUser");
-            debugPrint("accountType : $accountType");
-            debugPrint("hasBusiness : $hasBusiness");
-            debugPrint("completed   : $completed");
-            debugPrint("================================");
-
-            // ======================================================
-            // 10. ACCESS TOKEN VALIDATION
-            // ======================================================
-
-            if (accessToken == null || accessToken.isEmpty) {
-              debugPrint("❌ Access token missing after OTP verification");
-
+            if (accessToken == null ||
+                accessToken.isEmpty) {
               _errorMessage = "Login token missing";
               _isVerifyLoading = false;
               notifyListeners();
-
               return null;
             }
 
-            if (refreshToken == null || refreshToken.isEmpty) {
-              debugPrint("❌ Refresh token missing after OTP verification");
-
+            if (refreshToken == null ||
+                refreshToken.isEmpty) {
               _errorMessage = "Refresh token missing";
               _isVerifyLoading = false;
               notifyListeners();
-
               return null;
             }
 
-            final prefs = await SharedPreferences.getInstance();
+            // ====================================================
+            // USER
+            // ====================================================
 
-            await prefs.setString('access_token', accessToken);
+            final bool isNewUser =
+                data['is_new_user'] == true ||
+                    data['data']?['is_new_user'] == true;
 
-            await prefs.setString('refresh_token', refreshToken);
+            // ====================================================
+            // ONBOARDING
+            // ====================================================
 
-            await prefs.setString('saved_mobile_number', _mobileNumber.trim());
+            final dynamic onboardingData =
+                data['onboarding'] ??
+                    data['data']?['onboarding'];
 
-            await prefs.setBool('is_new_user', isNewUser);
+            String? accountType;
 
-            await prefs.setBool('is_logged_in', true);
+            bool hasBusiness = false;
+            bool completed = false;
 
-            await prefs.setBool('is_business_completed', completed);
+            if (onboardingData is Map) {
+              final dynamic accountTypeValue =
+              onboardingData['account_type'];
 
-            if (accountType != null && accountType.isNotEmpty) {
-              await prefs.setString('account_type', accountType);
+              if (accountTypeValue != null &&
+                  accountTypeValue
+                      .toString()
+                      .trim()
+                      .isNotEmpty) {
+                accountType =
+                    accountTypeValue
+                        .toString()
+                        .trim()
+                        .toLowerCase();
+              }
 
-              debugPrint("✅ Account type saved: $accountType");
-            } else {
-              await prefs.remove('account_type');
+              hasBusiness =
+                  onboardingData['has_business'] == true;
 
-              debugPrint(
-                "🆕 Account type is NULL "
-                "→ First-time onboarding flow",
+              completed =
+                  onboardingData['completed'] == true;
+            }
+
+            // ====================================================
+            // PREFS
+            // ====================================================
+
+            final prefs =
+            await SharedPreferences.getInstance();
+
+            // ====================================================
+            // IMPORTANT:
+            // READ OLD CONTINUE VALUE BEFORE CHANGING ANYTHING
+            // ====================================================
+
+            final bool oldContinue =
+                prefs.getBool('continue') ?? false;
+
+            debugPrint("================================");
+            debugPrint("🔐 OTP FLOW");
+            debugPrint("isNewUser     : $isNewUser");
+            debugPrint("accountType   : $accountType");
+            debugPrint("hasBusiness   : $hasBusiness");
+            debugPrint("completed     : $completed");
+            debugPrint("oldContinue   : $oldContinue");
+            debugPrint("================================");
+
+            // ====================================================
+            // SAVE LOGIN DATA
+            // ====================================================
+
+            await prefs.setString(
+              'access_token',
+              accessToken,
+            );
+
+            await prefs.setString(
+              'refresh_token',
+              refreshToken,
+            );
+
+            await prefs.setString(
+              'saved_mobile_number',
+              _mobileNumber.trim(),
+            );
+
+            await prefs.setBool(
+              'is_new_user',
+              isNewUser,
+            );
+
+            await prefs.setBool(
+              'is_logged_in',
+              true,
+            );
+
+            // ====================================================
+            // SAVE ONBOARDING
+            // ====================================================
+
+            await prefs.setBool(
+              'is_business_completed',
+              completed,
+            );
+
+            if (accountType != null &&
+                accountType.isNotEmpty) {
+              await prefs.setString(
+                'account_type',
+                accountType,
               );
             }
+
+            // ====================================================
+            // SET API TOKENS
+            // ====================================================
 
             await ApiHandler.instance.setTokens(
               token: accessToken,
               refreshToken: refreshToken,
             );
 
-            final bool isContinue = prefs.getBool('continue') ?? false;
+            // ====================================================
+            // NEW USER
+            //
+            // Never consider new user as completed just because
+            // API has some business data.
+            // ====================================================
 
-            debugPrint("================================");
-            debugPrint("🔐 OTP NAVIGATION DATA");
-            debugPrint("isNewUser   : $isNewUser");
-            debugPrint("accountType : $accountType");
-            debugPrint("continue    : $isContinue");
-            debugPrint("completed   : $completed");
-            debugPrint("hasBusiness : $hasBusiness");
-            debugPrint("================================");
+            if (isNewUser) {
+              debugPrint(
+                "🆕 NEW USER → PlansAndPricingScreen",
+              );
+
+              // New onboarding has not been continued yet.
+              await prefs.setBool(
+                'continue',
+                false,
+              );
+
+              _isVerifyLoading = false;
+              notifyListeners();
+
+              if (!context.mounted) {
+                return data;
+              }
+
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                "/PlansAndPricingScreen",
+                    (route) => false,
+              );
+
+              return data;
+            }
+
+            // ====================================================
+            // EXISTING USER
+            // ====================================================
+
+            if (accountType == null ||
+                accountType.isEmpty) {
+              debugPrint(
+                "⚠️ EXISTING USER BUT ACCOUNT TYPE NULL"
+                    " → PlansAndPricingScreen",
+              );
+
+              _isVerifyLoading = false;
+              notifyListeners();
+
+              if (!context.mounted) {
+                return data;
+              }
+
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                "/PlansAndPricingScreen",
+                    (route) => false,
+              );
+
+              return data;
+            }
+
+            // ====================================================
+            // FULL ONBOARDING
+            // ====================================================
+
+            final bool onboardingCompleted =
+                completed &&
+                    (
+                        accountType == "business"
+                            ? hasBusiness
+                            : true
+                    );
+
+            // ====================================================
+            // IMPORTANT NAVIGATION RULE
+            //
+            // COMPLETE + CONTINUE TRUE
+            //      → HOME
+            //
+            // COMPLETE + CONTINUE FALSE
+            //      → BUSINESS DETAILS
+            //
+            // This handles:
+            // user filled data but closed app before Continue.
+            // ====================================================
+
+            if (onboardingCompleted &&
+                oldContinue) {
+              debugPrint(
+                "✅ COMPLETE + CONTINUE TRUE"
+                    " → CustomBottomNavScreen",
+              );
+
+              // Keep it true.
+              await prefs.setBool(
+                'continue',
+                true,
+              );
+
+              _isVerifyLoading = false;
+              notifyListeners();
+
+              if (!context.mounted) {
+                return data;
+              }
+
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                "/CustomBottomNavScreen",
+                    (route) => false,
+              );
+
+              return data;
+            }
+
+            // ====================================================
+            // COMPLETE BUT CONTINUE FALSE
+            //
+            // Business data exists, but user never pressed
+            // Continue.
+            //
+            // So resume BusinessDetailsScreen.
+            // ====================================================
+
+            if (onboardingCompleted &&
+                !oldContinue) {
+              debugPrint(
+                "⚠️ COMPLETE DATA"
+                    " BUT CONTINUE FALSE"
+                    " → BusinessDetailsScreen",
+              );
+
+              // DO NOT set continue true here.
+              await prefs.setBool(
+                'continue',
+                false,
+              );
+
+              _isVerifyLoading = false;
+              notifyListeners();
+
+              if (!context.mounted) {
+                return data;
+              }
+
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                "/BusinessDetailsScreen",
+                    (route) => false,
+              );
+
+              return data;
+            }
+
+            // ====================================================
+            // INCOMPLETE
+            // ====================================================
+
+            debugPrint(
+              "⚠️ ONBOARDING INCOMPLETE"
+                  " → BusinessDetailsScreen",
+            );
+
+            await prefs.setBool(
+              'continue',
+              false,
+            );
 
             _isVerifyLoading = false;
             notifyListeners();
@@ -388,63 +589,21 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               return data;
             }
 
-            if (accountType == null || accountType.isEmpty) {
-              debugPrint(
-                "🆕 FIRST-TIME USER"
-                " → PlansAndPricingScreen",
-              );
-
-              Navigator.pushReplacementNamed(context, "/PlansAndPricingScreen");
-
-              return data;
-            }
-
-            if (!isContinue) {
-              debugPrint(
-                "➡️ EXISTING USER"
-                " + CONTINUE = FALSE"
-                " → BusinessDetailsScreen",
-              );
-
-              Navigator.pushReplacementNamed(context, "/BusinessDetailsScreen");
-
-              return data;
-            }
-            final bool onboardingFullyCompleted =
-                completed && (accountType == "business" ? hasBusiness : true);
-
-            debugPrint("================================");
-            debugPrint(
-              "ONBOARDING FULLY COMPLETED:"
-              " $onboardingFullyCompleted",
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              "/BusinessDetailsScreen",
+                  (route) => false,
             );
-            debugPrint("================================");
-
-            if (isContinue && onboardingFullyCompleted) {
-              debugPrint(
-                "✅ CONTINUE = TRUE"
-                " + ONBOARDING COMPLETE"
-                " → CustomBottomNavScreen",
-              );
-
-              Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
-
-              return data;
-            }
-
-            debugPrint(
-              "⚠️ CONTINUE = TRUE"
-              " BUT ONBOARDING INCOMPLETE"
-              " → BusinessDetailsScreen",
-            );
-
-            Navigator.pushReplacementNamed(context, "/BusinessDetailsScreen");
 
             return data;
           } catch (e, stackTrace) {
-            debugPrint("❌ OTP success handling error: $e");
+            debugPrint(
+              "❌ OTP SUCCESS HANDLING ERROR: $e",
+            );
 
-            debugPrintStack(stackTrace: stackTrace);
+            debugPrintStack(
+              stackTrace: stackTrace,
+            );
 
             _isVerifyLoading = false;
             _errorMessage = e.toString();
@@ -460,8 +619,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
           _errorMessage = error.message;
 
           debugPrint(
-            "❌ OTP verification failed: "
-            "${error.message}",
+            "❌ OTP VERIFICATION FAILED: "
+                "${error.message}",
           );
 
           notifyListeners();
@@ -473,9 +632,13 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       _isVerifyLoading = false;
       _errorMessage = e.toString();
 
-      debugPrint("❌ OTP API exception: $e");
+      debugPrint(
+        "❌ OTP API EXCEPTION: $e",
+      );
 
-      debugPrintStack(stackTrace: stackTrace);
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
 
       notifyListeners();
 
