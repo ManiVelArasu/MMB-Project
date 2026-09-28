@@ -1,28 +1,32 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/special_days.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/special_days_provider.dart';
+import '../../network/provider/template_list_provider.dart';
 
-class SpecialDaysScreen extends StatelessWidget {
-  const SpecialDaysScreen({super.key});
+class TemplateListScreen extends StatelessWidget {
+  final String? type;
+
+  const TemplateListScreen({super.key, this.type});
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("🎉 TemplateListScreen type: $type");
+
     return ChangeNotifierProvider(
-      create: (_) => SpecialDaysProvider()..loadSpecialDays(),
-      child: const _SpecialDaysScreenView(),
+      create: (_) => TemplateListProvider()..loadSpecialDays(type: type),
+      child: const _TemplateListScreenView(),
     );
   }
 }
 
-class _SpecialDaysScreenView extends StatelessWidget {
-  const _SpecialDaysScreenView();
+class _TemplateListScreenView extends StatelessWidget {
+  const _TemplateListScreenView();
 
   @override
   Widget build(BuildContext context) {
@@ -57,49 +61,37 @@ class _SpecialDaysScreenView extends StatelessWidget {
       ),
 
       body: SafeArea(
-        child: Consumer<SpecialDaysProvider>(
+        child: Consumer<TemplateListProvider>(
           builder: (context, provider, _) {
             if (provider.isLoading) {
               return const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFFE53935),
-                ),
+                child: CircularProgressIndicator(color: Color(0xFFE53935)),
               );
             }
-        
-            final specialDays =
-                provider.specialDays?.data ?? [];
-        
+
+            final specialDays = provider.specialDays?.data ?? [];
+
             if (specialDays.isEmpty) {
               return _EmptyState(isDark: isDark);
             }
-        
+
             final List<Template> templates = [];
-        
+
             for (final specialDay in specialDays) {
               templates.addAll(specialDay.templates);
             }
-        
+
             if (templates.isEmpty) {
-              return _EmptyState(
-                isDark: isDark,
-                message: 'No templates found',
-              );
+              return _EmptyState(isDark: isDark, message: 'No templates found');
             }
-        
+
             // FULL SCREEN SCROLL
             return GridView.builder(
-              padding: EdgeInsets.fromLTRB(
-                12.w,
-                12.h,
-                12.w,
-                30.h,
-              ),
+              padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 30.h),
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
-              gridDelegate:
-              SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 10.w,
                 mainAxisSpacing: 10.h,
@@ -150,21 +142,17 @@ class _TemplateCard extends StatelessWidget {
         debugPrint('Template Type : ${template.templateType}');
         debugPrint('================================');
 
-        final templateUid = (template as dynamic).uid?.toString().trim() ?? '';
-
-        if (templateUid.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Template UID not available')),
-          );
-          return;
-        }
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => TemplateEditScreen(templateUid: templateUid),
-          ),
-        );
+        // TODO:
+        // Navigate to Template Edit screen
+        //
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (_) => TemplateEditScreen(
+        //       templateUid: template.uid!,
+        //     ),
+        //   ),
+        // );
       },
 
       child: Container(

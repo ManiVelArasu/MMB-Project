@@ -81,18 +81,13 @@ class _CustomAppBarState extends State<CustomAppBar> {
           provider.accountType!.trim().isEmpty) {
         debugPrint(
           "⚠️ Account type not available."
-              " Calling ME API...",
+          " Calling ME API...",
         );
 
-        final bool meSuccess =
-        await provider.loadMe(
-          forceRefresh: true,
-        );
+        final bool meSuccess = await provider.loadMe(forceRefresh: true);
 
         if (!meSuccess) {
-          debugPrint(
-            "❌ ME API failed",
-          );
+          debugPrint("❌ ME API failed");
 
           return;
         }
@@ -103,73 +98,43 @@ class _CustomAppBarState extends State<CustomAppBar> {
       // ========================================================
 
       final String accountType =
-          provider.accountType
-              ?.trim()
-              .toLowerCase() ??
-              "";
+          provider.accountType?.trim().toLowerCase() ?? "";
 
-      debugPrint(
-        "========================================",
-      );
+
 
       debugPrint(
         "📌 CUSTOM APP BAR ACCOUNT TYPE: "
-            "$accountType",
+        "$accountType",
       );
 
-      debugPrint(
-        "========================================",
-      );
 
-      // ========================================================
-      // PERSONAL
-      // ========================================================
 
       if (accountType == "personal") {
         debugPrint(
           "👤 PERSONAL ACCOUNT"
-              " → Calling ME API",
+          " → Calling ME API",
         );
 
-        await provider.loadMe(
-          forceRefresh: true,
-        );
+        await provider.loadMe(forceRefresh: true);
 
         return;
       }
-
-      // ========================================================
-      // BUSINESS
-      // ========================================================
-
       if (accountType == "business") {
         debugPrint(
           "🏢 BUSINESS ACCOUNT"
-              " → Calling BUSINESS API",
+          " → Calling BUSINESS API",
         );
 
-        await provider.loadBusiness(
-          forceRefresh: true,
-        );
+        await provider.loadBusiness(forceRefresh: true);
 
         return;
       }
 
-      // ========================================================
-      // UNKNOWN ACCOUNT TYPE
-      // ========================================================
-
-      debugPrint(
-        "⚠️ Unknown account type: $accountType",
-      );
+      debugPrint("⚠️ Unknown account type: $accountType");
     } catch (e, stackTrace) {
-      debugPrint(
-        "❌ CustomAppBar API error: $e",
-      );
+      debugPrint("❌ CustomAppBar API error: $e");
 
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
+      debugPrintStack(stackTrace: stackTrace);
     }
   }
 
@@ -178,21 +143,16 @@ class _CustomAppBarState extends State<CustomAppBar> {
   // ============================================================
 
   String _getDisplayName(CommonProvider provider) {
-    final String? accountType =
-    provider.accountType
-        ?.trim()
-        .toLowerCase();
+    final String? accountType = provider.accountType?.trim().toLowerCase();
 
     // ==========================================================
     // PERSONAL
     // ==========================================================
 
     if (accountType == "personal") {
-      final String? name =
-      provider.me?.data.name?.trim();
+      final String? name = provider.me?.data.name?.trim();
 
-      if (name != null &&
-          name.isNotEmpty) {
+      if (name != null && name.isNotEmpty) {
         return name;
       }
 
@@ -204,11 +164,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
     // ==========================================================
 
     if (accountType == "business") {
-      final String? businessName =
-      provider.business?.name?.trim();
+      final String? businessName = provider.business?.name?.trim();
 
-      if (businessName != null &&
-          businessName.isNotEmpty) {
+      if (businessName != null && businessName.isNotEmpty) {
         return businessName;
       }
 
@@ -224,34 +182,27 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider =
-    context.watch<CustomThemeProvider>();
+    final themeProvider = context.watch<CustomThemeProvider>();
 
-    final isDark =
-        themeProvider.isDarkMode;
+    final isDark = themeProvider.isDarkMode;
 
-    final theme =
-        Theme.of(context).textTheme;
+    final theme = Theme.of(context).textTheme;
 
     // This rebuilds whenever CommonProvider
     // calls notifyListeners().
-    final provider =
-        CommonProvider.instance;
+    final provider = CommonProvider.instance;
 
     // Listen to CommonProvider changes.
     return ListenableBuilder(
       listenable: provider,
       builder: (context, _) {
-        final String displayName =
-        _getDisplayName(provider);
+        final String displayName = _getDisplayName(provider);
 
         return SafeArea(
           child: AppBar(
-            backgroundColor:
-            Colors.transparent,
+            backgroundColor: Colors.transparent,
             elevation: 0,
-            surfaceTintColor:
-            Colors.transparent,
+            surfaceTintColor: Colors.transparent,
             automaticallyImplyLeading: false,
             titleSpacing: 16.w,
 
@@ -262,10 +213,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
                 // ==================================================
 
                 InkWell(
-                  onTap: widget.onBackPressed ??
-                          () => Navigator.pop(context),
-                  borderRadius:
-                  BorderRadius.circular(24.r),
+                  onTap: widget.onBackPressed ?? () => Navigator.pop(context),
+                  borderRadius: BorderRadius.circular(24.r),
                   child: Container(
                     height: 42.h,
                     width: 42.w,
@@ -290,22 +239,16 @@ class _CustomAppBarState extends State<CustomAppBar> {
                 // ==================================================
                 // TITLE
                 // ==================================================
-
                 if (widget.showTitle)
                   Expanded(
                     child: Text(
                       displayName,
                       maxLines: 1,
-                      overflow:
-                      TextOverflow.ellipsis,
-                      style:
-                      theme.titleLarge?.copyWith(
-                        fontWeight:
-                        FontWeight.w700,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
                         fontSize: 20.sp,
-                        color: isDark
-                            ? Colors.white
-                            : Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                   ),
@@ -315,7 +258,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
             // ======================================================
             // RIGHT SIDE
             // ======================================================
-
             actions: [
               // ====================================================
               // ACTION TEXT
@@ -323,31 +265,20 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
               if (widget.showActionText)
                 Padding(
-                  padding:
-                  EdgeInsets.only(right: 12.w),
+                  padding: EdgeInsets.only(right: 12.w),
                   child: InkWell(
-                    onTap:
-                    widget.onActionTextTap,
-                    borderRadius:
-                    BorderRadius.circular(8.r),
+                    onTap: widget.onActionTextTap,
+                    borderRadius: BorderRadius.circular(8.r),
                     child: Center(
                       child: Padding(
-                        padding:
-                        EdgeInsets.symmetric(
-                          horizontal: 4.w,
-                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 4.w),
                         child: Text(
                           widget.actionText,
-                          style:
-                          theme.titleMedium
-                              ?.copyWith(
+                          style: theme.titleMedium?.copyWith(
                             color: isDark
                                 ? Colors.blueAccent
-                                : const Color(
-                              0xFF1E2E5F,
-                            ),
-                            fontWeight:
-                            FontWeight.w600,
+                                : const Color(0xFF1E2E5F),
+                            fontWeight: FontWeight.w600,
                             fontSize: 15.sp,
                           ),
                         ),
@@ -359,29 +290,20 @@ class _CustomAppBarState extends State<CustomAppBar> {
               // ====================================================
               // RIGHT ICON
               // ====================================================
-
               if (widget.showRightIcon)
                 Padding(
-                  padding:
-                  EdgeInsets.only(right: 16.w),
+                  padding: EdgeInsets.only(right: 16.w),
                   child: InkWell(
-                    onTap:
-                    widget.onRightIconTap,
-                    borderRadius:
-                    BorderRadius.circular(24.r),
+                    onTap: widget.onRightIconTap,
+                    borderRadius: BorderRadius.circular(24.r),
                     child: Stack(
-                      clipBehavior:
-                      Clip.none,
+                      clipBehavior: Clip.none,
                       children: [
                         Container(
-                          padding:
-                          EdgeInsets.all(6.r),
+                          padding: EdgeInsets.all(6.r),
                           child: Icon(
                             Icons.layers_rounded,
-                            color:
-                            const Color(
-                              0xFFE53935,
-                            ),
+                            color: const Color(0xFFE53935),
                             size: 30.sp,
                           ),
                         ),
@@ -389,47 +311,29 @@ class _CustomAppBarState extends State<CustomAppBar> {
                         // ==========================================
                         // BADGE
                         // ==========================================
-
-                        if (widget.badgeCount !=
-                            null)
+                        if (widget.badgeCount != null)
                           Positioned(
                             top: 2,
                             left: 2,
                             child: Container(
-                              padding:
-                              EdgeInsets.all(
-                                4.r,
-                              ),
-                              decoration:
-                              BoxDecoration(
+                              padding: EdgeInsets.all(4.r),
+                              decoration: BoxDecoration(
                                 color: isDark
-                                    ? Colors
-                                    .red.shade800
-                                    : const Color(
-                                  0xFF1E293B,
-                                ),
-                                shape:
-                                BoxShape.circle,
+                                    ? Colors.red.shade800
+                                    : const Color(0xFF1E293B),
+                                shape: BoxShape.circle,
                               ),
-                              constraints:
-                              BoxConstraints(
+                              constraints: BoxConstraints(
                                 minWidth: 18.w,
                                 minHeight: 18.h,
                               ),
                               child: Center(
                                 child: Text(
-                                  widget
-                                      .badgeCount!,
-                                  style:
-                                  TextStyle(
-                                    color:
-                                    Colors
-                                        .white,
-                                    fontSize:
-                                    10.sp,
-                                    fontWeight:
-                                    FontWeight
-                                        .bold,
+                                  widget.badgeCount!,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),

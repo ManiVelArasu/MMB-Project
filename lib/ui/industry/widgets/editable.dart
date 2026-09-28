@@ -3708,14 +3708,14 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
     final double left = alignment.x < 0
         ? 0.0
         : alignment.x > 0
-            ? math.max(0.0, widget.bodyWidth - hitSize)
-            : math.max(0.0, (widget.bodyWidth - hitSize) / 2);
+        ? math.max(0.0, widget.bodyWidth - hitSize)
+        : math.max(0.0, (widget.bodyWidth - hitSize) / 2);
 
     final double top = alignment.y < 0
         ? (alignment.x == 0 ? 24.0 : 0.0)
         : alignment.y > 0
-            ? math.max(0.0, widget.bodyHeight - hitSize)
-            : math.max(0.0, (widget.bodyHeight - hitSize) / 2);
+        ? math.max(0.0, widget.bodyHeight - hitSize)
+        : math.max(0.0, (widget.bodyHeight - hitSize) / 2);
 
     return Positioned(
       left: left,
@@ -3736,15 +3736,15 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
               alignment.x < 0
                   ? -hitSize / 2 + visualSize / 2
                   : alignment.x > 0
-                      ? hitSize / 2 - visualSize / 2
-                      : 0,
+                  ? hitSize / 2 - visualSize / 2
+                  : 0,
               alignment.y < 0
                   ? (alignment.x == 0
-                      ? -hitSize / 2 + visualSize / 2 - 24
-                      : -hitSize / 2 + visualSize / 2)
+                  ? -hitSize / 2 + visualSize / 2 - 24
+                  : -hitSize / 2 + visualSize / 2)
                   : alignment.y > 0
-                      ? hitSize / 2 - visualSize / 2
-                      : 0,
+                  ? hitSize / 2 - visualSize / 2
+                  : 0,
             ),
             child: Container(
               width: visualSize,

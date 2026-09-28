@@ -83,7 +83,9 @@ class _SplashScreenState extends State<SplashScreen> {
       // ========================================================
 
       debugPrint("======================================");
+
       debugPrint("🔐 SPLASH LOGIN STATUS: $isLoggedIn");
+
       debugPrint("======================================");
 
       if (!isLoggedIn) {
@@ -125,9 +127,9 @@ class _SplashScreenState extends State<SplashScreen> {
       // ========================================================
 
       if (accessToken == null ||
-          accessToken!.trim().isEmpty ||
+          accessToken.trim().isEmpty ||
           refreshToken == null ||
-          refreshToken!.trim().isEmpty) {
+          refreshToken.trim().isEmpty) {
         debugPrint(
           "❌ SAVED TOKENS MISSING "
           "→ LoginScreen",
@@ -228,9 +230,9 @@ class _SplashScreenState extends State<SplashScreen> {
       // ========================================================
 
       if (accessToken == null ||
-          accessToken!.trim().isEmpty ||
+          accessToken.trim().isEmpty ||
           refreshToken == null ||
-          refreshToken!.trim().isEmpty) {
+          refreshToken.trim().isEmpty) {
         debugPrint("❌ TOKENS NOT AVAILABLE AFTER REFRESH");
 
         await _clearSessionAndLogin();
@@ -375,36 +377,56 @@ class _SplashScreenState extends State<SplashScreen> {
     dynamic meApiData,
   ) async {
     try {
-      final onboarding = meApiData.data.onboarding;
+      // ========================================================
+      // ACCOUNT TYPE
+      // ========================================================
 
-      final String? accountType = onboarding?.accountType
+      final dynamic meData = meApiData.data;
+
+      final dynamic onboarding = meData.onboarding;
+
+      // Actual user account_type
+      final String? userAccountType = meData.accountType
           ?.toString()
           .trim()
           .toLowerCase();
 
-      final bool hasBusiness = onboarding?.hasBusiness ?? false;
+      // Onboarding account_type
+      final String? onboardingAccountType = onboarding?.accountType
+          ?.toString()
+          .trim()
+          .toLowerCase();
 
-      final bool completed = onboarding?.completed ?? false;
-
-      // ========================================================
-      // CONTINUE
-      // ========================================================
-
-      final bool isContinue = prefs.getBool('continue') ?? false;
+      // Prefer actual account_type
+      final String? accountType =
+          userAccountType != null && userAccountType.isNotEmpty
+          ? userAccountType
+          : onboardingAccountType;
 
       debugPrint("======================================");
-      debugPrint("🚦 SPLASH NAVIGATION");
-      debugPrint("accountType : $accountType");
-      debugPrint("hasBusiness : $hasBusiness");
-      debugPrint("completed   : $completed");
-      debugPrint("continue    : $isContinue");
+
+      debugPrint("🚦 SPLASH ACCOUNT FLOW");
+
+      debugPrint(
+        "USER ACCOUNT TYPE      : "
+        "$userAccountType",
+      );
+
+      debugPrint(
+        "ONBOARDING ACCOUNT TYPE: "
+        "$onboardingAccountType",
+      );
+
+      debugPrint(
+        "FINAL ACCOUNT TYPE     : "
+        "$accountType",
+      );
+
       debugPrint("======================================");
 
       // ========================================================
-      // SAVE API STATUS
+      // SAVE ACCOUNT TYPE
       // ========================================================
-
-      await prefs.setBool('is_business_completed', completed);
 
       if (accountType != null && accountType.isNotEmpty) {
         await prefs.setString('account_type', accountType);
@@ -416,8 +438,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
       if (accountType == null || accountType.isEmpty) {
         debugPrint(
-          "🆕 ACCOUNT TYPE NULL"
-          " → PlansAndPricingScreen",
+          "⚠️ ACCOUNT TYPE NOT FOUND "
+          "→ PlansAndPricingScreen",
         );
 
         if (!mounted) return;
@@ -432,55 +454,71 @@ class _SplashScreenState extends State<SplashScreen> {
       }
 
       // ========================================================
-      // ONBOARDING COMPLETE
+      // PERSONAL ACCOUNT
       // ========================================================
 
-      final bool onboardingCompleted =
-          completed && (accountType == "business" ? hasBusiness : true);
+      if (accountType == "personal") {
+        debugPrint("======================================");
 
-      debugPrint(
-        "onboardingCompleted: "
-        "$onboardingCompleted",
-      );
+        debugPrint("👤 PERSONAL ACCOUNT");
 
-      // ========================================================
-      // COMPLETE + CONTINUE TRUE
-      //
-      // User actually pressed Continue previously.
-      // ========================================================
+        debugPrint("Checking personal profile...");
 
-      if (onboardingCompleted && isContinue) {
+        debugPrint("======================================");
+
+        // ------------------------------------------------------
+        // PERSONAL NAME
+        // ------------------------------------------------------
+
+        final String personalName = meData.name?.toString().trim() ?? "";
+
+        // ------------------------------------------------------
+        // PERSONAL IMAGE
+        // ------------------------------------------------------
+
+        final String personalImage =
+            meData.profilePhotoS3Key?.toString().trim() ?? "";
+
+        final bool hasName = personalName.isNotEmpty;
+
+        final bool hasImage = personalImage.isNotEmpty;
+
+        debugPrint("PERSONAL NAME  : $personalName");
+
+        debugPrint("PERSONAL IMAGE : $personalImage");
+
+        debugPrint("HAS NAME       : $hasName");
+
+        debugPrint("HAS IMAGE      : $hasImage");
+
+        // ======================================================
+        // PERSONAL COMPLETE
+        // ======================================================
+
+        if (hasName && hasImage) {
+          debugPrint(
+            "✅ PERSONAL PROFILE COMPLETE "
+            "→ CustomBottomNavScreen",
+          );
+
+          if (!mounted) return;
+
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            "/CustomBottomNavScreen",
+            (route) => false,
+          );
+
+          return;
+        }
+
+        // ======================================================
+        // PERSONAL INCOMPLETE
+        // ======================================================
+
         debugPrint(
-          "✅ COMPLETE + CONTINUE TRUE"
-          " → CustomBottomNavScreen",
-        );
-
-        if (!mounted) return;
-
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          "/CustomBottomNavScreen",
-          (route) => false,
-        );
-
-        return;
-      }
-
-      // ========================================================
-      // COMPLETE + CONTINUE FALSE
-      //
-      // User has data but closed app before pressing Continue.
-      //
-      // IMPORTANT:
-      // Don't send to Home.
-      // Resume BusinessDetails.
-      // ========================================================
-
-      if (onboardingCompleted && !isContinue) {
-        debugPrint(
-          "⚠️ COMPLETE DATA"
-          " + CONTINUE FALSE"
-          " → BusinessDetailsScreen",
+          "⚠️ PERSONAL PROFILE INCOMPLETE "
+          "→ BusinessDetailsScreen",
         );
 
         if (!mounted) return;
@@ -495,19 +533,132 @@ class _SplashScreenState extends State<SplashScreen> {
       }
 
       // ========================================================
-      // INCOMPLETE
+      // BUSINESS ACCOUNT
       // ========================================================
 
-      debugPrint(
-        "⚠️ ONBOARDING INCOMPLETE"
-        " → BusinessDetailsScreen",
-      );
+      if (accountType == "business") {
+        debugPrint("======================================");
+
+        debugPrint("🏢 BUSINESS ACCOUNT");
+
+        debugPrint("Calling Business API...");
+
+        debugPrint("======================================");
+
+        final commonProvider = CommonProvider.instance;
+
+        // ======================================================
+        // BUSINESS API
+        // ======================================================
+
+        final bool businessSuccess = await commonProvider.loadBusiness(
+          forceRefresh: true,
+        );
+
+        // ======================================================
+        // BUSINESS API FAILED / NO DATA
+        // ======================================================
+
+        if (!businessSuccess) {
+          debugPrint(
+            "⚠️ BUSINESS DATA NOT FOUND "
+            "→ BusinessDetailsScreen",
+          );
+
+          if (!mounted) return;
+
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            "/BusinessDetailsScreen",
+            (route) => false,
+          );
+
+          return;
+        }
+
+        // ======================================================
+        // BUSINESS DATA
+        // ======================================================
+
+        final business = commonProvider.business;
+
+        // Business name
+        final String businessName = business?.name?.toString().trim() ?? "";
+
+        // Business logo
+        final String businessImage =
+            business?.logoS3Key?.toString().trim() ?? "";
+
+        final bool hasName = businessName.isNotEmpty;
+
+        final bool hasImage = businessImage.isNotEmpty;
+
+        debugPrint("======================================");
+
+        debugPrint("🏢 BUSINESS DATA");
+
+        debugPrint("BUSINESS NAME : $businessName");
+
+        debugPrint("BUSINESS LOGO : $businessImage");
+
+        debugPrint("HAS NAME      : $hasName");
+
+        debugPrint("HAS IMAGE     : $hasImage");
+
+        debugPrint("======================================");
+
+        // ======================================================
+        // BUSINESS COMPLETE
+        // ======================================================
+
+        if (hasName && hasImage) {
+          debugPrint(
+            "✅ BUSINESS PROFILE COMPLETE "
+            "→ CustomBottomNavScreen",
+          );
+
+          if (!mounted) return;
+
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            "/CustomBottomNavScreen",
+            (route) => false,
+          );
+
+          return;
+        }
+
+        // ======================================================
+        // BUSINESS INCOMPLETE
+        // ======================================================
+
+        debugPrint(
+          "⚠️ BUSINESS PROFILE INCOMPLETE "
+          "→ BusinessDetailsScreen",
+        );
+
+        if (!mounted) return;
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          "/BusinessDetailsScreen",
+          (route) => false,
+        );
+
+        return;
+      }
+
+      // ========================================================
+      // UNKNOWN ACCOUNT TYPE
+      // ========================================================
+
+      debugPrint("⚠️ UNKNOWN ACCOUNT TYPE: $accountType");
 
       if (!mounted) return;
 
       Navigator.pushNamedAndRemoveUntil(
         context,
-        "/BusinessDetailsScreen",
+        "/PlansAndPricingScreen",
         (route) => false,
       );
     } catch (e, stackTrace) {
@@ -518,123 +669,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   // ============================================================
-  // BUSINESS DETAILS
-  // ============================================================
-
-  Future<void> _goToBusinessDetails({required String accountType}) async {
-    if (!mounted) return;
-
-    // ==========================================================
-    // PERSONAL
-    // ==========================================================
-
-    if (accountType == "personal") {
-      debugPrint(
-        "👤 PERSONAL "
-        "→ BusinessDetailsScreen",
-      );
-
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/BusinessDetailsScreen',
-        (route) => false,
-      );
-
-      return;
-    }
-
-    // ==========================================================
-    // BUSINESS
-    // ==========================================================
-
-    if (accountType == "business") {
-      debugPrint(
-        "🏢 BUSINESS "
-        "→ Loading business...",
-      );
-
-      try {
-        final businessLoaded = await CommonProvider.instance.loadBusiness(
-          forceRefresh: true,
-        );
-
-        debugPrint(
-          "🏢 BUSINESS LOADED: "
-          "$businessLoaded",
-        );
-      } catch (e, stackTrace) {
-        debugPrint("❌ LOAD BUSINESS ERROR: $e");
-
-        debugPrintStack(stackTrace: stackTrace);
-      }
-
-      if (!mounted) return;
-
-      final business = CommonProvider.instance.business;
-
-      final String? businessUid = business?.uid;
-
-      debugPrint(
-        "🏢 BUSINESS UID: "
-        "$businessUid",
-      );
-
-      // ========================================================
-      // BUSINESS UID FOUND
-      // ========================================================
-
-      if (businessUid != null && businessUid.isNotEmpty) {
-        debugPrint(
-          "🏢 → BusinessDetailsScreen "
-          "with UID",
-        );
-
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/BusinessDetailsScreen',
-          (route) => false,
-          arguments: businessUid,
-        );
-
-        return;
-      }
-
-      // ========================================================
-      // BUSINESS UID NOT FOUND
-      // ========================================================
-
-      debugPrint(
-        "⚠️ BUSINESS UID NOT FOUND "
-        "→ BusinessDetailsScreen",
-      );
-
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/BusinessDetailsScreen',
-        (route) => false,
-      );
-
-      return;
-    }
-
-    // ==========================================================
-    // UNKNOWN ACCOUNT TYPE
-    // ==========================================================
-
-    debugPrint(
-      "⚠️ UNKNOWN ACCOUNT TYPE: "
-      "$accountType",
-    );
-
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/PlansAndPricingScreen',
-      (route) => false,
-    );
-  }
-
-  // ============================================================
-  // CLEAR SESSION + LOGIN
+  // CLEAR SESSION AND LOGIN
   // ============================================================
 
   Future<void> _clearSessionAndLogin() async {
@@ -658,12 +693,10 @@ class _SplashScreenState extends State<SplashScreen> {
       await prefs.setBool('is_logged_in', false);
 
       // ========================================================
-      // CONTINUE
-      //
-      // Session is genuinely invalid here.
+      // ACCOUNT TYPE
       // ========================================================
 
-      await prefs.setBool('continue', false);
+      await prefs.remove('account_type');
 
       // ========================================================
       // CLEAR API TOKENS

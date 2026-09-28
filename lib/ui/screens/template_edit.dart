@@ -144,17 +144,9 @@ class _EditorViewState extends State<EditorView> {
   }
 
   bool _isCanvasBackground(EditorItem item) {
-    if (item.id?.startsWith('bg_') == true &&
-        (item.type == 'image' ||
-            item.type == 'video' ||
-            item.type == 'shape')) {
-      return true;
-    }
-    return item.type == 'image' &&
-        item.position.dx.abs() < 1.0 &&
-        item.position.dy.abs() < 1.0 &&
-        (item.width - 1080.0).abs() < 2.0 &&
-        (item.height - 1080.0).abs() < 2.0;
+    // Keep the provider as the single source of truth. It knows about both
+    // editor-created bg_ layers and API/Fabric template background IDs.
+    return context.read<EditorProvider>().isCanvasBackgroundItem(item);
   }
 
   Future<String?> _prepareCropSource(String source) async {

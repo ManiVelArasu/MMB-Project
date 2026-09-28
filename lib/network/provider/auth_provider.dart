@@ -7,6 +7,7 @@ import '../../Repository/auth_repository.dart';
 import '../../core/api/api_handler.dart';
 import '../../core/app_provider/my_notifier.dart';
 import 'business_provider.dart';
+import 'common_provider.dart';
 
 class AuthProvider extends ChangeNotifier with MyNotifier {
   String _mobileNumber = "";
@@ -265,9 +266,9 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             debugPrint(data.toString());
             debugPrint("================================");
 
-            // ====================================================
+            // =========================================================
             // TOKENS
-            // ====================================================
+            // =========================================================
 
             final String? accessToken =
             data['access_token']?.toString();
@@ -275,93 +276,30 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             final String? refreshToken =
             data['refresh_token']?.toString();
 
-            if (accessToken == null ||
-                accessToken.isEmpty) {
+            if (accessToken == null || accessToken.isEmpty) {
               _errorMessage = "Login token missing";
               _isVerifyLoading = false;
               notifyListeners();
               return null;
             }
 
-            if (refreshToken == null ||
-                refreshToken.isEmpty) {
+            if (refreshToken == null || refreshToken.isEmpty) {
               _errorMessage = "Refresh token missing";
               _isVerifyLoading = false;
               notifyListeners();
               return null;
             }
 
-            // ====================================================
-            // USER
-            // ====================================================
-
-            final bool isNewUser =
-                data['is_new_user'] == true ||
-                    data['data']?['is_new_user'] == true;
-
-            // ====================================================
-            // ONBOARDING
-            // ====================================================
-
-            final dynamic onboardingData =
-                data['onboarding'] ??
-                    data['data']?['onboarding'];
-
-            String? accountType;
-
-            bool hasBusiness = false;
-            bool completed = false;
-
-            if (onboardingData is Map) {
-              final dynamic accountTypeValue =
-              onboardingData['account_type'];
-
-              if (accountTypeValue != null &&
-                  accountTypeValue
-                      .toString()
-                      .trim()
-                      .isNotEmpty) {
-                accountType =
-                    accountTypeValue
-                        .toString()
-                        .trim()
-                        .toLowerCase();
-              }
-
-              hasBusiness =
-                  onboardingData['has_business'] == true;
-
-              completed =
-                  onboardingData['completed'] == true;
-            }
-
-            // ====================================================
+            // =========================================================
             // PREFS
-            // ====================================================
+            // =========================================================
 
             final prefs =
             await SharedPreferences.getInstance();
 
-            // ====================================================
-            // IMPORTANT:
-            // READ OLD CONTINUE VALUE BEFORE CHANGING ANYTHING
-            // ====================================================
-
-            final bool oldContinue =
-                prefs.getBool('continue') ?? false;
-
-            debugPrint("================================");
-            debugPrint("🔐 OTP FLOW");
-            debugPrint("isNewUser     : $isNewUser");
-            debugPrint("accountType   : $accountType");
-            debugPrint("hasBusiness   : $hasBusiness");
-            debugPrint("completed     : $completed");
-            debugPrint("oldContinue   : $oldContinue");
-            debugPrint("================================");
-
-            // ====================================================
+            // =========================================================
             // SAVE LOGIN DATA
-            // ====================================================
+            // =========================================================
 
             await prefs.setString(
               'access_token',
@@ -379,84 +317,76 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             );
 
             await prefs.setBool(
-              'is_new_user',
-              isNewUser,
-            );
-
-            await prefs.setBool(
               'is_logged_in',
               true,
             );
 
-            // ====================================================
-            // SAVE ONBOARDING
-            // ====================================================
-
-            await prefs.setBool(
-              'is_business_completed',
-              completed,
-            );
-
-            if (accountType != null &&
-                accountType.isNotEmpty) {
-              await prefs.setString(
-                'account_type',
-                accountType,
-              );
-            }
-
-            // ====================================================
+            // =========================================================
             // SET API TOKENS
-            // ====================================================
+            // =========================================================
 
             await ApiHandler.instance.setTokens(
               token: accessToken,
               refreshToken: refreshToken,
             );
 
-            // ====================================================
-            // NEW USER
+            // =========================================================
+            // COMMON PROVIDER
+            // =========================================================
+
+            final commonProvider =
+                CommonProvider.instance;
+
+            // =========================================================
+            // ME API
             //
-            // Never consider new user as completed just because
-            // API has some business data.
-            // ====================================================
+            // This API gives:
+            // account_type = personal / business
+            // =========================================================
 
-            if (isNewUser) {
+            debugPrint("================================");
+            debugPrint("👤 CALLING ME API");
+            debugPrint("================================");
+
+            final bool meSuccess =
+            await commonProvider.loadMe(
+              forceRefresh: true,
+            );
+
+            if (!meSuccess) {
               debugPrint(
-                "🆕 NEW USER → PlansAndPricingScreen",
-              );
-
-              // New onboarding has not been continued yet.
-              await prefs.setBool(
-                'continue',
-                false,
+                "❌ ME API FAILED",
               );
 
               _isVerifyLoading = false;
+              _errorMessage =
+                  commonProvider.meError ??
+                      "Unable to load user details";
+
               notifyListeners();
-
-              if (!context.mounted) {
-                return data;
-              }
-
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                "/PlansAndPricingScreen",
-                    (route) => false,
-              );
-
-              return data;
+              return null;
             }
 
-            // ====================================================
-            // EXISTING USER
-            // ====================================================
+            final String? accountType =
+            commonProvider.accountType
+                ?.trim()
+                .toLowerCase();
+
+            debugPrint("================================");
+            debugPrint("👤 ME API SUCCESS");
+            debugPrint(
+              "ACCOUNT TYPE : $accountType",
+            );
+            debugPrint("================================");
+
+            // =========================================================
+            // ACCOUNT TYPE NOT FOUND
+            // =========================================================
 
             if (accountType == null ||
                 accountType.isEmpty) {
               debugPrint(
-                "⚠️ EXISTING USER BUT ACCOUNT TYPE NULL"
-                    " → PlansAndPricingScreen",
+                "⚠️ ACCOUNT TYPE EMPTY",
               );
 
               _isVerifyLoading = false;
@@ -475,43 +405,64 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               return data;
             }
 
-            // ====================================================
-            // FULL ONBOARDING
-            // ====================================================
-
-            final bool onboardingCompleted =
-                completed &&
-                    (
-                        accountType == "business"
-                            ? hasBusiness
-                            : true
-                    );
-
-            // ====================================================
-            // IMPORTANT NAVIGATION RULE
+            // =========================================================
+            // PERSONAL ACCOUNT
             //
-            // COMPLETE + CONTINUE TRUE
-            //      → HOME
+            // Personal → ME API data itself is used.
             //
-            // COMPLETE + CONTINUE FALSE
-            //      → BUSINESS DETAILS
+            // Check:
+            // name
+            // profile_photo_s3_key
             //
-            // This handles:
-            // user filled data but closed app before Continue.
-            // ====================================================
+            // If both exist → HOME
+            // Otherwise → BUSINESS DETAILS
+            // =========================================================
 
-            if (onboardingCompleted &&
-                oldContinue) {
+            if (accountType == "personal") {
+              debugPrint("================================");
               debugPrint(
-                "✅ COMPLETE + CONTINUE TRUE"
-                    " → CustomBottomNavScreen",
+                "👤 PERSONAL ACCOUNT",
               );
+              debugPrint(
+                "Checking ME profile data...",
+              );
+              debugPrint("================================");
 
-              // Keep it true.
-              await prefs.setBool(
-                'continue',
-                true,
+              final meData =
+                  commonProvider.me?.data;
+
+              final String personalName =
+                  meData?.name
+                      ?.toString()
+                      .trim() ??
+                      "";
+
+              final String personalImage =
+                  meData?.profilePhotoS3Key
+                      ?.toString()
+                      .trim() ??
+                      "";
+
+              final bool hasName =
+                  personalName.isNotEmpty;
+
+              final bool hasImage =
+                  personalImage.isNotEmpty;
+
+              debugPrint("================================");
+              debugPrint(
+                "PERSONAL NAME  : $personalName",
               );
+              debugPrint(
+                "PERSONAL IMAGE : $personalImage",
+              );
+              debugPrint(
+                "HAS NAME       : $hasName",
+              );
+              debugPrint(
+                "HAS IMAGE      : $hasImage",
+              );
+              debugPrint("================================");
 
               _isVerifyLoading = false;
               notifyListeners();
@@ -520,37 +471,130 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
                 return data;
               }
 
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                "/CustomBottomNavScreen",
-                    (route) => false,
-              );
+              // Both available
+              if (hasName && hasImage) {
+                debugPrint(
+                  "✅ PERSONAL PROFILE COMPLETE"
+                      " → CustomBottomNavScreen",
+                );
+
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  "/CustomBottomNavScreen",
+                      (route) => false,
+                );
+              } else {
+                debugPrint(
+                  "⚠️ PERSONAL PROFILE INCOMPLETE"
+                      " → BusinessDetailsScreen",
+                );
+
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  "/BusinessDetailsScreen",
+                      (route) => false,
+                );
+              }
 
               return data;
             }
 
-            // ====================================================
-            // COMPLETE BUT CONTINUE FALSE
+            // =========================================================
+            // BUSINESS ACCOUNT
             //
-            // Business data exists, but user never pressed
-            // Continue.
+            // Business → BUSINESS API
             //
-            // So resume BusinessDetailsScreen.
-            // ====================================================
+            // Check:
+            // name
+            // logo_s3_key
+            //
+            // If both exist → HOME
+            // Otherwise → BUSINESS DETAILS
+            // =========================================================
 
-            if (onboardingCompleted &&
-                !oldContinue) {
+            if (accountType == "business") {
+              debugPrint("================================");
               debugPrint(
-                "⚠️ COMPLETE DATA"
-                    " BUT CONTINUE FALSE"
-                    " → BusinessDetailsScreen",
+                "🏢 BUSINESS ACCOUNT",
+              );
+              debugPrint(
+                "Calling Business API...",
+              );
+              debugPrint("================================");
+
+              final bool businessSuccess =
+              await commonProvider.loadBusiness(
+                forceRefresh: true,
               );
 
-              // DO NOT set continue true here.
-              await prefs.setBool(
-                'continue',
-                false,
+              // =======================================================
+              // BUSINESS API FAILED / NO BUSINESS DATA
+              // =======================================================
+
+              if (!businessSuccess) {
+                debugPrint(
+                  "⚠️ BUSINESS DATA NOT FOUND"
+                      " → BusinessDetailsScreen",
+                );
+
+                _isVerifyLoading = false;
+                notifyListeners();
+
+                if (!context.mounted) {
+                  return data;
+                }
+
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  "/BusinessDetailsScreen",
+                      (route) => false,
+                );
+
+                return data;
+              }
+
+              // =======================================================
+              // BUSINESS DATA
+              // =======================================================
+
+              final business =
+                  commonProvider.business;
+
+              final String businessName =
+                  business?.name
+                      ?.toString()
+                      .trim() ??
+                      "";
+
+              final String businessImage =
+                  business?.logoS3Key
+                      ?.toString()
+                      .trim() ??
+                      "";
+
+              final bool hasName =
+                  businessName.isNotEmpty;
+
+              final bool hasImage =
+                  businessImage.isNotEmpty;
+
+              debugPrint("================================");
+              debugPrint(
+                "🏢 BUSINESS DATA",
               );
+              debugPrint(
+                "BUSINESS NAME : $businessName",
+              );
+              debugPrint(
+                "BUSINESS IMAGE: $businessImage",
+              );
+              debugPrint(
+                "HAS NAME      : $hasName",
+              );
+              debugPrint(
+                "HAS IMAGE     : $hasImage",
+              );
+              debugPrint("================================");
 
               _isVerifyLoading = false;
               notifyListeners();
@@ -559,27 +603,49 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
                 return data;
               }
 
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                "/BusinessDetailsScreen",
-                    (route) => false,
-              );
+              // =======================================================
+              // BUSINESS COMPLETE
+              // =======================================================
+
+              if (hasName && hasImage) {
+                debugPrint(
+                  "✅ BUSINESS PROFILE COMPLETE"
+                      " → CustomBottomNavScreen",
+                );
+
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  "/CustomBottomNavScreen",
+                      (route) => false,
+                );
+              }
+
+              // =======================================================
+              // BUSINESS INCOMPLETE
+              // =======================================================
+
+              else {
+                debugPrint(
+                  "⚠️ BUSINESS PROFILE INCOMPLETE"
+                      " → BusinessDetailsScreen",
+                );
+
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  "/BusinessDetailsScreen",
+                      (route) => false,
+                );
+              }
 
               return data;
             }
 
-            // ====================================================
-            // INCOMPLETE
-            // ====================================================
+            // =========================================================
+            // UNKNOWN ACCOUNT TYPE
+            // =========================================================
 
             debugPrint(
-              "⚠️ ONBOARDING INCOMPLETE"
-                  " → BusinessDetailsScreen",
-            );
-
-            await prefs.setBool(
-              'continue',
-              false,
+              "⚠️ UNKNOWN ACCOUNT TYPE: $accountType",
             );
 
             _isVerifyLoading = false;
@@ -591,7 +657,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
             Navigator.pushNamedAndRemoveUntil(
               context,
-              "/BusinessDetailsScreen",
+              "/PlansAndPricingScreen",
                   (route) => false,
             );
 
@@ -613,7 +679,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             return null;
           }
         },
-
         failure: (error) {
           _isVerifyLoading = false;
           _errorMessage = error.message;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter/material.dart';
 
 class MySpaceModel {
   final String title;
@@ -9,10 +10,11 @@ class MySpaceModel {
   MySpaceModel({
     required this.title,
     required this.icon,
-    List<Color>? gradientColors, // Nullable parameter
-  }) : gradientColors = gradientColors ??
-      [const Color(0xFFE0F7FA), const Color(0xFF80DEEA)]; // Fallback Default Gradient
-}class MyCelebrateModel {
+    required this.gradientColors,
+  });
+}
+
+class MyCelebrateModel {
   final String title;
   final String icon;
   final List<Color> gradientColors;
@@ -21,6 +23,10 @@ class MySpaceModel {
     required this.title,
     required this.icon,
     List<Color>? gradientColors, // Nullable parameter
-  }) : gradientColors = gradientColors ??
-      [const Color(0xFFE0F7FA), const Color(0xFF80DEEA)]; // Fallback Default Gradient
+  }) : gradientColors =
+           gradientColors ??
+           [
+             const Color(0xFFE0F7FA),
+             const Color(0xFF80DEEA),
+           ]; // Fallback Default Gradient
 }

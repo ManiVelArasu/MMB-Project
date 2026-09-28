@@ -59,9 +59,7 @@ class _CustomCreateBody extends StatelessWidget {
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
-            child: const HomeCustomAppBar(
-
-            ),
+            child: const HomeCustomAppBar(),
           ),
           body: SafeArea(
             child: SingleChildScrollView(
@@ -109,8 +107,12 @@ class _CustomCreateBody extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => TemplateEditScreen(
-                                    canvasWidth: width > 0 ? width.toDouble() : null,
-                                    canvasHeight: height > 0 ? height.toDouble() : null,
+                                    canvasWidth: width > 0
+                                        ? width.toDouble()
+                                        : null,
+                                    canvasHeight: height > 0
+                                        ? height.toDouble()
+                                        : null,
                                   ),
                                 ),
                               );
@@ -220,12 +222,12 @@ class _CustomCreateBody extends StatelessWidget {
                                 width: 52.w,
                                 child: tool.imagePath.trim().isNotEmpty
                                     ? Image.asset(
-                                  tool.imagePath,
-                                  fit: BoxFit.contain,
-                                  errorBuilder:
-                                      (context, error, stackTrace) =>
-                                      _buildFallbackIcon(),
-                                )
+                                        tool.imagePath,
+                                        fit: BoxFit.contain,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                _buildFallbackIcon(),
+                                      )
                                     : _buildFallbackIcon(),
                               ),
 

@@ -25,6 +25,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   final Map<String, String> _outlineStyles = {};
   final Map<String, String> _outlineJoins = {};
   final Map<String, Map<String, dynamic>> _templateRawObjects = {};
+
+  // IDs of background objects that came from the API/Fabric template.
+  // These are tracked separately from size-based detection so a template
+  // background can still be replaced even after the editor canvas is resized.
+  final Set<String> _templateBackgroundIds = <String>{};
+
   final Map<String, bool> _templateFlipX = {};
   final Map<String, bool> _templateFlipY = {};
   Map<String, dynamic>? templateRawObject(String id) => _templateRawObjects[id];
@@ -356,16 +362,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final limitX = extentXAtOne <= 0
         ? 10.0
         : math.min(
-            centerX / extentXAtOne,
-            (canvasWidth - centerX) / extentXAtOne,
-          );
+      centerX / extentXAtOne,
+      (canvasWidth - centerX) / extentXAtOne,
+    );
 
     final limitY = extentYAtOne <= 0
         ? 10.0
         : math.min(
-            centerY / extentYAtOne,
-            (canvasHeight - centerY) / extentYAtOne,
-          );
+      centerY / extentYAtOne,
+      (canvasHeight - centerY) / extentYAtOne,
+    );
 
     final maxAllowed = math.max(0.05, math.min(10.0, math.min(limitX, limitY)));
 
@@ -428,10 +434,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool isEcommerceLoading = false;
 
   Future<List<String>> _fetchFreepikCategory(
-    String query, {
-    required void Function(bool) setLoading,
-    required void Function(List<String>) setData,
-  }) async {
+      String query, {
+        required void Function(bool) setLoading,
+        required void Function(List<String>) setData,
+      }) async {
     setLoading(true);
     notifyListeners();
     try {
@@ -539,11 +545,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Loads one element category without touching backgroundAssets or the
   /// generic freePikAssets list.
   Future<void> fetchElementCategory(
-    String query, {
-    int page = 1,
-    int limit = 4,
-    bool append = false,
-  }) async {
+      String query, {
+        int page = 1,
+        int limit = 4,
+        bool append = false,
+      }) async {
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) return;
 
@@ -598,7 +604,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         for (final item in merged) {
           final key =
               item.id?.toString() ??
-              '${item.name}|${item.s3Key}|${item.s3Key ?? ''}';
+                  '${item.name}|${item.s3Key}|${item.s3Key ?? ''}';
           unique[key] = item;
         }
 
@@ -611,9 +617,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             .map((e) => e.previewKey)
             .where(
               (e) =>
-                  e.trim().isNotEmpty &&
-                  !items.any((x) => x.previewKey == e && x.isLocked),
-            )
+          e.trim().isNotEmpty &&
+              !items.any((x) => x.previewKey == e && x.isLocked),
+        )
             .toSet()
             .toList();
       } else {
@@ -711,7 +717,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           for (final item in allAssetItems) {
             final key =
                 item.id?.toString() ??
-                '${item.name}|${item.s3Key}|${item.s3Key ?? ''}';
+                    '${item.name}|${item.s3Key}|${item.s3Key ?? ''}';
             unique[key] = item;
           }
 
@@ -794,10 +800,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Loads the template detail API and converts its Fabric JSON `content`
   /// into the editor's existing EditorItem list.
   Future<bool> loadTemplateByUid(
-    String uid, {
-    double? canvasWidth,
-    double? canvasHeight,
-  }) async {
+      String uid, {
+        double? canvasWidth,
+        double? canvasHeight,
+      }) async {
     final safeUid = uid.trim();
 
     if (safeUid.isEmpty) {
@@ -849,8 +855,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       // Background
       final rootBackgroundValue =
           root['backgroundColor'] ??
-          root['background'] ??
-          root['background_color'];
+              root['background'] ??
+              root['background_color'];
 
       final rootBackgroundGradient = _parseGradient(rootBackgroundValue);
 
@@ -905,7 +911,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
       if (objects == null) {
         _templateDetailError =
-            'Template content has no supported objects array';
+        'Template content has no supported objects array';
 
         isTemplateLoaded = false;
         return false;
@@ -938,7 +944,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
       debugPrint(
         '✅ Template loaded: ${detail.data.name} | '
-        '${_items.length} objects',
+            '${_items.length} objects',
       );
 
       return true;
@@ -966,9 +972,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   Size? _detectTemplateCanvasSize(
-    Map<String, dynamic> root,
-    List<dynamic> objects,
-  ) {
+      Map<String, dynamic> root,
+      List<dynamic> objects,
+      ) {
     // 1. Fabric root width / height
     final rootWidth = _toDouble(root['width']);
     final rootHeight = _toDouble(root['height']);
@@ -1109,12 +1115,13 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void loadItemsFromJson(
-    List<Map<String, dynamic>> jsonList, {
-    String? templateUid,
-  }) {
+      List<Map<String, dynamic>> jsonList, {
+        String? templateUid,
+      }) {
     try {
       _items.clear();
       _templateRawObjects.clear();
+      _templateBackgroundIds.clear();
       _templateFlipX.clear();
       _templateFlipY.clear();
       _outlineStyles.clear();
@@ -1143,7 +1150,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         if (objectName == 'clip') {
           final fill = _parseColor(json['fill']);
           if ((_backgroundColor == Colors.white ||
-                  _backgroundColor.alpha == 0) &&
+              _backgroundColor.alpha == 0) &&
               fill != null &&
               fill.alpha > 0) {
             _backgroundColor = fill;
@@ -1215,6 +1222,19 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               isLocal: false,
             );
             _items.add(imageItem);
+
+            // API/Fabric templates commonly store the page background as a
+            // normal image object sized to the whole canvas. Mark it by ID
+            // so Background -> Replace can always remove it later, even if
+            // the editor canvas has been resized after template loading.
+            if (_isTemplateBackgroundObject(
+              json,
+              canvasWidth: canvasWidth,
+              canvasHeight: canvasHeight,
+            )) {
+              _templateBackgroundIds.add(id);
+            }
+
             _templateRawObjects[id] = Map<String, dynamic>.from(json);
             _templateFlipX[id] = json['flipX'] == true;
             _templateFlipY[id] = json['flipY'] == true;
@@ -1240,10 +1260,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             type == 'path') {
           final isFullCanvasRect =
               type == 'rect' &&
-              left.abs() < 1.0 &&
-              top.abs() < 1.0 &&
-              (width - canvasWidth).abs() < 2.0 &&
-              (height - canvasHeight).abs() < 2.0;
+                  left.abs() < 1.0 &&
+                  top.abs() < 1.0 &&
+                  (width - canvasWidth).abs() < 2.0 &&
+                  (height - canvasHeight).abs() < 2.0;
 
           // A full-canvas rect in Fabric templates is often the clip/page
           // background. Treat its fill as the page background instead of
@@ -1281,7 +1301,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             outlineColor: rawStroke ?? const Color(0xFFD9D9D9),
             outlineWidth: rawStrokeWidth,
             borderRadius:
-                _toDouble(json['rx']) ?? _toDouble(json['ry']) ?? 16.0,
+            _toDouble(json['rx']) ?? _toDouble(json['ry']) ?? 16.0,
           );
           _items.add(shapeItem);
           _templateRawObjects[id] = Map<String, dynamic>.from(json);
@@ -1302,9 +1322,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           // become a blank white canvas while loading.
           final isFullCanvas =
               left.abs() < 1.0 &&
-              top.abs() < 1.0 &&
-              (width - canvasWidth).abs() < 2.0 &&
-              (height - canvasHeight).abs() < 2.0;
+                  top.abs() < 1.0 &&
+                  (width - canvasWidth).abs() < 2.0 &&
+                  (height - canvasHeight).abs() < 2.0;
           final fill = _parseColor(json['fill']);
           if (isFullCanvas && fill != null && fill.alpha > 0) {
             _backgroundColor = fill;
@@ -1335,6 +1355,15 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
                 isLocal: false,
               );
               _items.add(imageItem);
+
+              if (_isTemplateBackgroundObject(
+                json,
+                canvasWidth: canvasWidth,
+                canvasHeight: canvasHeight,
+              )) {
+                _templateBackgroundIds.add(id);
+              }
+
               _templateRawObjects[id] = Map<String, dynamic>.from(json);
               _templateFlipX[id] = json['flipX'] == true;
               _templateFlipY[id] = json['flipY'] == true;
@@ -1414,10 +1443,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   String _outlineStyleFromFabric(
-    dynamic dashArray, {
-    double strokeWidth = 0,
-    String? strokeCap,
-  }) {
+      dynamic dashArray, {
+        double strokeWidth = 0,
+        String? strokeCap,
+      }) {
     if (dashArray is! List || dashArray.isEmpty || strokeWidth <= 0) {
       return 'solid';
     }
@@ -1886,7 +1915,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           r'''\bviewBox\s*=\s*["']([^"']+)["']''',
           caseSensitive: false,
         ).firstMatch(attrs)?.group(1) ??
-        '0 0 512 512';
+            '0 0 512 512';
 
     final root = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="$viewBox">';
     final tokens = RegExp(
@@ -1992,11 +2021,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void addVideo(
-    String videoUrl, {
-    bool isLocal = false,
-    double width = 600,
-    double height = 400,
-  }) {
+      String videoUrl, {
+        bool isLocal = false,
+        double width = 600,
+        double height = 400,
+      }) {
     if (videoUrl.trim().isEmpty) return;
 
     _saveState();
@@ -2120,11 +2149,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void updateImageColorAdjustments(
-    String id, {
-    double? brightness,
-    double? contrast,
-    double? saturation,
-  }) {
+      String id, {
+        double? brightness,
+        double? contrast,
+        double? saturation,
+      }) {
     final index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _saveState();
@@ -2521,11 +2550,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// each handle changes the corresponding width/height and the opposite
   /// edge/corner stays anchored.
   void updateItemSize(
-    String id, {
-    required double width,
-    required double height,
-    Offset? position,
-  }) {
+      String id, {
+        required double width,
+        required double height,
+        Offset? position,
+      }) {
     final index = _items.indexWhere((e) => e.id == id);
     if (index == -1) return;
 
@@ -2582,17 +2611,17 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       debugPrint("Searching Pexels videos: $searchQuery");
 
       _pexelsVideoAssets =
-          await FreePikService.searchPexelsVideoAssets(
-            searchQuery,
-            page: 1,
-            limit: 24,
-          ).timeout(
-            const Duration(seconds: 15),
-            onTimeout: () {
-              debugPrint("Pexels video search timeout");
-              return <PexelsVideoAsset>[];
-            },
-          );
+      await FreePikService.searchPexelsVideoAssets(
+        searchQuery,
+        page: 1,
+        limit: 24,
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          debugPrint("Pexels video search timeout");
+          return <PexelsVideoAsset>[];
+        },
+      );
 
       debugPrint("Pexels videos found: ${_pexelsVideoAssets.length}");
     } catch (e, stackTrace) {
@@ -2607,12 +2636,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setBackgroundImage(
-    String imageUrl, {
-    double canvasWidth = 1080.0,
-    double canvasHeight = 1080.0,
-    double? sourceWidth,
-    double? sourceHeight,
-  }) {
+      String imageUrl, {
+        double canvasWidth = 1080.0,
+        double canvasHeight = 1080.0,
+        double? sourceWidth,
+        double? sourceHeight,
+      }) {
     _saveState();
     _removeBackgroundLayers();
     _backgroundColor = Colors.transparent;
@@ -2642,12 +2671,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setBackgroundVideo(
-    String videoUrl, {
-    double canvasWidth = 1080.0,
-    double canvasHeight = 1080.0,
-    double? sourceWidth,
-    double? sourceHeight,
-  }) {
+      String videoUrl, {
+        double canvasWidth = 1080.0,
+        double canvasHeight = 1080.0,
+        double? sourceWidth,
+        double? sourceHeight,
+      }) {
     _saveState();
     _removeBackgroundLayers();
     _backgroundColor = Colors.transparent;
@@ -2657,7 +2686,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         ? sourceWidth
         : canvasWidth;
     final sh =
-        (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
+    (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
         ? sourceHeight
         : canvasHeight;
 
@@ -2692,8 +2721,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   String? get backgroundImageUrl {
     final bgItem = _items.firstWhere(
-      (item) =>
-          item.position.dx == 0 &&
+          (item) =>
+      item.position.dx == 0 &&
           item.position.dy == 0 &&
           item.type == 'image',
       orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
@@ -2703,8 +2732,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   String? get backgroundVideoUrl {
     final bgItem = _items.firstWhere(
-      (item) =>
-          item.position.dx == 0 &&
+          (item) =>
+      item.position.dx == 0 &&
           item.position.dy == 0 &&
           item.type == 'video',
       orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
@@ -2713,13 +2742,13 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void replaceBackgroundImage(
-    String imageUrl,
-    String selectedItemIdToRemove, {
-    double canvasWidth = 1080.0,
-    double canvasHeight = 1350.0,
-    double? sourceWidth,
-    double? sourceHeight,
-  }) {
+      String imageUrl,
+      String selectedItemIdToRemove, {
+        double canvasWidth = 1080.0,
+        double canvasHeight = 1350.0,
+        double? sourceWidth,
+        double? sourceHeight,
+      }) {
     _saveState();
     _removeBackgroundLayers();
     _items.removeWhere((item) => item.id == selectedItemIdToRemove);
@@ -2806,21 +2835,70 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
+  bool _isTemplateBackgroundObject(
+      Map<String, dynamic> json, {
+        double? canvasWidth,
+        double? canvasHeight,
+      }) {
+    final type = json['type']?.toString().toLowerCase().trim();
+    if (type != 'image') return false;
+
+    final left = _toDouble(json['left']) ?? 0.0;
+    final top = _toDouble(json['top']) ?? 0.0;
+    final width = _toDouble(json['width']) ?? 0.0;
+    final height = _toDouble(json['height']) ?? 0.0;
+    final scaleX = (_toDouble(json['scaleX']) ?? 1.0).abs();
+    final scaleY = (_toDouble(json['scaleY']) ?? 1.0).abs();
+
+    if (width <= 0 || height <= 0) return false;
+
+    final cw = (canvasWidth != null && canvasWidth > 0)
+        ? canvasWidth
+        : this.canvasWidth;
+    final ch = (canvasHeight != null && canvasHeight > 0)
+        ? canvasHeight
+        : this.canvasHeight;
+
+    final renderedWidth = width * scaleX;
+    final renderedHeight = height * scaleY;
+
+    // Full-page API background: anchored at the page origin and covering the
+    // page in Fabric coordinates. A small tolerance handles floating point
+    // values such as -9.09e-13 returned by Fabric.
+    final atOrigin = left.abs() <= 2.0 && top.abs() <= 2.0;
+    final coversCanvas =
+        (renderedWidth - cw).abs() <= 4.0 &&
+            (renderedHeight - ch).abs() <= 4.0;
+
+    return atOrigin && coversCanvas;
+  }
+
+  bool isCanvasBackgroundItem(EditorItem item) {
+    return _isBackgroundLayer(item);
+  }
+
   bool _isBackgroundLayer(EditorItem item) {
     final isBackgroundType =
         item.type == 'image' || item.type == 'video' || item.type == 'shape';
 
-    // bg_ IDs are stable even after drag/scale/rotate.
-    if (item.id?.startsWith('bg_') == true && isBackgroundType) {
+    if (!isBackgroundType) return false;
+
+    // API/Fabric background IDs are explicitly tracked while importing the
+    // template. This is the important path for replacing API backgrounds.
+    if (item.id != null && _templateBackgroundIds.contains(item.id)) {
+      return true;
+    }
+
+    // bg_ IDs are stable for backgrounds created by the editor.
+    if (item.id?.startsWith('bg_') == true) {
       return true;
     }
 
     // Backward compatibility for older saved projects.
-    return item.position.dx == 0 &&
-        item.position.dy == 0 &&
+    return item.position.dx.abs() < 1.0 &&
+        item.position.dy.abs() < 1.0 &&
         item.width >= 1000 &&
-        item.height >= 1000 &&
-        isBackgroundType;
+        item.height >= 1000;
   }
 
   void _removeBackgroundLayers() {
@@ -2862,12 +2940,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _syncCurrentPage();
     final source = duplicateCurrent
         ? _items
-              .map(
-                (e) => e.copyWith(
-                  id: '${DateTime.now().microsecondsSinceEpoch}_${e.id}',
-                ),
-              )
-              .toList()
+        .map(
+          (e) => e.copyWith(
+        id: '${DateTime.now().microsecondsSinceEpoch}_${e.id}',
+      ),
+    )
+        .toList()
         : <EditorItem>[];
     _pages.add(source);
     _currentPageIndex = _pages.length - 1;
@@ -2998,7 +3076,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     debugPrint(
       'FULL PAGE PASTED: ${pastedItems.length} items -> '
-      'Page ${_currentPageIndex + 1}',
+          'Page ${_currentPageIndex + 1}',
     );
 
     return true;
@@ -3049,12 +3127,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Updates position, scale and rotation in a single provider notification.
   /// Used by interactive canvas/background gestures.
   void updateItemTransform(
-    String id, {
-    Offset? position,
-    double? scale,
-    double? rotation,
-    bool clampToFrame = true,
-  }) {
+      String id, {
+        Offset? position,
+        double? scale,
+        double? rotation,
+        bool clampToFrame = true,
+      }) {
     final index = _items.indexWhere((item) => item.id == id);
     if (index == -1) return;
 

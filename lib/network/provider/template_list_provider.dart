@@ -1,20 +1,20 @@
 import 'package:flutter/cupertino.dart';
-import 'package:mmb_app/Repository/home_repository.dart';
 
 import '../../Api Model/special_days.dart';
+import '../../Repository/home_repository.dart';
 import '../../core/api/models/api_result.dart';
 
-class SpecialDaysProvider extends ChangeNotifier {
+class TemplateListProvider extends ChangeNotifier {
   final String? selectedDate;
 
-  SpecialDaysProvider({this.selectedDate});
+  TemplateListProvider({this.selectedDate});
 
   bool isLoading = false;
 
   SpecialDays? _specialDays;
   SpecialDays? get specialDays => _specialDays;
 
-  Future<void> loadSpecialDays() async {
+  Future<void> loadSpecialDays( {String? type}) async {
     isLoading = true;
     notifyListeners();
 
@@ -27,7 +27,7 @@ class SpecialDaysProvider extends ChangeNotifier {
           to: selectedDate!,
         );
       } else {
-        response = await HomeRepository.instance.specialDaysApi(range: 'year');
+        response = await HomeRepository.instance.specialDaysApi(type: type);
       }
 
       if (response.data != null) {

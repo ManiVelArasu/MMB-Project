@@ -69,4 +69,6 @@ class ApiEndpoints {
 
   static String notificationReadOne(String notificationUid) =>
       '/notifications/${notificationUid}/read';
+
+  static const String project = '/project';
 }

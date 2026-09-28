@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart';
+
 import '../Api Model/Template_model.dart';
 import '../Api Model/special_days.dart';
 import '../Api Model/templatecategories.dart';
@@ -47,17 +49,32 @@ class HomeRepository {
     String? range,
     String? from,
     String? to,
+    String? type,
   }) async {
     final Map<String, dynamic> queryParams = {};
+
+    // range இருந்தால் from/to தேவையில்லை
     if (range != null && range.isNotEmpty) {
       queryParams["range"] = range;
-    } else if (from != null &&
+    }
+
+    // range இல்லையென்றால் from/to
+    else if (from != null &&
         from.isNotEmpty &&
         to != null &&
         to.isNotEmpty) {
       queryParams["from"] = from;
       queryParams["to"] = to;
     }
+
+    // Event type
+    if (type != null && type.isNotEmpty) {
+      queryParams["type"] = type;
+    }
+
+    debugPrint(
+      "📅 Special Days API Params: $queryParams",
+    );
 
     final result =
     await ApiRepository.instance.request<SpecialDays>(

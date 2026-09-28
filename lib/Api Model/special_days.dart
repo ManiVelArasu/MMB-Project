@@ -3,11 +3,7 @@ class SpecialDays {
   final List<SpecialDaysList> data;
   final Meta? meta;
 
-  SpecialDays({
-    required this.success,
-    required this.data,
-    required this.meta,
-  });
+  SpecialDays({required this.success, required this.data, required this.meta});
 
   factory SpecialDays.fromJson(Map<String, dynamic> json) {
     return SpecialDays(
@@ -15,17 +11,13 @@ class SpecialDays {
       data: json["data"] == null
           ? []
           : List<SpecialDaysList>.from(
-        (json["data"] as List).map(
-              (x) => SpecialDaysList.fromJson(
-            x as Map<String, dynamic>,
-          ),
-        ),
-      ),
+              (json["data"] as List).map(
+                (x) => SpecialDaysList.fromJson(x as Map<String, dynamic>),
+              ),
+            ),
       meta: json["meta"] == null
           ? null
-          : Meta.fromJson(
-        json["meta"] as Map<String, dynamic>,
-      ),
+          : Meta.fromJson(json["meta"] as Map<String, dynamic>),
     );
   }
 
@@ -82,37 +74,27 @@ class SpecialDaysList {
       name: json["name"]?.toString(),
       description: json["description"]?.toString(),
 
-      thumbnailS3Key:
-      json["thumbnail_s3_key"]?.toString(),
+      thumbnailS3Key: json["thumbnail_s3_key"]?.toString(),
 
-      bannerS3Key:
-      json["banner_s3_key"]?.toString(),
+      bannerS3Key: json["banner_s3_key"]?.toString(),
 
       type: json["type"]?.toString(),
 
-      eventDate:
-      json["event_date"]?.toString(),
+      eventDate: json["event_date"]?.toString(),
 
-      fullDate:
-      json["full_date"]?.toString(),
+      fullDate: json["full_date"]?.toString(),
 
-      isRecurring:
-      json["is_recurring"]?.toString(),
+      isRecurring: json["is_recurring"]?.toString(),
 
-      isActive:
-      json["is_active"]?.toString(),
+      isActive: json["is_active"]?.toString(),
 
       createdAt: json["created_at"] == null
           ? null
-          : DateTime.tryParse(
-        json["created_at"].toString(),
-      ),
+          : DateTime.tryParse(json["created_at"].toString()),
 
       updatedAt: json["updated_at"] == null
           ? null
-          : DateTime.tryParse(
-        json["updated_at"].toString(),
-      ),
+          : DateTime.tryParse(json["updated_at"].toString()),
 
       // IMPORTANT
       // API:
@@ -120,16 +102,12 @@ class SpecialDaysList {
       templates: json["Templates"] == null
           ? []
           : List<Template>.from(
-        (json["Templates"] as List).map(
-              (x) => Template.fromJson(
-            x as Map<String, dynamic>,
-          ),
-        ),
-      ),
+              (json["Templates"] as List).map(
+                (x) => Template.fromJson(x as Map<String, dynamic>),
+              ),
+            ),
 
-      occursOn: DateTime.parse(
-        json["occurs_on"].toString(),
-      ),
+      occursOn: DateTime.parse(json["occurs_on"].toString()),
     );
   }
 
@@ -149,12 +127,10 @@ class SpecialDaysList {
       "created_at": createdAt?.toIso8601String(),
       "updated_at": updatedAt?.toIso8601String(),
 
-      "Templates": templates
-          .map((x) => x.toJson())
-          .toList(),
+      "Templates": templates.map((x) => x.toJson()).toList(),
 
       "occurs_on":
-      "${occursOn.year.toString().padLeft(4, '0')}-"
+          "${occursOn.year.toString().padLeft(4, '0')}-"
           "${occursOn.month.toString().padLeft(2, '0')}-"
           "${occursOn.day.toString().padLeft(2, '0')}",
     };
@@ -169,6 +145,7 @@ class Template {
   final String? name;
   final String? thumbnailS3Key;
   final String? templateType;
+  final String? content;
   final String? isPremium;
   final String? trendingScore;
   final String? viewsCount;
@@ -190,6 +167,7 @@ class Template {
     required this.templateType,
     required this.isPremium,
     required this.trendingScore,
+    required this.content,
     required this.viewsCount,
     required this.downloadsCount,
     required this.likesCount,
@@ -200,64 +178,46 @@ class Template {
     required this.isLocked,
   });
 
-  factory Template.fromJson(
-      Map<String, dynamic> json,
-      ) {
+  factory Template.fromJson(Map<String, dynamic> json) {
     return Template(
       id: json["id"]?.toString(),
 
       uid: json["uid"]?.toString(),
 
-      categoryId:
-      json["category_id"]?.toString(),
+      categoryId: json["category_id"]?.toString(),
 
-      languageId:
-      json["language_id"]?.toString(),
+      languageId: json["language_id"]?.toString(),
 
-      name:
-      json["name"]?.toString(),
+      name: json["name"]?.toString(),
 
-      thumbnailS3Key:
-      json["thumbnail_s3_key"]?.toString(),
+      thumbnailS3Key: json["thumbnail_s3_key"]?.toString(),
+      content: json["content"]?.toString(),
 
-      templateType:
-      json["template_type"]?.toString(),
+      templateType: json["template_type"]?.toString(),
 
-      isPremium:
-      json["is_premium"]?.toString(),
+      isPremium: json["is_premium"]?.toString(),
 
-      trendingScore:
-      json["trending_score"]?.toString(),
+      trendingScore: json["trending_score"]?.toString(),
 
-      viewsCount:
-      json["views_count"]?.toString(),
+      viewsCount: json["views_count"]?.toString(),
 
-      downloadsCount:
-      json["downloads_count"]?.toString(),
+      downloadsCount: json["downloads_count"]?.toString(),
 
-      likesCount:
-      json["likes_count"]?.toString(),
+      likesCount: json["likes_count"]?.toString(),
 
-      status:
-      json["status"]?.toString(),
+      status: json["status"]?.toString(),
 
-      createdBy:
-      json["created_by"]?.toString(),
+      createdBy: json["created_by"]?.toString(),
 
       createdAt: json["created_at"] == null
           ? null
-          : DateTime.tryParse(
-        json["created_at"].toString(),
-      ),
+          : DateTime.tryParse(json["created_at"].toString()),
 
       updatedAt: json["updated_at"] == null
           ? null
-          : DateTime.tryParse(
-        json["updated_at"].toString(),
-      ),
+          : DateTime.tryParse(json["updated_at"].toString()),
 
-      isLocked:
-      json["is_locked"] == true,
+      isLocked: json["is_locked"] == true,
     );
   }
 
@@ -274,6 +234,7 @@ class Template {
       "trending_score": trendingScore,
       "views_count": viewsCount,
       "downloads_count": downloadsCount,
+      "content":content,
       "likes_count": likesCount,
       "status": status,
       "created_by": createdBy,
@@ -287,26 +248,18 @@ class Template {
 class Meta {
   final Range? range;
 
-  Meta({
-    required this.range,
-  });
+  Meta({required this.range});
 
-  factory Meta.fromJson(
-      Map<String, dynamic> json,
-      ) {
+  factory Meta.fromJson(Map<String, dynamic> json) {
     return Meta(
       range: json["range"] == null
           ? null
-          : Range.fromJson(
-        json["range"] as Map<String, dynamic>,
-      ),
+          : Range.fromJson(json["range"] as Map<String, dynamic>),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      "range": range?.toJson(),
-    };
+    return {"range": range?.toJson()};
   }
 }
 
@@ -314,33 +267,24 @@ class Range {
   final DateTime from;
   final DateTime to;
 
-  Range({
-    required this.from,
-    required this.to,
-  });
+  Range({required this.from, required this.to});
 
-  factory Range.fromJson(
-      Map<String, dynamic> json,
-      ) {
+  factory Range.fromJson(Map<String, dynamic> json) {
     return Range(
-      from: DateTime.parse(
-        json["from"].toString(),
-      ),
-      to: DateTime.parse(
-        json["to"].toString(),
-      ),
+      from: DateTime.parse(json["from"].toString()),
+      to: DateTime.parse(json["to"].toString()),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       "from":
-      "${from.year.toString().padLeft(4, '0')}-"
+          "${from.year.toString().padLeft(4, '0')}-"
           "${from.month.toString().padLeft(2, '0')}-"
           "${from.day.toString().padLeft(2, '0')}",
 
       "to":
-      "${to.year.toString().padLeft(4, '0')}-"
+          "${to.year.toString().padLeft(4, '0')}-"
           "${to.month.toString().padLeft(2, '0')}-"
           "${to.day.toString().padLeft(2, '0')}",
     };

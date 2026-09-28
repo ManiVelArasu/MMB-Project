@@ -16,9 +16,11 @@ import '../../component/custom_searchbar.dart';
 import '../../component/custom_widget.dart';
 import '../../component/home_appbar.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../model/my_space_model.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/common_provider.dart';
 import '../../network/provider/home_screen_provider.dart';
+import '../../network/provider/prpject_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
 
@@ -78,7 +80,43 @@ class HomeScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 12.h),
                       _buildMySpaceList(homeScreenProvider, isDark, (item) {
-                        Navigator.pushNamed(context, "/TemplateEditScreen");
+                        switch (item.title) {
+                          case "CREATE NEW":
+                            _showCreateNewDialog(context, isDark);
+                            break;
+
+                          case "FOR YOU":
+                            Navigator.pushNamed(context, "/ForYouScreen");
+                            break;
+
+                          case "FESTIVAL":
+                            Navigator.pushNamed(
+                              context,
+                              "/TemplateListScreen",
+                              arguments: {"type": "festival"},
+                            );
+                            break;
+
+                          case "MY BRAND":
+                            Navigator.pushNamed(
+                              context,
+                              "/TemplateListScreen",
+                              arguments: {"type": "brand-series"},
+                            );
+                            break;
+
+                          case "BRAND SERIES":
+                            Navigator.pushNamed(context, "/BrandSeriesScreen");
+                            break;
+
+                          case "BRAND FRAMES":
+                            Navigator.pushNamed(context, "/BrandFramesScreen");
+                            break;
+
+                          case "AI HUB":
+                            Navigator.pushNamed(context, "/AiHubScreen");
+                            break;
+                        }
                       }),
 
                       SizedBox(height: 20.h),
@@ -457,6 +495,19 @@ class HomeScreen extends StatelessWidget {
                                   iconAsset: categoryIcon,
                                   hasViewAll: true,
                                   isDark: isDark,
+                                  onViewAll: () {
+                                    if (slug.isEmpty) return;
+
+                                    debugPrint(
+                                      "📂 VIEW ALL category slug: $slug",
+                                    );
+
+                                    Navigator.pushNamed(
+                                      context,
+                                      "/TemplateDetailScreen",
+                                      arguments: {"category": slug},
+                                    );
+                                  },
                                 ),
 
                                 SizedBox(height: 12.h),
@@ -647,6 +698,188 @@ class HomeScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  void _showCreateNewDialog(BuildContext context, bool isDark) {
+    final List<String> sizes = [
+      "Post Square (1:1)",
+      "Post Portrait (4:5)",
+      "Story / Reel (9:16)",
+      "Post Horizontal (16:9)",
+    ];
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+
+          title: Text(
+            "Create New",
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black,
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+
+          contentPadding: EdgeInsets.only(
+            left: 12.w,
+            right: 12.w,
+            bottom: 10.h,
+          ),
+
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: sizes.map((size) {
+              return InkWell(
+                borderRadius: BorderRadius.circular(8.r),
+
+                onTap: () async {
+                  // ==========================================
+                  // CLOSE DIALOG
+                  // ==========================================
+
+                  Navigator.pop(dialogContext);
+
+                  // ==========================================
+                  // CANVAS SIZE
+                  // ==========================================
+
+                  double canvasWidth = 1080;
+                  double canvasHeight = 1080;
+
+                  switch (size) {
+                    case "Post Square (1:1)":
+                      canvasWidth = 1080;
+                      canvasHeight = 1080;
+                      break;
+
+                    case "Post Portrait (4:5)":
+                      canvasWidth = 1080;
+                      canvasHeight = 1350;
+                      break;
+
+                    case "Story / Reel (9:16)":
+                      canvasWidth = 1080;
+                      canvasHeight = 1920;
+                      break;
+
+                    case "Post Horizontal (16:9)":
+                      canvasWidth = 1920;
+                      canvasHeight = 1080;
+                      break;
+                  }
+
+                  final projectProvider = context.read<ProjectProvider>();
+
+                  final bool success = await projectProvider.createProject(
+                    name: null,
+                    content: "{}",
+                  );
+
+                  // ==========================================
+                  // CONTEXT CHECK
+                  // ==========================================
+
+                  if (!context.mounted) {
+                    return;
+                  }
+
+                  // ==========================================
+                  // API FAILED
+                  // ==========================================
+
+                  if (!success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          projectProvider.errorMessage ??
+                              "Unable to create project",
+                        ),
+                      ),
+                    );
+
+                    return;
+                  }
+
+                  // ==========================================
+                  // API SUCCESS
+                  // ==========================================
+
+                  debugPrint("================================");
+
+                  debugPrint("✅ OPEN TEMPLATE EDIT SCREEN");
+
+                  debugPrint(
+                    "Project ID: "
+                    "${projectProvider.projectId}",
+                  );
+
+                  debugPrint(
+                    "Project UID: "
+                    "${projectProvider.projectUid}",
+                  );
+
+                  debugPrint(
+                    "Project Name: "
+                    "${projectProvider.projectName}",
+                  );
+
+                  debugPrint("================================");
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TemplateEditScreen(
+                        canvasWidth: canvasWidth,
+
+                        canvasHeight: canvasHeight,
+
+                        resizeSize: size,
+                      ),
+                    ),
+                  );
+                },
+
+                child: Container(
+                  width: double.infinity,
+
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.w,
+                    vertical: 12.h,
+                  ),
+
+                  margin: EdgeInsets.only(bottom: 4.h),
+
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF333333)
+                        : Colors.transparent,
+
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+
+                  child: Text(
+                    size,
+
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black87,
+
+                      fontSize: 13.sp,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 
@@ -857,7 +1090,7 @@ class HomeScreen extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
 
-      onTap: () {
+      onTap: () async {
         final templateUid = template.uid?.trim() ?? '';
 
         if (templateUid.isEmpty) {
@@ -872,6 +1105,13 @@ class HomeScreen extends StatelessWidget {
           _showPremiumTemplateDialog(context, template);
           return;
         }
+        final projectProvider = context.read<ProjectProvider>();
+        final bool success = await projectProvider.createProject(
+          name: template.name,
+
+          // New project content empty
+          content: template.content,
+        );
 
         Navigator.push(
           context,
@@ -1279,6 +1519,7 @@ class HomeScreen extends StatelessWidget {
     required String iconAsset,
     bool hasViewAll = false,
     required bool isDark,
+    VoidCallback? onViewAll,
   }) {
     final icon = iconAsset.trim();
 
@@ -1348,12 +1589,19 @@ class HomeScreen extends StatelessWidget {
         ),
 
         if (hasViewAll)
-          AppText(
-            "VIEW ALL",
-            style: TextStyle(
-              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w700,
+          GestureDetector(
+            onTap: onViewAll,
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 4.w),
+              child: AppText(
+                "VIEW ALL",
+                style: TextStyle(
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
       ],
@@ -1375,7 +1623,7 @@ class HomeScreen extends StatelessWidget {
   Widget _buildMySpaceList(
     HomeScreenProvider homeScreenProvider,
     bool isDark,
-    void Function(dynamic item) onTap,
+    void Function(MySpaceModel item) onTap,
   ) {
     return SizedBox(
       height: 90.h,
@@ -1388,17 +1636,14 @@ class HomeScreen extends StatelessWidget {
 
           return InkWell(
             onTap: () => onTap(item),
+            borderRadius: BorderRadius.circular(20.r),
             child: Container(
               width: 100.w,
               margin: EdgeInsets.only(right: 12.w),
               padding: EdgeInsets.all(10.r),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: item.gradientColors.isNotEmpty
-                      ? item.gradientColors
-                      : (isDark
-                            ? [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)]
-                            : [Colors.white, Colors.grey.shade200]),
+                  colors: item.gradientColors,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -1443,11 +1688,29 @@ class HomeScreen extends StatelessWidget {
       future: SharedPreferences.getInstance(),
       builder: (context, snapshot) {
         String? savedImagePath;
+
         if (snapshot.hasData) {
           savedImagePath = snapshot.data?.getString(
             'saved_business_image_path',
           );
         }
+
+        final String? accountType =
+            homeScreenProvider.provider.me?.data.accountType;
+        final bool isBusiness = accountType == 'business';
+
+        // Business image
+        final String? businessLogo =
+            homeScreenProvider.provider.business?.logoS3Key;
+
+        final String? profilePhoto =
+            homeScreenProvider.provider.me?.data.profilePhotoS3Key;
+
+        final String? imageKey = isBusiness ? businessLogo : profilePhoto;
+
+        debugPrint("ACCOUNT TYPE: $accountType");
+        debugPrint("BUSINESS LOGO: $businessLogo");
+        debugPrint("PROFILE PHOTO: $profilePhoto");
 
         return SizedBox(
           height: 360.h,
@@ -1468,13 +1731,29 @@ class HomeScreen extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      homeScreenProvider.provider.business?.logoS3Key != null
-                          ? Image.network(
-                              '${ApiEndpoints.cdnImageUrl}/${homeScreenProvider.provider.business?.logoS3Key ?? ''}',
+                      // =========================
+                      // PROFILE / BUSINESS IMAGE
+                      // =========================
+                      if (imageKey != null && imageKey.isNotEmpty)
+                        Image.network(
+                          '${ApiEndpoints.cdnImageUrl}/$imageKey',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              "assets/images/BName.png",
                               fit: BoxFit.cover,
-                            )
-                          : Image.asset("assets/images/BName.png"),
+                            );
+                          },
+                        )
+                      else
+                        Image.asset(
+                          "assets/images/BName.png",
+                          fit: BoxFit.cover,
+                        ),
 
+                      // =========================
+                      // BOTTOM INFO
+                      // =========================
                       Positioned(
                         left: 0,
                         right: 0,
@@ -1489,18 +1768,43 @@ class HomeScreen extends StatelessWidget {
                           ),
                           child: Row(
                             children: [
-                              AppText(
-                                homeScreenProvider.provider.business?.name ??
-                                    '',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11.sp,
+                              Expanded(
+                                child: AppText(
+                                  isBusiness
+                                      ? homeScreenProvider
+                                                .provider
+                                                .business
+                                                ?.name ??
+                                            ''
+                                      : homeScreenProvider
+                                                .provider
+                                                .me
+                                                ?.data
+                                                .name ??
+                                            '',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11.sp,
+                                  ),
+                                  maxLines: 1,
                                 ),
                               ),
-                              const Spacer(),
+
+                              SizedBox(width: 10.w),
+
                               AppText(
-                                homeScreenProvider.provider.business?.email ??
-                                    '',
+                                isBusiness
+                                    ? homeScreenProvider
+                                              .provider
+                                              .business
+                                              ?.email ??
+                                          ''
+                                    : homeScreenProvider
+                                              .provider
+                                              .me
+                                              ?.data
+                                              .email ??
+                                          '',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 11.sp,

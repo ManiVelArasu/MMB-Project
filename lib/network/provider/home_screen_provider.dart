@@ -347,6 +347,7 @@ class HomeScreenProvider extends ChangeNotifier {
         const Color(0xFFF2BA4E),
       ],
     ),
+
     MySpaceModel(
       title: "FOR YOU",
       icon: "assets/images/user_tag.png",
@@ -355,6 +356,7 @@ class HomeScreenProvider extends ChangeNotifier {
         const Color(0xFF4ED8F2),
       ],
     ),
+
     MySpaceModel(
       title: "FESTIVAL",
       icon: "assets/images/festival_calender.png",
@@ -363,6 +365,7 @@ class HomeScreenProvider extends ChangeNotifier {
         const Color(0xFFF24E86),
       ],
     ),
+
     MySpaceModel(
       title: "MY BRAND",
       icon: "assets/images/briefcase.png",
@@ -371,6 +374,7 @@ class HomeScreenProvider extends ChangeNotifier {
         const Color(0xFFA5D6A7),
       ],
     ),
+
     MySpaceModel(
       title: "BRAND SERIES",
       icon: "assets/images/corporate.png",
@@ -379,6 +383,7 @@ class HomeScreenProvider extends ChangeNotifier {
         const Color(0xFFA5D6A7),
       ],
     ),
+
     MySpaceModel(
       title: "BRAND FRAMES",
       icon: "assets/images/corporate.png",
@@ -387,6 +392,7 @@ class HomeScreenProvider extends ChangeNotifier {
         const Color(0xFFA5D6A7),
       ],
     ),
+
     MySpaceModel(
       title: "AI HUB",
       icon: "assets/images/corporate.png",

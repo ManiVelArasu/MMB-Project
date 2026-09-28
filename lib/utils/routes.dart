@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mmb_app/ui/screens/template_list_screen.dart';
 import 'package:provider/provider.dart';
 import '../Api Model/plans_type.dart';
 import '../Api Model/theme_screen_model.dart';
@@ -132,8 +133,20 @@ class RouteGenerator {
           builder: (context) => const EditProfileScreen(),
         );
       case "/TemplateDetailScreen":
+        final arguments = settings.arguments;
+
+        String? category;
+
+        if (arguments is Map<String, dynamic>) {
+          category = arguments["category"]?.toString();
+        }
+
+        debugPrint("📂 TemplateDetailScreen category: $category");
+
         return MaterialPageRoute(
-          builder: (context) => const TemplateDetailScreen(),
+          settings: settings,
+          builder: (context) =>
+              TemplateDetailScreen(categorySlug: category ?? ""),
         );
 
       /* case "/EditorScreen":
@@ -237,9 +250,23 @@ class RouteGenerator {
       case "/ManagePlanScreen":
         return MaterialPageRoute(
           builder: (context) => const ManagePlanScreen(),
-        );  case "/PlanUsageScreen":
+        );
+      case "/PlanUsageScreen":
+        return MaterialPageRoute(builder: (context) => const PlanUsageScreen());
+      case "/TemplateListScreen":
+        final arguments = settings.arguments;
+
+        String? type;
+
+        if (arguments is Map<String, dynamic>) {
+          type = arguments["type"]?.toString();
+        }
+
+        debugPrint("🎉 TemplateListScreen route type: $type");
+
         return MaterialPageRoute(
-          builder: (context) => const PlanUsageScreen(),
+          settings: settings,
+          builder: (context) => TemplateListScreen(type: type),
         );
     }
     return null;
