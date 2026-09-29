@@ -81,7 +81,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                       if (monthlyBilling != null)
                         Expanded(
                           child: _buildPricingCard(
-                            amount: '₹${monthlyBilling.price}',
+                            amount: '₹${monthlyBilling.discountedPrice}',
                             period: '/month',
                             isSelected: isMonthlySelected,
                             onTap: () =>
@@ -93,7 +93,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                       if (annualBilling != null)
                         Expanded(
                           child: _buildPricingCard(
-                            amount: '₹${annualBilling.price}',
+                            amount: '₹${annualBilling.discountedPrice}',
                             period: '/year',
                             isSelected: !isMonthlySelected,
                             onTap: () =>

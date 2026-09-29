@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../Api Model/plans_type.dart';
 import '../../component/custom_widget.dart';
 import '../../network/provider/plan_provider.dart';
@@ -14,398 +15,680 @@ class PlansAndPricingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => PlanProvider()..fetchPlans(),
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: Column(
-            children: [
-              // Top Bar
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    AppText(
-                      "Plans & Pricing",
+      create: (_) {
+        final provider = PlanProvider();
+
+        // Load plans
+        provider.fetchPlans();
+
+        // Check currently active subscription
+        provider.fetchMySubscription();
+
+        return provider;
+      },
+      child: const _PlansAndPricingBody(),
+    );
+  }
+}
+
+class _PlansAndPricingBody extends StatelessWidget {
+  const _PlansAndPricingBody();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ==========================================================
+            // TOP BAR
+            // ==========================================================
+
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: 16.w,
+                vertical: 12.h,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  AppText(
+                    "Plans & Pricing",
+                    style: TextStyle(
+                      color: AppColors.textBlack,
+                      fontSize: AppFontSize.fontSize17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+
+                  InkWell(
+                    onTap: () async {
+                      final prefs =
+                      await SharedPreferences.getInstance();
+
+                      await prefs.setBool(
+                        'has_seen_plans',
+                        true,
+                      );
+
+                      if (!context.mounted) return;
+
+                      Navigator.pushNamed(
+                        context,
+                        "/AccountTypeScreen",
+                      );
+                    },
+                    child: AppText(
+                      "SKIP",
                       style: TextStyle(
-                        color: AppColors.textBlack,
                         fontSize: AppFontSize.fontSize17,
                         fontWeight: FontWeight.w600,
+                        color: AppColors.primaryColor,
                       ),
                     ),
-                    InkWell(
-                      onTap: () async {
-                        final prefs = await SharedPreferences.getInstance();
-                        await prefs.setBool('has_seen_plans', true);
+                  ),
+                ],
+              ),
+            ),
 
-                        if (!context.mounted) return;
-                        Navigator.pushNamed(context, "/AccountTypeScreen");
-                      },
+            // ==========================================================
+            // BODY
+            // ==========================================================
+
+            Expanded(
+              child: Consumer<PlanProvider>(
+                builder: (context, provider, child) {
+                  // --------------------------------------------------
+                  // LOADING
+                  // --------------------------------------------------
+
+                  if (provider.isLoadingPlans ||
+                      provider.isLoadingSubscription) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+
+                  // --------------------------------------------------
+                  // PLANS
+                  // --------------------------------------------------
+
+                  final plansList =
+                      provider.plansData?.data ?? [];
+
+                  if (plansList.isEmpty) {
+                    return Center(
                       child: AppText(
-                        "SKIP",
+                        provider.plansErrorMessage ??
+                            "No plans available",
                         style: TextStyle(
-                          fontSize: AppFontSize.fontSize17,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryColor,
+                          fontSize: 14.sp,
+                          color: Colors.grey,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              Expanded(
-                child: Consumer<PlanProvider>(
-                  builder: (context, provider, child) {
-                    if (provider.isLoadingPlans) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    final plansList = provider.plansData?.data ?? [];
-
-                    return SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      child: Column(
-                        children: [
-                          SizedBox(
-                            height: 170.h,
-                            width: double.infinity,
-                            child: Image.asset(
-                              "assets/images/pricelogo.png",
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          SizedBox(height: 16.h),
-                          Stack(
-                            children: [
-                              // 1. பின்னணியில் உள்ள இமேஜ் (Background Image)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(16.r),
-                                child: Image.asset(
-                                  "assets/images/offers.png",
-                                  width: double.infinity,
-                                  height: 150
-                                      .h, // உங்களது இமேஜ் உயரத்திற்கேற்ப மாற்றிக் கொள்ளலாம்
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-
-                              // 2. இமேஜின் மீது தெரிய வேண்டிய டெக்ஸ்ட்கள் மற்றும் பட்டன்
-                              Padding(
-                                padding: EdgeInsets.all(16.r),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    AppText(
-                                      "START YOUR\n7-DAY FREE TRIAL",
-                                      style: TextStyle(
-                                        fontSize: AppFontSize.fontSize21,
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF1E293B),
-                                        height: 1.15,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4.h),
-                                    AppText(
-                                      "Get full access to all Premium features.",
-                                      style: TextStyle(
-                                        fontSize: 11.sp,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    SizedBox(height: 6.h),
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.baseline,
-                                      textBaseline: TextBaseline.alphabetic,
-                                      children: [
-                                        AppText(
-                                          "Just Pay ",
-                                          style: TextStyle(
-                                            fontSize: 12.sp,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                        AppText(
-                                          "₹10",
-                                          style: TextStyle(
-                                            fontSize: AppFontSize.fontSize21,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 8.h),
-
-                                    // Start Free Trial பட்டன்
-                                    SizedBox(
-                                      height: 34.h,
-                                      child: ElevatedButton(
-                                        onPressed: () {
-                                          // Action here
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(
-                                            0xFF38BDF8,
-                                          ),
-                                          elevation: 0,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8.r,
-                                            ),
-                                          ),
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 14.w,
-                                          ),
-                                        ),
-                                        child: AppText(
-                                          "START FREE TRIAL",
-                                          style: TextStyle(
-                                            color: AppColors.deepBlue,
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 11.sp,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 16.h),
-
-                          // Dynamic Plans List Builder
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: plansList.length,
-                            itemBuilder: (context, index) {
-                              final plan = plansList[index];
-                              return _buildDynamicPricingCard(
-                                plan,
-                                index,
-                                provider,
-                                context,
-                              );
-                            },
-                          ),
-
-                          SizedBox(height: 16.h),
-
-                          AppText(
-                            'Secure Payment',
-                            style: TextStyle(
-                              color: AppColors.normalButtonColor,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14.sp,
-                            ),
-                          ),
-
-                          SizedBox(height: 4.h),
-                          AppText(
-                            'Cancel anytime. Refund policy applies.',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 14.sp,
-                            ),
-                          ),
-                          SizedBox(height: 4.h),
-                          AppText(
-                            'Continue with Free Plan',
-                            style: TextStyle(
-                              color: AppColors.normalButtonColor,
-                              fontSize: 16.sp,
-                            ),
-                          ),
-                          SizedBox(height: 20.h),
-                        ],
-                      ),
                     );
-                  },
-                ),
+                  }
+
+                  // --------------------------------------------------
+                  // ACTIVE PLAN DEBUG
+                  // --------------------------------------------------
+
+                  debugPrint(
+                    "================================",
+                  );
+
+                  debugPrint(
+                    "ACTIVE PLAN UID: "
+                        "${provider.activePlanUid}",
+                  );
+
+                  debugPrint(
+                    "ACTIVE PLAN NAME: "
+                        "${provider.activePlanName}",
+                  );
+
+                  debugPrint(
+                    "================================",
+                  );
+
+                  // --------------------------------------------------
+                  // CONTENT
+                  // --------------------------------------------------
+
+                  return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                    ),
+                    child: Column(
+                      children: [
+                        // ==================================================
+                        // PRICE LOGO
+                        // ==================================================
+
+                        SizedBox(
+                          height: 170.h,
+                          width: double.infinity,
+                          child: Image.asset(
+                            "assets/images/pricelogo.png",
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+
+                        SizedBox(height: 16.h),
+
+                        // ==================================================
+                        // FREE TRIAL CARD
+                        // ==================================================
+
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius:
+                              BorderRadius.circular(16.r),
+                              child: Image.asset(
+                                "assets/images/offers.png",
+                                width: double.infinity,
+                                height: 150.h,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+
+                            Padding(
+                              padding: EdgeInsets.all(16.r),
+                              child: Column(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: [
+                                  AppText(
+                                    "START YOUR\n7-DAY FREE TRIAL",
+                                    style: TextStyle(
+                                      fontSize:
+                                      AppFontSize.fontSize21,
+                                      fontWeight:
+                                      FontWeight.bold,
+                                      color:
+                                      const Color(0xFF1E293B),
+                                      height: 1.15,
+                                    ),
+                                  ),
+
+                                  SizedBox(height: 4.h),
+
+                                  AppText(
+                                    "Get full access to all Premium features.",
+                                    style: TextStyle(
+                                      fontSize: 11.sp,
+                                      fontWeight:
+                                      FontWeight.w500,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+
+                                  SizedBox(height: 6.h),
+
+                                  Row(
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.baseline,
+                                    textBaseline:
+                                    TextBaseline.alphabetic,
+                                    children: [
+                                      AppText(
+                                        "Just Pay ",
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          fontWeight:
+                                          FontWeight.w700,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      AppText(
+                                        "₹10",
+                                        style: TextStyle(
+                                          fontSize:
+                                          AppFontSize.fontSize21,
+                                          fontWeight:
+                                          FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  SizedBox(height: 8.h),
+
+                                  SizedBox(
+                                    height: 34.h,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        // Start free trial
+                                      },
+                                      style:
+                                      ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                        const Color(
+                                          0xFF38BDF8,
+                                        ),
+                                        elevation: 0,
+                                        shape:
+                                        RoundedRectangleBorder(
+                                          borderRadius:
+                                          BorderRadius.circular(
+                                            8.r,
+                                          ),
+                                        ),
+                                        padding:
+                                        EdgeInsets.symmetric(
+                                          horizontal: 14.w,
+                                        ),
+                                      ),
+                                      child: AppText(
+                                        "START FREE TRIAL",
+                                        style: TextStyle(
+                                          color:
+                                          AppColors.deepBlue,
+                                          fontWeight:
+                                          FontWeight.w900,
+                                          fontSize: 11.sp,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        SizedBox(height: 16.h),
+
+                        // ==================================================
+                        // PLANS
+                        // ==================================================
+
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics:
+                          const NeverScrollableScrollPhysics(),
+                          itemCount: plansList.length,
+                          itemBuilder: (context, index) {
+                            final plan = plansList[index];
+
+                            return _buildDynamicPricingCard(
+                              context: context,
+                              plan: plan,
+                              index: index,
+                              provider: provider,
+                            );
+                          },
+                        ),
+
+                        SizedBox(height: 16.h),
+
+                        // ==================================================
+                        // FOOTER
+                        // ==================================================
+
+                        AppText(
+                          'Secure Payment',
+                          style: TextStyle(
+                            color:
+                            AppColors.normalButtonColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14.sp,
+                          ),
+                        ),
+
+                        SizedBox(height: 4.h),
+
+                        AppText(
+                          'Cancel anytime. Refund policy applies.',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14.sp,
+                          ),
+                        ),
+
+                        SizedBox(height: 4.h),
+
+                        AppText(
+                          'Continue with Free Plan',
+                          style: TextStyle(
+                            color:
+                            AppColors.normalButtonColor,
+                            fontSize: 16.sp,
+                          ),
+                        ),
+
+                        SizedBox(height: 20.h),
+                      ],
+                    ),
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildDynamicPricingCard(
-    Plan plan,
-    int index,
-    PlanProvider provider,
-    BuildContext context,
-  ) {
+  // ================================================================
+  // PLAN CARD
+  // ================================================================
+
+  Widget _buildDynamicPricingCard({
+    required BuildContext context,
+    required Plan plan,
+    required int index,
+    required PlanProvider provider,
+  }) {
+    // ==============================================================
+    // ACTIVE PLAN CHECK
+    // ==============================================================
+
+    final bool isActivePlan =
+    provider.isActivePlan(plan);
+
+    // ==============================================================
+
     final billing = plan.planBillingOptions.isNotEmpty
         ? plan.planBillingOptions.first
         : null;
 
-    final String actualPrice = billing?.price?.toString() ?? "0";
+    final String actualPrice =
+        billing?.price?.toString() ?? "0";
 
-    final String? discountedPrice = billing?.discountedPrice?.toString();
+    final String? discountedPrice =
+    billing?.discountedPrice?.toString();
 
     final bool hasDiscount =
         discountedPrice != null &&
-        discountedPrice.isNotEmpty &&
-        discountedPrice != "null" &&
-        discountedPrice != "0" &&
-        discountedPrice != actualPrice;
+            discountedPrice.isNotEmpty &&
+            discountedPrice != "null" &&
+            discountedPrice != "0" &&
+            discountedPrice != actualPrice;
 
     String formatPrice(String value) {
       if (value.contains(".")) {
         return value.split(".").first;
       }
+
       return value;
     }
 
-    final String actualPriceText = "₹${formatPrice(actualPrice)}";
+    final String actualPriceText =
+        "₹${formatPrice(actualPrice)}";
 
-    final String discountPriceText = hasDiscount
+    final String discountPriceText =
+    hasDiscount
         ? "₹${formatPrice(discountedPrice)}"
         : actualPriceText;
 
-    final String periodText = billing == null
+    final String periodText =
+    billing == null
         ? "/month"
         : "/${billing.billingCycle}";
 
-    final String discountLabel = billing?.discountLabel?.toString() ?? "";
+    final String discountLabel =
+        billing?.discountLabel?.toString() ?? "";
+
+    // ==============================================================
+    // CARD DESIGN
+    // ==============================================================
 
     Color cardBgColor;
     Color borderColor;
     Color buttonColor;
+
     String buttonText;
 
     String staticDescription = "";
     String staticIncludes = "";
 
     if (index == 0) {
-      cardBgColor = const Color(0xFFFCFFF6);
-      borderColor = const Color(0xFFBBE5ED);
-      buttonColor = const Color(0xFF43CBD9);
-      buttonText = "START BASIC";
-      staticDescription = "Perfect for exploring MMB before upgrading";
+      cardBgColor =
+      const Color(0xFFFCFFF6);
+
+      borderColor =
+      const Color(0xFFBBE5ED);
+
+      buttonColor =
+      const Color(0xFF43CBD9);
+
+      buttonText =
+      "START BASIC";
+
+      staticDescription =
+      "Perfect for exploring MMB before upgrading";
+
       staticIncludes =
-          "10 Business Templates | 2 Video Templates | 10 AI Credits | Watermarked Downloads";
+      "10 Business Templates | "
+          "2 Video Templates | "
+          "10 AI Credits | "
+          "Watermarked Downloads";
     } else if (index == 1) {
-      cardBgColor = const Color(0xFFFCFFF6);
-      borderColor = const Color(0xFFD4ED91);
-      buttonColor = const Color(0xFF8BC34A);
-      buttonText = "START PREMIUM";
-      staticDescription = "Perfect for individuals & small businesses.";
-      staticIncludes = "500 Templates | 200 Videos | 2 AI Logo Credits";
+      cardBgColor =
+      const Color(0xFFFCFFF6);
+
+      borderColor =
+      const Color(0xFFD4ED91);
+
+      buttonColor =
+      const Color(0xFF8BC34A);
+
+      buttonText =
+      "START PREMIUM";
+
+      staticDescription =
+      "Perfect for individuals & small businesses.";
+
+      staticIncludes =
+      "500 Templates | "
+          "200 Videos | "
+          "2 AI Logo Credits";
     } else if (index == 2) {
-      cardBgColor = const Color(0xFFFFECEE);
-      borderColor = const Color(0xFFFFCDD2);
-      buttonColor = const Color(0xFFFF6FB5);
-      buttonText = "START ELITE";
-      staticDescription = "Perfect for growing businesses.";
-      staticIncludes = "2000 Templates | 500 Videos | 5 AI Logo Credits";
+      cardBgColor =
+      const Color(0xFFFFECEE);
+
+      borderColor =
+      const Color(0xFFFFCDD2);
+
+      buttonColor =
+      const Color(0xFFFF6FB5);
+
+      buttonText =
+      "START ELITE";
+
+      staticDescription =
+      "Perfect for growing businesses.";
+
+      staticIncludes =
+      "2000 Templates | "
+          "500 Videos | "
+          "5 AI Logo Credits";
     } else {
-      cardBgColor = const Color(0xFFF3E8FF);
-      borderColor = const Color(0xFFD8B4FE);
-      buttonColor = const Color(0xFFA78BFA);
-      buttonText = "START ELITE";
-      staticDescription = "Perfect for individuals & small businesses.";
-      staticIncludes = "2000 Templates | 1000 Videos | 10 AI Logo Credits";
+      cardBgColor =
+      const Color(0xFFF3E8FF);
+
+      borderColor =
+      const Color(0xFFD8B4FE);
+
+      buttonColor =
+      const Color(0xFFA78BFA);
+
+      buttonText =
+      "START ELITE";
+
+      staticDescription =
+      "Perfect for individuals & small businesses.";
+
+      staticIncludes =
+      "2000 Templates | "
+          "1000 Videos | "
+          "10 AI Logo Credits";
     }
 
+    // ==============================================================
+    // CARD
+    // ==============================================================
+
     return Container(
-      margin: EdgeInsets.only(bottom: 15.h),
+      margin: EdgeInsets.only(
+        bottom: 15.h,
+      ),
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: cardBgColor,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: borderColor, width: 1.5),
+        borderRadius:
+        BorderRadius.circular(16.r),
+        border: Border.all(
+          color: isActivePlan
+              ? Colors.green
+              : borderColor,
+          width: isActivePlan
+              ? 2
+              : 1.5,
+        ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
+          // ==========================================================
+          // PLAN NAME + BUTTON
+          // ==========================================================
+
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment:
+            MainAxisAlignment.spaceBetween,
+            crossAxisAlignment:
+            CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
                       children: [
-                        AppText(
-                          plan.name ?? "Plan",
-                          style: TextStyle(
-                            fontSize: 17.sp,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.black,
+                        // PLAN NAME
+
+                        Expanded(
+                          child: AppText(
+                            plan.name ?? "Plan",
+                            style: TextStyle(
+                              fontSize: 17.sp,
+                              fontWeight:
+                              FontWeight.w900,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
-                        ElevatedButton(
-                          onPressed: () {
 
-                              Navigator.pushNamed(
-                                context,
-                                '/PlanDetailScreen',
-                                arguments: plan,
-                              );
+                        SizedBox(width: 8.w),
+
+                        // ==================================================
+                        // BUTTON
+                        // ==================================================
+
+                        ElevatedButton(
+                          onPressed: isActivePlan
+                              ? null
+                              : () {
+                            Navigator.pushNamed(
+                              context,
+                              '/PlanDetailScreen',
+                              arguments: plan,
+                            );
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: buttonColor,
+                          style:
+                          ElevatedButton.styleFrom(
+                            backgroundColor:
+                            isActivePlan
+                                ? Colors.green
+                                : buttonColor,
+                            disabledBackgroundColor:
+                            Colors.green,
                             elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12.r),
+                            shape:
+                            RoundedRectangleBorder(
+                              borderRadius:
+                              BorderRadius.circular(
+                                12.r,
+                              ),
                             ),
-                            padding: EdgeInsets.symmetric(
+                            padding:
+                            EdgeInsets.symmetric(
                               horizontal: 14.w,
                               vertical: 8.h,
                             ),
                           ),
                           child: AppText(
-                            buttonText,
-                            textAlign: TextAlign.center,
+                            isActivePlan
+                                ? "ACTIVE PLAN"
+                                : buttonText,
+                            textAlign:
+                            TextAlign.center,
                             style: TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: index == 0 ? 10.sp : 11.sp,
+                              fontWeight:
+                              FontWeight.w900,
+                              fontSize:
+                              index == 0
+                                  ? 10.sp
+                                  : 11.sp,
                               height: 1.1,
                             ),
                           ),
                         ),
                       ],
                     ),
+
                     SizedBox(height: 2.h),
+
+                    // ==================================================
+                    // PRICE
+                    // ==================================================
+
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
+                      crossAxisAlignment:
+                      CrossAxisAlignment.baseline,
+                      textBaseline:
+                      TextBaseline.alphabetic,
                       children: [
-                        // Actual price
                         if (hasDiscount)
                           Padding(
-                            padding: EdgeInsets.only(right: 6.w),
+                            padding:
+                            EdgeInsets.only(
+                              right: 6.w,
+                            ),
                             child: AppText(
                               actualPriceText,
                               style: TextStyle(
                                 fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade500,
-                                decoration: TextDecoration.lineThrough,
-                                decorationThickness: 1.5,
+                                fontWeight:
+                                FontWeight.w600,
+                                color:
+                                Colors.grey.shade500,
+                                decoration:
+                                TextDecoration
+                                    .lineThrough,
+                                decorationThickness:
+                                1.5,
                               ),
                             ),
                           ),
 
-                        // Discounted price / Normal price
                         AppText(
                           discountPriceText,
                           style: TextStyle(
                             fontSize: 26.sp,
-                            fontWeight: FontWeight.w900,
+                            fontWeight:
+                            FontWeight.w900,
                             color: Colors.black,
                           ),
                         ),
@@ -416,20 +699,26 @@ class PlansAndPricingScreen extends StatelessWidget {
                           periodText,
                           style: TextStyle(
                             fontSize: 13.sp,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black54,
+                            fontWeight:
+                            FontWeight.w700,
+                            color:
+                            Colors.black54,
                           ),
                         ),
 
-                        // Save percentage
-                        if (hasDiscount && discountLabel.isNotEmpty)
+                        if (hasDiscount &&
+                            discountLabel.isNotEmpty)
                           Padding(
-                            padding: EdgeInsets.only(left: 5.w),
+                            padding:
+                            EdgeInsets.only(
+                              left: 5.w,
+                            ),
                             child: AppText(
                               "($discountLabel)",
                               style: TextStyle(
                                 fontSize: 10.sp,
-                                fontWeight: FontWeight.w600,
+                                fontWeight:
+                                FontWeight.w600,
                                 color: Colors.red,
                               ),
                             ),
@@ -441,67 +730,95 @@ class PlansAndPricingScreen extends StatelessWidget {
               ),
             ],
           ),
+
           SizedBox(height: 8.h),
 
-          // 🚀 Static Description Text
+          // ==========================================================
+          // DESCRIPTION
+          // ==========================================================
+
           AppText(
             staticDescription,
             style: TextStyle(
               fontSize: 12.sp,
-              fontWeight: FontWeight.w500,
+              fontWeight:
+              FontWeight.w500,
               color: Colors.black87,
               height: 1.3,
             ),
           ),
+
           SizedBox(height: 4.h),
 
-          // 🚀 Static Includes Text
+          // ==========================================================
+          // INCLUDES
+          // ==========================================================
+
           RichText(
             text: TextSpan(
-              style: TextStyle(fontSize: 11.5.sp, color: Colors.black),
+              style: TextStyle(
+                fontSize: 11.5.sp,
+                color: Colors.black,
+              ),
               children: [
                 const TextSpan(
                   text: "Includes:\n",
-                  style: TextStyle(fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    fontWeight:
+                    FontWeight.w800,
+                  ),
                 ),
                 TextSpan(
                   text: staticIncludes,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontWeight:
+                    FontWeight.w600,
+                  ),
                 ),
               ],
             ),
           ),
 
           SizedBox(height: 8.h),
-            InkWell(
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  '/PlanDetailScreen',
-                  arguments: plan,
-                );
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppText(
-                    "VIEW FEATURES",
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.green.shade700,
-                      letterSpacing: 0.5,
-                    ),
+
+          // ==========================================================
+          // VIEW FEATURES
+          // ==========================================================
+
+          InkWell(
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                '/PlanDetailScreen',
+                arguments: plan,
+              );
+            },
+            child: Row(
+              mainAxisSize:
+              MainAxisSize.min,
+              children: [
+                AppText(
+                  "VIEW FEATURES",
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight:
+                    FontWeight.w800,
+                    color:
+                    Colors.green.shade700,
+                    letterSpacing: 0.5,
                   ),
-                  SizedBox(width: 4.w),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 12.sp,
-                    color: Colors.green.shade700,
-                  ),
-                ],
-              ),
+                ),
+                SizedBox(width: 4.w),
+                Icon(
+                  Icons
+                      .arrow_forward_rounded,
+                  size: 12.sp,
+                  color:
+                  Colors.green.shade700,
+                ),
+              ],
             ),
+          ),
         ],
       ),
     );

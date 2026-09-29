@@ -20,14 +20,26 @@ class PlanRepository {
     );
   }
 
-  Future<ApiResult<dynamic>> subscription() {
+  Future<ApiResult<dynamic>> subscription({
+    required int planBillingOptionId,
+  }) {
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.subscription,
         method: ApiMethod.post,
         body: {
-          "plan_billing_option_id": 3,
+          "plan_billing_option_id": planBillingOptionId,
         },
+      ),
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResult<dynamic>> getMySubscription() {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: '${ApiEndpoints.subscription}/me',
+        method: ApiMethod.get,
       ),
       fromJson: (json) => json,
     );
