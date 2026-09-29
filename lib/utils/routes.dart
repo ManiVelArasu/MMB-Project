@@ -122,7 +122,7 @@ class RouteGenerator {
         );
       case "/MyDownloadsScreen":
         return MaterialPageRoute(
-          builder: (context) => const MyDownloadsScreen(),
+          builder: (context) => const MyDownloadScreen(),
         );
       case "/SmCalendarScreen":
         return MaterialPageRoute(
@@ -154,11 +154,54 @@ class RouteGenerator {
           builder: (context) => const EditorScreen(),
         ); */
       case "/TemplateEditScreen":
-        final String resizeSize =
-            settings.arguments as String? ?? "Post Square (1:1)";
+        final args = settings.arguments;
+
+        String? resizeSize;
+        String? templateUid;
+        String? projectUid;
+        String? projectName;
+
+        double? canvasWidth;
+        double? canvasHeight;
+
+        if (args is String) {
+          // Old route support
+          resizeSize = args;
+        } else if (args is Map) {
+          resizeSize = args["resizeSize"] ?? args["resize_size"];
+
+          templateUid =
+              args["templateUid"] ?? args["template_uid"] ?? args["uid"];
+
+          projectUid = args["projectUid"] ?? args["project_uid"];
+
+          projectName =
+              args["projectName"] ?? args["project_name"] ?? args["name"];
+
+          final widthValue =
+              args["canvasWidth"] ?? args["canvas_width"] ?? args["width"];
+
+          final heightValue =
+              args["canvasHeight"] ?? args["canvas_height"] ?? args["height"];
+
+          canvasWidth = double.tryParse(widthValue?.toString() ?? "");
+
+          canvasHeight = double.tryParse(heightValue?.toString() ?? "");
+        }
+
         return MaterialPageRoute(
           settings: settings,
-          builder: (context) => const TemplateEditScreen(),
+          builder: (context) {
+            return TemplateEditScreen(
+              resizeSize: resizeSize ?? "Post Square (1:1)",
+
+              templateUid: templateUid,
+
+              canvasWidth: canvasWidth,
+
+              canvasHeight: canvasHeight,
+            );
+          },
         );
       case "/SocialCalendarFormScreen":
         return MaterialPageRoute(

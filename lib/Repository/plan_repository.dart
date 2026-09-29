@@ -19,4 +19,17 @@ class PlanRepository {
       fromJson: (json) => PlanResponse.fromJson(json),
     );
   }
+
+  Future<ApiResult<dynamic>> subscription() {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.subscription,
+        method: ApiMethod.post,
+        body: {
+          "plan_billing_option_id": 3,
+        },
+      ),
+      fromJson: (json) => json,
+    );
+  }
 }

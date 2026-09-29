@@ -2867,8 +2867,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     // values such as -9.09e-13 returned by Fabric.
     final atOrigin = left.abs() <= 2.0 && top.abs() <= 2.0;
     final coversCanvas =
-        (renderedWidth - cw).abs() <= 4.0 &&
-            (renderedHeight - ch).abs() <= 4.0;
+        (renderedWidth - cw).abs() <= 4.0 && (renderedHeight - ch).abs() <= 4.0;
 
     return atOrigin && coversCanvas;
   }

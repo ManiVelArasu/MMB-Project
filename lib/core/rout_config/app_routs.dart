@@ -95,7 +95,7 @@ class AppRouter {
         return _page(const BusinessProfileScreen(), settings: settings);
 
       case '/MyDownloadsScreen':
-        return _page(const MyDownloadsScreen(), settings: settings);
+        return _page(const MyDownloadScreen(), settings: settings);
 
       case '/SmCalendarScreen':
         return _page(const SmCalendarScreen(), settings: settings);

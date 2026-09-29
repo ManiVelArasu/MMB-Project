@@ -740,16 +740,8 @@ class HomeScreen extends StatelessWidget {
               return InkWell(
                 borderRadius: BorderRadius.circular(8.r),
 
-                onTap: () async {
-                  // ==========================================
-                  // CLOSE DIALOG
-                  // ==========================================
-
+                onTap: () {
                   Navigator.pop(dialogContext);
-
-                  // ==========================================
-                  // CANVAS SIZE
-                  // ==========================================
 
                   double canvasWidth = 1080;
                   double canvasHeight = 1080;
@@ -759,88 +751,28 @@ class HomeScreen extends StatelessWidget {
                       canvasWidth = 1080;
                       canvasHeight = 1080;
                       break;
-
                     case "Post Portrait (4:5)":
                       canvasWidth = 1080;
                       canvasHeight = 1350;
                       break;
-
                     case "Story / Reel (9:16)":
                       canvasWidth = 1080;
                       canvasHeight = 1920;
                       break;
-
                     case "Post Horizontal (16:9)":
                       canvasWidth = 1920;
                       canvasHeight = 1080;
                       break;
                   }
 
-                  final projectProvider = context.read<ProjectProvider>();
-
-                  final bool success = await projectProvider.createProject(
-                    name: null,
-                    content: "{}",
-                  );
-
-                  // ==========================================
-                  // CONTEXT CHECK
-                  // ==========================================
-
-                  if (!context.mounted) {
-                    return;
-                  }
-
-                  // ==========================================
-                  // API FAILED
-                  // ==========================================
-
-                  if (!success) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          projectProvider.errorMessage ??
-                              "Unable to create project",
-                        ),
-                      ),
-                    );
-
-                    return;
-                  }
-
-                  // ==========================================
-                  // API SUCCESS
-                  // ==========================================
-
-                  debugPrint("================================");
-
-                  debugPrint("✅ OPEN TEMPLATE EDIT SCREEN");
-
-                  debugPrint(
-                    "Project ID: "
-                    "${projectProvider.projectId}",
-                  );
-
-                  debugPrint(
-                    "Project UID: "
-                    "${projectProvider.projectUid}",
-                  );
-
-                  debugPrint(
-                    "Project Name: "
-                    "${projectProvider.projectName}",
-                  );
-
-                  debugPrint("================================");
-
+                  // Project creation is intentionally handled inside
+                  // TemplateEditScreen so the editor owns the complete flow.
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => TemplateEditScreen(
                         canvasWidth: canvasWidth,
-
                         canvasHeight: canvasHeight,
-
                         resizeSize: size,
                       ),
                     ),
@@ -1079,6 +1011,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildSpecialDayTemplateCard(BuildContext context, Template template) {
+    print('asdasdsadsadasd');
     final key = template.thumbnailS3Key?.trim() ?? '';
 
     final imageUrl = key.isEmpty
@@ -1090,14 +1023,13 @@ class HomeScreen extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
 
-      onTap: () async {
+      onTap: () {
         final templateUid = template.uid?.trim() ?? '';
 
         if (templateUid.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Template UID not available')),
           );
-
           return;
         }
 
@@ -1105,14 +1037,8 @@ class HomeScreen extends StatelessWidget {
           _showPremiumTemplateDialog(context, template);
           return;
         }
-        final projectProvider = context.read<ProjectProvider>();
-        final bool success = await projectProvider.createProject(
-          name: template.name,
 
-          // New project content empty
-          content: template.content,
-        );
-
+        // Template API + Project API are handled by TemplateEditScreen.
         Navigator.push(
           context,
           MaterialPageRoute(

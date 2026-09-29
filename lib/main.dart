@@ -6,6 +6,8 @@ import 'package:mmb_app/theme/app_theme.dart';
 import 'package:mmb_app/utils/routes.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import 'Repository/refresh_token.dart';
 import 'core/api/api_endpoints.dart';
@@ -19,7 +21,9 @@ import 'network/provider/common_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  if (WebViewPlatform.instance == null) {
+    WebViewPlatform.instance = AndroidWebViewPlatform();
+  }
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.manual,
     overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],

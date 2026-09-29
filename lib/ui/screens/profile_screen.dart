@@ -480,7 +480,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               iconAsset: "assets/images/my_plan.png",
                               isDark: isDark,
                               onTap: () {
-                                Navigator.pushNamed(context, "/PlansAndPricingScreen");
+                                Navigator.pushNamed(
+                                  context,
+                                  "/PlansAndPricingScreen",
+                                );
                               },
                             ),
                             _buildSettingsTile(

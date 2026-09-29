@@ -1,70 +1,64 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
-enum DownloadFilter { all, image, video, postSize }
-
-class DownloadItemModel {
-  final String id;
-  final String thumbnailUrl;
-  final String? videoUrl;
-  final bool isVideo;
-
-  DownloadItemModel({
-    required this.id,
-    required this.thumbnailUrl,
-    this.videoUrl,
-    required this.isVideo,
-  });
-}
+import 'prpject_provider.dart';
 
 class MyDownloadsProvider extends ChangeNotifier {
-  DownloadFilter _selectedFilter = DownloadFilter.all;
+  // =====================================================
+  // PROJECT PROVIDER
+  // =====================================================
+
+  final ProjectProvider projectProvider = ProjectProvider();
+
+  // =====================================================
+  // FILTER
+  // =====================================================
+
+  DownloadFilter _selectedFilter = DownloadFilter.image;
+
   DownloadFilter get selectedFilter => _selectedFilter;
 
-  void setFilter(DownloadFilter filter) {
-    if (_selectedFilter == filter) {
-      _selectedFilter = DownloadFilter.all;
-    } else {
-      _selectedFilter = filter;
-    }
+  // =====================================================
+  // PROJECT DATA
+  // =====================================================
+
+  bool get isLoading => projectProvider.isLoadingPlans;
+
+  dynamic get projects {
+    return projectProvider.plansData?.data ?? [];
+  }
+
+  // =====================================================
+  // GET PROJECT LIST
+  // =====================================================
+
+  Future<void> fetchProjects() async {
+    await projectProvider.fetchProject();
+
     notifyListeners();
   }
-  final List<DownloadItemModel> _downloads = [
-    DownloadItemModel(
-      id: "1",
-      thumbnailUrl: "assets/images/thumbnail1.png",
-      videoUrl: "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
-      isVideo: true,
-    ),
-    DownloadItemModel(
-      id: "2",
-      thumbnailUrl: "assets/images/thumbnail1.png",
-      videoUrl: "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
-      isVideo: true,
-    ),
-    DownloadItemModel(
-      id: "3",
-      thumbnailUrl: "assets/images/thumbnail1.png",
-      isVideo: false,
-    ),
-    DownloadItemModel(
-      id: "4",
-      thumbnailUrl: "assets/images/thumbnail1.png",
-      videoUrl: "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
-      isVideo: true,
-    ),
-    DownloadItemModel(
-      id: "5",
-      thumbnailUrl: "assets/images/thumbnail1.png",
-      isVideo: false,
-    ),
-  ];
 
-  List<DownloadItemModel> get downloads {
-    if (_selectedFilter == DownloadFilter.image) {
-      return _downloads.where((item) => !item.isVideo).toList();
-    } else if (_selectedFilter == DownloadFilter.video) {
-      return _downloads.where((item) => item.isVideo).toList();
-    }
-    return _downloads;
+  // =====================================================
+  // FILTER
+  // =====================================================
+
+  void setFilter(DownloadFilter filter) {
+    _selectedFilter = filter;
+    notifyListeners();
   }
+
+  @override
+  void dispose() {
+    projectProvider.dispose();
+    super.dispose();
+  }
+}
+
+// =====================================================
+// DOWNLOAD FILTER
+// =====================================================
+
+enum DownloadFilter {
+  image,
+  video,
+  postSize,
 }

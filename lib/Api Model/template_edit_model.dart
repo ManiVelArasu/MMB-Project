@@ -11,17 +11,17 @@ String templateEditToJson(TemplateEdit data) => json.encode(data.toJson());
 
 class TemplateEdit {
   final bool success;
-  final Data data;
+  final TemplateListEdit data;
 
   TemplateEdit({required this.success, required this.data});
 
   factory TemplateEdit.fromJson(Map<String, dynamic> json) =>
-      TemplateEdit(success: json["success"], data: Data.fromJson(json["data"]));
+      TemplateEdit(success: json["success"], data: TemplateListEdit.fromJson(json["data"]));
 
   Map<String, dynamic> toJson() => {"success": success, "data": data.toJson()};
 }
 
-class Data {
+class TemplateListEdit {
   final String? id;
   final String? uid;
   final String? categoryId;
@@ -41,7 +41,7 @@ class Data {
   final DateTime? updatedAt;
   final bool isLocked;
 
-  Data({
+  TemplateListEdit({
     required this.id,
     required this.uid,
     required this.categoryId,
@@ -62,7 +62,7 @@ class Data {
     required this.isLocked,
   });
 
-  factory Data.fromJson(Map<String, dynamic> json) => Data(
+  factory TemplateListEdit.fromJson(Map<String, dynamic> json) => TemplateListEdit(
     id: json["id"]?.toString(),
     uid: json["uid"]?.toString(),
     categoryId: json["category_id"]?.toString(),

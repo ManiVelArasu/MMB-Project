@@ -1,13 +1,6 @@
-// ============================================================
-// API ENDPOINTS
-// Single source of truth for every endpoint path in the app.
-// Usage: ApiEndpoints.login, ApiEndpoints.getMember(1), etc.
-// ============================================================
-
 class ApiEndpoints {
   ApiEndpoints._(); // no instances
 
-  // ── Base URL Config ────────────────────────────────────────
   static const String baseUrl =
       'https://lightslategray-llama-976293.hostingersite.com/api/v1';
 
@@ -70,5 +63,6 @@ class ApiEndpoints {
   static String notificationReadOne(String notificationUid) =>
       '/notifications/${notificationUid}/read';
 
-  static const String project = '/project';
+  static const String project = '/projects';
+  static const String subscription = '/subscriptions';
 }
