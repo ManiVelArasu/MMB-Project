@@ -99,6 +99,12 @@ class _MyDownloadScreenState extends State<MyDownloadScreen> {
 
     return GestureDetector(
       onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TemplateEditScreen(templateUid: project.uid),
+          ),
+        );
         debugPrint('Project UID: ${project.uid}');
       },
       child: Container(
@@ -190,11 +196,5 @@ class _MyDownloadScreenState extends State<MyDownloadScreen> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final d = date.day.toString().padLeft(2, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    final y = date.year.toString();
 
-    return '$d/$m/$y';
-  }
 }

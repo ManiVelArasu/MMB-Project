@@ -61,16 +61,15 @@ class PlanProvider extends ChangeNotifier {
           for (final option in plan.planBillingOptions) {
             debugPrint(
               "➡️ Billing ID: ${option.id} | "
-                  "Cycle: ${option.billingCycle} | "
-                  "Price: ${option.price}",
+              "Cycle: ${option.billingCycle} | "
+              "Price: ${option.price}",
             );
           }
         }
 
         debugPrint("===========================");
       } else {
-        _plansErrorMessage =
-            result.error?.message ?? "Something went wrong";
+        _plansErrorMessage = result.error?.message ?? "Something went wrong";
       }
     } finally {
       _isLoadingPlans = false;
@@ -139,9 +138,7 @@ class PlanProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint(
-        "💳 Plan Billing Option ID: $planBillingOptionId",
-      );
+      debugPrint("💳 Plan Billing Option ID: $planBillingOptionId");
 
       final result = await _repository.subscription(
         planBillingOptionId: planBillingOptionId,
@@ -174,8 +171,7 @@ class PlanProvider extends ChangeNotifier {
 
       final shortUrl = data["short_url"]?.toString().trim();
 
-      final subscriptionId =
-      data["subscription_id"]?.toString().trim();
+      final subscriptionId = data["subscription_id"]?.toString().trim();
 
       if (shortUrl == null || shortUrl.isEmpty) {
         _subscriptionError = "Payment URL not available";
@@ -204,6 +200,74 @@ class PlanProvider extends ChangeNotifier {
     } finally {
       _isCreatingSubscription = false;
       notifyListeners();
+    }
+  }
+
+  // Add this inside PlanProvider class
+  int? get activePlanIndex {
+    final activeUid = activePlanUid;
+    if (activeUid == null || activeUid.isEmpty || _plansData == null) {
+      return null;
+    }
+
+    final plans = _plansData!.data;
+    for (int i = 0; i < plans.length; i++) {
+      if (plans[i].uid == activeUid) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  /// Returns the button text and state based on current active plan index
+  PlanButtonState getPlanButtonState(Plan plan, int currentIndex) {
+    final activeIndex = activePlanIndex;
+
+    // 1. No plan is active at all
+    if (activeIndex == null) {
+      return PlanButtonState(
+        text: _getDefaultButtonText(currentIndex),
+        isEnabled: true,
+        isCurrentActive: false,
+      );
+    }
+
+    // 2. This exact plan is active
+    if (plan.uid == activePlanUid) {
+      return const PlanButtonState(
+        text: "ACTIVE PLAN",
+        isEnabled: false,
+        isCurrentActive: true,
+      );
+    }
+
+    // 3. This plan is lower in the list than the active plan -> DOWNGRADE
+    if (currentIndex < activeIndex) {
+      return const PlanButtonState(
+        text: "DOWNGRADE",
+        isEnabled: true,
+        isCurrentActive: false,
+      );
+    }
+
+    // 4. This plan is higher in the list than the active plan -> UPGRADE
+    return const PlanButtonState(
+      text: "UPGRADE",
+      isEnabled: true,
+      isCurrentActive: false,
+    );
+  }
+
+  String _getDefaultButtonText(int index) {
+    switch (index) {
+      case 0:
+        return " BASIC";
+      case 1:
+        return "PREMIUM";
+      case 2:
+        return "ELITE";
+      default:
+        return "PLAN";
     }
   }
 
@@ -243,4 +307,16 @@ class CreatedSubscription {
   final String subscriptionId;
 
   CreatedSubscription({required this.shortUrl, required this.subscriptionId});
+}
+
+class PlanButtonState {
+  final String text;
+  final bool isEnabled;
+  final bool isCurrentActive;
+
+  const PlanButtonState({
+    required this.text,
+    required this.isEnabled,
+    required this.isCurrentActive,
+  });
 }

@@ -4,10 +4,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
-
 import '../../component/home_appbar.dart';
-import '../../component/language_bottom_sheet.dart';
 import '../../network/provider/auth_provider.dart';
+import '../../network/provider/bottom_provider.dart';
 import '../../network/provider/common_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/home_screen_provider.dart';
@@ -490,7 +489,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               title: 'Brand Series',
                               iconAsset: "assets/images/direct.png",
                               isDark: isDark,
-                              onTap: () {},
+                              onTap: () {
+                                context.read<BottomNavProvider>().updateIndex(
+                                  1,
+                                );
+                              },
                             ),
 
                             _buildSettingsTile(

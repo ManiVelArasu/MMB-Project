@@ -1011,7 +1011,6 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildSpecialDayTemplateCard(BuildContext context, Template template) {
-    print('asdasdsadsadasd');
     final key = template.thumbnailS3Key?.trim() ?? '';
 
     final imageUrl = key.isEmpty

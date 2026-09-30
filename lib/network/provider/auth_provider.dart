@@ -234,9 +234,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  Future<Map<String, dynamic>?> verifyOtpApi(
-      BuildContext context,
-      ) async {
+  Future<Map<String, dynamic>?> verifyOtpApi(BuildContext context) async {
     final String enteredOtp = getOtp();
 
     if (enteredOtp.length < 6) {
@@ -270,11 +268,9 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             // TOKENS
             // =========================================================
 
-            final String? accessToken =
-            data['access_token']?.toString();
+            final String? accessToken = data['access_token']?.toString();
 
-            final String? refreshToken =
-            data['refresh_token']?.toString();
+            final String? refreshToken = data['refresh_token']?.toString();
 
             if (accessToken == null || accessToken.isEmpty) {
               _errorMessage = "Login token missing";
@@ -294,32 +290,19 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             // PREFS
             // =========================================================
 
-            final prefs =
-            await SharedPreferences.getInstance();
+            final prefs = await SharedPreferences.getInstance();
 
             // =========================================================
             // SAVE LOGIN DATA
             // =========================================================
 
-            await prefs.setString(
-              'access_token',
-              accessToken,
-            );
+            await prefs.setString('access_token', accessToken);
 
-            await prefs.setString(
-              'refresh_token',
-              refreshToken,
-            );
+            await prefs.setString('refresh_token', refreshToken);
 
-            await prefs.setString(
-              'saved_mobile_number',
-              _mobileNumber.trim(),
-            );
+            await prefs.setString('saved_mobile_number', _mobileNumber.trim());
 
-            await prefs.setBool(
-              'is_logged_in',
-              true,
-            );
+            await prefs.setBool('is_logged_in', true);
 
             // =========================================================
             // SET API TOKENS
@@ -334,8 +317,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             // COMMON PROVIDER
             // =========================================================
 
-            final commonProvider =
-                CommonProvider.instance;
+            final commonProvider = CommonProvider.instance;
 
             // =========================================================
             // ME API
@@ -348,46 +330,36 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             debugPrint("👤 CALLING ME API");
             debugPrint("================================");
 
-            final bool meSuccess =
-            await commonProvider.loadMe(
+            final bool meSuccess = await commonProvider.loadMe(
               forceRefresh: true,
             );
 
             if (!meSuccess) {
-              debugPrint(
-                "❌ ME API FAILED",
-              );
+              debugPrint("❌ ME API FAILED");
 
               _isVerifyLoading = false;
               _errorMessage =
-                  commonProvider.meError ??
-                      "Unable to load user details";
+                  commonProvider.meError ?? "Unable to load user details";
 
               notifyListeners();
               return null;
             }
 
-            final String? accountType =
-            commonProvider.accountType
+            final String? accountType = commonProvider.accountType
                 ?.trim()
                 .toLowerCase();
 
             debugPrint("================================");
             debugPrint("👤 ME API SUCCESS");
-            debugPrint(
-              "ACCOUNT TYPE : $accountType",
-            );
+            debugPrint("ACCOUNT TYPE : $accountType");
             debugPrint("================================");
 
             // =========================================================
             // ACCOUNT TYPE NOT FOUND
             // =========================================================
 
-            if (accountType == null ||
-                accountType.isEmpty) {
-              debugPrint(
-                "⚠️ ACCOUNT TYPE EMPTY",
-              );
+            if (accountType == null || accountType.isEmpty) {
+              debugPrint("⚠️ ACCOUNT TYPE EMPTY");
 
               _isVerifyLoading = false;
               notifyListeners();
@@ -399,69 +371,35 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 "/PlansAndPricingScreen",
-                    (route) => false,
+                (route) => false,
+                arguments: {"showSkip": true},
               );
 
               return data;
             }
 
-            // =========================================================
-            // PERSONAL ACCOUNT
-            //
-            // Personal → ME API data itself is used.
-            //
-            // Check:
-            // name
-            // profile_photo_s3_key
-            //
-            // If both exist → HOME
-            // Otherwise → BUSINESS DETAILS
-            // =========================================================
-
             if (accountType == "personal") {
               debugPrint("================================");
-              debugPrint(
-                "👤 PERSONAL ACCOUNT",
-              );
-              debugPrint(
-                "Checking ME profile data...",
-              );
+              debugPrint("👤 PERSONAL ACCOUNT");
+              debugPrint("Checking ME profile data...");
               debugPrint("================================");
 
-              final meData =
-                  commonProvider.me?.data;
+              final meData = commonProvider.me?.data;
 
-              final String personalName =
-                  meData?.name
-                      ?.toString()
-                      .trim() ??
-                      "";
+              final String personalName = meData?.name?.toString().trim() ?? "";
 
               final String personalImage =
-                  meData?.profilePhotoS3Key
-                      ?.toString()
-                      .trim() ??
-                      "";
+                  meData?.profilePhotoS3Key?.toString().trim() ?? "";
 
-              final bool hasName =
-                  personalName.isNotEmpty;
+              final bool hasName = personalName.isNotEmpty;
 
-              final bool hasImage =
-                  personalImage.isNotEmpty;
+              final bool hasImage = personalImage.isNotEmpty;
 
               debugPrint("================================");
-              debugPrint(
-                "PERSONAL NAME  : $personalName",
-              );
-              debugPrint(
-                "PERSONAL IMAGE : $personalImage",
-              );
-              debugPrint(
-                "HAS NAME       : $hasName",
-              );
-              debugPrint(
-                "HAS IMAGE      : $hasImage",
-              );
+              debugPrint("PERSONAL NAME  : $personalName");
+              debugPrint("PERSONAL IMAGE : $personalImage");
+              debugPrint("HAS NAME       : $hasName");
+              debugPrint("HAS IMAGE      : $hasImage");
               debugPrint("================================");
 
               _isVerifyLoading = false;
@@ -475,24 +413,24 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               if (hasName && hasImage) {
                 debugPrint(
                   "✅ PERSONAL PROFILE COMPLETE"
-                      " → CustomBottomNavScreen",
+                  " → CustomBottomNavScreen",
                 );
 
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   "/CustomBottomNavScreen",
-                      (route) => false,
+                  (route) => false,
                 );
               } else {
                 debugPrint(
                   "⚠️ PERSONAL PROFILE INCOMPLETE"
-                      " → BusinessDetailsScreen",
+                  " → BusinessDetailsScreen",
                 );
 
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   "/BusinessDetailsScreen",
-                      (route) => false,
+                  (route) => false,
                 );
               }
 
@@ -514,16 +452,11 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
             if (accountType == "business") {
               debugPrint("================================");
-              debugPrint(
-                "🏢 BUSINESS ACCOUNT",
-              );
-              debugPrint(
-                "Calling Business API...",
-              );
+              debugPrint("🏢 BUSINESS ACCOUNT");
+              debugPrint("Calling Business API...");
               debugPrint("================================");
 
-              final bool businessSuccess =
-              await commonProvider.loadBusiness(
+              final bool businessSuccess = await commonProvider.loadBusiness(
                 forceRefresh: true,
               );
 
@@ -534,7 +467,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               if (!businessSuccess) {
                 debugPrint(
                   "⚠️ BUSINESS DATA NOT FOUND"
-                      " → BusinessDetailsScreen",
+                  " → BusinessDetailsScreen",
                 );
 
                 _isVerifyLoading = false;
@@ -547,7 +480,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   "/BusinessDetailsScreen",
-                      (route) => false,
+                  (route) => false,
                 );
 
                 return data;
@@ -557,43 +490,24 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               // BUSINESS DATA
               // =======================================================
 
-              final business =
-                  commonProvider.business;
+              final business = commonProvider.business;
 
               final String businessName =
-                  business?.name
-                      ?.toString()
-                      .trim() ??
-                      "";
+                  business?.name?.toString().trim() ?? "";
 
               final String businessImage =
-                  business?.logoS3Key
-                      ?.toString()
-                      .trim() ??
-                      "";
+                  business?.logoS3Key?.toString().trim() ?? "";
 
-              final bool hasName =
-                  businessName.isNotEmpty;
+              final bool hasName = businessName.isNotEmpty;
 
-              final bool hasImage =
-                  businessImage.isNotEmpty;
+              final bool hasImage = businessImage.isNotEmpty;
 
               debugPrint("================================");
-              debugPrint(
-                "🏢 BUSINESS DATA",
-              );
-              debugPrint(
-                "BUSINESS NAME : $businessName",
-              );
-              debugPrint(
-                "BUSINESS IMAGE: $businessImage",
-              );
-              debugPrint(
-                "HAS NAME      : $hasName",
-              );
-              debugPrint(
-                "HAS IMAGE     : $hasImage",
-              );
+              debugPrint("🏢 BUSINESS DATA");
+              debugPrint("BUSINESS NAME : $businessName");
+              debugPrint("BUSINESS IMAGE: $businessImage");
+              debugPrint("HAS NAME      : $hasName");
+              debugPrint("HAS IMAGE     : $hasImage");
               debugPrint("================================");
 
               _isVerifyLoading = false;
@@ -610,30 +524,28 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               if (hasName && hasImage) {
                 debugPrint(
                   "✅ BUSINESS PROFILE COMPLETE"
-                      " → CustomBottomNavScreen",
+                  " → CustomBottomNavScreen",
                 );
 
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   "/CustomBottomNavScreen",
-                      (route) => false,
+                  (route) => false,
                 );
               }
-
               // =======================================================
               // BUSINESS INCOMPLETE
               // =======================================================
-
               else {
                 debugPrint(
                   "⚠️ BUSINESS PROFILE INCOMPLETE"
-                      " → BusinessDetailsScreen",
+                  " → BusinessDetailsScreen",
                 );
 
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   "/BusinessDetailsScreen",
-                      (route) => false,
+                  (route) => false,
                 );
               }
 
@@ -644,9 +556,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             // UNKNOWN ACCOUNT TYPE
             // =========================================================
 
-            debugPrint(
-              "⚠️ UNKNOWN ACCOUNT TYPE: $accountType",
-            );
+            debugPrint("⚠️ UNKNOWN ACCOUNT TYPE: $accountType");
 
             _isVerifyLoading = false;
             notifyListeners();
@@ -658,18 +568,14 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             Navigator.pushNamedAndRemoveUntil(
               context,
               "/PlansAndPricingScreen",
-                  (route) => false,
+              (route) => false,
             );
 
             return data;
           } catch (e, stackTrace) {
-            debugPrint(
-              "❌ OTP SUCCESS HANDLING ERROR: $e",
-            );
+            debugPrint("❌ OTP SUCCESS HANDLING ERROR: $e");
 
-            debugPrintStack(
-              stackTrace: stackTrace,
-            );
+            debugPrintStack(stackTrace: stackTrace);
 
             _isVerifyLoading = false;
             _errorMessage = e.toString();
@@ -685,7 +591,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
           debugPrint(
             "❌ OTP VERIFICATION FAILED: "
-                "${error.message}",
+            "${error.message}",
           );
 
           notifyListeners();
@@ -697,13 +603,9 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       _isVerifyLoading = false;
       _errorMessage = e.toString();
 
-      debugPrint(
-        "❌ OTP API EXCEPTION: $e",
-      );
+      debugPrint("❌ OTP API EXCEPTION: $e");
 
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
+      debugPrintStack(stackTrace: stackTrace);
 
       notifyListeners();
 

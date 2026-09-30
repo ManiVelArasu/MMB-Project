@@ -1047,7 +1047,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setSelectedItem(String? type, String? id) {
-    selectedItemType = type;
+    // Templates can come from different Fabric/API versions (`Text`,
+    // `Textbox`, `IText`, etc.). Keep one canonical type inside the editor.
+    final normalizedType = (type ?? '').trim().toLowerCase();
+    selectedItemType =
+    (normalizedType == 'textbox' ||
+        normalizedType == 'i-text' ||
+        normalizedType == 'itext' ||
+        normalizedType == 'text')
+        ? 'text'
+        : type;
     selectedItemId = id;
     notifyListeners();
   }
@@ -1138,10 +1147,23 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
       var idIndex = 0;
       for (final json in jsonList) {
-        final type = (json['type']?.toString() ?? '').trim().toLowerCase();
+        final rawType = (json['type']?.toString() ?? '').trim();
+        final type = rawType.toLowerCase();
         final objectName = (json['name']?.toString() ?? '')
             .trim()
             .toLowerCase();
+
+        // Fabric/API versions are inconsistent about text object names.
+        // Examples: Text, text, IText, i-text, Textbox, textbox.
+        // Some templates also omit/rename the type but still contain a `text`
+        // property. Treat every such object as an editable text layer.
+        final hasTextValue = json['text'] != null;
+        final isTextObject =
+            type == 'textbox' ||
+                type == 'i-text' ||
+                type == 'itext' ||
+                type == 'text' ||
+                hasTextValue;
 
         // Admin Fabric JSON commonly contains a full-page `clip` rect. It is
         // a clipping definition, not a visible design layer. Painting it
@@ -1170,7 +1192,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         final id =
             'template_${DateTime.now().microsecondsSinceEpoch}_${idIndex++}';
 
-        if (type == 'textbox' || type == 'i-text' || type == 'text') {
+        if (isTextObject) {
           final fontSize = _toDouble(json['fontSize']) ?? 36.0;
           final text = json['text']?.toString() ?? '';
           final item = EditorItem(
@@ -1185,7 +1207,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             opacity: opacity,
             fontSize: fontSize,
             color: _parseColor(json['fill']),
-            fontFamily: json['fontFamily']!.toString(),
+            fontFamily: json['fontFamily']?.toString() ?? 'Roboto',
           );
           _items.add(item);
           _templateRawObjects[id] = Map<String, dynamic>.from(json);
@@ -1381,7 +1403,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               opacity: opacity,
               fontSize: _toDouble(json['fontSize']) ?? 36.0,
               color: _parseColor(json['fill']),
-              fontFamily: json['fontFamily']!.toString(),
+              fontFamily: json['fontFamily']?.toString() ?? 'Roboto',
             );
             _items.add(item);
             _templateRawObjects[id] = Map<String, dynamic>.from(json);
@@ -2134,6 +2156,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     if (index != -1) {
       _saveState();
       _items[index] = _items[index].copyWith(text: newText);
+      _syncCurrentPage();
       notifyListeners();
     }
   }

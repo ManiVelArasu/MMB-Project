@@ -39,7 +39,11 @@ class EditableItemWidget extends StatelessWidget {
     bool isSelected = provider.selectedItemId == currentItem.id;
 
     final isBackground = _isCanvasBackground(currentItem);
-    final isTextItem = currentItem.type == 'text' || currentItem.type == 'textbox';
+    final normalizedItemType = (currentItem.type ?? '').trim().toLowerCase();
+    final isTextItem = normalizedItemType == 'text' ||
+        normalizedItemType == 'textbox' ||
+        normalizedItemType == 'i-text' ||
+        normalizedItemType == 'itext';
 
     // Text must occupy only its real painted size. Do not reuse the API's
     // large width/height rectangle for selection/hit testing.
@@ -3561,7 +3565,11 @@ class _EditorSelectionControlsState extends State<_EditorSelectionControls> {
     // editor, so keep the existing proportional scale behavior for text.
     // Images/shapes/videos use real width/height resizing, matching the
     // reference editor where the aspect ratio can change with each handle.
-    final isText = widget.item.type == 'text' || widget.item.type == 'textbox';
+    final normalizedType = (widget.item.type ?? '').trim().toLowerCase();
+    final isText = normalizedType == 'text' ||
+        normalizedType == 'textbox' ||
+        normalizedType == 'i-text' ||
+        normalizedType == 'itext';
     if (isText) {
       final horizontal = alignment.x == 0
           ? 0.0

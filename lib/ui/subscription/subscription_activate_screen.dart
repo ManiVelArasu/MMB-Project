@@ -49,57 +49,36 @@ class _SubscriptionActivatedScreenState
       child: Consumer<PlanProvider>(
         builder: (context, provider, child) {
           if (provider.isLoadingSubscription) {
-            return const Scaffold(
-              backgroundColor: Colors.white,
-              body: Center(
-                child: CircularProgressIndicator(),
+            return PopScope(
+              onPopInvokedWithResult: (didPop, result) {
+                if (didPop) return;
+
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  "/PlansAndPricingScreen",
+                  (route) => false,
+                );
+              },
+              child: const Scaffold(
+                backgroundColor: Colors.white,
+                body: Center(child: CircularProgressIndicator()),
               ),
             );
           }
 
           final data = provider.subscriptionData;
 
-          final subscription =
-          data?["subscription"] as Map<String, dynamic>?;
+          final subscription = data?["subscription"] as Map<String, dynamic>?;
 
-          final plan =
-          data?["plan"] as Map<String, dynamic>?;
+          final plan = data?["plan"] as Map<String, dynamic>?;
 
-          final billing =
-          data?["billing"] as Map<String, dynamic>?;
+          final billing = data?["billing"] as Map<String, dynamic>?;
 
-          final period =
-          data?["period"] as Map<String, dynamic>?;
+          final period = data?["period"] as Map<String, dynamic>?;
 
-          final features =
-              data?["features"] as List<dynamic>? ?? [];
+          final features = data?["features"] as List<dynamic>? ?? [];
 
-          final planName =
-              plan?["name"]?.toString() ?? "Premium Plan";
-
-          final amountPaid =
-              subscription?["amount_paid"]?.toString() ?? "0";
-
-          final paymentMethod =
-              subscription?["payment_method"]?.toString() ?? "";
-
-          final startsAt =
-              subscription?["starts_at"]?.toString() ?? "";
-
-          final endsAt =
-              subscription?["ends_at"]?.toString() ?? "";
-
-          final cycle =
-              billing?["cycle"]?.toString() ?? "monthly";
-
-          final currency =
-              billing?["currency"]?.toString() ?? "INR";
-
-          final periodStart =
-              period?["start"]?.toString() ?? "";
-
-          final periodEnd =
-              period?["end"]?.toString() ?? "";
+          final planName = plan?["name"]?.toString() ?? "Premium Plan";
 
           return Scaffold(
             backgroundColor: Colors.white,
@@ -107,13 +86,7 @@ class _SubscriptionActivatedScreenState
             appBar: AppBar(
               backgroundColor: Colors.white,
               elevation: 0,
-              leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: Colors.red,
-                ),
-                onPressed: () => Navigator.pop(context),
-              ),
+              automaticallyImplyLeading: false,
               title: const Text(
                 "Subscription Activated",
                 style: TextStyle(
@@ -129,11 +102,7 @@ class _SubscriptionActivatedScreenState
                 children: [
                   const SizedBox(height: 20),
 
-                  const Icon(
-                    Icons.celebration,
-                    size: 64,
-                    color: Colors.amber,
-                  ),
+                  const Icon(Icons.celebration, size: 64, color: Colors.amber),
 
                   const SizedBox(height: 12),
 
@@ -151,10 +120,7 @@ class _SubscriptionActivatedScreenState
                   Text(
                     "$planName is now active on your account.",
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey,
-                    ),
+                    style: const TextStyle(fontSize: 13, color: Colors.grey),
                   ),
 
                   const SizedBox(height: 24),
@@ -163,7 +129,7 @@ class _SubscriptionActivatedScreenState
                   // SUBSCRIPTION DETAILS
                   // ------------------------------------------
 
-               /*   Container(
+                  /*   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -224,13 +190,11 @@ class _SubscriptionActivatedScreenState
                       ],
                     ),
                   ),*/
-
                   const SizedBox(height: 20),
 
                   // ------------------------------------------
                   // ACCESS LIST
                   // ------------------------------------------
-
                   Expanded(
                     child: Container(
                       width: double.infinity,
@@ -238,13 +202,10 @@ class _SubscriptionActivatedScreenState
                       decoration: BoxDecoration(
                         color: Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.grey.shade200,
-                        ),
+                        border: Border.all(color: Colors.grey.shade200),
                       ),
                       child: Column(
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
                             "YOU NOW HAVE ACCESS TO",
@@ -260,95 +221,76 @@ class _SubscriptionActivatedScreenState
                           Expanded(
                             child: features.isEmpty
                                 ? const Text(
-                              "No features available",
-                              style: TextStyle(
-                                color: Colors.grey,
-                              ),
-                            )
+                                    "No features available",
+                                    style: TextStyle(color: Colors.grey),
+                                  )
                                 : ListView.separated(
-                              itemCount: features.length,
-                              separatorBuilder:
-                                  (_, __) =>
-                              const SizedBox(
-                                height: 10,
-                              ),
-                              itemBuilder:
-                                  (context, index) {
-                                final feature =
-                                features[index];
+                                    itemCount: features.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 10),
+                                    itemBuilder: (context, index) {
+                                      final feature = features[index];
 
-                                if (feature
-                                is! Map<String, dynamic>) {
-                                  return const SizedBox();
-                                }
+                                      if (feature is! Map<String, dynamic>) {
+                                        return const SizedBox();
+                                      }
 
-                                final label =
-                                    feature["label"]
-                                        ?.toString() ??
-                                        "";
+                                      final label =
+                                          feature["label"]?.toString() ?? "";
 
-                                final enabled =
-                                feature["enabled"];
+                                      final enabled = feature["enabled"];
 
-                                final remaining =
-                                feature["remaining"];
+                                      final remaining = feature["remaining"];
 
-                                final limit =
-                                feature["limit"];
+                                      final limit = feature["limit"];
 
-                                return Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.check_circle,
-                                      color: Colors.green,
-                                      size: 20,
-                                    ),
+                                      return Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green,
+                                            size: 20,
+                                          ),
 
-                                    const SizedBox(width: 10),
+                                          const SizedBox(width: 10),
 
-                                    Expanded(
-                                      child: Text(
-                                        label,
-                                        style:
-                                        const TextStyle(
-                                          fontWeight:
-                                          FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
+                                          Expanded(
+                                            child: Text(
+                                              label,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
 
-                                    if (remaining != null)
-                                      Text(
-                                        "$remaining",
-                                        style:
-                                        const TextStyle(
-                                          fontWeight:
-                                          FontWeight.bold,
-                                          color: Colors.red,
-                                        ),
-                                      ),
+                                          if (remaining != null)
+                                            Text(
+                                              "$remaining",
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.red,
+                                              ),
+                                            ),
 
-                                    if (enabled == true)
-                                      const Icon(
-                                        Icons.check,
-                                        color:
-                                        Colors.green,
-                                        size: 18,
-                                      ),
+                                          if (enabled == true)
+                                            const Icon(
+                                              Icons.check,
+                                              color: Colors.green,
+                                              size: 18,
+                                            ),
 
-                                    if (limit != null &&
-                                        remaining == null)
-                                      Text(
-                                        "$limit",
-                                        style:
-                                        const TextStyle(
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                  ],
-                                );
-                              },
-                            ),
+                                          if (limit != null &&
+                                              remaining == null)
+                                            Text(
+                                              "$limit",
+                                              style: const TextStyle(
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                        ],
+                                      );
+                                    },
+                                  ),
                           ),
                         ],
                       ),
@@ -360,7 +302,6 @@ class _SubscriptionActivatedScreenState
                   // ------------------------------------------
                   // START EXPLORING
                   // ------------------------------------------
-
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -368,8 +309,7 @@ class _SubscriptionActivatedScreenState
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                          BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       onPressed: () {
@@ -402,19 +342,13 @@ class _SubscriptionActivatedScreenState
                     height: 50,
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: Colors.black87,
-                        ),
+                        side: const BorderSide(color: Colors.black87),
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                          BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          "/MySubscriptionScreen",
-                        );
+                        Navigator.pushNamed(context, "/MySubscriptionScreen");
                       },
                       child: const Text(
                         "GO TO MY SUBSCRIPTION",
@@ -436,10 +370,7 @@ class _SubscriptionActivatedScreenState
     );
   }
 
-  Widget _detailRow(
-      String title,
-      String value,
-      ) {
+  Widget _detailRow(String title, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -449,19 +380,13 @@ class _SubscriptionActivatedScreenState
             width: 120,
             child: Text(
               title,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 13,
-              ),
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ),
         ],

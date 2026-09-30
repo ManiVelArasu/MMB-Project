@@ -88,8 +88,14 @@ class RouteGenerator {
           builder: (context) => const BusinessFramesScreen(),
         );
       case "/PlansAndPricingScreen":
+        final args = settings.arguments;
+
+        final showSkip = args is Map<String, dynamic>
+            ? args["showSkip"] == true
+            : false;
+
         return MaterialPageRoute(
-          builder: (context) => const PlansAndPricingScreen(),
+          builder: (context) => PlansAndPricingScreen(showSkip: showSkip),
         );
       case "/CustomBottomNavScreen":
         return MaterialPageRoute(

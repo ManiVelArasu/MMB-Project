@@ -318,10 +318,6 @@ class _SplashScreenState extends State<SplashScreen> {
             return;
           }
 
-          // ====================================================
-          // AUTHENTICATION ERROR
-          // ====================================================
-
           final int? statusCode = error.statusCode;
 
           if (statusCode == 401 || statusCode == 403) {
@@ -339,18 +335,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
             return;
           }
-
-          // ====================================================
-          // OTHER SERVER ERROR
-          // ====================================================
-
-          debugPrint("======================================");
-
-          debugPrint("⚠️ GET ME SERVER/UNKNOWN ERROR");
-
-          debugPrint("⚠️ KEEPING SESSION");
-
-          debugPrint("======================================");
         },
       );
     } catch (e, stackTrace) {
@@ -422,19 +406,9 @@ class _SplashScreenState extends State<SplashScreen> {
         "$accountType",
       );
 
-      debugPrint("======================================");
-
-      // ========================================================
-      // SAVE ACCOUNT TYPE
-      // ========================================================
-
       if (accountType != null && accountType.isNotEmpty) {
         await prefs.setString('account_type', accountType);
       }
-
-      // ========================================================
-      // NO ACCOUNT TYPE
-      // ========================================================
 
       if (accountType == null || accountType.isEmpty) {
         debugPrint(
@@ -448,6 +422,7 @@ class _SplashScreenState extends State<SplashScreen> {
           context,
           "/PlansAndPricingScreen",
           (route) => false,
+          arguments: {"showSkip": true},
         );
 
         return;
