@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:mmb_app/Repository/get_me_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../Api Model/key_words_model.dart';
 import '../../Api Model/special_days.dart';
 import '../../Api Model/templatecategories.dart';
 import '../../Api Model/Template_model.dart';
 import '../../Api Model/templates_children.dart';
+import '../../Repository/business_profile_repository.dart';
 import '../../Repository/home_repository.dart';
 import '../../model/my_space_model.dart';
 import 'common_provider.dart';
@@ -15,17 +17,30 @@ class HomeScreenProvider extends ChangeNotifier {
     fetchTemplateCategories();
     loadSavedBusinessData();
     fetchTemplatesByPopular();
+    loadKeyWords();
     if (loadSpecialDaysOnInit) {
       fetchSpecialDays(range: 'month');
     }
   }
+  List<KeyWordsData> _keyWords = [];
 
+  List<KeyWordsData> get keyWords => _keyWords;
+
+  bool _isKeyWordsLoading = false;
+
+  bool get isKeyWordsLoading => _isKeyWordsLoading;
+
+  String? _keyWordsError;
+
+  String? get keyWordsError => _keyWordsError;
   String _businessName = "";
   String get businessName => _businessName;
   String selectedDate = "2";
   final GetMeRepository getMeRepository = GetMeRepository.instance;
   final CommonProvider provider = CommonProvider.instance;
 
+  final BusinessProfileRepository businessProfileRepository =
+      BusinessProfileRepository.instance;
   Future<void> loadSavedBusinessData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -57,6 +72,101 @@ class HomeScreenProvider extends ChangeNotifier {
       to: selected,
       preserveCalendarRange: true,
     );
+  }
+
+  Future<bool> loadKeyWords({bool forceRefresh = false}) async {
+    // =======================================================
+    // PERSONAL → DO NOT CALL API
+    // =======================================================
+
+    if (provider.accountType?.toLowerCase() == 'personal') {
+      debugPrint("👤 PERSONAL ACCOUNT → loadKeyWords SKIPPED");
+
+      return false;
+    }
+
+    // =======================================================
+    // BUSINESS ONLY
+    // =======================================================
+
+    if (provider.accountType?.toLowerCase() != 'business') {
+      debugPrint("⚠️ Unknown account type → Keywords API SKIPPED");
+
+      return false;
+    }
+
+    if (_keyWords.isNotEmpty && !forceRefresh) {
+      return true;
+    }
+
+    _isKeyWordsLoading = true;
+    _keyWordsError = null;
+
+    notifyListeners();
+
+    try {
+      final categorySlug =
+          provider.business?.businessCategory?.parent?.slug ?? '';
+
+      // Category slug இல்லையென்றால் API call வேண்டாம்
+      if (categorySlug.isEmpty) {
+        _keyWordsError = "Business category slug not found";
+
+        debugPrint("⚠️ Category slug empty → Keywords API SKIPPED");
+
+        return false;
+      }
+
+      debugPrint("🏢 BUSINESS → Calling Keywords API");
+
+      debugPrint("Category Slug: $categorySlug");
+
+      final result = await businessProfileRepository.industryKeyWords(
+        categorySlug,
+      );
+
+      final KeyWordsModel? data = result.data;
+
+      if (data == null) {
+        _keyWordsError = "Keywords data not found";
+
+        return false;
+      }
+
+      _keyWords = data.data;
+
+      debugPrint("================================");
+
+      debugPrint("✅ KEYWORDS API SUCCESS");
+
+      debugPrint(
+        "Total Keywords : "
+        "${_keyWords.length}",
+      );
+
+      for (final keyword in _keyWords) {
+        debugPrint(
+          "Keyword : ${keyword.name} | "
+          "Slug : ${keyword.slug}",
+        );
+      }
+
+      debugPrint("================================");
+
+      return true;
+    } catch (e, stackTrace) {
+      _keyWordsError = e.toString();
+
+      debugPrint("❌ Keywords API failed: $e");
+
+      debugPrint("$stackTrace");
+
+      return false;
+    } finally {
+      _isKeyWordsLoading = false;
+
+      notifyListeners();
+    }
   }
 
   void updateSelectedDate(String date) {
@@ -108,11 +218,9 @@ class HomeScreenProvider extends ChangeNotifier {
   List<TemplatedChildrenList> _celebrateChildren = [];
   List<TemplatedChildrenList> _devotionalChildren = [];
 
-  List<TemplatedChildrenList> get celebrateChildren =>
-      _celebrateChildren;
+  List<TemplatedChildrenList> get celebrateChildren => _celebrateChildren;
 
-  List<TemplatedChildrenList> get devotionalChildren =>
-      _devotionalChildren;
+  List<TemplatedChildrenList> get devotionalChildren => _devotionalChildren;
   // ============================================================
   // CATEGORY -> TEMPLATES
   // ============================================================
@@ -153,25 +261,64 @@ class HomeScreenProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result =
-      await HomeRepository.instance.templateCategory();
+      final result = await HomeRepository.instance.templateCategory();
 
       if (result.isSuccess && result.data != null) {
         final response = result.data!;
 
         if (response.success == true) {
-          _templateCategories = response.data ?? [];
+          final homepageCategories = response.data ?? [];
 
-          debugPrint(
-            "✅ Categories: ${_templateCategories.length}",
-          );
+          final treeResult = await HomeRepository.instance
+              .templateCategoryTree();
+
+          if (treeResult.isSuccess && treeResult.data?.success == true) {
+            final treeCategories = treeResult.data?.data ?? [];
+
+            final treeBySlug = <String, dynamic>{};
+            final treeByName = <String, dynamic>{};
+
+            for (final treeCategory in treeCategories) {
+              final slug = treeCategory.slug?.trim().toLowerCase() ?? '';
+              final name = treeCategory.name?.trim().toLowerCase() ?? '';
+
+              if (slug.isNotEmpty) {
+                treeBySlug[slug] = treeCategory;
+              }
+              if (name.isNotEmpty) {
+                treeByName[name] = treeCategory;
+              }
+            }
+
+            _templateCategories = homepageCategories.map((category) {
+              final slug = category.slug?.trim().toLowerCase() ?? '';
+              final name = category.name?.trim().toLowerCase() ?? '';
+
+              final treeCategory =
+                  (slug.isNotEmpty ? treeBySlug[slug] : null) ??
+                  (name.isNotEmpty ? treeByName[name] : null);
+
+              if (treeCategory != null && treeCategory.children.isNotEmpty) {
+                return category.copyWith(children: treeCategory.children);
+              }
+
+              return category;
+            }).toList();
+          } else {
+            // Keep homepage categories even if the optional tree request fails.
+            _templateCategories = homepageCategories;
+            debugPrint(
+              "⚠️ Tree category API failed: "
+              "${treeResult.error?.message ?? 'Unknown error'}",
+            );
+          }
+
+          debugPrint("✅ Homepage Categories: ${_templateCategories.length}");
 
           for (final category in _templateCategories) {
-            final categoryName =
-                category.name?.trim().toLowerCase() ?? '';
+            final categoryName = category.name?.trim().toLowerCase() ?? '';
 
-            final categorySlug =
-                category.slug?.trim() ?? '';
+            final categorySlug = category.slug?.trim() ?? '';
 
             // =====================================================
             // CELEBRATE MOMENTS / DEVOTIONAL DAILY POSTS
@@ -180,32 +327,25 @@ class HomeScreenProvider extends ChangeNotifier {
 
             final bool isSpecialParent =
                 categoryName == 'celebrate moments' ||
-                    categoryName == 'devotional/daily posts' ||
-                    categoryName == 'devotional / daily posts';
+                categoryName == 'devotional/daily posts' ||
+                categoryName == 'devotional / daily posts';
 
             if (isSpecialParent) {
-              debugPrint(
-                "⭐ SPECIAL CATEGORY: ${category.name}",
-              );
+              debugPrint("⭐ SPECIAL CATEGORY: ${category.name}");
 
-              debugPrint(
-                "⭐ CHILD COUNT: ${category.children.length}",
-              );
+              debugPrint("⭐ CHILD COUNT: ${category.children.length}");
 
               for (final child in category.children) {
-                final childSlug =
-                    child.slug?.trim() ?? '';
+                final childSlug = child.slug?.trim() ?? '';
 
                 if (childSlug.isEmpty) continue;
 
                 debugPrint(
                   "   └── CHILD: ${child.name} "
-                      "[$childSlug]",
+                  "[$childSlug]",
                 );
 
-                await fetchTemplatesByCategory(
-                  childSlug,
-                );
+                await fetchTemplatesByCategory(childSlug);
               }
 
               continue;
@@ -216,33 +356,24 @@ class HomeScreenProvider extends ChangeNotifier {
             // =====================================================
 
             if (categorySlug.isNotEmpty) {
-              await fetchTemplatesByCategory(
-                categorySlug,
-              );
+              await fetchTemplatesByCategory(categorySlug);
             }
           }
 
           _categoryErrorMessage = null;
         } else {
-          _categoryErrorMessage =
-          "Failed to load categories";
+          _categoryErrorMessage = "Failed to load categories";
         }
       } else {
         _categoryErrorMessage =
-            result.error?.message ??
-                "Network Error Occurred";
+            result.error?.message ?? "Network Error Occurred";
       }
     } catch (e, stackTrace) {
-      debugPrint(
-        "❌ Category API error: $e",
-      );
+      debugPrint("❌ Category API error: $e");
 
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
+      debugPrintStack(stackTrace: stackTrace);
 
-      _categoryErrorMessage =
-          e.toString();
+      _categoryErrorMessage = e.toString();
     } finally {
       _isLoadingCategories = false;
       notifyListeners();
@@ -347,8 +478,8 @@ class HomeScreenProvider extends ChangeNotifier {
 
   String _formatApiDate(DateTime date) =>
       '${date.year.toString().padLeft(4, '0')}-'
-          '${date.month.toString().padLeft(2, '0')}-'
-          '${date.day.toString().padLeft(2, '0')}';
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 
   Future<void> fetchTemplatesByCategory(String slug) async {
     final categorySlug = slug.trim();
@@ -401,8 +532,7 @@ class HomeScreenProvider extends ChangeNotifier {
       debugPrint("🔥 FETCH POPULAR TEMPLATES");
       debugPrint("======================================");
 
-      final result =
-      await HomeRepository.instance.myBrandCategory();
+      final result = await HomeRepository.instance.myBrandCategory();
 
       if (result.isSuccess && result.data != null) {
         final response = result.data!;
@@ -414,31 +544,25 @@ class HomeScreenProvider extends ChangeNotifier {
 
           debugPrint(
             "✅ Popular categories count: "
-                "${_popularTemplates.length}",
+            "${_popularTemplates.length}",
           );
         } else {
           _popularTemplates = [];
-          _popularTemplatesError =
-          "Failed to load popular templates";
+          _popularTemplatesError = "Failed to load popular templates";
         }
       } else {
         _popularTemplates = [];
 
         _popularTemplatesError =
-            result.error?.message ??
-                "Network Error Occurred";
+            result.error?.message ?? "Network Error Occurred";
       }
     } catch (e, stackTrace) {
       _popularTemplates = [];
       _popularTemplatesError = e.toString();
 
-      debugPrint(
-        "❌ Popular Templates API Error: $e",
-      );
+      debugPrint("❌ Popular Templates API Error: $e");
 
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
+      debugPrintStack(stackTrace: stackTrace);
     } finally {
       _isLoadingPopularTemplates = false;
       notifyListeners();
@@ -561,13 +685,13 @@ class HomeScreenProvider extends ChangeNotifier {
     {
       "title": "Make My Lead",
       "subTitle":
-      "Go Premium and list your business for free on our platform to boost your leads.",
+          "Go Premium and list your business for free on our platform to boost your leads.",
       "btnText": "BOOST MY BUSINESS",
     },
     {
       "title": "Grow Your Business",
       "subTitle":
-      "Get verified badge and double your client engagement effortlessly.",
+          "Get verified badge and double your client engagement effortlessly.",
       "btnText": "UPGRADE NOW",
     },
   ];
@@ -624,22 +748,22 @@ class HomeScreenProvider extends ChangeNotifier {
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-      "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-      "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-      "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-      "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
   ];
   void clearUserData() {

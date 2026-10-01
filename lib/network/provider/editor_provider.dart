@@ -821,7 +821,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     try {
       debugPrint('📄 Loading template: $safeUid');
-      final result = await TemplateRepository.instance.getTemplateByUid(
+
+      final result =
+      await TemplateRepository.instance.getTemplateByUid(
         uid: safeUid,
       );
 
@@ -829,113 +831,311 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
       if (detail == null) {
         _templateDetailError = 'Template not found';
-        isTemplateLoaded = false;
         return false;
       }
+
       final content = detail.data.content?.trim() ?? '';
 
       if (content.isEmpty) {
         _templateDetailError = 'Template content is empty';
-        isTemplateLoaded = false;
         return false;
       }
 
       _templateDetail = detail;
 
-      final decoded = jsonDecode(content);
+      // =========================================================
+      // DECODE JSON
+      // =========================================================
 
-      if (decoded is! Map) {
+      dynamic decoded;
+
+      try {
+        decoded = jsonDecode(content);
+      } catch (e) {
+        debugPrint('❌ Invalid JSON: $e');
         _templateDetailError = 'Invalid template content JSON';
-        isTemplateLoaded = false;
         return false;
       }
 
-      final root = Map<String, dynamic>.from(decoded);
+      // =========================================================
+      // ROOT
+      // =========================================================
 
-      // Background
-      final rootBackgroundValue =
-          root['backgroundColor'] ??
-              root['background'] ??
-              root['background_color'];
+      Map<String, dynamic>? root;
 
-      final rootBackgroundGradient = _parseGradient(rootBackgroundValue);
+      if (decoded is Map) {
+        root = Map<String, dynamic>.from(decoded);
+      }
 
-      if (rootBackgroundGradient != null) {
-        _importedBackgroundGradient = rootBackgroundGradient;
-        _backgroundColor = Colors.transparent;
-        _hasImportedRootBackground = true;
-      } else {
-        final rootBackground = _parseColor(rootBackgroundValue);
+      // =========================================================
+      // BACKGROUND
+      // =========================================================
 
-        _hasImportedRootBackground =
-            rootBackground != null && rootBackground.alpha > 0;
+      if (root != null) {
+        final rootBackgroundValue =
+            root['backgroundColor'] ??
+                root['background'] ??
+                root['background_color'];
 
-        if (_hasImportedRootBackground) {
-          _backgroundColor = rootBackground!;
+        final rootBackgroundGradient =
+        _parseGradient(rootBackgroundValue);
+
+        if (rootBackgroundGradient != null) {
+          _importedBackgroundGradient =
+              rootBackgroundGradient;
+
+          _backgroundColor = Colors.transparent;
+          _hasImportedRootBackground = true;
+        } else {
+          final rootBackground =
+          _parseColor(rootBackgroundValue);
+
+          _hasImportedRootBackground =
+              rootBackground != null &&
+                  rootBackground.alpha > 0;
+
+          if (_hasImportedRootBackground) {
+            _backgroundColor = rootBackground!;
+          }
         }
       }
 
-      List<dynamic>? objects;
+      // =========================================================
+      // FIND OBJECTS
+      // =========================================================
 
-      final directObjects = root['objects'];
+      List<dynamic> objects = [];
 
-      if (directObjects is List) {
-        objects = directObjects;
-      } else {
-        final pages = root['pages'];
+      // ---------------------------------------------------------
+      // CASE 1
+      // [
+      //   {...},
+      //   {...}
+      // ]
+      // ---------------------------------------------------------
 
-        if (pages is List && pages.isNotEmpty) {
+      if (decoded is List) {
+        objects = List<dynamic>.from(decoded);
+      }
+
+      // ---------------------------------------------------------
+      // CASE 2
+      // {
+      //   "objects": [...]
+      // }
+      // ---------------------------------------------------------
+
+      else if (root != null && root['objects'] is List) {
+        objects = List<dynamic>.from(
+          root['objects'],
+        );
+      }
+
+      // ---------------------------------------------------------
+      // CASE 3
+      // {
+      //   "data": {
+      //      "objects": [...]
+      //   }
+      // }
+      // ---------------------------------------------------------
+
+      else if (root != null &&
+          root['data'] is Map &&
+          (root['data'] as Map)['objects'] is List) {
+        objects = List<dynamic>.from(
+          (root['data'] as Map)['objects'] as List,
+        );
+      }
+
+      // ---------------------------------------------------------
+      // CASE 4
+      // {
+      //   "data": [...]
+      // }
+      // ---------------------------------------------------------
+
+      else if (root != null && root['data'] is List) {
+        objects = List<dynamic>.from(
+          root['data'] as List,
+        );
+      }
+
+      // ---------------------------------------------------------
+      // CASE 5
+      // {
+      //   "pages": [
+      //     {
+      //       "fabric": {
+      //         "objects": [...]
+      //       }
+      //     }
+      //   ]
+      // }
+      // ---------------------------------------------------------
+
+      else if (root != null && root['pages'] is List) {
+        final pages = root['pages'] as List;
+
+        if (pages.isNotEmpty) {
           final firstPage = pages.first;
 
           if (firstPage is Map) {
+            // -----------------------------
+            // PAGE SIZE
+            // -----------------------------
+
+            if (canvasWidth == null ||
+                canvasHeight == null) {
+              final pageWidth =
+              _toDouble(firstPage['width']);
+
+              final pageHeight =
+              _toDouble(firstPage['height']);
+
+              if (pageWidth != null &&
+                  pageHeight != null &&
+                  pageWidth > 0 &&
+                  pageHeight > 0) {
+                setCanvasSize(
+                  pageWidth,
+                  pageHeight,
+                );
+              }
+            }
+
+            // -----------------------------
+            // FABRIC
+            // -----------------------------
+
             final fabric = firstPage['fabric'];
 
-            if (fabric is Map && fabric['objects'] is List) {
-              objects = fabric['objects'] as List;
+            if (fabric is Map &&
+                fabric['objects'] is List) {
+              objects = List<dynamic>.from(
+                fabric['objects'] as List,
+              );
+            }
 
-              if (canvasWidth == null || canvasHeight == null) {
-                final pageWidth = _toDouble(firstPage['width']);
-                final pageHeight = _toDouble(firstPage['height']);
+            // -----------------------------
+            // PAGE OBJECTS
+            // -----------------------------
 
-                if (pageWidth != null &&
-                    pageHeight != null &&
-                    pageWidth > 0 &&
-                    pageHeight > 0) {
-                  setCanvasSize(pageWidth, pageHeight);
-                }
-              }
+            else if (firstPage['objects'] is List) {
+              objects = List<dynamic>.from(
+                firstPage['objects'] as List,
+              );
             }
           }
         }
       }
 
-      if (objects == null) {
-        _templateDetailError =
-        'Template content has no supported objects array';
+      // =========================================================
+      // NO OBJECTS
+      // =========================================================
 
-        isTemplateLoaded = false;
-        return false;
+      if (objects.isEmpty) {
+        debugPrint(
+          '⚠️ Template has no objects. '
+              'Loading empty editor.',
+        );
+
+        // Empty template-யும் editor open ஆக வேண்டும்
+        // என்ற requirement-க்கு இது useful.
+        _items.clear();
+
+        if (canvasWidth != null &&
+            canvasHeight != null &&
+            canvasWidth > 0 &&
+            canvasHeight > 0) {
+          setCanvasSize(
+            canvasWidth,
+            canvasHeight,
+          );
+        } else if (root != null) {
+          final detected =
+          _detectTemplateCanvasSize(
+            root,
+            objects,
+          );
+
+          if (detected != null) {
+            setCanvasSize(
+              detected.width,
+              detected.height,
+            );
+          }
+        }
+
+        isTemplateLoaded = true;
+        _templateDetailError = null;
+
+        debugPrint(
+          '✅ Empty template loaded: '
+              '${detail.data.name}',
+        );
+
+        return true;
       }
 
-      // Exact canvas size
+      // =========================================================
+      // CANVAS SIZE
+      // =========================================================
+
       if (canvasWidth != null &&
           canvasHeight != null &&
           canvasWidth > 0 &&
           canvasHeight > 0) {
-        setCanvasSize(canvasWidth, canvasHeight);
-      } else {
-        final detected = _detectTemplateCanvasSize(root, objects);
+        setCanvasSize(
+          canvasWidth,
+          canvasHeight,
+        );
+      } else if (root != null) {
+        final detected =
+        _detectTemplateCanvasSize(
+          root,
+          objects,
+        );
 
         if (detected != null) {
-          setCanvasSize(detected.width, detected.height);
+          setCanvasSize(
+            detected.width,
+            detected.height,
+          );
         }
       }
 
+      // =========================================================
+      // FILTER VALID OBJECTS
+      // =========================================================
+
+      final validObjects = objects
+          .whereType<Map>()
+          .map(
+            (e) => Map<String, dynamic>.from(e),
+      )
+          .where(
+            (object) =>
+        object['type'] != null ||
+            object['objectType'] != null,
+      )
+          .toList();
+
+      debugPrint(
+        '📦 API objects: ${objects.length}',
+      );
+
+      debugPrint(
+        '📦 Valid editor objects: '
+            '${validObjects.length}',
+      );
+
+      // =========================================================
+      // LOAD INTO EDITOR
+      // =========================================================
+
       loadItemsFromJson(
-        objects
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList(),
+        validObjects,
         templateUid: safeUid,
       );
 
@@ -943,7 +1143,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       _templateDetailError = null;
 
       debugPrint(
-        '✅ Template loaded: ${detail.data.name} | '
+        '✅ Template loaded: '
+            '${detail.data.name} | '
             '${_items.length} objects',
       );
 
@@ -951,7 +1152,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     } catch (e, stackTrace) {
       _templateDetailError = e
           .toString()
-          .replaceFirst('Exception: ', '')
+          .replaceFirst(
+        'Exception: ',
+        '',
+      )
           .trim();
 
       if (_templateDetailError!.isEmpty) {
@@ -960,12 +1164,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
       isTemplateLoaded = false;
 
-      debugPrint('❌ Template load failed [$safeUid]: $e');
-      debugPrint('$stackTrace');
+      debugPrint(
+        '❌ Template load failed [$safeUid]: $e',
+      );
+
+      debugPrint(
+        '$stackTrace',
+      );
 
       return false;
     } finally {
-      // ALWAYS stop loading
       _isTemplateDetailLoading = false;
       notifyListeners();
     }
@@ -1074,9 +1282,80 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   bool isTemplateLoaded = false;
 
+  /// Convert Fabric origin-based coordinates into this editor's top-left
+  /// coordinate system. This keeps center/right/bottom-origin objects aligned.
+  Offset _fabricTopLeft({
+    required Map<String, dynamic> json,
+    required double left,
+    required double top,
+    required double width,
+    required double height,
+    required double scaleX,
+    required double scaleY,
+  }) {
+    final visualWidth = width * scaleX.abs();
+    final visualHeight = height * scaleY.abs();
+    var x = left;
+    var y = top;
+
+    switch ((json['originX']?.toString() ?? 'left').toLowerCase()) {
+      case 'center':
+        x -= visualWidth / 2.0;
+        break;
+      case 'right':
+        x -= visualWidth;
+        break;
+    }
+
+    switch ((json['originY']?.toString() ?? 'top').toLowerCase()) {
+      case 'center':
+        y -= visualHeight / 2.0;
+        break;
+      case 'bottom':
+        y -= visualHeight;
+        break;
+    }
+
+    return Offset(x, y);
+  }
+
+  String _cleanFontFamily(dynamic value) {
+    final raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) return 'Roboto';
+    final first = raw.split(',').first.trim();
+    final cleaned = first
+        .replaceAll(RegExp(r'''^["']|["']$'''), '')
+        .trim();
+    return cleaned.isEmpty ? 'Roboto' : cleaned;
+  }
+
+  double _effectiveTextLineHeight({
+    required double rawLineHeight,
+    required double fontSize,
+    required double objectHeight,
+    required String text,
+  }) {
+    final lineCount = math.max(1, '\n'.allMatches(text).length + 1);
+    final raw = rawLineHeight.isFinite && rawLineHeight > 0 ? rawLineHeight : 1.0;
+    final measured = fontSize > 0 && objectHeight > 0
+        ? objectHeight / (fontSize * lineCount)
+        : raw;
+
+    // Some Fabric exports contain an inflated lineHeight. The actual object
+    // height is a safer source when it is internally consistent.
+    if (measured.isFinite && measured >= 0.7 && measured <= 2.5) {
+      return measured.clamp(0.7, 2.5).toDouble();
+    }
+    return raw.clamp(0.7, 2.5).toDouble();
+  }
+
   String _resolveTemplateSrc(String rawSrc, String? templateUid) {
     final src = rawSrc.trim();
     if (src.isEmpty) return '';
+
+    if (src.startsWith('data:') || src.startsWith('blob:')) {
+      return src;
+    }
 
     final uid = (templateUid ?? '').trim();
 
@@ -1100,7 +1379,18 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       fileName = Uri.decodeComponent(fileName);
     } catch (_) {}
     fileName = fileName.trim();
+
+    final parsedUri = Uri.tryParse(src);
+    final isAbsoluteHttp = parsedUri != null &&
+        (parsedUri.scheme == 'http' || parsedUri.scheme == 'https');
+    final isLegacyTemplateHost = src.contains('temp-m2b-assets.s3.') ||
+        src.contains('amazonaws.com');
+    if (isAbsoluteHttp && !isLegacyTemplateHost) {
+      return src;
+    }
+
     if (fileName.isEmpty || uid.isEmpty) {
+      if (isAbsoluteHttp) return src;
       debugPrint(
         '⚠️ Template image URL could not be resolved. uid=$uid src=$src',
       );
@@ -1179,13 +1469,37 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           }
           continue;
         }
-        final left = _toDouble(json['left']) ?? 0.0;
-        final top = _toDouble(json['top']) ?? 0.0;
-        final width = _toDouble(json['width']) ?? 100.0;
-        final height = _toDouble(json['height']) ?? 100.0;
-        final scaleX = _toDouble(json['scaleX']) ?? 1.0;
-        final scaleY = _toDouble(json['scaleY']) ?? 1.0;
-        final scale = scaleX.abs() < 0.0001 ? scaleY.abs() : scaleX.abs();
+        final rawLeft = _toDouble(json['left']) ?? 0.0;
+        final rawTop = _toDouble(json['top']) ?? 0.0;
+        final width = math.max(1.0, _toDouble(json['width']) ?? 100.0);
+        final height = math.max(1.0, _toDouble(json['height']) ?? 100.0);
+        final scaleXRaw = _toDouble(json['scaleX']) ?? 1.0;
+        final scaleYRaw = _toDouble(json['scaleY']) ?? 1.0;
+        final scaleX = scaleXRaw.abs() < 0.0001 ? 1.0 : scaleXRaw;
+        final scaleY = scaleYRaw.abs() < 0.0001 ? 1.0 : scaleYRaw;
+        final importedPosition = _fabricTopLeft(
+          json: json,
+          left: rawLeft,
+          top: rawTop,
+          width: width,
+          height: height,
+          scaleX: scaleX,
+          scaleY: scaleY,
+        );
+
+        // Fabric stores X/Y scaling independently. EditorItem currently has
+        // one uniform `scale`, so preserve the non-uniform Y scaling by
+        // baking only the Y/X ratio into the item's layout height. The
+        // existing canvas-level scaleX then produces:
+        //
+        //   visualWidth  = width  * scaleX
+        //   visualHeight = height * scaleY
+        //
+        // This keeps the imported template geometry identical to Fabric
+        // while still allowing the user to resize the item uniformly later.
+        final safeScaleX = scaleX.abs() < 0.0001 ? 1.0 : scaleX.abs();
+        final scale = safeScaleX;
+        final importedHeight = height * (scaleY.abs() / safeScaleX);
         final angleDegrees = _toDouble(json['angle']) ?? 0.0;
         final rotation = angleDegrees * math.pi / 180.0;
         final opacity = (_toDouble(json['opacity']) ?? 1.0).clamp(0.0, 1.0);
@@ -1195,37 +1509,49 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         if (isTextObject) {
           final fontSize = _toDouble(json['fontSize']) ?? 36.0;
           final text = json['text']?.toString() ?? '';
+
+          // Keep Fabric's box and scale separate. The complete text object
+          // is scaled by the canvas renderer, so font size and wrapping keep
+          // the same relationship as the API/Fabric preview.
+          final rawWidth = math.max(1.0, _toDouble(json['width']) ?? 1.0);
+          final textScaleX = scaleX.abs().clamp(0.01, 10.0).toDouble();
+          final textScaleY = scaleY.abs().clamp(0.01, 10.0).toDouble();
+          final textHeight = math.max(1.0, height * (textScaleY / textScaleX));
+
           final item = EditorItem(
             id: id,
             type: 'text',
             text: text,
-            position: Offset(left, top),
-            width: width,
-            height: height,
-            scale: scale.clamp(0.05, 10.0).toDouble(),
+            position: importedPosition,
+            width: rawWidth,
+            height: textHeight,
+            scale: textScaleX,
             rotation: rotation,
             opacity: opacity,
             fontSize: fontSize,
-            color: _parseColor(json['fill']),
-            fontFamily: json['fontFamily']?.toString() ?? 'Roboto',
+            color: _parseColor(json['fill']) ?? Colors.black,
+            fontFamily: _cleanFontFamily(json['fontFamily']),
           );
           _items.add(item);
           _templateRawObjects[id] = Map<String, dynamic>.from(json);
-          _templateFlipX[id] = json['flipX'] == true;
-          _templateFlipY[id] = json['flipY'] == true;
-          _textLetterSpacing[id] =
-              (_toDouble(json['charSpacing']) ?? 0.0) / 10.0;
-          _textLineSpacing[id] = (_toDouble(json['lineHeight']) ?? 1.0).clamp(
-            0.7,
-            3.0,
+          _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
+          _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
+          final charSpacing = _toDouble(json['charSpacing']) ?? 0.0;
+          // Fabric charSpacing is measured in 1/1000 of the font size.
+          _textLetterSpacing[id] = (fontSize * charSpacing / 1000.0)
+              .clamp(-20.0, 50.0)
+              .toDouble();
+          _textLineSpacing[id] = _effectiveTextLineHeight(
+            rawLineHeight: _toDouble(json['lineHeight']) ?? 1.0,
+            fontSize: fontSize,
+            objectHeight: height,
+            text: text,
           );
           _textAlignment[id] = _parseTextAlign(json['textAlign']);
           _textWeight[id] = _parseFontWeight(json['fontWeight']);
-          _textStyle[id] = (json['fontStyle']?.toString() == 'italic')
-              ? FontStyle.italic
-              : FontStyle.normal;
+          _textStyle[id] = (json['fontStyle']?.toString() == 'italic') ? FontStyle.italic : FontStyle.normal;
           _textUnderline[id] = json['underline'] == true;
-        } else if (type == 'image') {
+        }else if (type == 'image') {
           final imageUrl = _resolveTemplateSrc(
             json['src']?.toString() ?? '',
             templateUid,
@@ -1235,9 +1561,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               id: id,
               type: 'image',
               contentUrl: imageUrl,
-              position: Offset(left, top),
+              position: importedPosition,
               width: width,
-              height: height,
+              height: importedHeight,
               scale: scale.clamp(0.05, 10.0).toDouble(),
               rotation: rotation,
               opacity: opacity,
@@ -1258,8 +1584,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             }
 
             _templateRawObjects[id] = Map<String, dynamic>.from(json);
-            _templateFlipX[id] = json['flipX'] == true;
-            _templateFlipY[id] = json['flipY'] == true;
+            _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
+            _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
           }
         } else if (type == 'rect' ||
             type == 'roundrect' ||
@@ -1282,8 +1608,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             type == 'path') {
           final isFullCanvasRect =
               type == 'rect' &&
-                  left.abs() < 1.0 &&
-                  top.abs() < 1.0 &&
+                  importedPosition.dx.abs() < 1.0 &&
+                  importedPosition.dy.abs() < 1.0 &&
                   (width - canvasWidth).abs() < 2.0 &&
                   (height - canvasHeight).abs() < 2.0;
 
@@ -1313,9 +1639,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             id: id,
             type: 'shape',
             text: type,
-            position: Offset(left, top),
+            position: importedPosition,
             width: width,
-            height: height,
+            height: importedHeight,
             scale: scale.clamp(0.05, 10.0).toDouble(),
             rotation: rotation,
             opacity: opacity,
@@ -1327,8 +1653,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           );
           _items.add(shapeItem);
           _templateRawObjects[id] = Map<String, dynamic>.from(json);
-          _templateFlipX[id] = json['flipX'] == true;
-          _templateFlipY[id] = json['flipY'] == true;
+          _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
+          _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
 
           // Keep the API/Fabric outline settings as the source of truth.
           // The editor UI is only a controller for these values.
@@ -1343,8 +1669,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           // Keep its fill as the editor canvas color so the template does not
           // become a blank white canvas while loading.
           final isFullCanvas =
-              left.abs() < 1.0 &&
-                  top.abs() < 1.0 &&
+              importedPosition.dx.abs() < 1.0 &&
+                  importedPosition.dy.abs() < 1.0 &&
                   (width - canvasWidth).abs() < 2.0 &&
                   (height - canvasHeight).abs() < 2.0;
           final fill = _parseColor(json['fill']);
@@ -1368,9 +1694,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
                 id: id,
                 type: 'image',
                 contentUrl: imageUrl,
-                position: Offset(left, top),
+                position: importedPosition,
                 width: width,
-                height: height,
+                height: importedHeight,
                 scale: scale.clamp(0.05, 10.0).toDouble(),
                 rotation: rotation,
                 opacity: opacity,
@@ -1387,17 +1713,17 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               }
 
               _templateRawObjects[id] = Map<String, dynamic>.from(json);
-              _templateFlipX[id] = json['flipX'] == true;
-              _templateFlipY[id] = json['flipY'] == true;
+              _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
+              _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
             }
           } else if (inferredType == 'text') {
             final item = EditorItem(
               id: id,
               type: 'text',
               text: rawText,
-              position: Offset(left, top),
+              position: importedPosition,
               width: width,
-              height: height,
+              height: importedHeight,
               scale: scale.clamp(0.05, 10.0).toDouble(),
               rotation: rotation,
               opacity: opacity,
@@ -1407,8 +1733,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             );
             _items.add(item);
             _templateRawObjects[id] = Map<String, dynamic>.from(json);
-            _templateFlipX[id] = json['flipX'] == true;
-            _templateFlipY[id] = json['flipY'] == true;
+            _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
+            _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
           } else if (rawPath is List ||
               json['points'] is List ||
               type.isNotEmpty) {
@@ -1416,9 +1742,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               id: id,
               type: 'shape',
               text: type.isEmpty ? 'rect' : type,
-              position: Offset(left, top),
+              position: importedPosition,
               width: width,
-              height: height,
+              height: importedHeight,
               scale: scale.clamp(0.05, 10.0).toDouble(),
               rotation: rotation,
               opacity: opacity,
@@ -1426,8 +1752,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             );
             _items.add(item);
             _templateRawObjects[id] = Map<String, dynamic>.from(json);
-            _templateFlipX[id] = json['flipX'] == true;
-            _templateFlipY[id] = json['flipY'] == true;
+            _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
+            _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
           }
         }
       }

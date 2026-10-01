@@ -75,13 +75,11 @@ class EditableItemWidget extends StatelessWidget {
       );
     }
     final textValueForBounds = currentItem.text ?? '';
-    final isMultilineForBounds = textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
-    final bodyWidth = isMultilineForBounds
-        ? (currentItem.width ?? naturalTextSize?.width ?? 220)
-        : (naturalTextSize?.width ?? (currentItem.width ?? 220));
-    final bodyHeight = isMultilineForBounds
-        ? (currentItem.height ?? naturalTextSize?.height ?? 220)
-        : (naturalTextSize?.height ?? (currentItem.height ?? 220));
+    // Always use the imported Fabric box for text hit-testing/selection.
+    // Device font fallback can change natural glyph width, but it must not
+    // change the object's API position or editing handles.
+    final bodyWidth = math.max(1.0, currentItem.width).toDouble();
+    final bodyHeight = math.max(1.0, currentItem.height).toDouble();
 
     // One finger = move, two fingers = pinch zoom + pan. Keep the starting
     // scale outside the GestureDetector callbacks so a rebuild during the
@@ -893,7 +891,7 @@ class EditableItemWidget extends StatelessWidget {
             item.contentUrl ?? '',
             width: item.width,
             height: item.height,
-            fit: BoxFit.contain,
+            fit: BoxFit.fill,
             errorBuilder: (_, __, ___) => const Center(
               child: Icon(Icons.broken_image_outlined, color: Colors.grey),
             ),
@@ -918,7 +916,7 @@ class EditableItemWidget extends StatelessWidget {
           item.contentUrl ?? '',
           width: item.width,
           height: item.height,
-          fit: BoxFit.contain,
+          fit: BoxFit.fill,
           placeholderBuilder: (_) => const Center(
             child: SizedBox(
               width: 18,
@@ -938,7 +936,7 @@ class EditableItemWidget extends StatelessWidget {
           item.contentUrl ?? '',
           width: item.width,
           height: item.height,
-          fit: BoxFit.contain,
+          fit: BoxFit.fill,
           placeholderBuilder: (_) => const Center(
             child: SizedBox(
               width: 18,
@@ -1068,7 +1066,7 @@ class EditableItemWidget extends StatelessWidget {
         imageWidget = isSvg
             ? SvgPicture.file(
           File(localPath),
-          fit: isBackground ? BoxFit.cover : BoxFit.contain,
+          fit: BoxFit.fill,
           placeholderBuilder: (_) => const Center(
             child: CircularProgressIndicator(strokeWidth: 1.5),
           ),
@@ -1077,7 +1075,7 @@ class EditableItemWidget extends StatelessWidget {
           File(localPath),
           width: item.width,
           height: item.height,
-          fit: isBackground ? BoxFit.cover : BoxFit.contain,
+          fit: BoxFit.fill,
           errorBuilder: (_, __, ___) => const Center(
             child: Icon(Icons.broken_image_outlined, color: Colors.grey),
           ),
@@ -1089,7 +1087,7 @@ class EditableItemWidget extends StatelessWidget {
           url,
           width: item.width,
           height: item.height,
-          fit: isBackground ? BoxFit.cover : BoxFit.contain,
+          fit: BoxFit.fill,
           placeholderBuilder: (_) => const Center(
             child: SizedBox(
               width: 20,
@@ -1106,7 +1104,7 @@ class EditableItemWidget extends StatelessWidget {
           url,
           width: item.width,
           height: item.height,
-          fit: isBackground ? BoxFit.cover : BoxFit.contain,
+          fit: BoxFit.fill,
           errorBuilder: (_, __, ___) => const Center(
             child: Icon(Icons.broken_image_outlined, color: Colors.grey),
           ),
@@ -1214,14 +1212,21 @@ class EditableItemWidget extends StatelessWidget {
       style: textStyle,
     );
 
-    if (isMultiline) {
-      return SizedBox(
-        width: item.width,
-        height: item.height,
+    // Keep the Fabric textbox as a real editable box for every text object.
+    // Natural glyph measurement must not move the imported layer.
+    return SizedBox(
+      width: math.max(1.0, item.width).toDouble(),
+      height: math.max(1.0, item.height).toDouble(),
+      child: Align(
+        alignment: switch (editorProvider.textAlignment(id)) {
+          TextAlign.center => Alignment.topCenter,
+          TextAlign.right => Alignment.topRight,
+          TextAlign.justify => Alignment.topLeft,
+          _ => Alignment.topLeft,
+        },
         child: textWidget,
-      );
-    }
-    return textWidget;
+      ),
+    );
   }
 
   void _showProActionSheet(
@@ -2023,7 +2028,15 @@ class EditableItemWidget extends StatelessWidget {
       height: height,
     );
 
-    final family = (fontFamily ?? '').trim();
+    final rawFamily = (fontFamily ?? '').trim();
+    if (rawFamily.isEmpty) return base;
+
+    final family = rawFamily
+        .split(',')
+        .first
+        .trim()
+        .replaceAll(RegExp(r'''^["']|["']$'''), '')
+        .trim();
     if (family.isEmpty) return base;
 
     try {

@@ -24,7 +24,7 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
 
   const CustomAppBar({
     super.key,
-    this.title = "Business Frames",
+    this.title = "",
     this.showTitle = true,
 
     // Back

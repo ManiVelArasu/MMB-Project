@@ -4,7 +4,6 @@ import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
-
 import '../../Api Model/theme_screen_model.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/home_appbar.dart';
@@ -12,8 +11,6 @@ import '../../component/network_image.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/theme_screen_provider.dart';
-
-import 'package:flutter/material.dart';
 
 class ThemesScreen extends StatefulWidget {
   const ThemesScreen({super.key});
@@ -200,10 +197,6 @@ class ThemeGroupSection extends StatelessWidget {
             Container(
               height: 32.h,
               width: 32.w,
-              decoration: BoxDecoration(
-                color: const Color(0xFF00E676),
-                borderRadius: BorderRadius.circular(8.r),
-              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8.r),
                 child: NetworkAssetImage(

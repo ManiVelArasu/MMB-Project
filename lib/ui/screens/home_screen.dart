@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../Api Model/Template_model.dart';
 import '../../Api Model/special_days.dart';
+import '../../Api Model/templatecategories.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/custom_widget.dart';
 import '../../component/home_appbar.dart';
@@ -20,7 +21,6 @@ import '../../model/my_space_model.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/common_provider.dart';
 import '../../network/provider/home_screen_provider.dart';
-import '../../network/provider/prpject_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
 
@@ -40,7 +40,7 @@ class HomeScreen extends StatelessWidget {
       create: (_) => HomeScreenProvider(),
       builder: (context, provider) => Consumer<HomeScreenProvider>(
         builder: (context, homeScreenProvider, child) {
-          if (homeScreenProvider.templateCategories.isEmpty) {
+          if (homeScreenProvider.isLoadingCategories) {
             return Scaffold(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               body: const Center(
@@ -237,54 +237,50 @@ class HomeScreen extends StatelessWidget {
                         SizedBox(height: 12.h),
 
                         SizedBox(
-                          height: 45.h,
+                          height: 38.h,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
-                            itemCount:
-                                homeScreenProvider.videoCategories.length,
                             physics: const BouncingScrollPhysics(),
+                            padding: EdgeInsets.only(right: 8.w),
+                            itemCount: homeScreenProvider.keyWords.length,
                             itemBuilder: (context, index) {
-                              bool isSelected =
-                                  homeScreenProvider
-                                      .selectedVideoCategoryIndex ==
-                                  index;
-                              return GestureDetector(
-                                onTap: () => homeScreenProvider
-                                    .updateVideoCategoryIndex(index),
+                              final keywordItem =
+                                  homeScreenProvider.keyWords[index];
+
+                              final keyword = keywordItem.name?.trim() ?? '';
+
+                              if (keyword.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return Padding(
+                                padding: EdgeInsets.only(right: 8.w),
                                 child: Container(
-                                  margin: EdgeInsets.only(right: 10.w),
                                   padding: EdgeInsets.symmetric(
-                                    horizontal: 22.w,
-                                    vertical: 10.h,
+                                    horizontal: 14.w,
+                                    vertical: 6.h,
                                   ),
+                                  alignment: Alignment.center,
                                   decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(0xFF555555)
-                                        : (isDark
-                                              ? const Color(0xFF1E1E1E)
-                                              : Colors.white),
-                                    borderRadius: BorderRadius.circular(30.r),
+                                    color: isDark
+                                        ? const Color(0xFF1E1E1E)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(20.r),
                                     border: Border.all(
-                                      color: isSelected
-                                          ? Colors.transparent
-                                          : (isDark
-                                                ? Colors.grey.shade700
-                                                : Colors.grey.shade400),
-                                      width: 1.5,
+                                      color: isDark
+                                          ? Colors.grey.shade800
+                                          : Colors.grey.shade300,
+                                      width: 1.2,
                                     ),
                                   ),
-                                  child: Center(
-                                    child: AppText(
-                                      homeScreenProvider.videoCategories[index],
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : (isDark
-                                                  ? Colors.white70
-                                                  : Colors.grey.shade800),
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  child: AppText(
+                                    keyword,
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black87,
+                                      fontSize: 11.5.sp,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ),
@@ -981,6 +977,227 @@ class HomeScreen extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCategorySection({
+    required String categoryName,
+    required TemplateCategories category,
+    required bool isDark,
+  }) {
+    final children = category.children;
+
+    if (children.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 7.h),
+      padding: EdgeInsets.only(top: 12.h, bottom: 12.h),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1B1620) : const Color(0xFFFFF9FF),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(
+          color: isDark ? const Color(0xFF302936) : const Color(0xFFE9D8F4),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          // ==========================================
+          // TITLE
+          // ==========================================
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12.w),
+            child: Row(
+              children: [
+                Expanded(
+                  child: AppText(
+                    categoryName,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: 10.h),
+
+          // ==========================================
+          // HORIZONTAL CHILDREN
+          // ==========================================
+          SizedBox(
+            height: 91.h,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+
+              // IMPORTANT:
+              // First + last item screen edge-la
+              // cut aagama irukka padding
+              padding: EdgeInsets.symmetric(horizontal: 14.w),
+
+              physics: const BouncingScrollPhysics(),
+
+              itemCount: children.length,
+
+              separatorBuilder: (_, __) {
+                return SizedBox(width: 11.w);
+              },
+
+              itemBuilder: (context, index) {
+                final child = children[index];
+
+                final childName = child.name?.trim() ?? '';
+
+                final childSlug = child.slug?.trim() ?? '';
+
+                // ------------------------------------------
+                // Prefer thumbnail, fallback icon
+                // ------------------------------------------
+                String imageKey = child.thumbnailS3Key?.trim() ?? '';
+
+                if (imageKey.isEmpty) {
+                  imageKey = child.iconS3Key?.trim() ?? '';
+                }
+
+                final imageUrl = imageKey.isEmpty
+                    ? ''
+                    : '${ApiEndpoints.cdnImageUrl}/$imageKey';
+
+                return SizedBox(
+                  width: 62.w,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12.r),
+
+                    onTap: () {
+                      debugPrint("📂 CHILD CATEGORY: $childName");
+
+                      debugPrint("📂 CHILD SLUG: $childSlug");
+
+                      Navigator.pushNamed(
+                        context,
+                        "/TemplateDetailScreen",
+                        arguments: {
+                          "category": childSlug,
+                          "categoryUid": child.uid,
+                          "categoryName": child.name,
+                        },
+                      );
+                    },
+
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // ==================================
+                        // IMAGE
+                        // ==================================
+                        Container(
+                          width: 58.w,
+                          height: 58.w,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(11.r),
+
+                            color: isDark
+                                ? const Color(0xFF28232B)
+                                : Colors.white,
+
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 5,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(11.r),
+
+                            child: imageUrl.isEmpty
+                                ? Center(
+                                    child: Icon(
+                                      Icons.image_outlined,
+                                      size: 22.sp,
+                                      color: Colors.grey,
+                                    ),
+                                  )
+                                : Image.network(
+                                    imageUrl,
+                                    width: 58.w,
+                                    height: 58.w,
+                                    fit: BoxFit.cover,
+
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                          if (loadingProgress == null) {
+                                            return child;
+                                          }
+
+                                          return Center(
+                                            child: SizedBox(
+                                              width: 17.w,
+                                              height: 17.w,
+                                              child:
+                                                  const CircularProgressIndicator(
+                                                    strokeWidth: 1.5,
+                                                    color: Color(0xFFE53935),
+                                                  ),
+                                            ),
+                                          );
+                                        },
+
+                                    errorBuilder: (context, error, stackTrace) {
+                                      debugPrint(
+                                        "❌ CHILD IMAGE ERROR: "
+                                        "$imageUrl",
+                                      );
+
+                                      return Center(
+                                        child: Icon(
+                                          Icons.broken_image_outlined,
+                                          size: 21.sp,
+                                          color: Colors.grey,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ),
+
+                        SizedBox(height: 5.h),
+
+                        // ==================================
+                        // NAME
+                        // ==================================
+                        SizedBox(
+                          width: 62.w,
+                          child: AppText(
+                            childName,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 7.5.sp,
+                              fontWeight: FontWeight.w700,
+                              height: 1.05,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

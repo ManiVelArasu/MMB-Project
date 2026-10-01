@@ -19,6 +19,18 @@ class HomeRepository {
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.templateCategory,
         method: ApiMethod.get,
+        queryParams: {"homepage": "1"},
+      ),
+      fromJson: (json) =>
+          TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  Future<ApiResult<TemplateCategoriesModel>> templateCategoryTree() async {
+    return await ApiRepository.instance.request<TemplateCategoriesModel>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.templateCategory,
+        method: ApiMethod.get,
         queryParams: {"tree": "1"},
       ),
       fromJson: (json) =>
@@ -27,8 +39,8 @@ class HomeRepository {
   }
 
   Future<ApiResult<TemplatesResponseModel>> templatesByCategory(
-    String categorySlug,
-  ) async {
+      String categorySlug,
+      ) async {
     final result = await ApiRepository.instance.request<TemplatesResponseModel>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.templates,
@@ -46,14 +58,14 @@ class HomeRepository {
   Future<ApiResult<TemplateCategoriesModel>> myBrandCategory() async {
     final result = await ApiRepository.instance
         .request<TemplateCategoriesModel>(
-          config: ApiRequestConfig(
-            endpoint: ApiEndpoints.templateCategory,
-            method: ApiMethod.get,
-            queryParams: {"popular": "1"},
-          ),
-          fromJson: (json) =>
-              TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
-        );
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.templateCategory,
+        method: ApiMethod.get,
+        queryParams: {"popular": "1"},
+      ),
+      fromJson: (json) =>
+          TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
+    );
     return result;
   }
 

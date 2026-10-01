@@ -1,7 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/component/appbar_widget.dart';
+import 'package:mmb_app/component/custom_searchbar.dart';
+import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/special_days.dart';
@@ -26,7 +31,6 @@ class _SpecialDaysScreenView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final isDark = context.watch<CustomThemeProvider>().isDarkMode;
 
     return Scaffold(
@@ -34,27 +38,10 @@ class _SpecialDaysScreenView extends StatelessWidget {
           ? const Color(0xFF121212)
           : const Color(0xFFF8F8F8),
 
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
-
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 19.sp,
-            color: isDark ? Colors.white : Colors.black87,
-          ),
-        ),
-
-        title: Text(
-          'Special Days',
-          style: TextStyle(
-            fontSize: 19.sp,
-            fontWeight: FontWeight.w900,
-            color: isDark ? Colors.white : Colors.black87,
-          ),
-        ),
+      appBar: CustomAppBar(
+        showTitle: true,
+        title: "Special Days",
+        showRightIcon: false,
       ),
 
       body: SafeArea(
@@ -62,9 +49,7 @@ class _SpecialDaysScreenView extends StatelessWidget {
           builder: (context, provider, _) {
             if (provider.isLoading) {
               return const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFFE53935),
-                ),
+                child: CircularProgressIndicator(color: Color(0xFFE53935)),
               );
             }
 
@@ -89,40 +74,60 @@ class _SpecialDaysScreenView extends StatelessWidget {
             }
 
             if (templates.isEmpty) {
-              return _EmptyState(
-                isDark: isDark,
-                message: 'No templates found',
-              );
+              return _EmptyState(isDark: isDark, message: 'No templates found');
             }
 
-            return GridView.builder(
-              padding: EdgeInsets.fromLTRB(
-                12.w,
-                12.h,
-                12.w,
-                30.h,
-              ),
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
-              ),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 10.w,
-                mainAxisSpacing: 10.h,
+            return Padding(
+              padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 30.h),
+              child: Column(
+                children: [
+                  AppText(
+                    "Find the Right Festival Templates",
+                    style: TextStyle(
+                      color: AppColors.appBlack,
+                      fontWeight: FontWeight.bold,
+                      fontSize: AppFontSize.fontSize18,
+                    ),
+                  ),
+                  AppText(
+                    "Choose the festival to discover ready-to-edit designs for promotions, offers, announcements, and everyday marketing.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.grey,
+                      fontWeight: FontWeight.w600,
+                      fontSize: AppFontSize.fontSize14,
+                    ),
+                  ),
+                  SizedBox(height: 10,),
+                  CustomSearchBar(hintText: 'Find your festival',),
+                  SizedBox(height: 15,),
+                  Expanded(
+                    child: GridView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 10.w,
+                        mainAxisSpacing: 10.h,
 
-                // Image + nameக்கு space
-                childAspectRatio: 0.78,
-              ),
-              itemCount: templates.length,
-              itemBuilder: (context, index) {
-                final item = templates[index];
+                        // Image + nameக்கு space
+                        childAspectRatio: 0.78,
+                      ),
+                      itemCount: templates.length,
+                      itemBuilder: (context, index) {
+                        final item = templates[index];
 
-                return _TemplateCard(
-                  template: item.template,
-                  specialDayName: item.specialDayName,
-                  isDark: isDark,
-                );
-              },
+                        return _TemplateCard(
+                          template: item.template,
+                          specialDayName: item.specialDayName,
+                          isDark: isDark,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         ),
@@ -162,9 +167,7 @@ class _TemplateCard extends StatelessWidget {
 
         if (templateUid.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Template UID not available'),
-            ),
+            const SnackBar(content: Text('Template UID not available')),
           );
           return;
         }
@@ -172,22 +175,16 @@ class _TemplateCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => TemplateEditScreen(
-              templateUid: templateUid,
-            ),
+            builder: (_) => TemplateEditScreen(templateUid: templateUid),
           ),
         );
       },
       child: Container(
         decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF1F1F1F)
-              : Colors.white,
+          color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
           borderRadius: BorderRadius.circular(12.r),
           border: Border.all(
-            color: isDark
-                ? Colors.white10
-                : const Color(0xFFEAEAEA),
+            color: isDark ? Colors.white10 : const Color(0xFFEAEAEA),
           ),
           boxShadow: [
             BoxShadow(
@@ -208,53 +205,48 @@ class _TemplateCard extends StatelessWidget {
                 width: double.infinity,
                 child: imageUrl.isEmpty
                     ? Container(
-                  color: const Color(0xFFFFE5E5),
-                  child: Icon(
-                    Icons.image_outlined,
-                    color: const Color(0xFFE53935),
-                    size: 38.sp,
-                  ),
-                )
-                    : CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) {
-                    return Container(
-                      color: isDark
-                          ? const Color(0xFF292929)
-                          : const Color(0xFFF3F3F3),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Color(0xFFE53935),
+                        color: const Color(0xFFFFE5E5),
+                        child: Icon(
+                          Icons.image_outlined,
+                          color: const Color(0xFFE53935),
+                          size: 38.sp,
                         ),
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) {
+                          return Container(
+                            color: isDark
+                                ? const Color(0xFF292929)
+                                : const Color(0xFFF3F3F3),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFFE53935),
+                              ),
+                            ),
+                          );
+                        },
+                        errorWidget: (_, __, ___) {
+                          return Container(
+                            color: const Color(0xFFFFE5E5),
+                            child: Icon(
+                              Icons.image_not_supported_rounded,
+                              color: const Color(0xFFE53935),
+                              size: 32.sp,
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                  errorWidget: (_, __, ___) {
-                    return Container(
-                      color: const Color(0xFFFFE5E5),
-                      child: Icon(
-                        Icons.image_not_supported_rounded,
-                        color: const Color(0xFFE53935),
-                        size: 32.sp,
-                      ),
-                    );
-                  },
-                ),
               ),
             ),
 
             // SPECIAL DAY NAME
             Padding(
-              padding: EdgeInsets.fromLTRB(
-                6.w,
-                7.h,
-                6.w,
-                8.h,
-              ),
+              padding: EdgeInsets.fromLTRB(6.w, 7.h, 6.w, 8.h),
               child: Center(
                 child: Text(
                   specialDayName,
@@ -264,9 +256,7 @@ class _TemplateCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w800,
-                    color: isDark
-                        ? Colors.white
-                        : Colors.black87,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
@@ -324,6 +314,7 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
+
 class SpecialDayTemplateItem {
   final Template template;
   final String specialDayName;

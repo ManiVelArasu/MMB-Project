@@ -17,26 +17,31 @@ class TemplateCategoriesModel {
   TemplateCategoriesModel copyWith({
     bool? success,
     List<TemplateCategories>? data,
-  }) => TemplateCategoriesModel(
-    success: success ?? this.success,
-    data: data ?? this.data,
-  );
+  }) {
+    return TemplateCategoriesModel(
+      success: success ?? this.success,
+      data: data ?? this.data,
+    );
+  }
 
-  factory TemplateCategoriesModel.fromJson(Map<String, dynamic> json) =>
-      TemplateCategoriesModel(
-        success: json["success"] as bool?,
-        data: json["data"] == null
-            ? <TemplateCategories>[]
-            : (json["data"] as List)
-            .whereType<Map<String, dynamic>>()
-            .map(TemplateCategories.fromJson)
-            .toList(),
-      );
+  factory TemplateCategoriesModel.fromJson(Map<String, dynamic> json) {
+    return TemplateCategoriesModel(
+      success: json["success"] as bool?,
+      data: json["data"] == null
+          ? <TemplateCategories>[]
+          : (json["data"] as List)
+                .whereType<Map<String, dynamic>>()
+                .map((x) => TemplateCategories.fromJson(x))
+                .toList(),
+    );
+  }
 
-  Map<String, dynamic> toJson() => {
-    "success": success,
-    "data": data?.map((x) => x.toJson()).toList() ?? [],
-  };
+  Map<String, dynamic> toJson() {
+    return {
+      "success": success,
+      "data": data?.map((x) => x.toJson()).toList() ?? [],
+    };
+  }
 }
 
 class TemplateCategories {
@@ -71,6 +76,41 @@ class TemplateCategories {
     this.children = const [],
   });
 
+  // ⭐ IMPORTANT: copyWith
+  TemplateCategories copyWith({
+    String? id,
+    String? uid,
+    String? parentId,
+    String? name,
+    String? slug,
+    String? iconS3Key,
+    String? thumbnailS3Key,
+    String? showInHomepage,
+    String? displayOrder,
+    String? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    List<TemplatedChildrenList>? children,
+  }) {
+    return TemplateCategories(
+      id: id ?? this.id,
+      uid: uid ?? this.uid,
+      parentId: parentId ?? this.parentId,
+      name: name ?? this.name,
+      slug: slug ?? this.slug,
+      iconS3Key: iconS3Key ?? this.iconS3Key,
+      thumbnailS3Key: thumbnailS3Key ?? this.thumbnailS3Key,
+      showInHomepage: showInHomepage ?? this.showInHomepage,
+      displayOrder: displayOrder ?? this.displayOrder,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+
+      // ⭐ Preserve / replace children
+      children: children ?? this.children,
+    );
+  }
+
   factory TemplateCategories.fromJson(Map<String, dynamic> json) {
     return TemplateCategories(
       id: json["id"]?.toString(),
@@ -92,12 +132,12 @@ class TemplateCategories {
           ? null
           : DateTime.tryParse(json["updated_at"].toString()),
 
-      // ⭐ IMPORTANT
+      // ⭐ Children
       children: json["children"] is List
           ? (json["children"] as List)
-          .whereType<Map<String, dynamic>>()
-          .map((child) => TemplatedChildrenList.fromJson(child))
-          .toList()
+                .whereType<Map<String, dynamic>>()
+                .map((child) => TemplatedChildrenList.fromJson(child))
+                .toList()
           : <TemplatedChildrenList>[],
     );
   }

@@ -11,6 +11,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_svg/flutter_svg.dart' as svg;
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:gal/gal.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:path/path.dart' as path;
@@ -5906,44 +5907,128 @@ class _EditorViewState extends State<EditorView> {
   Future<void> _downloadProjectExport(BuildContext context) async {
     final projectProvider = context.read<ProjectProvider>();
 
-    final projectUid = projectProvider.projectUid;
+    final projectUid = projectProvider.projectUid?.trim() ?? '';
 
-    if (projectUid == null || projectUid.trim().isEmpty) {
+    if (projectUid.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Project UID not available')),
       );
       return;
     }
 
-    final fileUrl = await projectProvider.exportProject(projectUid: projectUid);
+    try {
+      debugPrint('📤 Calling export API...');
 
-    if (!context.mounted) return;
+      // API success மட்டும் check பண்ணுகிறோம்.
+      await projectProvider.exportProject(projectUid: projectUid);
 
-    if (fileUrl == null || fileUrl.isEmpty) {
+      if (!context.mounted) return;
+
+      // IMPORTANT:
+      // s3_key null இருந்தாலும் API response success என்றால்
+      // canvas-ஐ download செய்ய வேண்டும்.
+
+      if (projectProvider.exportError != null &&
+          projectProvider.exportError!.isNotEmpty) {
+        debugPrint('❌ Export API error: ${projectProvider.exportError}');
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(projectProvider.exportError!)));
+
+        return;
+      }
+
+      debugPrint('✅ Export API successful');
+
+      // Give Flutter time to finish latest canvas changes.
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (!context.mounted) return;
+
+      // -------------------------------------------------------
+      // CAPTURE CANVAS
+      // -------------------------------------------------------
+
+      final renderObject = _canvasKey.currentContext?.findRenderObject();
+
+      if (renderObject == null || renderObject is! RenderRepaintBoundary) {
+        debugPrint('❌ RepaintBoundary not found');
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to capture design')),
+        );
+
+        return;
+      }
+
+      final boundary = renderObject;
+
+      debugPrint('📸 Capturing canvas...');
+
+      final image = await boundary.toImage(pixelRatio: 3.0);
+
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+
+      if (byteData == null) {
+        debugPrint('❌ PNG conversion failed');
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Unable to create image')));
+
+        return;
+      }
+
+      final bytes = byteData.buffer.asUint8List();
+
+      debugPrint('✅ Canvas captured: ${bytes.length} bytes');
+
+      // -------------------------------------------------------
+      // SAVE TO GALLERY
+      // -------------------------------------------------------
+
+      bool hasAccess = await Gal.hasAccess();
+
+      if (!hasAccess) {
+        await Gal.requestAccess();
+
+        hasAccess = await Gal.hasAccess();
+      }
+
+      if (!hasAccess) {
+        debugPrint('❌ Gallery permission denied');
+
+        if (!context.mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gallery permission is required')),
+        );
+
+        return;
+      }
+
+      final fileName = 'MMB_${DateTime.now().millisecondsSinceEpoch}';
+
+      await Gal.putImageBytes(bytes, name: fileName);
+
+      debugPrint('✅ IMAGE SAVED TO GALLERY');
+
+      if (!context.mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(projectProvider.exportError ?? 'Export failed')),
+        const SnackBar(content: Text('Image saved to Gallery successfully')),
       );
-      return;
-    }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Export/download error: $e');
 
-    final filePath = await downloadExportFile(fileUrl: fileUrl);
+      debugPrintStack(stackTrace: stackTrace);
 
-    if (!context.mounted) return;
+      if (!context.mounted) return;
 
-    if (filePath != null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Downloaded successfully')));
-
-      debugPrint('✅ Downloaded: $filePath');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            projectProvider.exportError ?? 'Download failed',
-          ),
-        ),
-      );
+      ).showSnackBar(SnackBar(content: Text('Unable to save image: $e')));
     }
   }
 
@@ -7175,4 +7260,3 @@ class _InteractiveBackgroundLayerState
     );
   }
 }
-
