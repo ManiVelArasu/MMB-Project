@@ -295,67 +295,65 @@ class HomeScreen extends StatelessWidget {
 
                         SizedBox(height: 16.h),
 
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount:
-                              homeScreenProvider.brandVideoPostsList.isNotEmpty
-                              ? homeScreenProvider.brandVideoPostsList.length
-                              : 4,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12.w,
-                                mainAxisSpacing: 12.h,
-                                childAspectRatio: 1.0,
-                              ),
-                          itemBuilder: (context, index) {
-                            return InkWell(
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  "/TemplateDetailScreen",
-                                );
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
+                        SizedBox(
+                          height: 190.h,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            padding: EdgeInsets.symmetric(horizontal: 4.w),
+                            itemCount:
+                                homeScreenProvider.popularTemplates.length,
+                            itemBuilder: (context, index) {
+                              final item =
+                                  homeScreenProvider.popularTemplates[index];
+
+                              final thumbnailKey = item.iconS3Key ?? '';
+
+                              final imageUrl = thumbnailKey.isEmpty
+                                  ? ''
+                                  : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+
+                              return Padding(
+                                padding: EdgeInsets.only(right: 12.w),
+                                child: InkWell(
+                                  onTap: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      "/TemplateDetailScreen",
+                                      arguments: {"templateUid": item.uid},
+                                    );
+                                  },
                                   borderRadius: BorderRadius.circular(20.r),
-                                  color: isDark
-                                      ? const Color(0xFF1E1E1E)
-                                      : Colors.grey.shade100,
-                                  border: Border.all(
-                                    color: isDark
-                                        ? Colors.grey.shade800
-                                        : Colors.grey.shade300,
-                                    width: 1.2,
-                                  ),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(20.r),
-                                  child: Stack(
-                                    children: [
-                                      Positioned.fill(
-                                        child: Image.asset(
-                                          "assets/images/thumbnail1.png",
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, _, _) => Container(
-                                            color: isDark
-                                                ? const Color(0xFF2C2C2C)
-                                                : Colors.grey.shade200,
-                                            child: Icon(
-                                              Icons.image_outlined,
-                                              size: 40.sp,
-                                              color: Colors.grey.shade400,
-                                            ),
-                                          ),
-                                        ),
+                                  child: Container(
+                                    width: 145.w,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20.r),
+                                      color: isDark
+                                          ? const Color(0xFF1E1E1E)
+                                          : Colors.grey.shade100,
+                                      border: Border.all(
+                                        color: isDark
+                                            ? Colors.grey.shade800
+                                            : Colors.grey.shade300,
+                                        width: 1.2,
                                       ),
-                                    ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(20.r),
+                                      child: imageUrl.isEmpty
+                                          ? const Center(
+                                              child: Icon(
+                                                Icons.image_outlined,
+                                                color: Colors.grey,
+                                              ),
+                                            )
+                                          : buildProfileImage(imageUrl),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
                         SizedBox(height: 12.h),
                       ],
@@ -457,12 +455,252 @@ class HomeScreen extends StatelessWidget {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: homeScreenProvider.templateCategories.length,
+
                         itemBuilder: (context, index) {
                           final category =
                               homeScreenProvider.templateCategories[index];
 
                           final categoryName = category.name?.trim() ?? '';
+
+                          final categoryLower = categoryName.toLowerCase();
+
                           final slug = category.slug?.trim() ?? '';
+
+                          // ==========================================================
+                          // SPECIAL CATEGORY CHECK
+                          // ==========================================================
+
+                          final bool isSpecialCategory =
+                              categoryLower == 'celebrate moments' ||
+                              categoryLower == 'devotional/daily posts' ||
+                              categoryLower == 'devotional / daily posts';
+
+                          // ==========================================================
+                          // SPECIAL CATEGORY
+                          // Celebrate Moments
+                          // Devotional / Daily Posts
+                          // ==========================================================
+
+                          if (isSpecialCategory) {
+                            if (category.children.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+
+                            return Container(
+                              width: double.infinity,
+                              margin: EdgeInsets.only(top: 20.h),
+                              padding: EdgeInsets.fromLTRB(
+                                12.w,
+                                14.h,
+                                12.w,
+                                16.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF171717)
+                                    : const Color(0xFFFAF4FF),
+                                border: Border(
+                                  top: BorderSide(
+                                    color: isDark
+                                        ? Colors.grey.shade800
+                                        : const Color(0xFFE9DDF0),
+                                  ),
+                                  bottom: BorderSide(
+                                    color: isDark
+                                        ? Colors.grey.shade800
+                                        : const Color(0xFFE9DDF0),
+                                  ),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  // ==================================================
+                                  // PARENT TITLE
+                                  // ==================================================
+
+                                  AppText(
+                                    categoryName,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
+                                  ),
+
+                                  SizedBox(height: 12.h),
+
+                                  // ==================================================
+                                  // CHILDREN HORIZONTAL SCROLL
+                                  // ==================================================
+                                  SizedBox(
+                                    height: 105.h,
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: const BouncingScrollPhysics(),
+                                      itemCount: category.children.length,
+
+                                      separatorBuilder: (_, __) =>
+                                          SizedBox(width: 14.w),
+
+                                      itemBuilder: (context, childIndex) {
+                                        final child =
+                                            category.children[childIndex];
+
+                                        final childName =
+                                            child.name?.trim() ?? '';
+
+                                        final childSlug =
+                                            child.slug?.trim() ?? '';
+
+                                        final thumbnailKey =
+                                            child.iconS3Key?.trim() ?? '';
+
+                                        final imageUrl = thumbnailKey.isEmpty
+                                            ? ''
+                                            : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+
+                                        return SizedBox(
+                                          width: 72.w,
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              30.r,
+                                            ),
+
+                                            onTap: () {
+                                              debugPrint(
+                                                "📂 CHILD CATEGORY: "
+                                                "$childName",
+                                              );
+
+                                              debugPrint(
+                                                "📂 CHILD SLUG: "
+                                                "$childSlug",
+                                              );
+
+                                              Navigator.pushNamed(
+                                                context,
+                                                "/TemplateDetailScreen",
+                                                arguments: {
+                                                  "category": childSlug,
+                                                  "categoryUid": child.uid,
+                                                  "categoryName": child.name,
+                                                },
+                                              );
+                                            },
+
+                                            child: Column(
+                                              children: [
+                                                // ====================================
+                                                // CHILD THUMBNAIL
+                                                // ====================================
+
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        10.r,
+                                                      ),
+                                                  child: Container(
+                                                    width: 68.w,
+                                                    height: 68.w,
+                                                    color: isDark
+                                                        ? const Color(
+                                                            0xFF252525,
+                                                          )
+                                                        : Colors.grey.shade100,
+
+                                                    child: imageUrl.isEmpty
+                                                        ? const Icon(
+                                                            Icons
+                                                                .image_outlined,
+                                                            color: Colors.grey,
+                                                          )
+                                                        : Image.network(
+                                                            imageUrl,
+                                                            width: 68.w,
+                                                            height: 68.w,
+                                                            fit: BoxFit.cover,
+
+                                                            loadingBuilder:
+                                                                (
+                                                                  context,
+                                                                  child,
+                                                                  loadingProgress,
+                                                                ) {
+                                                                  if (loadingProgress ==
+                                                                      null) {
+                                                                    return child;
+                                                                  }
+
+                                                                  return const Center(
+                                                                    child: CircularProgressIndicator(
+                                                                      strokeWidth:
+                                                                          1.5,
+                                                                      color: Color(
+                                                                        0xFFE53935,
+                                                                      ),
+                                                                    ),
+                                                                  );
+                                                                },
+
+                                                            errorBuilder:
+                                                                (
+                                                                  context,
+                                                                  error,
+                                                                  stackTrace,
+                                                                ) {
+                                                                  debugPrint(
+                                                                    "❌ CHILD IMAGE ERROR: "
+                                                                    "$imageUrl",
+                                                                  );
+
+                                                                  return const Icon(
+                                                                    Icons
+                                                                        .broken_image_outlined,
+                                                                    color: Colors
+                                                                        .grey,
+                                                                  );
+                                                                },
+                                                          ),
+                                                  ),
+                                                ),
+
+                                                SizedBox(height: 6.h),
+
+                                                // ====================================
+                                                // CHILD NAME
+                                                // ====================================
+                                                AppText(
+                                                  childName,
+                                                  textAlign: TextAlign.center,
+                                                  maxLines: 2,
+                                                  style: TextStyle(
+                                                    fontSize: 8.sp,
+                                                    fontWeight: FontWeight.w800,
+                                                    height: 1.05,
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : Colors.black,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          // ==========================================================
+                          // NORMAL CATEGORY
+                          // ==========================================================
 
                           if (slug.isEmpty) {
                             return const SizedBox.shrink();
@@ -479,29 +717,32 @@ class HomeScreen extends StatelessWidget {
                           final isLoading = homeScreenProvider
                               .isTemplateLoading(slug);
 
-                          // YouTube category check
+                          // ==========================================================
+                          // YOUTUBE THUMBNAIL CHECK
+                          // ==========================================================
+
                           final bool isYoutubeThumbnail =
                               slug.toLowerCase() == 'youtube-thumbnails' ||
-                              categoryName.toLowerCase() ==
-                                  'youtube thumbnails';
+                              categoryLower == 'youtube thumbnails';
 
                           return Padding(
                             padding: EdgeInsets.only(top: 24.h),
+
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
+
                               children: [
+                                // ======================================================
+                                // CATEGORY HEADER
+                                // ======================================================
+
                                 _buildSectionHeader(
                                   title: categoryName,
                                   iconAsset: categoryIcon,
                                   hasViewAll: true,
                                   isDark: isDark,
+
                                   onViewAll: () {
-                                    if (slug.isEmpty) return;
-
-                                    debugPrint(
-                                      "📂 VIEW ALL category slug: $slug",
-                                    );
-
                                     Navigator.pushNamed(
                                       context,
                                       "/TemplateDetailScreen",
@@ -512,9 +753,13 @@ class HomeScreen extends StatelessWidget {
 
                                 SizedBox(height: 12.h),
 
+                                // ======================================================
+                                // LOADING
+                                // ======================================================
                                 if (isLoading)
                                   SizedBox(
                                     height: isYoutubeThumbnail ? 310.h : 165.h,
+
                                     child: const Center(
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
@@ -522,15 +767,17 @@ class HomeScreen extends StatelessWidget {
                                       ),
                                     ),
                                   )
-                                // =========================
+                                // ======================================================
                                 // EMPTY
-                                // =========================
+                                // ======================================================
                                 else if (templates.isEmpty)
                                   SizedBox(
                                     height: isYoutubeThumbnail ? 250.h : 110.h,
+
                                     child: Center(
                                       child: AppText(
                                         'No templates available',
+
                                         style: TextStyle(
                                           color: isDark
                                               ? Colors.white54
@@ -540,38 +787,52 @@ class HomeScreen extends StatelessWidget {
                                       ),
                                     ),
                                   )
+                                // ======================================================
+                                // YOUTUBE THUMBNAILS
+                                // 16:9 OLD YOUTUBE SIZE
+                                // 2 x 2 GRID + HORIZONTAL PAGE
+                                // ======================================================
                                 else if (isYoutubeThumbnail)
                                   SizedBox(
                                     height: 200.h,
                                     width: double.infinity,
+
                                     child: LayoutBuilder(
                                       builder: (context, constraints) {
                                         final double pageWidth =
                                             constraints.maxWidth;
 
-                                        final double horizontalGap = 16.w;
-                                        final double verticalGap = 16.h;
+                                        final double horizontalGap = 12.w;
 
+                                        final double verticalGap = 12.h;
+
+                                        // 2 cards per row
                                         final double cardWidth =
                                             (pageWidth - horizontalGap) / 2;
 
+                                        // EXACT 16:9
                                         final double cardHeight =
                                             cardWidth * 9 / 16;
 
+                                        // 4 cards per page
                                         final int pageCount =
                                             (templates.length / 4).ceil();
 
                                         return ListView.builder(
                                           scrollDirection: Axis.horizontal,
+
                                           physics:
                                               const BouncingScrollPhysics(),
+
                                           itemCount: pageCount,
+
                                           itemBuilder: (context, pageIndex) {
                                             final int startIndex =
                                                 pageIndex * 4;
 
                                             return SizedBox(
                                               width: pageWidth,
+
                                               child: Padding(
                                                 padding: EdgeInsets.only(
                                                   right:
@@ -579,11 +840,16 @@ class HomeScreen extends StatelessWidget {
                                                       ? 0
                                                       : 16.w,
                                                 ),
+
                                                 child: Column(
                                                   children: [
+                                                    // ==============================
                                                     // ROW 1
+                                                    // ==============================
+
                                                     SizedBox(
                                                       height: cardHeight,
+
                                                       child: Row(
                                                         children: [
                                                           Expanded(
@@ -620,9 +886,12 @@ class HomeScreen extends StatelessWidget {
                                                       height: verticalGap,
                                                     ),
 
+                                                    // ==============================
                                                     // ROW 2
+                                                    // ==============================
                                                     SizedBox(
                                                       height: cardHeight,
+
                                                       child: Row(
                                                         children: [
                                                           Expanded(
@@ -669,18 +938,33 @@ class HomeScreen extends StatelessWidget {
                                       },
                                     ),
                                   )
+                                // ======================================================
+                                // NORMAL CATEGORY
+                                // HORIZONTAL TEMPLATE SCROLL
+                                // ======================================================
                                 else
                                   SizedBox(
                                     height: 165.h,
-                                    child: ListView.builder(
+
+                                    child: ListView.separated(
                                       scrollDirection: Axis.horizontal,
+
                                       physics: const BouncingScrollPhysics(),
+
                                       itemCount: templates.length,
+
+                                      separatorBuilder: (_, __) =>
+                                          SizedBox(width: 12.w),
+
                                       itemBuilder: (context, templateIndex) {
-                                        return _buildApiTemplateCard(
-                                          context,
-                                          templates[templateIndex],
-                                          isDark,
+                                        return SizedBox(
+                                          width: 145.w,
+
+                                          child: _buildApiTemplateCard(
+                                            context,
+                                            templates[templateIndex],
+                                            isDark,
+                                          ),
                                         );
                                       },
                                     ),
@@ -949,6 +1233,51 @@ class HomeScreen extends StatelessWidget {
     return months[month - 1];
   }
 
+  Widget buildProfileImage(String imageUrl) {
+    if (imageUrl.isEmpty) {
+      return _defaultLogo();
+    }
+
+    final uri = Uri.tryParse(imageUrl);
+    final path = uri?.path.toLowerCase() ?? '';
+
+    final isSvg = path.endsWith('.svg');
+
+    // SVG
+    if (isSvg) {
+      return SvgPicture.network(
+        imageUrl,
+        width: 50.w,
+        height: 50.w,
+        fit: BoxFit.cover,
+        placeholderBuilder: (context) {
+          return _defaultLogo();
+        },
+      );
+    }
+
+    // PNG / JPG / JPEG / WEBP
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      cacheKey: imageUrl,
+      width: 50.w,
+      height: 50.w,
+      fit: BoxFit.cover,
+
+      placeholder: (context, url) {
+        return _defaultLogo();
+      },
+
+      errorWidget: (context, url, error) {
+        debugPrint("❌ Profile image load failed: $error");
+
+        debugPrint("Image URL: $url");
+
+        return _defaultLogo();
+      },
+    );
+  }
+
   Widget _buildSpecialDaysApiList(HomeScreenProvider provider) {
     final events = provider.specialDays;
 
@@ -1122,7 +1451,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
 
-            Positioned(
+            /*    Positioned(
               left: 0,
               right: 0,
               bottom: 0,
@@ -1157,7 +1486,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
+            ),*/
           ],
         ),
       ),
@@ -1415,7 +1744,7 @@ class HomeScreen extends StatelessWidget {
               ? _templateImagePlaceholder(isDark)
               : CachedNetworkImage(
                   imageUrl: imageUrl,
-                  fit: BoxFit.contain,
+                  fit: BoxFit.cover,
                   placeholder: (context, url) {
                     return const Center(child: CircularProgressIndicator());
                   },
@@ -1609,145 +1938,94 @@ class HomeScreen extends StatelessWidget {
     bool isDark, {
     required dynamic me,
   }) {
-    return FutureBuilder<SharedPreferences>(
-      future: SharedPreferences.getInstance(),
-      builder: (context, snapshot) {
-        String? savedImagePath;
+    // Popular templates first 4 only
+    final popularTemplates = homeScreenProvider.popularTemplates
+        .take(4)
+        .toList();
 
-        if (snapshot.hasData) {
-          savedImagePath = snapshot.data?.getString(
-            'saved_business_image_path',
-          );
-        }
-
-        final String? accountType =
-            homeScreenProvider.provider.me?.data.accountType;
-        final bool isBusiness = accountType == 'business';
-
-        // Business image
-        final String? businessLogo =
-            homeScreenProvider.provider.business?.logoS3Key;
-
-        final String? profilePhoto =
-            homeScreenProvider.provider.me?.data.profilePhotoS3Key;
-
-        final String? imageKey = isBusiness ? businessLogo : profilePhoto;
-
-        debugPrint("ACCOUNT TYPE: $accountType");
-        debugPrint("BUSINESS LOGO: $businessLogo");
-        debugPrint("PROFILE PHOTO: $profilePhoto");
-
-        return SizedBox(
-          height: 360.h,
-          child: PageView.builder(
-            controller: homeScreenProvider.zonePageController,
-            itemCount: homeScreenProvider.myZoneBanners.length,
-            itemBuilder: (context, index) {
-              return Container(
-                margin: EdgeInsets.symmetric(horizontal: 25.w),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16.r),
-                  color: isDark
-                      ? const Color(0xFF1E1E1E)
-                      : Colors.grey.shade100,
+    return SizedBox(
+      height: 360.h,
+      child: popularTemplates.isEmpty
+          ? Container(
+              margin: EdgeInsets.symmetric(horizontal: 25.w),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.r),
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16.r),
+                child: Image.asset(
+                  "assets/images/BName.png",
+                  fit: BoxFit.cover,
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16.r),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // =========================
-                      // PROFILE / BUSINESS IMAGE
-                      // =========================
-                      if (imageKey != null && imageKey.isNotEmpty)
-                        Image.network(
-                          '${ApiEndpoints.cdnImageUrl}/$imageKey',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              "assets/images/BName.png",
-                              fit: BoxFit.cover,
-                            );
-                          },
-                        )
-                      else
-                        Image.asset(
-                          "assets/images/BName.png",
-                          fit: BoxFit.cover,
-                        ),
+              ),
+            )
+          : PageView.builder(
+              controller: homeScreenProvider.zonePageController,
+              itemCount: popularTemplates.length,
+              itemBuilder: (context, index) {
+                final item = popularTemplates[index];
 
-                      // =========================
-                      // BOTTOM INFO
-                      // =========================
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 18.w,
-                            vertical: 12.h,
-                          ),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF246BFE),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: AppText(
-                                  isBusiness
-                                      ? homeScreenProvider
-                                                .provider
-                                                .business
-                                                ?.name ??
-                                            ''
-                                      : homeScreenProvider
-                                                .provider
-                                                .me
-                                                ?.data
-                                                .name ??
-                                            '',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11.sp,
-                                  ),
-                                  maxLines: 1,
-                                ),
-                              ),
+                final thumbnailKey = item.iconS3Key ?? '';
 
-                              SizedBox(width: 10.w),
+                final imageUrl = thumbnailKey.isEmpty
+                    ? ''
+                    : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
 
-                              AppText(
-                                isBusiness
-                                    ? homeScreenProvider
-                                              .provider
-                                              .business
-                                              ?.email ??
-                                          ''
-                                    : homeScreenProvider
-                                              .provider
-                                              .me
-                                              ?.data
-                                              .email ??
-                                          '',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11.sp,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                return Container(
+                  margin: EdgeInsets.symmetric(horizontal: 25.w),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16.r),
+                    color: isDark
+                        ? const Color(0xFF1E1E1E)
+                        : Colors.grey.shade100,
                   ),
-                ),
-              );
-            },
-          ),
-        );
-      },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16.r),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        buildProfileImage(imageUrl),
+
+                        // =========================
+                        // BOTTOM INFO
+                        // =========================
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 18.w,
+                              vertical: 12.h,
+                            ),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF246BFE),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: AppText(
+                                    item.name ?? '',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 
@@ -2344,6 +2622,28 @@ class HomeScreen extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+
+  Widget _defaultLogo() {
+    return Image.asset(
+      "assets/images/BName.png",
+
+      width: 50.w,
+      height: 50.w,
+
+      fit: BoxFit.cover,
+
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: 50.w,
+          height: 50.w,
+
+          color: const Color(0xFFE91E63),
+
+          child: const Icon(Icons.business, color: Colors.white),
+        );
+      },
     );
   }
 

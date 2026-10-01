@@ -31,7 +31,10 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
+
             isMinifyEnabled = true
+            isShrinkResources = true
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -54,17 +57,11 @@ flutter {
 
 dependencies {
     // Google ML Kit
-    implementation(
-        "com.google.mlkit:segmentation-selfie:16.0.0-beta6"
-    )
+    implementation("com.google.mlkit:segmentation-selfie:16.0.0-beta6")
 
     // Kotlin Coroutines
-    implementation(
-        "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
-    )
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    // SmartAuth / Google Credentials API
-    implementation(
-        "com.google.android.gms:play-services-auth:21.4.0"
-    )
+    // Required by smart_auth
+    implementation("com.google.android.gms:play-services-auth:20.5.0")
 }

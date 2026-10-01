@@ -26,6 +26,7 @@ class _SpecialDaysScreenView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     final isDark = context.watch<CustomThemeProvider>().isDarkMode;
 
     return Scaffold(
@@ -66,28 +67,34 @@ class _SpecialDaysScreenView extends StatelessWidget {
                 ),
               );
             }
-        
-            final specialDays =
-                provider.specialDays?.data ?? [];
-        
+
+            final specialDays = provider.specialDays?.data ?? [];
+
             if (specialDays.isEmpty) {
               return _EmptyState(isDark: isDark);
             }
-        
-            final List<Template> templates = [];
-        
+
+            // Template + Special Day Name
+            final List<SpecialDayTemplateItem> templates = [];
+
             for (final specialDay in specialDays) {
-              templates.addAll(specialDay.templates);
+              for (final template in specialDay.templates) {
+                templates.add(
+                  SpecialDayTemplateItem(
+                    template: template,
+                    specialDayName: specialDay.name ?? '',
+                  ),
+                );
+              }
             }
-        
+
             if (templates.isEmpty) {
               return _EmptyState(
                 isDark: isDark,
                 message: 'No templates found',
               );
             }
-        
-            // FULL SCREEN SCROLL
+
             return GridView.builder(
               padding: EdgeInsets.fromLTRB(
                 12.w,
@@ -98,17 +105,21 @@ class _SpecialDaysScreenView extends StatelessWidget {
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
-              gridDelegate:
-              SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 10.w,
                 mainAxisSpacing: 10.h,
+
+                // Image + nameக்கு space
                 childAspectRatio: 0.78,
               ),
               itemCount: templates.length,
               itemBuilder: (context, index) {
+                final item = templates[index];
+
                 return _TemplateCard(
-                  template: templates[index],
+                  template: item.template,
+                  specialDayName: item.specialDayName,
                   isDark: isDark,
                 );
               },
@@ -126,9 +137,14 @@ class _SpecialDaysScreenView extends StatelessWidget {
 
 class _TemplateCard extends StatelessWidget {
   final Template template;
+  final String specialDayName;
   final bool isDark;
 
-  const _TemplateCard({required this.template, required this.isDark});
+  const _TemplateCard({
+    required this.template,
+    required this.specialDayName,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -142,19 +158,13 @@ class _TemplateCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        debugPrint('================================');
-        debugPrint('SPECIAL DAY TEMPLATE CLICK');
-        debugPrint('Template ID   : ${template.id}');
-        debugPrint('Template UID  : ${template.uid}');
-        debugPrint('Template Name : ${template.name}');
-        debugPrint('Template Type : ${template.templateType}');
-        debugPrint('================================');
-
-        final templateUid = (template as dynamic).uid?.toString().trim() ?? '';
+        final templateUid = template.uid?.trim() ?? '';
 
         if (templateUid.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Template UID not available')),
+            const SnackBar(
+              content: Text('Template UID not available'),
+            ),
           );
           return;
         }
@@ -162,21 +172,23 @@ class _TemplateCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => TemplateEditScreen(templateUid: templateUid),
+            builder: (_) => TemplateEditScreen(
+              templateUid: templateUid,
+            ),
           ),
         );
       },
-
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
-
+          color: isDark
+              ? const Color(0xFF1F1F1F)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12.r),
-
           border: Border.all(
-            color: isDark ? Colors.white10 : const Color(0xFFEAEAEA),
+            color: isDark
+                ? Colors.white10
+                : const Color(0xFFEAEAEA),
           ),
-
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(.05),
@@ -185,104 +197,78 @@ class _TemplateCard extends StatelessWidget {
             ),
           ],
         ),
-
         clipBehavior: Clip.antiAlias,
 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-
           children: [
-            // =================================================
             // IMAGE
-            // =================================================
-
             Expanded(
               child: SizedBox(
                 width: double.infinity,
-
                 child: imageUrl.isEmpty
                     ? Container(
-                        color: const Color(0xFFFFE5E5),
-                        child: Icon(
-                          Icons.image_outlined,
-                          color: const Color(0xFFE53935),
-                          size: 38.sp,
-                        ),
-                      )
+                  color: const Color(0xFFFFE5E5),
+                  child: Icon(
+                    Icons.image_outlined,
+                    color: const Color(0xFFE53935),
+                    size: 38.sp,
+                  ),
+                )
                     : CachedNetworkImage(
-                        imageUrl: imageUrl,
-
-                        width: double.infinity,
-
-                        height: double.infinity,
-
-                        fit: BoxFit.cover,
-
-                        placeholder: (_, __) {
-                          return Container(
-                            color: isDark
-                                ? const Color(0xFF292929)
-                                : const Color(0xFFF3F3F3),
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Color(0xFFE53935),
-                              ),
-                            ),
-                          );
-                        },
-
-                        errorWidget: (_, __, ___) {
-                          return Container(
-                            color: const Color(0xFFFFE5E5),
-                            child: Icon(
-                              Icons.image_not_supported_rounded,
-                              color: const Color(0xFFE53935),
-                              size: 32.sp,
-                            ),
-                          );
-                        },
+                  imageUrl: imageUrl,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) {
+                    return Container(
+                      color: isDark
+                          ? const Color(0xFF292929)
+                          : const Color(0xFFF3F3F3),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFFE53935),
+                        ),
                       ),
+                    );
+                  },
+                  errorWidget: (_, __, ___) {
+                    return Container(
+                      color: const Color(0xFFFFE5E5),
+                      child: Icon(
+                        Icons.image_not_supported_rounded,
+                        color: const Color(0xFFE53935),
+                        size: 32.sp,
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
 
-            // =================================================
-            // TEMPLATE NAME
-            // =================================================
+            // SPECIAL DAY NAME
             Padding(
-              padding: EdgeInsets.fromLTRB(9.w, 7.h, 9.w, 8.h),
-
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      template.name ?? 'Template',
-
-                      maxLines: 1,
-
-                      overflow: TextOverflow.ellipsis,
-
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                    ),
+              padding: EdgeInsets.fromLTRB(
+                6.w,
+                7.h,
+                6.w,
+                8.h,
+              ),
+              child: Center(
+                child: Text(
+                  specialDayName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w800,
+                    color: isDark
+                        ? Colors.white
+                        : Colors.black87,
                   ),
-
-                  // =========================================
-                  // PREMIUM
-                  // =========================================
-                  if (template.isPremium == '1')
-                    Padding(
-                      padding: EdgeInsets.only(left: 4.w),
-                      child: Icon(
-                        Icons.workspace_premium_rounded,
-                        size: 15.sp,
-                        color: const Color(0xFFFFB300),
-                      ),
-                    ),
-                ],
+                ),
               ),
             ),
           ],
@@ -337,4 +323,13 @@ class _EmptyState extends StatelessWidget {
       ),
     );
   }
+}
+class SpecialDayTemplateItem {
+  final Template template;
+  final String specialDayName;
+
+  SpecialDayTemplateItem({
+    required this.template,
+    required this.specialDayName,
+  });
 }

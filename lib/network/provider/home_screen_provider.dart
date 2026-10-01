@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../Api Model/special_days.dart';
 import '../../Api Model/templatecategories.dart';
 import '../../Api Model/Template_model.dart';
+import '../../Api Model/templates_children.dart';
 import '../../Repository/home_repository.dart';
 import '../../model/my_space_model.dart';
 import 'common_provider.dart';
@@ -13,6 +14,7 @@ class HomeScreenProvider extends ChangeNotifier {
   HomeScreenProvider({bool loadSpecialDaysOnInit = true}) {
     fetchTemplateCategories();
     loadSavedBusinessData();
+    fetchTemplatesByPopular();
     if (loadSpecialDaysOnInit) {
       fetchSpecialDays(range: 'month');
     }
@@ -91,7 +93,26 @@ class HomeScreenProvider extends ChangeNotifier {
   Range? _specialDaysRange;
 
   Range? get specialDaysRange => _specialDaysRange;
+  List<TemplateCategories> _popularTemplates = [];
 
+  List<TemplateCategories> get popularTemplates => _popularTemplates;
+
+  bool _isLoadingPopularTemplates = false;
+
+  String? _popularTemplatesError;
+
+  bool get isLoadingPopularTemplates => _isLoadingPopularTemplates;
+
+  String? get popularTemplatesError => _popularTemplatesError;
+
+  List<TemplatedChildrenList> _celebrateChildren = [];
+  List<TemplatedChildrenList> _devotionalChildren = [];
+
+  List<TemplatedChildrenList> get celebrateChildren =>
+      _celebrateChildren;
+
+  List<TemplatedChildrenList> get devotionalChildren =>
+      _devotionalChildren;
   // ============================================================
   // CATEGORY -> TEMPLATES
   // ============================================================
@@ -128,40 +149,100 @@ class HomeScreenProvider extends ChangeNotifier {
   Future<void> fetchTemplateCategories() async {
     _isLoadingCategories = true;
     _categoryErrorMessage = null;
+
     notifyListeners();
 
     try {
-      final result = await HomeRepository.instance.templateCategory();
+      final result =
+      await HomeRepository.instance.templateCategory();
 
       if (result.isSuccess && result.data != null) {
         final response = result.data!;
 
         if (response.success == true) {
           _templateCategories = response.data ?? [];
-          _categoryErrorMessage = null;
 
-          notifyListeners();
+          debugPrint(
+            "✅ Categories: ${_templateCategories.length}",
+          );
 
-          // Load templates for every category using its slug.
-          // We intentionally don't use category index.
           for (final category in _templateCategories) {
-            final slug = category.slug?.trim();
+            final categoryName =
+                category.name?.trim().toLowerCase() ?? '';
 
-            if (slug != null && slug.isNotEmpty) {
-              await fetchTemplatesByCategory(slug);
+            final categorySlug =
+                category.slug?.trim() ?? '';
+
+            // =====================================================
+            // CELEBRATE MOMENTS / DEVOTIONAL DAILY POSTS
+            // FETCH THEIR CHILDREN
+            // =====================================================
+
+            final bool isSpecialParent =
+                categoryName == 'celebrate moments' ||
+                    categoryName == 'devotional/daily posts' ||
+                    categoryName == 'devotional / daily posts';
+
+            if (isSpecialParent) {
+              debugPrint(
+                "⭐ SPECIAL CATEGORY: ${category.name}",
+              );
+
+              debugPrint(
+                "⭐ CHILD COUNT: ${category.children.length}",
+              );
+
+              for (final child in category.children) {
+                final childSlug =
+                    child.slug?.trim() ?? '';
+
+                if (childSlug.isEmpty) continue;
+
+                debugPrint(
+                  "   └── CHILD: ${child.name} "
+                      "[$childSlug]",
+                );
+
+                await fetchTemplatesByCategory(
+                  childSlug,
+                );
+              }
+
+              continue;
+            }
+
+            // =====================================================
+            // NORMAL CATEGORY
+            // =====================================================
+
+            if (categorySlug.isNotEmpty) {
+              await fetchTemplatesByCategory(
+                categorySlug,
+              );
             }
           }
+
+          _categoryErrorMessage = null;
         } else {
-          _categoryErrorMessage = "Failed to load categories";
+          _categoryErrorMessage =
+          "Failed to load categories";
         }
-      } else if (result.isFailure) {
+      } else {
         _categoryErrorMessage =
-            result.error?.message ?? "Network Error Occurred";
+            result.error?.message ??
+                "Network Error Occurred";
       }
     } catch (e, stackTrace) {
-      debugPrint("Category API error: $e");
-      debugPrintStack(stackTrace: stackTrace);
-      _categoryErrorMessage = e.toString();
+      debugPrint(
+        "❌ Category API error: $e",
+      );
+
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
+
+      _categoryErrorMessage =
+          e.toString();
     } finally {
       _isLoadingCategories = false;
       notifyListeners();
@@ -266,8 +347,8 @@ class HomeScreenProvider extends ChangeNotifier {
 
   String _formatApiDate(DateTime date) =>
       '${date.year.toString().padLeft(4, '0')}-'
-      '${date.month.toString().padLeft(2, '0')}-'
-      '${date.day.toString().padLeft(2, '0')}';
+          '${date.month.toString().padLeft(2, '0')}-'
+          '${date.day.toString().padLeft(2, '0')}';
 
   Future<void> fetchTemplatesByCategory(String slug) async {
     final categorySlug = slug.trim();
@@ -305,6 +386,61 @@ class HomeScreenProvider extends ChangeNotifier {
       _templateErrorByCategory[categorySlug] = e.toString();
     } finally {
       _templateLoadingByCategory[categorySlug] = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchTemplatesByPopular() async {
+    _isLoadingPopularTemplates = true;
+    _popularTemplatesError = null;
+
+    notifyListeners();
+
+    try {
+      debugPrint("======================================");
+      debugPrint("🔥 FETCH POPULAR TEMPLATES");
+      debugPrint("======================================");
+
+      final result =
+      await HomeRepository.instance.myBrandCategory();
+
+      if (result.isSuccess && result.data != null) {
+        final response = result.data!;
+
+        debugPrint("🔥 POPULAR RESPONSE: $response");
+
+        if (response.success == true) {
+          _popularTemplates = response.data ?? [];
+
+          debugPrint(
+            "✅ Popular categories count: "
+                "${_popularTemplates.length}",
+          );
+        } else {
+          _popularTemplates = [];
+          _popularTemplatesError =
+          "Failed to load popular templates";
+        }
+      } else {
+        _popularTemplates = [];
+
+        _popularTemplatesError =
+            result.error?.message ??
+                "Network Error Occurred";
+      }
+    } catch (e, stackTrace) {
+      _popularTemplates = [];
+      _popularTemplatesError = e.toString();
+
+      debugPrint(
+        "❌ Popular Templates API Error: $e",
+      );
+
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
+    } finally {
+      _isLoadingPopularTemplates = false;
       notifyListeners();
     }
   }
@@ -377,25 +513,25 @@ class HomeScreenProvider extends ChangeNotifier {
 
     MySpaceModel(
       title: "BRAND SERIES",
-      icon: "assets/images/corporate.png",
+      icon: "assets/images/brand_series.png",
       gradientColors: [
-        const Color(0xFFE8F5E9).withValues(alpha: 0.2),
-        const Color(0xFFA5D6A7),
+        const Color(0xFFF2BA4E).withValues(alpha: 0.2),
+        const Color(0xFFF2BA4E),
       ],
     ),
 
     MySpaceModel(
       title: "BRAND FRAMES",
-      icon: "assets/images/corporate.png",
+      icon: "assets/images/b_brush.png",
       gradientColors: [
-        const Color(0xFFE8F5E9).withValues(alpha: 0.2),
-        const Color(0xFFA5D6A7),
+        const Color(0xFF4ED8F2).withValues(alpha: 0.2),
+        const Color(0xFF4ED8F2),
       ],
     ),
 
     MySpaceModel(
       title: "AI HUB",
-      icon: "assets/images/corporate.png",
+      icon: "assets/images/ai_tool.png",
       gradientColors: [
         const Color(0xFFE8F5E9).withValues(alpha: 0.2),
         const Color(0xFFA5D6A7),
@@ -425,13 +561,13 @@ class HomeScreenProvider extends ChangeNotifier {
     {
       "title": "Make My Lead",
       "subTitle":
-          "Go Premium and list your business for free on our platform to boost your leads.",
+      "Go Premium and list your business for free on our platform to boost your leads.",
       "btnText": "BOOST MY BUSINESS",
     },
     {
       "title": "Grow Your Business",
       "subTitle":
-          "Get verified badge and double your client engagement effortlessly.",
+      "Get verified badge and double your client engagement effortlessly.",
       "btnText": "UPGRADE NOW",
     },
   ];
@@ -488,22 +624,22 @@ class HomeScreenProvider extends ChangeNotifier {
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+      "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+      "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+      "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+      "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
   ];
   void clearUserData() {
@@ -524,6 +660,8 @@ class HomeScreenProvider extends ChangeNotifier {
     _templatesByCategory.clear();
     _templateLoadingByCategory.clear();
     _templateErrorByCategory.clear();
+    _celebrateChildren = [];
+    _devotionalChildren = [];
 
     _categoryErrorMessage = null;
     _isLoadingCategories = false;

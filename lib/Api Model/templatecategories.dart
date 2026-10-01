@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:mmb_app/Api%20Model/templates_children.dart';
+
 TemplateCategoriesModel templateCategoriesModelFromJson(String str) =>
     TemplateCategoriesModel.fromJson(json.decode(str));
 
@@ -10,37 +12,30 @@ class TemplateCategoriesModel {
   final bool? success;
   final List<TemplateCategories>? data;
 
-  TemplateCategoriesModel({
-    this.success,
-    this.data,
-  });
+  TemplateCategoriesModel({this.success, this.data});
 
   TemplateCategoriesModel copyWith({
     bool? success,
     List<TemplateCategories>? data,
-  }) =>
-      TemplateCategoriesModel(
-        success: success ?? this.success,
-        data: data ?? this.data,
-      );
+  }) => TemplateCategoriesModel(
+    success: success ?? this.success,
+    data: data ?? this.data,
+  );
 
-  // 🚨 INTHA factory constructor missing-a irundhadhaala dhaan error vandhuchu
   factory TemplateCategoriesModel.fromJson(Map<String, dynamic> json) =>
       TemplateCategoriesModel(
         success: json["success"] as bool?,
         data: json["data"] == null
-            ? []
-            : List<TemplateCategories>.from(
-          (json["data"] as List)
-              .map((x) => TemplateCategories.fromJson(x as Map<String, dynamic>)),
-        ),
+            ? <TemplateCategories>[]
+            : (json["data"] as List)
+            .whereType<Map<String, dynamic>>()
+            .map(TemplateCategories.fromJson)
+            .toList(),
       );
 
   Map<String, dynamic> toJson() => {
     "success": success,
-    "data": data == null
-        ? []
-        : List<dynamic>.from(data!.map((x) => x.toJson())),
+    "data": data?.map((x) => x.toJson()).toList() ?? [],
   };
 }
 
@@ -58,6 +53,8 @@ class TemplateCategories {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  final List<TemplatedChildrenList> children;
+
   TemplateCategories({
     this.id,
     this.uid,
@@ -71,69 +68,56 @@ class TemplateCategories {
     this.isActive,
     this.createdAt,
     this.updatedAt,
+    this.children = const [],
   });
 
-  TemplateCategories copyWith({
-    String? id,
-    String? uid,
-    String? parentId,
-    String? name,
-    String? slug,
-    String? iconS3Key,
-    String? thumbnailS3Key,
-    String? showInHomepage,
-    String? displayOrder,
-    String? isActive,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) =>
-      TemplateCategories(
-        id: id ?? this.id,
-        uid: uid ?? this.uid,
-        parentId: parentId ?? this.parentId,
-        name: name ?? this.name,
-        slug: slug ?? this.slug,
-        iconS3Key: iconS3Key ?? this.iconS3Key,
-        thumbnailS3Key: thumbnailS3Key ?? this.thumbnailS3Key,
-        showInHomepage: showInHomepage ?? this.showInHomepage,
-        displayOrder: displayOrder ?? this.displayOrder,
-        isActive: isActive ?? this.isActive,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+  factory TemplateCategories.fromJson(Map<String, dynamic> json) {
+    return TemplateCategories(
+      id: json["id"]?.toString(),
+      uid: json["uid"]?.toString(),
+      parentId: json["parent_id"]?.toString(),
+      name: json["name"]?.toString(),
+      slug: json["slug"]?.toString(),
+      iconS3Key: json["icon_s3_key"]?.toString(),
+      thumbnailS3Key: json["thumbnail_s3_key"]?.toString(),
+      showInHomepage: json["show_in_homepage"]?.toString(),
+      displayOrder: json["display_order"]?.toString(),
+      isActive: json["is_active"]?.toString(),
 
-  factory TemplateCategories.fromJson(Map<String, dynamic> json) =>
-      TemplateCategories(
-        id: json["id"]?.toString(),
-        uid: json["uid"]?.toString(),
-        parentId: json["parent_id"]?.toString(),
-        name: json["name"]?.toString(),
-        slug: json["slug"]?.toString(),
-        iconS3Key: json["icon_s3_key"]?.toString(),
-        thumbnailS3Key: json["thumbnail_s3_key"]?.toString(),
-        showInHomepage: json["show_in_homepage"]?.toString(),
-        displayOrder: json["display_order"]?.toString(),
-        isActive: json["is_active"]?.toString(),
-        createdAt: json["created_at"] == null
-            ? null
-            : DateTime.tryParse(json["created_at"].toString()),
-        updatedAt: json["updated_at"] == null
-            ? null
-            : DateTime.tryParse(json["updated_at"].toString()),
-      );
+      createdAt: json["created_at"] == null
+          ? null
+          : DateTime.tryParse(json["created_at"].toString()),
 
-  Map<String, dynamic> toJson() => {
-    "id": id,
-    "uid": uid,
-    "parent_id": parentId,
-    "name": name,
-    "slug": slug,
-    "icon_s3_key": iconS3Key,
-    "thumbnail_s3_key": thumbnailS3Key,
-    "show_in_homepage": showInHomepage,
-    "display_order": displayOrder,
-    "is_active": isActive,
-    "created_at": createdAt?.toIso8601String(),
-    "updated_at": updatedAt?.toIso8601String(),
-  };
+      updatedAt: json["updated_at"] == null
+          ? null
+          : DateTime.tryParse(json["updated_at"].toString()),
+
+      // ⭐ IMPORTANT
+      children: json["children"] is List
+          ? (json["children"] as List)
+          .whereType<Map<String, dynamic>>()
+          .map((child) => TemplatedChildrenList.fromJson(child))
+          .toList()
+          : <TemplatedChildrenList>[],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "uid": uid,
+      "parent_id": parentId,
+      "name": name,
+      "slug": slug,
+      "icon_s3_key": iconS3Key,
+      "thumbnail_s3_key": thumbnailS3Key,
+      "show_in_homepage": showInHomepage,
+      "display_order": displayOrder,
+      "is_active": isActive,
+      "created_at": createdAt?.toIso8601String(),
+      "updated_at": updatedAt?.toIso8601String(),
+
+      "children": children.map((child) => child.toJson()).toList(),
+    };
+  }
 }

@@ -15,17 +15,15 @@ class HomeRepository {
   static final HomeRepository instance = HomeRepository._();
 
   Future<ApiResult<TemplateCategoriesModel>> templateCategory() async {
-    final result = await ApiRepository.instance
-        .request<TemplateCategoriesModel>(
-          config: ApiRequestConfig(
-            endpoint: ApiEndpoints.templateCategory,
-            method: ApiMethod.get,
-            queryParams: {"tree": "1", "homepage": "1"},
-          ),
-          fromJson: (json) =>
-              TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
-        );
-    return result;
+    return await ApiRepository.instance.request<TemplateCategoriesModel>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.templateCategory,
+        method: ApiMethod.get,
+        queryParams: {"tree": "1"},
+      ),
+      fromJson: (json) =>
+          TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
+    );
   }
 
   Future<ApiResult<TemplatesResponseModel>> templatesByCategory(
@@ -45,6 +43,20 @@ class HomeRepository {
     return result;
   }
 
+  Future<ApiResult<TemplateCategoriesModel>> myBrandCategory() async {
+    final result = await ApiRepository.instance
+        .request<TemplateCategoriesModel>(
+          config: ApiRequestConfig(
+            endpoint: ApiEndpoints.templateCategory,
+            method: ApiMethod.get,
+            queryParams: {"popular": "1"},
+          ),
+          fromJson: (json) =>
+              TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
+        );
+    return result;
+  }
+
   Future<ApiResult<SpecialDays>> specialDaysApi({
     String? range,
     String? from,
@@ -57,12 +69,8 @@ class HomeRepository {
     if (range != null && range.isNotEmpty) {
       queryParams["range"] = range;
     }
-
     // range இல்லையென்றால் from/to
-    else if (from != null &&
-        from.isNotEmpty &&
-        to != null &&
-        to.isNotEmpty) {
+    else if (from != null && from.isNotEmpty && to != null && to.isNotEmpty) {
       queryParams["from"] = from;
       queryParams["to"] = to;
     }
@@ -72,21 +80,15 @@ class HomeRepository {
       queryParams["type"] = type;
     }
 
-    debugPrint(
-      "📅 Special Days API Params: $queryParams",
-    );
+    debugPrint("📅 Special Days API Params: $queryParams");
 
-    final result =
-    await ApiRepository.instance.request<SpecialDays>(
+    final result = await ApiRepository.instance.request<SpecialDays>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.specialDays,
         method: ApiMethod.get,
         queryParams: queryParams,
       ),
-      fromJson: (json) =>
-          SpecialDays.fromJson(
-            json as Map<String, dynamic>,
-          ),
+      fromJson: (json) => SpecialDays.fromJson(json as Map<String, dynamic>),
     );
 
     return result;
