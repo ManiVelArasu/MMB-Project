@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/ui/screens/widget/change_number.dart';
+import 'package:mmb_app/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
@@ -126,7 +127,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(provider.saveError ?? "Failed to update profile"),
+          content: AppText(provider.saveError ?? "Failed to update profile"),
         ),
       );
     }
@@ -252,36 +253,13 @@ class _EditProfileViewState extends State<_EditProfileView> {
         SizedBox(
           width: double.infinity,
           height: 50.h,
-          child: ElevatedButton(
-            onPressed: provider.isSaving || provider.isUploadingImage
+          child: ButtonWidget(
+            isLoading: provider.isSaving,
+            buttonPress: provider.isSaving || provider.isUploadingImage
                 ? null
                 : _saveProfile,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF51B23),
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: Colors.grey.shade400,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.r),
-              ),
-            ),
-            child: provider.isSaving
-                ? SizedBox(
-                    height: 22.h,
-                    width: 22.w,
-                    child: const CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(
-                    "UPDATE",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+            title: provider.isUploadingImage ? 'Uploading Logo...' : 'Update',
+            buttonColor: AppColors.appRed,
           ),
         ),
         SizedBox(height: 20.h),
@@ -326,8 +304,8 @@ class _EditProfileViewState extends State<_EditProfileView> {
                       borderRadius: BorderRadius.circular(14.r),
                       child: Image.network(
                         getS3ImageUrl(provider.profilePhotoS3Key),
-                        width: 50.w,
-                        height: 50.w,
+                        width: 85.w,
+                        height: 85.w,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) {
                           return Image.asset(
@@ -394,7 +372,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
             children: [
               Row(
                 children: [
-                  Text(
+                  AppText(
                     "Mobile Number",
                     style: TextStyle(
                       fontSize: 9.sp,
@@ -416,7 +394,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
                       children: [
                         Icon(Icons.check, color: Colors.white, size: 9.sp),
                         SizedBox(width: 2.w),
-                        Text(
+                        AppText(
                           "Verified",
                           style: TextStyle(
                             color: Colors.white,
@@ -430,7 +408,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
                 ],
               ),
               SizedBox(height: 2.h),
-              Text(
+              AppText(
                 provider.contactController.text.trim().isNotEmpty
                     ? provider.contactController.text.trim()
                     : "+91 98000 00001",
@@ -454,7 +432,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
             },
             child: Padding(
               padding: EdgeInsets.only(top: 5.h, right: 2.w),
-              child: Text(
+              child: AppText(
                 "CHANGE NUMBER",
                 style: TextStyle(
                   color: const Color(0xFFE91E63),
@@ -485,7 +463,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          AppText(
             label,
             style: TextStyle(
               fontSize: 9.sp,
@@ -769,61 +747,13 @@ class _EditProfileViewState extends State<_EditProfileView> {
 
           height: 52.h,
 
-          child: ElevatedButton(
-            onPressed: provider.isSaving || provider.isUploadingImage
+          child: ButtonWidget(
+            isLoading: provider.isSaving,
+            buttonPress: provider.isSaving || provider.isUploadingImage
                 ? null
                 : _saveProfile,
-
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE91E63),
-
-              foregroundColor: Colors.white,
-
-              disabledBackgroundColor: Colors.grey.shade400,
-
-              elevation: 0,
-
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-            ),
-
-            child:
-                // =================================================
-                // SAVING
-                // =================================================
-                provider.isSaving
-                ? SizedBox(
-                    height: 22.h,
-                    width: 22.w,
-
-                    child: const CircularProgressIndicator(
-                      strokeWidth: 2.5,
-
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                // =================================================
-                // IMAGE UPLOADING
-                // =================================================
-                : provider.isUploadingImage
-                ? Text(
-                    "Uploading Logo...",
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  )
-                // =================================================
-                // NORMAL
-                // =================================================
-                : Text(
-                    "Save Changes",
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+            title: provider.isUploadingImage ? 'Uploading Logo...' : 'Update',
+            buttonColor: AppColors.appRed,
           ),
         ),
 
@@ -875,8 +805,8 @@ class _EditProfileViewState extends State<_EditProfileView> {
                       borderRadius: BorderRadius.circular(14.r),
                       child: Image.network(
                         getS3ImageUrl(imageKey),
-                        width: 50.w,
-                        height: 50.w,
+                        width: 85.w,
+                        height: 85.w,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) {
                           return Image.asset(

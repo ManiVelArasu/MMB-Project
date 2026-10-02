@@ -18,6 +18,7 @@ class ButtonWidget extends StatefulWidget {
   final double? iconHeight;
   final double? iconWidth;
   final Color? loaderColor;
+  final Color? buttonColor;
 
   const ButtonWidget({
     super.key,
@@ -35,7 +36,7 @@ class ButtonWidget extends StatefulWidget {
     this.iconBackgroundColor,
     this.iconHeight = 24,
     this.iconWidth = 24,
-    this.loaderColor = Colors.white,
+    this.loaderColor = Colors.white,this.buttonColor = Colors.black,
   });
 
   @override
@@ -86,7 +87,7 @@ class _ButtonWidgetState extends State<ButtonWidget>
           decoration:
               widget.decoration ??
               BoxDecoration(
-                color: Colors.black,
+                color: widget.buttonColor,
                 borderRadius: BorderRadius.circular(20.r),
               ),
           child: widget.isLoading

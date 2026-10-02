@@ -8,7 +8,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/ui/screens/video_widget/video_widget.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../Api Model/Template_model.dart';
 import '../../Api Model/special_days.dart';
@@ -18,7 +17,9 @@ import '../../component/custom_widget.dart';
 import '../../component/home_appbar.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../model/my_space_model.dart';
-import '../../network/provider/custom_theme_provider.dart';
+import '../../network/provider/custom_the'
+    ''
+    'me_provider.dart';
 import '../../network/provider/common_provider.dart';
 import '../../network/provider/home_screen_provider.dart';
 import '../../utils/theme/app.colors.dart';
@@ -40,10 +41,10 @@ class HomeScreen extends StatelessWidget {
       create: (_) => HomeScreenProvider(),
       builder: (context, provider) => Consumer<HomeScreenProvider>(
         builder: (context, homeScreenProvider, child) {
-          if (homeScreenProvider.isLoadingCategories) {
+          if (homeScreenProvider.isLoadingCategories ||
+              homeScreenProvider.isKeyWordsLoading) {
             return Scaffold(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              body: const Center(
+              body: Center(
                 child: CircularProgressIndicator(color: Color(0xFFE53935)),
               ),
             );
@@ -158,7 +159,7 @@ class HomeScreen extends StatelessWidget {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
+                                    AppText(
                                       'VIEW ALL',
                                       style: TextStyle(
                                         color: isDark
@@ -484,32 +485,15 @@ class HomeScreen extends StatelessWidget {
 
                             return Container(
                               width: double.infinity,
-                              margin: EdgeInsets.only(top: 20.h),
                               padding: EdgeInsets.fromLTRB(
                                 12.w,
                                 14.h,
                                 12.w,
                                 16.h,
                               ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF171717)
-                                    : const Color(0xFFFAF4FF),
-                                border: Border(
-                                  top: BorderSide(
-                                    color: isDark
-                                        ? Colors.grey.shade800
-                                        : const Color(0xFFE9DDF0),
-                                  ),
-                                  bottom: BorderSide(
-                                    color: isDark
-                                        ? Colors.grey.shade800
-                                        : const Color(0xFFE9DDF0),
-                                  ),
-                                ),
-                              ),
+
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   // ==================================================
                                   // PARENT TITLE
@@ -560,21 +544,18 @@ class HomeScreen extends StatelessWidget {
                                             : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
 
                                         return SizedBox(
-                                          width: 72.w,
+                                          width: 90.w,
                                           child: InkWell(
                                             borderRadius: BorderRadius.circular(
-                                              30.r,
+                                              12.r,
                                             ),
 
                                             onTap: () {
                                               debugPrint(
-                                                "📂 CHILD CATEGORY: "
-                                                "$childName",
+                                                "📂 CHILD CATEGORY: $childName",
                                               );
-
                                               debugPrint(
-                                                "📂 CHILD SLUG: "
-                                                "$childSlug",
+                                                "📂 CHILD SLUG: $childSlug",
                                               );
 
                                               Navigator.pushNamed(
@@ -593,15 +574,14 @@ class HomeScreen extends StatelessWidget {
                                                 // ====================================
                                                 // CHILD THUMBNAIL
                                                 // ====================================
-
                                                 ClipRRect(
                                                   borderRadius:
                                                       BorderRadius.circular(
                                                         10.r,
                                                       ),
                                                   child: Container(
-                                                    width: 68.w,
-                                                    height: 68.w,
+                                                    width: 84.w,
+                                                    height: 84.w,
                                                     color: isDark
                                                         ? const Color(
                                                             0xFF252525,
@@ -609,15 +589,16 @@ class HomeScreen extends StatelessWidget {
                                                         : Colors.grey.shade100,
 
                                                     child: imageUrl.isEmpty
-                                                        ? const Icon(
+                                                        ? Icon(
                                                             Icons
                                                                 .image_outlined,
+                                                            size: 28.sp,
                                                             color: Colors.grey,
                                                           )
                                                         : Image.network(
                                                             imageUrl,
-                                                            width: 68.w,
-                                                            height: 68.w,
+                                                            width: 150.w,
+                                                            height: 150.w,
                                                             fit: BoxFit.cover,
 
                                                             loadingBuilder:
@@ -648,14 +629,10 @@ class HomeScreen extends StatelessWidget {
                                                                   error,
                                                                   stackTrace,
                                                                 ) {
-                                                                  debugPrint(
-                                                                    "❌ CHILD IMAGE ERROR: "
-                                                                    "$imageUrl",
-                                                                  );
-
-                                                                  return const Icon(
+                                                                  return Icon(
                                                                     Icons
                                                                         .broken_image_outlined,
+                                                                    size: 28.sp,
                                                                     color: Colors
                                                                         .grey,
                                                                   );
@@ -674,9 +651,9 @@ class HomeScreen extends StatelessWidget {
                                                   textAlign: TextAlign.center,
                                                   maxLines: 2,
                                                   style: TextStyle(
-                                                    fontSize: 8.sp,
-                                                    fontWeight: FontWeight.w800,
-                                                    height: 1.05,
+                                                    fontSize: 10.sp,
+                                                    fontWeight: FontWeight.w700,
+                                                    height: 1.1,
                                                     color: isDark
                                                         ? Colors.white
                                                         : Colors.black,
@@ -1220,7 +1197,7 @@ class HomeScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(12.r),
           ),
 
-          title: Text(
+          title: AppText(
             "Create New",
             style: TextStyle(
               color: isDark ? Colors.white : Colors.black,
@@ -1298,7 +1275,7 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8.r),
                   ),
 
-                  child: Text(
+                  child: AppText(
                     size,
 
                     style: TextStyle(
@@ -1357,7 +1334,7 @@ class HomeScreen extends StatelessWidget {
             height: double.infinity,
             color: const Color(0xFFF51B23),
             alignment: Alignment.center,
-            child: Text(
+            child: AppText(
               _monthName(month),
               style: TextStyle(
                 color: Colors.white,
@@ -1396,7 +1373,7 @@ class HomeScreen extends StatelessWidget {
                         width: 1.5,
                       ),
                     ),
-                    child: Text(
+                    child: AppText(
                       '${date.day}',
                       style: TextStyle(
                         fontSize: 16.sp,
@@ -1573,7 +1550,7 @@ class HomeScreen extends StatelessWidget {
 
         if (templateUid.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Template UID not available')),
+            const SnackBar(content: AppText('Template UID not available')),
           );
           return;
         }
@@ -1748,7 +1725,7 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(width: 10),
 
                       Expanded(
-                        child: Text(
+                        child: AppText(
                           'Premium template',
                           style: const TextStyle(
                             fontSize: 16,
@@ -1765,7 +1742,7 @@ class HomeScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(
+                    child: AppText(
                       '"$templateName" is part of the premium\n'
                       'collection. Upgrade your plan to use it in your designs.',
                       style: const TextStyle(
@@ -1791,7 +1768,7 @@ class HomeScreen extends StatelessWidget {
                         onPressed: () {
                           Navigator.pop(dialogContext);
                         },
-                        child: const Text(
+                        child: const AppText(
                           'Not now',
                           style: TextStyle(
                             color: Color(0xFF222222),
@@ -1822,7 +1799,7 @@ class HomeScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(9),
                           ),
                         ),
-                        child: const Text(
+                        child: const AppText(
                           'Upgrade to premium',
                           style: TextStyle(
                             fontSize: 13,
@@ -1933,7 +1910,7 @@ class HomeScreen extends StatelessWidget {
 
         if (templateUid.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Template UID not available')),
+            const SnackBar(content: AppText('Template UID not available')),
           );
           return;
         }
@@ -2249,7 +2226,7 @@ class HomeScreen extends StatelessWidget {
   Widget _buildMyFrameHeader(bool isDark, BuildContext context) {
     return Row(
       children: [
-        Text(
+        AppText(
           "MY FRAME - 1",
           style: TextStyle(
             color: isDark ? Colors.white : AppColors.darkBlack,
@@ -2675,7 +2652,7 @@ class HomeScreen extends StatelessWidget {
                     // Header
                     Row(
                       children: [
-                        Text(
+                        AppText(
                           "Share",
                           style: TextStyle(
                             color: isDark ? Colors.white : AppColors.darkBlack,
@@ -2759,7 +2736,7 @@ class HomeScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (title != null) ...[
-          Text(
+          AppText(
             title,
             style: TextStyle(
               color: isDark ? Colors.white : AppColors.darkBlack,
@@ -2820,7 +2797,7 @@ class HomeScreen extends StatelessWidget {
 
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 4.w),
-                      child: Text(
+                      child: AppText(
                         item.title,
                         textAlign: TextAlign.center,
                         maxLines: 2,

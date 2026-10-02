@@ -7131,14 +7131,15 @@ class _InteractiveBackgroundLayerState
               angle: item.rotation,
               child: Opacity(
                 opacity: item.opacity.clamp(0.0, 1.0),
-                child: FittedBox(
-                  fit: BoxFit.fill,
-                  child: SizedBox(
-                    width: baseWidth,
-                    height: baseHeight,
-                    child: EditableItemWidget.buildStandaloneMediaContent(
-                      context,
-                      item,
+                child: SizedBox(
+                  width: baseWidth,
+                  height: baseHeight,
+                  child: ClipRect(
+                    child: SizedBox.expand(
+                      child: EditableItemWidget.buildStandaloneMediaContent(
+                        context,
+                        item,
+                      ),
                     ),
                   ),
                 ),

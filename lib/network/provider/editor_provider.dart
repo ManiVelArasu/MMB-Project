@@ -1435,6 +1435,22 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       _textStyle.clear();
       _textUnderline.clear();
 
+      // Detect a real full-page image BEFORE importing any full-page rect.
+      // Some Fabric templates contain a white/transparent helper rect plus
+      // the actual textured background image. The helper must not replace it.
+      final hasFullCanvasImage = jsonList.any(
+            (json) => _isTemplateBackgroundObject(
+          json,
+          canvasWidth: canvasWidth,
+          canvasHeight: canvasHeight,
+          tolerant: true,
+        ),
+      );
+
+      debugPrint(
+        '🖼️ Template full-canvas image detected: $hasFullCanvasImage',
+      );
+
       var idIndex = 0;
       for (final json in jsonList) {
         final rawType = (json['type']?.toString() ?? '').trim();
@@ -1557,29 +1573,37 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             templateUid,
           );
           if (imageUrl.isNotEmpty) {
+            final isTemplateBackground = _isTemplateBackgroundObject(
+              json,
+              canvasWidth: canvasWidth,
+              canvasHeight: canvasHeight,
+              tolerant: true,
+            );
+
             final imageItem = EditorItem(
               id: id,
               type: 'image',
               contentUrl: imageUrl,
-              position: importedPosition,
-              width: width,
-              height: importedHeight,
-              scale: scale.clamp(0.05, 10.0).toDouble(),
-              rotation: rotation,
+              // A template background is a canvas layer, not a normal image.
+              position: isTemplateBackground
+                  ? Offset.zero
+                  : importedPosition,
+              width: isTemplateBackground
+                  ? canvasWidth
+                  : width,
+              height: isTemplateBackground
+                  ? canvasHeight
+                  : importedHeight,
+              scale: isTemplateBackground
+                  ? 1.0
+                  : scale.clamp(0.05, 10.0).toDouble(),
+              rotation: isTemplateBackground ? 0.0 : rotation,
               opacity: opacity,
               isLocal: false,
             );
             _items.add(imageItem);
 
-            // API/Fabric templates commonly store the page background as a
-            // normal image object sized to the whole canvas. Mark it by ID
-            // so Background -> Replace can always remove it later, even if
-            // the editor canvas has been resized after template loading.
-            if (_isTemplateBackgroundObject(
-              json,
-              canvasWidth: canvasWidth,
-              canvasHeight: canvasHeight,
-            )) {
+            if (isTemplateBackground) {
               _templateBackgroundIds.add(id);
             }
 
@@ -1617,13 +1641,17 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           // background. Treat its fill as the page background instead of
           // adding another giant editable object over every layer.
           if (isFullCanvasRect) {
-            final gradient = _parseGradient(json['fill']);
-            if (gradient != null) {
-              _importedBackgroundGradient = gradient;
-            } else {
-              final fill = _parseColor(json['fill']);
-              if (fill != null && fill.alpha > 0) {
-                _backgroundColor = fill;
+            // A real full-page image is the visual background. Do not let a
+            // helper/clip white rect replace it with a plain white canvas.
+            if (!hasFullCanvasImage) {
+              final gradient = _parseGradient(json['fill']);
+              if (gradient != null) {
+                _importedBackgroundGradient = gradient;
+              } else {
+                final fill = _parseColor(json['fill']);
+                if (fill != null && fill.alpha > 0) {
+                  _backgroundColor = fill;
+                }
               }
             }
             continue;
@@ -3188,6 +3216,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       Map<String, dynamic> json, {
         double? canvasWidth,
         double? canvasHeight,
+        bool tolerant = false,
       }) {
     final type = json['type']?.toString().toLowerCase().trim();
     if (type != 'image') return false;
@@ -3211,12 +3240,15 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final renderedWidth = width * scaleX;
     final renderedHeight = height * scaleY;
 
-    // Full-page API background: anchored at the page origin and covering the
-    // page in Fabric coordinates. A small tolerance handles floating point
-    // values such as -9.09e-13 returned by Fabric.
-    final atOrigin = left.abs() <= 2.0 && top.abs() <= 2.0;
+    final originTolerance = tolerant ? 12.0 : 2.0;
+    final coverageRatio = tolerant ? 0.82 : 0.995;
+
+    final atOrigin =
+        left.abs() <= originTolerance && top.abs() <= originTolerance;
+
     final coversCanvas =
-        (renderedWidth - cw).abs() <= 4.0 && (renderedHeight - ch).abs() <= 4.0;
+        renderedWidth >= cw * coverageRatio &&
+            renderedHeight >= ch * coverageRatio;
 
     return atOrigin && coversCanvas;
   }

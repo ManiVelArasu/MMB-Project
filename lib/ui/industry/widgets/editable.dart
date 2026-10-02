@@ -1066,16 +1066,16 @@ class EditableItemWidget extends StatelessWidget {
         imageWidget = isSvg
             ? SvgPicture.file(
           File(localPath),
-          fit: BoxFit.fill,
+          fit: isBackground ? BoxFit.cover : BoxFit.fill,
           placeholderBuilder: (_) => const Center(
             child: CircularProgressIndicator(strokeWidth: 1.5),
           ),
         )
             : Image.file(
           File(localPath),
-          width: item.width,
-          height: item.height,
-          fit: BoxFit.fill,
+          width: isBackground ? double.infinity : item.width,
+          height: isBackground ? double.infinity : item.height,
+          fit: isBackground ? BoxFit.cover : BoxFit.fill,
           errorBuilder: (_, __, ___) => const Center(
             child: Icon(Icons.broken_image_outlined, color: Colors.grey),
           ),
@@ -1085,9 +1085,9 @@ class EditableItemWidget extends StatelessWidget {
         // SVG URLs, so SVG assets must use flutter_svg.
         imageWidget = SvgPicture.network(
           url,
-          width: item.width,
-          height: item.height,
-          fit: BoxFit.fill,
+          width: isBackground ? double.infinity : item.width,
+          height: isBackground ? double.infinity : item.height,
+          fit: isBackground ? BoxFit.cover : BoxFit.fill,
           placeholderBuilder: (_) => const Center(
             child: SizedBox(
               width: 20,
@@ -1102,9 +1102,9 @@ class EditableItemWidget extends StatelessWidget {
       } else {
         imageWidget = Image.network(
           url,
-          width: item.width,
-          height: item.height,
-          fit: BoxFit.fill,
+          width: isBackground ? double.infinity : item.width,
+          height: isBackground ? double.infinity : item.height,
+          fit: isBackground ? BoxFit.cover : BoxFit.fill,
           errorBuilder: (_, __, ___) => const Center(
             child: Icon(Icons.broken_image_outlined, color: Colors.grey),
           ),

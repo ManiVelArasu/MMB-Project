@@ -17,11 +17,60 @@ class HomeScreenProvider extends ChangeNotifier {
     fetchTemplateCategories();
     loadSavedBusinessData();
     fetchTemplatesByPopular();
-    loadKeyWords();
+
     if (loadSpecialDaysOnInit) {
       fetchSpecialDays(range: 'month');
     }
+
+    _loadInitialData();
   }
+
+  Future<void> _loadInitialData() async {
+    debugPrint("🚀 HomeScreen initial data loading...");
+
+    await _waitAndLoadKeywords();
+  }
+
+  Future<void> _waitAndLoadKeywords() async {
+    const maxRetries = 20;
+
+    for (int i = 0; i < maxRetries; i++) {
+      final accountType = provider.accountType?.trim().toLowerCase();
+
+      final categorySlug =
+          provider.business?.businessCategory?.parent?.slug?.trim() ?? '';
+
+      debugPrint(
+        "🔑 KEYWORDS CHECK [$i/$maxRetries] "
+        "accountType=$accountType "
+        "categorySlug=$categorySlug",
+      );
+
+      // Personal account - keyword API தேவையில்லை
+      if (accountType == 'personal') {
+        debugPrint("👤 PERSONAL ACCOUNT → Keywords API skipped");
+        return;
+      }
+
+      // Business data ready
+      if (accountType == 'business' && categorySlug.isNotEmpty) {
+        debugPrint("✅ Business data ready → Calling Keywords API");
+
+        await loadKeyWords(forceRefresh: true);
+
+        return;
+      }
+
+      // CommonProvider data இன்னும் ready ஆகவில்லை
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+
+    debugPrint(
+      "❌ Keywords API not called. "
+      "CommonProvider data was not ready.",
+    );
+  }
+
   List<KeyWordsData> _keyWords = [];
 
   List<KeyWordsData> get keyWords => _keyWords;
@@ -66,7 +115,6 @@ class HomeScreenProvider extends ChangeNotifier {
     _selectedDates = selected;
     notifyListeners();
 
-    // Keep the month date strip on Home, but fetch only the tapped date data.
     await fetchSpecialDays(
       from: selected,
       to: selected,
@@ -74,97 +122,117 @@ class HomeScreenProvider extends ChangeNotifier {
     );
   }
 
-  Future<bool> loadKeyWords({bool forceRefresh = false}) async {
-    // =======================================================
-    // PERSONAL → DO NOT CALL API
-    // =======================================================
-
-    if (provider.accountType?.toLowerCase() == 'personal') {
-      debugPrint("👤 PERSONAL ACCOUNT → loadKeyWords SKIPPED");
-
-      return false;
-    }
-
-    // =======================================================
-    // BUSINESS ONLY
-    // =======================================================
-
-    if (provider.accountType?.toLowerCase() != 'business') {
-      debugPrint("⚠️ Unknown account type → Keywords API SKIPPED");
-
-      return false;
-    }
-
-    if (_keyWords.isNotEmpty && !forceRefresh) {
-      return true;
-    }
-
-    _isKeyWordsLoading = true;
-    _keyWordsError = null;
-
-    notifyListeners();
-
+  Future<bool> loadKeyWords({
+    bool forceRefresh = false,
+  }) async {
     try {
+      final accountType =
+      provider.accountType?.trim().toLowerCase();
+
+      debugPrint("🔑 LOAD KEYWORDS");
+      debugPrint("Account Type: $accountType");
+
+      if (accountType == 'personal') {
+        debugPrint(
+          "👤 PERSONAL → Keywords API skipped",
+        );
+        return false;
+      }
+
+      if (accountType != 'business') {
+        debugPrint(
+          "⚠️ Account type is not business",
+        );
+        return false;
+      }
+
+      if (_keyWords.isNotEmpty && !forceRefresh) {
+        return true;
+      }
+
       final categorySlug =
-          provider.business?.businessCategory?.parent?.slug ?? '';
+          provider.business
+              ?.businessCategory
+              ?.parent
+              ?.slug
+              ?.trim() ??
+              '';
 
-      // Category slug இல்லையென்றால் API call வேண்டாம்
+      debugPrint(
+        "🏢 Business Category Slug: $categorySlug",
+      );
+
       if (categorySlug.isEmpty) {
-        _keyWordsError = "Business category slug not found";
+        _keyWordsError =
+        "Business category slug not found";
 
-        debugPrint("⚠️ Category slug empty → Keywords API SKIPPED");
+        debugPrint(
+          "⚠️ Category slug empty",
+        );
 
         return false;
       }
 
-      debugPrint("🏢 BUSINESS → Calling Keywords API");
+      _isKeyWordsLoading = true;
+      _keyWordsError = null;
+      notifyListeners();
 
-      debugPrint("Category Slug: $categorySlug");
+      debugPrint(
+        "🚀 Calling Keywords API...",
+      );
 
-      final result = await businessProfileRepository.industryKeyWords(
+      final result =
+      await businessProfileRepository.industryKeyWords(
         categorySlug,
       );
 
-      final KeyWordsModel? data = result.data;
+      if (result.isSuccess && result.data != null) {
+        _keyWords = result.data!.data;
 
-      if (data == null) {
-        _keyWordsError = "Keywords data not found";
+        debugPrint(
+          "✅ KEYWORDS API SUCCESS",
+        );
 
-        return false;
+        debugPrint(
+          "Total Keywords: ${_keyWords.length}",
+        );
+
+        for (final keyword in _keyWords) {
+          debugPrint(
+            "Keyword: ${keyword.name} | "
+                "Slug: ${keyword.slug}",
+          );
+        }
+
+        return true;
       }
 
-      _keyWords = data.data;
+      _keyWords = [];
 
-      debugPrint("================================");
-
-      debugPrint("✅ KEYWORDS API SUCCESS");
+      _keyWordsError =
+          result.error?.message ??
+              "Keywords not found";
 
       debugPrint(
-        "Total Keywords : "
-        "${_keyWords.length}",
+        "❌ Keywords API failed: $_keyWordsError",
       );
 
-      for (final keyword in _keyWords) {
-        debugPrint(
-          "Keyword : ${keyword.name} | "
-          "Slug : ${keyword.slug}",
-        );
-      }
-
-      debugPrint("================================");
-
-      return true;
+      return false;
     } catch (e, stackTrace) {
+      _keyWords = [];
       _keyWordsError = e.toString();
 
-      debugPrint("❌ Keywords API failed: $e");
+      debugPrint(
+        "❌ Keywords API error: $e",
+      );
 
-      debugPrint("$stackTrace");
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
 
       return false;
     } finally {
       _isKeyWordsLoading = false;
-
       notifyListeners();
     }
   }
