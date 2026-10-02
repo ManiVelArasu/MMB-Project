@@ -1120,7 +1120,8 @@ void _showLanguagesBottomSheet(
 ) {
   final languages = provider.plansData?.data ?? [];
 
-  final Set<String> selectedCodes = {"en", "ta", "hi"};
+  // ⭐ Selection order maintain ஆக List பயன்படுத்துகிறோம்
+  final List<String> selectedCodes = ["en", "ta", "hi"];
 
   showModalBottomSheet(
     context: context,
@@ -1148,7 +1149,9 @@ void _showLanguagesBottomSheet(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Drag handle
+                // =========================================================
+                // DRAG HANDLE
+                // =========================================================
                 Center(
                   child: Container(
                     width: 82.w,
@@ -1162,7 +1165,9 @@ void _showLanguagesBottomSheet(
 
                 SizedBox(height: 10.h),
 
-                // Header
+                // =========================================================
+                // HEADER
+                // =========================================================
                 Row(
                   children: [
                     Expanded(
@@ -1175,6 +1180,7 @@ void _showLanguagesBottomSheet(
                         ),
                       ),
                     ),
+
                     GestureDetector(
                       onTap: () {
                         Navigator.pop(sheetContext);
@@ -1200,7 +1206,9 @@ void _showLanguagesBottomSheet(
 
                 SizedBox(height: 28.h),
 
-                // Selected languages
+                // =========================================================
+                // SELECTED LANGUAGE COUNT
+                // =========================================================
                 Row(
                   children: [
                     AppText(
@@ -1249,11 +1257,14 @@ void _showLanguagesBottomSheet(
 
                 SizedBox(height: 18.h),
 
+                // =========================================================
+                // LANGUAGES
+                // =========================================================
                 Wrap(
                   spacing: 10.w,
                   runSpacing: 10.h,
                   children: languages.map((language) {
-                    final String code = language.code ?? "";
+                    final String code = language.code?.trim() ?? "";
 
                     final bool isSelected = selectedCodes.contains(code);
 
@@ -1261,12 +1272,16 @@ void _showLanguagesBottomSheet(
 
                     return GestureDetector(
                       onTap: () {
-                        if (!isActive) return;
+                        if (!isActive || code.isEmpty) return;
 
                         setModalState(() {
                           if (isSelected) {
+                            // ⭐ Remove selected language
                             selectedCodes.remove(code);
                           } else {
+                            // ⭐ IMPORTANT:
+                            // New language always gets added at END.
+                            // So first selected language remains first.
                             selectedCodes.add(code);
                           }
                         });
@@ -1305,6 +1320,83 @@ void _showLanguagesBottomSheet(
                       ),
                     );
                   }).toList(),
+                ),
+
+                SizedBox(height: 10.h),
+
+                // =========================================================
+                // SAVE
+                // =========================================================
+                SizedBox(
+                  width: double.infinity,
+                  height: 48.h,
+                  child: ElevatedButton(
+                    onPressed: provider.isLanguageSaving
+                        ? null
+                        : () async {
+                            // ⭐ Copy current order
+                            final List<String> orderedLanguages =
+                                List<String>.from(selectedCodes);
+
+                            debugPrint(
+                              "🌐 Selected language order: "
+                              "$orderedLanguages",
+                            );
+
+                            final success = await provider.saveLanguages(
+                              languages: orderedLanguages,
+                              notifyPush: true,
+                              notifyEmail: false,
+                              notifyWhatsapp: true,
+                            );
+
+                            if (!context.mounted) return;
+
+                            if (success) {
+                              Navigator.pop(context);
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Language preferences updated successfully",
+                                  ),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Failed to update language preferences",
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      disabledBackgroundColor: Colors.grey,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                    ),
+                    child: provider.isLanguageSaving
+                        ? SizedBox(
+                            width: 20.w,
+                            height: 20.w,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            "Save",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
                 ),
 
                 SizedBox(height: 20.h),

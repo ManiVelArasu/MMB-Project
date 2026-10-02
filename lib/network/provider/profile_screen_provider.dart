@@ -26,6 +26,56 @@ class ProfileScreenProvider extends ChangeNotifier {
   bool get isDeactivateLoading => _isDeactivateLoading;
   final CommonProvider provider = CommonProvider.instance;
 
+  bool _isLanguageSaving = false;
+
+  bool get isLanguageSaving => _isLanguageSaving;
+
+  Future<bool> saveLanguages({
+    required List<String> languages,
+    bool notifyPush = true,
+    bool notifyEmail = false,
+    bool notifyWhatsapp = true,
+  }) async {
+    _isLanguageSaving = true;
+    notifyListeners();
+
+    try {
+      debugPrint("🌐 Saving languages...");
+      debugPrint("Languages: $languages");
+      debugPrint("Push: $notifyPush");
+      debugPrint("Email: $notifyEmail");
+      debugPrint("WhatsApp: $notifyWhatsapp");
+
+      final result = await _repository.accountLanguage(
+        languages: languages,
+        notifyPush: notifyPush,
+        notifyEmail: notifyEmail,
+        notifyWhatsapp: notifyWhatsapp,
+      );
+
+      if (result.isSuccess) {
+        debugPrint("✅ Language preferences saved");
+
+        return true;
+      }
+
+      debugPrint(
+        "❌ Language preference failed: "
+            "${result.error?.message}",
+      );
+
+      return false;
+    } catch (e, stackTrace) {
+      debugPrint("❌ Language preference error: $e");
+      debugPrintStack(stackTrace: stackTrace);
+
+      return false;
+    } finally {
+      _isLanguageSaving = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> deactivateAccount() async {
     _isDeactivateLoading = true;
     notifyListeners();

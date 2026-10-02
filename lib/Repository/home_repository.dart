@@ -39,8 +39,8 @@ class HomeRepository {
   }
 
   Future<ApiResult<TemplatesResponseModel>> templatesByCategory(
-      String categorySlug,
-      ) async {
+    String categorySlug,
+  ) async {
     final result = await ApiRepository.instance.request<TemplatesResponseModel>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.templates,
@@ -55,17 +55,20 @@ class HomeRepository {
     return result;
   }
 
-  Future<ApiResult<TemplateCategoriesModel>> myBrandCategory() async {
+  Future<ApiResult<TemplateCategoriesModel>> myBrandCategory({
+    required String industrySlug,
+  }) async {
+    print('sdsadsdasdsadasdads');
     final result = await ApiRepository.instance
         .request<TemplateCategoriesModel>(
-      config: ApiRequestConfig(
-        endpoint: ApiEndpoints.templateCategory,
-        method: ApiMethod.get,
-        queryParams: {"popular": "1"},
-      ),
-      fromJson: (json) =>
-          TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
-    );
+          config: ApiRequestConfig(
+            endpoint: ApiEndpoints.templates,
+            method: ApiMethod.get,
+            queryParams: {"industry": industrySlug,"type":"image"},
+          ),
+          fromJson: (json) =>
+              TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
+        );
     return result;
   }
 

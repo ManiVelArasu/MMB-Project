@@ -46,13 +46,11 @@ class HomeScreenProvider extends ChangeNotifier {
         "categorySlug=$categorySlug",
       );
 
-      // Personal account - keyword API தேவையில்லை
       if (accountType == 'personal') {
         debugPrint("👤 PERSONAL ACCOUNT → Keywords API skipped");
         return;
       }
 
-      // Business data ready
       if (accountType == 'business' && categorySlug.isNotEmpty) {
         debugPrint("✅ Business data ready → Calling Keywords API");
 
@@ -60,8 +58,6 @@ class HomeScreenProvider extends ChangeNotifier {
 
         return;
       }
-
-      // CommonProvider data இன்னும் ready ஆகவில்லை
       await Future.delayed(const Duration(milliseconds: 500));
     }
 
@@ -122,27 +118,20 @@ class HomeScreenProvider extends ChangeNotifier {
     );
   }
 
-  Future<bool> loadKeyWords({
-    bool forceRefresh = false,
-  }) async {
+  Future<bool> loadKeyWords({bool forceRefresh = false}) async {
     try {
-      final accountType =
-      provider.accountType?.trim().toLowerCase();
+      final accountType = provider.accountType?.trim().toLowerCase();
 
       debugPrint("🔑 LOAD KEYWORDS");
       debugPrint("Account Type: $accountType");
 
       if (accountType == 'personal') {
-        debugPrint(
-          "👤 PERSONAL → Keywords API skipped",
-        );
+        debugPrint("👤 PERSONAL → Keywords API skipped");
         return false;
       }
 
       if (accountType != 'business') {
-        debugPrint(
-          "⚠️ Account type is not business",
-        );
+        debugPrint("⚠️ Account type is not business");
         return false;
       }
 
@@ -151,24 +140,14 @@ class HomeScreenProvider extends ChangeNotifier {
       }
 
       final categorySlug =
-          provider.business
-              ?.businessCategory
-              ?.parent
-              ?.slug
-              ?.trim() ??
-              '';
+          provider.business?.businessCategory?.parent?.slug?.trim() ?? '';
 
-      debugPrint(
-        "🏢 Business Category Slug: $categorySlug",
-      );
+      debugPrint("🏢 Business Category Slug: $categorySlug");
 
       if (categorySlug.isEmpty) {
-        _keyWordsError =
-        "Business category slug not found";
+        _keyWordsError = "Business category slug not found";
 
-        debugPrint(
-          "⚠️ Category slug empty",
-        );
+        debugPrint("⚠️ Category slug empty");
 
         return false;
       }
@@ -177,30 +156,23 @@ class HomeScreenProvider extends ChangeNotifier {
       _keyWordsError = null;
       notifyListeners();
 
-      debugPrint(
-        "🚀 Calling Keywords API...",
-      );
+      debugPrint("🚀 Calling Keywords API...");
 
-      final result =
-      await businessProfileRepository.industryKeyWords(
+      final result = await businessProfileRepository.industryKeyWords(
         categorySlug,
       );
 
       if (result.isSuccess && result.data != null) {
         _keyWords = result.data!.data;
 
-        debugPrint(
-          "✅ KEYWORDS API SUCCESS",
-        );
+        debugPrint("✅ KEYWORDS API SUCCESS");
 
-        debugPrint(
-          "Total Keywords: ${_keyWords.length}",
-        );
+        debugPrint("Total Keywords: ${_keyWords.length}");
 
         for (final keyword in _keyWords) {
           debugPrint(
             "Keyword: ${keyword.name} | "
-                "Slug: ${keyword.slug}",
+            "Slug: ${keyword.slug}",
           );
         }
 
@@ -209,26 +181,18 @@ class HomeScreenProvider extends ChangeNotifier {
 
       _keyWords = [];
 
-      _keyWordsError =
-          result.error?.message ??
-              "Keywords not found";
+      _keyWordsError = result.error?.message ?? "Keywords not found";
 
-      debugPrint(
-        "❌ Keywords API failed: $_keyWordsError",
-      );
+      debugPrint("❌ Keywords API failed: $_keyWordsError");
 
       return false;
     } catch (e, stackTrace) {
       _keyWords = [];
       _keyWordsError = e.toString();
 
-      debugPrint(
-        "❌ Keywords API error: $e",
-      );
+      debugPrint("❌ Keywords API error: $e");
 
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
+      debugPrintStack(stackTrace: stackTrace);
 
       return false;
     } finally {
@@ -590,50 +554,86 @@ class HomeScreenProvider extends ChangeNotifier {
   }
 
   Future<void> fetchTemplatesByPopular() async {
+    debugPrint('🔥 fetchTemplatesByPopular START');
+
     _isLoadingPopularTemplates = true;
     _popularTemplatesError = null;
-
     notifyListeners();
 
     try {
-      debugPrint("======================================");
-      debugPrint("🔥 FETCH POPULAR TEMPLATES");
-      debugPrint("======================================");
+      final industrySlug =
+          provider.business?.businessCategory?.parent?.slug?.trim() ?? '';
 
-      final result = await HomeRepository.instance.myBrandCategory();
+      debugPrint('🏭 Industry Slug: "$industrySlug"');
+
+      if (industrySlug.isEmpty) {
+        _popularTemplates = [];
+        _popularTemplatesError = 'Industry not available';
+
+        debugPrint('❌ Industry slug is empty');
+        return;
+      }
+
+      debugPrint('======================================');
+      debugPrint('🔥 FETCH POPULAR TEMPLATES');
+      debugPrint('🏭 Industry: $industrySlug');
+      debugPrint('======================================');
+
+      final result = await HomeRepository.instance.myBrandCategory(
+        industrySlug: industrySlug,
+      );
+
+      debugPrint('📦 API Success: ${result.isSuccess}');
+      debugPrint('📦 API Data: ${result.data}');
+      debugPrint('📦 API Error: ${result.error?.message}');
 
       if (result.isSuccess && result.data != null) {
         final response = result.data!;
 
-        debugPrint("🔥 POPULAR RESPONSE: $response");
+        debugPrint('🔥 POPULAR RESPONSE: $response');
+        debugPrint('🔥 Response success: ${response.success}');
+        debugPrint('🔥 Categories: ${response.data?.length}');
 
         if (response.success == true) {
           _popularTemplates = response.data ?? [];
 
           debugPrint(
-            "✅ Popular categories count: "
-            "${_popularTemplates.length}",
+            '✅ Popular categories count: '
+            '${_popularTemplates.length}',
           );
+
+          for (final category in _popularTemplates) {
+            debugPrint(
+              '➡️ ${category.name} | '
+              'slug=${category.slug} | '
+              'uid=${category.uid}',
+            );
+          }
+
+          _popularTemplatesError = null;
         } else {
           _popularTemplates = [];
-          _popularTemplatesError = "Failed to load popular templates";
+          _popularTemplatesError = 'Failed to load popular templates';
         }
       } else {
         _popularTemplates = [];
 
         _popularTemplatesError =
-            result.error?.message ?? "Network Error Occurred";
+            result.error?.message ?? 'Network Error Occurred';
+
+        debugPrint('❌ Popular API failed: $_popularTemplatesError');
       }
     } catch (e, stackTrace) {
       _popularTemplates = [];
       _popularTemplatesError = e.toString();
 
-      debugPrint("❌ Popular Templates API Error: $e");
-
+      debugPrint('❌ Popular Templates API Error: $e');
       debugPrintStack(stackTrace: stackTrace);
     } finally {
       _isLoadingPopularTemplates = false;
       notifyListeners();
+
+      debugPrint('🔥 fetchTemplatesByPopular END');
     }
   }
 

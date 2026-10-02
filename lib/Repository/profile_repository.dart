@@ -19,6 +19,7 @@ class ProfileRepository {
       fromJson: (json) => LanguageModel.fromJson(json),
     );
   }
+
   Future<ApiResult<dynamic>> accountDeactivate() {
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
@@ -29,4 +30,24 @@ class ProfileRepository {
     );
   }
 
+  Future<ApiResult<dynamic>> accountLanguage({
+    required List<String> languages,
+    bool notifyPush = true,
+    bool notifyEmail = false,
+    bool notifyWhatsapp = true,
+  }) {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: "${ApiEndpoints.user}/preferences",
+        method: ApiMethod.patch,
+        body: {
+          "languages": languages,
+          "notify_push": notifyPush,
+          "notify_email": notifyEmail,
+          "notify_whatsapp": notifyWhatsapp,
+        },
+      ),
+      fromJson: (json) => json,
+    );
+  }
 }

@@ -42,7 +42,8 @@ class HomeScreen extends StatelessWidget {
       builder: (context, provider) => Consumer<HomeScreenProvider>(
         builder: (context, homeScreenProvider, child) {
           if (homeScreenProvider.isLoadingCategories ||
-              homeScreenProvider.isKeyWordsLoading) {
+              homeScreenProvider.isKeyWordsLoading ||
+              homeScreenProvider.isLoadingPopularTemplates) {
             return Scaffold(
               body: Center(
                 child: CircularProgressIndicator(color: Color(0xFFE53935)),
@@ -304,7 +305,7 @@ class HomeScreen extends StatelessWidget {
                               final item =
                                   homeScreenProvider.popularTemplates[index];
 
-                              final thumbnailKey = item.iconS3Key ?? '';
+                              final thumbnailKey = item.thumbnailS3Key ?? '';
 
                               final imageUrl = thumbnailKey.isEmpty
                                   ? ''
@@ -2160,7 +2161,7 @@ class HomeScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final item = popularTemplates[index];
 
-                final thumbnailKey = item.iconS3Key ?? '';
+                final thumbnailKey = item.thumbnailS3Key ?? '';
 
                 final imageUrl = thumbnailKey.isEmpty
                     ? ''

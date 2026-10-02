@@ -98,9 +98,9 @@ class _SpecialDaysScreenView extends StatelessWidget {
                       fontSize: AppFontSize.fontSize14,
                     ),
                   ),
-                  SizedBox(height: 10,),
-                  CustomSearchBar(hintText: 'Find your festival',),
-                  SizedBox(height: 15,),
+                  SizedBox(height: 10),
+                  CustomSearchBar(hintText: 'Find your festival'),
+                  SizedBox(height: 15),
                   Expanded(
                     child: GridView.builder(
                       physics: const AlwaysScrollableScrollPhysics(
