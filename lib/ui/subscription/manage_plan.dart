@@ -3,6 +3,7 @@ import 'package:mmb_app/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/plan_provider.dart';
+import 'invoice_screen.dart';
 
 class ManagePlanScreen extends StatelessWidget {
   const ManagePlanScreen({super.key});
@@ -408,7 +409,8 @@ class _ManagePlanView extends StatelessWidget {
                     // =================================================
                     Consumer<PlanProvider>(
                       builder: (context, provider, child) {
-                        final items = provider.paymentHistoryData?.data?.items ?? [];
+                        final items =
+                            provider.paymentHistoryData?.data?.items ?? [];
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,10 +433,11 @@ class _ManagePlanView extends StatelessWidget {
                                   child: CircularProgressIndicator(),
                                 ),
                               )
-
                             else if (provider.paymentHistoryError != null)
                               Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 child: AppText(
                                   provider.paymentHistoryError!,
                                   style: const TextStyle(
@@ -443,64 +446,176 @@ class _ManagePlanView extends StatelessWidget {
                                   ),
                                 ),
                               )
-
                             else if (items.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 20),
-                                  child: Center(
-                                    child: AppText(
-                                      "No payment history found",
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 13,
-                                      ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: Center(
+                                  child: AppText(
+                                    "No payment history found",
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 13,
                                     ),
                                   ),
-                                )
-
-                              else
-                                ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: items.length,
-                                  separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 8),
-                                  itemBuilder: (context, index) {
-                                    final payment = items[index];
-
-                                    final status =
-                                        payment.status?.trim().toUpperCase() ?? "UNKNOWN";
-
-                                    return _paymentCard(
-                                      status: _getPaymentStatusText(status),
-                                      statusColor: _getPaymentStatusColor(status),
-                                      statusBackground:
-                                      _getPaymentStatusBackground(status),
-                                      title: payment.description?.trim().isNotEmpty == true
-                                          ? payment.description!.trim()
-                                          : "Payment",
-                                      date: _formatPaymentDate(payment.date),
-                                      amount: _formatPaymentAmount(
-                                        payment.amount,
-                                        payment.currency,
-                                      ),
-                                    );
-                                  },
                                 ),
+                              )
+                            else
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: items.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 8),
+                                itemBuilder: (context, index) {
+                                  final payment = items[index];
+
+                                  final status =
+                                      payment.status?.trim().toUpperCase() ??
+                                      "UNKNOWN";
+
+                                  return _paymentCard(
+                                    status: _getPaymentStatusText(status),
+                                    statusColor: _getPaymentStatusColor(status),
+                                    statusBackground:
+                                        _getPaymentStatusBackground(status),
+                                    title:
+                                        payment.description
+                                                ?.trim()
+                                                .isNotEmpty ==
+                                            true
+                                        ? payment.description!.trim()
+                                        : "Payment",
+                                    date: _formatPaymentDate(payment.date),
+                                    amount: _formatPaymentAmount(
+                                      payment.amount,
+                                      payment.currency,
+                                    ),
+                                    invoice: "Invoice",
+                                    receipt: "Receipt",
+                                    onInvoiceTap: () async {
+                                      debugPrint("Invoice clicked");
+
+                                      final invoiceId = provider
+                                          .paymentHistoryData
+                                          ?.data
+                                          ?.lastTransaction
+                                          ?.uid;
+
+                                      if (invoiceId == null ||
+                                          invoiceId.isEmpty) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              "Invoice ID not found",
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      debugPrint("Invoice UID: $invoiceId");
+
+                                      final success = await provider.getInvoice(
+                                        invoiceId,
+                                      );
+
+                                      if (!context.mounted) return;
+
+                                      if (success &&
+                                          provider.invoiceHtml != null) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => InvoiceScreen(
+                                              html: provider.invoiceHtml!,
+                                            ),
+                                          ),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              provider.invoiceError ??
+                                                  "Unable to load invoice",
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+
+                                    onReceiptTap: () async {
+                                      debugPrint("Invoice clicked");
+
+                                      final invoiceId = provider
+                                          .paymentHistoryData
+                                          ?.data
+                                          ?.lastTransaction
+                                          ?.uid;
+
+                                      if (invoiceId == null ||
+                                          invoiceId.isEmpty) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              "Invoice ID not found",
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      debugPrint("Invoice UID: $invoiceId");
+
+                                      final success = await provider.getReceipt(
+                                        invoiceId,
+                                      );
+
+                                      if (!context.mounted) return;
+
+                                      if (success &&
+                                          provider.isReceiptHtml != null) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => InvoiceScreen(
+                                              html: provider.isReceiptHtml!,
+                                            ),
+                                          ),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              provider.invoiceError ??
+                                                  "Unable to load invoice",
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
                           ],
                         );
                       },
-                    )
+                    ),
                   ],
                 ),
               ),
       ),
     );
   }
-  String _formatPaymentAmount(
-      String? amount,
-      String? currency,
-      ) {
+
+  String _formatPaymentAmount(String? amount, String? currency) {
     final value = amount?.trim();
 
     if (value == null || value.isEmpty) {
@@ -519,6 +634,7 @@ class _ManagePlanView extends StatelessWidget {
 
     return "$currencyCode $value";
   }
+
   String _getPaymentStatusText(String status) {
     switch (status) {
       case "SUCCESS":
@@ -538,6 +654,7 @@ class _ManagePlanView extends StatelessWidget {
         return status.isEmpty ? "UNKNOWN" : status;
     }
   }
+
   Color _getPaymentStatusColor(String status) {
     switch (status) {
       case "SUCCESS":
@@ -557,6 +674,7 @@ class _ManagePlanView extends StatelessWidget {
         return Colors.grey;
     }
   }
+
   Color _getPaymentStatusBackground(String status) {
     switch (status) {
       case "SUCCESS":
@@ -576,6 +694,7 @@ class _ManagePlanView extends StatelessWidget {
         return const Color(0xFFF2F2F2);
     }
   }
+
   String _formatPaymentDate(DateTime? date) {
     if (date == null) {
       return "Date not available";
@@ -609,6 +728,12 @@ class _ManagePlanView extends StatelessWidget {
     required String title,
     required String date,
     required String amount,
+    required String invoice,
+    required String receipt,
+
+    // 👇 callbacks
+    VoidCallback? onInvoiceTap,
+    VoidCallback? onReceiptTap,
   }) {
     return Container(
       width: double.infinity,
@@ -690,6 +815,39 @@ class _ManagePlanView extends StatelessWidget {
           AppText(
             date,
             style: const TextStyle(color: Color(0xFF666666), fontSize: 9),
+          ),
+
+          const SizedBox(height: 3),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              InkWell(
+                onTap: onInvoiceTap,
+                child: AppText(
+                  invoice,
+                  style: const TextStyle(
+                    color: Color(0xFF171A2B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              InkWell(
+                onTap: onReceiptTap,
+                child: AppText(
+                  receipt,
+                  style: const TextStyle(
+                    color: Color(0xFF171A2B),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -43,6 +43,38 @@ class PlanRepository {
     );
   }
 
+  Future<ApiResult<dynamic>> cancelPlan() {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.cancelPlan,
+        method: ApiMethod.post,
+      ),
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResult<dynamic>> invoice(String InvoiceId) {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.invoice(InvoiceId),
+        method: ApiMethod.get,
+        queryParams: {"type": "invoice"},
+      ),
+      fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResult<dynamic>> receipt(String InvoiceId) {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.invoice(InvoiceId),
+        method: ApiMethod.get,
+        queryParams: {"type": "receipt"},
+      ),
+      fromJson: (json) => json,
+    );
+  }
+
   Future<ApiResult<PaymentHistory>> paymentHistory() {
     return ApiRepository.instance.request<PaymentHistory>(
       config: ApiRequestConfig(

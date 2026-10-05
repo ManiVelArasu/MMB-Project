@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../Api Model/plans_type.dart';
 import '../Api Model/theme_screen_model.dart';
 import '../component/bottom_navigation.dart';
-import '../network/provider/auth_provider.dart';
 import '../network/provider/business_provider.dart';
 import '../network/provider/smcalender_form_provider.dart';
 import '../ui/industry/account_type_screen.dart';

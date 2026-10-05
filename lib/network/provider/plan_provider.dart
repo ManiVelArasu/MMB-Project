@@ -59,6 +59,148 @@ class PlanProvider extends ChangeNotifier {
   String? _planUsageError;
   String? get planUsageError => _planUsageError;
 
+  bool _isCancellingPlan = false;
+  bool get isCancellingPlan => _isCancellingPlan;
+
+  String? _cancelPlanError;
+  String? get cancelPlanError => _cancelPlanError;
+
+  bool _isInvoiceLoading = false;
+
+  String? _invoiceError;
+  String? _invoiceHtml;
+
+  bool get isInvoiceLoading => _isInvoiceLoading;
+  String? get invoiceError => _invoiceError;
+  String? get invoiceHtml => _invoiceHtml;
+
+  bool _isReceiptLoading = false;
+
+  String? _isReceiptError;
+  String? _isReceiptHtml;
+
+  bool get isReceiptLoading => _isReceiptLoading;
+  String? get isReceiptError => _isReceiptError;
+  String? get isReceiptHtml => _isReceiptHtml;
+
+  Future<bool> getInvoice(String invoiceId) async {
+    _isInvoiceLoading = true;
+    _invoiceError = null;
+    _invoiceHtml = null;
+
+    notifyListeners();
+
+    try {
+      final result = await PlanRepository.instance.invoice(invoiceId);
+
+      return result.when(
+        success: (data) {
+          _invoiceHtml = data?.toString();
+
+          _isInvoiceLoading = false;
+          notifyListeners();
+
+          return _invoiceHtml != null && _invoiceHtml!.isNotEmpty;
+        },
+        failure: (error) {
+          _invoiceError = error.message;
+
+          _isInvoiceLoading = false;
+          notifyListeners();
+
+          return false;
+        },
+      );
+    } catch (e) {
+      _invoiceError = e.toString();
+
+      _isInvoiceLoading = false;
+      notifyListeners();
+
+      debugPrint("❌ Invoice API Error: $e");
+
+      return false;
+    }
+  }
+
+  Future<bool> getReceipt(String invoiceId) async {
+    _isReceiptLoading = true;
+    _isReceiptError = null;
+    _isReceiptHtml = null;
+
+    notifyListeners();
+
+    try {
+      final result = await PlanRepository.instance.receipt(invoiceId);
+
+      return await result.when(
+        success: (data) {
+          _isReceiptHtml = data?.toString();
+
+          _isReceiptLoading = false;
+          notifyListeners();
+
+          return _isReceiptHtml != null && _isReceiptHtml!.isNotEmpty;
+        },
+        failure: (error) {
+          _isReceiptError = error.message;
+
+          _isReceiptLoading = false;
+          notifyListeners();
+
+          return false;
+        },
+      );
+    } catch (e) {
+      _isReceiptError = e.toString();
+
+      _isReceiptLoading = false;
+      notifyListeners();
+
+      debugPrint("❌ Invoice API Error: $e");
+
+      return false;
+    }
+  }
+
+  Future<bool> cancelSubscription() async {
+    if (_isCancellingPlan) return false;
+
+    _isCancellingPlan = true;
+    _cancelPlanError = null;
+    notifyListeners();
+
+    try {
+      final result = await _repository.cancelPlan();
+
+      if (result.isFailure) {
+        _cancelPlanError =
+            result.error?.message ?? "Unable to cancel subscription";
+
+        debugPrint("❌ Cancel Plan Error: $_cancelPlanError");
+
+        return false;
+      }
+
+      debugPrint("================================");
+      debugPrint("✅ PLAN CANCELLED SUCCESSFULLY");
+      debugPrint("${result.data}");
+      debugPrint("================================");
+
+      return true;
+    } catch (e, stackTrace) {
+      _cancelPlanError = e.toString();
+
+      debugPrint("❌ Cancel Plan Exception: $e");
+      debugPrintStack(stackTrace: stackTrace);
+
+      return false;
+    } finally {
+      _isCancellingPlan = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> fetchPlans() async {
     _isLoadingPlans = true;
     _plansErrorMessage = null;

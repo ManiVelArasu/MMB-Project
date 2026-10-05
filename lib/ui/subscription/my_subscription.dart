@@ -3,23 +3,27 @@ import 'package:provider/provider.dart';
 
 import '../../network/provider/plan_provider.dart';
 
-
 class MySubscriptionScreen extends StatelessWidget {
   const MySubscriptionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Retrieve arguments passed via Navigator.pushNamed
+    final dynamic passedPlan = ModalRoute.of(context)?.settings.arguments;
+
     return ChangeNotifierProvider<PlanProvider>(
       create: (_) => PlanProvider()
         ..fetchMySubscription()
         ..fetchPlanUsage(),
-      child: const _MySubscriptionView(),
+      child: _MySubscriptionView(passedPlan: passedPlan),
     );
   }
 }
 
 class _MySubscriptionView extends StatelessWidget {
-  const _MySubscriptionView({super.key});
+  const _MySubscriptionView({super.key, this.passedPlan});
+
+  final dynamic passedPlan;
 
   int _daysRemaining(String? endDate) {
     if (endDate == null || endDate.isEmpty) {
@@ -28,23 +32,10 @@ class _MySubscriptionView extends StatelessWidget {
 
     try {
       final end = DateTime.parse(endDate).toLocal();
-
       final now = DateTime.now();
-
-      final today = DateTime(
-        now.year,
-        now.month,
-        now.day,
-      );
-
-      final expiry = DateTime(
-        end.year,
-        end.month,
-        end.day,
-      );
-
+      final today = DateTime(now.year, now.month, now.day);
+      final expiry = DateTime(end.year, end.month, end.day);
       final difference = expiry.difference(today).inDays;
-
       return difference < 0 ? 0 : difference;
     } catch (_) {
       return 0;
@@ -58,7 +49,6 @@ class _MySubscriptionView extends StatelessWidget {
 
     try {
       final parsed = DateTime.parse(date).toLocal();
-
       const months = [
         "Jan",
         "Feb",
@@ -73,7 +63,6 @@ class _MySubscriptionView extends StatelessWidget {
         "Nov",
         "Dec",
       ];
-
       return "${parsed.day} ${months[parsed.month - 1]} ${parsed.year}";
     } catch (_) {
       return date;
@@ -118,15 +107,12 @@ class _MySubscriptionView extends StatelessWidget {
     if (value.toLowerCase().contains("business post")) {
       return "Static Templates";
     }
-
     if (value.toLowerCase().contains("video")) {
       return "Video Templates";
     }
-
     if (value.toLowerCase().contains("ai")) {
       return "AI Credits";
     }
-
     return value;
   }
 
@@ -134,25 +120,25 @@ class _MySubscriptionView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFCFBF9),
-
       body: SafeArea(
         child: Consumer<PlanProvider>(
           builder: (context, provider, child) {
+            // If API hasn't loaded yet, fall back to the passed plan argument
+            final apiData = provider.subscriptionData;
+            final fallbackData = (passedPlan is Map<String, dynamic>)
+                ? {"plan": passedPlan}
+                : null;
 
-            if (provider.isLoadingSubscription &&
-                provider.subscriptionData == null) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+            final data = apiData ?? fallbackData;
+
+            if (provider.isLoadingSubscription && data == null) {
+              return const Center(child: CircularProgressIndicator());
             }
-
-            final data = provider.subscriptionData;
 
             if (data == null) {
               return Center(
                 child: Text(
-                  provider.subscriptionError ??
-                      "Unable to load subscription",
+                  provider.subscriptionError ?? "Unable to load subscription",
                 ),
               );
             }
@@ -161,29 +147,24 @@ class _MySubscriptionView extends StatelessWidget {
                 data["subscription"] as Map<String, dynamic>? ?? {};
 
             final plan =
-                data["plan"] as Map<String, dynamic>? ?? {};
+                data["plan"] as Map<String, dynamic>? ??
+                (passedPlan is Map<String, dynamic> ? passedPlan : {});
 
-            final billing =
-                data["billing"] as Map<String, dynamic>? ?? {};
+            final billing = data["billing"] as Map<String, dynamic>? ?? {};
 
-            final period =
-                data["period"] as Map<String, dynamic>? ?? {};
+            final period = data["period"] as Map<String, dynamic>? ?? {};
 
-            final features =
-                data["features"] as List<dynamic>? ?? [];
+            final features = data["features"] as List<dynamic>? ?? [];
 
             // ------------------------------------------
             // API DATA
             // ------------------------------------------
 
-            final planName =
-                plan["name"]?.toString() ?? "Premium Plan";
+            final planName = plan["name"]?.toString() ?? "Premium Plan";
 
-            final status =
-                subscription["status"]?.toString() ?? "";
+            final status = subscription["status"]?.toString() ?? "Active";
 
-            final autoRenew =
-                subscription["auto_renew"] == true;
+            final autoRenew = subscription["auto_renew"] == true;
 
             final paymentGateway =
                 subscription["payment_gateway"]?.toString() ?? "";
@@ -196,48 +177,33 @@ class _MySubscriptionView extends StatelessWidget {
 
             final renewsOn =
                 subscription["renews_on"]?.toString() ??
-                    period["end"]?.toString();
+                period["end"]?.toString();
 
             final endDate =
                 subscription["ends_at"]?.toString() ??
-                    period["end"]?.toString();
+                period["end"]?.toString();
 
-            final daysRemaining =
-            _daysRemaining(endDate);
-
-            final featuresText =
-            _buildFeaturesText(features);
+            final daysRemaining = _daysRemaining(endDate);
+            final featuresText = _buildFeaturesText(features);
 
             // ------------------------------------------
             // PROGRESS
             // ------------------------------------------
 
-            final startsAt =
-            subscription["starts_at"]?.toString();
-
+            final startsAt = subscription["starts_at"]?.toString();
             double progress = 0.0;
 
             try {
-              if (startsAt != null &&
-                  endDate != null) {
-                final start =
-                DateTime.parse(startsAt).toLocal();
-
-                final end =
-                DateTime.parse(endDate).toLocal();
-
+              if (startsAt != null && endDate != null) {
+                final start = DateTime.parse(startsAt).toLocal();
+                final end = DateTime.parse(endDate).toLocal();
                 final now = DateTime.now();
 
-                final total =
-                    end.difference(start).inSeconds;
-
-                final elapsed =
-                    now.difference(start).inSeconds;
+                final total = end.difference(start).inSeconds;
+                final elapsed = now.difference(start).inSeconds;
 
                 if (total > 0) {
-                  progress =
-                      (1 - (elapsed / total))
-                          .clamp(0.0, 1.0);
+                  progress = (1 - (elapsed / total)).clamp(0.0, 1.0);
                 }
               }
             } catch (_) {
@@ -245,49 +211,35 @@ class _MySubscriptionView extends StatelessWidget {
             }
 
             // ====================================================
-            // ORIGINAL DESIGN
+            // DESIGN
             // ====================================================
 
             return Column(
               children: [
-
-                // ====================================================
                 // HEADER
-                // ====================================================
-
                 Container(
                   height: 72,
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     border: Border(
-                      bottom: BorderSide(
-                        color: Color(0xFFEAEAEA),
-                        width: 1,
-                      ),
+                      bottom: BorderSide(color: Color(0xFFEAEAEA), width: 1),
                     ),
                   ),
-
                   child: Row(
                     children: [
-
                       GestureDetector(
                         onTap: () {
                           Navigator.pop(context);
                         },
-
                         child: Container(
                           width: 34,
                           height: 34,
-
                           decoration: const BoxDecoration(
                             color: Color(0xFFFFE5E7),
                             shape: BoxShape.circle,
                           ),
-
                           child: const Icon(
                             Icons.arrow_back,
                             color: Color(0xFFFF2027),
@@ -295,9 +247,7 @@ class _MySubscriptionView extends StatelessWidget {
                           ),
                         ),
                       ),
-
                       const SizedBox(width: 16),
-
                       const Text(
                         "My Subscription",
                         style: TextStyle(
@@ -310,73 +260,35 @@ class _MySubscriptionView extends StatelessWidget {
                   ),
                 ),
 
-                // ====================================================
                 // BODY
-                // ====================================================
-
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(
-                      20,
-                      0,
-                      20,
-                      20,
-                    ),
-
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     child: Column(
                       children: [
-
-                        const SizedBox(height: 0),
-
-                        // ==================================================
-                        // PREMIUM CARD
-                        // ==================================================
-
+                        const SizedBox(height: 20),
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.fromLTRB(
-                            20,
-                            20,
-                            20,
-                            18,
-                          ),
-
+                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFFFFB4DB),
-                                Color(0xFFF6D9F0),
-                              ],
+                              colors: [Color(0xFFFFB4DB), Color(0xFFF6D9F0)],
                             ),
-
-                            borderRadius:
-                            BorderRadius.circular(16),
-
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: const Color(0xFFFFA5D3),
                               width: 1,
                             ),
                           ),
-
                           child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
-
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-
-                              // PLAN NAME + ACTIVE
-
                               Row(
                                 mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
-
-                                crossAxisAlignment:
-                                CrossAxisAlignment.center,
-
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-
                                   Text(
                                     planName,
                                     style: const TextStyle(
@@ -385,43 +297,29 @@ class _MySubscriptionView extends StatelessWidget {
                                       fontWeight: FontWeight.w800,
                                     ),
                                   ),
-
                                   Container(
-                                    padding:
-                                    const EdgeInsets.symmetric(
+                                    padding: const EdgeInsets.symmetric(
                                       horizontal: 13,
                                       vertical: 6,
                                     ),
-
                                     decoration: BoxDecoration(
-                                      color:
-                                      status.toLowerCase() ==
-                                          "active"
+                                      color: status.toLowerCase() == "active"
                                           ? const Color(0xFFFF2027)
                                           : Colors.grey,
-
-                                      borderRadius:
-                                      BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(20),
                                     ),
-
                                     child: Text(
-                                      status
-                                          .toUpperCase(),
+                                      status.toUpperCase(),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 10,
-                                        fontWeight:
-                                        FontWeight.w800,
+                                        fontWeight: FontWeight.w800,
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
-
                               const SizedBox(height: 12),
-
-                              // RENEW TEXT
-
                               Text(
                                 autoRenew
                                     ? "Your plan will automatically renew next month."
@@ -430,15 +328,10 @@ class _MySubscriptionView extends StatelessWidget {
                                   color: Color(0xFF59545D),
                                   fontSize: 12,
                                   height: 1.4,
-                                  fontWeight:
-                                  FontWeight.w400,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
-
                               const SizedBox(height: 12),
-
-                              // FEATURES
-
                               Text(
                                 featuresText.isEmpty
                                     ? "No features available"
@@ -447,8 +340,7 @@ class _MySubscriptionView extends StatelessWidget {
                                   color: Color(0xFF59545D),
                                   fontSize: 12,
                                   height: 1.5,
-                                  fontWeight:
-                                  FontWeight.w400,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ],
@@ -457,117 +349,75 @@ class _MySubscriptionView extends StatelessWidget {
 
                         const SizedBox(height: 36),
 
-                        // ==================================================
                         // DAYS CIRCLE
-                        // ==================================================
-
                         SizedBox(
                           width: 145,
                           height: 145,
-
                           child: Stack(
                             alignment: Alignment.center,
-
                             children: [
-
                               SizedBox(
                                 width: 145,
                                 height: 145,
-
-                                child:
-                                CircularProgressIndicator(
+                                child: CircularProgressIndicator(
                                   value: 1,
                                   strokeWidth: 10,
-                                  backgroundColor:
-                                  const Color(0xFFEDEBE7),
-
+                                  backgroundColor: const Color(0xFFEDEBE7),
                                   valueColor:
-                                  const AlwaysStoppedAnimation<
-                                      Color>(
-                                    Color(0xFFEDEBE7),
-                                  ),
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Color(0xFFEDEBE7),
+                                      ),
                                 ),
                               ),
-
                               SizedBox(
                                 width: 145,
                                 height: 145,
-
-                                child:
-                                CircularProgressIndicator(
+                                child: CircularProgressIndicator(
                                   value: progress,
                                   strokeWidth: 10,
-                                  backgroundColor:
-                                  Colors.transparent,
-
+                                  backgroundColor: Colors.transparent,
                                   valueColor:
-                                  const AlwaysStoppedAnimation<
-                                      Color>(
-                                    Color(0xFFFF2027),
-                                  ),
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Color(0xFFFF2027),
+                                      ),
                                 ),
                               ),
-
                               Column(
-                                mainAxisAlignment:
-                                MainAxisAlignment.center,
-
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-
                                   Row(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.center,
-
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.end,
-
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
-
                                       Text(
                                         "$daysRemaining",
-                                        style:
-                                        const TextStyle(
-                                          color:
-                                          Color(0xFF171A2B),
+                                        style: const TextStyle(
+                                          color: Color(0xFF171A2B),
                                           fontSize: 36,
-                                          fontWeight:
-                                          FontWeight.w800,
+                                          fontWeight: FontWeight.w800,
                                         ),
                                       ),
-
                                       const SizedBox(width: 3),
-
                                       const Padding(
-                                        padding:
-                                        EdgeInsets.only(
-                                          bottom: 7,
-                                        ),
-
+                                        padding: EdgeInsets.only(bottom: 7),
                                         child: Text(
                                           "Days",
-                                          style:
-                                          TextStyle(
-                                            color:
-                                            Color(0xFF171A2B),
+                                          style: TextStyle(
+                                            color: Color(0xFF171A2B),
                                             fontSize: 13,
-                                            fontWeight:
-                                            FontWeight.w600,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
-
                                   const SizedBox(height: 1),
-
                                   const Text(
                                     "TILL RENEWAL",
                                     style: TextStyle(
-                                      color:
-                                      Color(0xFF666666),
+                                      color: Color(0xFF666666),
                                       fontSize: 9,
-                                      fontWeight:
-                                      FontWeight.w600,
+                                      fontWeight: FontWeight.w600,
                                       letterSpacing: 0.2,
                                     ),
                                   ),
@@ -579,141 +429,91 @@ class _MySubscriptionView extends StatelessWidget {
 
                         const SizedBox(height: 36),
 
-                        // ==================================================
                         // SUBSCRIPTION DETAILS
-                        // ==================================================
-
                         Container(
                           width: double.infinity,
-
-                          padding:
-                          const EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 18,
                             vertical: 16,
                           ),
-
                           decoration: BoxDecoration(
                             color: Colors.white,
-
-                            borderRadius:
-                            BorderRadius.circular(16),
-
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color:
-                              const Color(0xFFE4E0DB),
+                              color: const Color(0xFFE4E0DB),
                               width: 1,
                             ),
                           ),
-
                           child: Column(
                             children: [
-
                               _detailRow(
                                 title: "Renews on",
-                                value:
-                                _formatDate(renewsOn),
+                                value: _formatDate(renewsOn),
                               ),
-
                               const SizedBox(height: 16),
-
                               _detailRow(
                                 title: "Auto Renewal",
-                                value:
-                                autoRenew
-                                    ? "ON"
-                                    : "OFF",
-                                valueColor:
-                                autoRenew
-                                    ? const Color(
-                                    0xFFFF2027)
+                                value: autoRenew ? "ON" : "OFF",
+                                valueColor: autoRenew
+                                    ? const Color(0xFFFF2027)
                                     : Colors.grey,
                               ),
-
                               const SizedBox(height: 16),
-
                               _detailRow(
                                 title: "Payment Method",
-                                value:
-                                paymentGateway.isEmpty
+                                value: paymentGateway.isEmpty
                                     ? paymentMethod
                                     : "${_capitalize(paymentGateway)} • ${paymentMethod.toUpperCase()}",
                               ),
-
-                              if (paymentMethodDetail
-                                  .isNotEmpty) ...[
-
+                              if (paymentMethodDetail.isNotEmpty) ...[
                                 const SizedBox(height: 16),
-
                                 _detailRow(
                                   title: "Payment Detail",
-                                  value:
-                                  paymentMethodDetail,
+                                  value: paymentMethodDetail,
                                 ),
                               ],
-
                               const SizedBox(height: 16),
-
                               _detailRow(
                                 title: "Plan Price",
                                 value:
-                                "${billing["currency"] ?? "INR"} ${billing["price"] ?? "-"}",
+                                    "${billing["currency"] ?? "INR"} ${billing["price"] ?? "-"}",
                               ),
-
                               const SizedBox(height: 16),
-
                               _detailRow(
                                 title: "Amount Paid",
                                 value:
-                                "${billing["currency"] ?? "INR"} ${subscription["amount_paid"] ?? "-"}",
+                                    "${billing["currency"] ?? "INR"} ${subscription["amount_paid"] ?? "-"}",
                               ),
                             ],
                           ),
                         ),
 
-                        const SizedBox(height: 132),
+                        const SizedBox(height: 40),
 
-                        // ==================================================
                         // MANAGE PLAN
-                        // ==================================================
-
                         _buildActionButton(
                           title: "MANAGE PLAN",
-                          backgroundColor:
-                          const Color(0xFFFF2027),
-                          borderColor:
-                          const Color(0xFFFF2027),
+                          backgroundColor: const Color(0xFFFF2027),
+                          borderColor: const Color(0xFFFF2027),
                           textColor: Colors.white,
-
                           onTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              "/ManagePlanScreen",
-                            );
+                            Navigator.pushNamed(context, "/ManagePlanScreen");
                           },
                         ),
 
                         const SizedBox(height: 10),
 
-                        // ==================================================
                         // CANCEL RENEWAL
-                        // ==================================================
-
                         _buildActionButton(
                           title: "CANCEL RENEWAL",
-                          backgroundColor:
-                          Colors.white,
-                          borderColor:
-                          const Color(0xFF171A2B),
-                          textColor:
-                          const Color(0xFF171A2B),
-
+                          backgroundColor: Colors.white,
+                          borderColor: const Color(0xFF171A2B),
+                          textColor: const Color(0xFF171A2B),
                           onTap: () {
                             Navigator.pushNamed(
                               context,
                               "/ChangePlanScreen",
-                              arguments: {
-                                "openCancelSheet": true,
-                              },
+                              arguments: {"openCancelSheet": true},
                             );
                           },
                         ),
@@ -729,35 +529,21 @@ class _MySubscriptionView extends StatelessWidget {
     );
   }
 
-  // ==============================================================
-  // CAPITALIZE
-  // ==============================================================
-
   String _capitalize(String value) {
     if (value.isEmpty) {
       return value;
     }
-
-    return value[0].toUpperCase() +
-        value.substring(1);
+    return value[0].toUpperCase() + value.substring(1);
   }
-
-  // ==============================================================
-  // DETAIL ROW
-  // ==============================================================
 
   Widget _detailRow({
     required String title,
     required String value,
-    Color valueColor =
-    const Color(0xFF171A2B),
+    Color valueColor = const Color(0xFF171A2B),
   }) {
     return Row(
-      mainAxisAlignment:
-      MainAxisAlignment.spaceBetween,
-
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-
         Text(
           title,
           style: const TextStyle(
@@ -766,7 +552,6 @@ class _MySubscriptionView extends StatelessWidget {
             fontWeight: FontWeight.w400,
           ),
         ),
-
         Flexible(
           child: Text(
             value,
@@ -782,10 +567,6 @@ class _MySubscriptionView extends StatelessWidget {
     );
   }
 
-  // ==============================================================
-  // ACTION BUTTON
-  // ==============================================================
-
   Widget _buildActionButton({
     required String title,
     required Color backgroundColor,
@@ -796,26 +577,16 @@ class _MySubscriptionView extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 53,
-
       child: OutlinedButton(
         onPressed: onTap,
-
         style: OutlinedButton.styleFrom(
           backgroundColor: backgroundColor,
-
-          side: BorderSide(
-            color: borderColor,
-            width: 1.5,
-          ),
-
+          side: BorderSide(color: borderColor, width: 1.5),
           shape: RoundedRectangleBorder(
-            borderRadius:
-            BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12),
           ),
-
           elevation: 0,
         ),
-
         child: Text(
           title,
           style: TextStyle(

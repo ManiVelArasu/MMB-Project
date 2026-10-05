@@ -131,7 +131,7 @@ class CustomBottomNavView extends StatelessWidget {
                           _buildNavItem(
                             context: context,
                             imagePath: "assets/images/themes.png",
-                            label: "B SERIES",
+                            label: "THEMES",
                             index: 1,
                           ),
 

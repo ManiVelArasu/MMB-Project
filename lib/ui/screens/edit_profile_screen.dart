@@ -272,60 +272,78 @@ class _EditProfileViewState extends State<_EditProfileView> {
       clipBehavior: Clip.none,
       children: [
         GestureDetector(
-          onTap: provider.isUploadingImage ? null : provider.pickAndUploadImage,
+          onTap: provider.isUploadingImage
+              ? null
+              : provider.pickAndUploadImage,
           child: Container(
             height: 85.h,
             width: 85.w,
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(color: const Color(0xFFFFECEE), width: 1.5),
+              border: Border.all(
+                color: const Color(0xFFFFECEE),
+                width: 1.5,
+              ),
             ),
-            child: Center(
-              child: provider.isUploadingImage
-                  ? SizedBox(
-                      height: 24.h,
-                      width: 24.w,
-                      child: const CircularProgressIndicator(strokeWidth: 2.5),
-                    )
-                  : provider.selectedImage != null &&
-                        provider.selectedImage!.existsSync()
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(14.r),
-                      child: Image.file(
-                        provider.selectedImage!,
-                        width: 50.w,
-                        height: 50.w,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                  : provider.profilePhotoS3Key.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(14.r),
-                      child: Image.network(
-                        getS3ImageUrl(provider.profilePhotoS3Key),
-                        width: 85.w,
-                        height: 85.w,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) {
-                          return Image.asset(
-                            "assets/images/BName.png",
-                            width: 50.w,
-                            height: 50.w,
-                            fit: BoxFit.cover,
-                          );
-                        },
-                      ),
-                    )
-                  : Image.asset(
-                      "assets/images/BName.png",
-                      width: 50.w,
-                      height: 50.w,
-                      fit: BoxFit.cover,
-                    ),
+            child: provider.isUploadingImage
+                ? Center(
+              child: SizedBox(
+                height: 24.h,
+                width: 24.w,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                ),
+              ),
+            )
+
+            // =========================
+            // NEW SELECTED IMAGE
+            // =========================
+                : provider.selectedImage != null &&
+                provider.selectedImage!.existsSync()
+                ? Image.file(
+              provider.selectedImage!,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
+            )
+
+            // =========================
+            // EXISTING PROFILE IMAGE
+            // =========================
+                : provider.profilePhotoS3Key.isNotEmpty
+                ? Image.network(
+              getS3ImageUrl(provider.profilePhotoS3Key),
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) {
+                return Image.asset(
+                  "assets/images/BName.png",
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                );
+              },
+            )
+
+            // =========================
+            // DEFAULT IMAGE
+            // =========================
+                : Image.asset(
+              "assets/images/BName.png",
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
             ),
           ),
         ),
+
+        // =========================
+        // CLOSE ICON
+        // =========================
         Positioned(
           top: -6.h,
           right: -6.w,
@@ -773,64 +791,78 @@ class _EditProfileViewState extends State<_EditProfileView> {
       clipBehavior: Clip.none,
       children: [
         GestureDetector(
-          onTap: provider.isUploadingImage ? null : provider.pickAndUploadImage,
+          onTap: provider.isUploadingImage
+              ? null
+              : provider.pickAndUploadImage,
           child: Container(
             height: 85.h,
             width: 85.w,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(color: const Color(0xFFFFECEE), width: 1.5),
+              border: Border.all(
+                color: const Color(0xFFFFECEE),
+                width: 1.5,
+              ),
             ),
-            child: Center(
-              child: provider.isUploadingImage
-                  ? SizedBox(
-                      height: 24.h,
-                      width: 24.w,
-                      child: const CircularProgressIndicator(strokeWidth: 2.5),
-                    )
-                  : provider.selectedImage != null &&
-                        provider.selectedImage!.existsSync()
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(14.r),
-                      child: Image.file(
-                        provider.selectedImage!,
-                        width: 50.w,
-                        height: 50.w,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                  : imageKey.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(14.r),
-                      child: Image.network(
-                        getS3ImageUrl(imageKey),
-                        width: 85.w,
-                        height: 85.w,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) {
-                          return Image.asset(
-                            "assets/images/BName.png",
-                            width: 50.w,
-                            height: 50.w,
-                            fit: BoxFit.cover,
-                          );
-                        },
-                      ),
-                    )
-                  : Image.asset(
-                      "assets/images/BName.png",
-                      width: 50.w,
-                      height: 50.w,
-                      fit: BoxFit.cover,
-                    ),
+            clipBehavior: Clip.antiAlias,
+            child: provider.isUploadingImage
+                ? Center(
+              child: SizedBox(
+                height: 24.h,
+                width: 24.w,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                ),
+              ),
+            )
+
+            // =========================
+            // NEW SELECTED IMAGE
+            // =========================
+                : provider.selectedImage != null &&
+                provider.selectedImage!.existsSync()
+                ? Image.file(
+              provider.selectedImage!,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
+            )
+
+            // =========================
+            // OLD / API IMAGE
+            // =========================
+                : imageKey.isNotEmpty
+                ? Image.network(
+              getS3ImageUrl(imageKey),
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) {
+                return Image.asset(
+                  "assets/images/BName.png",
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                );
+              },
+            )
+
+            // =========================
+            // DEFAULT IMAGE
+            // =========================
+                : Image.asset(
+              "assets/images/BName.png",
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
             ),
           ),
         ),
 
-        // =====================================================
+        // =========================
         // CLOSE ICON
-        // =====================================================
+        // =========================
         Positioned(
           top: -6.h,
           right: -6.w,

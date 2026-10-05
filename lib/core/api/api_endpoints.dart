@@ -63,8 +63,12 @@ class ApiEndpoints {
   static String notificationReadOne(String notificationUid) =>
       '/notifications/${notificationUid}/read';
 
+  static String invoice(String invoiceId) =>
+      '/subscriptions/payments/${invoiceId}/document';
+
   static const String project = '/projects';
   static const String subscription = '/subscriptions';
   static const String subscriptionPayment = '/subscriptions/payments';
   static const String planUsage = '/quota/usage';
+  static const String cancelPlan = '/subscriptions/me/cancel-renewal';
 }

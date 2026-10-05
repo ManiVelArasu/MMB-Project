@@ -19,10 +19,8 @@ class PlansAndPricingScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) {
         final provider = PlanProvider();
-
         provider.fetchPlans();
         provider.fetchMySubscription();
-
         return provider;
       },
       child: _PlansAndPricingBody(showSkip: showSkip),
@@ -45,7 +43,6 @@ class _PlansAndPricingBody extends StatelessWidget {
             // ==========================================================
             // TOP BAR
             // ==========================================================
-
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
               child: Row(
@@ -59,17 +56,13 @@ class _PlansAndPricingBody extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-
                   if (showSkip)
                     InkWell(
                       onTap: () async {
                         final prefs = await SharedPreferences.getInstance();
-
                         await prefs.setBool('has_seen_plans', true);
-
                         if (!context.mounted) return;
-
-                        Navigator.pushNamed(context, "/AccountTypeScreen");
+                        Navigator.pushNamed(context, "/CustomBottomNavScreen");
                       },
                       child: AppText(
                         "SKIP",
@@ -90,18 +83,10 @@ class _PlansAndPricingBody extends StatelessWidget {
             Expanded(
               child: Consumer<PlanProvider>(
                 builder: (context, provider, child) {
-                  // --------------------------------------------------
-                  // LOADING
-                  // --------------------------------------------------
-
                   if (provider.isLoadingPlans ||
                       provider.isLoadingSubscription) {
                     return const Center(child: CircularProgressIndicator());
                   }
-
-                  // --------------------------------------------------
-                  // PLANS
-                  // --------------------------------------------------
 
                   final plansList = provider.plansData?.data ?? [];
 
@@ -114,37 +99,12 @@ class _PlansAndPricingBody extends StatelessWidget {
                     );
                   }
 
-                  // --------------------------------------------------
-                  // ACTIVE PLAN DEBUG
-                  // --------------------------------------------------
-
-                  debugPrint("================================");
-
-                  debugPrint(
-                    "ACTIVE PLAN UID: "
-                    "${provider.activePlanUid}",
-                  );
-
-                  debugPrint(
-                    "ACTIVE PLAN NAME: "
-                    "${provider.activePlanName}",
-                  );
-
-                  debugPrint("================================");
-
-                  // --------------------------------------------------
-                  // CONTENT
-                  // --------------------------------------------------
-
                   return SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     padding: EdgeInsets.symmetric(horizontal: 16.w),
                     child: Column(
                       children: [
-                        // ==================================================
                         // PRICE LOGO
-                        // ==================================================
-
                         SizedBox(
                           height: 170.h,
                           width: double.infinity,
@@ -156,9 +116,7 @@ class _PlansAndPricingBody extends StatelessWidget {
 
                         SizedBox(height: 16.h),
 
-                        // ==================================================
                         // FREE TRIAL CARD
-                        // ==================================================
                         Stack(
                           children: [
                             ClipRRect(
@@ -166,11 +124,10 @@ class _PlansAndPricingBody extends StatelessWidget {
                               child: Image.asset(
                                 "assets/images/offers.png",
                                 width: double.infinity,
-                                height: 150.h,
+                                height: 170.h,
                                 fit: BoxFit.cover,
                               ),
                             ),
-
                             Padding(
                               padding: EdgeInsets.all(16.r),
                               child: Column(
@@ -185,9 +142,7 @@ class _PlansAndPricingBody extends StatelessWidget {
                                       height: 1.15,
                                     ),
                                   ),
-
                                   SizedBox(height: 4.h),
-
                                   AppText(
                                     "Get full access to all Premium features.",
                                     style: TextStyle(
@@ -196,12 +151,10 @@ class _PlansAndPricingBody extends StatelessWidget {
                                       color: Colors.black87,
                                     ),
                                   ),
-
                                   SizedBox(height: 6.h),
-
                                   Row(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.baseline,
+                                    CrossAxisAlignment.baseline,
                                     textBaseline: TextBaseline.alphabetic,
                                     children: [
                                       AppText(
@@ -222,9 +175,7 @@ class _PlansAndPricingBody extends StatelessWidget {
                                       ),
                                     ],
                                   ),
-
                                   SizedBox(height: 8.h),
-
                                   SizedBox(
                                     height: 34.h,
                                     child: ElevatedButton(
@@ -232,14 +183,11 @@ class _PlansAndPricingBody extends StatelessWidget {
                                         // Start free trial
                                       },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFF38BDF8,
-                                        ),
+                                        backgroundColor: const Color(0xFF38BDF8),
                                         elevation: 0,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8.r,
-                                          ),
+                                          borderRadius:
+                                          BorderRadius.circular(8.r),
                                         ),
                                         padding: EdgeInsets.symmetric(
                                           horizontal: 14.w,
@@ -263,9 +211,7 @@ class _PlansAndPricingBody extends StatelessWidget {
 
                         SizedBox(height: 16.h),
 
-                        // ==================================================
-                        // PLANS
-                        // ==================================================
+                        // PLANS LIST
                         ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -284,9 +230,7 @@ class _PlansAndPricingBody extends StatelessWidget {
 
                         SizedBox(height: 16.h),
 
-                        // ==================================================
                         // FOOTER
-                        // ==================================================
                         AppText(
                           'Secure Payment',
                           style: TextStyle(
@@ -295,9 +239,7 @@ class _PlansAndPricingBody extends StatelessWidget {
                             fontSize: 14.sp,
                           ),
                         ),
-
                         SizedBox(height: 4.h),
-
                         AppText(
                           'Cancel anytime. Refund policy applies.',
                           style: TextStyle(
@@ -305,9 +247,7 @@ class _PlansAndPricingBody extends StatelessWidget {
                             fontSize: 14.sp,
                           ),
                         ),
-
                         SizedBox(height: 4.h),
-
                         AppText(
                           'Continue with Free Plan',
                           style: TextStyle(
@@ -315,7 +255,6 @@ class _PlansAndPricingBody extends StatelessWidget {
                             fontSize: 16.sp,
                           ),
                         ),
-
                         SizedBox(height: 20.h),
                       ],
                     ),
@@ -329,31 +268,20 @@ class _PlansAndPricingBody extends StatelessWidget {
     );
   }
 
-  // ================================================================
-  // PLAN CARD
-  // ================================================================
-
   Widget _buildDynamicPricingCard({
     required BuildContext context,
     required Plan plan,
     required int index,
     required PlanProvider provider,
   }) {
-    // ==============================================================
-    // ACTIVE PLAN & DYNAMIC BUTTON STATE
-    // ==============================================================
     final buttonState = provider.getPlanButtonState(plan, index);
     final bool isActivePlan = buttonState.isCurrentActive;
 
-    // ==============================================================
-    // BILLING & PRICING
-    // ==============================================================
     final billing = plan.planBillingOptions.isNotEmpty
         ? plan.planBillingOptions.first
         : null;
 
     final String actualPrice = billing?.price?.toString() ?? "0";
-
     final String? discountedPrice = billing?.discountedPrice?.toString();
 
     final bool hasDiscount =
@@ -367,29 +295,19 @@ class _PlansAndPricingBody extends StatelessWidget {
       if (value.contains(".")) {
         return value.split(".").first;
       }
-
       return value;
     }
 
     final String actualPriceText = "₹${formatPrice(actualPrice)}";
-
     final String discountPriceText = hasDiscount
         ? "₹${formatPrice(discountedPrice)}"
         : actualPriceText;
-
-    final String periodText = billing == null
-        ? "/month"
-        : "/${billing.billingCycle}";
-
+    final String periodText = billing == null ? "/month" : "/${billing.billingCycle}";
     final String discountLabel = billing?.discountLabel?.toString() ?? "";
 
-    // ==============================================================
-    // CARD DESIGN & COLORS
-    // ==============================================================
     Color cardBgColor;
     Color borderColor;
     Color buttonColor;
-
     String staticDescription = "";
     String staticIncludes = "";
 
@@ -398,50 +316,34 @@ class _PlansAndPricingBody extends StatelessWidget {
       borderColor = const Color(0xFFBBE5ED);
       buttonColor = const Color(0xFF43CBD9);
       staticDescription = "Perfect for exploring MMB before upgrading";
-      staticIncludes =
-      "10 Business Templates | "
-          "2 Video Templates | "
-          "10 AI Credits | "
-          "Watermarked Downloads";
+      staticIncludes = "10 Business Templates | 2 Video Templates | 10 AI Credits | Watermarked Downloads";
     } else if (index == 1) {
       cardBgColor = const Color(0xFFFCFFF6);
       borderColor = const Color(0xFFD4ED91);
       buttonColor = const Color(0xFF8BC34A);
       staticDescription = "Perfect for individuals & small businesses.";
-      staticIncludes =
-      "500 Templates | "
-          "200 Videos | "
-          "2 AI Logo Credits";
+      staticIncludes = "500 Templates | 200 Videos | 2 AI Logo Credits";
     } else if (index == 2) {
       cardBgColor = const Color(0xFFFFECEE);
       borderColor = const Color(0xFFFFCDD2);
       buttonColor = const Color(0xFFFF6FB5);
       staticDescription = "Perfect for growing businesses.";
-      staticIncludes =
-      "2000 Templates | "
-          "500 Videos | "
-          "5 AI Logo Credits";
+      staticIncludes = "2000 Templates | 500 Videos | 5 AI Logo Credits";
     } else {
       cardBgColor = const Color(0xFFF3E8FF);
       borderColor = const Color(0xFFD8B4FE);
       buttonColor = const Color(0xFFA78BFA);
       staticDescription = "Perfect for individuals & small businesses.";
-      staticIncludes =
-      "2000 Templates | "
-          "1000 Videos | "
-          "10 AI Logo Credits";
+      staticIncludes = "2000 Templates | 1000 Videos | 10 AI Logo Credits";
     }
 
-    // Determine button background color based on state
     Color currentButtonColor = isActivePlan
         ? Colors.green
         : (buttonState.text == "DOWNGRADE"
         ? Colors.orange.shade700
-        : (buttonState.text == "UPGRADE" ? Colors.blue.shade600 : buttonColor));
-
-    // ==============================================================
-    // CARD
-    // ==============================================================
+        : (buttonState.text == "UPGRADE"
+        ? Colors.blue.shade600
+        : buttonColor));
 
     return Container(
       margin: EdgeInsets.only(bottom: 15.h),
@@ -457,10 +359,6 @@ class _PlansAndPricingBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ==========================================================
-          // PLAN NAME + BUTTON
-          // ==========================================================
-
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -472,7 +370,6 @@ class _PlansAndPricingBody extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // PLAN NAME
                         Expanded(
                           child: AppText(
                             plan.name ?? "Plan",
@@ -483,27 +380,23 @@ class _PlansAndPricingBody extends StatelessWidget {
                             ),
                           ),
                         ),
-
                         SizedBox(width: 8.w),
-
-                        // ==================================================
-                        // BUTTON
-                        // ==================================================
                         ElevatedButton(
-                          onPressed: !buttonState.isEnabled
-                              ? (){
-                            Navigator.pushNamed(
-                              context,
-                              '/MySubscriptionScreen',
-                              arguments: plan,
-                            );
-                          }
-                              : () {
-                            Navigator.pushNamed(
-                              context,
-                              '/PlanDetailScreen',
-                              arguments: plan,
-                            );
+                          onPressed: () {
+                            if (!buttonState.isEnabled) {
+                              // If current active plan, push to MySubscriptionScreen with arguments
+                              Navigator.pushNamed(
+                                context,
+                                '/MySubscriptionScreen',
+                                arguments: plan,
+                              );
+                            } else {
+                              Navigator.pushNamed(
+                                context,
+                                '/PlanDetailScreen',
+                                arguments: plan,
+                              );
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: currentButtonColor,
@@ -530,12 +423,7 @@ class _PlansAndPricingBody extends StatelessWidget {
                         ),
                       ],
                     ),
-
                     SizedBox(height: 2.h),
-
-                    // ==================================================
-                    // PRICE
-                    // ==================================================
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
@@ -554,7 +442,6 @@ class _PlansAndPricingBody extends StatelessWidget {
                               ),
                             ),
                           ),
-
                         AppText(
                           discountPriceText,
                           style: TextStyle(
@@ -563,9 +450,7 @@ class _PlansAndPricingBody extends StatelessWidget {
                             color: Colors.black,
                           ),
                         ),
-
                         SizedBox(width: 3.w),
-
                         AppText(
                           periodText,
                           style: TextStyle(
@@ -574,7 +459,6 @@ class _PlansAndPricingBody extends StatelessWidget {
                             color: Colors.black54,
                           ),
                         ),
-
                         if (hasDiscount && discountLabel.isNotEmpty)
                           Padding(
                             padding: EdgeInsets.only(left: 5.w),
@@ -594,12 +478,7 @@ class _PlansAndPricingBody extends StatelessWidget {
               ),
             ],
           ),
-
           SizedBox(height: 8.h),
-
-          // ==========================================================
-          // DESCRIPTION
-          // ==========================================================
           AppText(
             staticDescription,
             style: TextStyle(
@@ -609,12 +488,7 @@ class _PlansAndPricingBody extends StatelessWidget {
               height: 1.3,
             ),
           ),
-
           SizedBox(height: 4.h),
-
-          // ==========================================================
-          // INCLUDES
-          // ==========================================================
           RichText(
             text: TextSpan(
               style: TextStyle(fontSize: 11.5.sp, color: Colors.black),
@@ -630,12 +504,7 @@ class _PlansAndPricingBody extends StatelessWidget {
               ],
             ),
           ),
-
           SizedBox(height: 8.h),
-
-          // ==========================================================
-          // VIEW FEATURES
-          // ==========================================================
           InkWell(
             onTap: () {
               Navigator.pushNamed(

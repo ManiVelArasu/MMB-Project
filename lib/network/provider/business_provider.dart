@@ -167,7 +167,7 @@ class BusinessProvider extends ChangeNotifier {
 
                 debugPrint(
                   "✅ ACCOUNT TYPE UPDATED = "
-                      "${language.data.accountType}",
+                  "${language.data.accountType}",
                 );
               }
             }
@@ -316,12 +316,12 @@ class BusinessProvider extends ChangeNotifier {
 
       switch (accountType) {
         case 'personal':
-        // Personal -> users/{uid}/profile/...
+          // Personal -> users/{uid}/profile/...
           uploadSlot = 'profile_photo';
           break;
 
         case 'business':
-        // Business -> users/{uid}/logo/...
+          // Business -> users/{uid}/logo/...
           uploadSlot = 'business_logo';
           break;
 
@@ -353,12 +353,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-        imageFile: imageFile,
-        filename: filename,
-        width: 1080,
-        height: 1080,
-        slot: uploadSlot,
-      );
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+            slot: uploadSlot,
+          );
 
       bool success = false;
 
@@ -400,8 +400,7 @@ class BusinessProvider extends ChangeNotifier {
 
           // Some repository implementations return the complete API
           // response, so the actual upload data can be nested under data.
-          if ((key == null || key.trim().isEmpty) &&
-              data['data'] is Map) {
+          if ((key == null || key.trim().isEmpty) && data['data'] is Map) {
             final nested = data['data'] as Map;
 
             key = nested['key']?.toString();
@@ -577,9 +576,9 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<Map<String, dynamic>?> businessUpdateApi(
-      BuildContext context,
-      String subIndustry,
-      ) async {
+    BuildContext context,
+    String subIndustry,
+  ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -663,9 +662,9 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<bool> updateBusinessDetails(
-      BuildContext context,
-      String businessUid,
-      ) async {
+    BuildContext context,
+    String businessUid,
+  ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -843,7 +842,7 @@ class BusinessProvider extends ChangeNotifier {
     final savedLogoKey = prefs.getString('logo_s3_key');
     final savedProfileKey =
         prefs.getString('profile_s3_key') ??
-            prefs.getString('profile_photo_s3_key');
+        prefs.getString('profile_photo_s3_key');
 
     if (savedLogoKey != null && savedLogoKey.trim().isNotEmpty) {
       _logoS3Key = savedLogoKey.trim();
@@ -900,17 +899,17 @@ class BusinessProvider extends ChangeNotifier {
 
     debugPrint(
       "✅ ACCOUNT TYPE UPDATED = "
-          "${provider.me?.data.accountType}",
+      "${provider.me?.data.accountType}",
     );
 
     debugPrint(
       "COMMON ACCOUNT TYPE = "
-          "${provider.accountType}",
+      "${provider.accountType}",
     );
 
     debugPrint(
       "IS PERSONAL = "
-          "${provider.isPersonal}",
+      "${provider.isPersonal}",
     );
 
     debugPrint("================================");
@@ -1180,12 +1179,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-        imageFile: imageFile,
-        filename: filename,
-        width: 1080,
-        height: 1080,
-        slot: uploadSlot,
-      );
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+            slot: uploadSlot,
+          );
 
       bool success = false;
 
@@ -1331,9 +1330,9 @@ class BusinessProvider extends ChangeNotifier {
   // ============================================================
 
   Future<void> pickImage(
-      BuildContext context, {
-        ImageSource source = ImageSource.gallery,
-      }) async {
+    BuildContext context, {
+    ImageSource source = ImageSource.gallery,
+  }) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -1380,12 +1379,12 @@ class BusinessProvider extends ChangeNotifier {
     AccTypeModel(
       title: "For my Business",
       description:
-      "Create branded designs tailored to your business and industry.",
+          "Create branded designs tailored to your business and industry.",
     ),
     AccTypeModel(
       title: "Personal Use",
       description:
-      "Create designs for festivals, birthdays, quotes, social posts, and more.",
+          "Create designs for festivals, birthdays, quotes, social posts, and more.",
     ),
   ];
 
@@ -1721,6 +1720,7 @@ class BusinessProvider extends ChangeNotifier {
       },
     );
   }
+
   Future<void> showBgRemoveScreen(BuildContext context) async {
     await showModalBottomSheet<bool>(
       context: context,
@@ -1731,7 +1731,7 @@ class BusinessProvider extends ChangeNotifier {
           value: this,
           child: BgRemoveSheet(
             onSuccess: () {
-            //  Navigator.of(modalContext).pop(true);
+              //  Navigator.of(modalContext).pop(true);
             },
           ),
         );
@@ -1880,7 +1880,7 @@ class BusinessProvider extends ChangeNotifier {
     } on PlatformException catch (e) {
       debugPrint(
         "Failed to remove background: "
-            "'${e.message}'",
+        "'${e.message}'",
       );
 
       _isProcessingBackground = false;
@@ -2018,8 +2018,7 @@ class BusinessProvider extends ChangeNotifier {
 
           final directKey = responseData['key'];
 
-          if (directKey != null &&
-              directKey.toString().trim().isNotEmpty) {
+          if (directKey != null && directKey.toString().trim().isNotEmpty) {
             s3Key = directKey.toString().trim();
           }
 
@@ -2030,8 +2029,7 @@ class BusinessProvider extends ChangeNotifier {
             if (keys is List && keys.isNotEmpty) {
               final key = keys.first;
 
-              if (key != null &&
-                  key.toString().trim().isNotEmpty) {
+              if (key != null && key.toString().trim().isNotEmpty) {
                 s3Key = key.toString().trim();
               }
             }
@@ -2047,8 +2045,7 @@ class BusinessProvider extends ChangeNotifier {
               if (firstResult is Map) {
                 final key = firstResult['key'];
 
-                if (key != null &&
-                    key.toString().trim().isNotEmpty) {
+                if (key != null && key.toString().trim().isNotEmpty) {
                   s3Key = key.toString().trim();
                 }
               }
@@ -2060,13 +2057,9 @@ class BusinessProvider extends ChangeNotifier {
           debugPrint("======================================");
 
           if (s3Key == null || s3Key.isEmpty) {
-            debugPrint(
-              "❌ Upload success but S3 key not found",
-            );
+            debugPrint("❌ Upload success but S3 key not found");
 
-            debugPrint(
-              "❌ Response was: $responseData",
-            );
+            debugPrint("❌ Response was: $responseData");
 
             success = false;
             return;

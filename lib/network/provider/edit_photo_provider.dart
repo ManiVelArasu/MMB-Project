@@ -200,12 +200,12 @@ class EditPhotoProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-        imageFile: imageFile,
-        filename: filename,
-        width: 1080,
-        height: 1080,
-        slot: uploadSlot,
-      );
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+            slot: uploadSlot,
+          );
 
       bool success = false;
 
@@ -265,7 +265,7 @@ class EditPhotoProvider extends ChangeNotifier {
 
             debugPrint(
               '❌ Cannot assign S3 key. '
-                  'Account type: $accountType',
+              'Account type: $accountType',
             );
             return;
           }
@@ -571,7 +571,7 @@ class EditPhotoProvider extends ChangeNotifier {
 
           debugPrint(
             '❌ BUSINESS PATCH FAILED: '
-                '${error.message}',
+            '${error.message}',
           );
         },
       );
@@ -682,7 +682,7 @@ class EditPhotoProvider extends ChangeNotifier {
 
           debugPrint(
             '❌ PERSONAL PATCH FAILED: '
-                '${error.message}',
+            '${error.message}',
           );
         },
       );

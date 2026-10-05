@@ -175,12 +175,34 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
       if (isBusiness) {
         debugPrint("======================================");
         debugPrint("🚀 UPDATE BUSINESS DETAILS");
-        debugPrint("Business UID: ${widget.businessUid}");
         debugPrint("======================================");
+
+        // widget.businessUid empty என்றால்
+        // SharedPreferences-ல் save செய்த UID-ஐ எடுத்துக்கொள்ளும்
+        String businessUid = widget.businessUid.trim();
+
+        if (businessUid.isEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+
+          businessUid = prefs.getString('business_uid')?.trim() ?? '';
+
+          debugPrint("📦 Business UID from SharedPreferences: $businessUid");
+        } else {
+          debugPrint("📌 Business UID from widget: $businessUid");
+        }
+
+        // UID எங்கும் கிடைக்கவில்லை என்றால் API call செய்ய வேண்டாம்
+        if (businessUid.isEmpty) {
+          debugPrint("❌ Business UID not found");
+
+          return;
+        }
+
+        debugPrint("🔑 Final Business UID: $businessUid");
 
         final bool success = await businessProvider.updateBusinessDetails(
           context,
-          widget.businessUid,
+          businessUid,
         );
 
         if (!success) {
