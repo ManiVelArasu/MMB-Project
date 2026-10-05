@@ -46,31 +46,6 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
           icon: const Icon(Icons.arrow_back, color: Colors.red),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.grey.shade300),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: () {
-                int newIndex = isBusiness ? 1 : 0;
-                accountProvider.setCurrentIndex(newIndex);
-              },
-              child: AppText(
-                isBusiness ? "SWITCH TO PERSONAL" : "SWITCH TO BUSINESS",
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

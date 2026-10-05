@@ -18,6 +18,7 @@ import 'core/api/enums/toast_position.dart';
 import 'network/provider/business_provider.dart';
 import 'network/provider/custom_theme_provider.dart';
 import 'network/provider/common_provider.dart';
+import 'network/provider/plan_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -183,6 +184,7 @@ class _MyAppState extends State<MyApp> {
           providers: [
             ChangeNotifierProvider(create: (_) => CustomThemeProvider()),
             ChangeNotifierProvider(create: (_) => BusinessProvider()),
+            ChangeNotifierProvider(create: (_) => PlanProvider()),
             ChangeNotifierProvider<CommonProvider>(
               create: (_) => CommonProvider.instance,
             ),

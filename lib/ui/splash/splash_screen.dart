@@ -420,7 +420,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
         Navigator.pushNamedAndRemoveUntil(
           context,
-          "/PlansAndPricingScreen",
+          "/AccountTypeScreen",
           (route) => false,
           arguments: {"showSkip": true},
         );
@@ -628,14 +628,6 @@ class _SplashScreenState extends State<SplashScreen> {
       // ========================================================
 
       debugPrint("⚠️ UNKNOWN ACCOUNT TYPE: $accountType");
-
-      if (!mounted) return;
-
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        "/PlansAndPricingScreen",
-        (route) => false,
-      );
     } catch (e, stackTrace) {
       debugPrint("❌ SPLASH GET ME HANDLING ERROR: $e");
 

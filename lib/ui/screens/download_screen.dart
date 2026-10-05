@@ -1,12 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
+import 'package:mmb_app/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
-
 import '../../Api Model/project_list.dart';
 import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
-import '../../network/provider/mydownload_provider.dart';
 import '../../network/provider/prpject_provider.dart';
 import '../screens/template_edit.dart';
 
@@ -60,7 +59,73 @@ class _MyDownloadScreenState extends State<MyDownloadScreen> {
             final projects = projectList.data;
 
             if (projects.isEmpty) {
-              return const Center(child: Text('No projects found'));
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 15),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        "assets/images/no_downloads.png",
+                        width: 140,
+                        height: 140,
+                      ),
+                      const AppText(
+                        'No Downloads Yet',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      const AppText(
+                        'Your downloaded designs will appear here. '
+                        'Create your first design and download it when it’s ready.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      Row(
+                        children: [
+                          Flexible(
+                            child: ButtonWidget(
+                              buttonPress: () {
+                                // Explore Templates
+                              },
+                              title: "Explore Templates",
+                              textColor: AppColors.appRed,
+                              buttonColor: AppColors.appWhite,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppColors.appRed),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(15),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          Flexible(
+                            child: ButtonWidget(
+                              buttonPress: () {
+                                // Create a Design
+                              },
+                              title: "Create a Design",
+                              textColor: AppColors.appWhite,
+                              buttonColor: AppColors.appRed,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
             }
 
             return RefreshIndicator(
@@ -195,6 +260,4 @@ class _MyDownloadScreenState extends State<MyDownloadScreen> {
       ),
     );
   }
-
-
 }

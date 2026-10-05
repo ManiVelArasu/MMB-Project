@@ -15,6 +15,7 @@ class IndustryDropdown {
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.industries,
         method: ApiMethod.get,
+        queryParams: {"hierarchy":"1"}
       ),
       fromJson: (json) =>
           IndustryResponse.fromJson(json as Map<String, dynamic>),

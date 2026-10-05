@@ -180,14 +180,17 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
                         final isSelected =
                             provider.selectedCategory?.id == item.id;
 
-                        return ListTile(
-                          title: Text(item.name ?? ""),
-                          selected: isSelected,
-                          onTap: () {
-                            provider.selectCategory(item);
-                            _searchController.text = item.name ?? "";
-                            setState(() {});
-                          },
+                        return Material(
+                          color: Colors.transparent,
+                          child: ListTile(
+                            title: Text(item.name ?? ""),
+                            selected: isSelected,
+                            onTap: () {
+                              provider.selectCategory(item);
+                              _searchController.text = item.name ?? "";
+                              setState(() {});
+                            },
+                          ),
                         );
                       },
                     ),
@@ -210,14 +213,31 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
                           final selectedCat = provider.selectedCategory;
 
                           if (selectedCat != null) {
-                            await prefs.setString(
-                              'saved_category_id',
-                              selectedCat.id.toString(),
-                            );
-                            await prefs.setString(
-                              'saved_category_name',
-                              selectedCat.slug ?? "",
-                            );
+                            if (selectedCat != null) {
+                              final categoryId = selectedCat.id?.toString() ?? "";
+                              final categoryName = selectedCat.name?.trim() ?? "";
+                              final categorySlug = selectedCat.slug?.trim() ?? "";
+
+                              await prefs.setString(
+                                'saved_category_id',
+                                categoryId,
+                              );
+
+                              await prefs.setString(
+                                'saved_category_name',
+                                categoryName,
+                              );
+
+                              await prefs.setString(
+                                'saved_category_slug',
+                                categorySlug,
+                              );
+
+                              debugPrint("✅ Selected Category");
+                              debugPrint("ID   : $categoryId");
+                              debugPrint("Name : $categoryName");
+                              debugPrint("Slug : $categorySlug");
+                            }
                           }
 
                           if (!context.mounted) return;

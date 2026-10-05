@@ -10,7 +10,9 @@ class ManagePlanScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => PlanProvider()..fetchMySubscription(),
+      create: (_) => PlanProvider()
+        ..fetchMySubscription()
+        ..fetchPaymentHistory(),
       child: const _ManagePlanView(),
     );
   }
@@ -404,76 +406,198 @@ class _ManagePlanView extends StatelessWidget {
                     // PAYMENT HISTORY
                     // STATIC
                     // =================================================
-                    const AppText(
-                      "PAYMENT HISTORY",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                    Consumer<PlanProvider>(
+                      builder: (context, provider, child) {
+                        final items = provider.paymentHistoryData?.data?.items ?? [];
 
-                    const SizedBox(height: 8),
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const AppText(
+                              "PAYMENT HISTORY",
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
 
-                    _paymentCard(
-                      status: "SUCCESSFUL",
-                      statusColor: const Color(0xFF00A878),
-                      statusBackground: const Color(0xFFE1FAF3),
-                      title: "500 AI Credits - AI TopUp",
-                      date: "Charged on 22 Aug 2026",
-                      amount: "₹249",
-                    ),
+                            const SizedBox(height: 8),
 
-                    const SizedBox(height: 8),
+                            if (provider.isLoadingPaymentHistory)
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 20),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              )
 
-                    _paymentCard(
-                      status: "SUCCESSFUL",
-                      statusColor: const Color(0xFF00A878),
-                      statusBackground: const Color(0xFFE1FAF3),
-                      title: "Premium - Monthly Plan",
-                      date: "Charged on 12 Aug 2026",
-                      amount: "₹499",
-                    ),
+                            else if (provider.paymentHistoryError != null)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: AppText(
+                                  provider.paymentHistoryError!,
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              )
 
-                    const SizedBox(height: 8),
+                            else if (items.isEmpty)
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 20),
+                                  child: Center(
+                                    child: AppText(
+                                      "No payment history found",
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                )
 
-                    _paymentCard(
-                      status: "FAILED",
-                      statusColor: const Color(0xFFFF3038),
-                      statusBackground: const Color(0xFFFFE5E7),
-                      title: "Premium - Monthly Plan",
-                      date: "Charged on 12 Aug 2026",
-                      amount: "₹499",
-                    ),
+                              else
+                                ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: items.length,
+                                  separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
+                                  itemBuilder: (context, index) {
+                                    final payment = items[index];
 
-                    const SizedBox(height: 8),
+                                    final status =
+                                        payment.status?.trim().toUpperCase() ?? "UNKNOWN";
 
-                    _paymentCard(
-                      status: "PENDING",
-                      statusColor: const Color(0xFFE6A900),
-                      statusBackground: const Color(0xFFFFF1C7),
-                      title: "Basic - Monthly Plan",
-                      date: "Charged on 12 May 2026",
-                      amount: "₹199",
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    _paymentCard(
-                      status: "SUCCESSFUL",
-                      statusColor: const Color(0xFF00A878),
-                      statusBackground: const Color(0xFFE1FAF3),
-                      title: "Basic - Trial Account",
-                      date: "Charged on 12 May 2026",
-                      amount: "₹0",
-                    ),
+                                    return _paymentCard(
+                                      status: _getPaymentStatusText(status),
+                                      statusColor: _getPaymentStatusColor(status),
+                                      statusBackground:
+                                      _getPaymentStatusBackground(status),
+                                      title: payment.description?.trim().isNotEmpty == true
+                                          ? payment.description!.trim()
+                                          : "Payment",
+                                      date: _formatPaymentDate(payment.date),
+                                      amount: _formatPaymentAmount(
+                                        payment.amount,
+                                        payment.currency,
+                                      ),
+                                    );
+                                  },
+                                ),
+                          ],
+                        );
+                      },
+                    )
                   ],
                 ),
               ),
       ),
     );
   }
+  String _formatPaymentAmount(
+      String? amount,
+      String? currency,
+      ) {
+    final value = amount?.trim();
 
+    if (value == null || value.isEmpty) {
+      return "—";
+    }
+
+    final currencyCode = currency?.trim().toUpperCase();
+
+    if (currencyCode == null || currencyCode.isEmpty) {
+      return value;
+    }
+
+    if (currencyCode == "INR") {
+      return "₹$value";
+    }
+
+    return "$currencyCode $value";
+  }
+  String _getPaymentStatusText(String status) {
+    switch (status) {
+      case "SUCCESS":
+      case "SUCCESSFUL":
+      case "COMPLETED":
+      case "PAID":
+        return "SUCCESSFUL";
+
+      case "FAILED":
+      case "FAILURE":
+        return "FAILED";
+
+      case "PENDING":
+        return "PENDING";
+
+      default:
+        return status.isEmpty ? "UNKNOWN" : status;
+    }
+  }
+  Color _getPaymentStatusColor(String status) {
+    switch (status) {
+      case "SUCCESS":
+      case "SUCCESSFUL":
+      case "COMPLETED":
+      case "PAID":
+        return const Color(0xFF00A878);
+
+      case "FAILED":
+      case "FAILURE":
+        return const Color(0xFFFF3038);
+
+      case "PENDING":
+        return const Color(0xFFE6A900);
+
+      default:
+        return Colors.grey;
+    }
+  }
+  Color _getPaymentStatusBackground(String status) {
+    switch (status) {
+      case "SUCCESS":
+      case "SUCCESSFUL":
+      case "COMPLETED":
+      case "PAID":
+        return const Color(0xFFE1FAF3);
+
+      case "FAILED":
+      case "FAILURE":
+        return const Color(0xFFFFE5E7);
+
+      case "PENDING":
+        return const Color(0xFFFFF1C7);
+
+      default:
+        return const Color(0xFFF2F2F2);
+    }
+  }
+  String _formatPaymentDate(DateTime? date) {
+    if (date == null) {
+      return "Date not available";
+    }
+
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    return "Charged on ${date.day} ${months[date.month - 1]} ${date.year}";
+  }
   // =============================================================
   // PAYMENT CARD
   // =============================================================

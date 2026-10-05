@@ -491,7 +491,13 @@ class _PlansAndPricingBody extends StatelessWidget {
                         // ==================================================
                         ElevatedButton(
                           onPressed: !buttonState.isEnabled
-                              ? null
+                              ? (){
+                            Navigator.pushNamed(
+                              context,
+                              '/MySubscriptionScreen',
+                              arguments: plan,
+                            );
+                          }
                               : () {
                             Navigator.pushNamed(
                               context,

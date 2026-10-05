@@ -19,6 +19,7 @@ class ButtonWidget extends StatefulWidget {
   final double? iconWidth;
   final Color? loaderColor;
   final Color? buttonColor;
+  final Color? textColor;
 
   const ButtonWidget({
     super.key,
@@ -36,7 +37,9 @@ class ButtonWidget extends StatefulWidget {
     this.iconBackgroundColor,
     this.iconHeight = 24,
     this.iconWidth = 24,
-    this.loaderColor = Colors.white,this.buttonColor = Colors.black,
+    this.loaderColor = Colors.white,
+    this.buttonColor = Colors.black,
+    this.textColor = Colors.black,
   });
 
   @override
@@ -46,6 +49,7 @@ class ButtonWidget extends StatefulWidget {
 class _ButtonWidgetState extends State<ButtonWidget>
     with SingleTickerProviderStateMixin {
   double _scale = 1.0;
+
   final Duration _duration = const Duration(milliseconds: 100);
 
   void _onTapDown(TapDownDetails details) {
@@ -73,78 +77,80 @@ class _ButtonWidgetState extends State<ButtonWidget>
       onTapUp: widget.isLoading
           ? null
           : (details) {
-              _onTapUp(details);
-              widget.buttonPress?.call();
-            },
+        _onTapUp(details);
+        widget.buttonPress?.call();
+      },
       onTapCancel: widget.isLoading ? null : _onTapCancel,
       child: AnimatedScale(
         scale: _scale,
         duration: _duration,
         curve: Curves.easeInOut,
         child: Container(
-          width: widget.width ?? double.infinity,
+          width: widget.width,
           height: widget.height ?? 48.h,
-          decoration:
-              widget.decoration ??
+          decoration: widget.decoration ??
               BoxDecoration(
                 color: widget.buttonColor,
                 borderRadius: BorderRadius.circular(20.r),
               ),
           child: widget.isLoading
               ? Center(
-                  child: SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(color: widget.loaderColor),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    widget.isLeftIconVisible
-                        ? Padding(
-                            padding: EdgeInsets.only(left: 6,top: 6,bottom: 6),
-                            child: SvgPicture.asset(
-                              widget.icon!,
-                              height: widget.iconHeight!.h,
-                              width: widget.iconWidth!.w,
-                              color: widget.iconColor,
-                            ),
-                          )
-                        : SizedBox(width: 24.w),
-                    Center(
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          left: widget.isLeftIconVisible ? 12.0 : 0,
-                        ),
-                        child: Text(
-                          widget.title,
-                          textAlign: TextAlign.center,
-                          style:
-                              widget.textStyle ??
-                              TextStyle(
-                                color: Colors.white,
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                      ),
+            child: SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(
+                color: widget.loaderColor,
+              ),
+            ),
+          )
+              : Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10.w),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (widget.isLeftIconVisible)
+                  Padding(
+                    padding: EdgeInsets.only(right: 6.w),
+                    child: SvgPicture.asset(
+                      widget.icon!,
+                      height: widget.iconHeight!.h,
+                      width: widget.iconWidth!.w,
+                      color: widget.iconColor,
                     ),
+                  ),
 
-                    widget.isRightIconVisible
-                        ? Padding(
-                            padding: EdgeInsets.only(right: 16.w),
-                            child: SvgPicture.asset(
-                              widget.icon!,
-                              height: widget.iconHeight!.h,
-                              width: widget.iconHeight!.w,
-                              color: widget.iconColor,
-                            ),
-                          )
-                        : SizedBox(width: 24.w),
-                  ],
+                // IMPORTANT:
+                // Flexible is directly inside Row
+                Flexible(
+                  child: Text(
+                    widget.title,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                    style: widget.textStyle ??
+                        TextStyle(
+                          color: widget.textColor,
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
                 ),
+
+                if (widget.isRightIconVisible)
+                  Padding(
+                    padding: EdgeInsets.only(left: 6.w),
+                    child: SvgPicture.asset(
+                      widget.icon!,
+                      height: widget.iconHeight!.h,
+                      width: widget.iconWidth!.w,
+                      color: widget.iconColor,
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );

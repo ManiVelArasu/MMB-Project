@@ -8,6 +8,7 @@ import '../../component/custom_widget.dart';
 import '../../network/provider/business_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/common_provider.dart';
+import '../../network/provider/plan_provider.dart';
 import '../../utils/height_measure.dart';
 import '../../widgets/button_widget.dart';
 import '../../widgets/title_value_widget.dart';
@@ -121,26 +122,20 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
     }
 
     // ==========================================================
-    // FORM VALIDATION CHECK
+    // FORM VALIDATION
     // ==========================================================
-    bool isValid = true;
 
-    // 1. Business Name Validation
     if (businessProvider.nameController.text.trim().isEmpty) {
-      businessProvider.setBusinessName(""); // அல்லது நேம் எரரை ட்ரிகர் செய்ய
-      // நேரடியாக provider-ல் உள்ள எரரை செட் செய்ய:
-      // (உங்களுக்கு provider-ல் nameError-ஐ செட் செய்ய செட்டர் இருந்தால் அதைப் பயன்படுத்தலாம்)
-      isValid = false;
+      businessProvider.setBusinessName("");
     }
 
-    // முழுமையான வேலிடேஷனுக்கு provider-ல் உள்ள validateForm() முறையைப் பயன்படுத்தலாம்:
     if (!businessProvider.validateForm()) {
-      setState(() {}); // எரர் மெசேஜ் UI-ல் உடனே ரெஃப்ரெஷ் ஆக
+      setState(() {});
       return;
     }
 
     // ==========================================================
-    // INVALID ACCOUNT TYPE
+    // ACCOUNT TYPE VALIDATION
     // ==========================================================
 
     if (!isPersonal && !isBusiness) {
@@ -148,7 +143,6 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
         "❌ Invalid account type: "
         "${CommonProvider.instance.accountType}",
       );
-
       return;
     }
 
@@ -168,7 +162,6 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
 
         if (!success) {
           debugPrint("❌ Personal details update failed");
-
           return;
         }
 
@@ -192,7 +185,6 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
 
         if (!success) {
           debugPrint("❌ Business details update failed");
-
           return;
         }
 
@@ -201,7 +193,6 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
 
       // ========================================================
       // SAVE CONTINUE
-      // ONLY AFTER API SUCCESS
       // ========================================================
 
       final prefs = await SharedPreferences.getInstance();
@@ -211,15 +202,103 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
       debugPrint("✅ continue = ${prefs.getBool('continue')}");
 
       // ========================================================
-      // NAVIGATION
+      // CHECK SKIP STATUS
+      // ========================================================
+
+      final bool showSkip = prefs.getBool('showSkip') ?? false;
+
+      debugPrint("======================================");
+      debugPrint("🔍 NAVIGATION CHECK");
+      debugPrint("showSkip: $showSkip");
+      debugPrint("======================================");
+
+      // ========================================================
+      // CHECK ACTIVE PLAN
       // ========================================================
 
       if (!context.mounted) return;
 
-      Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
+      final planProvider = context.read<PlanProvider>();
+      await planProvider.fetchMySubscription();
+
+      if (!context.mounted) return;
+
+      final bool hasActivePlan =
+          planProvider.activePlanUid != null &&
+          planProvider.activePlanUid!.isNotEmpty;
+
+      debugPrint(
+        "💳 Active Plan UID: "
+        "${planProvider.activePlanUid}",
+      );
+
+      debugPrint("💳 Has Active Plan: $hasActivePlan");
+
+      // ========================================================
+      // NAVIGATION LOGIC
+      // ========================================================
+
+      // --------------------------------------------------------
+      // 1. PAYMENT COMPLETED / ACTIVE PLAN
+      // --------------------------------------------------------
+      //
+      // Already subscribed -> directly CustomBottomNav
+      //
+
+      if (hasActivePlan) {
+        debugPrint(
+          "✅ ACTIVE PLAN FOUND "
+          "→ CustomBottomNavScreen",
+        );
+
+        if (!context.mounted) return;
+
+        Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
+
+        return;
+      }
+
+      // --------------------------------------------------------
+      // 2. USER SKIPPED PLAN
+      // --------------------------------------------------------
+      //
+      // Skip -> directly CustomBottomNav
+      //
+
+      if (showSkip) {
+        debugPrint(
+          "⏭️ PLAN SKIPPED "
+          "→ CustomBottomNavScreen",
+        );
+
+        if (!context.mounted) return;
+
+        Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
+
+        return;
+      }
+
+      // --------------------------------------------------------
+      // 3. FIRST TIME / NO ACTIVE PLAN / NOT SKIPPED
+      // --------------------------------------------------------
+      //
+      // Show Plans & Pricing
+      //
+
+      debugPrint(
+        "🛒 NO ACTIVE PLAN + NOT SKIPPED "
+        "→ PlansAndPricingScreen",
+      );
+
+      if (!context.mounted) return;
+
+      Navigator.pushReplacementNamed(
+        context,
+        "/PlansAndPricingScreen",
+        arguments: {"showSkip": true},
+      );
     } catch (e, stackTrace) {
       debugPrint("❌ Continue error: $e");
-
       debugPrintStack(stackTrace: stackTrace);
     }
   }

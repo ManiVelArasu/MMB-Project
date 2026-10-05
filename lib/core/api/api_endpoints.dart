@@ -65,4 +65,6 @@ class ApiEndpoints {
 
   static const String project = '/projects';
   static const String subscription = '/subscriptions';
+  static const String subscriptionPayment = '/subscriptions/payments';
+  static const String planUsage = '/quota/usage';
 }

@@ -184,70 +184,22 @@ class IndustryProvider extends ChangeNotifier with MyNotifier {
 
     _savedCategoryName =
         prefs.getString('saved_category_name') ?? '';
+
     _savedCategorySlug =
         prefs.getString('saved_category_slug') ?? '';
 
     notifyListeners();
 
-    // If the previous screen saved the slug, call the child API directly.
-    if (_savedCategorySlug.trim().isNotEmpty) {
-      debugPrint(
-        '➡️ ChooseView: GET /industries?parent=${_savedCategorySlug.trim()}',
-      );
-      await industryView(parentSlug: _savedCategorySlug.trim());
-      return;
-    }
-
-    // Backward compatibility: older code may have saved only the ID/name.
-    // First load the parent industries, resolve the selected industry's slug,
-    // save it, then call the child API.
-    final savedId =
-        prefs.getString('saved_category_id')?.trim() ?? '';
-
-    if (savedId.isEmpty && _savedCategoryName.trim().isEmpty) {
-      debugPrint('⚠️ ChooseView: no saved industry id/name');
-      return;
-    }
-
-    await fetchAssetCategories();
-
-    Industries? selected;
-
-    if (savedId.isNotEmpty) {
-      for (final item in _allCategories) {
-        if (item.id.toString() == savedId) {
-          selected = item;
-          break;
-        }
-      }
-    }
-
-    if (selected == null && _savedCategoryName.trim().isNotEmpty) {
-      for (final item in _allCategories) {
-        if (item.name?.trim().toLowerCase() ==
-            _savedCategoryName.trim().toLowerCase()) {
-          selected = item;
-          break;
-        }
-      }
-    }
-
-    final slug = selected?.slug?.trim() ?? '';
+    final slug = _savedCategorySlug.trim();
 
     if (slug.isEmpty) {
-      _childErrorMessage = 'Selected industry slug not found';
-      notifyListeners();
-      debugPrint('❌ ChooseView: industry slug not found');
+      debugPrint('⚠️ ChooseView: no saved category slug');
       return;
     }
 
-    _savedCategoryName = selected?.name ?? _savedCategoryName;
-    _savedCategorySlug = slug;
-
-    await prefs.setString('saved_category_slug', slug);
-
-    debugPrint('➡️ ChooseView: resolved slug=$slug');
-    debugPrint('➡️ ChooseView: GET /industries?parent=$slug');
+    debugPrint(
+      '➡️ ChooseView: GET /industries?parent=$slug',
+    );
 
     await industryView(parentSlug: slug);
   }

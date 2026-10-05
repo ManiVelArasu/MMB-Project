@@ -740,9 +740,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       SizedBox(height: 20.h),
 
-                      // =====================================================
-                      // LOGOUT
-                      // =====================================================
                       ButtonWidget(
                         isLoading: provider.isLogoutLoading,
                         buttonPress: () {
@@ -1001,17 +998,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           ...children,
         ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, bool isDark) {
-    return Text(
-      title,
-      style: TextStyle(
-        color: isDark ? Colors.white : Colors.black,
-        fontSize: 16.sp,
-        fontWeight: FontWeight.w800,
       ),
     );
   }

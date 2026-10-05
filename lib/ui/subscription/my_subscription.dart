@@ -1,30 +1,25 @@
 import 'package:flutter/material.dart';
-
-import 'change_plan_screen.dart';
-
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/plan_provider.dart';
-import 'change_plan_screen.dart';
 
-class MySubscriptionScreen extends StatefulWidget {
+
+class MySubscriptionScreen extends StatelessWidget {
   const MySubscriptionScreen({super.key});
 
   @override
-  State<MySubscriptionScreen> createState() =>
-      _MySubscriptionScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<PlanProvider>(
+      create: (_) => PlanProvider()
+        ..fetchMySubscription()
+        ..fetchPlanUsage(),
+      child: const _MySubscriptionView(),
+    );
+  }
 }
 
-class _MySubscriptionScreenState extends State<MySubscriptionScreen> {
-  @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PlanProvider>().fetchMySubscription();
-    });
-  }
+class _MySubscriptionView extends StatelessWidget {
+  const _MySubscriptionView({super.key});
 
   int _daysRemaining(String? endDate) {
     if (endDate == null || endDate.isEmpty) {

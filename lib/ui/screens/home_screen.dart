@@ -30,634 +30,888 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ChangeNotifierProvider<HomeScreenProvider>(
+      create: (_) => HomeScreenProvider(),
+      child: const _HomeScreenView(),
+    );
+  }
+}
+
+class _HomeScreenView extends StatelessWidget {
+  const _HomeScreenView();
+
+  Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
     final themeProvider = context.watch<CustomThemeProvider>();
     final commonProvider = context.watch<CommonProvider>();
+    final homeScreenProvider = context.watch<HomeScreenProvider>();
 
     final me = commonProvider.me;
     final isDark = themeProvider.isDarkMode;
 
-    return ChangeNotifierProvider(
-      create: (_) => HomeScreenProvider(),
-      builder: (context, provider) => Consumer<HomeScreenProvider>(
-        builder: (context, homeScreenProvider, child) {
-          if (homeScreenProvider.isLoadingCategories ||
-              homeScreenProvider.isKeyWordsLoading ||
-              homeScreenProvider.isLoadingPopularTemplates) {
-            return Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(color: Color(0xFFE53935)),
-              ),
-            );
-          }
-          return Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            appBar: const HomeCustomAppBar(),
-            body: SafeArea(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: size.width * 0.04,
-                    vertical: size.height * 0.015,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomSearchBar(
-                        hintText: "Find your Industry",
-                        prefixAsset: "assets/images/search.png",
-                        suffixAsset: "assets/images/mic.png",
-                        borderColor: AppColors.searchBorderColor,
-                        onChanged: (query) {},
-                      ),
+    if (homeScreenProvider.isLoadingCategories ||
+        homeScreenProvider.isKeyWordsLoading ||
+        homeScreenProvider.isLoadingPopularTemplates) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFFE53935),
+          ),
+        ),
+      );
+    }
 
-                      SizedBox(height: 20.h),
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: const HomeCustomAppBar(),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: size.width * 0.04,
+              vertical: size.height * 0.015,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CustomSearchBar(
+                  hintText: "Find your Industry",
+                  prefixAsset: "assets/images/search.png",
+                  suffixAsset: "assets/images/mic.png",
+                  borderColor: AppColors.searchBorderColor,
+                  onChanged: (query) {},
+                ),
 
-                      _buildSectionHeader(
-                        title: "My Space",
-                        iconAsset: "assets/images/myspace.png",
-                        hasViewAll: true,
-                        isDark: isDark,
-                      ),
-                      SizedBox(height: 12.h),
-                      _buildMySpaceList(homeScreenProvider, isDark, (item) {
-                        switch (item.title) {
-                          case "CREATE NEW":
-                            _showCreateNewDialog(context, isDark);
-                            break;
+                SizedBox(height: 20.h),
 
-                          case "FOR YOU":
-                            Navigator.pushNamed(context, "/ForYouScreen");
-                            break;
+                _buildSectionHeader(
+                  title: "My Space",
+                  iconAsset: "assets/images/myspace.png",
+                  hasViewAll: true,
+                  isDark: isDark,
+                ),
+                SizedBox(height: 12.h),
+                _buildMySpaceList(homeScreenProvider, isDark, (item) {
+                  switch (item.title) {
+                    case "CREATE NEW":
+                      _showCreateNewDialog(context, isDark);
+                      break;
 
-                          case "FESTIVAL":
-                            Navigator.pushNamed(
-                              context,
-                              "/TemplateListScreen",
-                              arguments: {"type": "festival"},
-                            );
-                            break;
+                    case "FOR YOU":
+                      Navigator.pushNamed(context, "/ForYouScreen");
+                      break;
 
-                          case "MY BRAND":
-                            Navigator.pushNamed(
-                              context,
-                              "/TemplateListScreen",
-                              arguments: {"type": "brand-series"},
-                            );
-                            break;
-
-                          case "BRAND SERIES":
-                            Navigator.pushNamed(context, "/BrandSeriesScreen");
-                            break;
-
-                          case "BRAND FRAMES":
-                            Navigator.pushNamed(context, "/BrandFramesScreen");
-                            break;
-
-                          case "AI HUB":
-                            Navigator.pushNamed(context, "/AiHubScreen");
-                            break;
-                        }
-                      }),
-
-                      SizedBox(height: 20.h),
-
-                      Row(
-                        children: [
-                          Image.asset(
-                            "assets/images/calendar.png",
-                            height: 32.h,
-                            width: 32.w,
-                          ),
-                          SizedBox(width: 8.w),
-                          AppText(
-                            "Special Days",
-                            style: TextStyle(
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.darkBlack,
-                              fontSize: AppFontSize.fontSize18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const Spacer(),
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(18.r),
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  "/SpecialDaysScreen",
-                                );
-                              },
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 4.w,
-                                  vertical: 5.h,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    AppText(
-                                      'VIEW ALL',
-                                      style: TextStyle(
-                                        color: isDark
-                                            ? Colors.grey.shade300
-                                            : Colors.grey.shade600,
-                                        fontSize: 12.sp,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                    SizedBox(width: 2.w),
-                                    Icon(
-                                      Icons.chevron_right_rounded,
-                                      size: 19.sp,
-                                      color: isDark
-                                          ? Colors.grey.shade300
-                                          : Colors.grey.shade600,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 12.h),
-
-                      _buildSpecialDaysCalendar(homeScreenProvider),
-                      SizedBox(height: 12.h),
-
-                      Row(
-                        children: [
-                          Image.asset(
-                            "assets/images/myzone.png",
-                            height: 32.h,
-                            width: 32.w,
-                          ),
-                          SizedBox(width: 8.w),
-                          AppText(
-                            "My Zone",
-                            style: TextStyle(
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.darkBlack,
-                              fontSize: AppFontSize.fontSize18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 12.h),
-
-                      _buildMyZoneSlider(homeScreenProvider, isDark, me: me),
-
-                      SizedBox(height: 24.h),
-
-                      _buildMyFrameHeader(isDark, context),
-
-                      SizedBox(height: 16.h),
-
-                      _buildLeadBannerSlider(
-                        homeScreenProvider,
-                        isDark,
-                        me,
+                    case "FESTIVAL":
+                      Navigator.pushNamed(
                         context,
+                        "/TemplateListScreen",
+                        arguments: {"type": "festival"},
+                      );
+                      break;
+
+                    case "MY BRAND":
+                      Navigator.pushNamed(
+                        context,
+                        "/TemplateListScreen",
+                        arguments: {"type": "brand-series"},
+                      );
+                      break;
+
+                    case "BRAND SERIES":
+                      Navigator.pushNamed(context, "/BrandSeriesScreen");
+                      break;
+
+                    case "BRAND FRAMES":
+                      Navigator.pushNamed(context, "/BrandFramesScreen");
+                      break;
+
+                    case "AI HUB":
+                      Navigator.pushNamed(context, "/AiHubScreen");
+                      break;
+                  }
+                }),
+
+                SizedBox(height: 20.h),
+
+                Row(
+                  children: [
+                    Image.asset(
+                      "assets/images/calendar.png",
+                      height: 32.h,
+                      width: 32.w,
+                    ),
+                    SizedBox(width: 8.w),
+                    AppText(
+                      "Special Days",
+                      style: TextStyle(
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.darkBlack,
+                        fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w800,
                       ),
-
-                      SizedBox(height: 20.h),
-
-                      if (me?.data.accountType != "personal") ...[
-                        _buildSectionHeader(
-                          title: "My Brand Posts",
-                          iconAsset: "assets/images/my_brand_posts.png",
-                          hasViewAll: true,
-                          isDark: isDark,
-                        ),
-                        SizedBox(height: 12.h),
-
-                        SizedBox(
-                          height: 38.h,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            padding: EdgeInsets.only(right: 8.w),
-                            itemCount: homeScreenProvider.keyWords.length,
-                            itemBuilder: (context, index) {
-                              final keywordItem =
-                                  homeScreenProvider.keyWords[index];
-
-                              final keyword = keywordItem.name?.trim() ?? '';
-
-                              if (keyword.isEmpty) {
-                                return const SizedBox.shrink();
-                              }
-
-                              return Padding(
-                                padding: EdgeInsets.only(right: 8.w),
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 14.w,
-                                    vertical: 6.h,
-                                  ),
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? const Color(0xFF1E1E1E)
-                                        : Colors.white,
-                                    borderRadius: BorderRadius.circular(20.r),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? Colors.grey.shade800
-                                          : Colors.grey.shade300,
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                  child: AppText(
-                                    keyword,
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? Colors.white70
-                                          : Colors.black87,
-                                      fontSize: 11.5.sp,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
+                    ),
+                    const Spacer(),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18.r),
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            "/SpecialDaysScreen",
+                          );
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 4.w,
+                            vertical: 5.h,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AppText(
+                                'VIEW ALL',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.grey.shade300
+                                      : Colors.grey.shade600,
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w800,
                                 ),
-                              );
-                            },
+                              ),
+                              SizedBox(width: 2.w),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 19.sp,
+                                color: isDark
+                                    ? Colors.grey.shade300
+                                    : Colors.grey.shade600,
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
 
-                        SizedBox(height: 16.h),
+                _buildSpecialDaysCalendar(homeScreenProvider),
+                SizedBox(height: 12.h),
 
-                        SizedBox(
-                          height: 190.h,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            padding: EdgeInsets.symmetric(horizontal: 4.w),
-                            itemCount:
-                                homeScreenProvider.popularTemplates.length,
-                            itemBuilder: (context, index) {
-                              final item =
-                                  homeScreenProvider.popularTemplates[index];
+                Row(
+                  children: [
+                    Image.asset(
+                      "assets/images/myzone.png",
+                      height: 32.h,
+                      width: 32.w,
+                    ),
+                    SizedBox(width: 8.w),
+                    AppText(
+                      "My Zone",
+                      style: TextStyle(
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.darkBlack,
+                        fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
 
-                              final thumbnailKey = item.thumbnailS3Key ?? '';
+                _buildMyZoneSlider(homeScreenProvider, isDark, me: me),
 
-                              final imageUrl = thumbnailKey.isEmpty
-                                  ? ''
-                                  : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+                SizedBox(height: 24.h),
 
-                              return Padding(
-                                padding: EdgeInsets.only(right: 12.w),
-                                child: InkWell(
-                                  onTap: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      "/TemplateDetailScreen",
-                                      arguments: {"templateUid": item.uid},
-                                    );
-                                  },
-                                  borderRadius: BorderRadius.circular(20.r),
-                                  child: Container(
-                                    width: 145.w,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20.r),
-                                      color: isDark
-                                          ? const Color(0xFF1E1E1E)
-                                          : Colors.grey.shade100,
-                                      border: Border.all(
-                                        color: isDark
-                                            ? Colors.grey.shade800
-                                            : Colors.grey.shade300,
-                                        width: 1.2,
+                _buildMyFrameHeader(isDark, context),
+
+                SizedBox(height: 16.h),
+
+                _buildLeadBannerSlider(
+                  homeScreenProvider,
+                  isDark,
+                  me,
+                  context,
+                ),
+
+                SizedBox(height: 20.h),
+
+                if (me?.data.accountType != "personal") ...[
+                  _buildSectionHeader(
+                    title: "My Brand Posts",
+                    iconAsset: "assets/images/my_brand_posts.png",
+                    hasViewAll: true,
+                    isDark: isDark,
+                  ),
+                  SizedBox(height: 12.h),
+
+                  SizedBox(
+                    height: 38.h,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.only(right: 8.w),
+                      itemCount: homeScreenProvider.keyWords.length,
+                      itemBuilder: (context, index) {
+                        final keywordItem =
+                        homeScreenProvider.keyWords[index];
+
+                        final keyword = keywordItem.name?.trim() ?? '';
+
+                        if (keyword.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+
+                        return Padding(
+                          padding: EdgeInsets.only(right: 8.w),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 14.w,
+                              vertical: 6.h,
+                            ),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF1E1E1E)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(20.r),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.grey.shade800
+                                    : Colors.grey.shade300,
+                                width: 1.2,
+                              ),
+                            ),
+                            child: AppText(
+                              keyword,
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.black87,
+                                fontSize: 11.5.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  SizedBox(height: 16.h),
+
+                  SizedBox(
+                    height: 190.h,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(horizontal: 4.w),
+                      itemCount:
+                      homeScreenProvider.popularTemplates.length,
+                      itemBuilder: (context, index) {
+                        final item =
+                        homeScreenProvider.popularTemplates[index];
+
+                        final thumbnailKey = item.thumbnailS3Key ?? '';
+
+                        final imageUrl = thumbnailKey.isEmpty
+                            ? ''
+                            : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+
+                        return Padding(
+                          padding: EdgeInsets.only(right: 12.w),
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                "/TemplateDetailScreen",
+                                arguments: {"templateUid": item.uid},
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(20.r),
+                            child: Container(
+                              width: 145.w,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20.r),
+                                color: isDark
+                                    ? const Color(0xFF1E1E1E)
+                                    : Colors.grey.shade100,
+                                border: Border.all(
+                                  color: isDark
+                                      ? Colors.grey.shade800
+                                      : Colors.grey.shade300,
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20.r),
+                                child: imageUrl.isEmpty
+                                    ? const Center(
+                                  child: Icon(
+                                    Icons.image_outlined,
+                                    color: Colors.grey,
+                                  ),
+                                )
+                                    : buildProfileImage(imageUrl),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                ],
+
+                if (me?.data.accountType != "personal") ...[
+                  _buildSectionHeader(
+                    title: "My Brand Video Posts",
+                    iconAsset: "assets/images/my_brand_posts.png",
+                    hasViewAll: true,
+                    isDark: isDark,
+                  ),
+
+                  SizedBox(height: 12.h),
+
+                  SizedBox(
+                    height: 38.h,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount:
+                      homeScreenProvider.videoCategories.length,
+                      physics: const BouncingScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        bool isSelected =
+                            homeScreenProvider
+                                .selectedVideoCategoryIndex ==
+                                index;
+                        return GestureDetector(
+                          onTap: () => homeScreenProvider
+                              .updateVideoCategoryIndex(index),
+                          child: Container(
+                            margin: EdgeInsets.only(right: 10.w),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.w,
+                              vertical: 8.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFF555555)
+                                  : (isDark
+                                  ? const Color(0xFF1E1E1E)
+                                  : Colors.white),
+                              borderRadius: BorderRadius.circular(20.r),
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.transparent
+                                    : (isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade400),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Center(
+                              child: AppText(
+                                homeScreenProvider.videoCategories[index],
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (isDark
+                                      ? Colors.white70
+                                      : Colors.grey.shade800),
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  SizedBox(height: 16.h),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount:
+                    homeScreenProvider.brandVideoPostsList.length,
+                    gridDelegate:
+                    SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12.w,
+                      mainAxisSpacing: 12.h,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemBuilder: (context, index) {
+                      final videoData =
+                      homeScreenProvider.brandVideoPostsList[index];
+                      return BrandVideoCard(
+                        thumbnailUrl: videoData["thumbnail"] ?? '',
+                        videoUrl: videoData["videoUrl"] ?? '',
+                      );
+                    },
+                  ),
+                  SizedBox(height: 12.h),
+                ],
+
+                // பொதுவான டெம்ப்ளேட் வகைகள்
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: homeScreenProvider.templateCategories.length,
+
+                  itemBuilder: (context, index) {
+                    final category =
+                    homeScreenProvider.templateCategories[index];
+
+                    final categoryName = category.name?.trim() ?? '';
+
+                    final categoryLower = categoryName.toLowerCase();
+
+                    final slug = category.slug?.trim() ?? '';
+
+                    // ==========================================================
+                    // SPECIAL CATEGORY CHECK
+                    // ==========================================================
+
+                    final bool isSpecialCategory =
+                        categoryLower == 'celebrate moments' ||
+                            categoryLower == 'devotional/daily posts' ||
+                            categoryLower == 'devotional / daily posts';
+
+                    // ==========================================================
+                    // SPECIAL CATEGORY
+                    // Celebrate Moments
+                    // Devotional / Daily Posts
+                    // ==========================================================
+
+                    if (isSpecialCategory) {
+                      if (category.children.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.fromLTRB(
+                          12.w,
+                          14.h,
+                          12.w,
+                          16.h,
+                        ),
+
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // ==================================================
+                            // PARENT TITLE
+                            // ==================================================
+
+                            AppText(
+                              categoryName,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w800,
+                                color: isDark
+                                    ? Colors.white
+                                    : Colors.black,
+                              ),
+                            ),
+
+                            SizedBox(height: 12.h),
+
+                            // ==================================================
+                            // CHILDREN HORIZONTAL SCROLL
+                            // ==================================================
+                            SizedBox(
+                              height: 105.h,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: category.children.length,
+
+                                separatorBuilder: (_, __) =>
+                                    SizedBox(width: 14.w),
+
+                                itemBuilder: (context, childIndex) {
+                                  final child =
+                                  category.children[childIndex];
+
+                                  final childName =
+                                      child.name?.trim() ?? '';
+
+                                  final childSlug =
+                                      child.slug?.trim() ?? '';
+
+                                  final thumbnailKey =
+                                      child.iconS3Key?.trim() ?? '';
+
+                                  final imageUrl = thumbnailKey.isEmpty
+                                      ? ''
+                                      : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+
+                                  return SizedBox(
+                                    width: 90.w,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(
+                                        12.r,
                                       ),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(20.r),
-                                      child: imageUrl.isEmpty
-                                          ? const Center(
-                                              child: Icon(
-                                                Icons.image_outlined,
+
+                                      onTap: () {
+                                        debugPrint(
+                                          "📂 CHILD CATEGORY: $childName",
+                                        );
+                                        debugPrint(
+                                          "📂 CHILD SLUG: $childSlug",
+                                        );
+
+                                        Navigator.pushNamed(
+                                          context,
+                                          "/TemplateDetailScreen",
+                                          arguments: {
+                                            "category": childSlug,
+                                            "categoryUid": child.uid,
+                                            "categoryName": child.name,
+                                          },
+                                        );
+                                      },
+
+                                      child: Column(
+                                        children: [
+                                          // ====================================
+                                          // CHILD THUMBNAIL
+                                          // ====================================
+                                          ClipRRect(
+                                            borderRadius:
+                                            BorderRadius.circular(
+                                              10.r,
+                                            ),
+                                            child: Container(
+                                              width: 84.w,
+                                              height: 84.w,
+                                              color: isDark
+                                                  ? const Color(
+                                                0xFF252525,
+                                              )
+                                                  : Colors.grey.shade100,
+
+                                              child: imageUrl.isEmpty
+                                                  ? Icon(
+                                                Icons
+                                                    .image_outlined,
+                                                size: 28.sp,
                                                 color: Colors.grey,
+                                              )
+                                                  : Image.network(
+                                                imageUrl,
+                                                width: 150.w,
+                                                height: 150.w,
+                                                fit: BoxFit.cover,
+
+                                                loadingBuilder:
+                                                    (
+                                                    context,
+                                                    child,
+                                                    loadingProgress,
+                                                    ) {
+                                                  if (loadingProgress ==
+                                                      null) {
+                                                    return child;
+                                                  }
+
+                                                  return const Center(
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth:
+                                                      1.5,
+                                                      color: Color(
+                                                        0xFFE53935,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+
+                                                errorBuilder:
+                                                    (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                    ) {
+                                                  return Icon(
+                                                    Icons
+                                                        .broken_image_outlined,
+                                                    size: 28.sp,
+                                                    color: Colors
+                                                        .grey,
+                                                  );
+                                                },
                                               ),
-                                            )
-                                          : buildProfileImage(imageUrl),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        SizedBox(height: 12.h),
-                      ],
+                                            ),
+                                          ),
 
-                      if (me?.data.accountType != "personal") ...[
-                        _buildSectionHeader(
-                          title: "My Brand Video Posts",
-                          iconAsset: "assets/images/my_brand_posts.png",
-                          hasViewAll: true,
-                          isDark: isDark,
-                        ),
+                                          SizedBox(height: 6.h),
 
-                        SizedBox(height: 12.h),
-
-                        SizedBox(
-                          height: 38.h,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount:
-                                homeScreenProvider.videoCategories.length,
-                            physics: const BouncingScrollPhysics(),
-                            itemBuilder: (context, index) {
-                              bool isSelected =
-                                  homeScreenProvider
-                                      .selectedVideoCategoryIndex ==
-                                  index;
-                              return GestureDetector(
-                                onTap: () => homeScreenProvider
-                                    .updateVideoCategoryIndex(index),
-                                child: Container(
-                                  margin: EdgeInsets.only(right: 10.w),
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 16.w,
-                                    vertical: 8.h,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(0xFF555555)
-                                        : (isDark
-                                              ? const Color(0xFF1E1E1E)
-                                              : Colors.white),
-                                    borderRadius: BorderRadius.circular(20.r),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? Colors.transparent
-                                          : (isDark
-                                                ? Colors.grey.shade700
-                                                : Colors.grey.shade400),
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: AppText(
-                                      homeScreenProvider.videoCategories[index],
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : (isDark
-                                                  ? Colors.white70
-                                                  : Colors.grey.shade800),
-                                        fontSize: 12.sp,
-                                        fontWeight: FontWeight.w700,
+                                          // ====================================
+                                          // CHILD NAME
+                                          // ====================================
+                                          AppText(
+                                            childName,
+                                            textAlign: TextAlign.center,
+                                            maxLines: 2,
+                                            style: TextStyle(
+                                              fontSize: 10.sp,
+                                              fontWeight: FontWeight.w700,
+                                              height: 1.1,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    // ==========================================================
+                    // NORMAL CATEGORY
+                    // ==========================================================
+
+                    if (slug.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final categoryIcon =
+                    (category.iconS3Key?.trim().isNotEmpty ?? false)
+                        ? '${ApiEndpoints.cdnImageUrl}/${category.iconS3Key}'
+                        : '';
+
+                    final templates = homeScreenProvider
+                        .templatesForCategory(slug);
+
+                    final isLoading = homeScreenProvider
+                        .isTemplateLoading(slug);
+
+                    // ==========================================================
+                    // YOUTUBE THUMBNAIL CHECK
+                    // ==========================================================
+
+                    final bool isYoutubeThumbnail =
+                        slug.toLowerCase() == 'youtube-thumbnails' ||
+                            categoryLower == 'youtube thumbnails';
+
+                    return Padding(
+                      padding: EdgeInsets.only(top: 24.h),
+
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+
+                        children: [
+                          // ======================================================
+                          // CATEGORY HEADER
+                          // ======================================================
+
+                          _buildSectionHeader(
+                            title: categoryName,
+                            iconAsset: categoryIcon,
+                            hasViewAll: true,
+                            isDark: isDark,
+
+                            onViewAll: () {
+                              Navigator.pushNamed(
+                                context,
+                                "/TemplateDetailScreen",
+                                arguments: {"category": slug},
                               );
                             },
                           ),
-                        ),
 
-                        SizedBox(height: 16.h),
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount:
-                              homeScreenProvider.brandVideoPostsList.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12.w,
-                                mainAxisSpacing: 12.h,
-                                childAspectRatio: 1.0,
+                          SizedBox(height: 12.h),
+
+                          // ======================================================
+                          // LOADING
+                          // ======================================================
+                          if (isLoading)
+                            SizedBox(
+                              height: isYoutubeThumbnail ? 310.h : 165.h,
+
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFFE53935),
+                                ),
                               ),
-                          itemBuilder: (context, index) {
-                            final videoData =
-                                homeScreenProvider.brandVideoPostsList[index];
-                            return BrandVideoCard(
-                              thumbnailUrl: videoData["thumbnail"] ?? '',
-                              videoUrl: videoData["videoUrl"] ?? '',
-                            );
-                          },
-                        ),
-                        SizedBox(height: 12.h),
-                      ],
+                            )
+                          // ======================================================
+                          // EMPTY
+                          // ======================================================
+                          else if (templates.isEmpty)
+                            SizedBox(
+                              height: isYoutubeThumbnail ? 250.h : 110.h,
 
-                      // பொதுவான டெம்ப்ளேட் வகைகள்
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: homeScreenProvider.templateCategories.length,
+                              child: Center(
+                                child: AppText(
+                                  'No templates available',
 
-                        itemBuilder: (context, index) {
-                          final category =
-                              homeScreenProvider.templateCategories[index];
-
-                          final categoryName = category.name?.trim() ?? '';
-
-                          final categoryLower = categoryName.toLowerCase();
-
-                          final slug = category.slug?.trim() ?? '';
-
-                          // ==========================================================
-                          // SPECIAL CATEGORY CHECK
-                          // ==========================================================
-
-                          final bool isSpecialCategory =
-                              categoryLower == 'celebrate moments' ||
-                              categoryLower == 'devotional/daily posts' ||
-                              categoryLower == 'devotional / daily posts';
-
-                          // ==========================================================
-                          // SPECIAL CATEGORY
-                          // Celebrate Moments
-                          // Devotional / Daily Posts
-                          // ==========================================================
-
-                          if (isSpecialCategory) {
-                            if (category.children.isEmpty) {
-                              return const SizedBox.shrink();
-                            }
-
-                            return Container(
-                              width: double.infinity,
-                              padding: EdgeInsets.fromLTRB(
-                                12.w,
-                                14.h,
-                                12.w,
-                                16.h,
-                              ),
-
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // ==================================================
-                                  // PARENT TITLE
-                                  // ==================================================
-
-                                  AppText(
-                                    categoryName,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
-                                      fontWeight: FontWeight.w800,
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black,
-                                    ),
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white54
+                                        : Colors.black45,
+                                    fontSize: 13.sp,
                                   ),
+                                ),
+                              ),
+                            )
+                          // ======================================================
+                          // YOUTUBE THUMBNAILS
+                          // 16:9 OLD YOUTUBE SIZE
+                          // 2 x 2 GRID + HORIZONTAL PAGE
+                          // ======================================================
+                          else if (isYoutubeThumbnail)
+                              SizedBox(
+                                height: 200.h,
+                                width: double.infinity,
 
-                                  SizedBox(height: 12.h),
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final double pageWidth =
+                                        constraints.maxWidth;
 
-                                  // ==================================================
-                                  // CHILDREN HORIZONTAL SCROLL
-                                  // ==================================================
-                                  SizedBox(
-                                    height: 105.h,
-                                    child: ListView.separated(
+                                    final double horizontalGap = 12.w;
+
+                                    final double verticalGap = 12.h;
+
+                                    // 2 cards per row
+                                    final double cardWidth =
+                                        (pageWidth - horizontalGap) / 2;
+
+                                    // EXACT 16:9
+                                    final double cardHeight =
+                                        cardWidth * 9 / 16;
+
+                                    // 4 cards per page
+                                    final int pageCount =
+                                    (templates.length / 4).ceil();
+
+                                    return ListView.builder(
                                       scrollDirection: Axis.horizontal,
-                                      physics: const BouncingScrollPhysics(),
-                                      itemCount: category.children.length,
 
-                                      separatorBuilder: (_, __) =>
-                                          SizedBox(width: 14.w),
+                                      physics:
+                                      const BouncingScrollPhysics(),
 
-                                      itemBuilder: (context, childIndex) {
-                                        final child =
-                                            category.children[childIndex];
+                                      itemCount: pageCount,
 
-                                        final childName =
-                                            child.name?.trim() ?? '';
-
-                                        final childSlug =
-                                            child.slug?.trim() ?? '';
-
-                                        final thumbnailKey =
-                                            child.iconS3Key?.trim() ?? '';
-
-                                        final imageUrl = thumbnailKey.isEmpty
-                                            ? ''
-                                            : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+                                      itemBuilder: (context, pageIndex) {
+                                        final int startIndex =
+                                            pageIndex * 4;
 
                                         return SizedBox(
-                                          width: 90.w,
-                                          child: InkWell(
-                                            borderRadius: BorderRadius.circular(
-                                              12.r,
+                                          width: pageWidth,
+
+                                          child: Padding(
+                                            padding: EdgeInsets.only(
+                                              right:
+                                              pageIndex == pageCount - 1
+                                                  ? 0
+                                                  : 16.w,
                                             ),
-
-                                            onTap: () {
-                                              debugPrint(
-                                                "📂 CHILD CATEGORY: $childName",
-                                              );
-                                              debugPrint(
-                                                "📂 CHILD SLUG: $childSlug",
-                                              );
-
-                                              Navigator.pushNamed(
-                                                context,
-                                                "/TemplateDetailScreen",
-                                                arguments: {
-                                                  "category": childSlug,
-                                                  "categoryUid": child.uid,
-                                                  "categoryName": child.name,
-                                                },
-                                              );
-                                            },
 
                                             child: Column(
                                               children: [
-                                                // ====================================
-                                                // CHILD THUMBNAIL
-                                                // ====================================
-                                                ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        10.r,
+                                                // ==============================
+                                                // ROW 1
+                                                // ==============================
+
+                                                SizedBox(
+                                                  height: cardHeight,
+
+                                                  child: Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: _buildApiTemplateCard(
+                                                          context,
+                                                          templates[startIndex],
+                                                          isDark,
+                                                        ),
                                                       ),
-                                                  child: Container(
-                                                    width: 84.w,
-                                                    height: 84.w,
-                                                    color: isDark
-                                                        ? const Color(
-                                                            0xFF252525,
-                                                          )
-                                                        : Colors.grey.shade100,
 
-                                                    child: imageUrl.isEmpty
-                                                        ? Icon(
-                                                            Icons
-                                                                .image_outlined,
-                                                            size: 28.sp,
-                                                            color: Colors.grey,
-                                                          )
-                                                        : Image.network(
-                                                            imageUrl,
-                                                            width: 150.w,
-                                                            height: 150.w,
-                                                            fit: BoxFit.cover,
+                                                      SizedBox(
+                                                        width:
+                                                        horizontalGap,
+                                                      ),
 
-                                                            loadingBuilder:
-                                                                (
-                                                                  context,
-                                                                  child,
-                                                                  loadingProgress,
-                                                                ) {
-                                                                  if (loadingProgress ==
-                                                                      null) {
-                                                                    return child;
-                                                                  }
-
-                                                                  return const Center(
-                                                                    child: CircularProgressIndicator(
-                                                                      strokeWidth:
-                                                                          1.5,
-                                                                      color: Color(
-                                                                        0xFFE53935,
-                                                                      ),
-                                                                    ),
-                                                                  );
-                                                                },
-
-                                                            errorBuilder:
-                                                                (
-                                                                  context,
-                                                                  error,
-                                                                  stackTrace,
-                                                                ) {
-                                                                  return Icon(
-                                                                    Icons
-                                                                        .broken_image_outlined,
-                                                                    size: 28.sp,
-                                                                    color: Colors
-                                                                        .grey,
-                                                                  );
-                                                                },
-                                                          ),
+                                                      Expanded(
+                                                        child:
+                                                        startIndex + 1 <
+                                                            templates
+                                                                .length
+                                                            ? _buildApiTemplateCard(
+                                                          context,
+                                                          templates[startIndex +
+                                                              1],
+                                                          isDark,
+                                                        )
+                                                            : const SizedBox(),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
 
-                                                SizedBox(height: 6.h),
+                                                SizedBox(
+                                                  height: verticalGap,
+                                                ),
 
-                                                // ====================================
-                                                // CHILD NAME
-                                                // ====================================
-                                                AppText(
-                                                  childName,
-                                                  textAlign: TextAlign.center,
-                                                  maxLines: 2,
-                                                  style: TextStyle(
-                                                    fontSize: 10.sp,
-                                                    fontWeight: FontWeight.w700,
-                                                    height: 1.1,
-                                                    color: isDark
-                                                        ? Colors.white
-                                                        : Colors.black,
+                                                // ==============================
+                                                // ROW 2
+                                                // ==============================
+                                                SizedBox(
+                                                  height: cardHeight,
+
+                                                  child: Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child:
+                                                        startIndex + 2 <
+                                                            templates
+                                                                .length
+                                                            ? _buildApiTemplateCard(
+                                                          context,
+                                                          templates[startIndex +
+                                                              2],
+                                                          isDark,
+                                                        )
+                                                            : const SizedBox(),
+                                                      ),
+
+                                                      SizedBox(
+                                                        width:
+                                                        horizontalGap,
+                                                      ),
+
+                                                      Expanded(
+                                                        child:
+                                                        startIndex + 3 <
+                                                            templates
+                                                                .length
+                                                            ? _buildApiTemplateCard(
+                                                          context,
+                                                          templates[startIndex +
+                                                              3],
+                                                          isDark,
+                                                        )
+                                                            : const SizedBox(),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ],
@@ -665,297 +919,52 @@ class HomeScreen extends StatelessWidget {
                                           ),
                                         );
                                       },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          // ==========================================================
-                          // NORMAL CATEGORY
-                          // ==========================================================
-
-                          if (slug.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-
-                          final categoryIcon =
-                              (category.iconS3Key?.trim().isNotEmpty ?? false)
-                              ? '${ApiEndpoints.cdnImageUrl}/${category.iconS3Key}'
-                              : '';
-
-                          final templates = homeScreenProvider
-                              .templatesForCategory(slug);
-
-                          final isLoading = homeScreenProvider
-                              .isTemplateLoading(slug);
-
-                          // ==========================================================
-                          // YOUTUBE THUMBNAIL CHECK
-                          // ==========================================================
-
-                          final bool isYoutubeThumbnail =
-                              slug.toLowerCase() == 'youtube-thumbnails' ||
-                              categoryLower == 'youtube thumbnails';
-
-                          return Padding(
-                            padding: EdgeInsets.only(top: 24.h),
-
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-
-                              children: [
-                                // ======================================================
-                                // CATEGORY HEADER
-                                // ======================================================
-
-                                _buildSectionHeader(
-                                  title: categoryName,
-                                  iconAsset: categoryIcon,
-                                  hasViewAll: true,
-                                  isDark: isDark,
-
-                                  onViewAll: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      "/TemplateDetailScreen",
-                                      arguments: {"category": slug},
                                     );
                                   },
                                 ),
+                              )
+                            // ======================================================
+                            // NORMAL CATEGORY
+                            // HORIZONTAL TEMPLATE SCROLL
+                            // ======================================================
+                            else
+                              SizedBox(
+                                height: 165.h,
 
-                                SizedBox(height: 12.h),
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
 
-                                // ======================================================
-                                // LOADING
-                                // ======================================================
-                                if (isLoading)
-                                  SizedBox(
-                                    height: isYoutubeThumbnail ? 310.h : 165.h,
+                                  physics: const BouncingScrollPhysics(),
 
-                                    child: const Center(
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Color(0xFFE53935),
+                                  itemCount: templates.length,
+
+                                  separatorBuilder: (_, __) =>
+                                      SizedBox(width: 12.w),
+
+                                  itemBuilder: (context, templateIndex) {
+                                    return SizedBox(
+                                      width: 145.w,
+
+                                      child: _buildApiTemplateCard(
+                                        context,
+                                        templates[templateIndex],
+                                        isDark,
                                       ),
-                                    ),
-                                  )
-                                // ======================================================
-                                // EMPTY
-                                // ======================================================
-                                else if (templates.isEmpty)
-                                  SizedBox(
-                                    height: isYoutubeThumbnail ? 250.h : 110.h,
-
-                                    child: Center(
-                                      child: AppText(
-                                        'No templates available',
-
-                                        style: TextStyle(
-                                          color: isDark
-                                              ? Colors.white54
-                                              : Colors.black45,
-                                          fontSize: 13.sp,
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                // ======================================================
-                                // YOUTUBE THUMBNAILS
-                                // 16:9 OLD YOUTUBE SIZE
-                                // 2 x 2 GRID + HORIZONTAL PAGE
-                                // ======================================================
-                                else if (isYoutubeThumbnail)
-                                  SizedBox(
-                                    height: 200.h,
-                                    width: double.infinity,
-
-                                    child: LayoutBuilder(
-                                      builder: (context, constraints) {
-                                        final double pageWidth =
-                                            constraints.maxWidth;
-
-                                        final double horizontalGap = 12.w;
-
-                                        final double verticalGap = 12.h;
-
-                                        // 2 cards per row
-                                        final double cardWidth =
-                                            (pageWidth - horizontalGap) / 2;
-
-                                        // EXACT 16:9
-                                        final double cardHeight =
-                                            cardWidth * 9 / 16;
-
-                                        // 4 cards per page
-                                        final int pageCount =
-                                            (templates.length / 4).ceil();
-
-                                        return ListView.builder(
-                                          scrollDirection: Axis.horizontal,
-
-                                          physics:
-                                              const BouncingScrollPhysics(),
-
-                                          itemCount: pageCount,
-
-                                          itemBuilder: (context, pageIndex) {
-                                            final int startIndex =
-                                                pageIndex * 4;
-
-                                            return SizedBox(
-                                              width: pageWidth,
-
-                                              child: Padding(
-                                                padding: EdgeInsets.only(
-                                                  right:
-                                                      pageIndex == pageCount - 1
-                                                      ? 0
-                                                      : 16.w,
-                                                ),
-
-                                                child: Column(
-                                                  children: [
-                                                    // ==============================
-                                                    // ROW 1
-                                                    // ==============================
-
-                                                    SizedBox(
-                                                      height: cardHeight,
-
-                                                      child: Row(
-                                                        children: [
-                                                          Expanded(
-                                                            child: _buildApiTemplateCard(
-                                                              context,
-                                                              templates[startIndex],
-                                                              isDark,
-                                                            ),
-                                                          ),
-
-                                                          SizedBox(
-                                                            width:
-                                                                horizontalGap,
-                                                          ),
-
-                                                          Expanded(
-                                                            child:
-                                                                startIndex + 1 <
-                                                                    templates
-                                                                        .length
-                                                                ? _buildApiTemplateCard(
-                                                                    context,
-                                                                    templates[startIndex +
-                                                                        1],
-                                                                    isDark,
-                                                                  )
-                                                                : const SizedBox(),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-
-                                                    SizedBox(
-                                                      height: verticalGap,
-                                                    ),
-
-                                                    // ==============================
-                                                    // ROW 2
-                                                    // ==============================
-                                                    SizedBox(
-                                                      height: cardHeight,
-
-                                                      child: Row(
-                                                        children: [
-                                                          Expanded(
-                                                            child:
-                                                                startIndex + 2 <
-                                                                    templates
-                                                                        .length
-                                                                ? _buildApiTemplateCard(
-                                                                    context,
-                                                                    templates[startIndex +
-                                                                        2],
-                                                                    isDark,
-                                                                  )
-                                                                : const SizedBox(),
-                                                          ),
-
-                                                          SizedBox(
-                                                            width:
-                                                                horizontalGap,
-                                                          ),
-
-                                                          Expanded(
-                                                            child:
-                                                                startIndex + 3 <
-                                                                    templates
-                                                                        .length
-                                                                ? _buildApiTemplateCard(
-                                                                    context,
-                                                                    templates[startIndex +
-                                                                        3],
-                                                                    isDark,
-                                                                  )
-                                                                : const SizedBox(),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  )
-                                // ======================================================
-                                // NORMAL CATEGORY
-                                // HORIZONTAL TEMPLATE SCROLL
-                                // ======================================================
-                                else
-                                  SizedBox(
-                                    height: 165.h,
-
-                                    child: ListView.separated(
-                                      scrollDirection: Axis.horizontal,
-
-                                      physics: const BouncingScrollPhysics(),
-
-                                      itemCount: templates.length,
-
-                                      separatorBuilder: (_, __) =>
-                                          SizedBox(width: 12.w),
-
-                                      itemBuilder: (context, templateIndex) {
-                                        return SizedBox(
-                                          width: 145.w,
-
-                                          child: _buildApiTemplateCard(
-                                            context,
-                                            templates[templateIndex],
-                                            isDark,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          );
-                        },
+                                    );
+                                  },
+                                ),
+                              ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              ),
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
+
     );
   }
 
@@ -1099,52 +1108,52 @@ class HomeScreen extends StatelessWidget {
 
                             child: imageUrl.isEmpty
                                 ? Center(
-                                    child: Icon(
-                                      Icons.image_outlined,
-                                      size: 22.sp,
-                                      color: Colors.grey,
-                                    ),
-                                  )
+                              child: Icon(
+                                Icons.image_outlined,
+                                size: 22.sp,
+                                color: Colors.grey,
+                              ),
+                            )
                                 : Image.network(
-                                    imageUrl,
-                                    width: 58.w,
-                                    height: 58.w,
-                                    fit: BoxFit.cover,
+                              imageUrl,
+                              width: 58.w,
+                              height: 58.w,
+                              fit: BoxFit.cover,
 
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                          if (loadingProgress == null) {
-                                            return child;
-                                          }
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                if (loadingProgress == null) {
+                                  return child;
+                                }
 
-                                          return Center(
-                                            child: SizedBox(
-                                              width: 17.w,
-                                              height: 17.w,
-                                              child:
-                                                  const CircularProgressIndicator(
-                                                    strokeWidth: 1.5,
-                                                    color: Color(0xFFE53935),
-                                                  ),
-                                            ),
-                                          );
-                                        },
-
-                                    errorBuilder: (context, error, stackTrace) {
-                                      debugPrint(
-                                        "❌ CHILD IMAGE ERROR: "
-                                        "$imageUrl",
-                                      );
-
-                                      return Center(
-                                        child: Icon(
-                                          Icons.broken_image_outlined,
-                                          size: 21.sp,
-                                          color: Colors.grey,
-                                        ),
-                                      );
-                                    },
+                                return Center(
+                                  child: SizedBox(
+                                    width: 17.w,
+                                    height: 17.w,
+                                    child:
+                                    const CircularProgressIndicator(
+                                      strokeWidth: 1.5,
+                                      color: Color(0xFFE53935),
+                                    ),
                                   ),
+                                );
+                              },
+
+                              errorBuilder: (context, error, stackTrace) {
+                                debugPrint(
+                                  "❌ CHILD IMAGE ERROR: "
+                                      "$imageUrl",
+                                );
+
+                                return Center(
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 21.sp,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ),
 
@@ -1295,10 +1304,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildDateContainer(
-    HomeScreenProvider provider,
-    List<DateTime> dates,
-    int month,
-  ) {
+      HomeScreenProvider provider,
+      List<DateTime> dates,
+      int month,
+      ) {
     final now = DateTime.now();
     final selected = provider.selectedDates;
 
@@ -1313,8 +1322,8 @@ class HomeScreen extends StatelessWidget {
 
     if (selectedIndex < 0) {
       selectedIndex = dates.indexWhere(
-        (date) =>
-            date.year == now.year &&
+            (date) =>
+        date.year == now.year &&
             date.month == now.month &&
             date.day == now.day,
       );
@@ -1597,38 +1606,38 @@ class HomeScreen extends StatelessWidget {
               child: imageUrl.isEmpty
                   ? _specialDayPlaceholder()
                   : CachedNetworkImage(
-                      imageUrl: imageUrl,
+                imageUrl: imageUrl,
 
-                      width: double.infinity,
+                width: double.infinity,
 
-                      height: double.infinity,
+                height: double.infinity,
 
-                      fit: BoxFit.cover,
+                fit: BoxFit.cover,
 
-                      placeholder: (context, url) {
-                        return Container(
-                          color: Colors.grey.shade100,
+                placeholder: (context, url) {
+                  return Container(
+                    color: Colors.grey.shade100,
 
-                          child: const Center(
-                            child: SizedBox(
-                              height: 22,
-                              width: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                        );
-                      },
-
-                      errorWidget: (context, url, error) {
-                        debugPrint("❌ Template image failed");
-
-                        debugPrint("URL : $url");
-
-                        debugPrint("ERROR : $error");
-
-                        return _specialDayPlaceholder();
-                      },
+                    child: const Center(
+                      child: SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
                     ),
+                  );
+                },
+
+                errorWidget: (context, url, error) {
+                  debugPrint("❌ Template image failed");
+
+                  debugPrint("URL : $url");
+
+                  debugPrint("ERROR : $error");
+
+                  return _specialDayPlaceholder();
+                },
+              ),
             ),
 
             if (template.isLocked)
@@ -1745,7 +1754,7 @@ class HomeScreen extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: AppText(
                       '"$templateName" is part of the premium\n'
-                      'collection. Upgrade your plan to use it in your designs.',
+                          'collection. Upgrade your plan to use it in your designs.',
                       style: const TextStyle(
                         fontSize: 14,
                         height: 1.45,
@@ -1896,10 +1905,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildApiTemplateCard(
-    BuildContext context,
-    TemplateModel template,
-    bool isDark,
-  ) {
+      BuildContext context,
+      TemplateModel template,
+      bool isDark,
+      ) {
     final key = template.thumbnailS3Key?.trim() ?? '';
 
     final imageUrl = key.isEmpty ? '' : '${ApiEndpoints.cdnImageUrl}/$key';
@@ -1938,15 +1947,15 @@ class HomeScreen extends StatelessWidget {
           child: imageUrl.isEmpty
               ? _templateImagePlaceholder(isDark)
               : CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) {
-                    return const Center(child: CircularProgressIndicator());
-                  },
-                  errorWidget: (context, url, error) {
-                    return _templateImagePlaceholder(isDark);
-                  },
-                ),
+            imageUrl: imageUrl,
+            fit: BoxFit.cover,
+            placeholder: (context, url) {
+              return const Center(child: CircularProgressIndicator());
+            },
+            errorWidget: (context, url, error) {
+              return _templateImagePlaceholder(isDark);
+            },
+          ),
         ),
       ),
     );
@@ -1986,39 +1995,39 @@ class HomeScreen extends StatelessWidget {
                 ? _buildDefaultCategoryIcon(isDark)
                 : isNetwork
                 ? (isSvg
-                      ? SvgPicture.network(
-                          icon,
-                          width: 32.w,
-                          height: 32.w,
-                          fit: BoxFit.cover,
-                          placeholderBuilder: (_) =>
-                              _buildDefaultCategoryIcon(isDark),
-                        )
-                      : CachedNetworkImage(
-                          imageUrl: icon,
-                          width: 32.w,
-                          height: 32.w,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) =>
-                              _buildDefaultCategoryIcon(isDark),
-                          errorWidget: (_, __, ___) =>
-                              _buildDefaultCategoryIcon(isDark),
-                        ))
+                ? SvgPicture.network(
+              icon,
+              width: 32.w,
+              height: 32.w,
+              fit: BoxFit.cover,
+              placeholderBuilder: (_) =>
+                  _buildDefaultCategoryIcon(isDark),
+            )
+                : CachedNetworkImage(
+              imageUrl: icon,
+              width: 32.w,
+              height: 32.w,
+              fit: BoxFit.cover,
+              placeholder: (_, __) =>
+                  _buildDefaultCategoryIcon(isDark),
+              errorWidget: (_, __, ___) =>
+                  _buildDefaultCategoryIcon(isDark),
+            ))
                 : (isSvg
-                      ? SvgPicture.asset(
-                          icon,
-                          width: 32.w,
-                          height: 32.w,
-                          fit: BoxFit.cover,
-                        )
-                      : Image.asset(
-                          icon,
-                          width: 32.w,
-                          height: 32.w,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _buildDefaultCategoryIcon(isDark),
-                        )),
+                ? SvgPicture.asset(
+              icon,
+              width: 32.w,
+              height: 32.w,
+              fit: BoxFit.cover,
+            )
+                : Image.asset(
+              icon,
+              width: 32.w,
+              height: 32.w,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  _buildDefaultCategoryIcon(isDark),
+            )),
           ),
         ),
 
@@ -2070,10 +2079,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildMySpaceList(
-    HomeScreenProvider homeScreenProvider,
-    bool isDark,
-    void Function(MySpaceModel item) onTap,
-  ) {
+      HomeScreenProvider homeScreenProvider,
+      bool isDark,
+      void Function(MySpaceModel item) onTap,
+      ) {
     return SizedBox(
       height: 90.h,
       child: ListView.builder(
@@ -2129,10 +2138,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildMyZoneSlider(
-    HomeScreenProvider homeScreenProvider,
-    bool isDark, {
-    required dynamic me,
-  }) {
+      HomeScreenProvider homeScreenProvider,
+      bool isDark, {
+        required dynamic me,
+      }) {
     // Popular templates first 4 only
     final popularTemplates = homeScreenProvider.popularTemplates
         .take(4)
@@ -2142,85 +2151,85 @@ class HomeScreen extends StatelessWidget {
       height: 360.h,
       child: popularTemplates.isEmpty
           ? Container(
-              margin: EdgeInsets.symmetric(horizontal: 25.w),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16.r),
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16.r),
-                child: Image.asset(
-                  "assets/images/BName.png",
-                  fit: BoxFit.cover,
-                ),
-              ),
-            )
+        margin: EdgeInsets.symmetric(horizontal: 25.w),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16.r),
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16.r),
+          child: Image.asset(
+            "assets/images/BName.png",
+            fit: BoxFit.cover,
+          ),
+        ),
+      )
           : PageView.builder(
-              controller: homeScreenProvider.zonePageController,
-              itemCount: popularTemplates.length,
-              itemBuilder: (context, index) {
-                final item = popularTemplates[index];
+        controller: homeScreenProvider.zonePageController,
+        itemCount: popularTemplates.length,
+        itemBuilder: (context, index) {
+          final item = popularTemplates[index];
 
-                final thumbnailKey = item.thumbnailS3Key ?? '';
+          final thumbnailKey = item.thumbnailS3Key ?? '';
 
-                final imageUrl = thumbnailKey.isEmpty
-                    ? ''
-                    : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+          final imageUrl = thumbnailKey.isEmpty
+              ? ''
+              : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
 
-                return Container(
-                  margin: EdgeInsets.symmetric(horizontal: 25.w),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16.r),
-                    color: isDark
-                        ? const Color(0xFF1E1E1E)
-                        : Colors.grey.shade100,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16.r),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        buildProfileImage(imageUrl),
+          return Container(
+            margin: EdgeInsets.symmetric(horizontal: 25.w),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16.r),
+              color: isDark
+                  ? const Color(0xFF1E1E1E)
+                  : Colors.grey.shade100,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16.r),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  buildProfileImage(imageUrl),
 
-                        // =========================
-                        // BOTTOM INFO
-                        // =========================
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 18.w,
-                              vertical: 12.h,
-                            ),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF246BFE),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: AppText(
-                                    item.name ?? '',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13.sp,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
+                  // =========================
+                  // BOTTOM INFO
+                  // =========================
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 18.w,
+                        vertical: 12.h,
+                      ),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF246BFE),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: AppText(
+                              item.name ?? '',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                );
-              },
+                ],
+              ),
             ),
+          );
+        },
+      ),
     );
   }
 
@@ -2290,18 +2299,18 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildLeadBannerSlider(
-    HomeScreenProvider homeScreenProvider,
-    bool isDark,
-    dynamic me,
-    BuildContext context,
-  ) {
+      HomeScreenProvider homeScreenProvider,
+      bool isDark,
+      dynamic me,
+      BuildContext context,
+      ) {
     final controller = homeScreenProvider.leadPageController;
 
     final banners = [
       {
         "title": "Grow Your Business",
         "description":
-            "List your business on MMB and get discovered by potential customers.",
+        "List your business on MMB and get discovered by potential customers.",
         "button": "GO PREMIUM",
         "onTap": () {
           Navigator.pushNamed(context, "/PlansAndPricingScreen");
@@ -2324,7 +2333,7 @@ class HomeScreen extends StatelessWidget {
       {
         "title": "Powerful AI Tools",
         "description":
-            "Generate logos, remove backgrounds, create images, and write caption instantly",
+        "Generate logos, remove backgrounds, create images, and write caption instantly",
         "button": "EXPLORE AI",
         "onTap": () {
           // Navigator.pushNamed(context, "/AIScreen");

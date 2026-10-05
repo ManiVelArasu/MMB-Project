@@ -58,13 +58,12 @@ class HomeRepository {
   Future<ApiResult<TemplateCategoriesModel>> myBrandCategory({
     required String industrySlug,
   }) async {
-    print('sdsadsdasdsadasdads');
     final result = await ApiRepository.instance
         .request<TemplateCategoriesModel>(
           config: ApiRequestConfig(
             endpoint: ApiEndpoints.templates,
             method: ApiMethod.get,
-            queryParams: {"industry": industrySlug,"type":"image"},
+            queryParams: {"industry": industrySlug, "type": "image"},
           ),
           fromJson: (json) =>
               TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
@@ -80,17 +79,13 @@ class HomeRepository {
   }) async {
     final Map<String, dynamic> queryParams = {};
 
-    // range இருந்தால் from/to தேவையில்லை
     if (range != null && range.isNotEmpty) {
       queryParams["range"] = range;
-    }
-    // range இல்லையென்றால் from/to
-    else if (from != null && from.isNotEmpty && to != null && to.isNotEmpty) {
+    } else if (from != null && from.isNotEmpty && to != null && to.isNotEmpty) {
       queryParams["from"] = from;
       queryParams["to"] = to;
     }
 
-    // Event type
     if (type != null && type.isNotEmpty) {
       queryParams["type"] = type;
     }

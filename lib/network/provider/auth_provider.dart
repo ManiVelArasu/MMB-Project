@@ -338,10 +338,12 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               debugPrint("❌ ME API FAILED");
 
               _isVerifyLoading = false;
+
               _errorMessage =
                   commonProvider.meError ?? "Unable to load user details";
 
               notifyListeners();
+
               return null;
             }
 
@@ -356,10 +358,17 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
             // =========================================================
             // ACCOUNT TYPE NOT FOUND
+            //
+            // NO PLAN CONDITION
+            // NO PLAN DETAIL CONDITION
+            // NO ACTIVE PLAN CONDITION
+            //
+            // Directly go to AccountTypeScreen
             // =========================================================
 
             if (accountType == null || accountType.isEmpty) {
               debugPrint("⚠️ ACCOUNT TYPE EMPTY");
+              debugPrint("➡️ Going to AccountTypeScreen");
 
               _isVerifyLoading = false;
               notifyListeners();
@@ -370,13 +379,17 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
               Navigator.pushNamedAndRemoveUntil(
                 context,
-                "/PlansAndPricingScreen",
+                "/AccountTypeScreen",
                 (route) => false,
                 arguments: {"showSkip": true},
               );
 
               return data;
             }
+
+            // =========================================================
+            // PERSONAL ACCOUNT
+            // =========================================================
 
             if (accountType == "personal") {
               debugPrint("================================");
@@ -409,7 +422,10 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
                 return data;
               }
 
-              // Both available
+              // =======================================================
+              // PERSONAL PROFILE COMPLETE
+              // =======================================================
+
               if (hasName && hasImage) {
                 debugPrint(
                   "✅ PERSONAL PROFILE COMPLETE"
@@ -421,7 +437,11 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
                   "/CustomBottomNavScreen",
                   (route) => false,
                 );
-              } else {
+              }
+              // =======================================================
+              // PERSONAL PROFILE INCOMPLETE
+              // =======================================================
+              else {
                 debugPrint(
                   "⚠️ PERSONAL PROFILE INCOMPLETE"
                   " → BusinessDetailsScreen",
@@ -554,6 +574,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
             // =========================================================
             // UNKNOWN ACCOUNT TYPE
+            //
+            // NO PLAN SCREEN
             // =========================================================
 
             debugPrint("⚠️ UNKNOWN ACCOUNT TYPE: $accountType");
@@ -567,8 +589,9 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
             Navigator.pushNamedAndRemoveUntil(
               context,
-              "/PlansAndPricingScreen",
+              "/AccountTypeScreen",
               (route) => false,
+              arguments: {"showSkip": true},
             );
 
             return data;
@@ -585,6 +608,10 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             return null;
           }
         },
+
+        // =========================================================
+        // OTP API FAILURE
+        // =========================================================
         failure: (error) {
           _isVerifyLoading = false;
           _errorMessage = error.message;

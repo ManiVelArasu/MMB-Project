@@ -56,7 +56,7 @@ class _SubscriptionActivatedScreenState
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   "/PlansAndPricingScreen",
-                  (route) => false,
+                  (route) => true,
                 );
               },
               child: const Scaffold(
@@ -68,13 +68,7 @@ class _SubscriptionActivatedScreenState
 
           final data = provider.subscriptionData;
 
-          final subscription = data?["subscription"] as Map<String, dynamic>?;
-
           final plan = data?["plan"] as Map<String, dynamic>?;
-
-          final billing = data?["billing"] as Map<String, dynamic>?;
-
-          final period = data?["period"] as Map<String, dynamic>?;
 
           final features = data?["features"] as List<dynamic>? ?? [];
 
@@ -96,119 +90,60 @@ class _SubscriptionActivatedScreenState
               ),
             ),
 
-            body: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
 
-                  const Icon(Icons.celebration, size: 64, color: Colors.amber),
-
-                  const SizedBox(height: 12),
-
-                  const Text(
-                    "SUBSCRIPTION ACTIVATED!",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black,
+                    const Icon(
+                      Icons.celebration,
+                      size: 64,
+                      color: Colors.amber,
                     ),
-                  ),
 
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 12),
 
-                  Text(
-                    "$planName is now active on your account.",
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 13, color: Colors.grey),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ------------------------------------------
-                  // SUBSCRIPTION DETAILS
-                  // ------------------------------------------
-
-                  /*   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.grey.shade200,
+                    const Text(
+                      "SUBSCRIPTION ACTIVATED!",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.black,
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "SUBSCRIPTION DETAILS",
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red,
-                          ),
-                        ),
 
-                        const SizedBox(height: 14),
+                    const SizedBox(height: 4),
 
-                        _detailRow(
-                          "Plan",
-                          planName,
-                        ),
-
-                        _detailRow(
-                          "Amount Paid",
-                          "$currency $amountPaid",
-                        ),
-
-                        _detailRow(
-                          "Billing",
-                          cycle,
-                        ),
-
-                        _detailRow(
-                          "Payment Method",
-                          paymentMethod.toUpperCase(),
-                        ),
-
-                        _detailRow(
-                          "Start Date",
-                          periodStart.isNotEmpty
-                              ? periodStart
-                              : _formatDate(startsAt),
-                        ),
-
-                        _detailRow(
-                          "End Date",
-                          periodEnd.isNotEmpty
-                              ? periodEnd
-                              : _formatDate(endsAt),
-                        ),
-                      ],
+                    Text(
+                      "$planName is now active on your account.",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 13, color: Colors.grey),
                     ),
-                  ),*/
-                  const SizedBox(height: 20),
 
-                  // ------------------------------------------
-                  // ACCESS LIST
-                  // ------------------------------------------
-                  Expanded(
-                    child: Container(
+                    const SizedBox(height: 24),
+
+                    // ------------------------------------------
+                    // SUBSCRIPTION DETAILS
+                    // ------------------------------------------
+
+                    /*   Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade50,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.all(
+                          color: Colors.grey.shade200,
+                        ),
                       ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            "YOU NOW HAVE ACCESS TO",
+                            "SUBSCRIPTION DETAILS",
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -216,152 +151,217 @@ class _SubscriptionActivatedScreenState
                             ),
                           ),
 
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 14),
 
-                          Expanded(
-                            child: features.isEmpty
-                                ? const Text(
-                                    "No features available",
-                                    style: TextStyle(color: Colors.grey),
-                                  )
-                                : ListView.separated(
-                                    itemCount: features.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(height: 10),
-                                    itemBuilder: (context, index) {
-                                      final feature = features[index];
+                          _detailRow(
+                            "Plan",
+                            planName,
+                          ),
 
-                                      if (feature is! Map<String, dynamic>) {
-                                        return const SizedBox();
-                                      }
+                          _detailRow(
+                            "Amount Paid",
+                            "$currency $amountPaid",
+                          ),
 
-                                      final label =
-                                          feature["label"]?.toString() ?? "";
+                          _detailRow(
+                            "Billing",
+                            cycle,
+                          ),
 
-                                      final enabled = feature["enabled"];
+                          _detailRow(
+                            "Payment Method",
+                            paymentMethod.toUpperCase(),
+                          ),
 
-                                      final remaining = feature["remaining"];
+                          _detailRow(
+                            "Start Date",
+                            periodStart.isNotEmpty
+                                ? periodStart
+                                : _formatDate(startsAt),
+                          ),
 
-                                      final limit = feature["limit"];
-
-                                      return Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.check_circle,
-                                            color: Colors.green,
-                                            size: 20,
-                                          ),
-
-                                          const SizedBox(width: 10),
-
-                                          Expanded(
-                                            child: Text(
-                                              label,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-
-                                          if (remaining != null)
-                                            Text(
-                                              "$remaining",
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.red,
-                                              ),
-                                            ),
-
-                                          if (enabled == true)
-                                            const Icon(
-                                              Icons.check,
-                                              color: Colors.green,
-                                              size: 18,
-                                            ),
-
-                                          if (limit != null &&
-                                              remaining == null)
-                                            Text(
-                                              "$limit",
-                                              style: const TextStyle(
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                        ],
-                                      );
-                                    },
-                                  ),
+                          _detailRow(
+                            "End Date",
+                            periodEnd.isNotEmpty
+                                ? periodEnd
+                                : _formatDate(endsAt),
                           ),
                         ],
                       ),
-                    ),
-                  ),
+                    ),*/
+                    const SizedBox(height: 20),
 
-                  const SizedBox(height: 16),
-
-                  // ------------------------------------------
-                  // START EXPLORING
-                  // ------------------------------------------
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    // ------------------------------------------
+                    // ACCESS LIST
+                    // ------------------------------------------
+                    Expanded(
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
                         ),
-                      ),
-                      onPressed: () {
-                        final planProvider = context.read<PlanProvider>();
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ChangeNotifierProvider.value(
-                              value: planProvider,
-                              child: const MySubscriptionScreen(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "YOU NOW HAVE ACCESS TO",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red,
+                              ),
                             ),
+
+                            const SizedBox(height: 12),
+
+                            Expanded(
+                              child: features.isEmpty
+                                  ? const Text(
+                                      "No features available",
+                                      style: TextStyle(color: Colors.grey),
+                                    )
+                                  : ListView.separated(
+                                      itemCount: features.length,
+                                      separatorBuilder: (_, __) =>
+                                          const SizedBox(height: 10),
+                                      itemBuilder: (context, index) {
+                                        final feature = features[index];
+
+                                        if (feature is! Map<String, dynamic>) {
+                                          return const SizedBox();
+                                        }
+
+                                        final label =
+                                            feature["label"]?.toString() ?? "";
+
+                                        final enabled = feature["enabled"];
+
+                                        final remaining = feature["remaining"];
+
+                                        final limit = feature["limit"];
+
+                                        return Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.check_circle,
+                                              color: Colors.green,
+                                              size: 20,
+                                            ),
+
+                                            const SizedBox(width: 10),
+
+                                            Expanded(
+                                              child: Text(
+                                                label,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+
+                                            if (remaining != null)
+                                              Text(
+                                                "$remaining",
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+
+                                            if (enabled == true)
+                                              const Icon(
+                                                Icons.check,
+                                                color: Colors.green,
+                                                size: 18,
+                                              ),
+
+                                            if (limit != null &&
+                                                remaining == null)
+                                              Text(
+                                                "$limit",
+                                                style: const TextStyle(
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ------------------------------------------
+                    // START EXPLORING
+                    // ------------------------------------------
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        );
-                      },
-                      child: const Text(
-                        "START EXPLORING",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                        ),
+                        onPressed: () {
+                          final planProvider = context.read<PlanProvider>();
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChangeNotifierProvider.value(
+                                value: planProvider,
+                                child: const MySubscriptionScreen(),
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "START EXPLORING",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.black87),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.black87),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                      ),
-                      onPressed: () {
-                        Navigator.pushNamed(context, "/MySubscriptionScreen");
-                      },
-                      child: const Text(
-                        "GO TO MY SUBSCRIPTION",
-                        style: TextStyle(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
+                        onPressed: () {
+                          Navigator.pushNamed(context, "/CustomBottomNavScreen");
+                        },
+                        child: const Text(
+                          "GO TO MY SUBSCRIPTION",
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 20),
-                ],
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
             ),
           );

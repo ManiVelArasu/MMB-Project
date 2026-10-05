@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
+import '../../Api Model/payment_history.dart';
+import '../../Api Model/plan_usage.dart';
 import '../../Api Model/plans_type.dart';
 import '../../Repository/plan_repository.dart';
 
@@ -38,6 +40,25 @@ class PlanProvider extends ChangeNotifier {
 
   bool _isLoadingSubscription = false;
   bool get isLoadingSubscription => _isLoadingSubscription;
+
+  bool _isLoadingPaymentHistory = false;
+  bool get isLoadingPaymentHistory => _isLoadingPaymentHistory;
+
+  PaymentHistory? _paymentHistory;
+  PaymentHistory? get paymentHistoryData => _paymentHistory;
+
+  String? _paymentHistoryError;
+  String? get paymentHistoryError => _paymentHistoryError;
+
+  PlanUsage? _planUsageData;
+  PlanUsage? get planUsageData => _planUsageData;
+
+  bool _isLoadingPlanUsage = false;
+  bool get isLoadingPlanUsage => _isLoadingPlanUsage;
+
+  String? _planUsageError;
+  String? get planUsageError => _planUsageError;
+
   Future<void> fetchPlans() async {
     _isLoadingPlans = true;
     _plansErrorMessage = null;
@@ -73,6 +94,45 @@ class PlanProvider extends ChangeNotifier {
       }
     } finally {
       _isLoadingPlans = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchPlanUsage() async {
+    _isLoadingPlanUsage = true;
+    _planUsageError = null;
+    notifyListeners();
+
+    try {
+      final result = await _repository.planUsage();
+
+      if (result.isSuccess && result.data != null) {
+        _planUsageData = result.data;
+
+        debugPrint("========== PLAN USAGE ==========");
+
+        final features = _planUsageData?.data?.features ?? [];
+
+        for (final feature in features) {
+          debugPrint(
+            "Feature: ${feature.label} | "
+            "Used: ${feature.used} | "
+            "Limit: ${feature.effectiveLimit} | "
+            "Remaining: ${feature.remaining}",
+          );
+        }
+
+        debugPrint("================================");
+      } else {
+        _planUsageError = result.error?.message ?? "Unable to get plan usage";
+      }
+    } catch (e, stackTrace) {
+      _planUsageError = e.toString();
+
+      debugPrint("❌ Plan usage error: $e");
+      debugPrintStack(stackTrace: stackTrace);
+    } finally {
+      _isLoadingPlanUsage = false;
       notifyListeners();
     }
   }
@@ -199,6 +259,51 @@ class PlanProvider extends ChangeNotifier {
       return null;
     } finally {
       _isCreatingSubscription = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> fetchPaymentHistory() async {
+    _isLoadingPaymentHistory = true;
+    _paymentHistoryError = null;
+    notifyListeners();
+
+    try {
+      final result = await _repository.paymentHistory();
+
+      if (result.isFailure) {
+        _paymentHistoryError =
+            result.error?.message ?? "Unable to get payment history";
+
+        debugPrint("❌ Payment History Error: $_paymentHistoryError");
+
+        return false;
+      }
+
+      final response = result.data;
+
+      if (response == null) {
+        _paymentHistoryError = "Payment history data not available";
+        return false;
+      }
+
+      _paymentHistory = response;
+
+      debugPrint("================================");
+      debugPrint("💰 PAYMENT HISTORY");
+      debugPrint("$_paymentHistory");
+      debugPrint("================================");
+
+      return true;
+    } catch (e, stackTrace) {
+      _paymentHistoryError = e.toString();
+
+      debugPrint("❌ Payment History Exception: $e");
+      debugPrintStack(stackTrace: stackTrace);
+
+      return false;
+    } finally {
+      _isLoadingPaymentHistory = false;
       notifyListeners();
     }
   }

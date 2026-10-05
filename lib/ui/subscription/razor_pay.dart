@@ -505,20 +505,22 @@ class _RazorpaySubscriptionScreenState
         ),
       ),
 
-      body: Stack(
-        children: [
-          WebViewWidget(
-            controller: _controller,
-          ),
-
-          if (isLoading)
-            Container(
-              color: Colors.white.withOpacity(0.4),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            WebViewWidget(
+              controller: _controller,
             ),
-        ],
+        
+            if (isLoading)
+              Container(
+                color: Colors.white.withOpacity(0.4),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -215,7 +215,6 @@ class OtpScreen extends StatelessWidget {
                                                     .isEmpty &&
                                                 isCurrentBox
                                             ? Container(
-
                                                 width: 12,
                                                 height: 2,
                                                 color: customColor.redColor,
@@ -254,7 +253,7 @@ class OtpScreen extends StatelessWidget {
                                         counterText: '',
                                         border: InputBorder.none,
                                       ),
-                                      onChanged: (value) {
+                                      onChanged: (value) async {
                                         for (int i = 0; i < 6; i++) {
                                           if (i < value.length) {
                                             authProvider.controllers[i].text =
@@ -263,7 +262,16 @@ class OtpScreen extends StatelessWidget {
                                             authProvider.controllers[i].clear();
                                           }
                                         }
+
                                         authProvider.notifyListeners();
+
+                                        // OTP 6 digits completed
+                                        if (value.length == 6 &&
+                                            !authProvider.isVerifyLoading) {
+                                          await authProvider.verifyOtpApi(
+                                            context,
+                                          );
+                                        }
                                       },
                                     ),
                                   ),
@@ -338,7 +346,7 @@ class OtpScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Column(
+                      /*  Column(
                         children: [
                           ButtonWidget(
                             isLoading: authProvider.isVerifyLoading,
@@ -419,7 +427,7 @@ class OtpScreen extends StatelessWidget {
                             ),
                           ),
                         ],
-                      ),
+                      ),*/
                     ],
                   ),
                 ),

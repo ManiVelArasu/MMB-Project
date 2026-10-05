@@ -1,3 +1,5 @@
+import '../Api Model/payment_history.dart';
+import '../Api Model/plan_usage.dart';
 import '../Api Model/plans_type.dart';
 import '../core/api/api_endpoints.dart';
 import '../core/api/api_repository.dart';
@@ -20,16 +22,12 @@ class PlanRepository {
     );
   }
 
-  Future<ApiResult<dynamic>> subscription({
-    required int planBillingOptionId,
-  }) {
+  Future<ApiResult<dynamic>> subscription({required int planBillingOptionId}) {
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.subscription,
         method: ApiMethod.post,
-        body: {
-          "plan_billing_option_id": planBillingOptionId,
-        },
+        body: {"plan_billing_option_id": planBillingOptionId},
       ),
       fromJson: (json) => json,
     );
@@ -42,6 +40,26 @@ class PlanRepository {
         method: ApiMethod.get,
       ),
       fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResult<PaymentHistory>> paymentHistory() {
+    return ApiRepository.instance.request<PaymentHistory>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.subscriptionPayment,
+        method: ApiMethod.get,
+      ),
+      fromJson: (json) => PaymentHistory.fromJson(json),
+    );
+  }
+
+  Future<ApiResult<PlanUsage>> planUsage() {
+    return ApiRepository.instance.request<PlanUsage>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.planUsage,
+        method: ApiMethod.get,
+      ),
+      fromJson: (json) => PlanUsage.fromJson(json),
     );
   }
 }

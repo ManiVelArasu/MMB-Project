@@ -25,10 +25,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   final Map<String, String> _outlineStyles = {};
   final Map<String, String> _outlineJoins = {};
   final Map<String, Map<String, dynamic>> _templateRawObjects = {};
-
-  // IDs of background objects that came from the API/Fabric template.
-  // These are tracked separately from size-based detection so a template
-  // background can still be replaced even after the editor canvas is resized.
   final Set<String> _templateBackgroundIds = <String>{};
 
   final Map<String, bool> _templateFlipX = {};
