@@ -42,6 +42,7 @@ class BusinessProvider extends ChangeNotifier {
 
   File? _selectedImage;
   File? _originalImage;
+  File? _bgRemovedImage;
 
   String _selectedTool = "";
   String _selectedAspect = "Original";
@@ -71,6 +72,8 @@ class BusinessProvider extends ChangeNotifier {
   File? get selectedImage => _selectedImage;
 
   File? get originalImage => _originalImage;
+
+  File? get bgRemovedImage => _bgRemovedImage;
 
   String get businessName => _businessName;
 
@@ -167,7 +170,7 @@ class BusinessProvider extends ChangeNotifier {
 
                 debugPrint(
                   "✅ ACCOUNT TYPE UPDATED = "
-                  "${language.data.accountType}",
+                      "${language.data.accountType}",
                 );
               }
             }
@@ -221,6 +224,7 @@ class BusinessProvider extends ChangeNotifier {
 
     _selectedImage = null;
     _originalImage = null;
+    _bgRemovedImage = null;
 
     _savedImagePath = null;
     _isImageSelected = false;
@@ -316,12 +320,12 @@ class BusinessProvider extends ChangeNotifier {
 
       switch (accountType) {
         case 'personal':
-          // Personal -> users/{uid}/profile/...
+        // Personal -> users/{uid}/profile/...
           uploadSlot = 'profile_photo';
           break;
 
         case 'business':
-          // Business -> users/{uid}/logo/...
+        // Business -> users/{uid}/logo/...
           uploadSlot = 'business_logo';
           break;
 
@@ -353,12 +357,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-            slot: uploadSlot,
-          );
+        imageFile: imageFile,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+        slot: uploadSlot,
+      );
 
       bool success = false;
 
@@ -576,9 +580,10 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<Map<String, dynamic>?> businessUpdateApi(
-    BuildContext context,
-    String subIndustry,
-  ) async {
+      BuildContext context,
+      String subIndustry,
+      String other,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -596,13 +601,102 @@ class BusinessProvider extends ChangeNotifier {
         _errorMessage = "Saved mobile number not found";
 
         notifyListeners();
-
         return null;
       }
 
+      final cleanSubIndustry = subIndustry.trim();
+      final cleanOther = other.trim();
+
+      debugPrint('🏢 Industry: $_savedCategorySlug');
+
+      debugPrint('🏢 Sub Industry: $cleanSubIndustry');
+
+      debugPrint('🏢 Custom Sub Industry: $cleanOther');
+
       final result = await BusinessRepository.instance.businessUpdate(
         _savedCategorySlug,
-        subIndustry,
+        cleanSubIndustry,
+        mobileNumber,
+        cleanOther,
+      );
+
+      return await result.when(
+        success: (data) async {
+          final uid = data['uid']?.toString();
+
+          if (uid == null || uid.isEmpty) {
+            _errorMessage = "Business UID not found";
+
+            _isUploading = false;
+            notifyListeners();
+
+            return null;
+          }
+
+          await prefs.setString('business_uid', uid);
+
+          _isUploading = false;
+          notifyListeners();
+
+          if (context.mounted) {
+            Navigator.pushNamed(
+              context,
+              "/BusinessDetailsScreen",
+              arguments: uid,
+            );
+          }
+
+          return data;
+        },
+
+        failure: (error) {
+          _errorMessage = error.message;
+
+          _isUploading = false;
+          notifyListeners();
+
+          return null;
+        },
+      );
+    } catch (e) {
+      _isUploading = false;
+      _errorMessage = e.toString();
+
+      notifyListeners();
+
+      debugPrint("❌ businessUpdateApi error: $e");
+
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> skipBusinessUpdateApi(
+      BuildContext context,
+      ) async {
+    _isUploading = true;
+    _errorMessage = null;
+
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      _savedCategorySlug = prefs.getString('saved_category_slug') ?? '';
+
+      if (_savedCategorySlug.trim().isEmpty) {
+        _isUploading = false;
+        _errorMessage = "Saved industry category not found";
+
+        notifyListeners();
+        return null;
+      }
+
+      debugPrint('⏭️ SKIP BUSINESS UPDATE');
+
+      debugPrint('🏢 Industry: $_savedCategorySlug');
+
+      final result = await BusinessRepository.instance.skipBusinessUpdate(
+        _savedCategorySlug,
         mobileNumber,
       );
 
@@ -622,7 +716,6 @@ class BusinessProvider extends ChangeNotifier {
           await prefs.setString('business_uid', uid);
 
           _isUploading = false;
-
           notifyListeners();
 
           if (context.mounted) {
@@ -635,11 +728,11 @@ class BusinessProvider extends ChangeNotifier {
 
           return data;
         },
+
         failure: (error) {
           _errorMessage = error.message;
 
           _isUploading = false;
-
           notifyListeners();
 
           return null;
@@ -651,7 +744,7 @@ class BusinessProvider extends ChangeNotifier {
 
       notifyListeners();
 
-      debugPrint("❌ businessUpdateApi error: $e");
+      debugPrint("❌ skipBusinessUpdateApi error: $e");
 
       return null;
     }
@@ -662,9 +755,9 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<bool> updateBusinessDetails(
-    BuildContext context,
-    String businessUid,
-  ) async {
+      BuildContext context,
+      String businessUid,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -677,7 +770,8 @@ class BusinessProvider extends ChangeNotifier {
 
       final logoS3Key = _logoS3Key?.trim() ?? '';
 
-      final result = await BusinessRepository.instance.updateBusinessDetails(
+      final result =
+      await BusinessRepository.instance.updateBusinessDetails(
         businessUid: businessUid,
         name: name,
         email: email,
@@ -692,10 +786,16 @@ class BusinessProvider extends ChangeNotifier {
           final prefs = await SharedPreferences.getInstance();
 
           if (logoS3Key.isNotEmpty) {
-            await prefs.setString('logo_s3_key', logoS3Key);
+            await prefs.setString(
+              'logo_s3_key',
+              logoS3Key,
+            );
           }
 
-          await prefs.setString('business_uid', businessUid);
+          await prefs.setString(
+            'business_uid',
+            businessUid,
+          );
 
           debugPrint("✅ BUSINESS UPDATE SUCCESS");
 
@@ -707,7 +807,9 @@ class BusinessProvider extends ChangeNotifier {
           _isUploading = false;
           _errorMessage = error.message;
 
-          debugPrint("❌ Business update failed: ${error.message}");
+          debugPrint(
+            "❌ Business update failed: ${error.message}",
+          );
 
           notifyListeners();
 
@@ -718,16 +820,19 @@ class BusinessProvider extends ChangeNotifier {
       _isUploading = false;
       _errorMessage = e.toString();
 
-      debugPrint("❌ Update business details error: $e");
+      debugPrint(
+        "❌ Update business details error: $e",
+      );
 
-      debugPrintStack(stackTrace: stackTrace);
+      debugPrintStack(
+        stackTrace: stackTrace,
+      );
 
       notifyListeners();
 
       return false;
     }
   }
-
   // ============================================================
   // UPDATE PERSONAL DETAILS
   // ============================================================
@@ -842,7 +947,7 @@ class BusinessProvider extends ChangeNotifier {
     final savedLogoKey = prefs.getString('logo_s3_key');
     final savedProfileKey =
         prefs.getString('profile_s3_key') ??
-        prefs.getString('profile_photo_s3_key');
+            prefs.getString('profile_photo_s3_key');
 
     if (savedLogoKey != null && savedLogoKey.trim().isNotEmpty) {
       _logoS3Key = savedLogoKey.trim();
@@ -899,17 +1004,17 @@ class BusinessProvider extends ChangeNotifier {
 
     debugPrint(
       "✅ ACCOUNT TYPE UPDATED = "
-      "${provider.me?.data.accountType}",
+          "${provider.me?.data.accountType}",
     );
 
     debugPrint(
       "COMMON ACCOUNT TYPE = "
-      "${provider.accountType}",
+          "${provider.accountType}",
     );
 
     debugPrint(
       "IS PERSONAL = "
-      "${provider.isPersonal}",
+          "${provider.isPersonal}",
     );
 
     debugPrint("================================");
@@ -969,37 +1074,41 @@ class BusinessProvider extends ChangeNotifier {
       _imageError = null;
     }
 
+    // Business Name
     if (_businessName.trim().isEmpty) {
       _nameError = "Business name is required";
-
       isValid = false;
     } else {
       _nameError = null;
     }
 
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    // Email is OPTIONAL.
+    // Validate format only when user enters email.
+    final email = _email.trim();
 
-    if (_email.trim().isEmpty) {
-      _emailError = "Email address is required";
-
-      isValid = false;
-    } else if (!emailRegex.hasMatch(_email.trim())) {
-      _emailError = "Enter a valid email address";
-
-      isValid = false;
-    } else {
+    if (email.isEmpty) {
       _emailError = null;
+    } else {
+      final emailRegex = RegExp(
+        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+      );
+
+      if (!emailRegex.hasMatch(email)) {
+        _emailError = "Enter a valid email address";
+        isValid = false;
+      } else {
+        _emailError = null;
+      }
     }
 
+    // Contact Number
     _mobileNumber = mobileController.text.trim();
 
     if (_mobileNumber.isEmpty) {
       _mobileError = "Contact number is required";
-
       isValid = false;
     } else if (_mobileNumber.length < 10) {
       _mobileError = "Enter a valid 10-digit contact number";
-
       isValid = false;
     } else {
       _mobileError = null;
@@ -1017,6 +1126,24 @@ class BusinessProvider extends ChangeNotifier {
 
   void setImageSelected(bool value) {
     _isImageSelected = value;
+
+    if (value) {
+      // Original image selected
+      if (_originalImage != null) {
+        _selectedImage = _originalImage;
+      }
+    } else {
+      // Background removed image selected
+      if (_bgRemovedImage != null) {
+        _selectedImage = _bgRemovedImage;
+      }
+    }
+
+    _resetLivePreview();
+    _hasChanges = false;
+    _isApplied = false;
+    _processedImageBytes = null;
+
     notifyListeners();
   }
 
@@ -1076,6 +1203,7 @@ class BusinessProvider extends ChangeNotifier {
   void clearImage() {
     _selectedImage = null;
     _originalImage = null;
+    _bgRemovedImage = null;
 
     _resetLivePreview();
 
@@ -1179,12 +1307,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-            slot: uploadSlot,
-          );
+        imageFile: imageFile,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+        slot: uploadSlot,
+      );
 
       bool success = false;
 
@@ -1330,9 +1458,9 @@ class BusinessProvider extends ChangeNotifier {
   // ============================================================
 
   Future<void> pickImage(
-    BuildContext context, {
-    ImageSource source = ImageSource.gallery,
-  }) async {
+      BuildContext context, {
+        ImageSource source = ImageSource.gallery,
+      }) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -1341,9 +1469,15 @@ class BusinessProvider extends ChangeNotifier {
 
       if (image == null) return;
 
-      _selectedImage = File(image.path);
+      final pickedFile = File(image.path);
 
-      _originalImage = File(image.path);
+      _originalImage = pickedFile;
+      _bgRemovedImage = null;
+      _selectedImage = pickedFile;
+      _isImageSelected = true;
+
+      _processedImageBytes = null;
+      _isProcessingBackground = false;
 
       _hasChanges = false;
       _isApplied = false;
@@ -1379,12 +1513,12 @@ class BusinessProvider extends ChangeNotifier {
     AccTypeModel(
       title: "For my Business",
       description:
-          "Create branded designs tailored to your business and industry.",
+      "Create branded designs tailored to your business and industry.",
     ),
     AccTypeModel(
       title: "Personal Use",
       description:
-          "Create designs for festivals, birthdays, quotes, social posts, and more.",
+      "Create designs for festivals, birthdays, quotes, social posts, and more.",
     ),
   ];
 
@@ -1818,83 +1952,91 @@ class BusinessProvider extends ChangeNotifier {
   // ============================================================
 
   Future<bool> removeBackground() async {
-    if (_selectedImage == null) {
-      debugPrint("No image selected for background removal");
+    final originalFile = _originalImage ?? _selectedImage;
 
+    if (originalFile == null) {
+      debugPrint("❌ No image selected for background removal");
       return false;
     }
 
-    _originalImage = _selectedImage;
+    if (!await originalFile.exists()) {
+      debugPrint("❌ Original image file does not exist");
+      return false;
+    }
 
+    // Keep the original file untouched.
+    _originalImage = originalFile;
     _isProcessingBackground = true;
-
+    _processedImageBytes = null;
     notifyListeners();
 
     try {
+      debugPrint("======================================");
+      debugPrint("🎯 START BACKGROUND REMOVAL");
+      debugPrint("ORIGINAL : ${originalFile.path}");
+      debugPrint("======================================");
+
       final Uint8List? result = await platform.invokeMethod<Uint8List>(
         'removeBackground',
-        {'imagePath': _selectedImage!.path},
+        {'imagePath': originalFile.path},
       );
 
-      if (result != null) {
-        final dir = await getTemporaryDirectory();
-
-        final fileName =
-            'bg_removed_${DateTime.now().millisecondsSinceEpoch}.png';
-
-        final processedFile = File('${dir.path}/$fileName');
-
-        await processedFile.writeAsBytes(result);
-
-        if (_selectedImage!.path.contains('temp')) {
-          try {
-            await _selectedImage!.delete();
-          } catch (e) {
-            debugPrint("Error deleting old image: $e");
-          }
-        }
-
-        _selectedImage = processedFile;
-
-        _processedImageBytes = result;
-
-        _resetLivePreview();
-
-        _isApplied = true;
-        _hasChanges = false;
-
+      if (result == null || result.isEmpty) {
+        debugPrint("❌ Background removal returned empty result");
         _isProcessingBackground = false;
-
-        _isImageSelected = false;
-
         notifyListeners();
-
-        return true;
-      } else {
-        _isProcessingBackground = false;
-
-        notifyListeners();
-
         return false;
       }
+
+      final dir = await getTemporaryDirectory();
+      final fileName =
+          'bg_removed_${DateTime.now().millisecondsSinceEpoch}.png';
+      final processedFile = File('${dir.path}/$fileName');
+
+      await processedFile.writeAsBytes(result, flush: true);
+
+      if (!await processedFile.exists()) {
+        debugPrint("❌ Processed image was not created");
+        _isProcessingBackground = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Keep both files separately.
+      _bgRemovedImage = processedFile;
+
+      // Keep ORIGINAL selected by default after processing.
+      // User can tap either card to choose the final image.
+      _selectedImage = _originalImage;
+      _isImageSelected = true;
+
+      _processedImageBytes = result;
+      _resetLivePreview();
+      _isApplied = true;
+      _hasChanges = false;
+      _isProcessingBackground = false;
+
+      debugPrint("======================================");
+      debugPrint("✅ BACKGROUND REMOVAL SUCCESS");
+      debugPrint("ORIGINAL   : ${_originalImage?.path}");
+      debugPrint("BG REMOVED : ${_bgRemovedImage?.path}");
+      debugPrint("SELECTED   : ${_selectedImage?.path}");
+      debugPrint("======================================");
+
+      notifyListeners();
+      return true;
     } on PlatformException catch (e) {
       debugPrint(
-        "Failed to remove background: "
-        "'${e.message}'",
+        "❌ Failed to remove background: ${e.code} - ${e.message}",
       );
-
       _isProcessingBackground = false;
-
       notifyListeners();
-
       return false;
-    } catch (e) {
-      debugPrint("Background removal error: $e");
-
+    } catch (e, stackTrace) {
+      debugPrint("❌ Background removal error: $e");
+      debugPrintStack(stackTrace: stackTrace);
       _isProcessingBackground = false;
-
       notifyListeners();
-
       return false;
     }
   }
@@ -1918,7 +2060,9 @@ class BusinessProvider extends ChangeNotifier {
 
       await processedFile.writeAsBytes(_processedImageBytes!);
 
-      _selectedImage = processedFile;
+      _bgRemovedImage = processedFile;
+      _selectedImage = _originalImage;
+      _isImageSelected = true;
 
       _resetLivePreview();
 

@@ -63,7 +63,7 @@ class HomeRepository {
           config: ApiRequestConfig(
             endpoint: ApiEndpoints.templates,
             method: ApiMethod.get,
-            queryParams: {"industry": industrySlug, "type": "image"},
+            queryParams: {"industry": industrySlug, "template_type": "image","is_popular":"1"},
           ),
           fromJson: (json) =>
               TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),

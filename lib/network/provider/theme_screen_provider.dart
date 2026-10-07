@@ -5,20 +5,23 @@ import '../../Repository/theme_repoaitory.dart';
 
 class ThemesScreenProvider extends ChangeNotifier {
   bool _isLoadingPlans = false;
+
   bool get isLoadingPlans => _isLoadingPlans;
 
   ThemeApiResponse? _plansData;
+
   ThemeApiResponse? get plansData => _plansData;
 
   String? _plansErrorMessage;
+
   String? get plansErrorMessage => _plansErrorMessage;
 
   final ThemeRepository _repository = ThemeRepository.instance;
 
   Future<void> fetchPlans() async {
     _isLoadingPlans = true;
-
     _plansErrorMessage = null;
+
     notifyListeners();
 
     try {
@@ -27,8 +30,11 @@ class ThemesScreenProvider extends ChangeNotifier {
       if (result.isSuccess && result.data != null) {
         _plansData = result.data;
       } else {
-        _plansErrorMessage = result.error?.message ?? "Something went wrong";
+        _plansErrorMessage =
+            result.error?.message ?? "Something went wrong";
       }
+    } catch (e) {
+      _plansErrorMessage = e.toString();
     } finally {
       _isLoadingPlans = false;
       notifyListeners();

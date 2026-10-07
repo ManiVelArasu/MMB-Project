@@ -69,14 +69,12 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
     return number;
   }
-
   Future<bool> updateAndSaveNewMobile() async {
     if (newMobileInput.trim().length != 10) {
       mobileError = "Enter a valid 10-digit number";
       notifyListeners();
       return false;
     }
-
     try {
       _mobileNumber = newMobileInput.trim();
       mobileError = null;
@@ -91,8 +89,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       return false;
     }
   }
-
-  // 🚀 லோகவுட் அல்லது புதிய லாகின் போது டேட்டாவை க்ளியர் செய்ய
   Future<void> clearAuthDataForNewLogin() async {
     _mobileNumber = "";
     newMobileInput = "";

@@ -311,7 +311,7 @@ class ThemeCard extends StatelessWidget {
                               ),
                             )
                           : Image.network(
-                              // 🚀 CDN URL மற்றும் thumbnailKey-ஐ இணைப்பது
+
                               "${ApiEndpoints.cdnImageUrl}/$thumbnailKey",
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) {

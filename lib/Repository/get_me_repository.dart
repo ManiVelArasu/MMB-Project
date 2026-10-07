@@ -36,21 +36,27 @@ class GetMeRepository {
   }
 
   Future<ApiResult<dynamic>> updatePersonalDetail(
-    String? name,
-    String? email,
-    String? profile_photo_s3_key,
+      String? name,
+      String? email,
+      String? profile_photo_s3_key,
+      ) {
+    final Map<String, dynamic> body = {
+      "name": name,
+      "profile_photo_s3_key": profile_photo_s3_key,
+    };
 
-  ) {
+    // Email entered இருந்தால் மட்டும் API-க்கு send செய்யவும்
+    if (email != null && email.trim().isNotEmpty) {
+      body["email"] = email.trim();
+    }
+
+
+
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.user,
         method: ApiMethod.patch,
-        body: {
-          "name": name,
-          "email": email,
-          "profile_photo_s3_key": profile_photo_s3_key,
-
-        },
+        body: body,
       ),
       fromJson: (json) => json,
     );

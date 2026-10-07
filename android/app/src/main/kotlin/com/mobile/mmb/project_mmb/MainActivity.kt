@@ -127,47 +127,106 @@ class MainActivity : FlutterActivity() {
     }
 
     // 🔥 ULTRA-FAST BULK PIXEL PROCESSING (10x faster than setPixel loop)
-    private fun applyMaskToBitmapFast(original: Bitmap, mask: SegmentationMask): Bitmap {
+    private fun applyMaskToBitmapFast(
+        original: Bitmap,
+        mask: SegmentationMask
+    ): Bitmap {
+
         val maskBuffer = mask.buffer
         val maskW = mask.width
         val maskH = mask.height
+
         val w = original.width
         val h = original.height
 
-        Log.d(TAG, "🎭 Applying mask: ${w}x${h} -> ${maskW}x${maskH}")
+        Log.d(TAG, "🎭 Applying high-quality mask: ${w}x${h} -> ${maskW}x${maskH}")
 
-        val output = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val output = Bitmap.createBitmap(
+            w,
+            h,
+            Bitmap.Config.ARGB_8888
+        )
 
-        // 🔥 BULK: Get ALL pixels at once (vs getPixel loop)
         val originalPixels = IntArray(w * h)
-        original.getPixels(originalPixels, 0, w, 0, 0, w, h)
         val outputPixels = IntArray(w * h)
 
-        val scaleX = w.toFloat() / maskW
-        val scaleY = h.toFloat() / maskH
+        original.getPixels(
+            originalPixels,
+            0,
+            w,
+            0,
+            0,
+            w,
+            h
+        )
 
-        for (i in originalPixels.indices) {
-            val x = i % w
-            val y = i / w
-            val maskX = (x / scaleX).toInt().coerceIn(0, maskW - 1)
-            val maskY = (y / scaleY).toInt().coerceIn(0, maskH - 1)
+        val scaleX = maskW.toFloat() / w
+        val scaleY = maskH.toFloat() / h
 
-            val maskIndex = (maskY * maskW + maskX) * 4
-            maskBuffer.position(maskIndex)
-            val confidence = maskBuffer.float
+        for (y in 0 until h) {
 
-            // 🔥 BETTER THRESHOLD + SMOOTHING (cleaner edges)
-            val alpha = if (confidence > 0.65f) {
-                // Smooth alpha transition for natural edges
-                ((confidence - 0.65f) / 0.35f * 255).toInt().coerceIn(0, 255)
-            } else 0
+            val maskY = (y * scaleY)
+                .toInt()
+                .coerceIn(0, maskH - 1)
 
-            val pixel = originalPixels[i]
-            outputPixels[i] = Color.argb(alpha, Color.red(pixel), Color.green(pixel), Color.blue(pixel))
+            for (x in 0 until w) {
+
+                val maskX = (x * scaleX)
+                    .toInt()
+                    .coerceIn(0, maskW - 1)
+
+                val maskIndex =
+                    (maskY * maskW + maskX) * 4
+
+                maskBuffer.position(maskIndex)
+
+                val confidence = maskBuffer.float
+
+                /*
+                 * Soft alpha:
+                 *
+                 * < 0.25  -> transparent
+                 * 0.25-0.75 -> smooth transition
+                 * > 0.75 -> fully visible
+                 */
+                val alpha = when {
+                    confidence <= 0.25f -> {
+                        0
+                    }
+
+                    confidence >= 0.75f -> {
+                        255
+                    }
+
+                    else -> {
+                        (
+                                ((confidence - 0.25f) / 0.50f) * 255f
+                                ).toInt().coerceIn(0, 255)
+                    }
+                }
+
+                val pixel = originalPixels[y * w + x]
+
+                outputPixels[y * w + x] =
+                    Color.argb(
+                        alpha,
+                        Color.red(pixel),
+                        Color.green(pixel),
+                        Color.blue(pixel)
+                    )
+            }
         }
 
-        // 🔥 BULK SET: All pixels at once (vs setPixel loop)
-        output.setPixels(outputPixels, 0, w, 0, 0, w, h)
+        output.setPixels(
+            outputPixels,
+            0,
+            w,
+            0,
+            0,
+            w,
+            h
+        )
+
         return output
     }
 

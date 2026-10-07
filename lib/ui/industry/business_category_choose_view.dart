@@ -200,25 +200,44 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
               if (industryProvider.showOtherInput) ...[
                 TextField(
                   controller: industryProvider.otherController,
+
+                  onChanged: (value) {
+                    if (value.trim().isNotEmpty) {
+                      industryProvider.clearOtherError();
+                    }
+                  },
+
                   decoration: InputDecoration(
                     hintText: "Please enter your business type",
+
                     hintStyle: TextStyle(
                       color: Colors.grey.shade400,
                       fontSize: 13,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
+
+                    errorText: industryProvider.otherError,
+
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
+
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
+
                     focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red),
+                    ),
+
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red),
+                    ),
+
+                    focusedErrorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: Colors.red),
                     ),
@@ -245,7 +264,15 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    AppText(" Skip", style: TextStyle(color: AppColors.appRed)),
+                    InkWell(
+                      onTap: () {
+                        accountProvider.skipBusinessUpdateApi(context);
+                      },
+                      child: AppText(
+                        " Skip",
+                        style: TextStyle(color: AppColors.appRed),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -253,9 +280,20 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
               ButtonWidget(
                 isLoading: accountProvider.isUploading,
                 buttonPress: () {
+                  // Other selected
+                  if (industryProvider.showOtherInput) {
+                    final other = industryProvider.otherController.text.trim();
+
+                    if (other.isEmpty) {
+                      industryProvider.validateOther(other);
+                      return;
+                    }
+                  }
+
                   accountProvider.businessUpdateApi(
                     context,
-                    '${industryProvider.selectedCategorySlug}',
+                    industryProvider.selectedCategorySlug ?? '',
+                    industryProvider.otherController.text.trim(),
                   );
                 },
                 title: "Continue",

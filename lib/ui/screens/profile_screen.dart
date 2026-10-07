@@ -398,7 +398,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               onTap: () {
                                 Navigator.pushNamed(
                                   context,
-                                  "/PlansAndPricingScreen",
+                                  "/BusinessDetailsScreen",
                                 );
                               },
                             ),
@@ -500,7 +500,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               title: 'Near Me',
                               iconAsset: "assets/images/shop.png",
                               isDark: isDark,
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  "/BusinessDetailsScreen",
+                                );
+                              },
                             ),
                             _buildSettingsTile(
                               title: 'AI Hub',

@@ -529,7 +529,7 @@ class _ManagePlanView extends StatelessWidget {
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) => InvoiceScreen(
-                                              html: provider.invoiceHtml!,
+                                              html: provider.invoiceHtml??'',
                                             ),
                                           ),
                                         );
@@ -584,7 +584,7 @@ class _ManagePlanView extends StatelessWidget {
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) => InvoiceScreen(
-                                              html: provider.isReceiptHtml!,
+                                              html: provider.isReceiptHtml??'',
                                             ),
                                           ),
                                         );
