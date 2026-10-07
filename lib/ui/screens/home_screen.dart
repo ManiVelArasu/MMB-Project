@@ -97,7 +97,7 @@ class _HomeScreenView extends StatelessWidget {
                       break;
 
                     case "FOR YOU":
-                      Navigator.pushNamed(context, "/ForYouScreen");
+                      //Navigator.pushNamed(context, "/ForYouScreen");
                       break;
 
                     case "FESTIVAL":
@@ -109,11 +109,11 @@ class _HomeScreenView extends StatelessWidget {
                       break;
 
                     case "MY BRAND":
-                      Navigator.pushNamed(
+                      /*Navigator.pushNamed(
                         context,
                         "/TemplateListScreen",
                         arguments: {"type": "brand-series"},
-                      );
+                      );*/
                       break;
 
                     case "BRAND SERIES":
