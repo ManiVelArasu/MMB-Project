@@ -266,7 +266,9 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
     );
   }
 
-  Future<void> _confirmCancellation(PlanProvider provider) async {
+  Future<void> _confirmCancellation(
+      PlanProvider provider,
+      ) async {
     final success = await provider.cancelSubscription();
 
     if (!mounted) return;
@@ -280,13 +282,12 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
         ),
       );
 
-      // Cancel success → Plan & Pricing screen
       Navigator.pushNamedAndRemoveUntil(
         context,
-        "/PlansAndPricingScreen",
+        "/MySubscriptionScreen",
             (route) => false,
         arguments: {
-          "showSkip": true,
+          "hideBackButton": true,
         },
       );
     } else {

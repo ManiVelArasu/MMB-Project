@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../Api Model/notification_model.dart';
 import '../../component/custom_widget.dart';
 import '../../model/notification_model.dart';
+import '../../network/provider/common_provider.dart';
 import '../../network/provider/notification_provider.dart';
 import '../../widgets/notification_section.dart';
 import '../../network/provider/custom_theme_provider.dart';
@@ -201,7 +202,15 @@ class NotificationScreen extends StatelessWidget {
                     return;
                   }
 
-                  await provider.markNotificationAsRead(uid);
+                  // 1. Mark single notification as read
+                  final success = await provider.markNotificationAsRead(uid);
+
+                  if (!context.mounted) return;
+
+                  // 2. Update Home AppBar unread count
+                  if (success) {
+                    context.read<CommonProvider>().decreaseUnreadCount();
+                  }
                 },
               ),
 
@@ -221,7 +230,15 @@ class NotificationScreen extends StatelessWidget {
                     return;
                   }
 
-                  await provider.markNotificationAsRead(uid);
+                  // 1. Mark single notification as read
+                  final success = await provider.markNotificationAsRead(uid);
+
+                  if (!context.mounted) return;
+
+                  // 2. Update Home AppBar unread count
+                  if (success) {
+                    context.read<CommonProvider>().decreaseUnreadCount();
+                  }
                 },
               ),
 

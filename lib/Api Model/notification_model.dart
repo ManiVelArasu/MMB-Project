@@ -63,7 +63,37 @@ class NotificationList {
     required this.createdAt,
     required this.category,
   });
-
+  NotificationList copyWith({
+    String? uid,
+    String? title,
+    String? body,
+    String? ctaLabel,
+    String? ctaAction,
+    String? ctaParams,
+    String? imageS3Key,
+    String? priority,
+    bool? isDismissible,
+    bool? isRead,
+    String? readAt,
+    DateTime? createdAt,
+    Category? category,
+  }) {
+    return NotificationList(
+      uid: uid ?? this.uid,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      ctaLabel: ctaLabel ?? this.ctaLabel,
+      ctaAction: ctaAction ?? this.ctaAction,
+      ctaParams: ctaParams ?? this.ctaParams,
+      imageS3Key: imageS3Key ?? this.imageS3Key,
+      priority: priority ?? this.priority,
+      isDismissible: isDismissible ?? this.isDismissible,
+      isRead: isRead ?? this.isRead,
+      readAt: readAt ?? this.readAt,
+      createdAt: createdAt ?? this.createdAt,
+      category: category ?? this.category,
+    );
+  }
   factory NotificationList.fromJson(Map<String, dynamic> json) =>
       NotificationList(
         uid: json["uid"]?.toString(),

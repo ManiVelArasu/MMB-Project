@@ -11,15 +11,25 @@ import '../../network/provider/template_list_provider.dart';
 
 class TemplateListScreen extends StatelessWidget {
   final String? type;
+  final String? range;
 
-  const TemplateListScreen({super.key, this.type});
+  const TemplateListScreen({
+    super.key,
+    this.type,
+    this.range,
+  });
 
   @override
   Widget build(BuildContext context) {
     debugPrint("🎉 TemplateListScreen type: $type");
+    debugPrint("🎉 TemplateListScreen range: $range");
 
     return ChangeNotifierProvider(
-      create: (_) => TemplateListProvider()..loadSpecialDays(type: type),
+      create: (_) => TemplateListProvider()
+        ..loadSpecialDays(
+          type: type,
+          range: range,
+        ),
       child: const _TemplateListScreenView(),
     );
   }

@@ -54,9 +54,7 @@ class _HomeScreenView extends StatelessWidget {
         homeScreenProvider.isLoadingPopularTemplates) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFE53935),
-          ),
+          child: CircularProgressIndicator(color: Color(0xFFE53935)),
         ),
       );
     }
@@ -106,7 +104,7 @@ class _HomeScreenView extends StatelessWidget {
                       Navigator.pushNamed(
                         context,
                         "/TemplateListScreen",
-                        arguments: {"type": "festival"},
+                        arguments: {"type": "festival", "range": "year"},
                       );
                       break;
 
@@ -145,9 +143,7 @@ class _HomeScreenView extends StatelessWidget {
                     AppText(
                       "Special Days",
                       style: TextStyle(
-                        color: isDark
-                            ? Colors.white
-                            : AppColors.darkBlack,
+                        color: isDark ? Colors.white : AppColors.darkBlack,
                         fontSize: AppFontSize.fontSize18,
                         fontWeight: FontWeight.w800,
                       ),
@@ -158,10 +154,7 @@ class _HomeScreenView extends StatelessWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(18.r),
                         onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            "/SpecialDaysScreen",
-                          );
+                          Navigator.pushNamed(context, "/SpecialDaysScreen");
                         },
                         child: Padding(
                           padding: EdgeInsets.symmetric(
@@ -212,9 +205,7 @@ class _HomeScreenView extends StatelessWidget {
                     AppText(
                       "My Zone",
                       style: TextStyle(
-                        color: isDark
-                            ? Colors.white
-                            : AppColors.darkBlack,
+                        color: isDark ? Colors.white : AppColors.darkBlack,
                         fontSize: AppFontSize.fontSize18,
                         fontWeight: FontWeight.w800,
                       ),
@@ -231,12 +222,7 @@ class _HomeScreenView extends StatelessWidget {
 
                 SizedBox(height: 16.h),
 
-                _buildLeadBannerSlider(
-                  homeScreenProvider,
-                  isDark,
-                  me,
-                  context,
-                ),
+                _buildLeadBannerSlider(homeScreenProvider, isDark, me, context),
 
                 SizedBox(height: 20.h),
 
@@ -257,8 +243,7 @@ class _HomeScreenView extends StatelessWidget {
                       padding: EdgeInsets.only(right: 8.w),
                       itemCount: homeScreenProvider.keyWords.length,
                       itemBuilder: (context, index) {
-                        final keywordItem =
-                        homeScreenProvider.keyWords[index];
+                        final keywordItem = homeScreenProvider.keyWords[index];
 
                         final keyword = keywordItem.name?.trim() ?? '';
 
@@ -289,9 +274,7 @@ class _HomeScreenView extends StatelessWidget {
                             child: AppText(
                               keyword,
                               style: TextStyle(
-                                color: isDark
-                                    ? Colors.white70
-                                    : Colors.black87,
+                                color: isDark ? Colors.white70 : Colors.black87,
                                 fontSize: 11.5.sp,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -310,11 +293,9 @@ class _HomeScreenView extends StatelessWidget {
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
                       padding: EdgeInsets.symmetric(horizontal: 4.w),
-                      itemCount:
-                      homeScreenProvider.popularTemplates.length,
+                      itemCount: homeScreenProvider.popularTemplates.length,
                       itemBuilder: (context, index) {
-                        final item =
-                        homeScreenProvider.popularTemplates[index];
+                        final item = homeScreenProvider.popularTemplates[index];
 
                         final thumbnailKey = item.thumbnailS3Key ?? '';
 
@@ -351,11 +332,11 @@ class _HomeScreenView extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(20.r),
                                 child: imageUrl.isEmpty
                                     ? const Center(
-                                  child: Icon(
-                                    Icons.image_outlined,
-                                    color: Colors.grey,
-                                  ),
-                                )
+                                        child: Icon(
+                                          Icons.image_outlined,
+                                          color: Colors.grey,
+                                        ),
+                                      )
                                     : buildProfileImage(imageUrl),
                               ),
                             ),
@@ -381,14 +362,12 @@ class _HomeScreenView extends StatelessWidget {
                     height: 38.h,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      itemCount:
-                      homeScreenProvider.videoCategories.length,
+                      itemCount: homeScreenProvider.videoCategories.length,
                       physics: const BouncingScrollPhysics(),
                       itemBuilder: (context, index) {
                         bool isSelected =
-                            homeScreenProvider
-                                .selectedVideoCategoryIndex ==
-                                index;
+                            homeScreenProvider.selectedVideoCategoryIndex ==
+                            index;
                         return GestureDetector(
                           onTap: () => homeScreenProvider
                               .updateVideoCategoryIndex(index),
@@ -402,15 +381,15 @@ class _HomeScreenView extends StatelessWidget {
                               color: isSelected
                                   ? const Color(0xFF555555)
                                   : (isDark
-                                  ? const Color(0xFF1E1E1E)
-                                  : Colors.white),
+                                        ? const Color(0xFF1E1E1E)
+                                        : Colors.white),
                               borderRadius: BorderRadius.circular(20.r),
                               border: Border.all(
                                 color: isSelected
                                     ? Colors.transparent
                                     : (isDark
-                                    ? Colors.grey.shade700
-                                    : Colors.grey.shade400),
+                                          ? Colors.grey.shade700
+                                          : Colors.grey.shade400),
                                 width: 1.2,
                               ),
                             ),
@@ -421,8 +400,8 @@ class _HomeScreenView extends StatelessWidget {
                                   color: isSelected
                                       ? Colors.white
                                       : (isDark
-                                      ? Colors.white70
-                                      : Colors.grey.shade800),
+                                            ? Colors.white70
+                                            : Colors.grey.shade800),
                                   fontSize: 12.sp,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -438,10 +417,8 @@ class _HomeScreenView extends StatelessWidget {
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount:
-                    homeScreenProvider.brandVideoPostsList.length,
-                    gridDelegate:
-                    SliverGridDelegateWithFixedCrossAxisCount(
+                    itemCount: homeScreenProvider.brandVideoPostsList.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 12.w,
                       mainAxisSpacing: 12.h,
@@ -449,7 +426,7 @@ class _HomeScreenView extends StatelessWidget {
                     ),
                     itemBuilder: (context, index) {
                       final videoData =
-                      homeScreenProvider.brandVideoPostsList[index];
+                          homeScreenProvider.brandVideoPostsList[index];
                       return BrandVideoCard(
                         thumbnailUrl: videoData["thumbnail"] ?? '',
                         videoUrl: videoData["videoUrl"] ?? '',
@@ -467,7 +444,7 @@ class _HomeScreenView extends StatelessWidget {
 
                   itemBuilder: (context, index) {
                     final category =
-                    homeScreenProvider.templateCategories[index];
+                        homeScreenProvider.templateCategories[index];
 
                     final categoryName = category.name?.trim() ?? '';
 
@@ -481,8 +458,8 @@ class _HomeScreenView extends StatelessWidget {
 
                     final bool isSpecialCategory =
                         categoryLower == 'celebrate moments' ||
-                            categoryLower == 'devotional/daily posts' ||
-                            categoryLower == 'devotional / daily posts';
+                        categoryLower == 'devotional/daily posts' ||
+                        categoryLower == 'devotional / daily posts';
 
                     // ==========================================================
                     // SPECIAL CATEGORY
@@ -497,12 +474,7 @@ class _HomeScreenView extends StatelessWidget {
 
                       return Container(
                         width: double.infinity,
-                        padding: EdgeInsets.fromLTRB(
-                          12.w,
-                          14.h,
-                          12.w,
-                          16.h,
-                        ),
+                        padding: EdgeInsets.fromLTRB(12.w, 14.h, 12.w, 16.h),
 
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,9 +489,7 @@ class _HomeScreenView extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 14.sp,
                                 fontWeight: FontWeight.w800,
-                                color: isDark
-                                    ? Colors.white
-                                    : Colors.black,
+                                color: isDark ? Colors.white : Colors.black,
                               ),
                             ),
 
@@ -539,14 +509,11 @@ class _HomeScreenView extends StatelessWidget {
                                     SizedBox(width: 14.w),
 
                                 itemBuilder: (context, childIndex) {
-                                  final child =
-                                  category.children[childIndex];
+                                  final child = category.children[childIndex];
 
-                                  final childName =
-                                      child.name?.trim() ?? '';
+                                  final childName = child.name?.trim() ?? '';
 
-                                  final childSlug =
-                                      child.slug?.trim() ?? '';
+                                  final childSlug = child.slug?.trim() ?? '';
 
                                   final thumbnailKey =
                                       child.iconS3Key?.trim() ?? '';
@@ -558,17 +525,13 @@ class _HomeScreenView extends StatelessWidget {
                                   return SizedBox(
                                     width: 90.w,
                                     child: InkWell(
-                                      borderRadius: BorderRadius.circular(
-                                        12.r,
-                                      ),
+                                      borderRadius: BorderRadius.circular(12.r),
 
                                       onTap: () {
                                         debugPrint(
                                           "📂 CHILD CATEGORY: $childName",
                                         );
-                                        debugPrint(
-                                          "📂 CHILD SLUG: $childSlug",
-                                        );
+                                        debugPrint("📂 CHILD SLUG: $childSlug");
 
                                         Navigator.pushNamed(
                                           context,
@@ -587,69 +550,66 @@ class _HomeScreenView extends StatelessWidget {
                                           // CHILD THUMBNAIL
                                           // ====================================
                                           ClipRRect(
-                                            borderRadius:
-                                            BorderRadius.circular(
+                                            borderRadius: BorderRadius.circular(
                                               10.r,
                                             ),
                                             child: Container(
                                               width: 84.w,
                                               height: 84.w,
                                               color: isDark
-                                                  ? const Color(
-                                                0xFF252525,
-                                              )
+                                                  ? const Color(0xFF252525)
                                                   : Colors.grey.shade100,
 
                                               child: imageUrl.isEmpty
                                                   ? Icon(
-                                                Icons
-                                                    .image_outlined,
-                                                size: 28.sp,
-                                                color: Colors.grey,
-                                              )
+                                                      Icons.image_outlined,
+                                                      size: 28.sp,
+                                                      color: Colors.grey,
+                                                    )
                                                   : Image.network(
-                                                imageUrl,
-                                                width: 150.w,
-                                                height: 150.w,
-                                                fit: BoxFit.cover,
+                                                      imageUrl,
+                                                      width: 150.w,
+                                                      height: 150.w,
+                                                      fit: BoxFit.cover,
 
-                                                loadingBuilder:
-                                                    (
-                                                    context,
-                                                    child,
-                                                    loadingProgress,
-                                                    ) {
-                                                  if (loadingProgress ==
-                                                      null) {
-                                                    return child;
-                                                  }
+                                                      loadingBuilder:
+                                                          (
+                                                            context,
+                                                            child,
+                                                            loadingProgress,
+                                                          ) {
+                                                            if (loadingProgress ==
+                                                                null) {
+                                                              return child;
+                                                            }
 
-                                                  return const Center(
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth:
-                                                      1.5,
-                                                      color: Color(
-                                                        0xFFE53935,
-                                                      ),
+                                                            return const Center(
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                    strokeWidth:
+                                                                        1.5,
+                                                                    color: Color(
+                                                                      0xFFE53935,
+                                                                    ),
+                                                                  ),
+                                                            );
+                                                          },
+
+                                                      errorBuilder:
+                                                          (
+                                                            context,
+                                                            error,
+                                                            stackTrace,
+                                                          ) {
+                                                            return Icon(
+                                                              Icons
+                                                                  .broken_image_outlined,
+                                                              size: 28.sp,
+                                                              color:
+                                                                  Colors.grey,
+                                                            );
+                                                          },
                                                     ),
-                                                  );
-                                                },
-
-                                                errorBuilder:
-                                                    (
-                                                    context,
-                                                    error,
-                                                    stackTrace,
-                                                    ) {
-                                                  return Icon(
-                                                    Icons
-                                                        .broken_image_outlined,
-                                                    size: 28.sp,
-                                                    color: Colors
-                                                        .grey,
-                                                  );
-                                                },
-                                              ),
                                             ),
                                           ),
 
@@ -692,15 +652,17 @@ class _HomeScreenView extends StatelessWidget {
                     }
 
                     final categoryIcon =
-                    (category.iconS3Key?.trim().isNotEmpty ?? false)
+                        (category.iconS3Key?.trim().isNotEmpty ?? false)
                         ? '${ApiEndpoints.cdnImageUrl}/${category.iconS3Key}'
                         : '';
 
-                    final templates = homeScreenProvider
-                        .templatesForCategory(slug);
+                    final templates = homeScreenProvider.templatesForCategory(
+                      slug,
+                    );
 
-                    final isLoading = homeScreenProvider
-                        .isTemplateLoading(slug);
+                    final isLoading = homeScreenProvider.isTemplateLoading(
+                      slug,
+                    );
 
                     // ==========================================================
                     // YOUTUBE THUMBNAIL CHECK
@@ -708,7 +670,7 @@ class _HomeScreenView extends StatelessWidget {
 
                     final bool isYoutubeThumbnail =
                         slug.toLowerCase() == 'youtube-thumbnails' ||
-                            categoryLower == 'youtube thumbnails';
+                        categoryLower == 'youtube thumbnails';
 
                     return Padding(
                       padding: EdgeInsets.only(top: 24.h),
@@ -778,182 +740,171 @@ class _HomeScreenView extends StatelessWidget {
                           // 2 x 2 GRID + HORIZONTAL PAGE
                           // ======================================================
                           else if (isYoutubeThumbnail)
-                              SizedBox(
-                                height: 200.h,
-                                width: double.infinity,
+                            SizedBox(
+                              height: 200.h,
+                              width: double.infinity,
 
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final double pageWidth =
-                                        constraints.maxWidth;
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final double pageWidth = constraints.maxWidth;
 
-                                    final double horizontalGap = 12.w;
+                                  final double horizontalGap = 12.w;
 
-                                    final double verticalGap = 12.h;
+                                  final double verticalGap = 12.h;
 
-                                    // 2 cards per row
-                                    final double cardWidth =
-                                        (pageWidth - horizontalGap) / 2;
+                                  // 2 cards per row
+                                  final double cardWidth =
+                                      (pageWidth - horizontalGap) / 2;
 
-                                    // EXACT 16:9
-                                    final double cardHeight =
-                                        cardWidth * 9 / 16;
+                                  // EXACT 16:9
+                                  final double cardHeight = cardWidth * 9 / 16;
 
-                                    // 4 cards per page
-                                    final int pageCount =
-                                    (templates.length / 4).ceil();
+                                  // 4 cards per page
+                                  final int pageCount = (templates.length / 4)
+                                      .ceil();
 
-                                    return ListView.builder(
-                                      scrollDirection: Axis.horizontal,
+                                  return ListView.builder(
+                                    scrollDirection: Axis.horizontal,
 
-                                      physics:
-                                      const BouncingScrollPhysics(),
+                                    physics: const BouncingScrollPhysics(),
 
-                                      itemCount: pageCount,
+                                    itemCount: pageCount,
 
-                                      itemBuilder: (context, pageIndex) {
-                                        final int startIndex =
-                                            pageIndex * 4;
+                                    itemBuilder: (context, pageIndex) {
+                                      final int startIndex = pageIndex * 4;
 
-                                        return SizedBox(
-                                          width: pageWidth,
+                                      return SizedBox(
+                                        width: pageWidth,
 
-                                          child: Padding(
-                                            padding: EdgeInsets.only(
-                                              right:
-                                              pageIndex == pageCount - 1
-                                                  ? 0
-                                                  : 16.w,
-                                            ),
-
-                                            child: Column(
-                                              children: [
-                                                // ==============================
-                                                // ROW 1
-                                                // ==============================
-
-                                                SizedBox(
-                                                  height: cardHeight,
-
-                                                  child: Row(
-                                                    children: [
-                                                      Expanded(
-                                                        child: _buildApiTemplateCard(
-                                                          context,
-                                                          templates[startIndex],
-                                                          isDark,
-                                                        ),
-                                                      ),
-
-                                                      SizedBox(
-                                                        width:
-                                                        horizontalGap,
-                                                      ),
-
-                                                      Expanded(
-                                                        child:
-                                                        startIndex + 1 <
-                                                            templates
-                                                                .length
-                                                            ? _buildApiTemplateCard(
-                                                          context,
-                                                          templates[startIndex +
-                                                              1],
-                                                          isDark,
-                                                        )
-                                                            : const SizedBox(),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-
-                                                SizedBox(
-                                                  height: verticalGap,
-                                                ),
-
-                                                // ==============================
-                                                // ROW 2
-                                                // ==============================
-                                                SizedBox(
-                                                  height: cardHeight,
-
-                                                  child: Row(
-                                                    children: [
-                                                      Expanded(
-                                                        child:
-                                                        startIndex + 2 <
-                                                            templates
-                                                                .length
-                                                            ? _buildApiTemplateCard(
-                                                          context,
-                                                          templates[startIndex +
-                                                              2],
-                                                          isDark,
-                                                        )
-                                                            : const SizedBox(),
-                                                      ),
-
-                                                      SizedBox(
-                                                        width:
-                                                        horizontalGap,
-                                                      ),
-
-                                                      Expanded(
-                                                        child:
-                                                        startIndex + 3 <
-                                                            templates
-                                                                .length
-                                                            ? _buildApiTemplateCard(
-                                                          context,
-                                                          templates[startIndex +
-                                                              3],
-                                                          isDark,
-                                                        )
-                                                            : const SizedBox(),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                        child: Padding(
+                                          padding: EdgeInsets.only(
+                                            right: pageIndex == pageCount - 1
+                                                ? 0
+                                                : 16.w,
                                           ),
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
-                              )
-                            // ======================================================
-                            // NORMAL CATEGORY
-                            // HORIZONTAL TEMPLATE SCROLL
-                            // ======================================================
-                            else
-                              SizedBox(
-                                height: 165.h,
 
-                                child: ListView.separated(
-                                  scrollDirection: Axis.horizontal,
+                                          child: Column(
+                                            children: [
+                                              // ==============================
+                                              // ROW 1
+                                              // ==============================
 
-                                  physics: const BouncingScrollPhysics(),
+                                              SizedBox(
+                                                height: cardHeight,
 
-                                  itemCount: templates.length,
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child:
+                                                          _buildApiTemplateCard(
+                                                            context,
+                                                            templates[startIndex],
+                                                            isDark,
+                                                          ),
+                                                    ),
 
-                                  separatorBuilder: (_, __) =>
-                                      SizedBox(width: 12.w),
+                                                    SizedBox(
+                                                      width: horizontalGap,
+                                                    ),
 
-                                  itemBuilder: (context, templateIndex) {
-                                    return SizedBox(
-                                      width: 145.w,
+                                                    Expanded(
+                                                      child:
+                                                          startIndex + 1 <
+                                                              templates.length
+                                                          ? _buildApiTemplateCard(
+                                                              context,
+                                                              templates[startIndex +
+                                                                  1],
+                                                              isDark,
+                                                            )
+                                                          : const SizedBox(),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
 
-                                      child: _buildApiTemplateCard(
-                                        context,
-                                        templates[templateIndex],
-                                        isDark,
-                                      ),
-                                    );
-                                  },
-                                ),
+                                              SizedBox(height: verticalGap),
+
+                                              // ==============================
+                                              // ROW 2
+                                              // ==============================
+                                              SizedBox(
+                                                height: cardHeight,
+
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child:
+                                                          startIndex + 2 <
+                                                              templates.length
+                                                          ? _buildApiTemplateCard(
+                                                              context,
+                                                              templates[startIndex +
+                                                                  2],
+                                                              isDark,
+                                                            )
+                                                          : const SizedBox(),
+                                                    ),
+
+                                                    SizedBox(
+                                                      width: horizontalGap,
+                                                    ),
+
+                                                    Expanded(
+                                                      child:
+                                                          startIndex + 3 <
+                                                              templates.length
+                                                          ? _buildApiTemplateCard(
+                                                              context,
+                                                              templates[startIndex +
+                                                                  3],
+                                                              isDark,
+                                                            )
+                                                          : const SizedBox(),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
                               ),
+                            )
+                          // ======================================================
+                          // NORMAL CATEGORY
+                          // HORIZONTAL TEMPLATE SCROLL
+                          // ======================================================
+                          else
+                            SizedBox(
+                              height: 165.h,
+
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+
+                                physics: const BouncingScrollPhysics(),
+
+                                itemCount: templates.length,
+
+                                separatorBuilder: (_, __) =>
+                                    SizedBox(width: 12.w),
+
+                                itemBuilder: (context, templateIndex) {
+                                  return SizedBox(
+                                    width: 145.w,
+
+                                    child: _buildApiTemplateCard(
+                                      context,
+                                      templates[templateIndex],
+                                      isDark,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                         ],
                       ),
                     );
@@ -964,7 +915,6 @@ class _HomeScreenView extends StatelessWidget {
           ),
         ),
       ),
-
     );
   }
 
@@ -1108,52 +1058,52 @@ class _HomeScreenView extends StatelessWidget {
 
                             child: imageUrl.isEmpty
                                 ? Center(
-                              child: Icon(
-                                Icons.image_outlined,
-                                size: 22.sp,
-                                color: Colors.grey,
-                              ),
-                            )
-                                : Image.network(
-                              imageUrl,
-                              width: 58.w,
-                              height: 58.w,
-                              fit: BoxFit.cover,
-
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) {
-                                  return child;
-                                }
-
-                                return Center(
-                                  child: SizedBox(
-                                    width: 17.w,
-                                    height: 17.w,
-                                    child:
-                                    const CircularProgressIndicator(
-                                      strokeWidth: 1.5,
-                                      color: Color(0xFFE53935),
+                                    child: Icon(
+                                      Icons.image_outlined,
+                                      size: 22.sp,
+                                      color: Colors.grey,
                                     ),
-                                  ),
-                                );
-                              },
+                                  )
+                                : Image.network(
+                                    imageUrl,
+                                    width: 58.w,
+                                    height: 58.w,
+                                    fit: BoxFit.cover,
 
-                              errorBuilder: (context, error, stackTrace) {
-                                debugPrint(
-                                  "❌ CHILD IMAGE ERROR: "
-                                      "$imageUrl",
-                                );
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                          if (loadingProgress == null) {
+                                            return child;
+                                          }
 
-                                return Center(
-                                  child: Icon(
-                                    Icons.broken_image_outlined,
-                                    size: 21.sp,
-                                    color: Colors.grey,
+                                          return Center(
+                                            child: SizedBox(
+                                              width: 17.w,
+                                              height: 17.w,
+                                              child:
+                                                  const CircularProgressIndicator(
+                                                    strokeWidth: 1.5,
+                                                    color: Color(0xFFE53935),
+                                                  ),
+                                            ),
+                                          );
+                                        },
+
+                                    errorBuilder: (context, error, stackTrace) {
+                                      debugPrint(
+                                        "❌ CHILD IMAGE ERROR: "
+                                        "$imageUrl",
+                                      );
+
+                                      return Center(
+                                        child: Icon(
+                                          Icons.broken_image_outlined,
+                                          size: 21.sp,
+                                          color: Colors.grey,
+                                        ),
+                                      );
+                                    },
                                   ),
-                                );
-                              },
-                            ),
                           ),
                         ),
 
@@ -1304,10 +1254,10 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildDateContainer(
-      HomeScreenProvider provider,
-      List<DateTime> dates,
-      int month,
-      ) {
+    HomeScreenProvider provider,
+    List<DateTime> dates,
+    int month,
+  ) {
     final now = DateTime.now();
     final selected = provider.selectedDates;
 
@@ -1322,8 +1272,8 @@ class _HomeScreenView extends StatelessWidget {
 
     if (selectedIndex < 0) {
       selectedIndex = dates.indexWhere(
-            (date) =>
-        date.year == now.year &&
+        (date) =>
+            date.year == now.year &&
             date.month == now.month &&
             date.day == now.day,
       );
@@ -1606,38 +1556,38 @@ class _HomeScreenView extends StatelessWidget {
               child: imageUrl.isEmpty
                   ? _specialDayPlaceholder()
                   : CachedNetworkImage(
-                imageUrl: imageUrl,
+                      imageUrl: imageUrl,
 
-                width: double.infinity,
+                      width: double.infinity,
 
-                height: double.infinity,
+                      height: double.infinity,
 
-                fit: BoxFit.cover,
+                      fit: BoxFit.cover,
 
-                placeholder: (context, url) {
-                  return Container(
-                    color: Colors.grey.shade100,
+                      placeholder: (context, url) {
+                        return Container(
+                          color: Colors.grey.shade100,
 
-                    child: const Center(
-                      child: SizedBox(
-                        height: 22,
-                        width: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
+                          child: const Center(
+                            child: SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        );
+                      },
+
+                      errorWidget: (context, url, error) {
+                        debugPrint("❌ Template image failed");
+
+                        debugPrint("URL : $url");
+
+                        debugPrint("ERROR : $error");
+
+                        return _specialDayPlaceholder();
+                      },
                     ),
-                  );
-                },
-
-                errorWidget: (context, url, error) {
-                  debugPrint("❌ Template image failed");
-
-                  debugPrint("URL : $url");
-
-                  debugPrint("ERROR : $error");
-
-                  return _specialDayPlaceholder();
-                },
-              ),
             ),
 
             if (template.isLocked)
@@ -1754,7 +1704,7 @@ class _HomeScreenView extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: AppText(
                       '"$templateName" is part of the premium\n'
-                          'collection. Upgrade your plan to use it in your designs.',
+                      'collection. Upgrade your plan to use it in your designs.',
                       style: const TextStyle(
                         fontSize: 14,
                         height: 1.45,
@@ -1905,10 +1855,10 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildApiTemplateCard(
-      BuildContext context,
-      TemplateModel template,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateModel template,
+    bool isDark,
+  ) {
     final key = template.thumbnailS3Key?.trim() ?? '';
 
     final imageUrl = key.isEmpty ? '' : '${ApiEndpoints.cdnImageUrl}/$key';
@@ -1947,15 +1897,15 @@ class _HomeScreenView extends StatelessWidget {
           child: imageUrl.isEmpty
               ? _templateImagePlaceholder(isDark)
               : CachedNetworkImage(
-            imageUrl: imageUrl,
-            fit: BoxFit.cover,
-            placeholder: (context, url) {
-              return const Center(child: CircularProgressIndicator());
-            },
-            errorWidget: (context, url, error) {
-              return _templateImagePlaceholder(isDark);
-            },
-          ),
+                  imageUrl: imageUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) {
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                  errorWidget: (context, url, error) {
+                    return _templateImagePlaceholder(isDark);
+                  },
+                ),
         ),
       ),
     );
@@ -1995,39 +1945,39 @@ class _HomeScreenView extends StatelessWidget {
                 ? _buildDefaultCategoryIcon(isDark)
                 : isNetwork
                 ? (isSvg
-                ? SvgPicture.network(
-              icon,
-              width: 32.w,
-              height: 32.w,
-              fit: BoxFit.cover,
-              placeholderBuilder: (_) =>
-                  _buildDefaultCategoryIcon(isDark),
-            )
-                : CachedNetworkImage(
-              imageUrl: icon,
-              width: 32.w,
-              height: 32.w,
-              fit: BoxFit.cover,
-              placeholder: (_, __) =>
-                  _buildDefaultCategoryIcon(isDark),
-              errorWidget: (_, __, ___) =>
-                  _buildDefaultCategoryIcon(isDark),
-            ))
+                      ? SvgPicture.network(
+                          icon,
+                          width: 32.w,
+                          height: 32.w,
+                          fit: BoxFit.cover,
+                          placeholderBuilder: (_) =>
+                              _buildDefaultCategoryIcon(isDark),
+                        )
+                      : CachedNetworkImage(
+                          imageUrl: icon,
+                          width: 32.w,
+                          height: 32.w,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) =>
+                              _buildDefaultCategoryIcon(isDark),
+                          errorWidget: (_, __, ___) =>
+                              _buildDefaultCategoryIcon(isDark),
+                        ))
                 : (isSvg
-                ? SvgPicture.asset(
-              icon,
-              width: 32.w,
-              height: 32.w,
-              fit: BoxFit.cover,
-            )
-                : Image.asset(
-              icon,
-              width: 32.w,
-              height: 32.w,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  _buildDefaultCategoryIcon(isDark),
-            )),
+                      ? SvgPicture.asset(
+                          icon,
+                          width: 32.w,
+                          height: 32.w,
+                          fit: BoxFit.cover,
+                        )
+                      : Image.asset(
+                          icon,
+                          width: 32.w,
+                          height: 32.w,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _buildDefaultCategoryIcon(isDark),
+                        )),
           ),
         ),
 
@@ -2079,10 +2029,10 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildMySpaceList(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark,
-      void Function(MySpaceModel item) onTap,
-      ) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+    void Function(MySpaceModel item) onTap,
+  ) {
     return SizedBox(
       height: 90.h,
       child: ListView.builder(
@@ -2138,10 +2088,10 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildMyZoneSlider(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark, {
-        required dynamic me,
-      }) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark, {
+    required dynamic me,
+  }) {
     // Popular templates first 4 only
     final popularTemplates = homeScreenProvider.popularTemplates
         .take(4)
@@ -2151,85 +2101,85 @@ class _HomeScreenView extends StatelessWidget {
       height: 360.h,
       child: popularTemplates.isEmpty
           ? Container(
-        margin: EdgeInsets.symmetric(horizontal: 25.w),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16.r),
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16.r),
-          child: Image.asset(
-            "assets/images/BName.png",
-            fit: BoxFit.cover,
-          ),
-        ),
-      )
+              margin: EdgeInsets.symmetric(horizontal: 25.w),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.r),
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16.r),
+                child: Image.asset(
+                  "assets/images/BName.png",
+                  fit: BoxFit.cover,
+                ),
+              ),
+            )
           : PageView.builder(
-        controller: homeScreenProvider.zonePageController,
-        itemCount: popularTemplates.length,
-        itemBuilder: (context, index) {
-          final item = popularTemplates[index];
+              controller: homeScreenProvider.zonePageController,
+              itemCount: popularTemplates.length,
+              itemBuilder: (context, index) {
+                final item = popularTemplates[index];
 
-          final thumbnailKey = item.thumbnailS3Key ?? '';
+                final thumbnailKey = item.thumbnailS3Key ?? '';
 
-          final imageUrl = thumbnailKey.isEmpty
-              ? ''
-              : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+                final imageUrl = thumbnailKey.isEmpty
+                    ? ''
+                    : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
 
-          return Container(
-            margin: EdgeInsets.symmetric(horizontal: 25.w),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16.r),
-              color: isDark
-                  ? const Color(0xFF1E1E1E)
-                  : Colors.grey.shade100,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16.r),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  buildProfileImage(imageUrl),
+                return Container(
+                  margin: EdgeInsets.symmetric(horizontal: 25.w),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16.r),
+                    color: isDark
+                        ? const Color(0xFF1E1E1E)
+                        : Colors.grey.shade100,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16.r),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        buildProfileImage(imageUrl),
 
-                  // =========================
-                  // BOTTOM INFO
-                  // =========================
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 18.w,
-                        vertical: 12.h,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF246BFE),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: AppText(
-                              item.name ?? '',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                        // =========================
+                        // BOTTOM INFO
+                        // =========================
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 18.w,
+                              vertical: 12.h,
+                            ),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF246BFE),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: AppText(
+                                    item.name ?? '',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 
@@ -2299,18 +2249,18 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildLeadBannerSlider(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark,
-      dynamic me,
-      BuildContext context,
-      ) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+    dynamic me,
+    BuildContext context,
+  ) {
     final controller = homeScreenProvider.leadPageController;
 
     final banners = [
       {
         "title": "Grow Your Business",
         "description":
-        "List your business on MMB and get discovered by potential customers.",
+            "List your business on MMB and get discovered by potential customers.",
         "button": "GO PREMIUM",
         "onTap": () {
           Navigator.pushNamed(context, "/PlansAndPricingScreen");
@@ -2333,7 +2283,7 @@ class _HomeScreenView extends StatelessWidget {
       {
         "title": "Powerful AI Tools",
         "description":
-        "Generate logos, remove backgrounds, create images, and write caption instantly",
+            "Generate logos, remove backgrounds, create images, and write caption instantly",
         "button": "EXPLORE AI",
         "onTap": () {
           // Navigator.pushNamed(context, "/AIScreen");

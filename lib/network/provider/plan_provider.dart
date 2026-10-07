@@ -467,10 +467,16 @@ class PlanProvider extends ChangeNotifier {
   }
 
   /// Returns the button text and state based on current active plan index
-  PlanButtonState getPlanButtonState(Plan plan, int currentIndex) {
+  PlanButtonState getPlanButtonState(
+      Plan plan,
+      int currentIndex,
+      ) {
     final activeIndex = activePlanIndex;
 
-    // 1. No plan is active at all
+    // ==========================================================
+    // 1. NO ACTIVE PLAN
+    // ==========================================================
+
     if (activeIndex == null) {
       return PlanButtonState(
         text: _getDefaultButtonText(currentIndex),
@@ -479,8 +485,28 @@ class PlanProvider extends ChangeNotifier {
       );
     }
 
-    // 2. This exact plan is active
+    // ==========================================================
+    // 2. CURRENT PLAN
+    // ==========================================================
+
     if (plan.uid == activePlanUid) {
+
+      // --------------------------------------------------------
+      // Current plan renewal cancelled
+      // --------------------------------------------------------
+
+      if (isRenewalCancelled) {
+        return const PlanButtonState(
+          text: "RENEW PLAN",
+          isEnabled: true,
+          isCurrentActive: false,
+        );
+      }
+
+      // --------------------------------------------------------
+      // Current plan is active + auto renew enabled
+      // --------------------------------------------------------
+
       return const PlanButtonState(
         text: "ACTIVE PLAN",
         isEnabled: false,
@@ -488,7 +514,10 @@ class PlanProvider extends ChangeNotifier {
       );
     }
 
-    // 3. This plan is lower in the list than the active plan -> DOWNGRADE
+    // ==========================================================
+    // 3. LOWER PLAN -> DOWNGRADE
+    // ==========================================================
+
     if (currentIndex < activeIndex) {
       return const PlanButtonState(
         text: "DOWNGRADE",
@@ -497,7 +526,10 @@ class PlanProvider extends ChangeNotifier {
       );
     }
 
-    // 4. This plan is higher in the list than the active plan -> UPGRADE
+    // ==========================================================
+    // 4. HIGHER PLAN -> UPGRADE
+    // ==========================================================
+
     return const PlanButtonState(
       text: "UPGRADE",
       isEnabled: true,
@@ -545,7 +577,27 @@ class PlanProvider extends ChangeNotifier {
       return false;
     }
 
+    if (isRenewalCancelled) {
+      return false;
+    }
+
     return plan.uid == activeUid;
+  }
+
+  bool get isRenewalCancelled {
+    final subscription = _subscriptionData?["subscription"];
+
+    if (subscription is! Map) {
+      return false;
+    }
+
+    final autoRenew = subscription["auto_renew"];
+
+    final renewalCancelledAt =
+    subscription["renewal_cancelled_at"];
+
+    return autoRenew == false ||
+        renewalCancelledAt != null;
   }
 }
 

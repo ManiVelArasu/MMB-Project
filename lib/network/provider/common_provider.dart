@@ -441,4 +441,26 @@ class CommonProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+  void decreaseUnreadCount() {
+    final current = int.tryParse(unreadCount) ?? 0;
+
+    if (current <= 0) return;
+
+    final currentData = _unReadCount?.data;
+
+    if (currentData == null) return;
+
+    _unReadCount = UnReadCount(
+      success: _unReadCount?.success,
+      data: currentData.copyWith(
+        unreadCount: (current - 1).toString(),
+      ),
+    );
+
+    debugPrint(
+      "🔔 UNREAD COUNT: $current → ${current - 1}",
+    );
+
+    notifyListeners();
+  }
 }

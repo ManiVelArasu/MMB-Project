@@ -13,10 +13,13 @@ class SpecialDaysProvider extends ChangeNotifier {
 
   SpecialDays? _specialDays;
   SpecialDays? get specialDays => _specialDays;
-
-  Future<void> loadSpecialDays() async {
-    isLoading = true;
-    notifyListeners();
+  Future<void> loadSpecialDays({
+    bool showLoader = true,
+  }) async {
+    if (showLoader) {
+      isLoading = true;
+      notifyListeners();
+    }
 
     try {
       late ApiResult<SpecialDays> response;
@@ -27,7 +30,9 @@ class SpecialDaysProvider extends ChangeNotifier {
           to: selectedDate!,
         );
       } else {
-        response = await HomeRepository.instance.specialDaysApi(range: 'year');
+        response = await HomeRepository.instance.specialDaysApi(
+          range: 'year',
+        );
       }
 
       if (response.data != null) {
@@ -36,8 +41,10 @@ class SpecialDaysProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Special Days API Error: $e');
     } finally {
-      isLoading = false;
-      notifyListeners();
+      if (showLoader) {
+        isLoading = false;
+        notifyListeners();
+      }
     }
   }
 }

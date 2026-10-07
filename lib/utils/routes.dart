@@ -18,6 +18,8 @@ import '../ui/screens/business_profile_screen.dart';
 import '../ui/screens/download_screen.dart';
 import '../ui/screens/edit_profile_screen.dart';
 import '../ui/screens/faq_screen.dart';
+import '../ui/screens/my_product_screen.dart';
+import '../ui/screens/my_upload_screen.dart';
 import '../ui/screens/notification_screen.dart';
 import '../ui/screens/help_support_screen.dart';
 import '../ui/screens/profile_screen.dart';
@@ -273,7 +275,18 @@ class RouteGenerator {
           builder: (context) => SubscriptionActivatedScreen(),
         );
       case "/MySubscriptionScreen":
-        return MaterialPageRoute(builder: (context) => MySubscriptionScreen());
+        final arguments = settings.arguments;
+
+        bool hideBackButton = false;
+
+        if (arguments is Map) {
+          hideBackButton = arguments["hideBackButton"] == true;
+        }
+
+        return MaterialPageRoute(
+          builder: (context) =>
+              MySubscriptionScreen(hideBackButton: hideBackButton),
+        );
       case "/ChangePlanScreen":
         final args = settings.arguments;
 
@@ -301,20 +314,31 @@ class RouteGenerator {
         );
       case "/PlanUsageScreen":
         return MaterialPageRoute(builder: (context) => const PlanUsageScreen());
+
+      case "/ProductsScreen":
+        return MaterialPageRoute(builder: (context) => const ProductsScreen());
+      case "/MyUploadsScreen":
+        return MaterialPageRoute(builder: (context) => const MyUploadsScreen());
       case "/TemplateListScreen":
         final arguments = settings.arguments;
 
         String? type;
+        String? range;
 
         if (arguments is Map<String, dynamic>) {
           type = arguments["type"]?.toString();
+          range = arguments["range"]?.toString();
         }
 
         debugPrint("🎉 TemplateListScreen route type: $type");
+        debugPrint("🎉 TemplateListScreen route range: $range");
 
         return MaterialPageRoute(
           settings: settings,
-          builder: (context) => TemplateListScreen(type: type),
+          builder: (context) => TemplateListScreen(
+            type: type,
+            range: range,
+          ),
         );
     }
     return null;

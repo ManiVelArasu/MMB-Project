@@ -20,7 +20,7 @@ class SpecialDaysScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => SpecialDaysProvider()..loadSpecialDays(),
+      create: (_) => SpecialDaysProvider()..loadSpecialDays(showLoader: true),
       child: const _SpecialDaysScreenView(),
     );
   }
@@ -47,19 +47,18 @@ class _SpecialDaysScreenView extends StatelessWidget {
       body: SafeArea(
         child: Consumer<SpecialDaysProvider>(
           builder: (context, provider, _) {
+
+            // First screen load மட்டும் loader
             if (provider.isLoading) {
               return const Center(
-                child: CircularProgressIndicator(color: Color(0xFFE53935)),
+                child: CircularProgressIndicator(
+                  color: Color(0xFFE53935),
+                ),
               );
             }
 
             final specialDays = provider.specialDays?.data ?? [];
 
-            if (specialDays.isEmpty) {
-              return _EmptyState(isDark: isDark);
-            }
-
-            // Template + Special Day Name
             final List<SpecialDayTemplateItem> templates = [];
 
             for (final specialDay in specialDays) {
@@ -74,11 +73,18 @@ class _SpecialDaysScreenView extends StatelessWidget {
             }
 
             if (templates.isEmpty) {
-              return _EmptyState(isDark: isDark, message: 'No templates found');
+              return _EmptyState(
+                isDark: isDark,
+              );
             }
 
             return Padding(
-              padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 30.h),
+              padding: EdgeInsets.fromLTRB(
+                12.w,
+                12.h,
+                12.w,
+                30.h,
+              ),
               child: Column(
                 children: [
                   AppText(
@@ -89,6 +95,7 @@ class _SpecialDaysScreenView extends StatelessWidget {
                       fontSize: AppFontSize.fontSize18,
                     ),
                   ),
+
                   AppText(
                     "Choose the festival to discover ready-to-edit designs for promotions, offers, announcements, and everyday marketing.",
                     textAlign: TextAlign.center,
@@ -98,39 +105,55 @@ class _SpecialDaysScreenView extends StatelessWidget {
                       fontSize: AppFontSize.fontSize14,
                     ),
                   ),
-                  SizedBox(height: 10),
-                  CustomSearchBar(hintText: 'Find your festival'),
-                  SizedBox(height: 15),
+
+                  SizedBox(height: 10.h),
+
+                  CustomSearchBar(
+                    hintText: 'Find your festival',
+                  ),
+
+                  SizedBox(height: 15.h),
+
                   Expanded(
-                    child: GridView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
-                      ),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 10.w,
-                        mainAxisSpacing: 10.h,
-
-                        // Image + nameக்கு space
-                        childAspectRatio: 0.78,
-                      ),
-                      itemCount: templates.length,
-                      itemBuilder: (context, index) {
-                        final item = templates[index];
-
-                        return _TemplateCard(
-                          template: item.template,
-                          specialDayName: item.specialDayName,
-                          isDark: isDark,
+                    child: RefreshIndicator(
+                      onRefresh: () {
+                        // Refresh-ல் full screen loader வராது
+                        return provider.loadSpecialDays(
+                          showLoader: false,
                         );
                       },
+                      child: GridView.builder(
+                        padding: EdgeInsets.only(
+                          bottom: 40.h,
+                        ),
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        gridDelegate:
+                        SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 10.w,
+                          mainAxisSpacing: 10.h,
+                          childAspectRatio: 0.78,
+                        ),
+                        itemCount: templates.length,
+                        itemBuilder: (context, index) {
+                          final item = templates[index];
+
+                          return _TemplateCard(
+                            template: item.template,
+                            specialDayName: item.specialDayName,
+                            isDark: isDark,
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ],
               ),
             );
           },
-        ),
+        )
       ),
     );
   }

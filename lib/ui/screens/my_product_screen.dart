@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../network/provider/my_product_provider.dart';
 import '../../network/provider/my_upload_provider.dart';
 
-
 class ProductsScreen extends StatelessWidget {
   const ProductsScreen({super.key});
 
@@ -81,20 +80,20 @@ class _ProductsView extends StatelessWidget {
                   child: provider.filteredProducts.isEmpty
                       ? const Center(child: Text("No products found"))
                       : GridView.builder(
-                    gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      childAspectRatio: .68,
-                    ),
-                    itemCount: provider.filteredProducts.length,
-                    itemBuilder: (context, index) {
-                      return ProductCard(
-                        item: provider.filteredProducts[index],
-                      );
-                    },
-                  ),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                                childAspectRatio: .68,
+                              ),
+                          itemCount: provider.filteredProducts.length,
+                          itemBuilder: (context, index) {
+                            return ProductCard(
+                              item: provider.filteredProducts[index],
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -138,9 +137,7 @@ class _ProductsView extends StatelessWidget {
             ChangeNotifierProvider.value(
               value: context.read<ProductsProvider>(),
             ),
-            ChangeNotifierProvider(
-              create: (_) => UploadProvider(),
-            ),
+            ChangeNotifierProvider(create: (_) => UploadProvider()),
           ],
           child: const AddProductServiceSheet(),
         );

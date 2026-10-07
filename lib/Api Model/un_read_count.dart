@@ -24,6 +24,12 @@ class unRead {
   final List<ByCategory> byCategory;
 
   unRead({required this.unreadCount, required this.byCategory});
+  unRead copyWith({String? unreadCount, List<ByCategory>? byCategory}) {
+    return unRead(
+      unreadCount: unreadCount ?? this.unreadCount,
+      byCategory: byCategory ?? this.byCategory,
+    );
+  }
 
   factory unRead.fromJson(Map<String, dynamic> json) => unRead(
     unreadCount: json["unread_count"]?.toString(),

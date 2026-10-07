@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../Api Model/notification_model.dart';
 import '../../Repository/notification_repository.dart';
+import 'common_provider.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationRepository _repository = NotificationRepository.instance;
@@ -20,10 +21,6 @@ class NotificationProvider extends ChangeNotifier {
 
   List<NotificationList> get notifications => _notificationData?.data ?? [];
 
-  // ============================================================
-  // TODAY
-  // ============================================================
-
   List<NotificationList> get todayNotifications {
     final now = DateTime.now();
 
@@ -38,10 +35,6 @@ class NotificationProvider extends ChangeNotifier {
     }).toList();
   }
 
-  // ============================================================
-  // YESTERDAY
-  // ============================================================
-
   List<NotificationList> get yesterdayNotifications {
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
 
@@ -55,10 +48,6 @@ class NotificationProvider extends ChangeNotifier {
           date.year == yesterday.year;
     }).toList();
   }
-
-  // ============================================================
-  // OLD NOTIFICATIONS
-  // ============================================================
 
   List<NotificationList> get oldNotifications {
     final now = DateTime.now();
@@ -84,17 +73,9 @@ class NotificationProvider extends ChangeNotifier {
     }).toList();
   }
 
-  // ============================================================
-  // UNREAD COUNT
-  // ============================================================
-
   int get unreadCount {
     return notifications.where((item) => item.isRead != true).length;
   }
-
-  // ============================================================
-  // GET NOTIFICATIONS API
-  // ============================================================
 
   Future<void> fetchNotifications() async {
     _isLoading = true;
@@ -126,10 +107,6 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // MARK ALL NOTIFICATIONS AS READ
-  // ============================================================
-
   Future<bool> markAsAllNotifications() async {
     if (_isLoading) return false;
 
@@ -140,12 +117,7 @@ class NotificationProvider extends ChangeNotifier {
 
     try {
       debugPrint('================================');
-
       debugPrint('🚀 MARK ALL NOTIFICATIONS API');
-
-      // --------------------------------------------------------
-      // 1. MARK ALL READ API
-      // --------------------------------------------------------
 
       final result = await _repository.notificationReadAll();
 
@@ -158,10 +130,6 @@ class NotificationProvider extends ChangeNotifier {
       }
 
       debugPrint('✅ Mark all notification API success');
-
-      // --------------------------------------------------------
-      // 2. GET NOTIFICATION API AGAIN
-      // --------------------------------------------------------
 
       final notificationResult = await _repository.getNotification();
 
@@ -178,6 +146,13 @@ class NotificationProvider extends ChangeNotifier {
 
         return false;
       }
+
+      await CommonProvider.instance.loadUnreadCount(forceRefresh: true);
+
+      debugPrint(
+        "🔔 HOME UNREAD COUNT UPDATED: "
+        "${CommonProvider.instance.unreadCount}",
+      );
 
       debugPrint('================================');
 
@@ -202,32 +177,57 @@ class NotificationProvider extends ChangeNotifier {
 
       final result = await _repository.notificationReadOne(notificationUid);
 
-      if (result.isSuccess) {
-        if (_notificationData != null) {
-          final index = _notificationData!.data.indexWhere(
-            (item) => item.uid == notificationUid,
-          );
+      if (!result.isSuccess) {
+        _errorMessage =
+            result.error?.message ?? "Failed to mark notification as read";
 
-          if (index != -1) {
-            _notificationData!.data[index].isRead == true;
-          }
-        }
+        debugPrint('❌ Mark notification failed: $_errorMessage');
 
-        notifyListeners();
-
-        debugPrint('Unread count: $unreadCount');
-
-        debugPrint('================================');
-
-        return true;
+        return false;
       }
 
-      _errorMessage =
-          result.error?.message ?? "Failed to mark notification as read";
+      debugPrint('✅ Mark notification API success');
 
-      debugPrint('❌ Mark notification failed: $_errorMessage');
+      if (_notificationData != null) {
+        final index = _notificationData!.data.indexWhere(
+          (item) => item.uid == notificationUid,
+        );
 
-      return false;
+        if (index != -1) {
+          _notificationData!.data[index] = _notificationData!.data[index]
+              .copyWith(isRead: true);
+
+          debugPrint(
+            '✅ ${_notificationData!.data[index].uid} '
+            'marked as read locally',
+          );
+        }
+      }
+
+      notifyListeners();
+
+      debugPrint(
+        '🔔 Notification screen unread count: '
+        '$unreadCount',
+      );
+
+      final commonProvider = CommonProvider.instance;
+
+      debugPrint(
+        '🔔 OLD HOME UNREAD COUNT: '
+        '${commonProvider.unreadCount}',
+      );
+
+      await commonProvider.loadUnreadCount(forceRefresh: true);
+
+      debugPrint(
+        '🔔 NEW HOME UNREAD COUNT: '
+        '${commonProvider.unreadCount}',
+      );
+
+      debugPrint('================================');
+
+      return true;
     } catch (e) {
       _errorMessage = "Failed to mark notification as read";
 
@@ -236,45 +236,6 @@ class NotificationProvider extends ChangeNotifier {
       return false;
     }
   }
-  // ============================================================
-  // LOCAL MARK ALL AS READ
-  // ============================================================
-
-  /* void markAllAsRead() {
-    if (_notificationData == null) return;
-
-    for (final item
-    in _notificationData!.data) {
-      item.isRead = true;
-    }
-
-    notifyListeners();
-  }*/
-
-  // ============================================================
-  // LOCAL MARK ONE AS READ
-  // ============================================================
-
-  /* void markAsRead(String uid) {
-    if (_notificationData == null) return;
-
-    final index =
-    _notificationData!.data.indexWhere(
-          (item) => item.uid == uid,
-    );
-
-    if (index == -1) return;
-
-    _notificationData!
-        .data[index]
-        .isRead = true;
-
-    notifyListeners();
-  }*/
-
-  // ============================================================
-  // REFRESH
-  // ============================================================
 
   Future<void> refreshNotifications() async {
     await fetchNotifications();

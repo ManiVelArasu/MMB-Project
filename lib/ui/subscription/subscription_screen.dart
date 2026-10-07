@@ -40,9 +40,6 @@ class _PlansAndPricingBody extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // ==========================================================
-            // TOP BAR
-            // ==========================================================
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
               child: Row(
@@ -154,7 +151,7 @@ class _PlansAndPricingBody extends StatelessWidget {
                                   SizedBox(height: 6.h),
                                   Row(
                                     crossAxisAlignment:
-                                    CrossAxisAlignment.baseline,
+                                        CrossAxisAlignment.baseline,
                                     textBaseline: TextBaseline.alphabetic,
                                     children: [
                                       AppText(
@@ -183,11 +180,14 @@ class _PlansAndPricingBody extends StatelessWidget {
                                         // Start free trial
                                       },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF38BDF8),
+                                        backgroundColor: const Color(
+                                          0xFF38BDF8,
+                                        ),
                                         elevation: 0,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                          BorderRadius.circular(8.r),
+                                          borderRadius: BorderRadius.circular(
+                                            8.r,
+                                          ),
                                         ),
                                         padding: EdgeInsets.symmetric(
                                           horizontal: 14.w,
@@ -286,10 +286,10 @@ class _PlansAndPricingBody extends StatelessWidget {
 
     final bool hasDiscount =
         discountedPrice != null &&
-            discountedPrice.isNotEmpty &&
-            discountedPrice != "null" &&
-            discountedPrice != "0" &&
-            discountedPrice != actualPrice;
+        discountedPrice.isNotEmpty &&
+        discountedPrice != "null" &&
+        discountedPrice != "0" &&
+        discountedPrice != actualPrice;
 
     String formatPrice(String value) {
       if (value.contains(".")) {
@@ -302,7 +302,9 @@ class _PlansAndPricingBody extends StatelessWidget {
     final String discountPriceText = hasDiscount
         ? "₹${formatPrice(discountedPrice)}"
         : actualPriceText;
-    final String periodText = billing == null ? "/month" : "/${billing.billingCycle}";
+    final String periodText = billing == null
+        ? "/month"
+        : "/${billing.billingCycle}";
     final String discountLabel = billing?.discountLabel?.toString() ?? "";
 
     Color cardBgColor;
@@ -316,34 +318,41 @@ class _PlansAndPricingBody extends StatelessWidget {
       borderColor = const Color(0xFFBBE5ED);
       buttonColor = const Color(0xFF43CBD9);
       staticDescription = "Perfect for exploring MMB before upgrading";
-      staticIncludes = "10 Business Templates | 2 Video Templates | 10 AI Credits | Watermarked Downloads";
+      staticIncludes =
+          "10 Business Templates | 2 Video Templates | 10 AI Credits | Watermarked Downloads";
     } else if (index == 1) {
-      cardBgColor = const Color(0xFFFCFFF6);
-      borderColor = const Color(0xFFD4ED91);
-      buttonColor = const Color(0xFF8BC34A);
+      cardBgColor = const Color(0xFFFFECEE);
+      borderColor = const Color(0xFFFFCDD2);
+      buttonColor = const Color(0xFFFF6FB5);
       staticDescription = "Perfect for individuals & small businesses.";
       staticIncludes = "500 Templates | 200 Videos | 2 AI Logo Credits";
     } else if (index == 2) {
-      cardBgColor = const Color(0xFFFFECEE);
-      borderColor = const Color(0xFFFFCDD2);
+      cardBgColor = const Color(0xFFFAF6FF);
+      borderColor = const Color(0xFFFAF6FF);
       buttonColor = const Color(0xFFFF6FB5);
       staticDescription = "Perfect for growing businesses.";
       staticIncludes = "2000 Templates | 500 Videos | 5 AI Logo Credits";
     } else {
-      cardBgColor = const Color(0xFFF3E8FF);
-      borderColor = const Color(0xFFD8B4FE);
+      cardBgColor = const Color(0xFFFAF6FF);
+      borderColor = const Color(0xFFFAF6FF);
       buttonColor = const Color(0xFFA78BFA);
       staticDescription = "Perfect for individuals & small businesses.";
       staticIncludes = "2000 Templates | 1000 Videos | 10 AI Logo Credits";
     }
 
-    Color currentButtonColor = isActivePlan
-        ? Colors.green
-        : (buttonState.text == "DOWNGRADE"
-        ? Colors.orange.shade700
-        : (buttonState.text == "UPGRADE"
-        ? Colors.blue.shade600
-        : buttonColor));
+    Color currentButtonColor;
+
+    if (buttonState.text == "RENEW PLAN") {
+      currentButtonColor = Colors.red.shade700;
+    } else if (isActivePlan) {
+      currentButtonColor = Colors.green;
+    } else if (buttonState.text == "DOWNGRADE") {
+      currentButtonColor = Colors.orange.shade700;
+    } else if (buttonState.text == "UPGRADE") {
+      currentButtonColor = Colors.blue.shade600;
+    } else {
+      currentButtonColor = buttonColor;
+    }
 
     return Container(
       margin: EdgeInsets.only(bottom: 15.h),
@@ -383,20 +392,29 @@ class _PlansAndPricingBody extends StatelessWidget {
                         SizedBox(width: 8.w),
                         ElevatedButton(
                           onPressed: () {
-                            if (!buttonState.isEnabled) {
-                              // If current active plan, push to MySubscriptionScreen with arguments
+                            if (buttonState.text == "ACTIVE PLAN") {
                               Navigator.pushNamed(
                                 context,
                                 '/MySubscriptionScreen',
                                 arguments: plan,
                               );
-                            } else {
+
+                              return;
+                            }
+                            if (buttonState.text == "RENEW PLAN") {
                               Navigator.pushNamed(
                                 context,
                                 '/PlanDetailScreen',
                                 arguments: plan,
                               );
+
+                              return;
                             }
+                            Navigator.pushNamed(
+                              context,
+                              '/PlanDetailScreen',
+                              arguments: plan,
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: currentButtonColor,

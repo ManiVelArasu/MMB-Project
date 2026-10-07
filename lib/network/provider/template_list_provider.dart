@@ -14,20 +14,32 @@ class TemplateListProvider extends ChangeNotifier {
   SpecialDays? _specialDays;
   SpecialDays? get specialDays => _specialDays;
 
-  Future<void> loadSpecialDays( {String? type}) async {
+  Future<void> loadSpecialDays({
+    String? type,
+    String? range,
+  }) async {
     isLoading = true;
     notifyListeners();
 
     try {
       late ApiResult<SpecialDays> response;
 
-      if (selectedDate != null && selectedDate!.isNotEmpty) {
+      if (type == "festival") {
+        // Festival → type and range only
+        response = await HomeRepository.instance.specialDaysApi(
+          type: type,
+          range: range,
+        );
+      } else if (selectedDate != null && selectedDate!.isNotEmpty) {
+        // Other types → selected date
         response = await HomeRepository.instance.specialDaysApi(
           from: selectedDate!,
           to: selectedDate!,
         );
       } else {
-        response = await HomeRepository.instance.specialDaysApi(type: type);
+        response = await HomeRepository.instance.specialDaysApi(
+          type: type,
+        );
       }
 
       if (response.data != null) {
