@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
+import '../../Api Model/ai_pack_data.dart';
+import '../../Api Model/ai_top_up_model.dart';
 import '../../Api Model/payment_history.dart';
 import '../../Api Model/plan_usage.dart';
 import '../../Api Model/plans_type.dart';
@@ -82,6 +84,49 @@ class PlanProvider extends ChangeNotifier {
   bool get isReceiptLoading => _isReceiptLoading;
   String? get isReceiptError => _isReceiptError;
   String? get isReceiptHtml => _isReceiptHtml;
+
+  AiTopUpData? _aiTopUpData;
+
+  AiTopUpData? get aiTopUpData => _aiTopUpData;
+
+  bool _isLoadingAiTopUp = false;
+  bool get isLoadingAiTopUp => _isLoadingAiTopUp;
+
+  String? _aiTopUpError;
+  String? get aiTopUpError => _aiTopUpError;
+
+  Future<bool> fetchAiTopUp() async {
+    _isLoadingAiTopUp = true;
+    _aiTopUpError = null;
+    notifyListeners();
+
+    try {
+      final result = await PlanRepository.instance.AiTopUpCredit();
+
+      if (result.isSuccess && result.data != null) {
+        _aiTopUpData = result.data;
+
+        debugPrint("========== AI TOP UP ==========");
+        debugPrint("${result.data}");
+        debugPrint("================================");
+
+        return true;
+      }
+
+      _aiTopUpError = result.error?.message ?? "Unable to load AI top up";
+      return false;
+    } catch (e, stackTrace) {
+      _aiTopUpError = e.toString();
+
+      debugPrint("❌ AI TopUp Error: $e");
+      debugPrintStack(stackTrace: stackTrace);
+
+      return false;
+    } finally {
+      _isLoadingAiTopUp = false;
+      notifyListeners();
+    }
+  }
 
   Future<bool> getInvoice(String invoiceId) async {
     _isInvoiceLoading = true;
@@ -195,6 +240,84 @@ class PlanProvider extends ChangeNotifier {
       debugPrintStack(stackTrace: stackTrace);
 
       return false;
+    } finally {
+      _isCancellingPlan = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> verifyAiPayment({
+    required String razorpayOrderId,
+    required String razorpayPaymentId,
+    required String razorpaySignature,
+  }) async {
+    try {
+      final result = await _repository.verify(
+        razorpayOrderId: razorpayOrderId,
+        razorpayPaymentId: razorpayPaymentId,
+        razorpaySignature: razorpaySignature,
+      );
+
+      if (result.isSuccess) {
+        debugPrint("================================");
+        debugPrint("✅ PAYMENT VERIFIED SUCCESSFULLY");
+        debugPrint("Response: ${result.data}");
+        debugPrint("================================");
+
+        return true;
+      }
+
+      debugPrint(
+        "❌ PAYMENT VERIFY FAILED: ${result.error?.message}",
+      );
+
+      return false;
+    } catch (e, stackTrace) {
+      debugPrint("❌ PAYMENT VERIFY EXCEPTION: $e");
+      debugPrintStack(stackTrace: stackTrace);
+
+      return false;
+    }
+  }
+
+  Future<AiPackPaymentData?> quotaAiPack(String quotaId) async {
+    if (_isCancellingPlan) return null;
+
+    _isCancellingPlan = true;
+    _cancelPlanError = null;
+    notifyListeners();
+
+    try {
+      final result = await _repository.quota(quotaId);
+
+      if (result.isFailure) {
+        _cancelPlanError =
+            result.error?.message ?? "Unable to create payment order";
+
+        debugPrint("❌ AI Pack Payment Error: $_cancelPlanError");
+
+        return null;
+      }
+
+      final data = result.data;
+
+      debugPrint("================================");
+      debugPrint("✅ AI PACK ORDER CREATED");
+      debugPrint("Order ID: ${data?.orderId}");
+      debugPrint("Amount: ${data?.amount}");
+      debugPrint("Currency: ${data?.currency}");
+      debugPrint("Payment UID: ${data?.paymentUid}");
+      debugPrint("Pack UID: ${data?.packUid}");
+      debugPrint("================================");
+
+      return data;
+    } catch (e, stackTrace) {
+      _cancelPlanError = e.toString();
+
+      debugPrint("❌ AI Pack Payment Exception: $e");
+      debugPrintStack(stackTrace: stackTrace);
+
+      return null;
     } finally {
       _isCancellingPlan = false;
       notifyListeners();
@@ -543,6 +666,19 @@ class PlanProvider extends ChangeNotifier {
         return "START ELITE";
       default:
         return "PLAN";
+    }
+  }
+
+  Color _getPlanButtonColor(int index) {
+    switch (index) {
+      case 0:
+        return const Color(0xFF96C63F); // Basic - Green
+      case 1:
+        return const Color(0xFFF47BC5); // Premium - Pink
+      case 2:
+        return const Color(0xFF9985ED); // Elite - Purple
+      default:
+        return const Color(0xFFE53935);
     }
   }
 

@@ -72,4 +72,6 @@ class ApiEndpoints {
   static const String planUsage = '/quota/usage';
   static const String cancelPlan = '/subscriptions/me/cancel-renewal';
   static const String aiPlan = '/quota/packs';
+  static const String verify = '/subscriptions/payment/verify';
+  static String quota(String quotaId) => '/quota/packs/${quotaId}/purchase';
 }

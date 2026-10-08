@@ -760,7 +760,7 @@ class BusinessProfileView extends StatelessWidget {
                         if (result == true) {
                           debugPrint(
                             "🔄 Edit Profile returned TRUE"
-                            " → refreshing profile API",
+                                " → refreshing profile API",
                           );
 
                           await context

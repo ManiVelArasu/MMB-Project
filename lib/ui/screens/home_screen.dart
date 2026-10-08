@@ -118,7 +118,7 @@ class _HomeScreenView extends StatelessWidget {
                       break;
 
                     case "BRAND FRAMES":
-                     // Navigator.pushNamed(context, "/BusinessProfileScreen");
+                      // Navigator.pushNamed(context, "/BusinessProfileScreen");
                       break;
 
                     case "AI HUB":
@@ -164,7 +164,9 @@ class _HomeScreenView extends StatelessWidget {
                               AppText(
                                 "VIEW ALL",
                                 style: TextStyle(
-                                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                  color: isDark
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
                                   fontSize: AppFontSize.fontSize12,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -209,7 +211,7 @@ class _HomeScreenView extends StatelessWidget {
                 ),
                 SizedBox(height: 12.h),
 
-                _buildMyZoneSlider(homeScreenProvider, isDark, me: me),
+                _buildMyZoneSlider(homeScreenProvider, isDark,),
 
                 SizedBox(height: 24.h),
 
@@ -453,16 +455,15 @@ class _HomeScreenView extends StatelessWidget {
 
                     final bool isSpecialCategory =
                         categoryLower == 'celebrate moments' ||
-                            categoryLower == 'devotional/daily posts' ||
-                            categoryLower == 'devotional / daily posts';
+                        categoryLower == 'devotional/daily posts' ||
+                        categoryLower == 'devotional / daily posts';
 
                     if (isSpecialCategory) {
                       if (category.children.isEmpty) {
                         return const SizedBox.shrink();
                       }
 
-                      final categoryIcon =
-                      categoryLower == 'celebrate moments'
+                      final categoryIcon = categoryLower == 'celebrate moments'
                           ? 'assets/images/flash.png'
                           : 'assets/images/devotional.png';
 
@@ -916,6 +917,7 @@ class _HomeScreenView extends StatelessWidget {
       ),
     );
   }
+
   void _showCreateNewDialog(BuildContext context, bool isDark) {
     final List<String> sizes = [
       "Post Square (1:1)",
@@ -1779,7 +1781,7 @@ class _HomeScreenView extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 4.w),
-              child:AppText(
+              child: AppText(
                 "VIEW ALL",
                 style: TextStyle(
                   color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -1806,10 +1808,10 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildMySpaceList(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark,
-      void Function(MySpaceModel item) onTap,
-      ) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+    void Function(MySpaceModel item) onTap,
+  ) {
     return SizedBox(
       height: 100.h,
       child: ListView.builder(
@@ -1836,9 +1838,7 @@ class _HomeScreenView extends StatelessWidget {
               onTap: () => onTap(item),
               borderRadius: BorderRadius.circular(20.r),
               child: Container(
-                padding: EdgeInsets.all(
-                  isSelected ? 8.r : 10.r,
-                ),
+                padding: EdgeInsets.all(isSelected ? 8.r : 10.r),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: item.gradientColors,
@@ -1847,19 +1847,16 @@ class _HomeScreenView extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(20.r),
                   border: isSelected
-                      ? Border.all(
-                    color: Colors.white,
-                    width: 2,
-                  )
+                      ? Border.all(color: Colors.white, width: 2)
                       : null,
                   boxShadow: isSelected
                       ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
                       : null,
                 ),
                 child: Column(
@@ -1877,9 +1874,7 @@ class _HomeScreenView extends StatelessWidget {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       style: TextStyle(
-                        color: isDark
-                            ? Colors.white
-                            : Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                         fontSize: 10.sp,
                         fontWeight: FontWeight.w900,
                         height: 1.1,
@@ -1896,11 +1891,10 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildMyZoneSlider(
-    HomeScreenProvider homeScreenProvider,
-    bool isDark, {
-    required dynamic me,
-  }) {
-    // Popular templates first 4 only
+      HomeScreenProvider homeScreenProvider,
+      bool isDark,
+      ) {
+    print('sdsadsadsadsadasdsad${homeScreenProvider.provider.me?.data.phone}');
     final popularTemplates = homeScreenProvider.popularTemplates
         .take(4)
         .toList();
@@ -1909,88 +1903,134 @@ class _HomeScreenView extends StatelessWidget {
       height: 360.h,
       child: popularTemplates.isEmpty
           ? Container(
-              margin: EdgeInsets.symmetric(horizontal: 25.w),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16.r),
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16.r),
-                child: Image.asset(
-                  "assets/images/BName.png",
-                  fit: BoxFit.cover,
-                ),
-              ),
-            )
+        margin: EdgeInsets.symmetric(horizontal: 25.w),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16.r),
+          color: isDark
+              ? const Color(0xFF1E1E1E)
+              : Colors.grey.shade100,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16.r),
+          child: Image.asset(
+            "assets/images/BName.png",
+            fit: BoxFit.cover,
+          ),
+        ),
+      )
           : PageView.builder(
-              controller: homeScreenProvider.zonePageController,
-              itemCount: popularTemplates.length,
-              itemBuilder: (context, index) {
-                final item = popularTemplates[index];
+        controller: homeScreenProvider.zonePageController,
+        itemCount: popularTemplates.length,
+        itemBuilder: (context, index) {
+          final item = popularTemplates[index];
 
-                final thumbnailKey = item.thumbnailS3Key ?? '';
+          final thumbnailKey = item.thumbnailS3Key ?? '';
 
-                final imageUrl = thumbnailKey.isEmpty
-                    ? ''
-                    : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+          final imageUrl = thumbnailKey.isEmpty
+              ? ''
+              : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
 
-                return Container(
-                  margin: EdgeInsets.symmetric(horizontal: 25.w),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16.r),
-                    color: isDark
-                        ? const Color(0xFF1E1E1E)
-                        : Colors.grey.shade100,
+          final phone =
+              homeScreenProvider.provider.me?.data.phone?.toString() ?? '';
+
+          final name =
+              homeScreenProvider.provider.me?.data.name?.toString() ?? '';
+
+          return Container(
+            margin: EdgeInsets.symmetric(horizontal: 25.w),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16.r),
+              color: isDark
+                  ? const Color(0xFF1E1E1E)
+                  : Colors.grey.shade100,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16.r),
+              child: Stack(
+                clipBehavior: Clip.hardEdge,
+                children: [
+
+                  // =========================
+                  // TEMPLATE IMAGE
+                  // =========================
+                  Positioned.fill(
+                    child: buildProfileImage(imageUrl),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16.r),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        buildProfileImage(imageUrl),
 
-                        // =========================
-                        // BOTTOM INFO
-                        // =========================
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 18.w,
-                              vertical: 12.h,
-                            ),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF246BFE),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: AppText(
-                                    item.name ?? '',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13.sp,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                  // =========================
+                  // BOTTOM BLUE INFO WITH WAVE
+                  // =========================
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: 55.h,
+                    child: ClipPath(
+                      clipper: BottomWaveClipper(),
+                      child: Container(
+                        padding: EdgeInsets.only(
+                          left: 20.w,
+                          right: 20.w,
+                          top: 12.h, // Padding to push content below the curve
                         ),
-                      ],
+                        color: const Color(0xFF246BFE),
+                        child: Row(
+                          children: [
+
+                            // PHONE ICON
+                            Icon(
+                              Icons.phone,
+                              color: Colors.white,
+                              size: 14.sp,
+                            ),
+
+                            SizedBox(width: 4.w),
+
+                            // PHONE
+                            Expanded(
+                              flex: 5,
+                              child: Text(
+                                phone,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(width: 5.w),
+
+                            // NAME
+                            Expanded(
+                              flex: 6,
+                              child: Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9.sp,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                );
-              },
+                ],
+              ),
             ),
+          );
+        },
+      ),
     );
   }
-
   Widget _buildMyFrameHeader(bool isDark, BuildContext context) {
     return Row(
       children: [
@@ -2634,4 +2674,31 @@ class _ShareItem {
   final IconData icon;
 
   _ShareItem(this.title, this.icon);
+}
+class BottomWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+
+    // Start from bottom-left
+    path.moveTo(0, size.height);
+
+    // Create the upward curve on the left side mimicking the reference image
+    path.quadraticBezierTo(
+      size.width * 0.15, 0, // Control point curving up towards the left
+      size.width * 0.35, 0.5.h, // End point of the curve segment
+    );
+
+    // Line across the top right
+    path.lineTo(size.width, 0);
+
+    // Down to bottom-right
+    path.lineTo(size.width, size.height);
+
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

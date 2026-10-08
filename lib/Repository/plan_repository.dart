@@ -1,3 +1,5 @@
+import '../Api Model/ai_pack_data.dart';
+import '../Api Model/ai_top_up_model.dart';
 import '../Api Model/payment_history.dart';
 import '../Api Model/plan_usage.dart';
 import '../Api Model/plans_type.dart';
@@ -53,6 +55,42 @@ class PlanRepository {
     );
   }
 
+  Future<ApiResult<dynamic>> verify({
+    required String razorpayOrderId,
+    required String razorpayPaymentId,
+    required String razorpaySignature,
+  }) {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.verify,
+        method: ApiMethod.post,
+        body: {
+          "razorpay_order_id": razorpayOrderId,
+          "razorpay_payment_id": razorpayPaymentId,
+          "razorpay_signature": razorpaySignature,
+        },
+      ),
+      fromJson: (json) => json,
+    );
+  }
+  Future<ApiResult<AiPackPaymentData>> quota(String quotaId) {
+    return ApiRepository.instance.request<AiPackPaymentData>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.quota(quotaId),
+        method: ApiMethod.post,
+      ),
+      fromJson: (json) {
+        final data = json["data"];
+
+        if (data is Map<String, dynamic>) {
+          return AiPackPaymentData.fromJson(data);
+        }
+
+        throw Exception("AI Pack payment data not found");
+      },
+    );
+  }
+
   Future<ApiResult<dynamic>> invoice(String InvoiceId) {
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
@@ -72,6 +110,18 @@ class PlanRepository {
         queryParams: {"type": "receipt"},
       ),
       fromJson: (json) => json,
+    );
+  }
+
+  Future<ApiResult<AiTopUpData>> AiTopUpCredit() {
+    return ApiRepository.instance.request<AiTopUpData>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.aiPlan,
+        method: ApiMethod.get,
+        queryParams: {"feature": "ai_credits"},
+      ),
+      fromJson: (json) =>
+          AiTopUpData.fromJson(Map<String, dynamic>.from(json["data"].first)),
     );
   }
 

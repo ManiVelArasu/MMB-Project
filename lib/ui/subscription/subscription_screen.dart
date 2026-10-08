@@ -314,29 +314,41 @@ class _PlansAndPricingBody extends StatelessWidget {
     String staticIncludes = "";
 
     if (index == 0) {
+      // BASIC
       cardBgColor = const Color(0xFFFCFFF6);
-      borderColor = const Color(0xFFBBE5ED);
-      buttonColor = const Color(0xFF43CBD9);
+      borderColor = const Color(0xFFDCEFB8);
+      buttonColor = const Color(0xFF96C63F);
+
       staticDescription = "Perfect for exploring MMB before upgrading";
+
       staticIncludes =
-          "10 Business Templates | 2 Video Templates | 10 AI Credits | Watermarked Downloads";
+          "10 Business Templates | 2 Video Templates | "
+          "10 AI Credits | Watermarked Downloads";
     } else if (index == 1) {
-      cardBgColor = const Color(0xFFFFECEE);
-      borderColor = const Color(0xFFFFCDD2);
-      buttonColor = const Color(0xFFFF6FB5);
+      // PREMIUM
+      cardBgColor = const Color(0xFFFFF7FC);
+      borderColor = const Color(0xFFFFD6EE);
+      buttonColor = const Color(0xFFF47BC5);
+
       staticDescription = "Perfect for individuals & small businesses.";
+
       staticIncludes = "500 Templates | 200 Videos | 2 AI Logo Credits";
     } else if (index == 2) {
-      cardBgColor = const Color(0xFFFAF6FF);
-      borderColor = const Color(0xFFFAF6FF);
-      buttonColor = const Color(0xFFFF6FB5);
+      // ELITE
+      cardBgColor = const Color(0xFFFAF8FF);
+      borderColor = const Color(0xFFE5DEFF);
+      buttonColor = const Color(0xFF9985ED);
+
       staticDescription = "Perfect for growing businesses.";
+
       staticIncludes = "2000 Templates | 500 Videos | 5 AI Logo Credits";
     } else {
-      cardBgColor = const Color(0xFFFAF6FF);
-      borderColor = const Color(0xFFFAF6FF);
-      buttonColor = const Color(0xFFA78BFA);
+      cardBgColor = const Color(0xFFFAF8FF);
+      borderColor = const Color(0xFFE5DEFF);
+      buttonColor = const Color(0xFF9985ED);
+
       staticDescription = "Perfect for individuals & small businesses.";
+
       staticIncludes = "2000 Templates | 1000 Videos | 10 AI Logo Credits";
     }
 

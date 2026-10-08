@@ -80,28 +80,6 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                         ),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          "/CustomBottomNavScreen",
-                          (route) => false,
-                        );
-                      },
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFE5E7),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.home_rounded,
-                          color: Colors.red,
-                          size: 21,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -124,7 +102,9 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                       if (annualBilling != null)
                         Expanded(
                           child: _buildPricingCard(
-                            amount: (annualBilling.discountedPrice?.isNotEmpty ?? false)
+                            amount:
+                                (annualBilling.discountedPrice?.isNotEmpty ??
+                                    false)
                                 ? '₹${annualBilling.discountedPrice}'
                                 : '₹${annualBilling.price ?? '0'}',
                             period: '/year',

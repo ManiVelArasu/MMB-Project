@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/ui/screens/widget/theme_data_card.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
@@ -95,7 +96,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
                       "professionally designed template collections.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: AppFontSize.fontSize16,
+                        fontSize: AppFontSize.fontSize18,
                         color: AppColors.lightTextGrey,
                         fontWeight: FontWeight.w400,
                       ),
@@ -105,26 +106,17 @@ class _ThemesScreenState extends State<ThemesScreen> {
 
                     Column(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 4,
+                          runSpacing: 4,
                           children: [
-                            Flexible(
-                              child: _brandBadge("2,500+ TEMPLATES"),
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: _brandBadge("50+ INDUSTRIES"),
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: _brandBadge("FULLY CUSTOMIZABLE"),
-                            ),
+                            _brandBadge("2,500+ TEMPLATES"),
+                            _brandBadge("50+ INDUSTRIES"),
+                            _brandBadge("FULLY CUSTOMIZABLE"),
+                            _brandBadge("INDUSTRY-SPECIFIC COLLECTIONS"),
                           ],
                         ),
-
-                        const SizedBox(height: 4),
-
-                        _brandBadge("INDUSTRY-SPECIFIC COLLECTIONS"),
                       ],
                     ),
 
@@ -140,9 +132,6 @@ class _ThemesScreenState extends State<ThemesScreen> {
                     ),
 
                     SizedBox(height: 20.h),
-
-                    SizedBox(height: 25.h),
-
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -164,26 +153,20 @@ class _ThemesScreenState extends State<ThemesScreen> {
 
   Widget _brandBadge(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF5F5),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: const Color(0xFFFFD5D5),
-        ),
+        border: Border.all(color: const Color(0xFFFFD5D5)),
       ),
       child: Text(
         text,
-        textAlign: TextAlign.center,
         maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Color(0xFFED1C24),
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
+        softWrap: false,
+        style: TextStyle(
+          color: AppColors.appRed,
+          fontSize: AppFontSize.fontSize14,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -232,7 +215,7 @@ class ThemeGroupSection extends StatelessWidget {
                 group.slug ?? "",
                 style: TextStyle(
                   color: isDark ? Colors.white : Colors.black,
-                  fontSize: 18.sp,
+                  fontSize: AppFontSize.fontSize22,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -246,11 +229,11 @@ class ThemeGroupSection extends StatelessWidget {
                   arguments: group,
                 );
               },
-              child: Text(
+              child: AppText(
                 "VIEW ALL",
                 style: TextStyle(
                   color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                  fontSize: 12.sp,
+                  fontSize: AppFontSize.fontSize12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -260,149 +243,72 @@ class ThemeGroupSection extends StatelessWidget {
 
         SizedBox(height: 14.h),
 
-        SizedBox(
-          height: 220.h,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: group.variants.length,
-            itemBuilder: (context, index) {
-              return ThemeCard(theme: group.variants[index], isDark: isDark);
-            },
-          ),
-        ),
+        group.variants.isEmpty
+            ? Padding(
+                padding: EdgeInsets.symmetric(vertical: 20.h),
+                child: Center(
+                  child: AppText(
+                    "Variants for this series are on their way.",
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
+                      fontSize: AppFontSize.fontSize14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              )
+            : SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: group.variants.map((variant) {
+                    final thumbnailKey = variant.thumbnailS3Key;
+
+                    final thumbnail =
+                        thumbnailKey != null && thumbnailKey.isNotEmpty
+                        ? "${ApiEndpoints.cdnImageUrl}/$thumbnailKey"
+                        : null;
+
+                    return Padding(
+                      padding: EdgeInsets.only(right: 12.w),
+                      child: SizedBox(
+                        width: 150.w,
+                        child: BrandSeriesCard(
+                          thumbnail: thumbnail,
+                          title: variant.name ?? "Theme",
+                          description:
+                              "${variant.businessCategories.length} Ready-to-Use TemplatesTemplates",
+                          perfectFor: variant.businessCategories
+                              .map(
+                                (category) => category.slug?.isNotEmpty == true
+                                    ? category.slug!
+                                    : variant.description ?? '',
+                              )
+                              .where((slug) => slug.isNotEmpty)
+                              .join(", "),
+                          isLocked: false,
+                          isDark: isDark,
+                          onTap: variant.uid != null
+                              ? () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/ThemeSingleitemViewScreen",
+                                    arguments: variant.uid,
+                                  );
+                                }
+                              : null,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
 
         SizedBox(height: 24.h),
       ],
-    );
-  }
-}
-
-class ThemeCard extends StatelessWidget {
-  final Variant theme;
-  final bool isDark;
-
-  const ThemeCard({super.key, required this.theme, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final String? thumbnailKey = theme.thumbnailS3Key;
-    return Container(
-      width: 150.w,
-      margin: EdgeInsets.only(right: 14.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: () {
-              Navigator.pushNamed(
-                context,
-                "/ThemeSingleitemViewScreen",
-                arguments: theme.uid,
-              );
-            },
-            child: Container(
-              height: 160.h,
-              width: 150.w,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16.r),
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade200,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16.r),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: thumbnailKey == null || thumbnailKey.isEmpty
-                          ? Container(
-                              color: isDark
-                                  ? const Color(0xFF2C2C2C)
-                                  : Colors.grey.shade300,
-                              child: Icon(
-                                Icons.image_outlined,
-                                size: 40.sp,
-                                color: Colors.grey,
-                              ),
-                            )
-                          : Image.network(
-                              "${ApiEndpoints.cdnImageUrl}/$thumbnailKey",
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) {
-                                return Container(
-                                  color: isDark
-                                      ? const Color(0xFF2C2C2C)
-                                      : Colors.grey.shade300,
-                                  child: Icon(
-                                    Icons.broken_image_outlined,
-                                    size: 40.sp,
-                                    color: Colors.grey,
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-
-                    // கிரவுன் (Crown) ஐகான்
-                    Positioned(
-                      top: 10.h,
-                      left: 10.w,
-                      child: Image.asset(
-                        "assets/images/crown.png",
-                        width: 15,
-                        height: 15,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          SizedBox(height: 8.h),
-
-          // Variant Name மற்றும் Likes
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  theme.name ?? "",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                ),
-              ),
-
-              Icon(Icons.favorite, color: Colors.red, size: 14.sp),
-
-              SizedBox(width: 4.w),
-
-              Text(
-                "${theme.likesCount ?? 0}",
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white70 : Colors.black,
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: 2.h),
-
-          Text(
-            "${theme.businessCategories.length} Templates",
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

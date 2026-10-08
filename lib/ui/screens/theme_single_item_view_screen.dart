@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/ui/screens/widget/theme_data_card.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
@@ -26,16 +27,7 @@ class ThemeSingleitemViewScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // ======================================================
-        // CURRENT VARIANT PROVIDER
-        // ======================================================
-
         ChangeNotifierProvider(create: (_) => ThemeSingleItemProvider()),
-
-        // ======================================================
-        // BRAND SERIES PROVIDER
-        // industry() API
-        // ======================================================
         ChangeNotifierProvider(
           create: (_) => ThemesScreenProvider()..fetchPlans(),
         ),
@@ -46,9 +38,6 @@ class ThemeSingleitemViewScreen extends StatelessWidget {
   }
 }
 
-// ============================================================
-// CONTENT
-// ============================================================
 
 class _ThemeSingleItemContent extends StatefulWidget {
   final String variantId;
@@ -66,13 +55,9 @@ class _ThemeSingleItemContentState extends State<_ThemeSingleItemContent> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Current variant API
-      context.read<ThemeSingleItemProvider>().fetchPlans(widget.variantId);
+            context.read<ThemeSingleItemProvider>().fetchPlans(widget.variantId);
 
-      // Brand Series API is already called from
-      // ThemesScreenProvider create:
-      //
-      // ThemesScreenProvider()..fetchPlans()
+
     });
   }
 
@@ -82,9 +67,7 @@ class _ThemeSingleItemContentState extends State<_ThemeSingleItemContent> {
   }
 }
 
-// ============================================================
-// DETAIL VIEW
-// ============================================================
+
 
 class ThemeDetailView extends StatelessWidget {
   const ThemeDetailView({super.key});
@@ -97,9 +80,7 @@ class ThemeDetailView extends StatelessWidget {
 
     return Consumer<ThemeSingleItemProvider>(
       builder: (context, provider, child) {
-        // ======================================================
-        // CURRENT VARIANT LOADING
-        // ======================================================
+
 
         if (provider.isLoadingPlans) {
           return Scaffold(
@@ -111,9 +92,7 @@ class ThemeDetailView extends StatelessWidget {
           );
         }
 
-        // ======================================================
-        // CURRENT VARIANT ERROR
-        // ======================================================
+
 
         if (provider.plansErrorMessage != null) {
           return Scaffold(
@@ -133,9 +112,6 @@ class ThemeDetailView extends StatelessWidget {
           );
         }
 
-        // ======================================================
-        // CURRENT VARIANT DATA
-        // ======================================================
 
         final data = provider.plansData?.data;
 
@@ -177,9 +153,7 @@ class ThemeDetailView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
 
                   children: [
-                    // ==================================================
-                    // BACK + FAVORITE
-                    // ==================================================
+
 
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -251,9 +225,6 @@ class ThemeDetailView extends StatelessWidget {
 
                     SizedBox(height: 12.h),
 
-                    // ==================================================
-                    // POPULAR
-                    // ==================================================
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
 
@@ -274,19 +245,18 @@ class ThemeDetailView extends StatelessWidget {
 
                           child: Row(
                             children: [
-                              Icon(
-                                Icons.local_fire_department,
-                                color: Colors.red,
-                                size: 10.sp,
+                              Image.asset(
+                                "assets/images/popular_heart.png",
+                                width: 12,
+                                height: 12,
                               ),
 
                               SizedBox(width: 2.w),
 
                               AppText(
                                 "POPULAR",
-
                                 style: TextStyle(
-                                  fontSize: 8.sp,
+                                  fontSize: AppFontSize.fontSize12,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.red,
                                 ),
@@ -299,14 +269,11 @@ class ThemeDetailView extends StatelessWidget {
 
                     SizedBox(height: 4.h),
 
-                    // ==================================================
-                    // TITLE
-                    // ==================================================
                     AppText(
                       title,
 
                       style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black,
+                        color: isDark ? AppColors.appWhite :AppColors.appBlack,
 
                         fontSize: AppFontSize.fontSize22,
 
@@ -318,14 +285,11 @@ class ThemeDetailView extends StatelessWidget {
 
                     SizedBox(height: 4.h),
 
-                    // ==================================================
-                    // CAPTION
-                    // ==================================================
                     AppText(
                       caption,
 
                       style: TextStyle(
-                        color: const Color(0xFFE53935),
+                        color: AppColors.appRed,
 
                         fontSize: AppFontSize.fontSize13,
 
@@ -337,9 +301,6 @@ class ThemeDetailView extends StatelessWidget {
 
                     SizedBox(height: 8.h),
 
-                    // ==================================================
-                    // DESCRIPTION
-                    // ==================================================
                     AppText(
                       description,
 
@@ -356,9 +317,6 @@ class ThemeDetailView extends StatelessWidget {
 
                     SizedBox(height: 14.h),
 
-                    // ==================================================
-                    // TAGS
-                    // ==================================================
                     Wrap(
                       spacing: 8.w,
                       runSpacing: 8.h,
@@ -383,8 +341,8 @@ class ThemeDetailView extends StatelessWidget {
                           child: AppText(
                             tag.toString(),
                             style: TextStyle(
-                              color:AppColors.appBlack,
-                              fontSize:AppFontSize.fontSize14,
+                              color: AppColors.appBlack,
+                              fontSize: AppFontSize.fontSize14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -394,22 +352,15 @@ class ThemeDetailView extends StatelessWidget {
 
                     SizedBox(height: 18.h),
 
-                    // ==================================================
-                    // GET THIS VARIANT
-                    // ==================================================
                     IntrinsicWidth(
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: 250.w,
-                        ),
+                        constraints: BoxConstraints(maxWidth: 250.w),
                         child: SizedBox(
                           height: 42.h,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFE53935),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 18.w,
-                              ),
+                              padding: EdgeInsets.symmetric(horizontal: 18.w),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10.r),
                               ),
@@ -428,8 +379,8 @@ class ThemeDetailView extends StatelessWidget {
                               "Get This Varient →",
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w700,
+                                fontSize: AppFontSize.fontSize14,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -439,9 +390,7 @@ class ThemeDetailView extends StatelessWidget {
 
                     SizedBox(height: 20.h),
 
-                    // ==================================================
-                    // MOCKUP
-                    // ==================================================
+
                     MockupSliderWidget(
                       templates: data?.templates ?? [],
 
@@ -450,9 +399,6 @@ class ThemeDetailView extends StatelessWidget {
 
                     SizedBox(height: 30.h),
 
-                    // ==================================================
-                    // PERFECT FOR
-                    // ==================================================
                     AppText(
                       "Perfect For",
 
@@ -517,8 +463,7 @@ class ThemeDetailView extends StatelessWidget {
                                     style: TextStyle(
                                       color: const Color(0xFFE53935),
 
-                                      fontSize: 11.sp,
-
+                                      fontSize: AppFontSize.fontSize14,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -527,9 +472,6 @@ class ThemeDetailView extends StatelessWidget {
                               .toList(),
                     ),
 
-                    // ==================================================
-                    // BRAND SERIES
-                    // ==================================================
                     SizedBox(height: 30.h),
 
                     _buildBrandSeriesSection(context, isDark),
@@ -543,10 +485,6 @@ class ThemeDetailView extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// BRAND SERIES SECTION
-// ============================================================
 
 Widget _buildBrandSeriesSection(BuildContext context, bool isDark) {
   return Consumer<ThemesScreenProvider>(
@@ -579,21 +517,17 @@ Widget _buildBrandSeriesSection(BuildContext context, bool isDark) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ======================================================
-          // HEADER
-          // ======================================================
-
           Row(
             children: [
-             Image.asset("assets/images/brand.png",width: 20,height: 20,),
+              Image.asset("assets/images/brand.png", width: 36, height: 36),
 
               SizedBox(width: 5.w),
 
               AppText(
                 "More Brand Series",
                 style: TextStyle(
-                  fontSize: 17.sp,
-                  fontWeight: FontWeight.w800,
+                  fontSize: AppFontSize.fontSize22,
+                  fontWeight: FontWeight.w600,
                   color: isDark ? Colors.white : Colors.black,
                 ),
               ),
@@ -601,13 +535,6 @@ Widget _buildBrandSeriesSection(BuildContext context, bool isDark) {
           ),
 
           SizedBox(height: 10.h),
-
-          // ======================================================
-          // HORIZONTAL CARDS
-          // ======================================================
-          // ======================================================
-// HORIZONTAL BRAND SERIES
-// ======================================================
 
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -617,316 +544,55 @@ Widget _buildBrandSeriesSection(BuildContext context, bool isDark) {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
 
-              children: List.generate(
-                brandSeries.length,
-                    (index) {
-                  final item = brandSeries[index];
+              children: List.generate(brandSeries.length, (index) {
+                final item = brandSeries[index];
 
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      right: index == brandSeries.length - 1
-                          ? 0
-                          : 8.w,
-                    ),
+                final variants = item.variants ?? [];
+                final variant = variants.isNotEmpty ? variants.first : null;
 
-                    child: _buildBrandSeriesCard(
-                      context,
-                      item,
-                      isDark,
+                final thumbnailKey = variant?.thumbnailS3Key;
+
+                final thumbnail =
+                    thumbnailKey != null && thumbnailKey.isNotEmpty
+                    ? "${ApiEndpoints.cdnImageUrl}/$thumbnailKey"
+                    : null;
+                return Padding(
+                  padding: EdgeInsets.only(
+                    right: index == brandSeries.length - 1 ? 0 : 8.w,
+                  ),
+
+                  child: BrandSeriesCard(
+                    thumbnail: thumbnail,
+                    title: variant?.name ?? item.name ?? "Brand Series",
+                    description: _cleanDescription(
+                      variant?.description ??
+                          item.description ??
+                          item.caption ??
+                          "",
                     ),
-                  );
-                },
-              ),
+                    perfectFor: _getPerfectFor(item),
+                    isLocked: item.isLocked == true,
+                    isDark: isDark,
+                    onTap: () {
+                      if (variant?.uid != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ThemeSingleitemViewScreen(
+                              variantId: variant!.uid!,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                );
+              }),
             ),
           ),
         ],
       );
     },
-  );
-}
-
-// ============================================================
-// BRAND SERIES CARD
-// ============================================================
-
-Widget _buildBrandSeriesCard(
-  BuildContext context,
-  ThemeItem item,
-  bool isDark,
-) {
-  // ============================================================
-  // GET FIRST VARIANT
-  // ============================================================
-
-  final variants = item.variants ?? [];
-
-  final variant = variants.isNotEmpty ? variants.first : null;
-
-  final String? thumbnail = variant?.thumbnailS3Key;
-
-  // ============================================================
-  // NAME
-  // ============================================================
-
-  final String seriesName = item.name ?? "Brand Series";
-
-  // ============================================================
-  // VARIANT NAME
-  // ============================================================
-
-  final String variantName = variant?.name ?? seriesName;
-
-  // ============================================================
-  // DESCRIPTION
-  // ============================================================
-
-  final String description =
-      variant?.description ?? item.description ?? item.caption ?? "";
-
-  // ============================================================
-  // BADGE
-  // ============================================================
-
-  final bool isLocked = item.isLocked == true;
-
-  return SizedBox(
-    width: 150.w,
-
-    child: GestureDetector(
-      onTap: () {
-        // ======================================================
-        // VIEW SERIES / VARIANT
-        // ======================================================
-
-        if (variant?.uid != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  ThemeSingleitemViewScreen(variantId: variant!.uid!),
-            ),
-          );
-        }
-      },
-
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-
-          borderRadius: BorderRadius.circular(10.r),
-
-          border: Border.all(
-            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-          ),
-
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-
-              blurRadius: 5,
-
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-
-          children: [
-            // ==================================================
-            // IMAGE
-            // ==================================================
-
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(10.r),
-                    topRight: Radius.circular(10.r),
-                  ),
-
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 105.h,
-
-                    child: thumbnail != null && thumbnail.isNotEmpty
-                        ? NetworkAssetImage(
-                            url: "${ApiEndpoints.cdnImageUrl}/$thumbnail",
-
-                            fit: BoxFit.cover,
-
-                            errorWidget: _buildSeriesPlaceholder(isDark),
-                          )
-                        : _buildSeriesPlaceholder(isDark),
-                  ),
-                ),
-
-                // ==============================================
-                // CROWN
-                // ==============================================
-                Positioned(
-                  top: 5.h,
-                  left: 5.w,
-
-                  child: Container(
-                    width: 22.w,
-                    height: 22.w,
-
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-
-                    child: Center(
-                      child: Text("👑", style: TextStyle(fontSize: 12.sp)),
-                    ),
-                  ),
-                ),
-
-                // ==============================================
-                // LOCK
-                // ==============================================
-                if (isLocked)
-                  Positioned(
-                    top: 6.h,
-                    right: 6.w,
-
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 5.w,
-                        vertical: 3.h,
-                      ),
-
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.65),
-
-                        borderRadius: BorderRadius.circular(5.r),
-                      ),
-
-                      child: Icon(
-                        Icons.lock_outline,
-                        size: 10.sp,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-
-            // ==================================================
-            // DETAILS
-            // ==================================================
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 5.h),
-
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-
-                children: [
-                  // ============================================
-                  // VARIANT NAME + POPULAR
-                  // ============================================
-
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-
-                    children: [
-                      Expanded(
-                        child: Text(
-                          variantName,
-
-                          maxLines: 1,
-
-                          overflow: TextOverflow.ellipsis,
-
-                          style: TextStyle(
-                            fontSize: 10.sp,
-
-                            fontWeight: FontWeight.w800,
-
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
-                        ),
-                      ),
-
-                      SizedBox(width: 2.w),
-
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 3.w,
-                          vertical: 1.h,
-                        ),
-
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFE8E8),
-
-                          borderRadius: BorderRadius.circular(3.r),
-                        ),
-
-                        child: AppText(
-                          "POPULAR",
-
-                          style: TextStyle(
-                            color: const Color(0xFFE53935),
-
-                            fontSize: 5.sp,
-
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 2.h),
-
-                  // ============================================
-                  // DESCRIPTION
-                  // ============================================
-                  AppText(
-                    _cleanDescription(description),
-
-                    maxLines: 2,
-
-                    overflow: TextOverflow.ellipsis,
-
-                    style: TextStyle(
-                      fontSize: 7.5.sp,
-
-                      height: 1.25,
-
-                      color: isDark ? Colors.white70 : Colors.black54,
-                    ),
-                  ),
-
-                  SizedBox(height: 2.h),
-
-                  // ============================================
-                  // PERFECT FOR
-                  // ============================================
-                  AppText(
-                    _getPerfectFor(item),
-
-                    maxLines: 1,
-
-                    overflow: TextOverflow.ellipsis,
-
-                    style: TextStyle(
-                      fontSize: 7.5.sp,
-
-                      color: isDark
-                          ? Colors.grey.shade400
-                          : Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
   );
 }
 
@@ -960,9 +626,6 @@ String _cleanDescription(String value) {
   return value.replaceAll('\n', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
-// ============================================================
-// MOCKUP SLIDER
-// ============================================================
 
 class MockupSliderWidget extends StatefulWidget {
   final List<dynamic> templates;
