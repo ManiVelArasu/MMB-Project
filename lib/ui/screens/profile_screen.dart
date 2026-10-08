@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +14,7 @@ import '../../network/provider/home_screen_provider.dart';
 import '../../network/provider/profile_screen_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../utils/theme/app.colors.dart';
 import '../../widgets/button_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -43,14 +45,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       type = CommonProvider.instance.accountType?.trim().toLowerCase() ?? '';
     }
 
-    // Final fallback
     if (type.isEmpty) {
       type = (prefs.getString('account_type') ?? '').trim().toLowerCase();
     }
-
-    debugPrint('================================');
-    debugPrint('PROFILE ACCOUNT TYPE = [$type]');
-    debugPrint('================================');
 
     if (!mounted) return;
 
@@ -301,7 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     if (accountType == 'personal') {
                                       Navigator.pushNamed(
                                         context,
-                                        "/PersonalProfileScreen",
+                                        "/EditProfileScreen",
                                       );
                                     } else {
                                       Navigator.pushNamed(
@@ -342,12 +339,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             Expanded(
                               child: _buildActionCard(
-                                title: 'Personal Profile',
-                                icon: Icons.person_outline_rounded,
-                                iconColor: const Color(0xFF1976D2),
+                                title: 'My Profile',
+                                imagePath: "assets/images/personalcard.png",
                                 background: isDark
-                                    ? const Color(0xFF18232D)
-                                    : const Color(0xFFEAF5FF),
+                                    ? const Color(0xFFEFF9FF)
+                                    : const Color(0xFFD3EEFD),
                                 onTap: () {
                                   Navigator.pushNamed(
                                     context,
@@ -361,12 +357,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Expanded(
                               child: _buildActionCard(
                                 title: 'My Downloads',
-                                icon: Icons.download_rounded,
-                                iconColor: const Color(0xFF7C4DFF),
+                                imagePath:
+                                    "assets/images/document_download.png",
                                 background: isDark
                                     ? const Color(0xFF241D32)
                                     : const Color(0xFFF0EAFE),
-                                onTap: () {},
+                                onTap: () {
+                                  print('asdsadsasadsadsa');
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/MyDownloadsScreen",
+                                  );
+                                },
                                 isDark: isDark,
                               ),
                             ),
@@ -396,10 +398,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               iconAsset: "assets/images/shop.png",
                               isDark: isDark,
                               onTap: () {
-                                Navigator.pushNamed(
+                                /*Navigator.pushNamed(
                                   context,
                                   "/BusinessDetailsScreen",
-                                );
+                                );*/
                               },
                             ),
                             _buildSettingsTile(
@@ -501,10 +503,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               iconAsset: "assets/images/shop.png",
                               isDark: isDark,
                               onTap: () {
-                                Navigator.pushNamed(
+                               /* Navigator.pushNamed(
                                   context,
                                   "/BusinessDetailsScreen",
-                                );
+                                );*/
                               },
                             ),
                             _buildSettingsTile(
@@ -713,7 +715,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               "Build Your Brand with Brand Series",
                               style: TextStyle(
                                 color: const Color(0xFF303F9F),
-                                fontSize: 18.sp,
+                                fontSize: AppFontSize.fontSize18,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
@@ -722,7 +724,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               "Create consistent social media designs \nfor your business, all in one place.",
                               style: TextStyle(
                                 color: Colors.black87,
-                                fontSize: 13.sp,
+                                fontSize: AppFontSize.fontSize13,
                               ),
                             ),
                             SizedBox(height: 12.h),
@@ -784,7 +786,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: "Logout",
                         textStyle: TextStyle(
                           color: Colors.red,
-                          fontSize: 16.sp,
+                          fontSize: AppFontSize.fontSize16,
                           fontWeight: FontWeight.bold,
                         ),
                         decoration: BoxDecoration(
@@ -817,8 +819,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildActionCard({
     required String title,
-    required IconData icon,
-    required Color iconColor,
+    required String imagePath,
     required Color background,
     required VoidCallback onTap,
     required bool isDark,
@@ -826,7 +827,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 76.h,
         padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
         decoration: BoxDecoration(
           color: background,
@@ -840,17 +840,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: iconColor, size: 26.sp),
+            Image.asset(
+              imagePath,
+              width: 36.w,
+              height: 36.w,
+              fit: BoxFit.contain,
+            ),
+
             SizedBox(height: 5.h),
+
             AppText(
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
               style: TextStyle(
-                color: isDark ? Colors.white : Colors.black87,
-                fontSize: 10.sp,
-                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : AppColors.darkBlack,
+                fontSize: AppFontSize.fontSize16,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -918,9 +924,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black87,
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : AppColors.darkBlack,
+                          fontSize: AppFontSize.fontSize15,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
 
@@ -931,8 +937,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: isDark ? Colors.white38 : Colors.black45,
-                            fontSize: 7.5.sp,
+                            color: isDark ? Colors.white38 : Colors.black,
+                            fontSize: AppFontSize.fontSize14,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -994,10 +1000,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: EdgeInsets.fromLTRB(12.w, 9.h, 12.w, 4.h),
             child: AppText(
               title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isDark ? Colors.white : Colors.black87,
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w900,
+                color: isDark ? Colors.white : AppColors.darkBlack,
+                fontSize: AppFontSize.fontSize16,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1225,7 +1233,7 @@ void _showLanguagesBottomSheet(
                         "${selectedCodes.length}",
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 17.sp,
+                          fontSize: AppFontSize.fontSize17,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -1240,7 +1248,7 @@ void _showLanguagesBottomSheet(
                   "connect better, reach wider!",
                   style: TextStyle(
                     color: isDark ? Colors.white : Colors.black,
-                    fontSize: 14.sp,
+                    fontSize: AppFontSize.fontSize14,
                     fontWeight: FontWeight.w500,
                     height: 1.4,
                   ),
@@ -1255,7 +1263,7 @@ void _showLanguagesBottomSheet(
                   spacing: 10.w,
                   runSpacing: 10.h,
                   children: languages.map((language) {
-                    final String code = language.code?.trim() ?? "";
+                    final String code = language.code.trim() ?? "";
 
                     final bool isSelected = selectedCodes.contains(code);
 

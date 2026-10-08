@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 
 import 'package:provider/provider.dart';
 
@@ -86,7 +87,7 @@ class AccountTypeScreen extends StatelessWidget {
                             Padding(
                               padding: EdgeInsets.symmetric(vertical: 12.h),
                               child: Center(
-                                child: Text(
+                                child: AppText(
                                   "or, if you're just here for yourself",
                                   textAlign: TextAlign.center,
                                   style: theme.bodyMedium?.copyWith(
@@ -139,7 +140,7 @@ class AccountTypeScreen extends StatelessWidget {
                                 if (!success) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(
+                                      content: AppText(
                                         accountTypeProvider.errorMessage ??
                                             "Something went wrong. Please try again.",
                                       ),
@@ -312,10 +313,10 @@ class AccountTypeScreen extends StatelessWidget {
                         ),
                         SizedBox(width: 7.w),
                         Expanded(
-                          child: Text(
+                          child: AppText(
                             feature,
                             style: theme.bodyMedium?.copyWith(
-                              fontSize: 14.sp,
+                              fontSize: AppFontSize.fontSize14,
                               height: 1.25,
                               color: customColor.blackColor,
                             ),

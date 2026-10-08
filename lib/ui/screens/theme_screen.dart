@@ -82,7 +82,8 @@ class _ThemesScreenState extends State<ThemesScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: AppFontSize.fontSize20,
+                        color: AppColors.appBlack,
+                        fontSize: AppFontSize.fontSize22,
                       ),
                     ),
 
@@ -94,38 +95,44 @@ class _ThemesScreenState extends State<ThemesScreen> {
                       "professionally designed template collections.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: AppFontSize.fontSize15,
-                        color: AppColors.appGrey,
-                        height: 1.15,
+                        fontSize: AppFontSize.fontSize16,
+                        color: AppColors.lightTextGrey,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
 
                     SizedBox(height: 4),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Column(
                       children: [
-                        _brandBadge("2,500+ TEMPLATES"),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: _brandBadge("2,500+ TEMPLATES"),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: _brandBadge("50+ INDUSTRIES"),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: _brandBadge("FULLY CUSTOMIZABLE"),
+                            ),
+                          ],
+                        ),
 
-                        SizedBox(width: 3),
+                        const SizedBox(height: 4),
 
-                        _brandBadge("60+ INDUSTRIES"),
-
-                        SizedBox(width: 3),
-
-                        _brandBadge("FULLY CUSTOMIZABLE"),
+                        _brandBadge("INDUSTRY-SPECIFIC COLLECTIONS"),
                       ],
                     ),
 
-                    SizedBox(height: 3),
-
-                    // BOTTOM BADGE
-                    _brandBadge("INDUSTRY-SPECIFIC COLLECTIONS"),
                     SizedBox(height: 10),
 
                     /// Search
                     CustomSearchBar(
-                      hintText: "Find your Industry",
+                      hintText: "Search Brand Series",
                       prefixAsset: "assets/images/search.png",
                       suffixAsset: "assets/images/mic.png",
                       borderColor: const Color(0xFFFFCDD2),
@@ -157,19 +164,26 @@ class _ThemesScreenState extends State<ThemesScreen> {
 
   Widget _brandBadge(String text) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF0F2),
-        borderRadius: BorderRadius.circular(3),
-        border: Border.all(color: const Color(0xFFFFB8C0), width: 0.6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 5,
       ),
-      child: AppText(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF5F5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: const Color(0xFFFFD5D5),
+        ),
+      ),
+      child: Text(
         text,
         textAlign: TextAlign.center,
-        style: TextStyle(
-          color: const Color(0xFFFF3B4D),
-          fontSize: 6.5,
-          fontWeight: FontWeight.w600,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Color(0xFFED1C24),
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -311,7 +325,6 @@ class ThemeCard extends StatelessWidget {
                               ),
                             )
                           : Image.network(
-
                               "${ApiEndpoints.cdnImageUrl}/$thumbnailKey",
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) {

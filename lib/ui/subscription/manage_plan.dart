@@ -182,6 +182,35 @@ class _ManagePlanView extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
+
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: IconButton(
+              tooltip: "Go to Home",
+              onPressed: () {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  "/CustomBottomNavScreen",
+                  (route) => false,
+                );
+              },
+              icon: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFE5E7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.home_rounded,
+                  color: Colors.red,
+                  size: 19,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
 
       // ========================================================
@@ -325,6 +354,45 @@ class _ManagePlanView extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 16),
+
+                    // =================================================
+                    // VIEW PLAN DETAILS
+                    // =================================================
+                    SizedBox(
+                      width: double.infinity,
+                      height: 43,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          _showCurrentPlanDetails(
+                            context,
+                            planName: planName,
+                            billingPrice: billingPrice,
+                            billingCycle: billingCycle,
+                            renewalDate: renewalDate,
+                            subscriptionStatus: subscriptionStatus,
+                            autoRenew: autoRenew,
+                            featuresText: featuresText,
+                          );
+                        },
+                        icon: const Icon(Icons.visibility_outlined, size: 17),
+                        label: const AppText(
+                          "VIEW PLAN DETAILS",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.red),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
 
                     // =================================================
                     // PLAN BUTTONS
@@ -529,7 +597,7 @@ class _ManagePlanView extends StatelessWidget {
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) => InvoiceScreen(
-                                              html: provider.invoiceHtml??'',
+                                              html: provider.invoiceHtml ?? '',
                                             ),
                                           ),
                                         );
@@ -584,7 +652,8 @@ class _ManagePlanView extends StatelessWidget {
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) => InvoiceScreen(
-                                              html: provider.isReceiptHtml??'',
+                                              html:
+                                                  provider.isReceiptHtml ?? '',
                                             ),
                                           ),
                                         );
@@ -856,6 +925,204 @@ class _ManagePlanView extends StatelessWidget {
 }
 
 // =================================================================
+// ============================================================
+// CURRENT PLAN DETAILS
+// ============================================================
+
+void _showCurrentPlanDetails(
+  BuildContext context, {
+  required String planName,
+  required String billingPrice,
+  required String billingCycle,
+  required String? renewalDate,
+  required String subscriptionStatus,
+  required bool autoRenew,
+  required String featuresText,
+}) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (sheetContext) {
+      final features = featuresText
+          .split('\n')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppText(
+                        planName,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF171A2B),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE1FAF3),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: AppText(
+                        subscriptionStatus.toUpperCase(),
+                        style: const TextStyle(
+                          color: Color(0xFF00A878),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                AppText(
+                  billingPrice == "0"
+                      ? "Free Plan"
+                      : "₹$billingPrice / $billingCycle",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.red,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFAF9F6),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    children: [
+                      /*_detailItem(
+                          "Renewal date",
+                          _formatDate(renewalDate),
+                        ),*/
+                      const SizedBox(height: 10),
+                      _detailItem("Auto-renew", autoRenew ? "ON" : "OFF"),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const AppText(
+                  "What's included",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF171A2B),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (features.isEmpty)
+                  const AppText(
+                    "No feature details available",
+                    style: TextStyle(color: Colors.grey),
+                  )
+                else
+                  ...features.map(
+                    (feature) => Padding(
+                      padding: const EdgeInsets.only(bottom: 9),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: AppText(
+                              feature,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const AppText(
+                      "DONE",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Widget _detailItem(String title, String value) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      AppText(title, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+      AppText(
+        value,
+        style: const TextStyle(
+          color: Color(0xFF171A2B),
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ],
+  );
+}
+
 // CHANGE PLAN BOTTOM SHEET
 // =================================================================
 

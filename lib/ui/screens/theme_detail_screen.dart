@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/theme_screen_model.dart';
@@ -129,7 +130,7 @@ class ThemeDetailView extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: isDark
                                 ? const Color(0xFF2A1A1C)
-                                : const Color(0xFFFFF0F2),
+                                : const Color(0xFFFFE4E5),
                             borderRadius: BorderRadius.circular(20.r),
                             border: Border.all(
                               color: isDark
@@ -140,7 +141,7 @@ class ThemeDetailView extends StatelessWidget {
                           child: AppText(
                             tag.name!,
                             style: TextStyle(
-                              color: const Color(0xFFE53935),
+                              color: AppColors.appBlack,
                               fontSize: 11.5.sp,
                               fontWeight: FontWeight.w600,
                             ),
@@ -152,30 +153,41 @@ class ThemeDetailView extends StatelessWidget {
                     SizedBox(height: 20.h),
 
                     // Unlock Button matching screenshot
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48.h,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE53935),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                          elevation: 0,
+                    IntrinsicWidth(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: 180.w,
                         ),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: AppText("Theme Unlocked Successfully!"),
+                        child: SizedBox(
+                          height: 42.h,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE53935),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 18.w,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.r),
+                              ),
+                              elevation: 0,
                             ),
-                          );
-                        },
-                        child: AppText(
-                          "Unlock $title →",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.bold,
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: AppText(
+                                    "Theme Unlocked Successfully!",
+                                  ),
+                                ),
+                              );
+                            },
+                            child: AppText(
+                              "Unlock $title →",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ),
                       ),

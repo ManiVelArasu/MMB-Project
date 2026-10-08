@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/theme_screen_model.dart';
@@ -280,7 +282,7 @@ class ThemeDetailView extends StatelessWidget {
 
                               SizedBox(width: 2.w),
 
-                              Text(
+                              AppText(
                                 "POPULAR",
 
                                 style: TextStyle(
@@ -300,13 +302,13 @@ class ThemeDetailView extends StatelessWidget {
                     // ==================================================
                     // TITLE
                     // ==================================================
-                    Text(
+                    AppText(
                       title,
 
                       style: TextStyle(
                         color: isDark ? Colors.white : Colors.black,
 
-                        fontSize: 22.sp,
+                        fontSize: AppFontSize.fontSize22,
 
                         fontWeight: FontWeight.w900,
                       ),
@@ -319,13 +321,13 @@ class ThemeDetailView extends StatelessWidget {
                     // ==================================================
                     // CAPTION
                     // ==================================================
-                    Text(
+                    AppText(
                       caption,
 
                       style: TextStyle(
                         color: const Color(0xFFE53935),
 
-                        fontSize: 13.sp,
+                        fontSize: AppFontSize.fontSize13,
 
                         fontWeight: FontWeight.w700,
                       ),
@@ -338,13 +340,13 @@ class ThemeDetailView extends StatelessWidget {
                     // ==================================================
                     // DESCRIPTION
                     // ==================================================
-                    Text(
+                    AppText(
                       description,
 
                       style: TextStyle(
                         color: isDark ? Colors.grey.shade300 : Colors.black87,
 
-                        fontSize: 12.sp,
+                        fontSize: AppFontSize.fontSize16,
 
                         height: 1.4,
                       ),
@@ -360,38 +362,29 @@ class ThemeDetailView extends StatelessWidget {
                     Wrap(
                       spacing: 8.w,
                       runSpacing: 8.h,
-
                       alignment: WrapAlignment.center,
-
                       children: tags.map((tag) {
                         return Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: 12.w,
-                            vertical: 6.h,
+                            vertical: 5.h,
                           ),
-
                           decoration: BoxDecoration(
                             color: isDark
                                 ? const Color(0xFF2A1A1C)
-                                : const Color(0xFFFFF0F2),
-
-                            borderRadius: BorderRadius.circular(20.r),
-
+                                : const Color(0xFFFFE9EB),
+                            borderRadius: BorderRadius.circular(18.r),
                             border: Border.all(
                               color: isDark
                                   ? Colors.red.shade900
                                   : Colors.red.shade100,
                             ),
                           ),
-
-                          child: Text(
+                          child: AppText(
                             tag.toString(),
-
                             style: TextStyle(
-                              color: const Color(0xFFE53935),
-
-                              fontSize: 11.sp,
-
+                              color:AppColors.appBlack,
+                              fontSize:AppFontSize.fontSize14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -404,36 +397,41 @@ class ThemeDetailView extends StatelessWidget {
                     // ==================================================
                     // GET THIS VARIANT
                     // ==================================================
-                    SizedBox(
-                      width: 180,
-                      height: 48.h,
-
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE53935),
-
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-
-                          elevation: 0,
+                    IntrinsicWidth(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: 250.w,
                         ),
-
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Variant Activated Successfully!"),
+                        child: SizedBox(
+                          height: 42.h,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE53935),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 18.w,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.r),
+                              ),
+                              elevation: 0,
                             ),
-                          );
-                        },
-
-                        child: Text(
-                          "Get this Variant →",
-
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.bold,
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: AppText(
+                                    "Theme Unlocked Successfully!",
+                                  ),
+                                ),
+                              );
+                            },
+                            child: AppText(
+                              "Get This Varient →",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -455,11 +453,11 @@ class ThemeDetailView extends StatelessWidget {
                     // ==================================================
                     // PERFECT FOR
                     // ==================================================
-                    Text(
+                    AppText(
                       "Perfect For",
 
                       style: TextStyle(
-                        fontSize: 20.sp,
+                        fontSize: AppFontSize.fontSize22,
 
                         fontWeight: FontWeight.w900,
 

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mmb_app/ui/industry/search_bottom_sheet.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -47,7 +48,7 @@ class BusinessCategoryChooseViewScreen extends StatelessWidget {
               AppText(
                 "Select Your Business Category",
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: AppFontSize.fontSize22,
                   fontWeight: FontWeight.bold,
                   color: AppColors.appBlack,
                 ),
@@ -55,7 +56,7 @@ class BusinessCategoryChooseViewScreen extends StatelessWidget {
               const SizedBox(height: 8),
               AppText(
                 "Find the category that best matches your business.",
-                style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: AppFontSize.fontSize18, color: Colors.grey.shade600),
               ),
 
               const SizedBox(height: 20),
@@ -200,23 +201,23 @@ class BusinessCategoryChooseViewScreen extends StatelessWidget {
     return Column(
       children: [
         const SizedBox(height: 4),
-        const Text(
+         AppText(
           "Can't find your business type?",
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: AppFontSize.fontSize16,
             fontWeight: FontWeight.w700,
             color: Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
-        Text(
+        AppText(
           "Choose Other and enter your business type. We'll review new "
           "requests and continuously expand our industry database to "
           "improve template recommendations.",
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: AppFontSize.fontSize15,
             height: 1.35,
             color: Colors.grey.shade700,
           ),
@@ -226,11 +227,11 @@ class BusinessCategoryChooseViewScreen extends StatelessWidget {
           onPressed: () {
             industryProvider.setSelectedSpecialization("Other");
           },
-          child: const Text(
+          child:  AppText(
             "Choose Other",
             style: TextStyle(
               color: Colors.red,
-              fontSize: 14,
+              fontSize: AppFontSize.fontSize14,
               fontWeight: FontWeight.w500,
             ),
           ),

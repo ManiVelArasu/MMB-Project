@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/network/provider/common_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/custom_theme_provider.dart';
+import '../utils/theme/app.fonts.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;
@@ -246,8 +248,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 20.sp,
+                        fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w800,
                         color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
@@ -279,7 +281,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                                 ? Colors.blueAccent
                                 : const Color(0xFF1E2E5F),
                             fontWeight: FontWeight.w600,
-                            fontSize: 15.sp,
+                            fontSize: AppFontSize.fontSize15,
                           ),
                         ),
                       ),
@@ -328,11 +330,11 @@ class _CustomAppBarState extends State<CustomAppBar> {
                                 minHeight: 18.h,
                               ),
                               child: Center(
-                                child: Text(
+                                child: AppText(
                                   widget.badgeCount!,
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 10.sp,
+                                    fontSize: AppFontSize.fontSize10,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),

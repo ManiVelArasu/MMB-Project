@@ -272,9 +272,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
       clipBehavior: Clip.none,
       children: [
         GestureDetector(
-          onTap: provider.isUploadingImage
-              ? null
-              : provider.pickAndUploadImage,
+          onTap: provider.isUploadingImage ? null : provider.pickAndUploadImage,
           child: Container(
             height: 85.h,
             width: 85.w,
@@ -282,62 +280,54 @@ class _EditProfileViewState extends State<_EditProfileView> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(
-                color: const Color(0xFFFFECEE),
-                width: 1.5,
-              ),
+              border: Border.all(color: const Color(0xFFFFECEE), width: 1.5),
             ),
             child: provider.isUploadingImage
                 ? Center(
-              child: SizedBox(
-                height: 24.h,
-                width: 24.w,
-                child: const CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                ),
-              ),
-            )
-
-            // =========================
-            // NEW SELECTED IMAGE
-            // =========================
+                    child: SizedBox(
+                      height: 24.h,
+                      width: 24.w,
+                      child: const CircularProgressIndicator(strokeWidth: 2.5),
+                    ),
+                  )
+                // =========================
+                // NEW SELECTED IMAGE
+                // =========================
                 : provider.selectedImage != null &&
-                provider.selectedImage!.existsSync()
+                      provider.selectedImage!.existsSync()
                 ? Image.file(
-              provider.selectedImage!,
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-            )
-
-            // =========================
-            // EXISTING PROFILE IMAGE
-            // =========================
+                    provider.selectedImage!,
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  )
+                // =========================
+                // EXISTING PROFILE IMAGE
+                // =========================
                 : provider.profilePhotoS3Key.isNotEmpty
                 ? Image.network(
-              getS3ImageUrl(provider.profilePhotoS3Key),
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) {
-                return Image.asset(
-                  "assets/images/BName.png",
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                );
-              },
-            )
-
-            // =========================
-            // DEFAULT IMAGE
-            // =========================
+                    getS3ImageUrl(provider.profilePhotoS3Key),
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) {
+                      return Image.asset(
+                        "assets/images/BName.png",
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                      );
+                    },
+                  )
+                // =========================
+                // DEFAULT IMAGE
+                // =========================
                 : Image.asset(
-              "assets/images/BName.png",
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-            ),
+                    "assets/images/BName.png",
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
           ),
         ),
 
@@ -791,72 +781,62 @@ class _EditProfileViewState extends State<_EditProfileView> {
       clipBehavior: Clip.none,
       children: [
         GestureDetector(
-          onTap: provider.isUploadingImage
-              ? null
-              : provider.pickAndUploadImage,
+          onTap: provider.isUploadingImage ? null : provider.pickAndUploadImage,
           child: Container(
             height: 85.h,
             width: 85.w,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(
-                color: const Color(0xFFFFECEE),
-                width: 1.5,
-              ),
+              border: Border.all(color: const Color(0xFFFFECEE), width: 1.5),
             ),
             clipBehavior: Clip.antiAlias,
             child: provider.isUploadingImage
                 ? Center(
-              child: SizedBox(
-                height: 24.h,
-                width: 24.w,
-                child: const CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                ),
-              ),
-            )
-
-            // =========================
-            // NEW SELECTED IMAGE
-            // =========================
+                    child: SizedBox(
+                      height: 24.h,
+                      width: 24.w,
+                      child: const CircularProgressIndicator(strokeWidth: 2.5),
+                    ),
+                  )
+                // =========================
+                // NEW SELECTED IMAGE
+                // =========================
                 : provider.selectedImage != null &&
-                provider.selectedImage!.existsSync()
+                      provider.selectedImage!.existsSync()
                 ? Image.file(
-              provider.selectedImage!,
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-            )
-
-            // =========================
-            // OLD / API IMAGE
-            // =========================
+                    provider.selectedImage!,
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  )
+                // =========================
+                // OLD / API IMAGE
+                // =========================
                 : imageKey.isNotEmpty
                 ? Image.network(
-              getS3ImageUrl(imageKey),
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) {
-                return Image.asset(
-                  "assets/images/BName.png",
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                );
-              },
-            )
-
-            // =========================
-            // DEFAULT IMAGE
-            // =========================
+                    getS3ImageUrl(imageKey),
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) {
+                      return Image.asset(
+                        "assets/images/BName.png",
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                      );
+                    },
+                  )
+                // =========================
+                // DEFAULT IMAGE
+                // =========================
                 : Image.asset(
-              "assets/images/BName.png",
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-            ),
+                    "assets/images/BName.png",
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
           ),
         ),
 

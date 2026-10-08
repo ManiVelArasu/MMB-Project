@@ -5,7 +5,8 @@ import '../../../network/provider/my_product_provider.dart';
 class TypeSelectionCard extends StatelessWidget {
   final ProductType type;
   final bool selected;
-  final String title, subtitle;
+  final String title;
+  final String subtitle;
   final VoidCallback onTap;
 
   const TypeSelectionCard({
@@ -21,49 +22,79 @@ class TypeSelectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(9),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.all(10),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 9,
+        ),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: selected ? Colors.red : Colors.black12),
-          color: selected ? const Color(0xFFFFF8F8) : Colors.white,
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected
+                ? const Color(0xFFED1C24)
+                : const Color(0xFFE0E0E0),
+            width: 1,
+          ),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+          CrossAxisAlignment.start,
           children: [
             Container(
-              width: 15,
-              height: 15,
-              margin: const EdgeInsets.only(top: 2),
+              width: 17,
+              height: 17,
+              margin: const EdgeInsets.only(top: 1),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: selected ? Colors.red : Colors.grey,
+                  color: selected
+                      ? const Color(0xFFED1C24)
+                      : const Color(0xFFBDBDBD),
                   width: 1.5,
                 ),
               ),
               child: selected
                   ? Center(
                 child: Container(
-                  width: 7,
-                  height: 7,
+                  width: 9,
+                  height: 9,
                   decoration: const BoxDecoration(
-                    color: Colors.red,
+                    color: Color(0xFFED1C24),
                     shape: BoxShape.circle,
                   ),
                 ),
               )
                   : null,
             ),
+
             const SizedBox(width: 8),
+
             Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+
                   const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(fontSize: 9, color: Colors.black54)),
+
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 9,
+                      color: Colors.black54,
+                      height: 1.2,
+                    ),
+                  ),
                 ],
               ),
             ),

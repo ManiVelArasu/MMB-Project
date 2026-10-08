@@ -302,6 +302,7 @@ class _MySubscriptionView extends StatelessWidget {
                           planName: planName,
                           endDate: endDate,
                           features: features,
+                          passedPlan: passedPlan,
                         )
                       : _buildActiveSubscriptionView(
                           context: context,
@@ -319,6 +320,7 @@ class _MySubscriptionView extends StatelessWidget {
                           progress: progress,
                           billing: billing,
                           subscription: subscription,
+                          passedPlan: passedPlan,
                         ),
                 ),
               ],
@@ -337,21 +339,21 @@ class _MySubscriptionView extends StatelessWidget {
     return Container(
       height: 72,
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFEAEAEA), width: 1)),
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFEAEAEA), width: 1),
+        ),
       ),
       child: Row(
         children: [
           if (!hideBackButton) ...[
             GestureDetector(
-              onTap: () {
-                Navigator.pop(context);
-              },
+              onTap: () => Navigator.pop(context),
               child: Container(
-                width: 34,
-                height: 34,
+                width: 36,
+                height: 36,
                 decoration: const BoxDecoration(
                   color: Color(0xFFFFE5E7),
                   shape: BoxShape.circle,
@@ -363,15 +365,41 @@ class _MySubscriptionView extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
           ],
-
-          const Text(
-            "My Subscription",
-            style: TextStyle(
-              color: Color(0xFF171A2B),
-              fontSize: 23,
-              fontWeight: FontWeight.w800,
+          const Expanded(
+            child: Text(
+              "My Subscription",
+              style: TextStyle(
+                color: Color(0xFF171A2B),
+                fontSize: 21,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          Tooltip(
+            message: "Go to Home",
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  "/CustomBottomNavScreen",
+                  (route) => false,
+                );
+              },
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFE5E7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.home_rounded,
+                  color: Color(0xFFFF2027),
+                  size: 21,
+                ),
+              ),
             ),
           ),
         ],
@@ -388,6 +416,7 @@ class _MySubscriptionView extends StatelessWidget {
     required String planName,
     required String? endDate,
     required List<dynamic> features,
+    required dynamic passedPlan,
   }) {
     final formattedEndDate = _formatDate(endDate);
 
@@ -499,6 +528,38 @@ class _MySubscriptionView extends StatelessWidget {
           ),
 
           const SizedBox(height: 24),
+
+          if (passedPlan != null) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    "/PlanDetailScreen",
+                    arguments: passedPlan,
+                  );
+                },
+                icon: const Icon(Icons.visibility_outlined, size: 18),
+                label: const Text(
+                  "VIEW PLAN DETAILS",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFFF2027),
+                  side: const BorderSide(color: Color(0xFFFF2027)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
 
           // ====================================================
           // REACTIVATE
@@ -622,6 +683,7 @@ class _MySubscriptionView extends StatelessWidget {
     required double progress,
     required Map<String, dynamic> billing,
     required Map<String, dynamic> subscription,
+    required dynamic passedPlan,
   }) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -857,6 +919,26 @@ class _MySubscriptionView extends StatelessWidget {
           ),
 
           const SizedBox(height: 40),
+
+          // ==================================================
+          // VIEW PLAN DETAILS
+          // ==================================================
+          if (passedPlan != null)
+            _buildActionButton(
+              title: "VIEW PLAN DETAILS",
+              backgroundColor: Colors.white,
+              borderColor: const Color(0xFFFF2027),
+              textColor: const Color(0xFFFF2027),
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  "/PlanDetailScreen",
+                  arguments: passedPlan,
+                );
+              },
+            ),
+
+          if (passedPlan != null) const SizedBox(height: 10),
 
           // ==================================================
           // MANAGE PLAN

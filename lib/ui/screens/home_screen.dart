@@ -17,6 +17,7 @@ import '../../component/custom_widget.dart';
 import '../../component/home_appbar.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../model/my_space_model.dart';
+import '../../network/provider/bottom_provider.dart';
 import '../../network/provider/custom_the'
     ''
     'me_provider.dart';
@@ -97,7 +98,7 @@ class _HomeScreenView extends StatelessWidget {
                       break;
 
                     case "FOR YOU":
-                      //Navigator.pushNamed(context, "/ForYouScreen");
+                      homeScreenProvider.setSelectedMySpace("FOR YOU");
                       break;
 
                     case "FESTIVAL":
@@ -109,19 +110,15 @@ class _HomeScreenView extends StatelessWidget {
                       break;
 
                     case "MY BRAND":
-                      /*Navigator.pushNamed(
-                        context,
-                        "/TemplateListScreen",
-                        arguments: {"type": "brand-series"},
-                      );*/
+                      context.read<BottomNavProvider>().updateIndex(4);
                       break;
 
                     case "BRAND SERIES":
-                      Navigator.pushNamed(context, "/BrandSeriesScreen");
+                      context.read<BottomNavProvider>().updateIndex(1);
                       break;
 
                     case "BRAND FRAMES":
-                      Navigator.pushNamed(context, "/BrandFramesScreen");
+                     // Navigator.pushNamed(context, "/BusinessProfileScreen");
                       break;
 
                     case "AI HUB":
@@ -165,13 +162,11 @@ class _HomeScreenView extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               AppText(
-                                'VIEW ALL',
+                                "VIEW ALL",
                                 style: TextStyle(
-                                  color: isDark
-                                      ? Colors.grey.shade300
-                                      : Colors.grey.shade600,
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w800,
+                                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                  fontSize: AppFontSize.fontSize12,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                               SizedBox(width: 2.w),
@@ -275,7 +270,7 @@ class _HomeScreenView extends StatelessWidget {
                               keyword,
                               style: TextStyle(
                                 color: isDark ? Colors.white70 : Colors.black87,
-                                fontSize: 11.5.sp,
+                                fontSize: AppFontSize.fontSize11,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -458,46 +453,49 @@ class _HomeScreenView extends StatelessWidget {
 
                     final bool isSpecialCategory =
                         categoryLower == 'celebrate moments' ||
-                        categoryLower == 'devotional/daily posts' ||
-                        categoryLower == 'devotional / daily posts';
-
-                    // ==========================================================
-                    // SPECIAL CATEGORY
-                    // Celebrate Moments
-                    // Devotional / Daily Posts
-                    // ==========================================================
+                            categoryLower == 'devotional/daily posts' ||
+                            categoryLower == 'devotional / daily posts';
 
                     if (isSpecialCategory) {
                       if (category.children.isEmpty) {
                         return const SizedBox.shrink();
                       }
 
+                      final categoryIcon =
+                      categoryLower == 'celebrate moments'
+                          ? 'assets/images/flash.png'
+                          : 'assets/images/devotional.png';
+
                       return Container(
                         width: double.infinity,
-                        padding: EdgeInsets.fromLTRB(12.w, 14.h, 12.w, 16.h),
-
+                        padding: EdgeInsets.fromLTRB(5.w, 14.h, 12.w, 16.h),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ==================================================
-                            // PARENT TITLE
-                            // ==================================================
+                            Row(
+                              children: [
+                                Image.asset(
+                                  categoryIcon,
+                                  width: 32.w,
+                                  height: 32.w,
+                                ),
 
-                            AppText(
-                              categoryName,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? Colors.white : Colors.black,
-                              ),
+                                SizedBox(width: 8.w),
+
+                                AppText(
+                                  categoryName,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? Colors.white : Colors.black,
+                                  ),
+                                ),
+                              ],
                             ),
 
                             SizedBox(height: 12.h),
 
-                            // ==================================================
-                            // CHILDREN HORIZONTAL SCROLL
-                            // ==================================================
                             SizedBox(
                               height: 105.h,
                               child: ListView.separated(
@@ -623,7 +621,8 @@ class _HomeScreenView extends StatelessWidget {
                                             textAlign: TextAlign.center,
                                             maxLines: 2,
                                             style: TextStyle(
-                                              fontSize: 10.sp,
+                                              fontSize:
+                                                  AppFontSize.fontSize12.sp,
                                               fontWeight: FontWeight.w700,
                                               height: 1.1,
                                               color: isDark
@@ -917,228 +916,6 @@ class _HomeScreenView extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildCategorySection({
-    required String categoryName,
-    required TemplateCategories category,
-    required bool isDark,
-  }) {
-    final children = category.children;
-
-    if (children.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 7.h),
-      padding: EdgeInsets.only(top: 12.h, bottom: 12.h),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1B1620) : const Color(0xFFFFF9FF),
-        borderRadius: BorderRadius.circular(14.r),
-        border: Border.all(
-          color: isDark ? const Color(0xFF302936) : const Color(0xFFE9D8F4),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          // ==========================================
-          // TITLE
-          // ==========================================
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12.w),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AppText(
-                    categoryName,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 10.h),
-
-          // ==========================================
-          // HORIZONTAL CHILDREN
-          // ==========================================
-          SizedBox(
-            height: 91.h,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-
-              // IMPORTANT:
-              // First + last item screen edge-la
-              // cut aagama irukka padding
-              padding: EdgeInsets.symmetric(horizontal: 14.w),
-
-              physics: const BouncingScrollPhysics(),
-
-              itemCount: children.length,
-
-              separatorBuilder: (_, __) {
-                return SizedBox(width: 11.w);
-              },
-
-              itemBuilder: (context, index) {
-                final child = children[index];
-
-                final childName = child.name?.trim() ?? '';
-
-                final childSlug = child.slug?.trim() ?? '';
-
-                // ------------------------------------------
-                // Prefer thumbnail, fallback icon
-                // ------------------------------------------
-                String imageKey = child.thumbnailS3Key?.trim() ?? '';
-
-                if (imageKey.isEmpty) {
-                  imageKey = child.iconS3Key?.trim() ?? '';
-                }
-
-                final imageUrl = imageKey.isEmpty
-                    ? ''
-                    : '${ApiEndpoints.cdnImageUrl}/$imageKey';
-
-                return SizedBox(
-                  width: 62.w,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12.r),
-
-                    onTap: () {
-                      debugPrint("📂 CHILD CATEGORY: $childName");
-
-                      debugPrint("📂 CHILD SLUG: $childSlug");
-
-                      Navigator.pushNamed(
-                        context,
-                        "/TemplateDetailScreen",
-                        arguments: {
-                          "category": childSlug,
-                          "categoryUid": child.uid,
-                          "categoryName": child.name,
-                        },
-                      );
-                    },
-
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // ==================================
-                        // IMAGE
-                        // ==================================
-                        Container(
-                          width: 58.w,
-                          height: 58.w,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(11.r),
-
-                            color: isDark
-                                ? const Color(0xFF28232B)
-                                : Colors.white,
-
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 5,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(11.r),
-
-                            child: imageUrl.isEmpty
-                                ? Center(
-                                    child: Icon(
-                                      Icons.image_outlined,
-                                      size: 22.sp,
-                                      color: Colors.grey,
-                                    ),
-                                  )
-                                : Image.network(
-                                    imageUrl,
-                                    width: 58.w,
-                                    height: 58.w,
-                                    fit: BoxFit.cover,
-
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                          if (loadingProgress == null) {
-                                            return child;
-                                          }
-
-                                          return Center(
-                                            child: SizedBox(
-                                              width: 17.w,
-                                              height: 17.w,
-                                              child:
-                                                  const CircularProgressIndicator(
-                                                    strokeWidth: 1.5,
-                                                    color: Color(0xFFE53935),
-                                                  ),
-                                            ),
-                                          );
-                                        },
-
-                                    errorBuilder: (context, error, stackTrace) {
-                                      debugPrint(
-                                        "❌ CHILD IMAGE ERROR: "
-                                        "$imageUrl",
-                                      );
-
-                                      return Center(
-                                        child: Icon(
-                                          Icons.broken_image_outlined,
-                                          size: 21.sp,
-                                          color: Colors.grey,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                          ),
-                        ),
-
-                        SizedBox(height: 5.h),
-
-                        // ==================================
-                        // NAME
-                        // ==================================
-                        SizedBox(
-                          width: 62.w,
-                          child: AppText(
-                            childName,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 7.5.sp,
-                              fontWeight: FontWeight.w700,
-                              height: 1.05,
-                              color: isDark ? Colors.white : Colors.black,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showCreateNewDialog(BuildContext context, bool isDark) {
     final List<String> sizes = [
       "Post Square (1:1)",
@@ -2002,11 +1779,11 @@ class _HomeScreenView extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 4.w),
-              child: AppText(
+              child:AppText(
                 "VIEW ALL",
                 style: TextStyle(
                   color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                  fontSize: 12.sp,
+                  fontSize: AppFontSize.fontSize12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -2029,12 +1806,12 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildMySpaceList(
-    HomeScreenProvider homeScreenProvider,
-    bool isDark,
-    void Function(MySpaceModel item) onTap,
-  ) {
+      HomeScreenProvider homeScreenProvider,
+      bool isDark,
+      void Function(MySpaceModel item) onTap,
+      ) {
     return SizedBox(
-      height: 90.h,
+      height: 100.h,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: homeScreenProvider.mySpaceList.length,
@@ -2042,43 +1819,74 @@ class _HomeScreenView extends StatelessWidget {
         itemBuilder: (context, index) {
           final item = homeScreenProvider.mySpaceList[index];
 
-          return InkWell(
-            onTap: () => onTap(item),
-            borderRadius: BorderRadius.circular(20.r),
-            child: Container(
-              width: 100.w,
-              margin: EdgeInsets.only(right: 12.w),
-              padding: EdgeInsets.all(10.r),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: item.gradientColors,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+          final bool isSelected =
+              homeScreenProvider.selectedMySpace == item.title;
+
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            width: isSelected ? 104.w : 100.w,
+            height: isSelected ? 96.h : 90.h,
+            margin: EdgeInsets.only(
+              right: 12.w,
+              top: isSelected ? 0 : 5.h,
+              bottom: isSelected ? 0 : 5.h,
+            ),
+            child: InkWell(
+              onTap: () => onTap(item),
+              borderRadius: BorderRadius.circular(20.r),
+              child: Container(
+                padding: EdgeInsets.all(
+                  isSelected ? 8.r : 10.r,
                 ),
-                borderRadius: BorderRadius.circular(20.r),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    item.icon,
-                    height: 36.h,
-                    width: 36.w,
-                    fit: BoxFit.contain,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: item.gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  SizedBox(height: 6.h),
-                  AppText(
-                    item.title,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    style: TextStyle(
-                      color: isDark ? Colors.white : Colors.black,
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w900,
-                      height: 1.1,
+                  borderRadius: BorderRadius.circular(20.r),
+                  border: isSelected
+                      ? Border.all(
+                    color: Colors.white,
+                    width: 2,
+                  )
+                      : null,
+                  boxShadow: isSelected
+                      ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
-                  ),
-                ],
+                  ]
+                      : null,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      item.icon,
+                      height: isSelected ? 38.h : 36.h,
+                      width: isSelected ? 38.w : 36.w,
+                      fit: BoxFit.contain,
+                    ),
+                    SizedBox(height: 6.h),
+                    AppText(
+                      item.title,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      style: TextStyle(
+                        color: isDark
+                            ? Colors.white
+                            : Colors.black,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w900,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -2293,116 +2101,6 @@ class _HomeScreenView extends StatelessWidget {
         "descriptionColor": const Color(0xFF303030),
       },
     ];
-
-    final bool isPersonal =
-        me?.data?.accountType?.toString().toLowerCase() == "personal";
-
-    if (isPersonal) {
-      return Padding(
-        padding: EdgeInsets.symmetric(horizontal: 4.w),
-        child: Column(
-          children: List.generate(banners.length, (index) {
-            final banner = banners[index];
-
-            final title = banner["title"] as String;
-
-            final description = banner["description"] as String;
-
-            final button = banner["button"] as String;
-
-            final gradient = banner["gradient"] as List<Color>;
-
-            final titleColor = banner["titleColor"] as Color;
-
-            final descriptionColor = banner["descriptionColor"] as Color;
-
-            final onTap = banner["onTap"] as VoidCallback;
-
-            return Container(
-              width: double.infinity,
-              height: 48.h,
-              margin: EdgeInsets.only(
-                bottom: index == banners.length - 1 ? 0 : 6.h,
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: gradient,
-                ),
-                borderRadius: BorderRadius.circular(7.r),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AppText(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: titleColor,
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-
-                        SizedBox(height: 1.h),
-
-                        AppText(
-                          description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: descriptionColor,
-                            fontSize: 7.sp,
-                            height: 1.1,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(width: 6.w),
-
-                  SizedBox(
-                    height: 19.h,
-                    child: ElevatedButton(
-                      onPressed: onTap,
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: titleColor,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(horizontal: 7.w),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      ),
-                      child: AppText(
-                        button,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 6.sp,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ),
-      );
-    }
-
     return SizedBox(
       height: 165.h,
       child: Column(
@@ -2453,7 +2151,7 @@ class _HomeScreenView extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: titleColor,
-                          fontSize: 20.sp,
+                          fontSize: AppFontSize.fontSize26,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -2466,7 +2164,7 @@ class _HomeScreenView extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: descriptionColor,
-                          fontSize: 13.sp,
+                          fontSize: AppFontSize.fontSize14,
                           height: 1.15,
                           fontWeight: FontWeight.w500,
                         ),

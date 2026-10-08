@@ -18,7 +18,14 @@ class HomeScreenProvider extends ChangeNotifier {
   HomeScreenProvider({bool loadSpecialDaysOnInit = true}) {
     initialize(loadSpecialDaysOnInit: loadSpecialDaysOnInit);
   }
+  String _selectedMySpace = '';
 
+  String get selectedMySpace => _selectedMySpace;
+
+  void setSelectedMySpace(String title) {
+    _selectedMySpace = title;
+    notifyListeners();
+  }
   Future<void> initialize({bool loadSpecialDaysOnInit = true}) async {
     if (_initialized) {
       debugPrint("⚠️ HomeScreenProvider already initialized");

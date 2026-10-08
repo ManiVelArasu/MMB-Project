@@ -7,6 +7,7 @@ import '../../network/provider/business_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/industry_provider.dart';
 import '../../utils/theme/app.colors.dart';
+import '../../utils/theme/app.fonts.dart';
 import '../../widgets/button_widget.dart';
 
 class BusinessCategoryChooseView extends StatelessWidget {
@@ -53,20 +54,20 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const AppText(
+               AppText(
                 "Select Your Business Category",
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: AppFontSize.fontSize22,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
               ),
               const SizedBox(height: 16),
 
-              const AppText(
+               AppText(
                 "Business Category",
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppFontSize.fontSize12,
                   color: Colors.grey,
                   fontWeight: FontWeight.bold,
                 ),
@@ -85,9 +86,9 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                 ),
                 child: AppText(
                   industryProvider.savedCategoryName,
-                  style: const TextStyle(
+                  style:  TextStyle(
                     color: Colors.red,
-                    fontSize: 16,
+                    fontSize: AppFontSize.fontSize16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -96,10 +97,10 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
 
               const SizedBox(height: 4),
               if (industryProvider.childCategories.isEmpty) ...[
-                const AppText(
+                 AppText(
                   "Can't find your business type?",
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: AppFontSize.fontSize15,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
@@ -109,13 +110,13 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                   "Choose Other and enter your business type. We'll review new requests "
                   "and continuously expand our industry database to improve template "
                   "recommendations.",
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle( fontSize: AppFontSize.fontSize12, color: Colors.grey.shade600),
                 ),
               ] else ...[
-                const AppText(
+                 AppText(
                   "Choose a specialization",
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: AppFontSize.fontSize15,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
@@ -123,7 +124,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                 const SizedBox(height: 4),
                 AppText(
                   "Find the category that best matches your business.",
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle( fontSize: AppFontSize.fontSize12, color: Colors.grey.shade600),
                 ),
               ],
 
@@ -143,7 +144,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                       backgroundColor: Colors.grey.shade100,
                       labelStyle: TextStyle(
                         color: selected ? Colors.red : Colors.black87,
-                        fontSize: 13,
+                        fontSize: AppFontSize.fontSize13,
                         fontWeight: FontWeight.w600,
                       ),
                       shape: RoundedRectangleBorder(
@@ -173,7 +174,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                             color: industryProvider.showOtherInput
                                 ? Colors.red
                                 : Colors.black87,
-                            fontSize: 13,
+                            fontSize: AppFontSize.fontSize13,
                             fontWeight: FontWeight.w600,
                           ),
                           shape: RoundedRectangleBorder(
@@ -212,7 +213,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
 
                     hintStyle: TextStyle(
                       color: Colors.grey.shade400,
-                      fontSize: 13,
+                      fontSize: AppFontSize.fontSize13,
                     ),
 
                     errorText: industryProvider.otherError,

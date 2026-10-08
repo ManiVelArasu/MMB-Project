@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/network/provider/common_provider.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
@@ -219,9 +221,7 @@ class BusinessProfileView extends StatelessWidget {
                               Row(
                                 children: [
                                   _buildActionCard(
-                                    onCallBack: (){
-
-                                    },
+                                    onCallBack: () {},
                                     title: "ABOUT",
                                     iconAsset: "assets/images/about.png",
                                     bgColor: isDark
@@ -232,9 +232,11 @@ class BusinessProfileView extends StatelessWidget {
                                   SizedBox(width: 10.w),
 
                                   _buildActionCard(
-                                    onCallBack: (){
-                                      Navigator.pushNamed(context, "/ProductsScreen");
-
+                                    onCallBack: () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        "/ProductsScreen",
+                                      );
                                     },
                                     title: "MY PRODUCTS",
                                     iconAsset: "assets/images/product.png",
@@ -245,8 +247,11 @@ class BusinessProfileView extends StatelessWidget {
                                   ),
                                   SizedBox(width: 10.w),
                                   _buildActionCard(
-                                    onCallBack: (){
-                                      Navigator.pushNamed(context, "/MyUploadsScreen");
+                                    onCallBack: () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        "/MyUploadsScreen",
+                                      );
                                     },
                                     title: "UPLOADS",
                                     iconAsset: "assets/images/uploads.png",
@@ -767,19 +772,18 @@ class BusinessProfileView extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           AppText(
-                            "EDIT PERSONAL DETAILS",
+                            "EDIT PROFILE",
                             style: TextStyle(
-                              color: const Color(0xFFE53935),
-                              fontSize: 11.sp,
+                              color: AppColors.appRed,
+                              fontSize: AppFontSize.fontSize12,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
                             ),
                           ),
                           SizedBox(width: 4.w),
-                          Icon(
-                            Icons.edit_note_rounded,
-                            color: const Color(0xFFE53935),
-                            size: 16.sp,
+                          Image.asset(
+                            "assets/images/edit_profile.png",
+                            width: 16,
+                            height: 16,
                           ),
                         ],
                       ),
@@ -800,20 +804,28 @@ class BusinessProfileView extends StatelessWidget {
                     Expanded(
                       child: _personalActionCard(
                         title: "My Downloads",
-                        icon: Icons.file_download_outlined,
-                        iconColor: const Color(0xFF8067E8),
-                        backgroundColor: const Color(0xFFF0EDFF),
-                        onTap: () {},
+                        imagePath:"assets/images/document_download.png" ,
+                        gradientColors: [
+                          const Color(0xFFF6F4FF),
+                          const Color(0xFFEEEBFF),
+                        ],
+                        onTap: () {
+                          Navigator.pushNamed(context, '/MyDownloadsScreen');
+                        },
                       ),
                     ),
                     SizedBox(width: 10.w),
                     Expanded(
                       child: _personalActionCard(
                         title: "Media Library",
-                        icon: Icons.folder_copy_outlined,
-                        iconColor: const Color(0xFFE97955),
-                        backgroundColor: const Color(0xFFFFEEDB),
-                        onTap: () {},
+                       imagePath: "assets/images/media.png",
+                        gradientColors: [
+                          const Color(0xFFFFFAF2),
+                          const Color(0xFFFFE8C6),
+                        ],
+                        onTap: () {
+                          Navigator.pushNamed(context, '/MyUploadsScreen');
+                        },
                       ),
                     ),
                   ],
@@ -936,33 +948,40 @@ class BusinessProfileView extends StatelessWidget {
       ),
     );
   }
-
   Widget _personalActionCard({
     required String title,
-    required IconData icon,
-    required Color iconColor,
-    required Color backgroundColor,
+    required String imagePath,
+    required List<Color> gradientColors,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 70.h,
+        height: 90.h,
         decoration: BoxDecoration(
-          color: backgroundColor,
+          gradient: LinearGradient(
+            colors: gradientColors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(10.r),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: iconColor, size: 23.sp),
+            Image.asset(
+              imagePath,
+              width: 36.w,
+              height: 36.h,
+              fit: BoxFit.contain,
+            ),
             SizedBox(height: 4.h),
             Text(
               title,
               style: TextStyle(
-                color: Colors.black,
-                fontSize: 10.5.sp,
-                fontWeight: FontWeight.w800,
+                color: AppColors.appBlack,
+                fontSize: AppFontSize.fontSize15,
+                fontWeight: FontWeight.w900,
               ),
             ),
           ],
@@ -2244,9 +2263,7 @@ Widget _buildActionCard({
               errorBuilder: (_, __, ___) => Icon(
                 Icons.folder_outlined,
                 size: 32.sp,
-                color: isDark
-                    ? Colors.white70
-                    : Colors.black54,
+                color: isDark ? Colors.white70 : Colors.black54,
               ),
             ),
             SizedBox(height: 8.h),
@@ -2254,9 +2271,7 @@ Widget _buildActionCard({
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: isDark
-                    ? Colors.white
-                    : Colors.black,
+                color: isDark ? Colors.white : Colors.black,
                 fontSize: 10.5.sp,
                 fontWeight: FontWeight.w900,
               ),

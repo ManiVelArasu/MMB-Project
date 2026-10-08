@@ -467,10 +467,7 @@ class PlanProvider extends ChangeNotifier {
   }
 
   /// Returns the button text and state based on current active plan index
-  PlanButtonState getPlanButtonState(
-      Plan plan,
-      int currentIndex,
-      ) {
+  PlanButtonState getPlanButtonState(Plan plan, int currentIndex) {
     final activeIndex = activePlanIndex;
 
     // ==========================================================
@@ -490,7 +487,6 @@ class PlanProvider extends ChangeNotifier {
     // ==========================================================
 
     if (plan.uid == activePlanUid) {
-
       // --------------------------------------------------------
       // Current plan renewal cancelled
       // --------------------------------------------------------
@@ -540,11 +536,11 @@ class PlanProvider extends ChangeNotifier {
   String _getDefaultButtonText(int index) {
     switch (index) {
       case 0:
-        return " BASIC";
+        return "START BASIC";
       case 1:
-        return "PREMIUM";
+        return "START PREMIUM";
       case 2:
-        return "ELITE";
+        return "START ELITE";
       default:
         return "PLAN";
     }
@@ -593,11 +589,9 @@ class PlanProvider extends ChangeNotifier {
 
     final autoRenew = subscription["auto_renew"];
 
-    final renewalCancelledAt =
-    subscription["renewal_cancelled_at"];
+    final renewalCancelledAt = subscription["renewal_cancelled_at"];
 
-    return autoRenew == false ||
-        renewalCancelledAt != null;
+    return autoRenew == false || renewalCancelledAt != null;
   }
 }
 
