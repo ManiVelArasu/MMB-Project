@@ -487,7 +487,7 @@ class _HomeScreenView extends StatelessWidget {
                                   categoryName,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontSize: 16.sp,
+                                    fontSize: AppFontSize.fontSize18,
                                     fontWeight: FontWeight.w600,
                                     color: isDark ? Colors.white : Colors.black,
                                   ),
@@ -2204,8 +2204,8 @@ class _HomeScreenView extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: descriptionColor,
-                          fontSize: AppFontSize.fontSize14,
-                          height: 1.15,
+                          fontSize: AppFontSize.fontSize16,
+
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -2229,7 +2229,7 @@ class _HomeScreenView extends StatelessWidget {
                             button,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 10.sp,
+                              fontSize: AppFontSize.fontSize14,
                               fontWeight: FontWeight.w800,
                             ),
                           ),

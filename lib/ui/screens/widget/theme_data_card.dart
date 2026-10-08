@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
 
 import '../../../Api Model/theme_screen_model.dart';
 import '../../../component/custom_widget.dart';
@@ -143,9 +144,9 @@ class BrandSeriesCard extends StatelessWidget {
                           child: AppText(
                             "POPULAR",
                             style: TextStyle(
-                              color: const Color(0xFFE53935),
-                              fontSize: AppFontSize.fontSize12,
-                              fontWeight: FontWeight.w400,
+                              color: AppColors.appBlack,
+                              fontSize: AppFontSize.fontSize11,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -160,9 +161,9 @@ class BrandSeriesCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: AppFontSize.fontSize12,
+                        fontSize: AppFontSize.fontSize13,
                         height: 1.25,
-                        color: isDark ? Colors.white70 : Colors.black54,
+                        color: isDark ? Colors.white70 : AppColors.appBlack,
                       ),
                     ),
 
@@ -170,11 +171,11 @@ class BrandSeriesCard extends StatelessWidget {
 
                     // PERFECT FOR
                     AppText(
-                      perfectFor,
+                      "$perfectFor",
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: AppFontSize.fontSize14,
+                        fontSize: AppFontSize.fontSize12,
                         color: isDark
                             ? Colors.grey.shade400
                             : Colors.grey.shade600,

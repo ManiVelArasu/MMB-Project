@@ -165,7 +165,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
         softWrap: false,
         style: TextStyle(
           color: AppColors.appRed,
-          fontSize: AppFontSize.fontSize14,
+          fontSize: AppFontSize.fontSize12,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -212,10 +212,10 @@ class ThemeGroupSection extends StatelessWidget {
 
             Expanded(
               child: Text(
-                group.slug ?? "",
+                group.name ?? "",
                 style: TextStyle(
                   color: isDark ? Colors.white : Colors.black,
-                  fontSize: AppFontSize.fontSize22,
+                  fontSize: AppFontSize.fontSize18,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -280,11 +280,11 @@ class ThemeGroupSection extends StatelessWidget {
                           thumbnail: thumbnail,
                           title: variant.name ?? "Theme",
                           description:
-                              "${variant.businessCategories.length} Ready-to-Use TemplatesTemplates",
+                              "${variant.businessCategories.length} Ready-to-Use Templates.",
                           perfectFor: variant.businessCategories
                               .map(
-                                (category) => category.slug?.isNotEmpty == true
-                                    ? category.slug!
+                                (category) => category.name ?.isNotEmpty == true
+                                    ? category.name!
                                     : variant.description ?? '',
                               )
                               .where((slug) => slug.isNotEmpty)

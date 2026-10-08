@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/core/api/api_endpoints.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -339,8 +340,8 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
                         style: TextStyle(
                           color: isDark
                               ? Colors.white
-                              : Colors.black,
-                          fontSize: AppFontSize.fontSize18,
+                              : AppColors.appBlack,
+                          fontSize: AppFontSize.fontSize22,
                           fontWeight: FontWeight.w800,
                         ),
                         maxLines: 1,

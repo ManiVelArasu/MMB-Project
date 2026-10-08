@@ -237,7 +237,7 @@ class ThemeDetailView extends StatelessWidget {
 
                     if (variants.isNotEmpty) ...[
                       SizedBox(height: 24.h),
-                      
+
 
                       GridView.builder(
                         shrinkWrap: true,
