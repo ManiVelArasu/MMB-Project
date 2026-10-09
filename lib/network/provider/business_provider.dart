@@ -1084,13 +1084,14 @@ class BusinessProvider extends ChangeNotifier {
 
     // Email is OPTIONAL.
     // Validate format only when user enters email.
-    final email = _email.trim();
+    // Email format validation only
+    final email = emailController.text.trim();
 
-    if (email.isEmpty) {
-      _emailError = null;
-    } else {
+
+
+    if (email.isNotEmpty) {
       final emailRegex = RegExp(
-        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+        r'^[\w.-]+@([\w-]+\.)+[\w-]{2,}$',
       );
 
       if (!emailRegex.hasMatch(email)) {
@@ -1099,7 +1100,10 @@ class BusinessProvider extends ChangeNotifier {
       } else {
         _emailError = null;
       }
+    } else {
+      _emailError = null;
     }
+
 
     // Contact Number
     _mobileNumber = mobileController.text.trim();

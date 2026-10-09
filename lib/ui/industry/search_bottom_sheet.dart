@@ -27,6 +27,19 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
   final TextEditingController _searchController = TextEditingController();
 
   final FocusNode _focusNode = FocusNode();
+  void _animateSheet(double size) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !widget.sheetController.isAttached) {
+        return;
+      }
+
+      widget.sheetController.animateTo(
+        size,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   @override
   void initState() {
@@ -36,17 +49,9 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
 
     _focusNode.addListener(() {
       if (_focusNode.hasFocus) {
-        widget.sheetController.animateTo(
-          0.95,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
+        _animateSheet(0.95);
       } else {
-        widget.sheetController.animateTo(
-          0.75,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
+        _animateSheet(0.75);
       }
     });
   }
@@ -61,20 +66,14 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
 
   @override
   void didChangeMetrics() {
-    final bottom = WidgetsBinding
-        .instance
-        .platformDispatcher
-        .views
-        .first
-        .viewInsets
-        .bottom;
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+
+    if (views.isEmpty) return;
+
+    final bottom = views.first.viewInsets.bottom;
 
     if (bottom > 0) {
-      widget.sheetController.animateTo(
-        0.95,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
+      _animateSheet(0.95);
     }
   }
 

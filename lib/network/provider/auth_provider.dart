@@ -231,6 +231,12 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
   }
 
   Future<Map<String, dynamic>?> verifyOtpApi(BuildContext context) async {
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      "/AccountTypeScreen",
+          (route) => false,
+      arguments: {"showSkip": true},
+    );
     final String enteredOtp = getOtp();
 
     if (enteredOtp.length < 6) {
