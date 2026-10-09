@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/special_days.dart';
+import '../../component/appbar_widget.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/special_days_provider.dart';
@@ -13,11 +14,7 @@ class TemplateListScreen extends StatelessWidget {
   final String? type;
   final String? range;
 
-  const TemplateListScreen({
-    super.key,
-    this.type,
-    this.range,
-  });
+  const TemplateListScreen({super.key, this.type, this.range});
 
   @override
   Widget build(BuildContext context) {
@@ -25,11 +22,8 @@ class TemplateListScreen extends StatelessWidget {
     debugPrint("🎉 TemplateListScreen range: $range");
 
     return ChangeNotifierProvider(
-      create: (_) => TemplateListProvider()
-        ..loadSpecialDays(
-          type: type,
-          range: range,
-        ),
+      create: (_) =>
+          TemplateListProvider()..loadSpecialDays(type: type, range: range),
       child: const _TemplateListScreenView(),
     );
   }
@@ -47,27 +41,10 @@ class _TemplateListScreenView extends StatelessWidget {
           ? const Color(0xFF121212)
           : const Color(0xFFF8F8F8),
 
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
-
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 19.sp,
-            color: isDark ? Colors.white : Colors.black87,
-          ),
-        ),
-
-        title: Text(
-          'Special Days',
-          style: TextStyle(
-            fontSize: 19.sp,
-            fontWeight: FontWeight.w900,
-            color: isDark ? Colors.white : Colors.black87,
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Special Days',
+        showTitle: true,
+        showRightIcon: false,
       ),
 
       body: SafeArea(

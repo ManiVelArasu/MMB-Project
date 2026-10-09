@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/ui/screens/video_widget/video_widget.dart';
+import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../Api Model/Template_model.dart';
@@ -105,7 +106,7 @@ class _HomeScreenView extends StatelessWidget {
                       Navigator.pushNamed(
                         context,
                         "/TemplateListScreen",
-                        arguments: {"type": "festival", "range": "year"},
+                        arguments: {"type": "holiday", "range": "year"},
                       );
                       break;
 
@@ -118,7 +119,7 @@ class _HomeScreenView extends StatelessWidget {
                       break;
 
                     case "BRAND FRAMES":
-                      // Navigator.pushNamed(context, "/BusinessProfileScreen");
+                      Navigator.pushNamed(context, "/BusinessFrameScreen");
                       break;
 
                     case "AI HUB":
@@ -211,7 +212,7 @@ class _HomeScreenView extends StatelessWidget {
                 ),
                 SizedBox(height: 12.h),
 
-                _buildMyZoneSlider(homeScreenProvider, isDark,),
+                _buildMyZoneSlider(homeScreenProvider, isDark),
 
                 SizedBox(height: 24.h),
 
@@ -741,57 +742,41 @@ class _HomeScreenView extends StatelessWidget {
                           // ======================================================
                           else if (isYoutubeThumbnail)
                             SizedBox(
-                              height: 200.h,
+                              height: 175.h,
                               width: double.infinity,
-
                               child: LayoutBuilder(
                                 builder: (context, constraints) {
-                                  final double pageWidth = constraints.maxWidth;
+                                  final double screenWidth =
+                                      constraints.maxWidth;
+                                  final double horizontalGap = 4.w;
+                                  final double verticalGap = 6.h;
 
-                                  final double horizontalGap = 12.w;
+                                  // Each page occupies 92% of available width.
+                                  final double pageWidth = screenWidth * 0.92;
 
-                                  final double verticalGap = 12.h;
-
-                                  // 2 cards per row
                                   final double cardWidth =
-                                      (pageWidth - horizontalGap) / 2;
+                                      (pageWidth - horizontalGap - 6.w) / 2;
 
-                                  // EXACT 16:9
                                   final double cardHeight = cardWidth * 9 / 16;
-
-                                  // 4 cards per page
                                   final int pageCount = (templates.length / 4)
                                       .ceil();
 
                                   return ListView.builder(
                                     scrollDirection: Axis.horizontal,
-
                                     physics: const BouncingScrollPhysics(),
-
+                                    padding: EdgeInsets.zero,
                                     itemCount: pageCount,
-
                                     itemBuilder: (context, pageIndex) {
                                       final int startIndex = pageIndex * 4;
 
                                       return SizedBox(
                                         width: pageWidth,
-
                                         child: Padding(
-                                          padding: EdgeInsets.only(
-                                            right: pageIndex == pageCount - 1
-                                                ? 0
-                                                : 16.w,
-                                          ),
-
+                                          padding: EdgeInsets.only(right: 6.w),
                                           child: Column(
                                             children: [
-                                              // ==============================
-                                              // ROW 1
-                                              // ==============================
-
                                               SizedBox(
                                                 height: cardHeight,
-
                                                 child: Row(
                                                   children: [
                                                     Expanded(
@@ -802,11 +787,9 @@ class _HomeScreenView extends StatelessWidget {
                                                             isDark,
                                                           ),
                                                     ),
-
                                                     SizedBox(
                                                       width: horizontalGap,
                                                     ),
-
                                                     Expanded(
                                                       child:
                                                           startIndex + 1 <
@@ -822,15 +805,9 @@ class _HomeScreenView extends StatelessWidget {
                                                   ],
                                                 ),
                                               ),
-
                                               SizedBox(height: verticalGap),
-
-                                              // ==============================
-                                              // ROW 2
-                                              // ==============================
                                               SizedBox(
                                                 height: cardHeight,
-
                                                 child: Row(
                                                   children: [
                                                     Expanded(
@@ -845,11 +822,9 @@ class _HomeScreenView extends StatelessWidget {
                                                             )
                                                           : const SizedBox(),
                                                     ),
-
                                                     SizedBox(
                                                       width: horizontalGap,
                                                     ),
-
                                                     Expanded(
                                                       child:
                                                           startIndex + 3 <
@@ -1368,7 +1343,40 @@ class _HomeScreenView extends StatelessWidget {
                       },
                     ),
             ),
+            Positioned(
+              top: 5.h,
+              right: 5.w,
+              child: TemplateActionPopup(
+                onCustomize: () {
+                  final templateUid = template.uid?.trim() ?? '';
 
+                  if (templateUid.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: AppText('Template UID not available'),
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (template.isLocked) {
+                    _showPremiumTemplateDialog(context, template);
+                    return;
+                  }
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          TemplateEditScreen(templateUid: templateUid),
+                    ),
+                  );
+                },
+                onFavorite: () {
+                  // உங்கள் Favorite API / storage logic இங்கே சேர்க்கவும்.
+                },
+              ),
+            ),
             if (template.isLocked)
               Positioned.fill(
                 child: Container(
@@ -1639,28 +1647,29 @@ class _HomeScreenView extends StatelessWidget {
     bool isDark,
   ) {
     final key = template.thumbnailS3Key?.trim() ?? '';
-
     final imageUrl = key.isEmpty ? '' : '${ApiEndpoints.cdnImageUrl}/$key';
+
+    final templateUid = (template as dynamic).uid?.toString().trim() ?? '';
+
+    void openCustomize() {
+      if (templateUid.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: AppText('Template UID not available')),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TemplateEditScreen(templateUid: templateUid),
+        ),
+      );
+    }
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        final templateUid = (template as dynamic).uid?.toString().trim() ?? '';
-
-        if (templateUid.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: AppText('Template UID not available')),
-          );
-          return;
-        }
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => TemplateEditScreen(templateUid: templateUid),
-          ),
-        );
-      },
+      onTap: openCustomize,
       child: Container(
         margin: EdgeInsets.only(right: 12.w),
         decoration: BoxDecoration(
@@ -1673,18 +1682,42 @@ class _HomeScreenView extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16.r),
-          child: imageUrl.isEmpty
-              ? _templateImagePlaceholder(isDark)
-              : CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) {
-                    return const Center(child: CircularProgressIndicator());
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              imageUrl.isEmpty
+                  ? _templateImagePlaceholder(isDark)
+                  : CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) =>
+                          const Center(child: CircularProgressIndicator()),
+                      errorWidget: (context, url, error) =>
+                          _templateImagePlaceholder(isDark),
+                    ),
+
+              Positioned(
+                top: 5.h,
+                right: 5.w,
+                child: TemplateActionPopup(
+                  onCustomize: () {
+                    if (templateUid.isEmpty) return;
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            TemplateEditScreen(templateUid: templateUid),
+                      ),
+                    );
                   },
-                  errorWidget: (context, url, error) {
-                    return _templateImagePlaceholder(isDark);
+                  onFavorite: () {
+                    // உங்கள் Favorite API அல்லது storage logic
                   },
                 ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1891,9 +1924,9 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildMyZoneSlider(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark,
-      ) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+  ) {
     print('sdsadsadsadsadasdsad${homeScreenProvider.provider.me?.data.phone}');
     final popularTemplates = homeScreenProvider.popularTemplates
         .take(4)
@@ -1903,134 +1936,131 @@ class _HomeScreenView extends StatelessWidget {
       height: 360.h,
       child: popularTemplates.isEmpty
           ? Container(
-        margin: EdgeInsets.symmetric(horizontal: 25.w),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16.r),
-          color: isDark
-              ? const Color(0xFF1E1E1E)
-              : Colors.grey.shade100,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16.r),
-          child: Image.asset(
-            "assets/images/BName.png",
-            fit: BoxFit.cover,
-          ),
-        ),
-      )
+              margin: EdgeInsets.symmetric(horizontal: 25.w),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.r),
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16.r),
+                child: Image.asset(
+                  "assets/images/BName.png",
+                  fit: BoxFit.cover,
+                ),
+              ),
+            )
           : PageView.builder(
-        controller: homeScreenProvider.zonePageController,
-        itemCount: popularTemplates.length,
-        itemBuilder: (context, index) {
-          final item = popularTemplates[index];
+              controller: homeScreenProvider.zonePageController,
+              itemCount: popularTemplates.length,
+              itemBuilder: (context, index) {
+                final item = popularTemplates[index];
 
-          final thumbnailKey = item.thumbnailS3Key ?? '';
+                final thumbnailKey = item.thumbnailS3Key ?? '';
 
-          final imageUrl = thumbnailKey.isEmpty
-              ? ''
-              : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+                final imageUrl = thumbnailKey.isEmpty
+                    ? ''
+                    : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
 
-          final phone =
-              homeScreenProvider.provider.me?.data.phone?.toString() ?? '';
+                final phone =
+                    homeScreenProvider.provider.me?.data.phone?.toString() ??
+                    '';
 
-          final name =
-              homeScreenProvider.provider.me?.data.name?.toString() ?? '';
+                final name =
+                    homeScreenProvider.provider.me?.data.name?.toString() ?? '';
 
-          return Container(
-            margin: EdgeInsets.symmetric(horizontal: 25.w),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16.r),
-              color: isDark
-                  ? const Color(0xFF1E1E1E)
-                  : Colors.grey.shade100,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16.r),
-              child: Stack(
-                clipBehavior: Clip.hardEdge,
-                children: [
-
-                  // =========================
-                  // TEMPLATE IMAGE
-                  // =========================
-                  Positioned.fill(
-                    child: buildProfileImage(imageUrl),
+                return Container(
+                  margin: EdgeInsets.symmetric(horizontal: 25.w),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16.r),
+                    color: isDark
+                        ? const Color(0xFF1E1E1E)
+                        : Colors.grey.shade100,
                   ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16.r),
+                    child: Stack(
+                      clipBehavior: Clip.hardEdge,
+                      children: [
+                        // =========================
+                        // TEMPLATE IMAGE
+                        // =========================
+                        Positioned.fill(child: buildProfileImage(imageUrl)),
 
-                  // =========================
-                  // BOTTOM BLUE INFO WITH WAVE
-                  // =========================
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    height: 55.h,
-                    child: ClipPath(
-                      clipper: BottomWaveClipper(),
-                      child: Container(
-                        padding: EdgeInsets.only(
-                          left: 20.w,
-                          right: 20.w,
-                          top: 12.h, // Padding to push content below the curve
-                        ),
-                        color: const Color(0xFF246BFE),
-                        child: Row(
-                          children: [
+                        // =========================
+                        // BOTTOM BLUE INFO WITH WAVE
+                        // =========================
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          height: 55.h,
+                          child: ClipPath(
+                            clipper: BottomWaveClipper(),
+                            child: Container(
+                              padding: EdgeInsets.only(
+                                left: 20.w,
+                                right: 20.w,
+                                top: 12
+                                    .h, // Padding to push content below the curve
+                              ),
+                              color: const Color(0xFF246BFE),
+                              child: Row(
+                                children: [
+                                  // PHONE ICON
+                                  Icon(
+                                    Icons.phone,
+                                    color: Colors.white,
+                                    size: 14.sp,
+                                  ),
 
-                            // PHONE ICON
-                            Icon(
-                              Icons.phone,
-                              color: Colors.white,
-                              size: 14.sp,
-                            ),
+                                  SizedBox(width: 4.w),
 
-                            SizedBox(width: 4.w),
+                                  // PHONE
+                                  Expanded(
+                                    flex: 5,
+                                    child: Text(
+                                      phone,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9.sp,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
 
-                            // PHONE
-                            Expanded(
-                              flex: 5,
-                              child: Text(
-                                phone,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9.sp,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                  SizedBox(width: 5.w),
+
+                                  // NAME
+                                  Expanded(
+                                    flex: 6,
+                                    child: Text(
+                                      name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.right,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9.sp,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-
-                            SizedBox(width: 5.w),
-
-                            // NAME
-                            Expanded(
-                              flex: 6,
-                              child: Text(
-                                name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9.sp,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
+
   Widget _buildMyFrameHeader(bool isDark, BuildContext context) {
     return Row(
       children: [
@@ -2675,6 +2705,7 @@ class _ShareItem {
 
   _ShareItem(this.title, this.icon);
 }
+
 class BottomWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
@@ -2685,8 +2716,10 @@ class BottomWaveClipper extends CustomClipper<Path> {
 
     // Create the upward curve on the left side mimicking the reference image
     path.quadraticBezierTo(
-      size.width * 0.15, 0, // Control point curving up towards the left
-      size.width * 0.35, 0.5.h, // End point of the curve segment
+      size.width * 0.15,
+      0, // Control point curving up towards the left
+      size.width * 0.35,
+      0.5.h, // End point of the curve segment
     );
 
     // Line across the top right

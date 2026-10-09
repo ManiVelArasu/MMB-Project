@@ -198,7 +198,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
     return ListenableBuilder(
       listenable: provider,
       builder: (context, _) {
-        final String displayName = _getDisplayName(provider);
+        final String displayName = widget.title.isNotEmpty
+            ? widget.title
+            : _getDisplayName(provider);
 
         return SafeArea(
           child: AppBar(

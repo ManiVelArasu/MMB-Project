@@ -39,6 +39,7 @@ class TemplateListProvider extends ChangeNotifier {
       } else {
         response = await HomeRepository.instance.specialDaysApi(
           type: type,
+          range: range
         );
       }
 

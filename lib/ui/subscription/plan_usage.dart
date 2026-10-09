@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
+import '../../Api Model/ai_top_up_model.dart' show AiTopUpData;
 import '../../Api Model/plan_usage.dart';
 import '../../component/custom_widget.dart';
 import '../../network/provider/plan_provider.dart';
@@ -30,12 +33,7 @@ class _PlanUsageScreenState extends State<PlanUsageScreen> {
   }
 
   Future<void> _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    debugPrint("================================");
-    debugPrint("✅ AI CREDIT PAYMENT SUCCESS");
-    debugPrint("Payment ID: ${response.paymentId}");
-    debugPrint("Order ID: ${response.orderId}");
-    debugPrint("Signature: ${response.signature}");
-    debugPrint("================================");
+    debugPrint("✅ Razorpay payment success");
 
     if (response.orderId == null ||
         response.paymentId == null ||
@@ -46,6 +44,7 @@ class _PlanUsageScreenState extends State<PlanUsageScreen> {
 
     final provider = context.read<PlanProvider>();
 
+    // Verify API call
     final success = await provider.verifyAiPayment(
       razorpayOrderId: response.orderId!,
       razorpayPaymentId: response.paymentId!,
@@ -55,12 +54,10 @@ class _PlanUsageScreenState extends State<PlanUsageScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Close bottom sheet
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+      // Close only the AI Credits bottom sheet
+      Navigator.of(context, rootNavigator: true).pop();
 
-      // Refresh usage
+      // Refresh updated AI credits
       await provider.fetchPlanUsage();
 
       if (!mounted) return;
@@ -192,10 +189,10 @@ class _PlanUsageView extends StatelessWidget {
       child: AppText(
         "EVERYTHING INCLUDED IN PREMIUM RESETS "
         "${_formatDate(endDate).toUpperCase()}",
-        style: const TextStyle(
-          fontSize: 8,
-          color: Color(0xFF555555),
-          fontWeight: FontWeight.w500,
+        style: TextStyle(
+          fontSize: AppFontSize.fontSize12,
+          color: AppColors.lightedGrey,
+          fontWeight: FontWeight.w400,
         ),
       ),
     );
@@ -209,17 +206,18 @@ class _PlanUsageView extends StatelessWidget {
     final List<Widget> widgets = [];
 
     for (final feature in features) {
-      final label = (feature.label ?? feature.key ?? "").trim();
+      final limit = feature.effectiveLimit ?? feature.limit;
+
+      // Limit data இல்லாத features hide ஆகும்
+      final hasLimit = limit != null && limit.trim().isNotEmpty;
+
+      if (!hasLimit) continue;
 
       if (_isAiCredits(feature)) {
         widgets.add(_buildAiCreditsCard(feature));
-
-        widgets.add(const SizedBox(height: 8));
-
-        continue;
+      } else {
+        widgets.add(_buildNormalFeatureCard(feature));
       }
-
-      widgets.add(_buildNormalFeatureCard(feature));
 
       widgets.add(const SizedBox(height: 8));
     }
@@ -265,10 +263,10 @@ class _PlanUsageView extends StatelessWidget {
               Expanded(
                 child: AppText(
                   title,
-                  style: const TextStyle(
-                    fontSize: 10,
+                  style: TextStyle(
+                    fontSize: AppFontSize.fontSize16,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF171A2B),
+                    color: AppColors.appBlack,
                   ),
                 ),
               ),
@@ -288,10 +286,10 @@ class _PlanUsageView extends StatelessWidget {
                 AppText(
                   "${_formatNumber(used)} / "
                   "${_formatNumber(limit)}",
-                  style: const TextStyle(
-                    fontSize: 10,
+                  style: TextStyle(
+                    fontSize: AppFontSize.fontSize16,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF171A2B),
+                    color: AppColors.appBlack,
                   ),
                 ),
             ],
@@ -341,10 +339,10 @@ class _PlanUsageView extends StatelessWidget {
               Expanded(
                 child: AppText(
                   feature.label ?? "AI Credits",
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: AppFontSize.fontSize16,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF171A2B),
+                    color: AppColors.appBlack,
                   ),
                 ),
               ),
@@ -370,9 +368,13 @@ class _PlanUsageView extends StatelessWidget {
           // USED THIS CYCLE
           Row(
             children: [
-              const AppText(
+              AppText(
                 "Used this cycle",
-                style: TextStyle(fontSize: 9, color: Color(0xFF666666)),
+                style: TextStyle(
+                  fontSize: AppFontSize.fontSize13,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.lightedShadedGrey,
+                ),
               ),
 
               const Spacer(),
@@ -380,10 +382,10 @@ class _PlanUsageView extends StatelessWidget {
               AppText(
                 "${_formatNumber(used)} / "
                 "${_formatNumber(limit)}",
-                style: const TextStyle(
-                  fontSize: 9,
+                style: TextStyle(
+                  fontSize: AppFontSize.fontSize13,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF333333),
+                  color: AppColors.appBlack,
                 ),
               ),
             ],
@@ -520,10 +522,10 @@ class _PlanUsageView extends StatelessWidget {
           // TODO:
           // Navigate to AI Credits Usage Calculation
         },
-        child: const AppText(
+        child: AppText(
           "AI Credits Usage Calculation",
           style: TextStyle(
-            fontSize: 9,
+            fontSize: AppFontSize.fontSize12,
             color: Color(0xFF555555),
             decoration: TextDecoration.underline,
           ),
@@ -549,7 +551,7 @@ class _PlanUsageView extends StatelessWidget {
           if (!context.mounted) return;
 
           if (success) {
-            _showAiTopUpBottomSheet(context);
+            _showSelectPlanBottomSheet(context);
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -578,11 +580,216 @@ class _PlanUsageView extends StatelessWidget {
     );
   }
 
-  void _showAiTopUpBottomSheet(BuildContext context) {
+  Future<void> _showSelectPlanBottomSheet(BuildContext context) async {
     final provider = context.read<PlanProvider>();
-    final topUp = provider.aiTopUpData;
 
-    if (topUp == null) return;
+    // API data load
+    if (provider.aiTopUpData == null) {
+      final success = await provider.fetchAiTopUp();
+
+      if (!context.mounted) return;
+
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              provider.aiTopUpError ?? 'Unable to load AI credit plans',
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    final List<AiTopUpData> plans = provider.aiTopUpData is AiTopUpData
+        ? [provider.aiTopUpData as AiTopUpData]
+        : <AiTopUpData>[];
+
+    if (plans.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No AI credit plans available')),
+      );
+      return;
+    }
+
+    int selectedIndex = 0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 45,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Top Up AI Credits',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(sheetContext),
+                          icon: const Icon(Icons.close, color: Colors.red),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    const Text(
+                      'Purchase additional credits. Top up credits persist '
+                      'even if your subscription is cancelled.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 13, color: Colors.black54),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    const Text(
+                      'SELECT THE PLAN',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: plans.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 1,
+                          ),
+                      itemBuilder: (context, index) {
+                        final plan = plans[index];
+                        final isSelected = selectedIndex == index;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setSheetState(() {
+                              selectedIndex = index;
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.red
+                                    : const Color(0xFFFFDFDF),
+                                width: isSelected ? 2.5 : 2,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '₹${plan.price ?? '0'}',
+                                  style: const TextStyle(
+                                    fontSize: 21,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF171A2B),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '${plan.quantity ?? '0'} Credits',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF171A2B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final AiTopUpData selectedPlan = plans[selectedIndex];
+
+                          Navigator.pop(sheetContext);
+
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (!context.mounted) return;
+
+                            _showAiTopUpBottomSheet(context, selectedPlan);
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF51F29),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'CONTINUE',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAiTopUpBottomSheet(BuildContext context, AiTopUpData topUp) {
+    final provider = context.read<PlanProvider>();
 
     showModalBottomSheet(
       context: context,

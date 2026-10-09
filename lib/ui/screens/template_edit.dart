@@ -14,7 +14,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gal/gal.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
-import 'package:path/path.dart' as path;
+import 'package:mmb_app/ui/screens/widget/empty_state.dart';
+import 'package:mmb_app/ui/screens/widget/font_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
@@ -404,12 +405,6 @@ class _EditorViewState extends State<EditorView> {
       _projectSaveQueued = false;
       await _saveProjectNow();
     }
-  }
-
-  Future<void> _flushProjectSave() async {
-    _projectSaveTimer?.cancel();
-    if (!_projectAutoSaveReady) return;
-    await _saveProjectNow();
   }
 
   void _enableProjectAutoSave() {
@@ -2977,6 +2972,29 @@ class _EditorViewState extends State<EditorView> {
             ),
           );
     final hasTemplateUid = (widget.templateUid?.trim() ?? '').isNotEmpty;
+
+    if (hasTemplateUid &&
+        !provider.isTemplateDetailLoading &&
+        provider.templateDetailError != null) {
+      return EmptyStateWidget(
+        isDark: isDark,
+        imagePath: 'assets/images/no_templates.png',
+        title: 'No Templates Available',
+        message:
+            'We’re adding more templates for this category. '
+            'Explore other categories to find the right design for your business.',
+        primaryButtonText: 'GO BACK',
+        secondaryButtonText: 'EXPLORE TEMPLATES',
+        onPrimaryPressed: () {
+          Navigator.pop(context);
+        },
+        onSecondaryPressed: () {
+          Navigator.pop(context);
+          // Replace this with your template listing navigation
+          // if that screen is not directly underneath this screen.
+        },
+      );
+    }
     if (hasTemplateUid && provider.isTemplateDetailLoading) {
       return Scaffold(
         backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
@@ -3570,23 +3588,8 @@ class _EditorViewState extends State<EditorView> {
                   'SIZE',
                   () => _showTextSizeBottomSheet(context, provider, id, isDark),
                 ),
-                ...fonts.map(
-                  (font) => _bottomTool(
-                    Icons.font_download_rounded,
-                    font,
-                    () => provider.updateFontFamily(id, font),
-                    selected:
-                        (provider.items
-                                .firstWhere(
-                                  (e) => e.id == id,
-                                  orElse: () => provider.items.first,
-                                )
-                                .fontFamily)
-                            .trim()
-                            .toLowerCase() ==
-                        font.toLowerCase(),
-                  ),
-                ),
+                _buildFontDropdown(provider, id, isDark),
+                SizedBox(width: 5),
                 _bottomTool(
                   Icons.format_bold_rounded,
                   'BOLD',
@@ -3691,6 +3694,79 @@ class _EditorViewState extends State<EditorView> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFontDropdown(EditorProvider provider, String id, bool isDark) {
+    final fonts = GoogleFonts.asMap().keys.toList()..sort();
+
+    final item = provider.items.firstWhere(
+      (e) => e.id == id,
+      orElse: () => provider.items.first,
+    );
+
+    final currentFont = item.fontFamily.trim();
+
+    final selectedFont = fonts.firstWhere(
+      (font) => font.toLowerCase() == currentFont.toLowerCase(),
+      orElse: () => fonts.first,
+    );
+
+    return SizedBox(
+      width: 150,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (sheetContext) {
+              return FontPickerSheet(
+                fonts: fonts,
+                selectedFont: selectedFont,
+                isDark: isDark,
+                onSelected: (font) {
+                  provider.updateFontFamily(id, font);
+                  Navigator.pop(sheetContext);
+                },
+              );
+            },
+          );
+        },
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF303030) : const Color(0xFF292929),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.font_download_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  selectedFont,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

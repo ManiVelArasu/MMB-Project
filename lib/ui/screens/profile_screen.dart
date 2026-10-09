@@ -924,7 +924,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: isDark ? Colors.white : AppColors.darkBlack,
+                          color: isDark ? Colors.white : AppColors.appBlack,
                           fontSize: AppFontSize.fontSize15,
                           fontWeight: FontWeight.w500,
                         ),
@@ -937,7 +937,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: isDark ? Colors.white38 : Colors.black,
+                            color: isDark ? Colors.white38 : AppColors.appBlack,
                             fontSize: AppFontSize.fontSize14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -1333,24 +1333,19 @@ void _showLanguagesBottomSheet(
                     onPressed: provider.isLanguageSaving
                         ? null
                         : () async {
-                            // ⭐ Copy current order
                             final List<String> orderedLanguages =
                                 List<String>.from(selectedCodes);
-
                             debugPrint(
                               "🌐 Selected language order: "
                               "$orderedLanguages",
                             );
-
                             final success = await provider.saveLanguages(
                               languages: orderedLanguages,
                               notifyPush: true,
                               notifyEmail: false,
                               notifyWhatsapp: true,
                             );
-
                             if (!context.mounted) return;
-
                             if (success) {
                               Navigator.pop(context);
 

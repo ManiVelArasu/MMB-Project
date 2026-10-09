@@ -4,6 +4,7 @@ import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
 import '../../Api Model/project_list.dart';
+import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/prpject_provider.dart';
@@ -41,113 +42,119 @@ class _MyDownloadScreenState extends State<MyDownloadScreen> {
     return ChangeNotifierProvider<ProjectProvider>.value(
       value: projectProvider,
       child: Scaffold(
-        appBar: AppBar(title: const Text('My Downloads')),
-        body: Consumer<ProjectProvider>(
-          builder: (context, provider, child) {
-            if (provider.isLoadingPlans) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final projectList = provider.plansData;
-
-            if (projectList == null) {
-              return Center(
-                child: Text(provider.errorMessage ?? 'No projects found'),
-              );
-            }
-
-            final projects = projectList.data;
-
-            if (projects.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 15),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        "assets/images/no_downloads.png",
-                        width: 140,
-                        height: 140,
-                      ),
-                      const AppText(
-                        'No Downloads Yet',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+        appBar: const CustomAppBar(
+          title: 'My Downloads',
+          showTitle: true,
+          showRightIcon: false,
+        ),
+        body: SafeArea(
+          child: Consumer<ProjectProvider>(
+            builder: (context, provider, child) {
+              if (provider.isLoadingPlans) {
+                return const Center(child: CircularProgressIndicator());
+              }
+          
+              final projectList = provider.plansData;
+          
+              if (projectList == null) {
+                return Center(
+                  child: Text(provider.errorMessage ?? 'No projects found'),
+                );
+              }
+          
+              final projects = projectList.data;
+          
+              if (projects.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          "assets/images/no_downloads.png",
+                          width: 140,
+                          height: 140,
                         ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      const AppText(
-                        'Your downloaded designs will appear here. '
-                        'Create your first design and download it when it’s ready.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13, color: Colors.black54),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      Row(
-                        children: [
-                          Flexible(
-                            child: ButtonWidget(
-                              buttonPress: () {
-                                // Explore Templates
-                              },
-                              title: "Explore Templates",
-                              textColor: AppColors.appRed,
-                              buttonColor: AppColors.appWhite,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: AppColors.appRed),
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(15),
+                        const AppText(
+                          'No Downloads Yet',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+          
+                        const SizedBox(height: 8),
+          
+                        const AppText(
+                          'Your downloaded designs will appear here. '
+                          'Create your first design and download it when it’s ready.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 13, color: Colors.black54),
+                        ),
+          
+                        const SizedBox(height: 20),
+          
+                        Row(
+                          children: [
+                            Flexible(
+                              child: ButtonWidget(
+                                buttonPress: () {
+                                  // Explore Templates
+                                },
+                                title: "Explore Templates",
+                                textColor: AppColors.appRed,
+                                buttonColor: AppColors.appWhite,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: AppColors.appRed),
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(15),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-
-                          const SizedBox(width: 8),
-
-                          Flexible(
-                            child: ButtonWidget(
-                              buttonPress: () {
-                                // Create a Design
-                              },
-                              title: "Create a Design",
-                              textColor: AppColors.appWhite,
-                              buttonColor: AppColors.appRed,
+          
+                            const SizedBox(width: 8),
+          
+                            Flexible(
+                              child: ButtonWidget(
+                                buttonPress: () {
+                                  // Create a Design
+                                },
+                                title: "Create a Design",
+                                textColor: AppColors.appWhite,
+                                buttonColor: AppColors.appRed,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
+                );
+              }
+          
+              return RefreshIndicator(
+                onRefresh: provider.fetchProject,
+                child: GridView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 14,
+                    childAspectRatio: 0.78,
+                  ),
+                  itemCount: projects.length,
+                  itemBuilder: (context, index) {
+                    final project = projects[index];
+          
+                    return _projectCard(context, project);
+                  },
                 ),
               );
-            }
-
-            return RefreshIndicator(
-              onRefresh: provider.fetchProject,
-              child: GridView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(12),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 14,
-                  childAspectRatio: 0.78,
-                ),
-                itemCount: projects.length,
-                itemBuilder: (context, index) {
-                  final project = projects[index];
-
-                  return _projectCard(context, project);
-                },
-              ),
-            );
-          },
+            },
+          ),
         ),
       ),
     );
