@@ -112,6 +112,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
     }
   }
 
+
   Future<void> _onContinue({
     required BusinessProvider businessProvider,
     required bool isPersonal,
@@ -131,6 +132,10 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
 
     if (!businessProvider.validateForm()) {
       setState(() {});
+      debugPrint("❌ Form validation failed");
+      debugPrint("Name: ${businessProvider.nameController.text}");
+      debugPrint("Email: '${businessProvider.emailController.text}'");
+      debugPrint("Phone: ${businessProvider.mobileController.text}");
       return;
     }
 
@@ -141,7 +146,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
     if (!isPersonal && !isBusiness) {
       debugPrint(
         "❌ Invalid account type: "
-        "${CommonProvider.instance.accountType}",
+            "${CommonProvider.instance.accountType}",
       );
       return;
     }
@@ -156,9 +161,8 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
         debugPrint("🚀 UPDATE PERSONAL DETAILS");
         debugPrint("======================================");
 
-        final bool success = await businessProvider.updatePersonalDetails(
-          context,
-        );
+        final bool success =
+        await businessProvider.updatePersonalDetails(context);
 
         if (!success) {
           debugPrint("❌ Personal details update failed");
@@ -177,8 +181,6 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
         debugPrint("🚀 UPDATE BUSINESS DETAILS");
         debugPrint("======================================");
 
-        // widget.businessUid empty என்றால்
-        // SharedPreferences-ல் save செய்த UID-ஐ எடுத்துக்கொள்ளும்
         String businessUid = widget.businessUid.trim();
 
         if (businessUid.isEmpty) {
@@ -186,27 +188,28 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
 
           businessUid = prefs.getString('business_uid')?.trim() ?? '';
 
-          debugPrint("📦 Business UID from SharedPreferences: $businessUid");
+          debugPrint(
+            "📦 Business UID from SharedPreferences: '$businessUid'",
+          );
         } else {
-          debugPrint("📌 Business UID from widget: $businessUid");
+          debugPrint("📌 Business UID from widget: '$businessUid'");
         }
 
-        // UID எங்கும் கிடைக்கவில்லை என்றால் API call செய்ய வேண்டாம்
-        if (businessUid.isEmpty) {
-          debugPrint("❌ Business UID not found");
+        // UID empty இருந்தாலும் API call செய்யும்
+        debugPrint("🔑 Calling business update API");
+        debugPrint("🔑 Business UID: '$businessUid'");
 
-          return;
-        }
-
-        debugPrint("🔑 Final Business UID: $businessUid");
-
-        final bool success = await businessProvider.updateBusinessDetails(
+        final bool success =
+        await businessProvider.updateBusinessDetails(
           context,
           businessUid,
         );
 
         if (!success) {
           debugPrint("❌ Business details update failed");
+          debugPrint(
+            "API Error: ${businessProvider.errorMessage}",
+          );
           return;
         }
 
@@ -241,78 +244,51 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
       if (!context.mounted) return;
 
       final planProvider = context.read<PlanProvider>();
+
       await planProvider.fetchMySubscription();
 
       if (!context.mounted) return;
 
       final bool hasActivePlan =
           planProvider.activePlanUid != null &&
-          planProvider.activePlanUid!.isNotEmpty;
+              planProvider.activePlanUid!.isNotEmpty;
 
-      debugPrint(
-        "💳 Active Plan UID: "
-        "${planProvider.activePlanUid}",
-      );
-
+      debugPrint("💳 Active Plan UID: ${planProvider.activePlanUid}");
       debugPrint("💳 Has Active Plan: $hasActivePlan");
 
       // ========================================================
       // NAVIGATION LOGIC
       // ========================================================
 
-      // --------------------------------------------------------
-      // 1. PAYMENT COMPLETED / ACTIVE PLAN
-      // --------------------------------------------------------
-      //
-      // Already subscribed -> directly CustomBottomNav
-      //
-
+      // 1. Active plan
       if (hasActivePlan) {
-        debugPrint(
-          "✅ ACTIVE PLAN FOUND "
-          "→ CustomBottomNavScreen",
+        debugPrint("✅ ACTIVE PLAN → CustomBottomNavScreen");
+
+        Navigator.pushReplacementNamed(
+          context,
+          "/CustomBottomNavScreen",
         );
-
-        if (!context.mounted) return;
-
-        Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
 
         return;
       }
 
-      // --------------------------------------------------------
-      // 2. USER SKIPPED PLAN
-      // --------------------------------------------------------
-      //
-      // Skip -> directly CustomBottomNav
-      //
-
+      // 2. User skipped plan
       if (showSkip) {
-        debugPrint(
-          "⏭️ PLAN SKIPPED "
-          "→ CustomBottomNavScreen",
+        debugPrint("⏭️ PLAN SKIPPED → CustomBottomNavScreen");
+
+        Navigator.pushReplacementNamed(
+          context,
+          "/CustomBottomNavScreen",
         );
-
-        if (!context.mounted) return;
-
-        Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
 
         return;
       }
 
-      // --------------------------------------------------------
-      // 3. FIRST TIME / NO ACTIVE PLAN / NOT SKIPPED
-      // --------------------------------------------------------
-      //
-      // Show Plans & Pricing
-      //
-
+      // 3. No active plan and not skipped
       debugPrint(
         "🛒 NO ACTIVE PLAN + NOT SKIPPED "
-        "→ PlansAndPricingScreen",
+            "→ PlansAndPricingScreen",
       );
-
-      if (!context.mounted) return;
 
       Navigator.pushReplacementNamed(
         context,
@@ -324,6 +300,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
       debugPrintStack(stackTrace: stackTrace);
     }
   }
+
 
   // ============================================================
   // BUILD

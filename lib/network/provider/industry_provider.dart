@@ -277,25 +277,21 @@ class IndustryProvider extends ChangeNotifier with MyNotifier {
   void filterCategories(String query) {
     _searchQuery = query;
 
-    if (query.isEmpty) {
-      _filteredCategories =
-          List.from(_allCategories);
+    final searchLower = query.trim().toLowerCase();
+
+    if (searchLower.isEmpty) {
+      _filteredCategories = List.from(_allCategories);
     } else {
-      _filteredCategories =
-          _allCategories.where((category) {
-            final categoryName =
-                category.name?.toLowerCase() ?? "";
+      _filteredCategories = _allCategories.where((category) {
+        final categoryName =
+        (category.name ?? '').trim().toLowerCase();
 
-            final searchLower =
-            query.toLowerCase();
-
-            return categoryName.contains(searchLower);
-          }).toList();
+        return categoryName.contains(searchLower);
+      }).toList();
     }
 
     notifyListeners();
   }
-
   // ============================================================
   // CLEAR SEARCH
   // ============================================================
