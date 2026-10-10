@@ -63,7 +63,11 @@ class HomeRepository {
           config: ApiRequestConfig(
             endpoint: ApiEndpoints.templates,
             method: ApiMethod.get,
-            queryParams: {"industry": industrySlug, "template_type": "image","is_popular":"1"},
+            queryParams: {
+              "industry": industrySlug,
+              "template_type": "image",
+              "is_popular": "1",
+            },
           ),
           fromJson: (json) =>
               TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
@@ -102,5 +106,15 @@ class HomeRepository {
     );
 
     return result;
+  }
+
+  Future<ApiResult<dynamic>> favorite(String? templateId) {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.favoriteTemplate('${templateId}'),
+        method: ApiMethod.put,
+      ),
+      fromJson: (json) => json,
+    );
   }
 }

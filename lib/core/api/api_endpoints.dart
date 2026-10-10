@@ -32,6 +32,7 @@ class ApiEndpoints {
   static const String feedBack = '/feedback';
 
   static const String fileUpload = '/uploads/presign';
+  static const String fileConfirm = '/uploads/confirm';
 
   static const String logout = '/auth/logout';
 
@@ -74,4 +75,6 @@ class ApiEndpoints {
   static const String aiPlan = '/quota/packs';
   static const String verify = '/subscriptions/payment/verify';
   static String quota(String quotaId) => '/quota/packs/${quotaId}/purchase';
+  static String favoriteTemplate(String templateId) =>
+      '/users/me/favourites/templates/${templateId}';
 }

@@ -26,6 +26,7 @@ class HomeScreenProvider extends ChangeNotifier {
     _selectedMySpace = title;
     notifyListeners();
   }
+
   Future<void> initialize({bool loadSpecialDaysOnInit = true}) async {
     if (_initialized) {
       debugPrint("⚠️ HomeScreenProvider already initialized");
@@ -64,8 +65,8 @@ class HomeScreenProvider extends ChangeNotifier {
 
       debugPrint(
         "🔑 KEYWORDS CHECK [$i/$maxRetries] "
-            "accountType=$accountType "
-            "categorySlug=$categorySlug",
+        "accountType=$accountType "
+        "categorySlug=$categorySlug",
       );
 
       if (accountType == 'personal') {
@@ -85,7 +86,7 @@ class HomeScreenProvider extends ChangeNotifier {
 
     debugPrint(
       "❌ Keywords API not called. "
-          "CommonProvider data was not ready.",
+      "CommonProvider data was not ready.",
     );
   }
 
@@ -194,7 +195,7 @@ class HomeScreenProvider extends ChangeNotifier {
         for (final keyword in _keyWords) {
           debugPrint(
             "Keyword: ${keyword.name} | "
-                "Slug: ${keyword.slug}",
+            "Slug: ${keyword.slug}",
           );
         }
 
@@ -350,7 +351,7 @@ class HomeScreenProvider extends ChangeNotifier {
 
               final treeCategory =
                   (slug.isNotEmpty ? treeBySlug[slug] : null) ??
-                      (name.isNotEmpty ? treeByName[name] : null);
+                  (name.isNotEmpty ? treeByName[name] : null);
 
               if (treeCategory != null && treeCategory.children.isNotEmpty) {
                 return category.copyWith(children: treeCategory.children);
@@ -363,7 +364,7 @@ class HomeScreenProvider extends ChangeNotifier {
             _templateCategories = homepageCategories;
             debugPrint(
               "⚠️ Tree category API failed: "
-                  "${treeResult.error?.message ?? 'Unknown error'}",
+              "${treeResult.error?.message ?? 'Unknown error'}",
             );
           }
 
@@ -381,8 +382,8 @@ class HomeScreenProvider extends ChangeNotifier {
 
             final bool isSpecialParent =
                 categoryName == 'celebrate moments' ||
-                    categoryName == 'devotional/daily posts' ||
-                    categoryName == 'devotional / daily posts';
+                categoryName == 'devotional/daily posts' ||
+                categoryName == 'devotional / daily posts';
 
             if (isSpecialParent) {
               debugPrint("⭐ SPECIAL CATEGORY: ${category.name}");
@@ -396,7 +397,7 @@ class HomeScreenProvider extends ChangeNotifier {
 
                 debugPrint(
                   "   └── CHILD: ${child.name} "
-                      "[$childSlug]",
+                  "[$childSlug]",
                 );
 
                 await fetchTemplatesByCategory(childSlug);
@@ -530,10 +531,22 @@ class HomeScreenProvider extends ChangeNotifier {
     await fetchSpecialDays(from: _formatApiDate(from), to: _formatApiDate(to));
   }
 
+  Future<void> favoriteTemplate(String templateId) async {
+    try {
+      final response = await HomeRepository.instance.favorite(templateId);
+
+      if (response.data != null) {
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Favorite Template Error: $e');
+    }
+  }
+
   String _formatApiDate(DateTime date) =>
       '${date.year.toString().padLeft(4, '0')}-'
-          '${date.month.toString().padLeft(2, '0')}-'
-          '${date.day.toString().padLeft(2, '0')}';
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 
   Future<void> fetchTemplatesByCategory(String slug) async {
     final categorySlug = slug.trim();
@@ -621,14 +634,14 @@ class HomeScreenProvider extends ChangeNotifier {
 
           debugPrint(
             '✅ Popular categories count: '
-                '${_popularTemplates.length}',
+            '${_popularTemplates.length}',
           );
 
           for (final category in _popularTemplates) {
             debugPrint(
               '➡️ ${category.name} | '
-                  'slug=${category.slug} | '
-                  'uid=${category.uid}',
+              'slug=${category.slug} | '
+              'uid=${category.uid}',
             );
           }
 
@@ -775,13 +788,13 @@ class HomeScreenProvider extends ChangeNotifier {
     {
       "title": "Make My Lead",
       "subTitle":
-      "Go Premium and list your business for free on our platform to boost your leads.",
+          "Go Premium and list your business for free on our platform to boost your leads.",
       "btnText": "BOOST MY BUSINESS",
     },
     {
       "title": "Grow Your Business",
       "subTitle":
-      "Get verified badge and double your client engagement effortlessly.",
+          "Get verified badge and double your client engagement effortlessly.",
       "btnText": "UPGRADE NOW",
     },
   ];
@@ -838,22 +851,22 @@ class HomeScreenProvider extends ChangeNotifier {
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-      "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-      "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-      "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-      "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
   ];
   void clearUserData() {

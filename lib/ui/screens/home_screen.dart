@@ -785,6 +785,7 @@ class _HomeScreenView extends StatelessWidget {
                                                             context,
                                                             templates[startIndex],
                                                             isDark,
+                                                            homeScreenProvider
                                                           ),
                                                     ),
                                                     SizedBox(
@@ -799,6 +800,7 @@ class _HomeScreenView extends StatelessWidget {
                                                               templates[startIndex +
                                                                   1],
                                                               isDark,
+                                                              homeScreenProvider
                                                             )
                                                           : const SizedBox(),
                                                     ),
@@ -819,6 +821,7 @@ class _HomeScreenView extends StatelessWidget {
                                                               templates[startIndex +
                                                                   2],
                                                               isDark,
+                                                              homeScreenProvider
                                                             )
                                                           : const SizedBox(),
                                                     ),
@@ -834,6 +837,7 @@ class _HomeScreenView extends StatelessWidget {
                                                               templates[startIndex +
                                                                   3],
                                                               isDark,
+                                                              homeScreenProvider
                                                             )
                                                           : const SizedBox(),
                                                     ),
@@ -875,6 +879,7 @@ class _HomeScreenView extends StatelessWidget {
                                       context,
                                       templates[templateIndex],
                                       isDark,
+                                        homeScreenProvider
                                     ),
                                   );
                                 },
@@ -1241,13 +1246,17 @@ class _HomeScreenView extends StatelessWidget {
         itemBuilder: (context, index) {
           final template = allTemplates[index];
 
-          return _buildSpecialDayTemplateCard(context, template);
+          return _buildSpecialDayTemplateCard(context, template,provider);
         },
       ),
     );
   }
 
-  Widget _buildSpecialDayTemplateCard(BuildContext context, Template template) {
+  Widget _buildSpecialDayTemplateCard(
+    BuildContext context,
+    Template template,
+    HomeScreenProvider provider,
+  ) {
     final key = template.thumbnailS3Key?.trim() ?? '';
 
     final imageUrl = key.isEmpty
@@ -1373,7 +1382,8 @@ class _HomeScreenView extends StatelessWidget {
                   );
                 },
                 onFavorite: () {
-                  // உங்கள் Favorite API / storage logic இங்கே சேர்க்கவும்.
+                  final templateUid = template.uid?.trim() ?? '';
+                  provider.favoriteTemplate(templateUid);
                 },
               ),
             ),
@@ -1645,6 +1655,7 @@ class _HomeScreenView extends StatelessWidget {
     BuildContext context,
     TemplateModel template,
     bool isDark,
+      HomeScreenProvider provider
   ) {
     final key = template.thumbnailS3Key?.trim() ?? '';
     final imageUrl = key.isEmpty ? '' : '${ApiEndpoints.cdnImageUrl}/$key';
@@ -1712,7 +1723,8 @@ class _HomeScreenView extends StatelessWidget {
                     );
                   },
                   onFavorite: () {
-                    // உங்கள் Favorite API அல்லது storage logic
+                    final templateUid = template.uid?.trim() ?? '';
+                    provider.favoriteTemplate(templateUid);
                   },
                 ),
               ),
@@ -1927,7 +1939,6 @@ class _HomeScreenView extends StatelessWidget {
     HomeScreenProvider homeScreenProvider,
     bool isDark,
   ) {
-    print('sdsadsadsadsadasdsad${homeScreenProvider.provider.me?.data.phone}');
     final popularTemplates = homeScreenProvider.popularTemplates
         .take(4)
         .toList();
@@ -1965,8 +1976,8 @@ class _HomeScreenView extends StatelessWidget {
                     homeScreenProvider.provider.me?.data.phone?.toString() ??
                     '';
 
-                final name =
-                    homeScreenProvider.provider.me?.data.name?.toString() ?? '';
+                final email =
+                    homeScreenProvider.provider.me?.data.email?.toString() ?? '';
 
                 return Container(
                   margin: EdgeInsets.symmetric(horizontal: 25.w),
@@ -2007,13 +2018,14 @@ class _HomeScreenView extends StatelessWidget {
                               child: Row(
                                 children: [
                                   // PHONE ICON
+                                  SizedBox(width: 8.w),
                                   Icon(
                                     Icons.phone,
                                     color: Colors.white,
                                     size: 14.sp,
                                   ),
 
-                                  SizedBox(width: 4.w),
+                                  SizedBox(width: 8.w),
 
                                   // PHONE
                                   Expanded(
@@ -2036,7 +2048,7 @@ class _HomeScreenView extends StatelessWidget {
                                   Expanded(
                                     flex: 6,
                                     child: Text(
-                                      name,
+                                      email,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       textAlign: TextAlign.right,

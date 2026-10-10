@@ -30,13 +30,33 @@ class ProjectRepository {
     required String projectUid,
     required String name,
     required String content,
+    String? thumbnailBase64,
   }) async {
     final uid = projectUid.trim();
+
+    final body = <String, dynamic>{
+      'name': name,
+      'content': content,
+      if (thumbnailBase64 != null && thumbnailBase64.trim().isNotEmpty)
+        'thumbnail': thumbnailBase64.trim(),
+    };
+
+    debugPrint('Thumbnail null: ${thumbnailBase64 == null}');
+    debugPrint('Thumbnail length: ${thumbnailBase64?.length}');
+    debugPrint(
+      'Thumbnail prefix: ${thumbnailBase64 == null ? 'null' : thumbnailBase64.substring(0, thumbnailBase64.length < 30 ? thumbnailBase64.length : 30)}',
+    );
+
+    debugPrint(
+      '📤 UPDATE PROJECT BODY: '
+      '${{'name': name, 'content': content, 'thumbnail': thumbnailBase64 == null ? null : '[BASE64 IMAGE]'}}',
+    );
+
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
         endpoint: '${ApiEndpoints.project}/$uid',
         method: ApiMethod.patch,
-        body: {'name': name, 'content': content},
+        body: body,
       ),
       fromJson: (json) => json,
     );
