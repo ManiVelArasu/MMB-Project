@@ -138,16 +138,25 @@ class BrandSeriesCard extends StatelessWidget {
                             vertical: 1.h,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFE8E8),
-                            borderRadius: BorderRadius.circular(3.r),
+                            color: const Color(0xFFFFE4E5),
+                            borderRadius: BorderRadius.circular(7.r),
                           ),
-                          child: AppText(
-                            "POPULAR",
-                            style: TextStyle(
-                              color: AppColors.appBlack,
-                              fontSize: AppFontSize.fontSize11,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          child: Row(
+                            children: [
+                              Image.asset(
+                                "assets/images/popular_heart.png",
+                                width: 15,
+                                height: 15,
+                              ),
+                              AppText(
+                                "POPULAR",
+                                style: TextStyle(
+                                  color: AppColors.appBlack,
+                                  fontSize: AppFontSize.fontSize11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

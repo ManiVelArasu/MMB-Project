@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/ui/screens/video_widget/video_widget.dart';
+import 'package:mmb_app/ui/screens/widget/dwonload_widget.dart';
 import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -2132,7 +2133,23 @@ class _HomeScreenView extends StatelessWidget {
           ),
           child: InkWell(
             onTap: () {
-              _showShareBottomSheet(context, isDark);
+              CommonShareBottomSheet.show(
+                context: context,
+                isDark: isDark,
+                onDownload: () => (),
+                onInstagram: () => (),
+                onFacebook: () => (),
+                onX: () => (),
+                onLinkedIn: () => (),
+                onPinterest: () => (),
+                onBoost: () => (),
+                onWhatsApp: () => (),
+                onMessenger: () => (),
+                onDrive: () => (),
+                onCopyLink: () => (),
+                onCaption: () => (),
+                onSchedule: () => (),
+              );
             },
             child: Image.asset('assets/images/download.png'),
           ),

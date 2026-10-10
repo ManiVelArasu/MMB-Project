@@ -30,7 +30,7 @@ class ProjectRepository {
     required String projectUid,
     required String name,
     required String content,
-    String? thumbnailBase64,
+    String? thumbnailBase64, String? thumbnailS3Key,
   }) async {
     final uid = projectUid.trim();
 

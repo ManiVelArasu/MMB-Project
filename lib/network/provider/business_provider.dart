@@ -170,7 +170,7 @@ class BusinessProvider extends ChangeNotifier {
 
                 debugPrint(
                   "✅ ACCOUNT TYPE UPDATED = "
-                      "${language.data.accountType}",
+                  "${language.data.accountType}",
                 );
               }
             }
@@ -320,12 +320,12 @@ class BusinessProvider extends ChangeNotifier {
 
       switch (accountType) {
         case 'personal':
-        // Personal -> users/{uid}/profile/...
+          // Personal -> users/{uid}/profile/...
           uploadSlot = 'profile_photo';
           break;
 
         case 'business':
-        // Business -> users/{uid}/logo/...
+          // Business -> users/{uid}/logo/...
           uploadSlot = 'business_logo';
           break;
 
@@ -357,12 +357,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-        imageFile: imageFile,
-        filename: filename,
-        width: 1080,
-        height: 1080,
-        slot: uploadSlot,
-      );
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+            slot: uploadSlot,
+          );
 
       bool success = false;
 
@@ -580,10 +580,10 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<Map<String, dynamic>?> businessUpdateApi(
-      BuildContext context,
-      String subIndustry,
-      String other,
-      ) async {
+    BuildContext context,
+    String subIndustry,
+    String other,
+  ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -671,8 +671,8 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>?> skipBusinessUpdateApi(
-      BuildContext context,
-      ) async {
+    BuildContext context,
+  ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -755,9 +755,9 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<bool> updateBusinessDetails(
-      BuildContext context,
-      String businessUid,
-      ) async {
+    BuildContext context,
+    String businessUid,
+  ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -770,8 +770,7 @@ class BusinessProvider extends ChangeNotifier {
 
       final logoS3Key = _logoS3Key?.trim() ?? '';
 
-      final result =
-      await BusinessRepository.instance.updateBusinessDetails(
+      final result = await BusinessRepository.instance.updateBusinessDetails(
         businessUid: businessUid,
         name: name,
         email: email,
@@ -786,16 +785,10 @@ class BusinessProvider extends ChangeNotifier {
           final prefs = await SharedPreferences.getInstance();
 
           if (logoS3Key.isNotEmpty) {
-            await prefs.setString(
-              'logo_s3_key',
-              logoS3Key,
-            );
+            await prefs.setString('logo_s3_key', logoS3Key);
           }
 
-          await prefs.setString(
-            'business_uid',
-            businessUid,
-          );
+          await prefs.setString('business_uid', businessUid);
 
           debugPrint("✅ BUSINESS UPDATE SUCCESS");
 
@@ -807,9 +800,7 @@ class BusinessProvider extends ChangeNotifier {
           _isUploading = false;
           _errorMessage = error.message;
 
-          debugPrint(
-            "❌ Business update failed: ${error.message}",
-          );
+          debugPrint("❌ Business update failed: ${error.message}");
 
           notifyListeners();
 
@@ -820,13 +811,9 @@ class BusinessProvider extends ChangeNotifier {
       _isUploading = false;
       _errorMessage = e.toString();
 
-      debugPrint(
-        "❌ Update business details error: $e",
-      );
+      debugPrint("❌ Update business details error: $e");
 
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
+      debugPrintStack(stackTrace: stackTrace);
 
       notifyListeners();
 
@@ -947,7 +934,7 @@ class BusinessProvider extends ChangeNotifier {
     final savedLogoKey = prefs.getString('logo_s3_key');
     final savedProfileKey =
         prefs.getString('profile_s3_key') ??
-            prefs.getString('profile_photo_s3_key');
+        prefs.getString('profile_photo_s3_key');
 
     if (savedLogoKey != null && savedLogoKey.trim().isNotEmpty) {
       _logoS3Key = savedLogoKey.trim();
@@ -1004,17 +991,17 @@ class BusinessProvider extends ChangeNotifier {
 
     debugPrint(
       "✅ ACCOUNT TYPE UPDATED = "
-          "${provider.me?.data.accountType}",
+      "${provider.me?.data.accountType}",
     );
 
     debugPrint(
       "COMMON ACCOUNT TYPE = "
-          "${provider.accountType}",
+      "${provider.accountType}",
     );
 
     debugPrint(
       "IS PERSONAL = "
-          "${provider.isPersonal}",
+      "${provider.isPersonal}",
     );
 
     debugPrint("================================");
@@ -1087,12 +1074,8 @@ class BusinessProvider extends ChangeNotifier {
     // Email format validation only
     final email = emailController.text.trim();
 
-
-
     if (email.isNotEmpty) {
-      final emailRegex = RegExp(
-        r'^[\w.-]+@([\w-]+\.)+[\w-]{2,}$',
-      );
+      final emailRegex = RegExp(r'^[\w.-]+@([\w-]+\.)+[\w-]{2,}$');
 
       if (!emailRegex.hasMatch(email)) {
         _emailError = "Enter a valid email address";
@@ -1103,7 +1086,6 @@ class BusinessProvider extends ChangeNotifier {
     } else {
       _emailError = null;
     }
-
 
     // Contact Number
     _mobileNumber = mobileController.text.trim();
@@ -1311,12 +1293,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-        imageFile: imageFile,
-        filename: filename,
-        width: 1080,
-        height: 1080,
-        slot: uploadSlot,
-      );
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+            slot: uploadSlot,
+          );
 
       bool success = false;
 
@@ -1462,9 +1444,9 @@ class BusinessProvider extends ChangeNotifier {
   // ============================================================
 
   Future<void> pickImage(
-      BuildContext context, {
-        ImageSource source = ImageSource.gallery,
-      }) async {
+    BuildContext context, {
+    ImageSource source = ImageSource.gallery,
+  }) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -1517,12 +1499,12 @@ class BusinessProvider extends ChangeNotifier {
     AccTypeModel(
       title: "For my Business",
       description:
-      "Create branded designs tailored to your business and industry.",
+          "Create branded designs tailored to your business and industry.",
     ),
     AccTypeModel(
       title: "Personal Use",
       description:
-      "Create designs for festivals, birthdays, quotes, social posts, and more.",
+          "Create designs for festivals, birthdays, quotes, social posts, and more.",
     ),
   ];
 
@@ -2030,9 +2012,7 @@ class BusinessProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } on PlatformException catch (e) {
-      debugPrint(
-        "❌ Failed to remove background: ${e.code} - ${e.message}",
-      );
+      debugPrint("❌ Failed to remove background: ${e.code} - ${e.message}");
       _isProcessingBackground = false;
       notifyListeners();
       return false;

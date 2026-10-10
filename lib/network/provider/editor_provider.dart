@@ -441,10 +441,26 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void _saveState() {
-    if (_historyIndex < _history.length - 1) {
-      _history.removeRange(_historyIndex + 1, _history.length);
+
+    if (_history.isEmpty) {
+      _history.add(
+        _items.map((e) => e.copyWith()).toList(),
+      );
+      _historyIndex = 0;
+      return;
     }
-    _history.add(_items.map((e) => e.copyWith()).toList());
+
+    if (_historyIndex < _history.length - 1) {
+      _history.removeRange(
+        _historyIndex + 1,
+        _history.length,
+      );
+    }
+
+    _history.add(
+      _items.map((e) => e.copyWith()).toList(),
+    );
+
     _historyIndex = _history.length - 1;
   }
 
@@ -454,10 +470,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void setCanvasSize(double width, double height) {
     final w = width.isFinite && width > 0 ? width : 1080.0;
     final h = height.isFinite && height > 0 ? height : 1080.0;
-
-    // Canvas size must never rewrite imported Fabric coordinates.
-    // The JSON `left`, `top`, `scaleX`, `scaleY` are authoritative and must
-    // remain unchanged when the canvas is initialized or rebuilt.
     canvasWidth = w;
     canvasHeight = h;
   }
@@ -493,15 +505,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final extentX = _rotationExtentX(item, scale);
     final extentY = _rotationExtentY(item, scale);
 
-    // `position` is the top-left of the item's unscaled layout box, while
-    // EditableItemWidget scales that box around its center.  Therefore the
-    // visual center is still `position + baseSize / 2`, but the allowed
-    // center range must be based on the *scaled/rotated* visual extents.
-    //
-    // This is important when an item is smaller than its original box: the
-    // position is allowed to become slightly negative so the visible image
-    // can actually touch the canvas edges.  Clamping to 0..canvas-baseSize
-    // made a dragged/resized item jump away from the finger.
     final minCenterX = extentX;
     final maxCenterX = canvasWidth - extentX;
     final minCenterY = extentY;
@@ -2834,14 +2837,18 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void undo() {
-    if (_historyIndex > 0) {
-      _historyIndex--;
-      _items.clear();
-      _items.addAll(_history[_historyIndex].map((e) => e.copyWith()));
-      notifyListeners();
-    }
-  }
+    if (_historyIndex <= 0) return;
 
+    _historyIndex--;
+
+    _items
+      ..clear()
+      ..addAll(
+        _history[_historyIndex].map((e) => e.copyWith()),
+      );
+
+    notifyListeners();
+  }
   void redo() {
     if (_historyIndex < _history.length - 1) {
       _historyIndex++;

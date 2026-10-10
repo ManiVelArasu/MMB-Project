@@ -729,7 +729,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             SizedBox(height: 12.h),
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                context.read<BottomNavProvider>().updateIndex(1);
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF8C74F5),
                                 shape: RoundedRectangleBorder(

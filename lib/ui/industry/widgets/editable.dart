@@ -1066,16 +1066,16 @@ class EditableItemWidget extends StatelessWidget {
         imageWidget = isSvg
             ? SvgPicture.file(
           File(localPath),
-          fit: isBackground ? BoxFit.cover : BoxFit.fill,
+          fit: BoxFit.fill,
           placeholderBuilder: (_) => const Center(
             child: CircularProgressIndicator(strokeWidth: 1.5),
           ),
         )
             : Image.file(
           File(localPath),
-          width: isBackground ? double.infinity : item.width,
-          height: isBackground ? double.infinity : item.height,
-          fit: isBackground ? BoxFit.cover : BoxFit.fill,
+          width: item.width,
+          height: item.height,
+          fit: BoxFit.fill,
           errorBuilder: (_, __, ___) => const Center(
             child: Icon(Icons.broken_image_outlined, color: Colors.grey),
           ),
@@ -1085,9 +1085,9 @@ class EditableItemWidget extends StatelessWidget {
         // SVG URLs, so SVG assets must use flutter_svg.
         imageWidget = SvgPicture.network(
           url,
-          width: isBackground ? double.infinity : item.width,
-          height: isBackground ? double.infinity : item.height,
-          fit: isBackground ? BoxFit.cover : BoxFit.fill,
+          width: item.width,
+          height: item.height,
+          fit: BoxFit.fill,
           placeholderBuilder: (_) => const Center(
             child: SizedBox(
               width: 20,
@@ -1102,9 +1102,9 @@ class EditableItemWidget extends StatelessWidget {
       } else {
         imageWidget = Image.network(
           url,
-          width: isBackground ? double.infinity : item.width,
-          height: isBackground ? double.infinity : item.height,
-          fit: isBackground ? BoxFit.cover : BoxFit.fill,
+          width: item.width,
+          height: item.height,
+          fit: BoxFit.fill,
           errorBuilder: (_, __, ___) => const Center(
             child: Icon(Icons.broken_image_outlined, color: Colors.grey),
           ),
@@ -3114,69 +3114,107 @@ class EditableItemWidget extends StatelessWidget {
     );
   }
 
-  void _showTextEditorDialog(
+  Future<void> _showTextEditorDialog(
       BuildContext context,
       EditorProvider provider,
       String itemId,
       String initialText,
-      ) {
-    final controller = TextEditingController(text: initialText);
+      ) async {
+    // Always load the text belonging to the selected canvas item.
+    final matchingItems = provider.items.where((e) => e.id == itemId);
+    if (itemId.isEmpty || matchingItems.isEmpty) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Please select a text item first.')),
+      );
+      return;
+    }
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1E1E2C),
-          title: const Text(
-            "Edit Text",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-            decoration: const InputDecoration(
-              hintText: "Type text here...",
-              hintStyle: TextStyle(color: Colors.white54),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.amberAccent),
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.amberAccent, width: 2),
+    final selectedItem = matchingItems.first;
+    final controller = TextEditingController(
+      text: selectedItem.text ?? initialText,
+    );
+
+    try {
+      final savedText = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1E1E2C),
+            title: const Text(
+              'Edit Text',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amberAccent,
-              ),
-              onPressed: () {
-                if (controller.text.isNotEmpty) {
-                  provider.updateTextContent(itemId, controller.text);
-                }
-                Navigator.pop(context);
-              },
-              child: const Text(
-                "Save",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              minLines: 1,
+              maxLines: 5,
+              textInputAction: TextInputAction.newline,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              decoration: const InputDecoration(
+                hintText: 'Type text here...',
+                hintStyle: TextStyle(color: Colors.white54),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.amberAccent),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(
+                    color: Colors.amberAccent,
+                    width: 2,
+                  ),
                 ),
               ),
             ),
-          ],
-        );
-      },
-    );
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amberAccent,
+                ),
+                onPressed: () {
+                  FocusScope.of(dialogContext).unfocus();
+                  Navigator.of(dialogContext).pop(controller.text);
+                },
+                child: const Text(
+                  'Save',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+      // Save only after the dialog has closed; empty text is also a valid edit.
+      if (savedText == null) return;
+      final stillExists = provider.items.any((e) => e.id == itemId);
+      if (!stillExists) {
+        if (context.mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            const SnackBar(content: Text('This text item no longer exists.')),
+          );
+        }
+        return;
+      }
+
+      provider.updateTextContent(itemId, savedText);
+    } finally {
+      controller.dispose();
+    }
   }
 
   Future<void> _openCropScreen(
