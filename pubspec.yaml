@@ -54,6 +54,7 @@ dependencies:
   webview_flutter: ^4.13.0
   webview_flutter_android: ^4.14.1
   razorpay_flutter: ^1.4.7
+  image: ^4.5.4
 
 
 dev_dependencies:

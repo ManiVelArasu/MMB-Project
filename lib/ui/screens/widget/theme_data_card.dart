@@ -162,6 +162,7 @@ class BrandSeriesCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: AppFontSize.fontSize13,
+                        fontWeight: FontWeight.w400,
                         height: 1.25,
                         color: isDark ? Colors.white70 : AppColors.appBlack,
                       ),
@@ -171,7 +172,7 @@ class BrandSeriesCard extends StatelessWidget {
 
                     // PERFECT FOR
                     AppText(
-                      "$perfectFor",
+                      "Perfect For $perfectFor",
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

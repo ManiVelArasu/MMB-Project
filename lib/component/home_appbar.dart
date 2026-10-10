@@ -326,7 +326,7 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
                               color: isDark
                                   ? Colors.grey.shade400
                                   : Colors.grey.shade600,
-                              fontSize: 13.sp,
+                              fontSize: AppFontSize.fontSize13,
                               fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,

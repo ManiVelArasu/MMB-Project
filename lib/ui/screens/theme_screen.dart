@@ -211,7 +211,7 @@ class ThemeGroupSection extends StatelessWidget {
             SizedBox(width: 8.w),
 
             Expanded(
-              child: Text(
+              child: AppText(
                 group.name ?? "",
                 style: TextStyle(
                   color: isDark ? Colors.white : Colors.black,

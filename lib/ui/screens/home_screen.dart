@@ -53,7 +53,8 @@ class _HomeScreenView extends StatelessWidget {
 
     if (homeScreenProvider.isLoadingCategories ||
         homeScreenProvider.isKeyWordsLoading ||
-        homeScreenProvider.isLoadingPopularTemplates) {
+        homeScreenProvider.isLoadingPopularTemplates ||
+        homeScreenProvider.isLoadingSpecialDays) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFFE53935)),
@@ -785,7 +786,7 @@ class _HomeScreenView extends StatelessWidget {
                                                             context,
                                                             templates[startIndex],
                                                             isDark,
-                                                            homeScreenProvider
+                                                            homeScreenProvider,
                                                           ),
                                                     ),
                                                     SizedBox(
@@ -800,7 +801,7 @@ class _HomeScreenView extends StatelessWidget {
                                                               templates[startIndex +
                                                                   1],
                                                               isDark,
-                                                              homeScreenProvider
+                                                              homeScreenProvider,
                                                             )
                                                           : const SizedBox(),
                                                     ),
@@ -821,7 +822,7 @@ class _HomeScreenView extends StatelessWidget {
                                                               templates[startIndex +
                                                                   2],
                                                               isDark,
-                                                              homeScreenProvider
+                                                              homeScreenProvider,
                                                             )
                                                           : const SizedBox(),
                                                     ),
@@ -837,7 +838,7 @@ class _HomeScreenView extends StatelessWidget {
                                                               templates[startIndex +
                                                                   3],
                                                               isDark,
-                                                              homeScreenProvider
+                                                              homeScreenProvider,
                                                             )
                                                           : const SizedBox(),
                                                     ),
@@ -879,7 +880,7 @@ class _HomeScreenView extends StatelessWidget {
                                       context,
                                       templates[templateIndex],
                                       isDark,
-                                        homeScreenProvider
+                                      homeScreenProvider,
                                     ),
                                   );
                                 },
@@ -1202,9 +1203,11 @@ class _HomeScreenView extends StatelessWidget {
       for (final template in event.templates) {
         final uid = template.uid?.trim() ?? '';
 
-        if (uid.isNotEmpty && !addedTemplateIds.contains(uid)) {
-          addedTemplateIds.add(uid);
+        final uniqueKey = uid.isNotEmpty
+            ? uid
+            : '${template.id ?? ''}_${template.name ?? ''}';
 
+        if (addedTemplateIds.add(uniqueKey)) {
           allTemplates.add(template);
         }
       }
@@ -1246,7 +1249,7 @@ class _HomeScreenView extends StatelessWidget {
         itemBuilder: (context, index) {
           final template = allTemplates[index];
 
-          return _buildSpecialDayTemplateCard(context, template,provider);
+          return _buildSpecialDayTemplateCard(context, template, provider);
         },
       ),
     );
@@ -1283,7 +1286,6 @@ class _HomeScreenView extends StatelessWidget {
           return;
         }
 
-        // Template API + Project API are handled by TemplateEditScreen.
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -1382,7 +1384,7 @@ class _HomeScreenView extends StatelessWidget {
                   );
                 },
                 onFavorite: () {
-                  final templateUid = template.uid?.trim() ?? '';
+                  final templateUid = template.familyUid?.trim() ?? '';
                   provider.favoriteTemplate(templateUid);
                 },
               ),
@@ -1390,7 +1392,7 @@ class _HomeScreenView extends StatelessWidget {
             if (template.isLocked)
               Positioned.fill(
                 child: Container(
-                  color: Colors.black.withOpacity(0.40),
+                  color: Colors.black.withValues(alpha: .40),
 
                   child: const Center(
                     child: Icon(
@@ -1655,7 +1657,7 @@ class _HomeScreenView extends StatelessWidget {
     BuildContext context,
     TemplateModel template,
     bool isDark,
-      HomeScreenProvider provider
+    HomeScreenProvider provider,
   ) {
     final key = template.thumbnailS3Key?.trim() ?? '';
     final imageUrl = key.isEmpty ? '' : '${ApiEndpoints.cdnImageUrl}/$key';
@@ -1977,7 +1979,8 @@ class _HomeScreenView extends StatelessWidget {
                     '';
 
                 final email =
-                    homeScreenProvider.provider.me?.data.email?.toString() ?? '';
+                    homeScreenProvider.provider.me?.data.email?.toString() ??
+                    '';
 
                 return Container(
                   margin: EdgeInsets.symmetric(horizontal: 25.w),

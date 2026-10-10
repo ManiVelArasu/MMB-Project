@@ -12,6 +12,7 @@ import 'package:flutter_svg/flutter_svg.dart' as svg;
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gal/gal.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:mmb_app/ui/screens/widget/empty_state.dart';
@@ -3012,6 +3013,7 @@ class _EditorViewState extends State<EditorView> {
       provider.setMusicPosition(Duration.zero);
     });
   }
+
   @override
   Future<void> dispose() async {
     _projectSaveTimer?.cancel();
@@ -3179,74 +3181,64 @@ class _EditorViewState extends State<EditorView> {
           : const Color(0xFFF0F2F5),
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        elevation: 1,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.red),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: AppText(
-          widget.resizeSize,
-          style: TextStyle(
-            color: isDark ? Colors.white : Colors.black,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.undo_rounded, color: Colors.grey),
-            onPressed: () => provider.undo(),
-          ),
-          IconButton(
-            tooltip: 'Pages',
-            icon: const Icon(
-              Icons.dashboard_customize_rounded,
-              color: Colors.grey,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
+        title: Row(
+          children: [
+            _editorToolbarButton(
+              icon: Icons.arrow_back_rounded,
+              backgroundColor: const Color(0xFFFFE3E5),
+              iconColor: const Color(0xFFFF2938),
+              tooltip: 'Back',
+              onPressed: () => Navigator.pop(context),
             ),
-            onPressed: () => _showPagesSheet(context, provider, isDark),
-          ),
-          IconButton(
-            tooltip: 'Copy Page',
-            icon: const Icon(Icons.copy_all_rounded, color: Colors.grey),
-            onPressed: () {
-              provider.copyCurrentPage();
-              Fluttertoast.showToast(
-                msg: 'Page copied. Go to another page and paste.',
-              );
-            },
-          ),
-          IconButton(
-            tooltip: 'Paste Page',
-            icon: Icon(
-              Icons.content_paste_rounded,
-              color: provider.canPasteCopiedPage
-                  ? Colors.grey
-                  : Colors.grey.shade400,
+            const Spacer(),
+            _editorToolbarButton(
+              icon: Icons.undo_rounded,
+              backgroundColor: const Color(0xFFE0E0E0),
+              iconColor: const Color(0xFF555555),
+              tooltip: 'Undo',
+              onPressed: () => provider.undo(),
             ),
-            onPressed: !provider.canPasteCopiedPage
-                ? null
-                : () {
-              final pasted = provider.pasteCopiedPage();
-              if (pasted) {
-                Fluttertoast.showToast(
-                  msg:
-                  'Copied page pasted to Page ${provider.currentPageIndex + 1}',
-                );
-              }
-            },
-          ),
-          IconButton(
-            tooltip: 'Download',
-            icon: const Icon(Icons.download_rounded, color: Colors.red),
-            onPressed: () {
-              _showExportSheet(context, provider);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.redo_rounded, color: Colors.grey),
-            onPressed: () => provider.redo(),
-          ),
-        ],
+            const SizedBox(width: 10),
+            _editorToolbarButton(
+              icon: Icons.redo_rounded,
+              backgroundColor: const Color(0xFFF1F1F1),
+              iconColor: const Color(0xFFBDBDBD),
+              tooltip: 'Redo',
+              onPressed: () => provider.redo(),
+            ),
+            const SizedBox(width: 10),
+            _editorToolbarButton(
+              icon: Icons.play_arrow_rounded,
+              backgroundColor: const Color(0xFFE0E0E0),
+              iconColor: const Color(0xFF555555),
+              tooltip: 'Preview',
+              onPressed: () => _showEditorPreview(context, provider, aspectRatio),
+            ),
+            const SizedBox(width: 10),
+            _editorToolbarButton(
+              icon: Icons.layers_rounded,
+              backgroundColor: const Color(0xFFE0E0E0),
+              iconColor: const Color(0xFF555555),
+              tooltip: 'Pages',
+              onPressed: () => _showPagesSheet(context, provider, isDark),
+              onLongPress: () {
+                provider.copyCurrentPage();
+                Fluttertoast.showToast(msg: 'Page copied. Go to another page and paste.');
+              },
+            ),
+            const SizedBox(width: 10),
+            _editorToolbarButton(
+              icon: Icons.file_download_outlined,
+              backgroundColor: const Color(0xFFE0E0E0),
+              iconColor: Colors.black,
+              tooltip: 'Download',
+              onPressed: () => _showExportSheet(context, provider),
+            ),
+          ],
+        ),
       ),
       body: Stack(
         children: [
@@ -5883,25 +5875,33 @@ class _EditorViewState extends State<EditorView> {
     return file;
   }
 
-  Future<String?> _getThumbnailBase64(
-      EditorProvider provider,
-      ) async {
+  Future<String?> _getThumbnailBase64(EditorProvider provider) async {
     final file = await _renderCurrentPagePng(provider);
-
     if (file == null) return null;
 
     final bytes = await file.readAsBytes();
+    final decoded = img.decodeImage(bytes);
 
-    if (bytes.length < 8 ||
-        bytes[0] != 0x89 ||
-        bytes[1] != 0x50 ||
-        bytes[2] != 0x4E ||
-        bytes[3] != 0x47) {
-      debugPrint('Invalid PNG image bytes');
+    if (decoded == null) return null;
+
+    // Thumbnail dimensions reduce the Base64 payload.
+    final resized = img.copyResize(decoded, width: 400);
+
+    final jpgBytes = img.encodeJpg(resized, quality: 65);
+
+    final base64 = base64Encode(jpgBytes);
+    final dataUri = 'data:image/jpeg;base64,$base64';
+
+    debugPrint('Original bytes: ${bytes.length}');
+    debugPrint('Compressed bytes: ${jpgBytes.length}');
+    debugPrint('Thumbnail Base64 length: ${dataUri.length}');
+
+    if (dataUri.length > 682731) {
+      debugPrint('Thumbnail still exceeds API limit');
       return null;
     }
 
-    return 'data:image/png;base64,${base64Encode(bytes)}';
+    return dataUri;
   }
 
   Future<void> _downloadCurrentPage(BuildContext context) async {
@@ -6018,6 +6018,56 @@ class _EditorViewState extends State<EditorView> {
       debugPrint('ZIP export error: $e');
       Fluttertoast.showToast(msg: 'Unable to create ZIP');
     }
+  }
+
+  Widget _editorToolbarButton({
+    required IconData icon,
+    required Color backgroundColor,
+    required Color iconColor,
+    required String tooltip,
+    required VoidCallback onPressed,
+    VoidCallback? onLongPress,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: backgroundColor,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onPressed,
+          onLongPress: onLongPress,
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEditorPreview(
+      BuildContext context,
+      EditorProvider provider,
+      double aspectRatio,
+      ) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: AspectRatio(
+            aspectRatio: aspectRatio,
+            child: Container(
+              color: provider.backgroundColor,
+              alignment: Alignment.center,
+              child: const Text('Preview'),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _showExportSheet(BuildContext context, EditorProvider provider) {

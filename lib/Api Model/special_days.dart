@@ -68,46 +68,36 @@ class SpecialDaysList {
   });
 
   factory SpecialDaysList.fromJson(Map<String, dynamic> json) {
+    final templatesJson = json['Templates'] ?? json['templates'];
+
     return SpecialDaysList(
-      id: json["id"]?.toString(),
-      uid: json["uid"]?.toString(),
-      name: json["name"]?.toString(),
-      description: json["description"]?.toString(),
-
-      thumbnailS3Key: json["thumbnail_s3_key"]?.toString(),
-
-      bannerS3Key: json["banner_s3_key"]?.toString(),
-
-      type: json["type"]?.toString(),
-
-      eventDate: json["event_date"]?.toString(),
-
-      fullDate: json["full_date"]?.toString(),
-
-      isRecurring: json["is_recurring"]?.toString(),
-
-      isActive: json["is_active"]?.toString(),
-
-      createdAt: json["created_at"] == null
-          ? null
-          : DateTime.tryParse(json["created_at"].toString()),
-
-      updatedAt: json["updated_at"] == null
-          ? null
-          : DateTime.tryParse(json["updated_at"].toString()),
-
-      // IMPORTANT
-      // API:
-      // "Templates": [...]
-      templates: json["Templates"] == null
-          ? []
-          : List<Template>.from(
-              (json["Templates"] as List).map(
-                (x) => Template.fromJson(x as Map<String, dynamic>),
-              ),
-            ),
-
-      occursOn: DateTime.parse(json["occurs_on"].toString()),
+      id: json['id']?.toString(),
+      uid: json['uid']?.toString(),
+      name: json['name']?.toString(),
+      description: json['description']?.toString(),
+      thumbnailS3Key: json['thumbnail_s3_key']?.toString(),
+      bannerS3Key: json['banner_s3_key']?.toString(),
+      type: json['type']?.toString(),
+      eventDate: json['event_date']?.toString(),
+      fullDate: json['full_date']?.toString(),
+      isRecurring: json['is_recurring']?.toString(),
+      isActive: json['is_active']?.toString(),
+      createdAt: DateTime.tryParse(
+        json['created_at']?.toString() ?? '',
+      ),
+      updatedAt: DateTime.tryParse(
+        json['updated_at']?.toString() ?? '',
+      ),
+      templates: templatesJson is List
+          ? templatesJson
+          .whereType<Map<String, dynamic>>()
+          .map(Template.fromJson)
+          .toList()
+          : [],
+      occursOn: DateTime.tryParse(
+        json['occurs_on']?.toString() ?? '',
+      ) ??
+          DateTime.now(),
     );
   }
 
@@ -140,6 +130,8 @@ class SpecialDaysList {
 class Template {
   final String? id;
   final String? uid;
+  final String? familyId;
+  final String? familyUid;
   final String? categoryId;
   final String? languageId;
   final String? name;
@@ -160,6 +152,8 @@ class Template {
   Template({
     required this.id,
     required this.uid,
+    required this.familyUid,
+    required this.familyId,
     required this.categoryId,
     required this.languageId,
     required this.name,
@@ -183,6 +177,9 @@ class Template {
       id: json["id"]?.toString(),
 
       uid: json["uid"]?.toString(),
+
+      familyId: (json['family_id'] ?? json['familyId'])?.toString(),
+      familyUid: (json['family_uid'] ?? json['familyUid'])?.toString(),
 
       categoryId: json["category_id"]?.toString(),
 
@@ -225,6 +222,8 @@ class Template {
     return {
       "id": id,
       "uid": uid,
+      "familyUid": familyUid,
+      "familyId": familyId,
       "category_id": categoryId,
       "language_id": languageId,
       "name": name,
@@ -234,7 +233,7 @@ class Template {
       "trending_score": trendingScore,
       "views_count": viewsCount,
       "downloads_count": downloadsCount,
-      "content":content,
+      "content": content,
       "likes_count": likesCount,
       "status": status,
       "created_by": createdBy,
