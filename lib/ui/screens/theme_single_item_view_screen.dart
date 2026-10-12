@@ -258,7 +258,7 @@ class ThemeDetailView extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: AppFontSize.fontSize12,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.red,
+                                  color: AppColors.appRed,
                                 ),
                               ),
                             ],
@@ -275,9 +275,8 @@ class ThemeDetailView extends StatelessWidget {
                       style: TextStyle(
                         color: isDark ? AppColors.appWhite :AppColors.appBlack,
 
-                        fontSize: AppFontSize.fontSize22,
-
-                        fontWeight: FontWeight.w900,
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w500,
                       ),
 
                       textAlign: TextAlign.center,
@@ -290,10 +289,8 @@ class ThemeDetailView extends StatelessWidget {
 
                       style: TextStyle(
                         color: AppColors.appRed,
-
-                        fontSize: AppFontSize.fontSize13,
-
-                        fontWeight: FontWeight.w700,
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w600,
                       ),
 
                       textAlign: TextAlign.center,
@@ -343,7 +340,7 @@ class ThemeDetailView extends StatelessWidget {
                             style: TextStyle(
                               color: AppColors.appBlack,
                               fontSize: AppFontSize.fontSize14,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         );
@@ -379,8 +376,8 @@ class ThemeDetailView extends StatelessWidget {
                               "Get This Varient →",
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: AppFontSize.fontSize14,
-                                fontWeight: FontWeight.w600,
+                                fontSize:   AppFontSize.fontSize14,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
@@ -405,7 +402,7 @@ class ThemeDetailView extends StatelessWidget {
                       style: TextStyle(
                         fontSize: AppFontSize.fontSize22,
 
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w500,
 
                         color: isDark ? Colors.white : Colors.black,
                       ),
@@ -526,8 +523,8 @@ Widget _buildBrandSeriesSection(BuildContext context, bool isDark) {
               AppText(
                 "More Brand Series",
                 style: TextStyle(
-                  fontSize: AppFontSize.fontSize22,
-                  fontWeight: FontWeight.w600,
+                  fontSize: AppFontSize.fontSize18,
+                  fontWeight: FontWeight.w500,
                   color: isDark ? Colors.white : Colors.black,
                 ),
               ),

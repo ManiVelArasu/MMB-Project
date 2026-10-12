@@ -3614,116 +3614,249 @@ class _EditorViewState extends State<EditorView> {
     String id,
     bool isDark,
   ) async {
+    const presets = <Color>[
+      Color(0xFFF44336),
+      Color(0xFFFF9800),
+      Color(0xFFFFEB3B),
+      Color(0xFF66BB6A),
+      Color(0xFF26A69A),
+      Color(0xFF03A9F4),
+      Color(0xFF4054B2),
+      Color(0xFF673AB7),
+      Color(0xFF9C27B0),
+      Color(0xFFEC407A),
+      Color(0xFF8D6E63),
+      Color(0xFFD6D6D6),
+    ];
+
     var hsv = HSVColor.fromColor(provider.textColor(id));
+    var selectedTab = 0;
 
-    final picked = await showDialog<Color>(
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final current = hsv.toColor();
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) {
+          final current = hsv.toColor();
+          final bg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+          final fg = isDark ? Colors.white : const Color(0xFF171717);
 
-            return AlertDialog(
-              title: const Text('Text Color'),
-              content: SizedBox(
-                width: 340,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      height: 54,
-                      decoration: BoxDecoration(
-                        color: current,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade400),
+          void applyColor(Color color) {
+            hsv = HSVColor.fromColor(color);
+            provider.updateTextColor(id, color);
+            setSheetState(() {});
+          }
+
+          Widget tab(String label, int index) {
+            final active = selectedTab == index;
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => setSheetState(() => selectedTab = index),
+                  child: Container(
+                    height: 46,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: active
+                          ? Colors.black
+                          : (isDark
+                                ? const Color(0xFF393939)
+                                : const Color(0xFFE0E0E0)),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        color: active ? Colors.white : fg,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                  ),
+                ),
+              ),
+            );
+          }
 
-                    // Hue
+          return SafeArea(
+            top: false,
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(sheetContext).size.height * 0.78,
+              ),
+              padding: const EdgeInsets.fromLTRB(22, 10, 22, 24),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 70,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade400,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
-                        const SizedBox(width: 42, child: Text('Hue')),
                         Expanded(
-                          child: Slider(
-                            min: 0,
-                            max: 360,
-                            value: hsv.hue,
-                            onChanged: (v) {
-                              setState(() {
-                                hsv = hsv.withHue(v);
-                              });
-                            },
+                          child: Text(
+                            'Font Color',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: fg,
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => Navigator.pop(sheetContext),
+                          borderRadius: BorderRadius.circular(30),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFFE3E3),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.red,
+                              size: 22,
+                            ),
                           ),
                         ),
                       ],
                     ),
-
-                    // Saturation
+                    const SizedBox(height: 28),
                     Row(
                       children: [
-                        const SizedBox(width: 42, child: Text('Sat')),
-                        Expanded(
-                          child: Slider(
-                            min: 0,
-                            max: 1,
-                            value: hsv.saturation,
-                            onChanged: (v) {
-                              setState(() {
-                                hsv = hsv.withSaturation(v);
-                              });
-                            },
-                          ),
-                        ),
+                        tab('PRESETS', 0),
+                        tab('CUSTOM', 1),
+                        tab('BRAND KIT', 2),
                       ],
                     ),
-
-                    // Brightness
-                    Row(
-                      children: [
-                        const SizedBox(width: 42, child: Text('Val')),
-                        Expanded(
-                          child: Slider(
-                            min: 0,
-                            max: 1,
-                            value: hsv.value,
-                            onChanged: (v) {
-                              setState(() {
-                                hsv = hsv.withValue(v);
-                              });
-                            },
-                          ),
+                    const SizedBox(height: 24),
+                    if (selectedTab == 0) ...[
+                      Text(
+                        'Color Presets',
+                        style: TextStyle(fontSize: 19, color: fg),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: presets.map((color) {
+                          final active = color.value == current.value;
+                          return InkWell(
+                            onTap: () => applyColor(color),
+                            borderRadius: BorderRadius.circular(7),
+                            child: Container(
+                              width:
+                                  (MediaQuery.of(sheetContext).size.width -
+                                      76) /
+                                  7,
+                              height: 53,
+                              decoration: BoxDecoration(
+                                color: color,
+                                borderRadius: BorderRadius.circular(7),
+                                border: active
+                                    ? Border.all(color: fg, width: 3)
+                                    : null,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ] else if (selectedTab == 1) ...[
+                      Container(
+                        height: 54,
+                        decoration: BoxDecoration(
+                          color: current,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade400),
                         ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 4),
-                    AppText(
-                      '#${current.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '#${current.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
+                        style: TextStyle(
+                          color: fg,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _colorSlider('Hue', hsv.hue, 0, 360, (v) {
+                        setSheetState(() => hsv = hsv.withHue(v));
+                        provider.updateTextColor(id, hsv.toColor());
+                      }),
+                      _colorSlider('Saturation', hsv.saturation, 0, 1, (v) {
+                        setSheetState(() => hsv = hsv.withSaturation(v));
+                        provider.updateTextColor(id, hsv.toColor());
+                      }),
+                      _colorSlider('Brightness', hsv.value, 0, 1, (v) {
+                        setSheetState(() => hsv = hsv.withValue(v));
+                        provider.updateTextColor(id, hsv.toColor());
+                      }),
+                    ] else ...[
+                      Text(
+                        'Brand Colors',
+                        style: TextStyle(fontSize: 19, color: fg),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Your brand colors will appear here.',
+                        style: TextStyle(
+                          color: isDark ? Colors.white60 : Colors.black54,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const AppText('CANCEL'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(dialogContext, current),
-                  child: const AppText('APPLY'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
+  }
 
-    if (picked != null) {
-      provider.updateTextColor(id, picked);
-    }
+  Widget _colorSlider(
+    String label,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged,
+  ) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 92,
+          child: Text(label, style: const TextStyle(fontSize: 12)),
+        ),
+        Expanded(
+          child: Slider(
+            min: min,
+            max: max,
+            value: value.clamp(min, max),
+            onChanged: onChanged,
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildTextEditorToolbar(
@@ -3734,174 +3867,628 @@ class _EditorViewState extends State<EditorView> {
     final id = provider.selectedItemId;
     if (id == null) return const SizedBox.shrink();
 
-    final fonts = GoogleFonts.asMap().keys.toList()..sort();
+    Widget tool(IconData icon, String label, VoidCallback onTap) {
+      return Expanded(
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 7),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF626262),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 19),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
+    return Container(
+      height: 100,
+      padding: const EdgeInsets.fromLTRB(8, 7, 8, 5),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        border: const Border(
+          bottom: BorderSide(color: Color(0xFF252525), width: 3),
+        ),
+      ),
+      child: Row(
+        children: [
+          tool(Icons.text_fields_rounded, 'FONT', () {
+            _showTextFontPicker(context, provider, id, isDark);
+          }),
+          tool(Icons.text_format_rounded, 'FORMAT', () {
+            _showTextFormatBottomSheet(context, provider, id, isDark);
+          }),
+          tool(Icons.format_line_spacing_rounded, 'SPACING', () {
+            _showTextSpacingBottomSheet(context, provider, id, isDark);
+          }),
+          tool(Icons.palette_rounded, 'COLOR', () {
+            _showTextColorPicker(context, provider, id, isDark);
+          }),
+          tool(Icons.format_align_center_rounded, 'ALIGN', () {
+            _showTextAlignmentBottomSheet(context, provider, id, isDark);
+          }),
+          tool(Icons.layers_rounded, 'ORDER', () {
+            _showTextOrderBottomSheet(context, provider, id, isDark);
+          }),
+        ],
+      ),
+    );
+  }
+
+  void _showTextFormatBottomSheet(
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
+    final item = provider.items.where((e) => e.id == id).firstOrNull;
+    if (item == null) return;
+    final alignments = <Map<String, dynamic>>[
+      {'icon': Icons.format_align_left_rounded, 'value': TextAlign.left},
+      {'icon': Icons.format_align_center_rounded, 'value': TextAlign.center},
+      {'icon': Icons.format_align_right_rounded, 'value': TextAlign.right},
+      {'icon': Icons.format_align_justify_rounded, 'value': TextAlign.justify},
+    ];
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) {
+          final current = provider.items.where((e) => e.id == id).firstOrNull;
+          if (current == null) return const SizedBox.shrink();
+          final fg = isDark ? Colors.white : const Color(0xFF222222);
+          final bg = isDark ? const Color(0xFF17191E) : Colors.white;
+          Widget iconButton(IconData icon, bool selected, VoidCallback onTap) =>
+              InkWell(
+                onTap: () {
+                  onTap();
+                  setSheetState(() {});
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 43,
+                  height: 43,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? const Color(0xFFFFE5E5)
+                        : (isDark
+                              ? const Color(0xFF292B31)
+                              : const Color(0xFFF2F2F2)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: selected ? Colors.red : fg,
+                    size: 23,
+                  ),
+                ),
+              );
+          Widget sliderRow(
+            String title,
+            double value,
+            double min,
+            double max,
+            ValueChanged<double> onChanged,
+          ) {
+            final safeValue = value.clamp(min, max).toDouble();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(color: fg, fontSize: 12),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF292B31)
+                            : const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        safeValue.round().toString(),
+                        style: TextStyle(
+                          color: fg,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(
+                  height: 2,
+                  child: SliderTheme(
+                    data: SliderTheme.of(sheetContext).copyWith(
+                      activeTrackColor: Colors.red,
+                      inactiveTrackColor: Colors.black12,
+                      thumbColor: Colors.red,
+                      overlayColor: Colors.red.withValues(alpha: .12),
+                      trackHeight: 2,
+                    ),
+                    child: Slider(
+                      value: safeValue,
+                      min: min,
+                      max: max,
+                      onChanged: (v) {
+                        onChanged(v);
+                        setSheetState(() {});
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            );
+          }
+
+          return Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 18),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(22),
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Format',
+                          style: TextStyle(
+                            color: fg,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => Navigator.pop(sheetContext),
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFE5E5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.red,
+                            size: 17,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      iconButton(
+                        Icons.format_bold_rounded,
+                        provider.textWeight(id) == FontWeight.bold,
+                        () => provider.toggleTextBold(id),
+                      ),
+                      iconButton(
+                        Icons.text_fields_rounded,
+                        false,
+                        () =>
+                            _showTextFontPicker(context, provider, id, isDark),
+                      ),
+                      iconButton(
+                        Icons.format_italic_rounded,
+                        provider.textStyle(id) == FontStyle.italic,
+                        () => provider.toggleTextItalic(id),
+                      ),
+                      iconButton(
+                        Icons.format_underlined_rounded,
+                        provider.textUnderline(id),
+                        () => provider.toggleTextUnderline(id),
+                      ),
+                      iconButton(Icons.strikethrough_s_rounded, false, () {}),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: alignments
+                        .map(
+                          (a) => Expanded(
+                            child: Center(
+                              child: iconButton(
+                                a['icon'] as IconData,
+                                provider.textAlignment(id) == a['value'],
+                                () => provider.updateTextAlignment(
+                                  id,
+                                  a['value'] as TextAlign,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 12),
+                  sliderRow(
+                    'Text Size',
+                    current.fontSize,
+                    8,
+                    300,
+                    (v) => provider.updateFontSize(id, v),
+                  ),
+                  sliderRow(
+                    'Rotate',
+                    current.rotation,
+                    -180,
+                    180,
+                    (v) => provider.updateRotation(id, v),
+                  ),
+                  sliderRow(
+                    'Transparency',
+                    current.opacity * 100,
+                    0,
+                    100,
+                    (v) => provider.updateOpacity(id, v / 100),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showTextFontPicker(
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
+    final fonts = GoogleFonts.asMap().keys.toList()..sort();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => SafeArea(
+        child: Container(
+          height: MediaQuery.of(sheetContext).size.height * 0.65,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: ListView.builder(
+            itemCount: fonts.length,
+            itemBuilder: (_, index) => ListTile(
+              title: Text(
+                fonts[index],
+                style: GoogleFonts.getFont(fonts[index]),
+              ),
+              onTap: () {
+                provider.updateFontFamily(id, fonts[index]);
+                Navigator.pop(sheetContext);
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showTextSpacingBottomSheet(
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final letterSpacing = provider
+                .textLetterSpacing(id)
+                .clamp(-2.0, 20.0)
+                .toDouble();
+            final lineSpacing = provider
+                .textLineSpacing(id)
+                .clamp(0.7, 3.0)
+                .toDouble();
+            final foreground = isDark ? Colors.white : const Color(0xFF171717);
+
+            Widget spacingControl({
+              required String label,
+              required double value,
+              required double min,
+              required double max,
+              required ValueChanged<double> onChanged,
+            }) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              color: foreground,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          constraints: const BoxConstraints(minWidth: 34),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF292929)
+                                : const Color(0xFFF5F5F5),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            value.toStringAsFixed(1),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: foreground,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                      height: 25,
+                      child: SliderTheme(
+                        data: SliderTheme.of(sheetContext).copyWith(
+                          trackHeight: 3,
+                          activeTrackColor: const Color(0xFFFF252D),
+                          inactiveTrackColor: isDark
+                              ? Colors.white24
+                              : const Color(0xFFE0E0E0),
+                          thumbColor: const Color(0xFFFF252D),
+                          overlayColor: const Color(0x22FF252D),
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 6,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 12,
+                          ),
+                        ),
+                        child: Slider(
+                          value: value,
+                          min: min,
+                          max: max,
+                          onChanged: (next) {
+                            onChanged(next);
+                            setSheetState(() {});
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Container(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 60,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white30 : Colors.black26,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Space',
+                            style: TextStyle(
+                              color: foreground,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => Navigator.pop(sheetContext),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF44292B)
+                                  : const Color(0xFFFFE5E6),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              size: 14,
+                              color: Color(0xFFFF252D),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    spacingControl(
+                      label: 'Letter Spacing',
+                      value: letterSpacing,
+                      min: -2,
+                      max: 20,
+                      onChanged: (value) =>
+                          provider.updateTextLetterSpacing(id, value),
+                    ),
+                    spacingControl(
+                      label: 'Line Spacing',
+                      value: lineSpacing,
+                      min: 0.7,
+                      max: 3,
+                      onChanged: (value) =>
+                          provider.updateTextLineSpacing(id, value),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showTextAlignmentBottomSheet(
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
     final alignments = <Map<String, dynamic>>[
       {
-        'label': 'LEFT',
-        'icon': Icons.format_align_left_rounded,
+        'label': 'Left',
+        'icon': Icons.format_align_left,
         'value': TextAlign.left,
       },
       {
-        'label': 'CENTER',
-        'icon': Icons.format_align_center_rounded,
+        'label': 'Center',
+        'icon': Icons.format_align_center,
         'value': TextAlign.center,
       },
       {
-        'label': 'RIGHT',
-        'icon': Icons.format_align_right_rounded,
+        'label': 'Right',
+        'icon': Icons.format_align_right,
         'value': TextAlign.right,
       },
       {
-        'label': 'JUSTIFY',
-        'icon': Icons.format_align_justify_rounded,
+        'label': 'Justify',
+        'icon': Icons.format_align_justify,
         'value': TextAlign.justify,
       },
     ];
-
-    final palette = <Color>[
-      Colors.white,
-      Colors.black,
-      Colors.red,
-      Colors.orange,
-      Colors.amber,
-      Colors.green,
-      Colors.blue,
-      Colors.purple,
-      Colors.pink,
-    ];
-
-    return Container(
-      height: 150,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : Colors.black,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: alignments
+              .map(
+                (a) => ListTile(
+                  leading: Icon(a['icon'] as IconData),
+                  title: Text(a['label'] as String),
+                  onTap: () {
+                    provider.updateTextAlignment(id, a['value'] as TextAlign);
+                    Navigator.pop(sheetContext);
+                  },
+                ),
+              )
+              .toList(),
+        ),
       ),
-      child: Column(
-        children: [
-          SizedBox(
-            height: 62,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              children: [
-                _bottomTool(
-                  Icons.edit_rounded,
-                  'EDIT',
-                  () => _showTextEditDialog(context, provider, id),
-                ),
-                _bottomTool(
-                  Icons.format_size_rounded,
-                  'SIZE',
-                  () => _showTextSizeBottomSheet(context, provider, id, isDark),
-                ),
-                _buildFontDropdown(provider, id, isDark),
-                SizedBox(width: 5),
-                _bottomTool(
-                  Icons.format_bold_rounded,
-                  'BOLD',
-                  () => provider.toggleTextBold(id),
-                  selected: provider.textWeight(id) == FontWeight.bold,
-                ),
-                _bottomTool(
-                  Icons.format_italic_rounded,
-                  'ITALIC',
-                  () => provider.toggleTextItalic(id),
-                  selected: provider.textStyle(id) == FontStyle.italic,
-                ),
-                _bottomTool(
-                  Icons.format_underlined_rounded,
-                  'UNDERLINE',
-                  () => provider.toggleTextUnderline(id),
-                  selected: provider.textUnderline(id),
-                ),
-                ...alignments.map(
-                  (item) => _bottomTool(
-                    item['icon'] as IconData,
-                    item['label'] as String,
-                    () => provider.updateTextAlignment(
-                      id,
-                      item['value'] as TextAlign,
-                    ),
-                    selected: provider.textAlignment(id) == item['value'],
-                  ),
-                ),
-                _bottomTool(
-                  Icons.colorize_rounded,
-                  'COLOR',
-                  () => _showTextColorPicker(context, provider, id, isDark),
-                ),
-                ...palette.map(
-                  (color) => _colorTool(
-                    color,
-                    () => provider.updateTextColor(id, color),
-                  ),
-                ),
-                _bottomTool(
-                  Icons.flip_to_front_rounded,
-                  'FRONT',
-                  () => provider.bringToFront(id),
-                ),
-                _bottomTool(
-                  Icons.flip_to_back_rounded,
-                  'BACK',
-                  () => provider.sendToBack(id),
-                ),
-                _bottomTool(
-                  Icons.copy_rounded,
-                  'DUPLICATE',
-                  () => provider.duplicateItem(id),
-                ),
-                _bottomTool(
-                  Icons.delete_outline_rounded,
-                  'DELETE',
-                  () => provider.removeItem(id),
-                  danger: true,
-                ),
-                _bottomTool(
-                  Icons.close_rounded,
-                  'CLOSE',
-                  provider.clearSelection,
-                ),
-              ],
+    );
+  }
+
+  void _showTextOrderBottomSheet(
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.flip_to_front),
+              title: const Text('Bring to front'),
+              onTap: () {
+                provider.bringToFront(id);
+                Navigator.pop(sheetContext);
+              },
             ),
-          ),
-          Expanded(
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              children: [
-                _bottomSliderTool(
-                  'FONT SIZE',
-                  provider.items
-                      .firstWhere(
-                        (e) => e.id == id,
-                        orElse: () => provider.items.first,
-                      )
-                      .fontSize,
-                  8,
-                  300,
-                  (v) => provider.updateFontSize(id, v),
-                ),
-                _bottomSliderTool(
-                  'LETTER SPACING',
-                  provider.textLetterSpacing(id),
-                  -2,
-                  20,
-                  (v) => provider.updateTextLetterSpacing(id, v),
-                ),
-                _bottomSliderTool(
-                  'LINE SPACING',
-                  provider.textLineSpacing(id),
-                  .7,
-                  3,
-                  (v) => provider.updateTextLineSpacing(id, v),
-                ),
-              ],
+            ListTile(
+              leading: const Icon(Icons.flip_to_back),
+              title: const Text('Send to back'),
+              onTap: () {
+                provider.sendToBack(id);
+                Navigator.pop(sheetContext);
+              },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -7473,47 +8060,7 @@ class _InteractiveBackgroundLayerState
     );
   }
 
-  void _showBackgroundQuickMenu(BuildContext context) {
-    final id = widget.item.id;
-    if (id == null || id.isEmpty) return;
 
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        final provider = context.read<EditorProvider>();
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _backgroundAction(
-                  sheetContext,
-                  Icons.flip_to_front_rounded,
-                  'Front',
-                  () => provider.bringToFront(id),
-                ),
-                _backgroundAction(
-                  sheetContext,
-                  Icons.copy_rounded,
-                  'Duplicate',
-                  () => provider.duplicateItem(id),
-                ),
-                _backgroundAction(
-                  sheetContext,
-                  Icons.delete_outline_rounded,
-                  'Delete',
-                  () => provider.removeItem(id),
-                  destructive: true,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Widget _backgroundAction(
     BuildContext context,
@@ -7535,7 +8082,7 @@ class _InteractiveBackgroundLayerState
           children: [
             Icon(icon, color: destructive ? Colors.red : null),
             const SizedBox(height: 4),
-            Text(
+            AppText(
               label,
               style: TextStyle(
                 fontSize: 11,

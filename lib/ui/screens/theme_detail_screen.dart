@@ -110,7 +110,7 @@ class ThemeDetailView extends StatelessWidget {
                             .colorScheme
                             .onSurface,
                         fontSize: 24.sp,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
 
@@ -123,7 +123,7 @@ class ThemeDetailView extends StatelessWidget {
                       style: TextStyle(
                         color: const Color(0xFFE53935),
                         fontSize: 13.sp,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
 
@@ -180,7 +180,7 @@ class ThemeDetailView extends StatelessWidget {
                               color: AppColors.appBlack,
                               fontSize:
                               AppFontSize.fontSize14,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         );
@@ -225,7 +225,7 @@ class ThemeDetailView extends StatelessWidget {
                                 color: Colors.white,
                                 fontSize:
                                 AppFontSize.fontSize14,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
@@ -337,7 +337,7 @@ class ThemeDetailView extends StatelessWidget {
                               color: isDark
                                   ? Colors.grey.shade400
                                   : Colors.grey.shade600,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -354,7 +354,7 @@ class ThemeDetailView extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 20.sp,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w500,
                           color: isDark
                               ? Colors.white
                               : Colors.black,
@@ -396,7 +396,7 @@ class ThemeDetailView extends StatelessWidget {
                                 color: Colors.white,
                                 fontSize:
                                 AppFontSize.fontSize14,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           );

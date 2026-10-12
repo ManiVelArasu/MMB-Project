@@ -216,7 +216,7 @@ class ThemeGroupSection extends StatelessWidget {
                 style: TextStyle(
                   color: isDark ? Colors.white : Colors.black,
                   fontSize: AppFontSize.fontSize18,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),

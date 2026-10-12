@@ -1,33 +1,40 @@
+import 'dart:convert';
+
+SpecialDays specialDaysFromJson(String str) =>
+    SpecialDays.fromJson(json.decode(str));
+
+String specialDaysToJson(SpecialDays data) =>
+    json.encode(data.toJson());
+
 class SpecialDays {
   final bool? success;
   final List<SpecialDaysList> data;
   final Meta? meta;
 
-  SpecialDays({required this.success, required this.data, required this.meta});
+  SpecialDays({
+    required this.success,
+    required this.data,
+    required this.meta,
+  });
 
   factory SpecialDays.fromJson(Map<String, dynamic> json) {
     return SpecialDays(
-      success: json["success"] ?? false,
-      data: json["data"] == null
-          ? []
-          : List<SpecialDaysList>.from(
-              (json["data"] as List).map(
-                (x) => SpecialDaysList.fromJson(x as Map<String, dynamic>),
-              ),
-            ),
-      meta: json["meta"] == null
-          ? null
-          : Meta.fromJson(json["meta"] as Map<String, dynamic>),
+      success: json['success'] == true,
+      data: (json['data'] as List? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(SpecialDaysList.fromJson)
+          .toList(),
+      meta: json['meta'] is Map<String, dynamic>
+          ? Meta.fromJson(json['meta'])
+          : null,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      "success": success,
-      "data": data.map((x) => x.toJson()).toList(),
-      "meta": meta?.toJson(),
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'success': success,
+    'data': data.map((e) => e.toJson()).toList(),
+    'meta': meta?.toJson(),
+  };
 }
 
 class SpecialDaysList {
@@ -40,31 +47,29 @@ class SpecialDaysList {
   final String? type;
   final String? eventDate;
   final String? fullDate;
-  final String? isRecurring;
-  final String? isActive;
+  final int? isRecurring;
+  final int? isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-
+  final DateTime? occursOn;
   final List<Template> templates;
 
-  final DateTime occursOn;
-
   SpecialDaysList({
-    required this.id,
-    required this.uid,
-    required this.name,
-    required this.description,
-    required this.thumbnailS3Key,
-    required this.bannerS3Key,
-    required this.type,
-    required this.eventDate,
-    required this.fullDate,
-    required this.isRecurring,
-    required this.isActive,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.templates,
-    required this.occursOn,
+    this.id,
+    this.uid,
+    this.name,
+    this.description,
+    this.thumbnailS3Key,
+    this.bannerS3Key,
+    this.type,
+    this.eventDate,
+    this.fullDate,
+    this.isRecurring,
+    this.isActive,
+    this.createdAt,
+    this.updatedAt,
+    this.occursOn,
+    this.templates = const [],
   });
 
   factory SpecialDaysList.fromJson(Map<String, dynamic> json) {
@@ -80,212 +85,305 @@ class SpecialDaysList {
       type: json['type']?.toString(),
       eventDate: json['event_date']?.toString(),
       fullDate: json['full_date']?.toString(),
-      isRecurring: json['is_recurring']?.toString(),
-      isActive: json['is_active']?.toString(),
-      createdAt: DateTime.tryParse(
-        json['created_at']?.toString() ?? '',
-      ),
-      updatedAt: DateTime.tryParse(
-        json['updated_at']?.toString() ?? '',
-      ),
-      templates: templatesJson is List
-          ? templatesJson
+      isRecurring: _toInt(json['is_recurring']),
+      isActive: _toInt(json['is_active']),
+      createdAt: _toDateTime(json['created_at']),
+      updatedAt: _toDateTime(json['updated_at']),
+      occursOn: _toDateTime(json['occurs_on']),
+      templates: (templatesJson as List? ?? [])
           .whereType<Map<String, dynamic>>()
           .map(Template.fromJson)
-          .toList()
-          : [],
-      occursOn: DateTime.tryParse(
-        json['occurs_on']?.toString() ?? '',
-      ) ??
-          DateTime.now(),
+          .toList(),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      "id": id,
-      "uid": uid,
-      "name": name,
-      "description": description,
-      "thumbnail_s3_key": thumbnailS3Key,
-      "banner_s3_key": bannerS3Key,
-      "type": type,
-      "event_date": eventDate,
-      "full_date": fullDate,
-      "is_recurring": isRecurring,
-      "is_active": isActive,
-      "created_at": createdAt?.toIso8601String(),
-      "updated_at": updatedAt?.toIso8601String(),
-
-      "Templates": templates.map((x) => x.toJson()).toList(),
-
-      "occurs_on":
-          "${occursOn.year.toString().padLeft(4, '0')}-"
-          "${occursOn.month.toString().padLeft(2, '0')}-"
-          "${occursOn.day.toString().padLeft(2, '0')}",
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'uid': uid,
+    'name': name,
+    'description': description,
+    'thumbnail_s3_key': thumbnailS3Key,
+    'banner_s3_key': bannerS3Key,
+    'type': type,
+    'event_date': eventDate,
+    'full_date': fullDate,
+    'is_recurring': isRecurring,
+    'is_active': isActive,
+    'created_at': createdAt?.toIso8601String(),
+    'updated_at': updatedAt?.toIso8601String(),
+    'occurs_on': occursOn == null
+        ? null
+        : _formatDate(occursOn!),
+    'Templates': templates.map((e) => e.toJson()).toList(),
+  };
 }
 
 class Template {
-  final String? id;
+  final int? id;
   final String? uid;
-  final String? familyId;
+  final int? familyId;
   final String? familyUid;
-  final String? categoryId;
-  final String? languageId;
   final String? name;
+  final int? categoryId;
+  final int? languageId;
+  final int? sizeId;
   final String? thumbnailS3Key;
   final String? templateType;
-  final String? content;
-  final String? isPremium;
-  final String? trendingScore;
-  final String? viewsCount;
-  final String? downloadsCount;
-  final String? likesCount;
+  final int? isPremium;
+  final int? isPopular;
+  final int? trendingScore;
+  final int? viewsCount;
+  final int? downloadsCount;
+  final int? likesCount;
   final String? status;
-  final String? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final Language? language;
+  final TemplateSize? templateSize;
+  final List<Language> availableLanguages;
+  final List<TemplateSize> availableSizes;
   final bool isLocked;
 
+  // Old model compatibility fields
+  final String? content;
+  final String? createdBy;
+
   Template({
-    required this.id,
-    required this.uid,
-    required this.familyUid,
-    required this.familyId,
-    required this.categoryId,
-    required this.languageId,
-    required this.name,
-    required this.thumbnailS3Key,
-    required this.templateType,
-    required this.isPremium,
-    required this.trendingScore,
-    required this.content,
-    required this.viewsCount,
-    required this.downloadsCount,
-    required this.likesCount,
-    required this.status,
-    required this.createdBy,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.isLocked,
+    this.id,
+    this.uid,
+    this.familyId,
+    this.familyUid,
+    this.name,
+    this.categoryId,
+    this.languageId,
+    this.sizeId,
+    this.thumbnailS3Key,
+    this.templateType,
+    this.isPremium,
+    this.isPopular,
+    this.trendingScore,
+    this.viewsCount,
+    this.downloadsCount,
+    this.likesCount,
+    this.status,
+    this.createdAt,
+    this.updatedAt,
+    this.language,
+    this.templateSize,
+    this.availableLanguages = const [],
+    this.availableSizes = const [],
+    this.isLocked = false,
+    this.content,
+    this.createdBy,
   });
 
   factory Template.fromJson(Map<String, dynamic> json) {
+    final languagesJson = json['available_languages'];
+    final sizesJson = json['available_sizes'];
+
     return Template(
-      id: json["id"]?.toString(),
-
-      uid: json["uid"]?.toString(),
-
-      familyId: (json['family_id'] ?? json['familyId'])?.toString(),
-      familyUid: (json['family_uid'] ?? json['familyUid'])?.toString(),
-
-      categoryId: json["category_id"]?.toString(),
-
-      languageId: json["language_id"]?.toString(),
-
-      name: json["name"]?.toString(),
-
-      thumbnailS3Key: json["thumbnail_s3_key"]?.toString(),
-      content: json["content"]?.toString(),
-
-      templateType: json["template_type"]?.toString(),
-
-      isPremium: json["is_premium"]?.toString(),
-
-      trendingScore: json["trending_score"]?.toString(),
-
-      viewsCount: json["views_count"]?.toString(),
-
-      downloadsCount: json["downloads_count"]?.toString(),
-
-      likesCount: json["likes_count"]?.toString(),
-
-      status: json["status"]?.toString(),
-
-      createdBy: json["created_by"]?.toString(),
-
-      createdAt: json["created_at"] == null
-          ? null
-          : DateTime.tryParse(json["created_at"].toString()),
-
-      updatedAt: json["updated_at"] == null
-          ? null
-          : DateTime.tryParse(json["updated_at"].toString()),
-
-      isLocked: json["is_locked"] == true,
+      id: _toInt(json['id']),
+      uid: json['uid']?.toString(),
+      familyId: _toInt(json['family_id'] ?? json['familyId']),
+      familyUid:
+      (json['family_uid'] ?? json['familyUid'])?.toString(),
+      name: json['name']?.toString(),
+      categoryId: _toInt(json['category_id']),
+      languageId: _toInt(json['language_id']),
+      sizeId: _toInt(json['size_id']),
+      thumbnailS3Key: json['thumbnail_s3_key']?.toString(),
+      templateType: json['template_type']?.toString(),
+      isPremium: _toInt(json['is_premium']),
+      isPopular: _toInt(json['is_popular']),
+      trendingScore: _toInt(json['trending_score']),
+      viewsCount: _toInt(json['views_count']),
+      downloadsCount: _toInt(json['downloads_count']),
+      likesCount: _toInt(json['likes_count']),
+      status: json['status']?.toString(),
+      createdAt: _toDateTime(json['created_at']),
+      updatedAt: _toDateTime(json['updated_at']),
+      language: json['Language'] is Map<String, dynamic>
+          ? Language.fromJson(json['Language'])
+          : null,
+      templateSize: json['TemplateSize'] is Map<String, dynamic>
+          ? TemplateSize.fromJson(json['TemplateSize'])
+          : null,
+      availableLanguages: (languagesJson as List? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(Language.fromJson)
+          .toList(),
+      availableSizes: (sizesJson as List? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(TemplateSize.fromJson)
+          .toList(),
+      isLocked: json['is_locked'] == true,
+      content: json['content']?.toString(),
+      createdBy: json['created_by']?.toString(),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      "id": id,
-      "uid": uid,
-      "familyUid": familyUid,
-      "familyId": familyId,
-      "category_id": categoryId,
-      "language_id": languageId,
-      "name": name,
-      "thumbnail_s3_key": thumbnailS3Key,
-      "template_type": templateType,
-      "is_premium": isPremium,
-      "trending_score": trendingScore,
-      "views_count": viewsCount,
-      "downloads_count": downloadsCount,
-      "content": content,
-      "likes_count": likesCount,
-      "status": status,
-      "created_by": createdBy,
-      "created_at": createdAt?.toIso8601String(),
-      "updated_at": updatedAt?.toIso8601String(),
-      "is_locked": isLocked,
-    };
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'uid': uid,
+    'family_id': familyId,
+    'family_uid': familyUid,
+    'name': name,
+    'category_id': categoryId,
+    'language_id': languageId,
+    'size_id': sizeId,
+    'thumbnail_s3_key': thumbnailS3Key,
+    'template_type': templateType,
+    'is_premium': isPremium,
+    'is_popular': isPopular,
+    'trending_score': trendingScore,
+    'views_count': viewsCount,
+    'downloads_count': downloadsCount,
+    'likes_count': likesCount,
+    'status': status,
+    'created_at': createdAt?.toIso8601String(),
+    'updated_at': updatedAt?.toIso8601String(),
+    'Language': language?.toJson(),
+    'TemplateSize': templateSize?.toJson(),
+    'available_languages':
+    availableLanguages.map((e) => e.toJson()).toList(),
+    'available_sizes':
+    availableSizes.map((e) => e.toJson()).toList(),
+    'is_locked': isLocked,
+    'content': content,
+    'created_by': createdBy,
+  };
+}
+
+class Language {
+  final int? id;
+  final String? code;
+  final String? name;
+  final String? nativeName;
+
+  Language({
+    this.id,
+    this.code,
+    this.name,
+    this.nativeName,
+  });
+
+  factory Language.fromJson(Map<String, dynamic> json) {
+    return Language(
+      id: _toInt(json['id']),
+      code: json['code']?.toString(),
+      name: json['name']?.toString(),
+      nativeName: json['native_name']?.toString(),
+    );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'code': code,
+    'name': name,
+    'native_name': nativeName,
+  };
+}
+
+class TemplateSize {
+  final int? id;
+  final String? uid;
+  final String? slug;
+  final String? name;
+  final int? width;
+  final int? height;
+  final String? platform;
+
+  TemplateSize({
+    this.id,
+    this.uid,
+    this.slug,
+    this.name,
+    this.width,
+    this.height,
+    this.platform,
+  });
+
+  factory TemplateSize.fromJson(Map<String, dynamic> json) {
+    return TemplateSize(
+      id: _toInt(json['id']),
+      uid: json['uid']?.toString(),
+      slug: json['slug']?.toString(),
+      name: json['name']?.toString(),
+      width: _toInt(json['width']),
+      height: _toInt(json['height']),
+      platform: json['platform']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'uid': uid,
+    'slug': slug,
+    'name': name,
+    'width': width,
+    'height': height,
+    'platform': platform,
+  };
 }
 
 class Meta {
   final Range? range;
+  final dynamic types;
 
-  Meta({required this.range});
+  Meta({
+    this.range,
+    this.types,
+  });
 
   factory Meta.fromJson(Map<String, dynamic> json) {
     return Meta(
-      range: json["range"] == null
-          ? null
-          : Range.fromJson(json["range"] as Map<String, dynamic>),
+      range: json['range'] is Map<String, dynamic>
+          ? Range.fromJson(json['range'])
+          : null,
+      types: json['types'],
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {"range": range?.toJson()};
-  }
+  Map<String, dynamic> toJson() => {
+    'range': range?.toJson(),
+    'types': types,
+  };
 }
 
 class Range {
-  final DateTime from;
-  final DateTime to;
+  final DateTime? from;
+  final DateTime? to;
 
-  Range({required this.from, required this.to});
+  Range({
+    this.from,
+    this.to,
+  });
 
   factory Range.fromJson(Map<String, dynamic> json) {
     return Range(
-      from: DateTime.parse(json["from"].toString()),
-      to: DateTime.parse(json["to"].toString()),
+      from:json['from']==null?null: _toDateTime(json['from']),
+      to:json['to']==null?null: _toDateTime(json['to']),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      "from":
-          "${from.year.toString().padLeft(4, '0')}-"
-          "${from.month.toString().padLeft(2, '0')}-"
-          "${from.day.toString().padLeft(2, '0')}",
-
-      "to":
-          "${to.year.toString().padLeft(4, '0')}-"
-          "${to.month.toString().padLeft(2, '0')}-"
-          "${to.day.toString().padLeft(2, '0')}",
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'from': from == null ? null : _formatDate(from!),
+    'to': to == null ? null : _formatDate(to!),
+  };
 }
+
+int? _toInt(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '');
+}
+
+DateTime? _toDateTime(dynamic value) {
+  if (value == null) return null;
+  return DateTime.tryParse(value.toString());
+}
+
+String _formatDate(DateTime date) =>
+    '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';

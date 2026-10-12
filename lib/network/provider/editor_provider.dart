@@ -1084,6 +1084,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       // =========================================================
 
       List<dynamic> objects = [];
+      // Objects of page 2..n (multi-page templates). Previously only the
+      // first page was imported and every other page was silently dropped.
+      final List<List<dynamic>> extraPageObjects = [];
 
       // ---------------------------------------------------------
       // CASE 1
@@ -1179,6 +1182,18 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               objects = List<dynamic>.from(firstPage['objects'] as List);
             }
           }
+
+          for (final page in pages.skip(1)) {
+            if (page is! Map) continue;
+            final pageFabric = page['fabric'];
+            if (pageFabric is Map && pageFabric['objects'] is List) {
+              extraPageObjects.add(
+                List<dynamic>.from(pageFabric['objects'] as List),
+              );
+            } else if (page['objects'] is List) {
+              extraPageObjects.add(List<dynamic>.from(page['objects'] as List));
+            }
+          }
         }
       }
 
@@ -1260,7 +1275,21 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       // LOAD INTO EDITOR
       // =========================================================
 
-      loadItemsFromJson(validObjects, templateUid: safeUid);
+      final extraPages = extraPageObjects
+          .map(
+            (page) => page
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .where((o) => o['type'] != null || o['objectType'] != null)
+            .toList(),
+      )
+          .toList();
+
+      loadItemsFromJson(
+        validObjects,
+        templateUid: safeUid,
+        extraPages: extraPages,
+      );
 
       isTemplateLoaded = true;
       _templateDetailError = null;
@@ -1530,27 +1559,114 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     );
   }
 
+  // ---------------------------------------------------------------------
+  // FABRIC GROUP FLATTENING
+  // ---------------------------------------------------------------------
+  // A Fabric `group` (Canva-style grouped layers) used to fall into the
+  // "unknown type" branch and became ONE grey rectangle, so none of the
+  // text / images / shapes inside it were editable. We now expand every
+  // group (recursively) into independent layers, applying the group's
+  // translate / scale / rotate / flip / opacity to each child.
+  List<Map<String, dynamic>> _flattenFabricObjects(
+      List<Map<String, dynamic>> input,
+      ) {
+    final out = <Map<String, dynamic>>[];
+    for (final json in input) {
+      if (json['visible'] == false) continue; // hidden layers stay hidden
+
+      final type = (json['type']?.toString() ?? '').toLowerCase();
+      final children = json['objects'];
+      final isContainer =
+          (type == 'group' || type == 'activeselection') && children is List;
+      if (!isContainer) {
+        out.add(json);
+        continue;
+      }
+
+      final gw = math.max(0.0, _toDouble(json['width']) ?? 0.0);
+      final gh = math.max(0.0, _toDouble(json['height']) ?? 0.0);
+      final gsx = _toDouble(json['scaleX']) ?? 1.0;
+      final gsy = _toDouble(json['scaleY']) ?? 1.0;
+      final gAngle = (_toDouble(json['angle']) ?? 0.0) * math.pi / 180.0;
+      final gOpacity = (_toDouble(json['opacity']) ?? 1.0).clamp(0.0, 1.0);
+      final cosA = math.cos(gAngle);
+      final sinA = math.sin(gAngle);
+      final gFlipX = json['flipX'] == true ? -1.0 : 1.0;
+      final gFlipY = json['flipY'] == true ? -1.0 : 1.0;
+      final sx = gsx * gFlipX;
+      final sy = gsy * gFlipY;
+
+      Offset rotate(double x, double y) =>
+          Offset(x * cosA - y * sinA, x * sinA + y * cosA);
+
+      // Group centre in canvas space (children are stored relative to it).
+      final originXName = (json['originX']?.toString() ?? 'left').toLowerCase();
+      final originYName = (json['originY']?.toString() ?? 'top').toLowerCase();
+      final ox = originXName == 'center' ? 0.5 : (originXName == 'right' ? 1.0 : 0.0);
+      final oy = originYName == 'center' ? 0.5 : (originYName == 'bottom' ? 1.0 : 0.0);
+      final fromOrigin = rotate(
+        (0.5 - ox) * gw * gsx.abs(),
+        (0.5 - oy) * gh * gsy.abs(),
+      );
+      final centre = Offset(
+        (_toDouble(json['left']) ?? 0.0) + fromOrigin.dx,
+        (_toDouble(json['top']) ?? 0.0) + fromOrigin.dy,
+      );
+
+      final flatChildren = <Map<String, dynamic>>[];
+      for (final raw in children) {
+        if (raw is! Map) continue;
+        final child = Map<String, dynamic>.from(raw);
+        if (child['visible'] == false) continue;
+
+        final cl = _toDouble(child['left']) ?? 0.0;
+        final ct = _toDouble(child['top']) ?? 0.0;
+        final p = rotate(cl * sx, ct * sy);
+
+        child['left'] = centre.dx + p.dx;
+        child['top'] = centre.dy + p.dy;
+        child['scaleX'] = (_toDouble(child['scaleX']) ?? 1.0) * sx;
+        child['scaleY'] = (_toDouble(child['scaleY']) ?? 1.0) * sy;
+        child['angle'] =
+            (_toDouble(child['angle']) ?? 0.0) + (gAngle * 180.0 / math.pi);
+        child['opacity'] =
+            ((_toDouble(child['opacity']) ?? 1.0) * gOpacity).clamp(0.0, 1.0);
+        flatChildren.add(child);
+      }
+
+      // Nested groups are expanded by the recursive call.
+      out.addAll(_flattenFabricObjects(flatChildren));
+    }
+    return out;
+  }
+
   void loadItemsFromJson(
       List<Map<String, dynamic>> jsonList, {
         String? templateUid,
+        List<List<Map<String, dynamic>>> extraPages = const [],
+        bool appendAsPage = false,
       }) {
     try {
+      jsonList = _flattenFabricObjects(jsonList);
+
       _items.clear();
-      _templateRawObjects.clear();
-      _templateBackgroundIds.clear();
-      _templateFlipX.clear();
-      _templateFlipY.clear();
-      _outlineStyles.clear();
-      _outlineJoins.clear();
-      // IMPORTANT: preserve the background loaded from the API/template JSON.
-      // loadTemplateDetail() resolves backgroundColor before this method.
-      // Resetting it here makes the canvas white even though the API returns a color.
-      _textLetterSpacing.clear();
-      _textLineSpacing.clear();
-      _textAlignment.clear();
-      _textWeight.clear();
-      _textStyle.clear();
-      _textUnderline.clear();
+      if (!appendAsPage) {
+        _templateRawObjects.clear();
+        _templateBackgroundIds.clear();
+        _templateFlipX.clear();
+        _templateFlipY.clear();
+        _outlineStyles.clear();
+        _outlineJoins.clear();
+        // IMPORTANT: preserve the background loaded from the API/template JSON.
+        // loadTemplateDetail() resolves backgroundColor before this method.
+        // Resetting it here makes the canvas white even though the API returns a color.
+        _textLetterSpacing.clear();
+        _textLineSpacing.clear();
+        _textAlignment.clear();
+        _textWeight.clear();
+        _textStyle.clear();
+        _textUnderline.clear();
+      }
 
       // Detect a real full-page image BEFORE importing any full-page rect.
       // Some Fabric templates contain a white/transparent helper rect plus
@@ -1900,10 +2016,29 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       }
 
       isTemplateLoaded = true;
+
+      // Extra pages (2..n) are imported through this same method and only
+      // appended to the page list.
+      if (appendAsPage) {
+        _pages.add(_items.map((e) => e.copyWith()).toList());
+        return;
+      }
+
       _pages
         ..clear()
         ..add(_items.map((e) => e.copyWith()).toList());
       _currentPageIndex = 0;
+
+      for (final page in extraPages) {
+        loadItemsFromJson(page, templateUid: templateUid, appendAsPage: true);
+      }
+
+      if (_pages.length > 1) {
+        // Back to page 1 on the canvas.
+        _items
+          ..clear()
+          ..addAll(_pages.first.map((e) => e.copyWith()));
+      }
       notifyListeners();
     } catch (e, stackTrace) {
       isTemplateLoaded = false;
@@ -2859,6 +2994,22 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   bool _isDisposed = false;
+
+  // `_isDisposed` was never set, so every `if (_isDisposed)` guard in the
+  // async fetchers was dead code and a late response called notifyListeners()
+  // on a disposed provider ("EditorProvider was used after being disposed").
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  // Safety net for ALL async callbacks (Freepik, uploads, autosave, ...).
+  @override
+  void notifyListeners() {
+    if (_isDisposed) return;
+    super.notifyListeners();
+  }
   Future<void> fetchFreePikAssets(String query) async {
     final normalized = query.trim();
 

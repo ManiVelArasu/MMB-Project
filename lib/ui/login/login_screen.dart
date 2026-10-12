@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -40,21 +41,20 @@ class LoginScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       height20,
                       const TitleValueWidget(
-                        title: "Create your Account",
+                        title: "Create Professional Social Media Posts in Minutes",
                         subTitle:
-                            "Join thousands of businesses creating professional designs with MMB.",
+                            "Join businesses creating eye-catching social media content with ready-made templates and powerful AI tools",
                         subTitleColor: Colors.red,
-                      ),
-                      AppText(
-                        "Create your account using your mobile number or continue with Google.",
                       ),
                       SizedBox(height: 10),
                       // Title
 
-                      // MOBILE NUMBER FIELD
+                      AppText("Get started with your mobile number",style: TextStyle(fontSize: AppFontSize.fontSize16,fontWeight: FontWeight.w500),),
+                      SizedBox(height: 10),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           vertical: 8,
@@ -109,7 +109,6 @@ class LoginScreen extends StatelessWidget {
                       ),
                       height12,
 
-
                       ButtonWidget(
                         isLoading: authProvider.isLoginLoading,
                         buttonPress: () async {
@@ -142,9 +141,7 @@ class LoginScreen extends StatelessWidget {
                             Navigator.pushNamed(
                               context,
                               "/OtpScreen",
-                              arguments: {
-                                'phone': authProvider.mobileNumber,
-                              },
+                              arguments: {'phone': authProvider.mobileNumber},
                             );
                           }
                         },

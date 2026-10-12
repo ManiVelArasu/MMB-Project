@@ -124,7 +124,7 @@ class BrandSeriesCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: AppFontSize.fontSize14,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                               color: isDark ? Colors.white : Colors.black,
                             ),
                           ),
@@ -153,7 +153,7 @@ class BrandSeriesCard extends StatelessWidget {
                                 style: TextStyle(
                                   color: AppColors.appBlack,
                                   fontSize: AppFontSize.fontSize11,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ],
@@ -188,7 +188,7 @@ class BrandSeriesCard extends StatelessWidget {
                         fontSize: AppFontSize.fontSize12,
                         color: isDark
                             ? Colors.grey.shade400
-                            : Colors.grey.shade600,
+                            : Colors.grey.shade400,
                       ),
                     ),
                   ],

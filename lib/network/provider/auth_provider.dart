@@ -428,10 +428,16 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
                   " → CustomBottomNavScreen",
                 );
 
+                await Future.delayed(const Duration(seconds: 5));
+
+                if (!context.mounted) {
+                  return data;
+                }
+
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   "/CustomBottomNavScreen",
-                  (route) => false,
+                      (route) => false,
                 );
               }
               // =======================================================
@@ -543,10 +549,16 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
                   " → CustomBottomNavScreen",
                 );
 
+                await Future.delayed(const Duration(seconds: 5));
+
+                if (!context.mounted) {
+                  return data;
+                }
+
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   "/CustomBottomNavScreen",
-                  (route) => false,
+                      (route) => false,
                 );
               }
               // =======================================================

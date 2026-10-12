@@ -503,23 +503,33 @@ class HomeScreenProvider extends ChangeNotifier {
     final current = _specialDaysRange;
     if (current == null) return;
 
+    final fromDate = current.from;
+    final toDate = current.to;
+
+    if (fromDate == null || toDate == null) return;
+
     final currentFrom = DateTime(
-      current.from.year,
-      current.from.month,
-      current.from.day,
+      fromDate.year,
+      fromDate.month,
+      fromDate.day,
     );
+
     final currentTo = DateTime(
-      current.to.year,
-      current.to.month,
-      current.to.day,
+      toDate.year,
+      toDate.month,
+      toDate.day,
     );
 
     late DateTime from;
     late DateTime to;
 
     if (_selectedSpecialDaysRange == 'month') {
-      // Move exactly one calendar month forward.
-      final nextMonth = DateTime(currentTo.year, currentTo.month + 1, 1);
+      final nextMonth = DateTime(
+        currentTo.year,
+        currentTo.month + 1,
+        1,
+      );
+
       from = nextMonth;
       to = DateTime(nextMonth.year, nextMonth.month + 1, 0);
     } else {
@@ -528,7 +538,11 @@ class HomeScreenProvider extends ChangeNotifier {
     }
 
     _selectedDates = null;
-    await fetchSpecialDays(from: _formatApiDate(from), to: _formatApiDate(to));
+
+    await fetchSpecialDays(
+      from: _formatApiDate(from),
+      to: _formatApiDate(to),
+    );
   }
 
   Future<void> favoriteTemplate(String templateId) async {
@@ -616,6 +630,7 @@ class HomeScreenProvider extends ChangeNotifier {
 
       final result = await HomeRepository.instance.myBrandCategory(
         industrySlug: industrySlug,
+        language: '',
       );
 
       debugPrint('📦 API Success: ${result.isSuccess}');

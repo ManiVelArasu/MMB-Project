@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 
 import 'package:provider/provider.dart';
 
@@ -28,18 +30,18 @@ class TitleValueWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText(
           title,
           style: theme.headlineLarge!.copyWith(
-            fontSize: 26.sp,
-            fontWeight: FontWeight.w900,
+            fontSize: AppFontSize.fontSize18,
+            fontWeight: FontWeight.w500,
             color: titleColor ?? customColor.blackColor,
           ),
         ),
         height12,
 
         // Subtitle
-        Text(
+        AppText(
           subTitle,
           style: theme.titleMedium!.copyWith(
             color: subTitleColor ?? customColor.textColor,

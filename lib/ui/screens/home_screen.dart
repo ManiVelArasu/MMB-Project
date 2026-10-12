@@ -145,7 +145,7 @@ class _HomeScreenView extends StatelessWidget {
                       style: TextStyle(
                         color: isDark ? Colors.white : AppColors.darkBlack,
                         fontSize: AppFontSize.fontSize18,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const Spacer(),
@@ -207,7 +207,7 @@ class _HomeScreenView extends StatelessWidget {
                       style: TextStyle(
                         color: isDark ? Colors.white : AppColors.darkBlack,
                         fontSize: AppFontSize.fontSize18,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -491,7 +491,7 @@ class _HomeScreenView extends StatelessWidget {
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: AppFontSize.fontSize18,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w500,
                                     color: isDark ? Colors.white : Colors.black,
                                   ),
                                 ),
@@ -922,7 +922,7 @@ class _HomeScreenView extends StatelessWidget {
             "Create New",
             style: TextStyle(
               color: isDark ? Colors.white : Colors.black,
-              fontSize: 16.sp,
+              fontSize: AppFontSize.fontSize14,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1002,7 +1002,8 @@ class _HomeScreenView extends StatelessWidget {
                     style: TextStyle(
                       color: isDark ? Colors.white : Colors.black87,
 
-                      fontSize: 13.sp,
+                      fontSize: AppFontSize.fontSize13,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -1286,11 +1287,14 @@ class _HomeScreenView extends StatelessWidget {
           _showPremiumTemplateDialog(context, template);
           return;
         }
-
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => TemplateEditScreen(templateUid: templateUid),
+            builder: (_) => TemplateEditScreen(
+              templateUid: templateUid,
+              canvasHeight: (template.templateSize?.height ?? 0).toDouble(),
+              canvasWidth: (template.templateSize?.width ?? 0).toDouble(),
+            ),
           ),
         );
       },
@@ -1615,14 +1619,16 @@ class _HomeScreenView extends StatelessWidget {
       );
     }
 
-    final DateTime from = DateTime(
-      range.from.year,
-      range.from.month,
-      range.from.day,
-    );
+    final fromDate = range.from;
+    final toDate = range.to;
 
-    final DateTime to = DateTime(range.to.year, range.to.month, range.to.day);
+    if (fromDate == null || toDate == null) {
+      return const SizedBox.shrink();
+    }
 
+    final DateTime from = DateTime(fromDate.year, fromDate.month, fromDate.day);
+
+    final DateTime to = DateTime(toDate.year, toDate.month, toDate.day);
     final List<DateTime> dates = [];
 
     DateTime current = from;
@@ -1676,7 +1682,11 @@ class _HomeScreenView extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => TemplateEditScreen(templateUid: templateUid),
+          builder: (_) => TemplateEditScreen(
+            templateUid: templateUid,
+            canvasHeight: (template.templateSize?.height ?? 0).toDouble(),
+            canvasWidth: (template.templateSize?.width ?? 0).toDouble(),
+          ),
         ),
       );
     }
@@ -1818,7 +1828,7 @@ class _HomeScreenView extends StatelessWidget {
             style: TextStyle(
               color: isDark ? Colors.white : AppColors.darkBlack,
               fontSize: AppFontSize.fontSize18,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -1924,7 +1934,7 @@ class _HomeScreenView extends StatelessWidget {
                       style: TextStyle(
                         color: isDark ? Colors.white : Colors.black,
                         fontSize: 10.sp,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w600,
                         height: 1.1,
                       ),
                     ),
@@ -2085,7 +2095,7 @@ class _HomeScreenView extends StatelessWidget {
           style: TextStyle(
             color: isDark ? Colors.white : AppColors.darkBlack,
             fontSize: 18.sp,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w500,
           ),
         ),
 
@@ -2345,240 +2355,6 @@ class _HomeScreenView extends StatelessWidget {
     );
   }
 
-  void _showShareBottomSheet(BuildContext context, bool isDark) {
-    final shareItems = <_ShareItem>[
-      _ShareItem("Download", Icons.download_rounded),
-      _ShareItem("Instagram", Icons.camera_alt_rounded),
-      _ShareItem("Facebook", Icons.facebook_rounded),
-      _ShareItem("X (Twitter)", Icons.close_rounded),
-      _ShareItem("LinkedIn", Icons.link_rounded),
-      _ShareItem("Pinterest", Icons.push_pin_rounded),
-      _ShareItem("Boost", Icons.rocket_launch_rounded),
-    ];
-
-    final messageItems = <_ShareItem>[
-      _ShareItem("WhatsApp", Icons.chat_rounded),
-      _ShareItem("Messenger", Icons.message_rounded),
-      _ShareItem("Drive", Icons.drive_file_move_rounded),
-      _ShareItem("Link", Icons.link_rounded),
-    ];
-
-    final manageItems = <_ShareItem>[
-      _ShareItem("Caption", Icons.description_rounded),
-      _ShareItem("Schedule", Icons.calendar_month_rounded),
-      _ShareItem("Link", Icons.link_rounded),
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return SafeArea(
-          top: false,
-          child: Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(sheetContext).size.height * 0.92,
-            ),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-            ),
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: 22.w,
-                  right: 22.w,
-                  top: 10.h,
-                  bottom: 20.h,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Drag handle
-                    Center(
-                      child: Container(
-                        width: 70.w,
-                        height: 5.h,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade400,
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 14.h),
-
-                    // Header
-                    Row(
-                      children: [
-                        AppText(
-                          "Share",
-                          style: TextStyle(
-                            color: isDark ? Colors.white : AppColors.darkBlack,
-                            fontSize: 24.sp,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        InkWell(
-                          borderRadius: BorderRadius.circular(30.r),
-                          onTap: () {
-                            Navigator.pop(sheetContext);
-                          },
-                          child: Container(
-                            width: 38.w,
-                            height: 38.w,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF3A2929)
-                                  : const Color(0xFFFFF1F1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.close,
-                              color: Colors.red,
-                              size: 22.sp,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 20.h),
-
-                    // SHARE
-                    _buildShareSection(
-                      context: sheetContext,
-                      title: null,
-                      items: shareItems,
-                      isDark: isDark,
-                    ),
-
-                    SizedBox(height: 16.h),
-
-                    // MESSAGE
-                    _buildShareSection(
-                      context: sheetContext,
-                      title: "Message",
-                      items: messageItems,
-                      isDark: isDark,
-                    ),
-
-                    SizedBox(height: 16.h),
-
-                    // MANAGE
-                    _buildShareSection(
-                      context: sheetContext,
-                      title: "Manage",
-                      items: manageItems,
-                      isDark: isDark,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildShareSection({
-    required BuildContext context,
-    required String? title,
-    required List<_ShareItem> items,
-    required bool isDark,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title != null) ...[
-          AppText(
-            title,
-            style: TextStyle(
-              color: isDark ? Colors.white : AppColors.darkBlack,
-              fontSize: 22.sp,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          SizedBox(height: 12.h),
-        ],
-
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          itemCount: items.length,
-
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-
-            crossAxisSpacing: 12.w,
-            mainAxisSpacing: 18.h,
-
-            childAspectRatio: 0.82,
-          ),
-
-          itemBuilder: (context, index) {
-            final item = items[index];
-
-            return InkWell(
-              borderRadius: BorderRadius.circular(12.r),
-              onTap: () {
-                _handleShareItem(context, item);
-              },
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF302020)
-                      : const Color(0xFFFFF5F5),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(color: Colors.red.withValues(alpha: 0.12)),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 30.w,
-                      height: 30.w,
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: .12),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(item.icon, color: Colors.red, size: 20.sp),
-                    ),
-
-                    SizedBox(height: 8.h),
-
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4.w),
-                      child: AppText(
-                        item.title,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isDark ? Colors.white : AppColors.darkBlack,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
   Widget _defaultLogo() {
     return Image.asset(
       "assets/images/BName.png",
@@ -2600,142 +2376,6 @@ class _HomeScreenView extends StatelessWidget {
       },
     );
   }
-
-  void _handleShareItem(BuildContext context, _ShareItem item) {
-    switch (item.title) {
-      case "Download":
-        Navigator.pop(context);
-
-        _downloadFrame();
-
-        break;
-
-      case "Instagram":
-        Navigator.pop(context);
-
-        // Instagram share
-        _openInstagram();
-
-        break;
-
-      case "Facebook":
-        Navigator.pop(context);
-
-        break;
-
-      case "X (Twitter)":
-        Navigator.pop(context);
-
-        break;
-
-      case "LinkedIn":
-        Navigator.pop(context);
-
-        break;
-
-      case "Pinterest":
-        Navigator.pop(context);
-
-        break;
-
-      case "Boost":
-        Navigator.pop(context);
-
-        break;
-
-      case "WhatsApp":
-        Navigator.pop(context);
-
-        _openWhatsApp();
-
-        break;
-
-      case "Messenger":
-        Navigator.pop(context);
-
-        break;
-
-      case "Drive":
-        Navigator.pop(context);
-
-        break;
-
-      case "Link":
-        Navigator.pop(context);
-
-        break;
-
-      case "Caption":
-        Navigator.pop(context);
-
-        break;
-
-      case "Schedule":
-        Navigator.pop(context);
-
-        break;
-      case "copy":
-        _copyLink(context);
-        Navigator.pop(context);
-
-        break;
-    }
-  }
-
-  Future<void> _openInstagram() async {
-    final appUrl = Uri.parse("instagram://app");
-
-    final webUrl = Uri.parse("https://www.instagram.com/");
-
-    if (await canLaunchUrl(appUrl)) {
-      await launchUrl(appUrl);
-    } else {
-      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  Future<void> _openWhatsApp() async {
-    final url = Uri.parse("whatsapp://send");
-
-    final webUrl = Uri.parse("https://www.whatsapp.com/");
-
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    } else {
-      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  Future<void> _openUrl(String url) async {
-    final uri = Uri.parse(url);
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  Future<void> _copyLink(BuildContext context) async {
-    const link = "https://your-mmb-app-link.com";
-
-    await Clipboard.setData(const ClipboardData(text: link));
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Link copied")));
-    }
-  }
-
-  Future<void> _downloadFrame() async {
-    // existing PNG export / save / share logic
-  }
-}
-
-class _ShareItem {
-  final String title;
-  final IconData icon;
-
-  _ShareItem(this.title, this.icon);
 }
 
 class BottomWaveClipper extends CustomClipper<Path> {

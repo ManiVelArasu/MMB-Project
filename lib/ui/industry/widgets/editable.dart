@@ -94,7 +94,14 @@ class EditableItemWidget extends StatelessWidget {
       // feel sticky or causes the wrong item to receive the gesture.
         key: ValueKey(currentItem.id),
         child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
+          // Text boxes imported from templates are often much larger than the
+          // glyphs and sit ABOVE images. An opaque detector made the whole
+          // text box swallow every tap, so the image underneath could never
+          // be selected again. Text now only receives taps on its real
+          // painted text; everything else keeps the full-box hit area.
+          behavior: isTextItem
+              ? HitTestBehavior.deferToChild
+              : HitTestBehavior.opaque,
           // Tapping an unselected item selects it instantly without moving it.
           // Dragging/moving is only active when the item is already selected.
           onTap: () {
@@ -174,7 +181,9 @@ class EditableItemWidget extends StatelessWidget {
                         // _TransformSelectionOverlay in template_edit.dart.
                         // Do not draw another border here; that creates a second
                         // selection rectangle offset from the real touch target.
-                        decoration: const BoxDecoration(),
+                        // NOTE: no `decoration` here on purpose. A DecoratedBox
+                        // (even an empty BoxDecoration) hit-tests as the full
+                        // rectangle and would defeat deferToChild for text.
                         child: Opacity(
                           opacity: currentItem.opacity.clamp(0.0, 1.0),
                           child: _buildItemContent(currentItem, context, isBackground: isBackground),
