@@ -3,7 +3,6 @@ import '../../Api Model/template_size_model.dart';
 import '../../Repository/custom_theme_repository.dart';
 import '../../model/custom_screen_model.dart';
 
-
 class CustomScreenProvider extends ChangeNotifier {
   // 1. Create Your Own Canvas Ratios Data List
   final List<CanvasRatioModel> canvasRatios = [
@@ -35,7 +34,6 @@ class CustomScreenProvider extends ChangeNotifier {
       title: "Logo Generator",
       subtitle: "Create professional logos in seconds",
       imagePath: 'assets/images/ai.png',
-
     ),
     AIToolModel(
       title: "Magic Media",
@@ -91,7 +89,11 @@ class CustomScreenProvider extends ChangeNotifier {
 
   String? _plansErrorMessage;
   String? get plansErrorMessage => _plansErrorMessage;
-  Future<void> fetchPlans() async {
+  Future<void> fetchPlans({bool forceRefresh = false}) async {
+    if (_isLoadingPlans) return;
+
+    if (_plansData != null && !forceRefresh) return;
+
     _isLoadingPlans = true;
     _plansErrorMessage = null;
     notifyListeners();
@@ -102,11 +104,17 @@ class CustomScreenProvider extends ChangeNotifier {
       if (result.isSuccess && result.data != null) {
         _plansData = result.data;
       } else {
-        _plansErrorMessage = result.error?.message ?? "Something went wrong";
+        _plansErrorMessage = result.error?.message ?? 'Something went wrong';
       }
+    } catch (e) {
+      _plansErrorMessage = e.toString();
     } finally {
       _isLoadingPlans = false;
       notifyListeners();
     }
+  }
+
+  Future<void> refresh() async {
+    await fetchPlans(forceRefresh: true);
   }
 }

@@ -11,7 +11,7 @@ import '../utils/height_measure.dart';
 class TitleValueWidget extends StatelessWidget {
   final String title;
   final String subTitle;
-  final Color? titleColor;    // 👈 Optional Title Color
+  final Color? titleColor; // 👈 Optional Title Color
   final Color? subTitleColor; // 👈 Optional Subtitle Color
 
   const TitleValueWidget({
@@ -34,7 +34,7 @@ class TitleValueWidget extends StatelessWidget {
           title,
           style: theme.headlineLarge!.copyWith(
             fontSize: AppFontSize.fontSize18,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             color: titleColor ?? customColor.blackColor,
           ),
         ),

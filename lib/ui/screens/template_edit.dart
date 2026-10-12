@@ -17,6 +17,7 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:mmb_app/ui/screens/widget/dwonload_widget.dart';
 import 'package:mmb_app/ui/screens/widget/empty_state.dart';
 import 'package:mmb_app/ui/screens/widget/font_picker.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
@@ -381,12 +382,8 @@ class _EditorViewState extends State<EditorView> {
     final projectProvider = context.read<ProjectProvider>();
     final editorProvider = context.read<EditorProvider>();
     final uid = projectProvider.projectUid?.trim() ?? '';
+
     if (uid.isEmpty) return;
-
-    final content = jsonEncode(editorProvider.exportCurrentPageJson());
-
-    // No API call when nothing in the canvas changed.
-    if (content == _lastSavedProjectContent) return;
 
     if (_projectSaveRunning) {
       _projectSaveQueued = true;
@@ -395,43 +392,57 @@ class _EditorViewState extends State<EditorView> {
 
     _projectSaveRunning = true;
     _projectSaveQueued = false;
-    if (mounted) setState(() => _projectSaveStatus = 'Saving...');
 
-    // Do NOT upload the canvas thumbnail here. Autosave must only PATCH the
-    // project. Presign/confirm are called only for an explicit Media upload.
-    // If the user selected an uploaded media item, send its confirmed S3 key.
-    final saveResult = await ProjectRepository.instance.updateProject(
-      projectUid: uid,
-      name: projectProvider.projectName ?? 'Untitled design',
-      content: content,
-      thumbnailS3Key: editorProvider.selectedMediaS3Key,
-    );
-
-    final success = saveResult.when(
-      success: (_) => true,
-      failure: (error) {
-        debugPrint('Project save failed: ${error.message}');
-        return false;
-      },
-    );
-
-    _projectSaveRunning = false;
-
-    if (!mounted) return;
-
-    if (success) {
-      _lastSavedProjectContent = content;
-      _projectSaveStatus = 'Saved';
-      setState(() {});
-    } else {
-      _projectSaveStatus = 'Save failed';
-      setState(() {});
+    if (mounted) {
+      setState(() => _projectSaveStatus = 'Saving...');
     }
 
-    // If canvas changed while PATCH was running, save the latest version.
-    if (_projectSaveQueued) {
-      _projectSaveQueued = false;
-      await _saveProjectNow();
+    try {
+      do {
+        _projectSaveQueued = false;
+
+        // Export the latest canvas content without truncating text.
+        final content = jsonEncode(editorProvider.exportCurrentPageJson());
+
+        if (content == _lastSavedProjectContent) {
+          continue;
+        }
+
+        final saveResult = await ProjectRepository.instance.updateProject(
+          projectUid: uid,
+          name: projectProvider.projectName ?? 'Untitled design',
+          content: content,
+          thumbnailS3Key: editorProvider.selectedMediaS3Key,
+        );
+
+        final success = saveResult.when(
+          success: (_) => true,
+          failure: (error) {
+            debugPrint('Project save failed: ${error.message}');
+            return false;
+          },
+        );
+
+        if (!mounted) return;
+
+        if (success) {
+          _lastSavedProjectContent = content;
+          _projectSaveStatus = 'Saved';
+        } else {
+          _projectSaveStatus = 'Save failed';
+        }
+
+        setState(() {});
+      } while (_projectSaveQueued && mounted);
+    } catch (e, stackTrace) {
+      debugPrint('Project autosave error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (mounted) {
+        setState(() => _projectSaveStatus = 'Save failed');
+      }
+    } finally {
+      _projectSaveRunning = false;
     }
   }
 
@@ -496,7 +507,7 @@ class _EditorViewState extends State<EditorView> {
         debugPrint('❌ TEMPLATE API FAILED');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: AppText(
               editorProvider.templateDetailError ?? 'Unable to load template',
             ),
           ),
@@ -535,7 +546,7 @@ class _EditorViewState extends State<EditorView> {
         debugPrint('❌ PROJECT CREATE FAILED');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: AppText(
               projectProvider.errorMessage ?? 'Unable to create project',
             ),
           ),
@@ -579,7 +590,7 @@ class _EditorViewState extends State<EditorView> {
         debugPrint('❌ PROJECT CREATE FAILED');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: AppText(
               projectProvider.errorMessage ?? 'Unable to create project',
             ),
           ),
@@ -957,8 +968,8 @@ class _EditorViewState extends State<EditorView> {
                 AppText(
                   'Templates',
                   style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    fontSize: AppFontSize.fontSize18,
+                    fontWeight: FontWeight.w500,
                     color: isDark ? Colors.white : Colors.black,
                   ),
                 ),
@@ -1279,8 +1290,8 @@ class _EditorViewState extends State<EditorView> {
                     AppText(
                       "Add Text",
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                        fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w500,
                         color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
@@ -1310,8 +1321,8 @@ class _EditorViewState extends State<EditorView> {
                     child: AppText(
                       "My Heading",
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                        fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w500,
                         color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
@@ -1327,8 +1338,8 @@ class _EditorViewState extends State<EditorView> {
                     child: AppText(
                       "My Sub Title",
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                        fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w500,
                         color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
@@ -1344,8 +1355,25 @@ class _EditorViewState extends State<EditorView> {
                     child: AppText(
                       "My Text",
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                        fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ),
+                  onTap: () {
+                    _addTextCentered(provider, "My Text");
+                    Navigator.pop(modalContext);
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Center(
+                    child: AppText(
+                      "HELP ME TO WRITE",
+                      style: TextStyle(
+                        fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w500,
                         color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
@@ -1413,9 +1441,10 @@ class _EditorViewState extends State<EditorView> {
   void _showMediaBottomSheet(
     BuildContext context,
     EditorProvider provider,
-    bool isDark,
-  ) {
-    int selectedTab = 1; // 0 uploads, 1 elements, 2 images
+    bool isDark, {
+    bool elementsOnly = false,
+  }) {
+    int selectedTab = elementsOnly ? 1 : 0; // 0 uploads, 1 elements, 2 images
     String? expandedCategory;
     bool sheetOpen = true;
     bool elementsInitialLoadScheduled = false;
@@ -1900,7 +1929,7 @@ class _EditorViewState extends State<EditorView> {
                           setSheetState(() {});
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
+                              content: AppText(
                                 ok ? 'Image uploaded' : 'Image upload failed',
                               ),
                             ),
@@ -1926,7 +1955,7 @@ class _EditorViewState extends State<EditorView> {
                           setSheetState(() {});
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
+                              content: AppText(
                                 ok ? 'Image uploaded' : 'Image upload failed',
                               ),
                             ),
@@ -1952,7 +1981,7 @@ class _EditorViewState extends State<EditorView> {
                     ],
                   ),
                   const SizedBox(height: 18),
-                  Text(
+                  AppText(
                     'My uploads',
                     style: TextStyle(
                       fontSize: 15,
@@ -2047,7 +2076,7 @@ class _EditorViewState extends State<EditorView> {
                                   : const Color(0xFFE0E0E0)),
                       ),
                     ),
-                    child: Text(
+                    child: AppText(
                       title,
                       style: TextStyle(
                         fontSize: 12,
@@ -2131,7 +2160,7 @@ class _EditorViewState extends State<EditorView> {
                           )
                         : images.isEmpty
                         ? const Center(
-                            child: Text(
+                            child: AppText(
                               'No images found',
                               style: TextStyle(color: Colors.grey),
                             ),
@@ -2228,11 +2257,11 @@ class _EditorViewState extends State<EditorView> {
                               icon: const Icon(Icons.arrow_back_rounded),
                             ),
                           Expanded(
-                            child: Text(
-                              'Media',
+                            child: AppText(
+                              elementsOnly ? 'Elements' : 'Media',
                               style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
+                                fontSize: AppFontSize.fontSize22,
+                                fontWeight: FontWeight.w500,
                                 color: isDark ? Colors.white : Colors.black,
                               ),
                             ),
@@ -2251,7 +2280,7 @@ class _EditorViewState extends State<EditorView> {
                         ],
                       ),
                     ),
-                    if (expandedCategory == null)
+                    if (expandedCategory == null && !elementsOnly)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
@@ -2260,29 +2289,6 @@ class _EditorViewState extends State<EditorView> {
                               title: 'UPLOADS',
                               selected: selectedTab == 0,
                               onTap: () => setSheetState(() => selectedTab = 0),
-                            ),
-                            const SizedBox(width: 24),
-                            _backgroundTab(
-                              title: 'ELEMENTS',
-                              selected: selectedTab == 1,
-                              onTap: () {
-                                setSheetState(() => selectedTab = 1);
-                                if (!elementsInitialLoadScheduled) {
-                                  WidgetsBinding.instance.addPostFrameCallback((
-                                    _,
-                                  ) {
-                                    if (!sheetOpen || !sheetContext.mounted)
-                                      return;
-                                    elementsInitialLoadScheduled = true;
-                                    for (final category in categories) {
-                                      loadCategory(
-                                        category['query']!,
-                                        setSheetState,
-                                      );
-                                    }
-                                  });
-                                }
-                              },
                             ),
                             const SizedBox(width: 24),
                             _backgroundTab(
@@ -2312,10 +2318,10 @@ class _EditorViewState extends State<EditorView> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: selectedTab == 0
-                            ? uploadsView()
-                            : selectedTab == 1
+                        child: elementsOnly
                             ? elementsView()
+                            : selectedTab == 0
+                            ? uploadsView()
                             : imagesView(),
                       ),
                     ),
@@ -2619,7 +2625,7 @@ class _EditorViewState extends State<EditorView> {
                   .toList();
               if (items.isEmpty) {
                 return Center(
-                  child: Text(
+                  child: AppText(
                     'No backgrounds found',
                     style: TextStyle(
                       color: isDark ? Colors.white54 : Colors.grey,
@@ -2725,7 +2731,7 @@ class _EditorViewState extends State<EditorView> {
               final assets = provider.pexelsVideoAssets;
               if (assets.isEmpty) {
                 return const Center(
-                  child: Text(
+                  child: AppText(
                     'No videos found',
                     style: TextStyle(color: Colors.grey),
                   ),
@@ -2851,15 +2857,15 @@ class _EditorViewState extends State<EditorView> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 12, 4),
+                      padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
                       child: Row(
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: AppText(
                               'Background',
                               style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
+                                fontSize: AppFontSize.fontSize22,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
@@ -2877,6 +2883,37 @@ class _EditorViewState extends State<EditorView> {
                         ],
                       ),
                     ),
+                    SizedBox(height: 5),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
+                      child: Row(
+                        children: [
+                          _backgroundTab(
+                            title: 'IMAGES',
+                            selected: selectedTab == 0,
+                            onTap: () => setSheetState(() => selectedTab = 0),
+                          ),
+                          const SizedBox(width: 24),
+                          _backgroundTab(
+                            title: 'VIDEOS',
+                            selected: selectedTab == 1,
+                            onTap: () => setSheetState(() => selectedTab = 1),
+                          ),
+                          const SizedBox(width: 24),
+                          _backgroundTab(
+                            title: 'COLORS',
+                            selected: selectedTab == 2,
+                            onTap: () => setSheetState(() => selectedTab = 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Divider(
+                      height: 1,
+                      color: isDark ? Colors.white10 : Colors.black12,
+                    ),
+                    SizedBox(height: 5),
                     if (selectedTab == 0) ...[
                       Padding(
                         padding: const EdgeInsets.fromLTRB(6, 4, 6, 8),
@@ -2911,34 +2948,7 @@ class _EditorViewState extends State<EditorView> {
                         ),
                       ),
                     ],
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
-                      child: Row(
-                        children: [
-                          _backgroundTab(
-                            title: 'IMAGES',
-                            selected: selectedTab == 0,
-                            onTap: () => setSheetState(() => selectedTab = 0),
-                          ),
-                          const SizedBox(width: 24),
-                          _backgroundTab(
-                            title: 'VIDEOS',
-                            selected: selectedTab == 1,
-                            onTap: () => setSheetState(() => selectedTab = 1),
-                          ),
-                          const SizedBox(width: 24),
-                          _backgroundTab(
-                            title: 'COLORS',
-                            selected: selectedTab == 2,
-                            onTap: () => setSheetState(() => selectedTab = 2),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Divider(
-                      height: 1,
-                      color: isDark ? Colors.white10 : Colors.black12,
-                    ),
+
                     Expanded(
                       child: selectedTab == 0
                           ? imageResults()
@@ -2974,8 +2984,8 @@ class _EditorViewState extends State<EditorView> {
           AppText(
             title,
             style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
+              fontSize: AppFontSize.fontSize13,
+              fontWeight: FontWeight.w600,
               color: selected ? Colors.black : Colors.grey,
             ),
           ),
@@ -3095,7 +3105,7 @@ class _EditorViewState extends State<EditorView> {
                           : Colors.red,
                     ),
                   const SizedBox(width: 5),
-                  Text(
+                  AppText(
                     _projectSaveStatus,
                     style: TextStyle(
                       fontSize: 11,
@@ -3580,12 +3590,17 @@ class _EditorViewState extends State<EditorView> {
             _bottomTool(
               Image.asset("assets/images/elements.png"),
               'ELEMENTS',
-              () => _showBackgroundBottomSheet(context, provider, isDark),
+              () => _showMediaBottomSheet(
+                context,
+                provider,
+                isDark,
+                elementsOnly: true,
+              ),
             ),
             _bottomTool(
               Image.asset("assets/images/magic_star.png"),
               'AI TOOLS',
-              () => _showBackgroundBottomSheet(context, provider, isDark),
+              () => () {},
             ),
             _bottomTool(
               Image.asset("assets/images/music.png"),
@@ -3595,12 +3610,12 @@ class _EditorViewState extends State<EditorView> {
             _bottomTool(
               Image.asset("assets/images/brand_kit.png"),
               'BRAND KIT',
-              () => _showBackgroundBottomSheet(context, provider, isDark),
+              () => () {},
             ),
             _bottomTool(
               Image.asset("assets/images/heart.png"),
               'FAVORITES',
-              () => _showBackgroundBottomSheet(context, provider, isDark),
+              () => () {},
             ),
           ],
         ),
@@ -3667,7 +3682,7 @@ class _EditorViewState extends State<EditorView> {
                                 : const Color(0xFFE0E0E0)),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Text(
+                    child: AppText(
                       label,
                       style: TextStyle(
                         color: active ? Colors.white : fg,
@@ -3713,7 +3728,7 @@ class _EditorViewState extends State<EditorView> {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
+                          child: AppText(
                             'Font Color',
                             style: TextStyle(
                               fontSize: 22,
@@ -3751,7 +3766,7 @@ class _EditorViewState extends State<EditorView> {
                     ),
                     const SizedBox(height: 24),
                     if (selectedTab == 0) ...[
-                      Text(
+                      AppText(
                         'Color Presets',
                         style: TextStyle(fontSize: 19, color: fg),
                       ),
@@ -3791,7 +3806,7 @@ class _EditorViewState extends State<EditorView> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Text(
+                      AppText(
                         '#${current.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
                         style: TextStyle(
                           color: fg,
@@ -3812,12 +3827,12 @@ class _EditorViewState extends State<EditorView> {
                         provider.updateTextColor(id, hsv.toColor());
                       }),
                     ] else ...[
-                      Text(
+                      AppText(
                         'Brand Colors',
                         style: TextStyle(fontSize: 19, color: fg),
                       ),
                       const SizedBox(height: 10),
-                      Text(
+                      AppText(
                         'Your brand colors will appear here.',
                         style: TextStyle(
                           color: isDark ? Colors.white60 : Colors.black54,
@@ -3886,14 +3901,14 @@ class _EditorViewState extends State<EditorView> {
                   child: Icon(icon, color: Colors.white, size: 19),
                 ),
                 const SizedBox(height: 7),
-                Text(
+                AppText(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontSize: AppFontSize.fontSize10,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -4000,7 +4015,7 @@ class _EditorViewState extends State<EditorView> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
+                      child: AppText(
                         title,
                         style: TextStyle(color: fg, fontSize: 12),
                       ),
@@ -4016,7 +4031,7 @@ class _EditorViewState extends State<EditorView> {
                             : const Color(0xFFF5F5F5),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
+                      child: AppText(
                         safeValue.round().toString(),
                         style: TextStyle(
                           color: fg,
@@ -4077,7 +4092,7 @@ class _EditorViewState extends State<EditorView> {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
+                        child: AppText(
                           'Format',
                           style: TextStyle(
                             color: fg,
@@ -4205,7 +4220,7 @@ class _EditorViewState extends State<EditorView> {
           child: ListView.builder(
             itemCount: fonts.length,
             itemBuilder: (_, index) => ListTile(
-              title: Text(
+              title: AppText(
                 fonts[index],
                 style: GoogleFonts.getFont(fonts[index]),
               ),
@@ -4258,7 +4273,7 @@ class _EditorViewState extends State<EditorView> {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
+                          child: AppText(
                             label,
                             style: TextStyle(
                               color: foreground,
@@ -4279,7 +4294,7 @@ class _EditorViewState extends State<EditorView> {
                                 : const Color(0xFFF5F5F5),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Text(
+                          child: AppText(
                             value.toStringAsFixed(1),
                             textAlign: TextAlign.center,
                             style: TextStyle(
@@ -4352,7 +4367,7 @@ class _EditorViewState extends State<EditorView> {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
+                          child: AppText(
                             'Space',
                             style: TextStyle(
                               color: foreground,
@@ -4446,7 +4461,7 @@ class _EditorViewState extends State<EditorView> {
               .map(
                 (a) => ListTile(
                   leading: Icon(a['icon'] as IconData),
-                  title: Text(a['label'] as String),
+                  title: AppText(a['label'] as String),
                   onTap: () {
                     provider.updateTextAlignment(id, a['value'] as TextAlign);
                     Navigator.pop(sheetContext);
@@ -4473,7 +4488,7 @@ class _EditorViewState extends State<EditorView> {
           children: [
             ListTile(
               leading: const Icon(Icons.flip_to_front),
-              title: const Text('Bring to front'),
+              title: const AppText('Bring to front'),
               onTap: () {
                 provider.bringToFront(id);
                 Navigator.pop(sheetContext);
@@ -4481,7 +4496,7 @@ class _EditorViewState extends State<EditorView> {
             ),
             ListTile(
               leading: const Icon(Icons.flip_to_back),
-              title: const Text('Send to back'),
+              title: const AppText('Send to back'),
               onTap: () {
                 provider.sendToBack(id);
                 Navigator.pop(sheetContext);
@@ -4490,334 +4505,6 @@ class _EditorViewState extends State<EditorView> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildFontDropdown(EditorProvider provider, String id, bool isDark) {
-    final fonts = GoogleFonts.asMap().keys.toList()..sort();
-
-    final item = provider.items.firstWhere(
-      (e) => e.id == id,
-      orElse: () => provider.items.first,
-    );
-
-    final currentFont = item.fontFamily.trim();
-
-    final selectedFont = fonts.firstWhere(
-      (font) => font.toLowerCase() == currentFont.toLowerCase(),
-      orElse: () => fonts.first,
-    );
-
-    return SizedBox(
-      width: 150,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (sheetContext) {
-              return FontPickerSheet(
-                fonts: fonts,
-                selectedFont: selectedFont,
-                isDark: isDark,
-                onSelected: (font) {
-                  provider.updateFontFamily(id, font);
-                  Navigator.pop(sheetContext);
-                },
-              );
-            },
-          );
-        },
-        child: Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF303030) : const Color(0xFF292929),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white24),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.font_download_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Text(
-                  selectedFont,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showTextSizeBottomSheet(
-    BuildContext context,
-    EditorProvider provider,
-    String id,
-    bool isDark,
-  ) {
-    final item = provider.items.firstWhere(
-      (e) => e.id == id,
-      orElse: () => provider.items.first,
-    );
-
-    double size = item.fontSize.isFinite
-        ? item.fontSize.clamp(8.0, 300.0).toDouble()
-        : 32.0;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return StatefulBuilder(
-          builder: (sheetContext, setSheetState) {
-            final current = provider.items.firstWhere(
-              (e) => e.id == id,
-              orElse: () => item,
-            );
-            final currentSize = current.fontSize.isFinite
-                ? current.fontSize.clamp(8.0, 300.0).toDouble()
-                : size;
-
-            return Container(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF17191F) : Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-              ),
-              child: SafeArea(
-                top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white24 : Colors.black26,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.format_size_rounded,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: AppText(
-                            'Text Size',
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black87,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        AppText(
-                          currentSize.round().toString(),
-                          style: const TextStyle(
-                            color: Colors.amber,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SliderTheme(
-                      data: SliderTheme.of(sheetContext).copyWith(
-                        activeTrackColor: Colors.amber,
-                        thumbColor: Colors.amber,
-                        overlayColor: Colors.amber.withValues(alpha: .15),
-                      ),
-                      child: Slider(
-                        value: currentSize,
-                        min: 8,
-                        max: 300,
-                        onChanged: (v) {
-                          size = v;
-                          setSheetState(() {});
-                          provider.updateFontSize(id, v);
-                        },
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        AppText(
-                          '8',
-                          style: TextStyle(
-                            color: isDark ? Colors.white54 : Colors.black54,
-                            fontSize: 11,
-                          ),
-                        ),
-                        AppText(
-                          '300',
-                          style: TextStyle(
-                            color: isDark ? Colors.white54 : Colors.black54,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showPremiumTemplateDialog(BuildContext context, TemplateEdit template) {
-    final String templateName =
-        '${(template.data.name?.toString().isNotEmpty ?? false) ? template.data.name?.toString() : "This template"}';
-
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (dialogContext) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(top: 3),
-                        child: const Icon(
-                          Icons.local_offer_rounded,
-                          color: Color(0xFFE91E63),
-                          size: 18,
-                        ),
-                      ),
-
-                      const SizedBox(width: 10),
-
-                      Expanded(
-                        child: Text(
-                          'Premium template',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF202124),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      '"$templateName" is part of the premium\n'
-                      'collection. Upgrade your plan to use it in your designs.',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.45,
-                        color: Color(0xFF666666),
-                      ),
-                    ),
-                  ),
-                ),
-
-                Container(height: 1, color: const Color(0xFFE8E8E8)),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(dialogContext);
-                        },
-                        child: const Text(
-                          'Not now',
-                          style: TextStyle(
-                            color: Color(0xFF222222),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(dialogContext);
-                          Navigator.pushNamed(
-                            context,
-                            '/PlansAndPricingScreen',
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF202020),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 11,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(9),
-                          ),
-                        ),
-                        child: const Text(
-                          'Upgrade to premium',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -4916,7 +4603,7 @@ class _EditorViewState extends State<EditorView> {
                     child: Row(
                       children: [
                         const Expanded(
-                          child: Text(
+                          child: AppText(
                             'Image Masks',
                             style: TextStyle(
                               fontSize: 21,
@@ -4952,7 +4639,7 @@ class _EditorViewState extends State<EditorView> {
                     child: loading && filtered.isEmpty
                         ? const Center(child: CircularProgressIndicator())
                         : filtered.isEmpty
-                        ? const Center(child: Text('No mask found'))
+                        ? const Center(child: AppText('No mask found'))
                         : GridView.builder(
                             padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
                             gridDelegate:
@@ -5158,7 +4845,7 @@ class _EditorViewState extends State<EditorView> {
                 ),
               ),
               const SizedBox(height: 3),
-              Text(
+              AppText(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -5189,7 +4876,7 @@ class _EditorViewState extends State<EditorView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          const AppText(
             'OUTLINE',
             style: TextStyle(
               color: Colors.white70,
@@ -5240,7 +4927,7 @@ class _EditorViewState extends State<EditorView> {
             children: labels
                 .map(
                   (label) => Expanded(
-                    child: Text(
+                    child: AppText(
                       label,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
@@ -5268,7 +4955,7 @@ class _EditorViewState extends State<EditorView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          const AppText(
             'JOIN',
             style: TextStyle(
               color: Colors.white70,
@@ -5336,7 +5023,7 @@ class _EditorViewState extends State<EditorView> {
     );
 
     Color current = isOutline
-        ? (item.outlineColor ?? const Color(0xFFD9D9D9))
+        ? (item.outlineColor)
         : (item.color ?? Colors.white);
 
     final picked = await showDialog<Color>(
@@ -5348,7 +5035,7 @@ class _EditorViewState extends State<EditorView> {
             current = hsv.toColor();
             return AlertDialog(
               backgroundColor: const Color(0xFF171A21),
-              title: Text(
+              title: AppText(
                 isOutline ? 'Outline Color' : 'Fill Color',
                 style: const TextStyle(color: Colors.white),
               ),
@@ -5383,7 +5070,7 @@ class _EditorViewState extends State<EditorView> {
                     (v) => setDialogState(() => hsv = hsv.withValue(v)),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  AppText(
                     '#${current.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
                     style: const TextStyle(
                       color: Colors.white70,
@@ -5395,11 +5082,11 @@ class _EditorViewState extends State<EditorView> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('CANCEL'),
+                  child: const AppText('CANCEL'),
                 ),
                 FilledButton(
                   onPressed: () => Navigator.pop(dialogContext, current),
-                  child: const Text('APPLY'),
+                  child: const AppText('APPLY'),
                 ),
               ],
             );
@@ -5427,7 +5114,7 @@ class _EditorViewState extends State<EditorView> {
       children: [
         SizedBox(
           width: 42,
-          child: Text(
+          child: AppText(
             label,
             style: const TextStyle(color: Colors.white70, fontSize: 10),
           ),
@@ -5559,7 +5246,7 @@ class _EditorViewState extends State<EditorView> {
                 children: [
                   const Padding(
                     padding: EdgeInsets.only(bottom: 6),
-                    child: Text(
+                    child: AppText(
                       'Flip',
                       style: TextStyle(
                         color: Colors.white,
@@ -5745,7 +5432,7 @@ class _EditorViewState extends State<EditorView> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
+                const AppText(
                   'SIZE',
                   style: TextStyle(
                     color: Colors.white70,
@@ -5754,7 +5441,7 @@ class _EditorViewState extends State<EditorView> {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                AppText(
                   '$percent%',
                   style: const TextStyle(
                     color: Colors.white,
@@ -5792,7 +5479,7 @@ class _EditorViewState extends State<EditorView> {
         children: [
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 5),
-            child: Text(
+            child: AppText(
               'OUTLINE',
               style: TextStyle(
                 color: Colors.white70,
@@ -5835,7 +5522,7 @@ class _EditorViewState extends State<EditorView> {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
+                        AppText(
                           labels[index],
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -5872,7 +5559,7 @@ class _EditorViewState extends State<EditorView> {
             Icon(icon, size: 19, color: Colors.white70),
             const SizedBox(width: 7),
             Flexible(
-              child: Text(
+              child: AppText(
                 label,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -5923,14 +5610,14 @@ class _EditorViewState extends State<EditorView> {
 
               const SizedBox(height: 3),
 
-              Text(
+              AppText(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w700,
+                  fontSize: AppFontSize.fontSize10,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -5966,7 +5653,7 @@ class _EditorViewState extends State<EditorView> {
                 ),
               ),
               const SizedBox(height: 3),
-              const Text(
+              const AppText(
                 'COLOR',
                 style: TextStyle(
                   color: Colors.white,
@@ -5999,7 +5686,7 @@ class _EditorViewState extends State<EditorView> {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 5),
-            child: Text(
+            child: AppText(
               title,
               style: const TextStyle(
                 color: Colors.amber,
@@ -6028,7 +5715,7 @@ class _EditorViewState extends State<EditorView> {
                       color: selected == value ? Colors.amber : Colors.white10,
                     ),
                   ),
-                  child: Text(
+                  child: AppText(
                     value.toUpperCase(),
                     style: const TextStyle(
                       color: Colors.white,
@@ -6066,7 +5753,7 @@ class _EditorViewState extends State<EditorView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              AppText(
                 title,
                 style: const TextStyle(
                   color: Colors.white70,
@@ -6074,7 +5761,7 @@ class _EditorViewState extends State<EditorView> {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              Text(
+              AppText(
                 title == 'OPACITY'
                     ? '${(safeValue * 100).round()}%'
                     : safeValue.toStringAsFixed(1),
@@ -6098,67 +5785,6 @@ class _EditorViewState extends State<EditorView> {
         ],
       ),
     );
-  }
-
-  Future<void> _showTextEditDialog(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-  ) async {
-    // Resolve the selected text item by ID; never fall back to editing the
-    // first unrelated canvas item when the selected ID is stale.
-    final matchingItems = provider.items.where((e) => e.id == itemId);
-    if (matchingItems.isEmpty) {
-      Fluttertoast.showToast(msg: 'Please select a text item');
-      return;
-    }
-
-    final initialText = matchingItems.first.text ?? '';
-    final controller = TextEditingController(text: initialText);
-
-    final newText = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Edit Text'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: 5,
-          minLines: 1,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
-            hintText: 'Enter text',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('CANCEL'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
-            child: const Text('SAVE'),
-          ),
-        ],
-      ),
-    );
-
-    await WidgetsBinding.instance.endOfFrame;
-    controller.dispose();
-
-    if (!mounted || newText == null) return;
-
-    // Re-check after the dialog closes because the canvas selection can change.
-    final stillExists = provider.items.any((e) => e.id == itemId);
-    if (!stillExists) {
-      Fluttertoast.showToast(msg: 'Text item no longer exists');
-      return;
-    }
-
-    if (newText != initialText) {
-      provider.updateTextContent(itemId, newText);
-    }
   }
 
   Future<void> _toggleEditorMusic(EditorProvider provider) async {
@@ -6265,7 +5891,7 @@ class _EditorViewState extends State<EditorView> {
                             onPressed: () => Navigator.pop(sheetContext),
                           ),
                           const Expanded(
-                            child: Text(
+                            child: AppText(
                               'Music',
                               style: TextStyle(
                                 fontSize: 17,
@@ -6373,14 +5999,14 @@ class _EditorViewState extends State<EditorView> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
+                                        AppText(
                                           track['title']!,
                                           style: const TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),
-                                        Text(
+                                        AppText(
                                           'Duration: ${track['duration']}',
                                           style: TextStyle(
                                             fontSize: 10,
@@ -6457,7 +6083,7 @@ class _EditorViewState extends State<EditorView> {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.grey.shade400),
       ),
-      child: Text(
+      child: AppText(
         title,
         style: TextStyle(
           color: selected ? Colors.white : Colors.black87,
@@ -6494,7 +6120,7 @@ class _EditorViewState extends State<EditorView> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                AppText(
                   provider.selectedMusicTitle ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -6542,29 +6168,6 @@ class _EditorViewState extends State<EditorView> {
     );
     await file.writeAsBytes(bytes, flush: true);
     return file;
-  }
-
-  Future<void> _downloadCurrentPage(BuildContext context) async {
-    final provider = context.read<EditorProvider>();
-    try {
-      final file = await _renderCurrentPagePng(provider);
-      if (file == null) {
-        Fluttertoast.showToast(msg: 'Canvas is not ready');
-        return;
-      }
-
-      // Open the native Android/iOS save/share sheet for the rendered PNG.
-      // The rendered file contains only the canvas, not selection dots/handles.
-      if (!context.mounted) return;
-      await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'image/png')],
-        subject: 'MMB Design PNG',
-        text: 'Save this MMB design image.',
-      );
-    } catch (e) {
-      debugPrint('Download error: $e');
-      Fluttertoast.showToast(msg: 'Unable to download design');
-    }
   }
 
   Future<void> _exportCurrentPageJson(BuildContext context) async {
@@ -6688,7 +6291,7 @@ class _EditorViewState extends State<EditorView> {
                 const SizedBox(height: 16),
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
+                  child: AppText(
                     'DOWNLOAD / EXPORT',
                     style: TextStyle(
                       color: Colors.white,
@@ -6785,7 +6388,7 @@ class _EditorViewState extends State<EditorView> {
 
     if (projectUid.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Project UID not available')),
+        const SnackBar(content: AppText('Project UID not available')),
       );
       return;
     }
@@ -6806,9 +6409,9 @@ class _EditorViewState extends State<EditorView> {
           projectProvider.exportError!.isNotEmpty) {
         debugPrint('❌ Export API error: ${projectProvider.exportError}');
 
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(projectProvider.exportError!)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: AppText(projectProvider.exportError!)),
+        );
 
         return;
       }
@@ -6830,7 +6433,7 @@ class _EditorViewState extends State<EditorView> {
         debugPrint('❌ RepaintBoundary not found');
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unable to capture design')),
+          const SnackBar(content: AppText('Unable to capture design')),
         );
 
         return;
@@ -6847,9 +6450,9 @@ class _EditorViewState extends State<EditorView> {
       if (byteData == null) {
         debugPrint('❌ PNG conversion failed');
 
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Unable to create image')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: AppText('Unable to create image')),
+        );
 
         return;
       }
@@ -6876,7 +6479,7 @@ class _EditorViewState extends State<EditorView> {
         if (!context.mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gallery permission is required')),
+          const SnackBar(content: AppText('Gallery permission is required')),
         );
 
         return;
@@ -6891,7 +6494,7 @@ class _EditorViewState extends State<EditorView> {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Image saved to Gallery successfully')),
+        const SnackBar(content: AppText('Image saved to Gallery successfully')),
       );
     } catch (e, stackTrace) {
       debugPrint('❌ Export/download error: $e');
@@ -6902,7 +6505,7 @@ class _EditorViewState extends State<EditorView> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Unable to save image: $e')));
+      ).showSnackBar(SnackBar(content: AppText('Unable to save image: $e')));
     }
   }
 
@@ -6926,7 +6529,7 @@ class _EditorViewState extends State<EditorView> {
           children: [
             Icon(icon, color: const Color(0xFFFFC107), size: 28),
             const SizedBox(height: 8),
-            Text(
+            AppText(
               title,
               style: const TextStyle(
                 color: Colors.white,
@@ -6934,7 +6537,7 @@ class _EditorViewState extends State<EditorView> {
               ),
             ),
             const SizedBox(height: 3),
-            Text(
+            AppText(
               subtitle,
               style: const TextStyle(color: Colors.white54, fontSize: 10),
             ),
@@ -6979,7 +6582,7 @@ class _EditorViewState extends State<EditorView> {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
+                        child: AppText(
                           'Pages',
                           style: TextStyle(
                             fontSize: 20,
@@ -7063,7 +6666,7 @@ class _EditorViewState extends State<EditorView> {
                                   color: selected ? Colors.red : Colors.grey,
                                 ),
                                 const SizedBox(height: 8),
-                                Text(
+                                AppText(
                                   'Page ${index + 1}',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
@@ -7073,7 +6676,7 @@ class _EditorViewState extends State<EditorView> {
                                 if (selected)
                                   const Padding(
                                     padding: EdgeInsets.only(top: 4),
-                                    child: Text(
+                                    child: AppText(
                                       'CURRENT',
                                       style: TextStyle(
                                         color: Colors.red,
@@ -8052,41 +7655,6 @@ class _InteractiveBackgroundLayerState
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-
-
-  Widget _backgroundAction(
-    BuildContext context,
-    IconData icon,
-    String label,
-    VoidCallback onTap, {
-    bool destructive = false,
-  }) {
-    return InkWell(
-      onTap: () {
-        Navigator.pop(context);
-        onTap();
-      },
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: destructive ? Colors.red : null),
-            const SizedBox(height: 4),
-            AppText(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: destructive ? Colors.red : null,
               ),
             ),
           ],

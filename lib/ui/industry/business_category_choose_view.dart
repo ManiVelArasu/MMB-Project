@@ -54,7 +54,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               AppText(
+              AppText(
                 "Select Your Business Category",
                 style: TextStyle(
                   fontSize: AppFontSize.fontSize22,
@@ -64,7 +64,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
               ),
               const SizedBox(height: 16),
 
-               AppText(
+              AppText(
                 "Business Category",
                 style: TextStyle(
                   fontSize: AppFontSize.fontSize12,
@@ -86,7 +86,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                 ),
                 child: AppText(
                   industryProvider.savedCategoryName,
-                  style:  TextStyle(
+                  style: TextStyle(
                     color: Colors.red,
                     fontSize: AppFontSize.fontSize16,
                     fontWeight: FontWeight.bold,
@@ -97,7 +97,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
 
               const SizedBox(height: 4),
               if (industryProvider.childCategories.isEmpty) ...[
-                 AppText(
+                AppText(
                   "Can't find your business type?",
                   style: TextStyle(
                     fontSize: AppFontSize.fontSize15,
@@ -110,10 +110,13 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                   "Choose Other and enter your business type. We'll review new requests "
                   "and continuously expand our industry database to improve template "
                   "recommendations.",
-                  style: TextStyle( fontSize: AppFontSize.fontSize12, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: AppFontSize.fontSize12,
+                    color: Colors.grey.shade600,
+                  ),
                 ),
               ] else ...[
-                 AppText(
+                AppText(
                   "Choose a specialization",
                   style: TextStyle(
                     fontSize: AppFontSize.fontSize15,
@@ -123,8 +126,11 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                 ),
                 const SizedBox(height: 4),
                 AppText(
-                  "Find the category that best matches your business.",
-                  style: TextStyle( fontSize: AppFontSize.fontSize12, color: Colors.grey.shade600),
+                  "Select the option that best describes your business.",
+                  style: TextStyle(
+                    fontSize: AppFontSize.fontSize12,
+                    color: Colors.grey.shade600,
+                  ),
                 ),
               ],
 
@@ -251,7 +257,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
 
               if (industryProvider.childCategories.isNotEmpty) ...[
                 AppText(
-                  "We’ll review your industry details and add them to your profile once approved.",
+                  "Your business type will be reviewed before being added to your profile.",
                   style: TextStyle(color: AppColors.appGrey),
                 ),
                 const SizedBox(height: 10),
@@ -297,7 +303,12 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                     industryProvider.otherController.text.trim(),
                   );
                 },
-                title: "Continue",
+                title: "CONTINUE",
+                textStyle: TextStyle(
+                  color: AppColors.appWhite,
+                  fontWeight: FontWeight.w700,
+                ),
+
                 decoration: BoxDecoration(
                   color: AppColors.appRed,
                   borderRadius: BorderRadius.all(Radius.circular(15)),

@@ -109,8 +109,8 @@ class ThemeDetailView extends StatelessWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface,
-                        fontSize: 24.sp,
                         fontWeight: FontWeight.w500,
+                        fontSize: AppFontSize.fontSize22,
                       ),
                     ),
 
@@ -122,7 +122,7 @@ class ThemeDetailView extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: const Color(0xFFE53935),
-                        fontSize: 13.sp,
+                        fontSize:AppFontSize.fontSize13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

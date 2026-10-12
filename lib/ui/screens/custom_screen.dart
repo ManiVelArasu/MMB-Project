@@ -16,10 +16,8 @@ class CustomCreateScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => CustomScreenProvider()..fetchPlans(),
-      child: const _CustomCreateBody(),
-    );
+    // CustomScreenProvider is created once by CustomBottomNavScreen.
+    return const _CustomCreateBody();
   }
 }
 
@@ -62,215 +60,221 @@ class _CustomCreateBody extends StatelessWidget {
             child: const HomeCustomAppBar(),
           ),
           body: SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: size.width * 0.04,
-                  vertical: 12.h,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CustomSearchBar(
-                      hintText: "Find your Industry",
-                      prefixAsset: "assets/images/search.png",
-                      suffixAsset: "assets/images/mic.png",
-                      borderColor: const Color(0xFFFFCDD2),
-                      onChanged: (query) {},
-                    ),
+            child: RefreshIndicator(
+              onRefresh: () async{
+               await provider.refresh();
+              },
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: size.width * 0.04,
+                    vertical: 12.h,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomSearchBar(
+                        hintText: "Find your Industry",
+                        prefixAsset: "assets/images/search.png",
+                        suffixAsset: "assets/images/mic.png",
+                        borderColor: const Color(0xFFFFCDD2),
+                        onChanged: (query) {},
+                      ),
 
-                    SizedBox(height: 24.h),
+                      SizedBox(height: 24.h),
 
-                    _buildHeader(
-                      title: "Create your Own",
-                      iconAsset: "assets/images/myspace.png",
-                      isDark: isDark,
-                    ),
+                      _buildHeader(
+                        title: "Create your Own",
+                        iconAsset: "assets/images/myspace.png",
+                        isDark: isDark,
+                      ),
 
-                    SizedBox(height: 16.h),
+                      SizedBox(height: 16.h),
 
-                    SizedBox(
-                      height: 210.h,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: templateSizes.length,
-                        itemBuilder: (context, index) {
-                          final item = templateSizes[index];
+                      SizedBox(
+                        height: 210.h,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: templateSizes.length,
+                          itemBuilder: (context, index) {
+                            final item = templateSizes[index];
 
-                          final width = int.tryParse(item.width ?? "0") ?? 0;
-                          final height = int.tryParse(item.height ?? "0") ?? 0;
+                            final width = int.tryParse(item.width ?? "0") ?? 0;
+                            final height =
+                                int.tryParse(item.height ?? "0") ?? 0;
 
-                          return InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => TemplateEditScreen(
-                                    canvasWidth: width > 0
-                                        ? width.toDouble()
-                                        : null,
-                                    canvasHeight: height > 0
-                                        ? height.toDouble()
-                                        : null,
+                            return InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => TemplateEditScreen(
+                                      canvasWidth: width > 0
+                                          ? width.toDouble()
+                                          : null,
+                                      canvasHeight: height > 0
+                                          ? height.toDouble()
+                                          : null,
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              width: 95.w,
-                              margin: EdgeInsets.only(right: 12.w),
-                              child: Column(
-                                children: [
-                                  /// Fixed Preview Area
-                                  SizedBox(
-                                    height: 130.h,
-                                    child: Align(
-                                      alignment: Alignment.bottomCenter,
-                                      child: Image.asset(
-                                        buildTemplateImage(width, height),
-                                        height: getImageHeight(width, height),
-                                        fit: BoxFit.contain,
+                                );
+                              },
+                              child: Container(
+                                width: 95.w,
+                                margin: EdgeInsets.only(right: 12.w),
+                                child: Column(
+                                  children: [
+                                    /// Fixed Preview Area
+                                    SizedBox(
+                                      height: 130.h,
+                                      child: Align(
+                                        alignment: Alignment.bottomCenter,
+                                        child: Image.asset(
+                                          buildTemplateImage(width, height),
+                                          height: getImageHeight(width, height),
+                                          fit: BoxFit.contain,
+                                        ),
                                       ),
                                     ),
-                                  ),
 
-                                  SizedBox(height: 8.h),
+                                    SizedBox(height: 8.h),
 
-                                  AppText(
-                                    item.name ?? "",
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    style: TextStyle(
-                                      fontSize: 11.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black,
+                                    AppText(
+                                      item.name ?? "",
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      style: TextStyle(
+                                        fontSize: 11.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
+                                      ),
                                     ),
-                                  ),
 
-                                  SizedBox(height: 2.h),
+                                    SizedBox(height: 2.h),
 
-                                  AppText(
-                                    "${item.width} × ${item.height}",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 9.sp,
-                                      color: Colors.grey,
+                                    AppText(
+                                      "${item.width} × ${item.height}",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 9.sp,
+                                        color: Colors.grey,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      SizedBox(height: 10.h),
+
+                      _buildHeader(
+                        title: "Generate with AI",
+                        iconAsset: "assets/images/special_days.png",
+                        isDark: isDark,
+                      ),
+
+                      SizedBox(height: 16.h),
+
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: provider.aiToolsList.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12.w,
+                          mainAxisSpacing: 12.h,
+                          childAspectRatio: 0.82,
+                        ),
+                        itemBuilder: (context, index) {
+                          final tool = provider.aiToolsList[index];
+
+                          return Container(
+                            padding: EdgeInsets.all(12.r),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF1E1E1E)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(16.r),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.grey.shade800
+                                    : const Color(0xFFE8EEF5),
+                                width: 1.2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(
+                                    alpha: isDark ? 0.2 : 0.02,
+                                  ),
+                                  blurRadius: 8.r,
+                                  offset: Offset(0, 2.h),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  height: 52.h,
+                                  width: 52.w,
+                                  child: tool.imagePath.trim().isNotEmpty
+                                      ? Image.asset(
+                                          tool.imagePath,
+                                          fit: BoxFit.contain,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  _buildFallbackIcon(),
+                                        )
+                                      : _buildFallbackIcon(),
+                                ),
+
+                                SizedBox(height: 10.h),
+
+                                // 2. TOOL TITLE
+                                AppText(
+                                  tool.title,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : Colors.black,
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+
+                                SizedBox(height: 4.h),
+
+                                // 3. TOOL SUBTITLE
+                                AppText(
+                                  tool.subtitle,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? Colors.grey.shade400
+                                        : Colors.grey.shade600,
+                                    fontSize: 9.5.sp,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.2,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           );
                         },
                       ),
-                    ),
 
-                    SizedBox(height: 10.h),
-
-                    _buildHeader(
-                      title: "Generate with AI",
-                      iconAsset: "assets/images/special_days.png",
-                      isDark: isDark,
-                    ),
-
-                    SizedBox(height: 16.h),
-
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: provider.aiToolsList.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12.w,
-                        mainAxisSpacing: 12.h,
-                        childAspectRatio: 0.82,
-                      ),
-                      itemBuilder: (context, index) {
-                        final tool = provider.aiToolsList[index];
-
-                        return Container(
-                          padding: EdgeInsets.all(12.r),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF1E1E1E)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(16.r),
-                            border: Border.all(
-                              color: isDark
-                                  ? Colors.grey.shade800
-                                  : const Color(0xFFE8EEF5),
-                              width: 1.2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(
-                                  alpha: isDark ? 0.2 : 0.02,
-                                ),
-                                blurRadius: 8.r,
-                                offset: Offset(0, 2.h),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                height: 52.h,
-                                width: 52.w,
-                                child: tool.imagePath.trim().isNotEmpty
-                                    ? Image.asset(
-                                        tool.imagePath,
-                                        fit: BoxFit.contain,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                _buildFallbackIcon(),
-                                      )
-                                    : _buildFallbackIcon(),
-                              ),
-
-                              SizedBox(height: 10.h),
-
-                              // 2. TOOL TITLE
-                              AppText(
-                                tool.title,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: isDark ? Colors.white : Colors.black,
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-
-                              SizedBox(height: 4.h),
-
-                              // 3. TOOL SUBTITLE
-                              AppText(
-                                tool.subtitle,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: isDark
-                                      ? Colors.grey.shade400
-                                      : Colors.grey.shade600,
-                                  fontSize: 9.5.sp,
-                                  fontWeight: FontWeight.w500,
-                                  height: 1.2,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-
-                    SizedBox(height: 20.h),
-                  ],
+                      SizedBox(height: 20.h),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -355,7 +359,7 @@ class _CustomCreateBody extends StatelessWidget {
           style: TextStyle(
             color: isDark ? Colors.white : AppColors.darkBlack,
             fontSize: AppFontSize.fontSize18,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

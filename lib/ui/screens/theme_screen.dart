@@ -68,80 +68,90 @@ class _ThemesScreenState extends State<ThemesScreen> {
             child: const HomeCustomAppBar(),
           ),
           body: SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: size.width * .04,
-                  vertical: 12.h,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    AppText(
-                      "Brand Series",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.appBlack,
-                        fontSize: AppFontSize.fontSize22,
-                      ),
-                    ),
+            child: RefreshIndicator(
+              color: const Color(0xFFE53935),
+              onRefresh: () async {
+                await context.read<ThemesScreenProvider>().refresh();
+              },
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: size.width * .04,
+                    vertical: 12.h,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      AppText(
+                        "Brand Series",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.appBlack,
 
-                    SizedBox(height: 2),
-
-                    // DESCRIPTION
-                    AppText(
-                      "Create a consistent brand identity with\n"
-                      "professionally designed template collections.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: AppFontSize.fontSize18,
-                        color: AppColors.lightTextGrey,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-
-                    SizedBox(height: 4),
-
-                    Column(
-                      children: [
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: [
-                            _brandBadge("2,500+ TEMPLATES"),
-                            _brandBadge("50+ INDUSTRIES"),
-                            _brandBadge("FULLY CUSTOMIZABLE"),
-                            _brandBadge("INDUSTRY-SPECIFIC COLLECTIONS"),
-                          ],
+                          fontSize: AppFontSize.fontSize22,
                         ),
-                      ],
-                    ),
+                      ),
 
-                    SizedBox(height: 10),
+                      SizedBox(height: 2),
 
-                    /// Search
-                    CustomSearchBar(
-                      hintText: "Search Brand Series",
-                      prefixAsset: "assets/images/search.png",
-                      suffixAsset: "assets/images/mic.png",
-                      borderColor: const Color(0xFFFFCDD2),
-                      onChanged: (value) {},
-                    ),
+                      // DESCRIPTION
+                      AppText(
+                        "Create a consistent brand identity with\n"
+                        "professionally designed template collections.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: AppFontSize.fontSize18,
+                          color: AppColors.lightTextGrey,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
 
-                    SizedBox(height: 20.h),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: groups.length,
-                      itemBuilder: (context, index) {
-                        final group = groups[index];
-                        return ThemeGroupSection(group: group, isDark: isDark);
-                      },
-                    ),
-                  ],
+                      SizedBox(height: 4),
+
+                      Column(
+                        children: [
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: [
+                              _brandBadge("2,500+ TEMPLATES"),
+                              _brandBadge("50+ INDUSTRIES"),
+                              _brandBadge("FULLY CUSTOMIZABLE"),
+                              _brandBadge("INDUSTRY-SPECIFIC COLLECTIONS"),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 10),
+
+                      /// Search
+                      CustomSearchBar(
+                        hintText: "Search Brand Series",
+                        prefixAsset: "assets/images/search.png",
+                        suffixAsset: "assets/images/mic.png",
+                        borderColor: const Color(0xFFFFCDD2),
+                        onChanged: (value) {},
+                      ),
+
+                      SizedBox(height: 20.h),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: groups.length,
+                        itemBuilder: (context, index) {
+                          final group = groups[index];
+                          return ThemeGroupSection(
+                            group: group,
+                            isDark: isDark,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -283,7 +293,7 @@ class ThemeGroupSection extends StatelessWidget {
                               "${variant.businessCategories.length} Ready-to-Use Templates.",
                           perfectFor: variant.businessCategories
                               .map(
-                                (category) => category.name ?.isNotEmpty == true
+                                (category) => category.name?.isNotEmpty == true
                                     ? category.name!
                                     : variant.description ?? '',
                               )

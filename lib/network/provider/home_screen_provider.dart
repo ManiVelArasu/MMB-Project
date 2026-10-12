@@ -43,7 +43,7 @@ class HomeScreenProvider extends ChangeNotifier {
       await Future.wait([
         fetchTemplateCategories(),
         loadSavedBusinessData(),
-        fetchTemplatesByPopular(),
+        if (provider.isBusiness) fetchTemplatesByPopular(),
         if (loadSpecialDaysOnInit) fetchSpecialDays(range: 'month'),
       ]);
 
@@ -508,27 +508,15 @@ class HomeScreenProvider extends ChangeNotifier {
 
     if (fromDate == null || toDate == null) return;
 
-    final currentFrom = DateTime(
-      fromDate.year,
-      fromDate.month,
-      fromDate.day,
-    );
+    final currentFrom = DateTime(fromDate.year, fromDate.month, fromDate.day);
 
-    final currentTo = DateTime(
-      toDate.year,
-      toDate.month,
-      toDate.day,
-    );
+    final currentTo = DateTime(toDate.year, toDate.month, toDate.day);
 
     late DateTime from;
     late DateTime to;
 
     if (_selectedSpecialDaysRange == 'month') {
-      final nextMonth = DateTime(
-        currentTo.year,
-        currentTo.month + 1,
-        1,
-      );
+      final nextMonth = DateTime(currentTo.year, currentTo.month + 1, 1);
 
       from = nextMonth;
       to = DateTime(nextMonth.year, nextMonth.month + 1, 0);
@@ -539,10 +527,7 @@ class HomeScreenProvider extends ChangeNotifier {
 
     _selectedDates = null;
 
-    await fetchSpecialDays(
-      from: _formatApiDate(from),
-      to: _formatApiDate(to),
-    );
+    await fetchSpecialDays(from: _formatApiDate(from), to: _formatApiDate(to));
   }
 
   Future<void> favoriteTemplate(String templateId) async {
@@ -611,9 +596,11 @@ class HomeScreenProvider extends ChangeNotifier {
 
     try {
       final industrySlug =
-          provider.business?.businessCategory?.parent?.slug?.trim() ?? '';
+          provider.business?.businessCategory?.slug?.trim() ?? '';
 
-      debugPrint('🏭 Industry Slug: "$industrySlug"');
+      debugPrint(
+        '🏭 Industry Slug: "${provider.business?.businessCategory?.slug}"',
+      );
 
       if (industrySlug.isEmpty) {
         _popularTemplates = [];
@@ -629,8 +616,8 @@ class HomeScreenProvider extends ChangeNotifier {
       debugPrint('======================================');
 
       final result = await HomeRepository.instance.myBrandCategory(
-        industrySlug: industrySlug,
-        language: '',
+        industrySlug: '${provider.business?.businessCategory?.slug}',
+        language: 'en',
       );
 
       debugPrint('📦 API Success: ${result.isSuccess}');
@@ -781,67 +768,13 @@ class HomeScreenProvider extends ChangeNotifier {
     ),
   ];
 
-  final List<Map<String, String>> mySpecialDaysList = [
-    {"icon": "assets/images/specialday1.png", "dayCount": "5"},
-    {"icon": "assets/images/specialdays2.png", "dayCount": "5"},
-    {"icon": "assets/images/specialdays2.png", "dayCount": "6"},
-    {"icon": "assets/images/specialdays2.png", "dayCount": "7"},
-  ];
-
-  final List<String> myZoneBanners = [
-    "assets/images/bakedcaks.png",
-    "assets/images/bakedcaks.png",
-    "assets/images/bakedcaks.png",
-    "assets/images/bakedcaks.png",
-    "assets/images/bakedcaks.png",
-  ];
-
   final PageController zonePageController = PageController();
   int currentZoneIndex = 0;
-
-  final List<Map<String, String>> leadBanners = [
-    {
-      "title": "Make My Lead",
-      "subTitle":
-          "Go Premium and list your business for free on our platform to boost your leads.",
-      "btnText": "BOOST MY BUSINESS",
-    },
-    {
-      "title": "Grow Your Business",
-      "subTitle":
-          "Get verified badge and double your client engagement effortlessly.",
-      "btnText": "UPGRADE NOW",
-    },
-  ];
 
   final PageController leadPageController = PageController();
   int currentLeadBannerIndex = 0;
 
-  final List<MyCelebrateModel> _myCelebrateList = [
-    MyCelebrateModel(
-      title: "Birthday\n Wishes",
-      icon: "assets/images/birthday.png",
-      gradientColors: [const Color(0xFFE0F7FA), const Color(0xFF80DEEA)],
-    ),
-    MyCelebrateModel(
-      title: "Birthday\n ThankYou",
-      icon: "assets/images/thankyou.png",
-      gradientColors: [const Color(0xFFFFECEE), const Color(0xFFFF80AB)],
-    ),
-    MyCelebrateModel(
-      title: "Wedding\n Anniversary",
-      icon: "assets/images/wedding.png",
-      gradientColors: [const Color(0xFFFFF8E1), const Color(0xFFFFE082)],
-    ),
-    MyCelebrateModel(
-      title: "Mothers\n Day",
-      icon: "assets/images/mom.png",
-      gradientColors: [const Color(0xFFE8F5E9), const Color(0xFFA5D6A7)],
-    ),
-  ];
-
   List<MySpaceModel> get mySpaceList => _mySpaceList;
-  List<MyCelebrateModel> get myCelebrateList => _myCelebrateList;
 
   void updateZoneIndex(int index) {
     currentZoneIndex = index;
@@ -884,6 +817,18 @@ class HomeScreenProvider extends ChangeNotifier {
           "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
   ];
+
+  Future<void> refreshHomeScreen() async {
+    await Future.wait([
+      fetchTemplateCategories(),
+      fetchTemplatesByPopular(),
+      fetchSpecialDays(range: 'month'),
+      loadSavedBusinessData(),
+    ]);
+
+    await loadKeyWords(forceRefresh: true);
+  }
+
   void clearUserData() {
     // User-specific data
     _businessName = "";

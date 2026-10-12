@@ -1306,47 +1306,45 @@ class BusinessProvider extends ChangeNotifier {
         success: (data) async {
           String? key;
 
-          if (data is Map) {
-            key = data['key']?.toString();
+          key = data['key']?.toString();
 
-            if ((key == null || key!.isEmpty) &&
-                data['keys'] is List &&
-                (data['keys'] as List).isNotEmpty) {
-              key = (data['keys'] as List).first?.toString();
+          if ((key == null || key.isEmpty) &&
+              data['keys'] is List &&
+              (data['keys'] as List).isNotEmpty) {
+            key = (data['keys'] as List).first?.toString();
+          }
+
+          if ((key == null || key.isEmpty) &&
+              data['results'] is List &&
+              (data['results'] as List).isNotEmpty) {
+            final first = (data['results'] as List).first;
+            if (first is Map) {
+              key = first['key']?.toString();
+            }
+          }
+
+          if ((key == null || key.isEmpty) && data['data'] is Map) {
+            final nested = data['data'];
+
+            key = nested['key']?.toString();
+
+            if ((key == null || key.isEmpty) &&
+                nested['keys'] is List &&
+                (nested['keys'] as List).isNotEmpty) {
+              key = (nested['keys'] as List).first?.toString();
             }
 
-            if ((key == null || key!.isEmpty) &&
-                data['results'] is List &&
-                (data['results'] as List).isNotEmpty) {
-              final first = (data['results'] as List).first;
+            if ((key == null || key.isEmpty) &&
+                nested['results'] is List &&
+                (nested['results'] as List).isNotEmpty) {
+              final first = (nested['results'] as List).first;
               if (first is Map) {
                 key = first['key']?.toString();
               }
             }
-
-            if ((key == null || key!.isEmpty) && data['data'] is Map) {
-              final nested = data['data'];
-
-              key = nested['key']?.toString();
-
-              if ((key == null || key!.isEmpty) &&
-                  nested['keys'] is List &&
-                  (nested['keys'] as List).isNotEmpty) {
-                key = (nested['keys'] as List).first?.toString();
-              }
-
-              if ((key == null || key!.isEmpty) &&
-                  nested['results'] is List &&
-                  (nested['results'] as List).isNotEmpty) {
-                final first = (nested['results'] as List).first;
-                if (first is Map) {
-                  key = first['key']?.toString();
-                }
-              }
-            }
           }
 
-          if (key == null || key!.trim().isEmpty) {
+          if (key == null || key.trim().isEmpty) {
             debugPrint("❌ Upload succeeded but S3 key missing");
             debugPrint("UPLOAD RESPONSE: $data");
             _errorMessage = "Image uploaded but S3 key not found";
@@ -1354,7 +1352,7 @@ class BusinessProvider extends ChangeNotifier {
             return;
           }
 
-          key = key!.trim();
+          key = key.trim();
 
           final prefs = await SharedPreferences.getInstance();
 

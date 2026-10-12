@@ -18,10 +18,12 @@ class ThemesScreenProvider extends ChangeNotifier {
 
   final ThemeRepository _repository = ThemeRepository.instance;
 
-  Future<void> fetchPlans() async {
+  Future<void> fetchPlans({bool forceRefresh = false}) async {
+    if (_isLoadingPlans) return;
+    if (_plansData != null && !forceRefresh) return;
+
     _isLoadingPlans = true;
     _plansErrorMessage = null;
-
     notifyListeners();
 
     try {
@@ -31,7 +33,7 @@ class ThemesScreenProvider extends ChangeNotifier {
         _plansData = result.data;
       } else {
         _plansErrorMessage =
-            result.error?.message ?? "Something went wrong";
+            result.error?.message ?? 'Something went wrong';
       }
     } catch (e) {
       _plansErrorMessage = e.toString();
@@ -40,6 +42,8 @@ class ThemesScreenProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> refresh() => fetchPlans(forceRefresh: true);
 
   List<ThemeItem> get groups {
     return _plansData?.data ?? [];

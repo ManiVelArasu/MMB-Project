@@ -250,11 +250,6 @@ class ProjectProvider extends ChangeNotifier {
         success: (data) {
           success = true;
 
-          debugPrint('================================');
-          debugPrint('✅ PROJECT PATCH SUCCESS');
-          debugPrint('PATCH RESPONSE: $data');
-          debugPrint('================================');
-
           _lastSavedContent = content;
 
           // IMPORTANT
@@ -263,9 +258,6 @@ class ProjectProvider extends ChangeNotifier {
             fallbackName: name,
           );
 
-          debugPrint(
-            '🖼️ SAVED THUMBNAIL KEY: $_thumbnailS3Key',
-          );
         },
         failure: (error) {
           _errorMessage = error.message;

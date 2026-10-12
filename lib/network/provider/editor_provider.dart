@@ -2995,16 +2995,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   bool _isDisposed = false;
 
-  // `_isDisposed` was never set, so every `if (_isDisposed)` guard in the
-  // async fetchers was dead code and a late response called notifyListeners()
-  // on a disposed provider ("EditorProvider was used after being disposed").
   @override
   void dispose() {
     _isDisposed = true;
     super.dispose();
   }
 
-  // Safety net for ALL async callbacks (Freepik, uploads, autosave, ...).
   @override
   void notifyListeners() {
     if (_isDisposed) return;

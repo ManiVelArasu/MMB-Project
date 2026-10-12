@@ -94,7 +94,7 @@ class ProfileScreenProvider extends ChangeNotifier {
 
       debugPrint(
         "❌ Account deactivate failed: "
-        "${result.error?.message}",
+            "${result.error?.message}",
       );
 
       _isDeactivateLoading = false;
@@ -217,7 +217,7 @@ class ProfileScreenProvider extends ChangeNotifier {
           ),
           content: const Text(
             "Are you sure you want to delete your account?\n\n"
-            "Your account will be permanently deleted within 24 hours.",
+                "Your account will be permanently deleted within 24 hours.",
           ),
           actions: [
             TextButton(
@@ -233,8 +233,8 @@ class ProfileScreenProvider extends ChangeNotifier {
               onPressed: _isDeactivateLoading
                   ? null
                   : () {
-                      Navigator.pop(dialogContext, true);
-                    },
+                Navigator.pop(dialogContext, true);
+              },
               child: const Text("YES", style: TextStyle(color: Colors.white)),
             ),
           ],
