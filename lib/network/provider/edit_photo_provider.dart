@@ -118,7 +118,9 @@ class EditPhotoProvider extends ChangeNotifier {
 
     businessNameController.text = me.data.name ?? '';
     emailController.text = me.data.email ?? '';
-    contactController.text = me.data.phone ?? '';
+    contactController.text = me.data.phone ?? provider.business?.phone ?? '';
+
+
 
     final accountType = me.data.accountType;
     final profileKey = me.data.profilePhotoS3Key;
@@ -319,7 +321,7 @@ class EditPhotoProvider extends ChangeNotifier {
   /// This is the single source for business name, industry,
   /// description, logo, contact, address and social data.
   Future<void> setBusinessApiData(BusinessApiModel business) async {
-    print(business.whatsapp);
+    print('sdsads${business.phone}');
     _businessUid = business.uid;
 
     businessNameController.text = business.name ?? '';

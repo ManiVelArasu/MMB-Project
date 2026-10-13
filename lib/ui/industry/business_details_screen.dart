@@ -122,10 +122,6 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
       return;
     }
 
-    // ==========================================================
-    // FORM VALIDATION
-    // ==========================================================
-
     if (businessProvider.nameController.text.trim().isEmpty) {
       businessProvider.setBusinessName("");
     }
@@ -133,9 +129,6 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
     if (!businessProvider.validateForm()) {
       setState(() {});
       debugPrint("❌ Form validation failed");
-      debugPrint("Name: ${businessProvider.nameController.text}");
-      debugPrint("Email: '${businessProvider.emailController.text}'");
-      debugPrint("Phone: ${businessProvider.mobileController.text}");
       return;
     }
 
@@ -146,7 +139,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
     if (!isPersonal && !isBusiness) {
       debugPrint(
         "❌ Invalid account type: "
-        "${CommonProvider.instance.accountType}",
+            "${CommonProvider.instance.accountType}",
       );
       return;
     }
@@ -188,15 +181,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
           final prefs = await SharedPreferences.getInstance();
 
           businessUid = prefs.getString('business_uid')?.trim() ?? '';
-
-          debugPrint("📦 Business UID from SharedPreferences: '$businessUid'");
-        } else {
-          debugPrint("📌 Business UID from widget: '$businessUid'");
         }
-
-        // UID empty இருந்தாலும் API call செய்யும்
-        debugPrint("🔑 Calling business update API");
-        debugPrint("🔑 Business UID: '$businessUid'");
 
         final bool success = await businessProvider.updateBusinessDetails(
           context,
@@ -213,72 +198,29 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
       }
 
       // ========================================================
-      // SAVE CONTINUE
+      // SAVE CONTINUE & NAVIGATION
       // ========================================================
 
       final prefs = await SharedPreferences.getInstance();
-
       await prefs.setBool('continue', true);
 
-      debugPrint("✅ continue = ${prefs.getBool('continue')}");
-
-      // ========================================================
-      // CHECK SKIP STATUS
-      // ========================================================
-
       final bool showSkip = prefs.getBool('showSkip') ?? false;
-
-      debugPrint("======================================");
-      debugPrint("🔍 NAVIGATION CHECK");
-      debugPrint("showSkip: $showSkip");
-      debugPrint("======================================");
-
-      // ========================================================
-      // CHECK ACTIVE PLAN
-      // ========================================================
 
       if (!context.mounted) return;
 
       final planProvider = context.read<PlanProvider>();
-
       await planProvider.fetchMySubscription();
 
       if (!context.mounted) return;
 
       final bool hasActivePlan =
           planProvider.activePlanUid != null &&
-          planProvider.activePlanUid!.isNotEmpty;
+              planProvider.activePlanUid!.isNotEmpty;
 
-      debugPrint("💳 Active Plan UID: ${planProvider.activePlanUid}");
-      debugPrint("💳 Has Active Plan: $hasActivePlan");
-
-      // ========================================================
-      // NAVIGATION LOGIC
-      // ========================================================
-
-      // 1. Active plan
-      if (hasActivePlan) {
-        debugPrint("✅ ACTIVE PLAN → CustomBottomNavScreen");
-
+      if (hasActivePlan || showSkip) {
         Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
-
         return;
       }
-
-      // 2. User skipped plan
-      if (showSkip) {
-        debugPrint("⏭️ PLAN SKIPPED → CustomBottomNavScreen");
-
-        Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
-
-        return;
-      }
-
-      // 3. No active plan and not skipped
-      debugPrint(
-        "🛒 NO ACTIVE PLAN + NOT SKIPPED "
-        "→ PlansAndPricingScreen",
-      );
 
       Navigator.pushReplacementNamed(
         context,

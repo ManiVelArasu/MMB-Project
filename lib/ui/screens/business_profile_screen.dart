@@ -58,249 +58,480 @@ class BusinessProfileView extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: SafeArea(
-            child: provider.isKeyWordsLoading
-                ? Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: size.width * 0.04,
-                            vertical: 12.h,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                isDark
-                                    ? const Color(0xFF2A1A1C)
-                                    : const Color(
-                                        0xFFFFECEE,
-                                      ).withValues(alpha: 0.6),
-                                isDark ? const Color(0xFF121212) : Colors.white,
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              // Back Arrow
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: GestureDetector(
-                                  onTap: () => Navigator.pop(context),
-                                  child: Container(
-                                    height: 38.h,
-                                    width: 38.w,
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? const Color(0xFF2A1A1C)
-                                          : const Color(0xFFFFECEE),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.arrow_back_rounded,
-                                      color: const Color(0xFFE53935),
-                                      size: 20.sp,
-                                    ),
-                                  ),
-                                ),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  "assets/images/plan_gradient.png",
+                  fit: BoxFit.cover,
+                ),
+              ),
+              SafeArea(
+                child: provider.isKeyWordsLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: size.width * 0.04,
+                                vertical: 12.h,
                               ),
 
-                              SizedBox(height: 8.h),
-
-                              // Profile Logo
-                              Container(
-                                width: 70.w,
-                                height: 70.w,
-                                padding: const EdgeInsets.all(2),
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                ),
-                                child: ClipOval(
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => ImageViewerScreen(
-                                              imagePath:
-                                                  '${ApiEndpoints.cdnImageUrl}/${provider.commonProvider.business?.logoS3Key ?? ''}',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Image.network(
-                                        '${ApiEndpoints.cdnImageUrl}/${provider.commonProvider.business?.logoS3Key ?? ''}',
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              SizedBox(height: 10.h),
-
-                              AppText(
-                                provider.businessName.isEmpty
-                                    ? "${provider.commonProvider.business?.name}"
-                                    : provider.businessName,
-                                style: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface,
-                                  fontSize: 20.sp,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              SizedBox(height: 4.h),
-                              AppText(
-                                "${provider.commonProvider.business?.businessCategory?.parent?.slug}",
-                                style: TextStyle(
-                                  color: isDark
-                                      ? Colors.grey.shade400
-                                      : Colors.grey.shade600,
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-
-                              SizedBox(height: 8.h),
-
-                              InkWell(
-                                onTap: () async {
-                                  final result = await Navigator.pushNamed(
-                                    context,
-                                    "/EditProfileScreen",
-                                  );
-
-                                  if (!context.mounted) return;
-
-                                  if (result == true) {
-                                    debugPrint(
-                                      "🔄 Edit Profile returned TRUE"
-                                      " → refreshing profile API",
-                                    );
-
-                                    await context
-                                        .read<BusinessProfileProvider>()
-                                        .refreshProfileAfterEdit();
-                                  }
-                                },
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    AppText(
-                                      "EDIT BUSINESS DETAILS",
-                                      style: TextStyle(
-                                        color: const Color(0xFFE53935),
-                                        fontSize: 11.sp,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                    SizedBox(width: 4.w),
-                                    Icon(
-                                      Icons.edit_note_rounded,
-                                      color: const Color(0xFFE53935),
-                                      size: 16.sp,
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              SizedBox(height: 16.h),
-
-                              Row(
+                              child: Column(
                                 children: [
-                                  _buildActionCard(
-                                    onCallBack: () {},
-                                    title: "ABOUT",
-                                    iconAsset: "assets/images/about.png",
-                                    bgColor: isDark
-                                        ? const Color(0xFF332211)
-                                        : const Color(0xFFFFDBB9),
-                                    isDark: isDark,
+                                  // Back Arrow
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: GestureDetector(
+                                      onTap: () => Navigator.pop(context),
+                                      child: Container(
+                                        height: 38.h,
+                                        width: 38.w,
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? const Color(0xFF2A1A1C)
+                                              : const Color(0xFFFFECEE),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.arrow_back_rounded,
+                                          color: const Color(0xFFE53935),
+                                          size: 20.sp,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                  SizedBox(width: 10.w),
 
-                                  _buildActionCard(
-                                    onCallBack: () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        "/ProductsScreen",
-                                      );
-                                    },
-                                    title: "MY PRODUCTS",
-                                    iconAsset: "assets/images/product.png",
-                                    bgColor: isDark
-                                        ? const Color(0xFF113338)
-                                        : const Color(0xFF72E8F5),
-                                    isDark: isDark,
+                                  SizedBox(height: 8.h),
+
+                                  // Profile Logo
+                                  Container(
+                                    width: 70.w,
+                                    height: 70.w,
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                    ),
+                                    child: ClipOval(
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => ImageViewerScreen(
+                                                  imagePath:
+                                                      '${ApiEndpoints.cdnImageUrl}/${provider.commonProvider.business?.logoS3Key ?? ''}',
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          child: Image.network(
+                                            '${ApiEndpoints.cdnImageUrl}/${provider.commonProvider.business?.logoS3Key ?? ''}',
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                  SizedBox(width: 10.w),
-                                  _buildActionCard(
-                                    onCallBack: () {
-                                      Navigator.pushNamed(
+
+                                  SizedBox(height: 10.h),
+
+                                  AppText(
+                                    provider.businessName.isEmpty
+                                        ? "${provider.commonProvider.business?.name}"
+                                        : provider.businessName,
+                                    style: TextStyle(
+                                      color: Theme.of(
                                         context,
-                                        "/MyUploadsScreen",
+                                      ).colorScheme.onSurface,
+                                      fontSize: 20.sp,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4.h),
+                                  AppText(
+                                    "${provider.commonProvider.business?.businessCategory?.slug??provider.commonProvider.business?.businessCategory?.parent?.slug}",
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.grey.shade400
+                                          : Colors.grey.shade600,
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+
+                                  SizedBox(height: 8.h),
+
+                                  InkWell(
+                                    onTap: () async {
+                                      final result = await Navigator.pushNamed(
+                                        context,
+                                        "/EditProfileScreen",
                                       );
+
+                                      if (!context.mounted) return;
+
+                                      if (result == true) {
+                                        debugPrint(
+                                          "🔄 Edit Profile returned TRUE"
+                                          " → refreshing profile API",
+                                        );
+
+                                        await context
+                                            .read<BusinessProfileProvider>()
+                                            .refreshProfileAfterEdit();
+                                      }
                                     },
-                                    title: "UPLOADS",
-                                    iconAsset: "assets/images/uploads.png",
-                                    bgColor: isDark
-                                        ? const Color(0xFF1D3315)
-                                        : const Color(0xFF9AE278),
-                                    isDark: isDark,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        AppText(
+                                          "EDIT BUSINESS DETAILS",
+                                          style: TextStyle(
+                                            color: const Color(0xFFE53935),
+                                            fontSize: 11.sp,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        SizedBox(width: 4.w),
+                                        Icon(
+                                          Icons.edit_note_rounded,
+                                          color: const Color(0xFFE53935),
+                                          size: 16.sp,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  SizedBox(height: 16.h),
+
+                                  Row(
+                                    children: [
+                                      _buildActionCard(
+                                        onCallBack: () {},
+                                        title: "ABOUT",
+                                        iconAsset: "assets/images/about.png",
+                                        bgColor: isDark
+                                            ? const Color(0xFF332211)
+                                            : const Color(0xFFFFDBB9),
+                                        isDark: isDark,
+                                      ),
+                                      SizedBox(width: 10.w),
+
+                                      _buildActionCard(
+                                        onCallBack: () {
+                                          Navigator.pushNamed(
+                                            context,
+                                            "/ProductsScreen",
+                                          );
+                                        },
+                                        title: "MY PRODUCTS",
+                                        iconAsset: "assets/images/product.png",
+                                        bgColor: isDark
+                                            ? const Color(0xFF113338)
+                                            : const Color(0xFF72E8F5),
+                                        isDark: isDark,
+                                      ),
+                                      SizedBox(width: 10.w),
+                                      _buildActionCard(
+                                        onCallBack: () {
+                                          Navigator.pushNamed(
+                                            context,
+                                            "/MyUploadsScreen",
+                                          );
+                                        },
+                                        title: "UPLOADS",
+                                        iconAsset: "assets/images/uploads.png",
+                                        bgColor: isDark
+                                            ? const Color(0xFF1D3315)
+                                            : const Color(0xFF9AE278),
+                                        isDark: isDark,
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
-                        ),
+                            ),
 
-                        Divider(
-                          height: 1,
-                          color: isDark
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade200,
-                        ),
-                        SizedBox(height: 16.h),
+                            Divider(
+                              height: 1,
+                              color: isDark
+                                  ? Colors.grey.shade800
+                                  : Colors.grey.shade200,
+                            ),
+                            SizedBox(height: 16.h),
 
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: size.width * 0.04,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Title + Plus Button
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: size.width * 0.04,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // Title + Plus Button
                                   Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Image.asset(
-                                        "assets/images/frames_icon.png",
-                                        height: 24.h,
-                                        width: 24.w,
-                                        errorBuilder: (_, __, ___) => Icon(
-                                          Icons.layers_rounded,
+                                      Row(
+                                        children: [
+                                          Image.asset(
+                                            "assets/images/frames_icon.png",
+                                            height: 24.h,
+                                            width: 24.w,
+                                            errorBuilder: (_, __, ___) => Icon(
+                                              Icons.layers_rounded,
+                                              color: const Color(0xFFE53935),
+                                              size: 22.sp,
+                                            ),
+                                          ),
+                                          SizedBox(width: 8.w),
+                                          AppText(
+                                            "My Frames",
+                                            style: TextStyle(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurface,
+                                              fontSize: 18.sp,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Container(
+                                        height: 32.h,
+                                        width: 32.w,
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? const Color(0xFF2A1A1C)
+                                              : const Color(0xFFFFECEE),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.add_rounded,
                                           color: const Color(0xFFE53935),
                                           size: 22.sp,
                                         ),
                                       ),
-                                      SizedBox(width: 8.w),
+                                    ],
+                                  ),
+
+                                  SizedBox(height: 12.h),
+
+                                  Row(
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () => provider.updateFrameTab(0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            AppText(
+                                              "Static Frames",
+                                              style: TextStyle(
+                                                color:
+                                                    provider.selectedFrameTab == 0
+                                                    ? (isDark
+                                                          ? Colors.white
+                                                          : Colors.black)
+                                                    : Colors.grey,
+                                                fontSize: 14.sp,
+                                                fontWeight:
+                                                    provider.selectedFrameTab == 0
+                                                    ? FontWeight.w900
+                                                    : FontWeight.w600,
+                                              ),
+                                            ),
+                                            if (provider.selectedFrameTab == 0)
+                                              Container(
+                                                margin: EdgeInsets.only(top: 4.h),
+                                                height: 3.h,
+                                                width: 85.w,
+                                                color: const Color(0xFFE53935),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(width: 20.w),
+                                      GestureDetector(
+                                        onTap: () => provider.updateFrameTab(1),
+                                        child: AppText(
+                                          "Animated Frames",
+                                          style: TextStyle(
+                                            color: provider.selectedFrameTab == 1
+                                                ? (isDark
+                                                      ? Colors.white
+                                                      : Colors.black)
+                                                : Colors.grey.shade400,
+                                            fontSize: 14.sp,
+                                            fontWeight:
+                                                provider.selectedFrameTab == 1
+                                                ? FontWeight.w900
+                                                : FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  SizedBox(height: 16.h),
+
+                                  // Frames Horizontal ListView
+                                  SizedBox(
+                                    height: 145.h,
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: const BouncingScrollPhysics(),
+                                      itemCount: provider.staticFrames.length,
+                                      itemBuilder: (context, index) {
+                                        final frame = provider.staticFrames[index];
+
+                                        return Container(
+                                          width: 110.w,
+                                          margin: EdgeInsets.only(right: 12.w),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    color: isDark
+                                                        ? const Color(0xFF1E1E1E)
+                                                        : Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(12.r),
+                                                    border: Border.all(
+                                                      color: isDark
+                                                          ? Colors.grey.shade800
+                                                          : Colors.grey.shade300,
+                                                      width: 1.2,
+                                                    ),
+                                                  ),
+                                                  child: ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.circular(10.r),
+                                                    child: Stack(
+                                                      children: [
+                                                        Positioned.fill(
+                                                          child: Container(
+                                                            color: isDark
+                                                                ? const Color(
+                                                                    0xFF1E1E1E,
+                                                                  )
+                                                                : Colors.white,
+                                                          ),
+                                                        ),
+                                                        Positioned(
+                                                          top: 8.h,
+                                                          left: 0,
+                                                          right: 0,
+                                                          child: Center(
+                                                            child: Image.asset(
+                                                              "assets/images/abslogo.png",
+                                                              height: 18.h,
+                                                              errorBuilder:
+                                                                  (
+                                                                    _,
+                                                                    __,
+                                                                    ___,
+                                                                  ) => Icon(
+                                                                    Icons
+                                                                        .auto_awesome,
+                                                                    size: 16.sp,
+                                                                    color:
+                                                                        const Color(
+                                                                          0xFFE53935,
+                                                                        ),
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        Positioned(
+                                                          bottom: 4.h,
+                                                          left: 4.w,
+                                                          right: 4.w,
+                                                          child:
+                                                              provider.isSolidBanner
+                                                              ? _buildSolidBanner(
+                                                                  provider,
+                                                                )
+                                                              : _buildOutlineBanner(
+                                                                  provider,
+                                                                ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              SizedBox(height: 6.h),
+                                              AppText(
+                                                frame["price"] ??
+                                                    (index == 0
+                                                        ? "Free"
+                                                        : "Rs.0 (Rs.100 Unlocked)"),
+                                                style: TextStyle(
+                                                  fontSize: 11.sp,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: isDark
+                                                      ? Colors.white70
+                                                      : Colors.black87,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            SizedBox(height: 12.h),
+                            Divider(
+                              height: 1,
+                              color: isDark
+                                  ? Colors.grey.shade800
+                                  : Colors.grey.shade200,
+                            ),
+                            SizedBox(height: 16.h),
+
+                            const _BrandKitSection(),
+
+                            SizedBox(height: 16.h),
+                            Divider(
+                              height: 1,
+                              color: isDark
+                                  ? Colors.grey.shade800
+                                  : Colors.grey.shade200,
+                            ),
+                            SizedBox(height: 16.h),
+
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: size.width * 0.04,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
                                       AppText(
-                                        "My Frames",
+                                        "My Keywords",
                                         style: TextStyle(
                                           color: Theme.of(
                                             context,
@@ -309,234 +540,86 @@ class BusinessProfileView extends StatelessWidget {
                                           fontWeight: FontWeight.w800,
                                         ),
                                       ),
+                                      AppText(
+                                        "MANAGE",
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.grey.shade400
+                                              : Colors.grey.shade600,
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
                                     ],
                                   ),
-                                  Container(
-                                    height: 32.h,
-                                    width: 32.w,
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? const Color(0xFF2A1A1C)
-                                          : const Color(0xFFFFECEE),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.add_rounded,
-                                      color: const Color(0xFFE53935),
-                                      size: 22.sp,
-                                    ),
-                                  ),
-                                ],
-                              ),
 
-                              SizedBox(height: 12.h),
+                                  SizedBox(height: 12.h),
 
-                              Row(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () => provider.updateFrameTab(0),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        AppText(
-                                          "Static Frames",
-                                          style: TextStyle(
-                                            color:
-                                                provider.selectedFrameTab == 0
-                                                ? (isDark
-                                                      ? Colors.white
-                                                      : Colors.black)
-                                                : Colors.grey,
-                                            fontSize: 14.sp,
-                                            fontWeight:
-                                                provider.selectedFrameTab == 0
-                                                ? FontWeight.w900
-                                                : FontWeight.w600,
+                                  Wrap(
+                                    spacing: 8.w,
+                                    runSpacing: 8.h,
+                                    children: (provider.keyWords).map<Widget>((
+                                      keywordItem,
+                                    ) {
+                                      final keyword =
+                                          keywordItem.name?.trim() ?? '';
+
+                                      if (keyword.isEmpty) {
+                                        return const SizedBox.shrink();
+                                      }
+
+                                      return Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 14.w,
+                                          vertical: 6.h,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? const Color(0xFF1E1E1E)
+                                              : Colors.white,
+                                          borderRadius: BorderRadius.circular(20.r),
+                                          border: Border.all(
+                                            color: isDark
+                                                ? Colors.grey.shade800
+                                                : Colors.grey.shade300,
+                                            width: 1.2,
                                           ),
                                         ),
-                                        if (provider.selectedFrameTab == 0)
-                                          Container(
-                                            margin: EdgeInsets.only(top: 4.h),
-                                            height: 3.h,
-                                            width: 85.w,
-                                            color: const Color(0xFFE53935),
+                                        child: AppText(
+                                          keyword,
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black87,
+                                            fontSize: 11.5.sp,
+                                            fontWeight: FontWeight.w700,
                                           ),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(width: 20.w),
-                                  GestureDetector(
-                                    onTap: () => provider.updateFrameTab(1),
-                                    child: AppText(
-                                      "Animated Frames",
-                                      style: TextStyle(
-                                        color: provider.selectedFrameTab == 1
-                                            ? (isDark
-                                                  ? Colors.white
-                                                  : Colors.black)
-                                            : Colors.grey.shade400,
-                                        fontSize: 14.sp,
-                                        fontWeight:
-                                            provider.selectedFrameTab == 1
-                                            ? FontWeight.w900
-                                            : FontWeight.w600,
-                                      ),
-                                    ),
+                                        ),
+                                      );
+                                    }).toList(),
                                   ),
                                 ],
                               ),
+                            ),
+                            SizedBox(height: 16.h),
+                            Divider(
+                              height: 1,
+                              color: isDark
+                                  ? Colors.grey.shade800
+                                  : Colors.grey.shade200,
+                            ),
+                            SizedBox(height: 16.h),
 
-                              SizedBox(height: 16.h),
-
-                              // Frames Horizontal ListView
-                              SizedBox(
-                                height: 145.h,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  physics: const BouncingScrollPhysics(),
-                                  itemCount: provider.staticFrames.length,
-                                  itemBuilder: (context, index) {
-                                    final frame = provider.staticFrames[index];
-
-                                    return Container(
-                                      width: 110.w,
-                                      margin: EdgeInsets.only(right: 12.w),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Expanded(
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: isDark
-                                                    ? const Color(0xFF1E1E1E)
-                                                    : Colors.white,
-                                                borderRadius:
-                                                    BorderRadius.circular(12.r),
-                                                border: Border.all(
-                                                  color: isDark
-                                                      ? Colors.grey.shade800
-                                                      : Colors.grey.shade300,
-                                                  width: 1.2,
-                                                ),
-                                              ),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(10.r),
-                                                child: Stack(
-                                                  children: [
-                                                    Positioned.fill(
-                                                      child: Container(
-                                                        color: isDark
-                                                            ? const Color(
-                                                                0xFF1E1E1E,
-                                                              )
-                                                            : Colors.white,
-                                                      ),
-                                                    ),
-                                                    Positioned(
-                                                      top: 8.h,
-                                                      left: 0,
-                                                      right: 0,
-                                                      child: Center(
-                                                        child: Image.asset(
-                                                          "assets/images/abslogo.png",
-                                                          height: 18.h,
-                                                          errorBuilder:
-                                                              (
-                                                                _,
-                                                                __,
-                                                                ___,
-                                                              ) => Icon(
-                                                                Icons
-                                                                    .auto_awesome,
-                                                                size: 16.sp,
-                                                                color:
-                                                                    const Color(
-                                                                      0xFFE53935,
-                                                                    ),
-                                                              ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    Positioned(
-                                                      bottom: 4.h,
-                                                      left: 4.w,
-                                                      right: 4.w,
-                                                      child:
-                                                          provider.isSolidBanner
-                                                          ? _buildSolidBanner(
-                                                              provider,
-                                                            )
-                                                          : _buildOutlineBanner(
-                                                              provider,
-                                                            ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(height: 6.h),
-                                          AppText(
-                                            frame["price"] ??
-                                                (index == 0
-                                                    ? "Free"
-                                                    : "Rs.0 (Rs.100 Unlocked)"),
-                                            style: TextStyle(
-                                              fontSize: 11.sp,
-                                              fontWeight: FontWeight.w700,
-                                              color: isDark
-                                                  ? Colors.white70
-                                                  : Colors.black87,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: size.width * 0.04,
                               ),
-                            ],
-                          ),
-                        ),
-
-                        SizedBox(height: 12.h),
-                        Divider(
-                          height: 1,
-                          color: isDark
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade200,
-                        ),
-                        SizedBox(height: 16.h),
-
-                        const _BrandKitSection(),
-
-                        SizedBox(height: 16.h),
-                        Divider(
-                          height: 1,
-                          color: isDark
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade200,
-                        ),
-                        SizedBox(height: 16.h),
-
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: size.width * 0.04,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   AppText(
-                                    "My Keywords",
+                                    "Online Presence",
                                     style: TextStyle(
                                       color: Theme.of(
                                         context,
@@ -545,130 +628,44 @@ class BusinessProfileView extends StatelessWidget {
                                       fontWeight: FontWeight.w800,
                                     ),
                                   ),
-                                  AppText(
-                                    "MANAGE",
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? Colors.grey.shade400
-                                          : Colors.grey.shade600,
-                                      fontSize: 12.sp,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.5,
-                                    ),
+
+                                  SizedBox(height: 12.h),
+
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildPresenceTile(
+                                          title: "Business Profile",
+                                          iconAsset: "assets/images/b_profile.png",
+                                          bgColor: isDark
+                                              ? const Color(0xFF2A1A1C)
+                                              : const Color(0xFFFFECEE),
+                                          isDark: isDark,
+                                        ),
+                                      ),
+                                      SizedBox(width: 12.w),
+                                      Expanded(
+                                        child: _buildPresenceTile(
+                                          title: "Business Card",
+                                          iconAsset: "assets/images/b_card.png",
+                                          bgColor: isDark
+                                              ? const Color(0xFF1B2A38)
+                                              : const Color(0xFFE3F2FD),
+                                          isDark: isDark,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
+                            ),
 
-                              SizedBox(height: 12.h),
-
-                              Wrap(
-                                spacing: 8.w,
-                                runSpacing: 8.h,
-                                children: (provider.keyWords).map<Widget>((
-                                  keywordItem,
-                                ) {
-                                  final keyword =
-                                      keywordItem.name?.trim() ?? '';
-
-                                  if (keyword.isEmpty) {
-                                    return const SizedBox.shrink();
-                                  }
-
-                                  return Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 14.w,
-                                      vertical: 6.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? const Color(0xFF1E1E1E)
-                                          : Colors.white,
-                                      borderRadius: BorderRadius.circular(20.r),
-                                      border: Border.all(
-                                        color: isDark
-                                            ? Colors.grey.shade800
-                                            : Colors.grey.shade300,
-                                        width: 1.2,
-                                      ),
-                                    ),
-                                    child: AppText(
-                                      keyword,
-                                      style: TextStyle(
-                                        color: isDark
-                                            ? Colors.white70
-                                            : Colors.black87,
-                                        fontSize: 11.5.sp,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ),
+                            SizedBox(height: 30.h),
+                          ],
                         ),
-                        SizedBox(height: 16.h),
-                        Divider(
-                          height: 1,
-                          color: isDark
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade200,
-                        ),
-                        SizedBox(height: 16.h),
-
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: size.width * 0.04,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              AppText(
-                                "Online Presence",
-                                style: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface,
-                                  fontSize: 18.sp,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-
-                              SizedBox(height: 12.h),
-
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildPresenceTile(
-                                      title: "Business Profile",
-                                      iconAsset: "assets/images/b_profile.png",
-                                      bgColor: isDark
-                                          ? const Color(0xFF2A1A1C)
-                                          : const Color(0xFFFFECEE),
-                                      isDark: isDark,
-                                    ),
-                                  ),
-                                  SizedBox(width: 12.w),
-                                  Expanded(
-                                    child: _buildPresenceTile(
-                                      title: "Business Card",
-                                      iconAsset: "assets/images/b_card.png",
-                                      bgColor: isDark
-                                          ? const Color(0xFF1B2A38)
-                                          : const Color(0xFFE3F2FD),
-                                      isDark: isDark,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        SizedBox(height: 30.h),
-                      ],
-                    ),
-                  ),
+                      ),
+              ),
+            ],
           ),
         );
       },

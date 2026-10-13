@@ -422,7 +422,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               // PERSONAL PROFILE COMPLETE
               // =======================================================
 
-              if (hasName && hasImage) {
+              if (hasName) {
                 debugPrint(
                   "✅ PERSONAL PROFILE COMPLETE"
                   " → CustomBottomNavScreen",
@@ -543,7 +543,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               // BUSINESS COMPLETE
               // =======================================================
 
-              if (hasName && hasImage) {
+              if (hasName) {
                 debugPrint(
                   "✅ BUSINESS PROFILE COMPLETE"
                   " → CustomBottomNavScreen",

@@ -156,31 +156,37 @@ class ProfileScreenProvider extends ChangeNotifier {
       await AuthRepository.instance.logout();
 
       if (context.mounted) {
-        final businessProvider = Provider.of<BusinessProvider>(
-          context,
-          listen: false,
-        );
+        final businessProvider =
+        Provider.of<BusinessProvider>(context, listen: false);
 
+        // Clear image and its related state
+        businessProvider.clearImage();
+
+        // Clear previously loaded business data
         await businessProvider.clearBusinessDataForNewLogin();
       }
+
+      // Clear authentication tokens
       await ApiHandler.instance.clearTokens();
 
       _isLogoutLoading = false;
       notifyListeners();
 
-      if (!context.mounted) {
-        return;
-      }
+      if (!context.mounted) return;
 
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil("/LoginScreen", (route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        "/LoginScreen",
+            (route) => false,
+      );
     } catch (e) {
       _isLogoutLoading = false;
       notifyListeners();
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Logout failed. Please try again.")),
+          const SnackBar(
+            content: Text("Logout failed. Please try again."),
+          ),
         );
       }
     }

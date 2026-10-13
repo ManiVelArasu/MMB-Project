@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 
 import '../../Api Model/plans_type.dart';
 
@@ -95,20 +96,42 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                       ),
                     ),
                     SizedBox(width: 12.w),
-                    Expanded(
-                      child: Text(
-                        widget.plan.name ?? "Plan Details",
-                        style: TextStyle(
-                          fontSize: 21.sp,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
+
                   ],
                 ),
                 SizedBox(height: 16.h),
-
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Column(
+                      children: [
+                        widget.plan.name =="Premium Plan"?   Container(
+                          decoration: BoxDecoration(color: AppColors.appWhite,borderRadius: BorderRadius.circular(10)),
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 5,right: 5),
+                            child: AppText(
+                              "MOST POPULAR",
+                              style: TextStyle(
+                                fontSize: AppFontSize.fontSize12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ):SizedBox(),
+                        AppText(
+                          widget.plan.name ?? "Plan Details",
+                          style: TextStyle(
+                            fontSize: AppFontSize.fontSize24,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10,),
                 // Pricing Cards (Monthly / Annual)
                 if (billingOptions.isNotEmpty)
                   Row(
@@ -393,8 +416,8 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     style: TextStyle(
-                      fontSize: 9.5.sp,
-                      fontWeight: FontWeight.w600,
+                      fontSize: AppFontSize.fontSize10,
+                      fontWeight: FontWeight.w400,
                       color: AppColors.appBlack,
                     ),
                   ),

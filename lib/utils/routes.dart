@@ -310,9 +310,16 @@ class RouteGenerator {
           builder: (context) => const ConfirmCancellationScreen(),
         );
       case "/ManagePlanScreen":
+        final args = settings.arguments;
+
+        final bool openCancelSheet =
+            args is Map && args["openCancelSheet"] == true;
+
         return MaterialPageRoute(
-          builder: (context) => const ManagePlanScreen(),
+          builder: (context) =>
+              ManagePlanScreen(openCancelSheet: openCancelSheet),
         );
+
       case "/PlanUsageScreen":
         return MaterialPageRoute(builder: (context) => const PlanUsageScreen());
 
@@ -320,8 +327,10 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (context) => const ProductsScreen());
       case "/MyUploadsScreen":
         return MaterialPageRoute(builder: (context) => const MyUploadsScreen());
-        case "/ProfilePictureScreen":
-        return MaterialPageRoute(builder: (context) => const ProfilePictureScreen());
+      case "/ProfilePictureScreen":
+        return MaterialPageRoute(
+          builder: (context) => const ProfilePictureScreen(),
+        );
       case "/TemplateListScreen":
         final arguments = settings.arguments;
 
@@ -338,10 +347,7 @@ class RouteGenerator {
 
         return MaterialPageRoute(
           settings: settings,
-          builder: (context) => TemplateListScreen(
-            type: type,
-            range: range,
-          ),
+          builder: (context) => TemplateListScreen(type: type, range: range),
         );
     }
     return null;

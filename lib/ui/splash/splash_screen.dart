@@ -470,7 +470,7 @@ class _SplashScreenState extends State<SplashScreen> {
         // PERSONAL COMPLETE
         // ======================================================
 
-        if (hasName && hasImage) {
+        if (hasName) {
           debugPrint(
             "✅ PERSONAL PROFILE COMPLETE "
             "→ CustomBottomNavScreen",
@@ -551,10 +551,6 @@ class _SplashScreenState extends State<SplashScreen> {
           return;
         }
 
-        // ======================================================
-        // BUSINESS DATA
-        // ======================================================
-
         final business = commonProvider.business;
 
         // Business name
@@ -586,7 +582,7 @@ class _SplashScreenState extends State<SplashScreen> {
         // BUSINESS COMPLETE
         // ======================================================
 
-        if (hasName && hasImage) {
+        if (hasName) {
           debugPrint(
             "✅ BUSINESS PROFILE COMPLETE "
             "→ CustomBottomNavScreen",

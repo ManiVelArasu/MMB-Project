@@ -668,20 +668,6 @@ class PlanProvider extends ChangeNotifier {
         return "PLAN";
     }
   }
-
-  Color _getPlanButtonColor(int index) {
-    switch (index) {
-      case 0:
-        return const Color(0xFF96C63F); // Basic - Green
-      case 1:
-        return const Color(0xFFF47BC5); // Premium - Pink
-      case 2:
-        return const Color(0xFF9985ED); // Elite - Purple
-      default:
-        return const Color(0xFFE53935);
-    }
-  }
-
   String? get activePlanUid {
     final plan = _subscriptionData?["plan"];
 

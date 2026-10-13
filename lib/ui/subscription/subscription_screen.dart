@@ -61,7 +61,7 @@ class _PlansAndPricingBody extends StatelessWidget {
                           "Plans & Pricing",
                           style: TextStyle(
                             color: AppColors.textBlack,
-                            fontSize: AppFontSize.fontSize17,
+                            fontSize: AppFontSize.fontSize22,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -244,11 +244,12 @@ class _PlansAndPricingBody extends StatelessWidget {
                               SizedBox(height: 16.h),
 
                               // PRICE LOGO
-                              SizedBox(
+                              Container(
                                 height: 170.h,
+                                decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
                                 width: double.infinity,
                                 child: Image.asset(
-                                  "assets/images/pricelogo.png",
+                                  "assets/images/video_icon.png",
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -331,7 +332,7 @@ class _PlansAndPricingBody extends StatelessWidget {
 
     final String actualPrice = billing?.price?.toString() ?? "0";
     final String? discountedPrice = billing?.discountedPrice?.toString();
-
+    final String? description =plan.description;
     final bool hasDiscount =
         discountedPrice != null &&
         discountedPrice.isNotEmpty &&
@@ -363,27 +364,27 @@ class _PlansAndPricingBody extends StatelessWidget {
     if (index == 0) {
       cardBgColor = const Color(0xFFFCFFF6);
       borderColor = const Color(0xFFDCEFB8);
-      buttonColor = const Color(0xFF96C63F);
-      staticDescription = "Perfect for exploring MMB before upgrading";
+      buttonColor = const Color(0xFF92BF46);
+      staticDescription = description??'';
       staticIncludes = "500 Templates  |   200 Videos  |   2 AI Logo Credits";
     } else if (index == 1) {
       cardBgColor = const Color(0xFFFFF7FC);
       borderColor = const Color(0xFFFFD6EE);
-      buttonColor = const Color(0xFFF47BC5);
-      staticDescription = "Perfect for individuals & small businesses.";
+      buttonColor = const Color(0xFFFA83CE);
+      staticDescription = description??'';
       staticIncludes = "2000 Templates  |   500 Videos  |   5 AI Logo Credits";
     } else if (index == 2) {
       cardBgColor = const Color(0xFFFAF8FF);
       borderColor = const Color(0xFFE5DEFF);
-      buttonColor = const Color(0xFF9985ED);
-      staticDescription = "Perfect for growing businesses.";
+      buttonColor = const Color(0xFF9D89F0);
+      staticDescription =description??'';
       staticIncludes =
           "2000 Templates  |   1000 Videos  |   10 AI Logo Credits";
     } else {
       cardBgColor = const Color(0xFFFAF8FF);
       borderColor = const Color(0xFFE5DEFF);
       buttonColor = const Color(0xFF9985ED);
-      staticDescription = "Perfect for individuals & small businesses.";
+      staticDescription = description??'';
       staticIncludes =
           "2000 Templates  |   1000 Videos  |   10 AI Logo Credits";
     }
@@ -397,7 +398,7 @@ class _PlansAndPricingBody extends StatelessWidget {
     } else if (buttonState.text == "DOWNGRADE") {
       currentButtonColor = Colors.orange.shade700;
     } else if (buttonState.text == "UPGRADE") {
-      currentButtonColor = Colors.blue.shade600;
+      currentButtonColor = plan.name=="Elite Plan"? Color(0xFF9D89F0):Color(0xFFFA83CE);
     } else {
       currentButtonColor = buttonColor;
     }
@@ -428,8 +429,8 @@ class _PlansAndPricingBody extends StatelessWidget {
                     AppText(
                       plan.name ?? "Plan",
                       style: TextStyle(
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w900,
+                        fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w600,
                         color: Colors.black,
                       ),
                     ),
@@ -446,18 +447,18 @@ class _PlansAndPricingBody extends StatelessWidget {
                             AppText(
                               discountPriceText,
                               style: TextStyle(
-                                fontSize: 26.sp,
-                                fontWeight: FontWeight.w900,
+                                fontSize: AppFontSize.fontSize27,
+                                fontWeight: FontWeight.w600,
                                 color: Colors.black,
                               ),
                             ),
                             SizedBox(width: 3.w),
                             AppText(
-                              periodText,
+                              periodText.replaceAll("ly", ""),
                               style: TextStyle(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black54,
+                                fontSize: AppFontSize.fontSize18,
+                                fontWeight: FontWeight.w600,
+                                color:  Colors.black,
                               ),
                             ),
                           ],
@@ -503,8 +504,8 @@ class _PlansAndPricingBody extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: index == 0 ? 10.sp : 11.sp,
+                              fontWeight: FontWeight.w700,
+                              fontSize: AppFontSize.fontSize15,
                               height: 1.1,
                             ),
                           ),

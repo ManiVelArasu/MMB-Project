@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -351,17 +353,19 @@ class _MySubscriptionView extends StatelessWidget {
           if (!hideBackButton) ...[
             GestureDetector(
               onTap: () => Navigator.pop(context),
-              child: Container(
-                width:42,
-                height: 42,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFE5E7),
+              child:  Container(
+                height: 42.h,
+                width: 42.w,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFECEE),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.arrow_back,
-                  color: Color(0xFFFF2027),
-                  size: 20,
+                child: const Center(
+                  child: Icon(
+                    Icons.arrow_back,
+                    color: Color(0xFFE53935),
+                    size: 20,
+                  ),
                 ),
               ),
             ),
@@ -372,9 +376,9 @@ class _MySubscriptionView extends StatelessWidget {
             child: AppText(
               "My Subscription",
               style: TextStyle(
-                color: Color(0xFF171A2B),
+                color: AppColors.appBlack,
                 fontSize: AppFontSize.fontSize18,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -965,7 +969,7 @@ class _MySubscriptionView extends StatelessWidget {
             onTap: () {
               Navigator.pushNamed(
                 context,
-                "/ChangePlanScreen",
+                "/ManagePlanScreen",
                 arguments: {"openCancelSheet": true},
               );
             },

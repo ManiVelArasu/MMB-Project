@@ -218,10 +218,6 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<void> clearBusinessDataForNewLogin() async {
-    _businessName = "";
-    _email = "";
-    _mobileNumber = "";
-
     _selectedImage = null;
     _originalImage = null;
     _bgRemovedImage = null;
@@ -755,9 +751,9 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<bool> updateBusinessDetails(
-    BuildContext context,
-    String businessUid,
-  ) async {
+      BuildContext context,
+      String businessUid,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -768,14 +764,16 @@ class BusinessProvider extends ChangeNotifier {
       final email = emailController.text.trim();
       final phone = mobileController.text.trim();
 
-      final logoS3Key = _logoS3Key?.trim() ?? '';
+      // Logo select panniruntha mattum s3_key anuppum, illana null / empty-ah avoid pannum
+      final logoS3Key = _logoS3Key?.trim();
+      final String? finalLogoKey = (logoS3Key != null && logoS3Key.isNotEmpty) ? logoS3Key : null;
 
       final result = await BusinessRepository.instance.updateBusinessDetails(
         businessUid: businessUid,
         name: name,
         email: email,
         phone: phone,
-        logo_s3_key: logoS3Key,
+        logo_s3_key: finalLogoKey ?? '',
       );
 
       return await result.when(
@@ -784,8 +782,8 @@ class BusinessProvider extends ChangeNotifier {
 
           final prefs = await SharedPreferences.getInstance();
 
-          if (logoS3Key.isNotEmpty) {
-            await prefs.setString('logo_s3_key', logoS3Key);
+          if (finalLogoKey != null && finalLogoKey.isNotEmpty) {
+            await prefs.setString('logo_s3_key', finalLogoKey);
           }
 
           await prefs.setString('business_uid', businessUid);
@@ -812,7 +810,6 @@ class BusinessProvider extends ChangeNotifier {
       _errorMessage = e.toString();
 
       debugPrint("❌ Update business details error: $e");
-
       debugPrintStack(stackTrace: stackTrace);
 
       notifyListeners();
@@ -835,21 +832,22 @@ class BusinessProvider extends ChangeNotifier {
       final email = emailController.text.trim();
       final phone = mobileController.text.trim();
 
-      // PERSONAL account always uses the profile S3 key.
-      final profileS3Key = _profileS3Key?.trim() ?? '';
+      // Profile picture select panniruntha mattum key anuppum, illana null
+      final profileS3Key = _profileS3Key?.trim();
+      final String? finalProfileKey = (profileS3Key != null && profileS3Key.isNotEmpty) ? profileS3Key : null;
 
       debugPrint("======================================");
       debugPrint("🚀 UPDATE PERSONAL DETAILS");
       debugPrint("Name           : $name");
       debugPrint("Email          : $email");
       debugPrint("Phone          : $phone");
-      debugPrint("Profile S3 Key : $profileS3Key");
+      debugPrint("Profile S3 Key : $finalProfileKey");
       debugPrint("======================================");
 
       final result = await GetMeRepository.instance.updatePersonalDetail(
         name,
         email,
-        profileS3Key,
+        finalProfileKey ?? '', // Oru vela repository empty string expect pannuchuna empty anuppalam, illana null pass pannanum.
       );
 
       return await result.when(
@@ -876,11 +874,11 @@ class BusinessProvider extends ChangeNotifier {
 
           final prefs = await SharedPreferences.getInstance();
 
-          if (profileS3Key.isNotEmpty) {
-            await prefs.setString('profile_s3_key', profileS3Key);
+          if (finalProfileKey != null && finalProfileKey.isNotEmpty) {
+            await prefs.setString('profile_s3_key', finalProfileKey);
 
             // Keep this key for compatibility with previous code.
-            await prefs.setString('profile_photo_s3_key', profileS3Key);
+            await prefs.setString('profile_photo_s3_key', finalProfileKey);
 
             // Personal account must not keep a business logo key.
             await prefs.remove('logo_s3_key');
@@ -1046,62 +1044,38 @@ class BusinessProvider extends ChangeNotifier {
   bool validateForm() {
     bool isValid = true;
 
-    if (_selectedImage == null && _originalImage == null) {
-      final accountType = provider.me?.data.accountType
-          ?.toString()
-          .trim()
-          .toLowerCase();
-
-      _imageError = accountType == "personal"
-          ? "Please select or upload a profile photo"
-          : "Please select or upload a logo";
-
-      isValid = false;
-    } else {
-      _imageError = null;
-    }
-
-    // Business Name
-    if (_businessName.trim().isEmpty) {
-      _nameError = "Business name is required";
+    // Name validation
+    if (nameController.text.trim().isEmpty) {
+      _nameError = "Please enter name";
       isValid = false;
     } else {
       _nameError = null;
     }
 
-    // Email is OPTIONAL.
-    // Validate format only when user enters email.
-    // Email format validation only
+    // Email validation (Only wrong format check, empty check removed)
     final email = emailController.text.trim();
-
-    if (email.isNotEmpty) {
-      final emailRegex = RegExp(r'^[\w.-]+@([\w-]+\.)+[\w-]{2,}$');
-
-      if (!emailRegex.hasMatch(email)) {
-        _emailError = "Enter a valid email address";
-        isValid = false;
-      } else {
-        _emailError = null;
-      }
+    if (email.isNotEmpty && !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      _emailError = "Please enter a valid email";
+      isValid = false;
     } else {
       _emailError = null;
     }
 
-    // Contact Number
-    _mobileNumber = mobileController.text.trim();
-
-    if (_mobileNumber.isEmpty) {
-      _mobileError = "Contact number is required";
+    // Mobile validation
+    final phone = mobileController.text.trim();
+    if (phone.isEmpty) {
+      _mobileError = "Please enter contact number";
       isValid = false;
-    } else if (_mobileNumber.length < 10) {
-      _mobileError = "Enter a valid 10-digit contact number";
+    } else if (phone.length < 10) {
+      _mobileError = "Please enter a valid contact number";
       isValid = false;
     } else {
       _mobileError = null;
     }
 
-    notifyListeners();
+    _imageError = null;
 
+    notifyListeners();
     return isValid;
   }
 

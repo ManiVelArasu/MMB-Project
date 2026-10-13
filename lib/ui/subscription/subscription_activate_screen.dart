@@ -100,11 +100,15 @@ class _SubscriptionActivatedScreenState
                   children: [
                     const SizedBox(height: 20),
 
-                   Image.asset("assets/images/celebration.png",width: 64,height: 64,),
+                    Image.asset(
+                      "assets/images/celebration.png",
+                      width: 64,
+                      height: 64,
+                    ),
 
                     const SizedBox(height: 12),
 
-                     AppText(
+                    AppText(
                       "SUBSCRIPTION ACTIVATED!",
                       style: TextStyle(
                         fontSize: AppFontSize.fontSize21,
@@ -118,10 +122,12 @@ class _SubscriptionActivatedScreenState
                     AppText(
                       "$planName is now active on your account.",
                       textAlign: TextAlign.center,
-                      style:  TextStyle(fontSize: AppFontSize.fontSize15,
-                          fontWeight: FontWeight.w400, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: AppFontSize.fontSize15,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey,
+                      ),
                     ),
-
 
                     const SizedBox(height: 20),
 
@@ -150,47 +156,51 @@ class _SubscriptionActivatedScreenState
                           SizedBox(height: 12.h),
                           features.isEmpty
                               ? const AppText(
-                            "No features available",
-                            style: TextStyle(color: Colors.grey),
-                          )
+                                  "No features available",
+                                  style: TextStyle(color: Colors.grey),
+                                )
                               : ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: features.length,
-                            separatorBuilder: (_, __) => SizedBox(height: 10.h),
-                            itemBuilder: (context, index) {
-                              final feature = features[index];
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: features.length,
+                                  separatorBuilder: (_, __) =>
+                                      SizedBox(height: 10.h),
+                                  itemBuilder: (context, index) {
+                                    final feature = features[index];
 
-                              if (feature is! Map<String, dynamic>) {
-                                return const SizedBox();
-                              }
+                                    if (feature is! Map<String, dynamic>) {
+                                      return const SizedBox();
+                                    }
 
-                              // Correct label extraction from map
-                              final label = feature["label"]?.toString() ?? "";
-                              final enabled = feature["enabled"];
+                                    // Correct label extraction from map
+                                    final label =
+                                        feature["label"]?.toString() ?? "";
+                                    final enabled = feature["enabled"];
 
-                              return Row(
-                                children: [
-                                  Icon(
-                                    Icons.check_circle,
-                                    color: Colors.amber,
-                                    size: 14.sp,
-                                  ),
-                                  SizedBox(width: 10.w),
-                                  Expanded(
-                                    child: AppText(
-                                      label,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: AppFontSize.fontSize15,
-                                        color: enabled == true ? Colors.black87 : Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
+                                    return Row(
+                                      children: [
+                                        Icon(
+                                          Icons.check_circle,
+                                          color: Colors.amber,
+                                          size: 14.sp,
+                                        ),
+                                        SizedBox(width: 10.w),
+                                        Expanded(
+                                          child: AppText(
+                                            label,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: AppFontSize.fontSize15,
+                                              color: enabled == true
+                                                  ? Colors.black87
+                                                  : Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
                         ],
                       ),
                     ),
@@ -211,16 +221,9 @@ class _SubscriptionActivatedScreenState
                           ),
                         ),
                         onPressed: () {
-                          final planProvider = context.read<PlanProvider>();
-
-                          Navigator.push(
+                          Navigator.pushNamed(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => ChangeNotifierProvider.value(
-                                value: planProvider,
-                                child: const MySubscriptionScreen(),
-                              ),
-                            ),
+                            "/CustomBottomNavScreen",
                           );
                         },
                         child: const Text(
@@ -246,7 +249,17 @@ class _SubscriptionActivatedScreenState
                           ),
                         ),
                         onPressed: () {
-                          Navigator.pushNamed(context, "/CustomBottomNavScreen");
+                          final planProvider = context.read<PlanProvider>();
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChangeNotifierProvider.value(
+                                value: planProvider,
+                                child: const MySubscriptionScreen(),
+                              ),
+                            ),
+                          );
                         },
                         child: const AppText(
                           "GO TO MY SUBSCRIPTION",
@@ -292,5 +305,4 @@ class _SubscriptionActivatedScreenState
       ),
     );
   }
-
 }

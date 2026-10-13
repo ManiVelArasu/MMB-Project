@@ -11,6 +11,7 @@ import '../../network/provider/bottom_provider.dart';
 import '../../network/provider/common_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/home_screen_provider.dart';
+import '../../network/provider/plan_provider.dart';
 import '../../network/provider/profile_screen_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -119,7 +120,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                               Row(
                                 mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                                    MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   AppText(
@@ -236,7 +237,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       padding: EdgeInsets.zero,
                                       minimumSize: Size.zero,
                                       tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
+                                          MaterialTapTargetSize.shrinkWrap,
                                     ),
                                     child: AppText(
                                       'CREDIT USAGE',
@@ -358,7 +359,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: _buildActionCard(
                                 title: 'My Downloads',
                                 imagePath:
-                                "assets/images/document_download.png",
+                                    "assets/images/document_download.png",
                                 background: isDark
                                     ? const Color(0xFF241D32)
                                     : const Color(0xFFF0EAFE),
@@ -385,11 +386,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               title: 'My Plan',
                               iconAsset: "assets/images/my_plan.png",
                               isDark: isDark,
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  "/PlansAndPricingScreen",
-                                );
+                              onTap: () async {
+                                final planProvider = PlanProvider();
+                                await planProvider.fetchMySubscription();
+
+                                if (!context.mounted) return;
+
+                                final bool hasActivePlan =
+                                    planProvider.activePlanUid != null &&
+                                    planProvider.activePlanUid!.isNotEmpty;
+
+
+                                if (hasActivePlan) {
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/ManagePlanScreen",
+                                  );
+                                } else {
+                                  print("asdsadsds${hasActivePlan}");
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/PlansAndPricingScreen",
+                                    arguments: {"showSkip": true},
+                                  );
+                                }
                               },
                             ),
 
@@ -480,11 +500,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               title: 'My Plan',
                               iconAsset: "assets/images/my_plan.png",
                               isDark: isDark,
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  "/PlansAndPricingScreen",
-                                );
+                              onTap: () async {
+                                final planProvider = PlanProvider();
+                                await planProvider.fetchMySubscription();
+
+                                if (!context.mounted) return;
+
+                                final bool hasActivePlan =
+                                    planProvider.activePlanUid != null &&
+                                        planProvider.activePlanUid!.isNotEmpty;
+
+
+                                if (hasActivePlan) {
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/ManagePlanScreen",
+                                  );
+                                } else {
+                                  print("asdsadsds${hasActivePlan}");
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/PlansAndPricingScreen",
+                                    arguments: {"showSkip": true},
+                                  );
+                                }
                               },
                             ),
                             _buildSettingsTile(
@@ -673,24 +712,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             onTap: provider.isDeactivateLoading
                                 ? null
                                 : () {
-                              provider.showDeactivateDialog(context);
-                            },
+                                    provider.showDeactivateDialog(context);
+                                  },
                             trailingWidget: provider.isDeactivateLoading
                                 ? SizedBox(
-                              width: 20.w,
-                              height: 20.w,
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.red,
-                              ),
-                            )
+                                    width: 20.w,
+                                    height: 20.w,
+                                    child: const CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.red,
+                                    ),
+                                  )
                                 : Icon(
-                              Icons.chevron_right_rounded,
-                              color: isDark
-                                  ? Colors.white70
-                                  : Colors.black87,
-                              size: 20.sp,
-                            ),
+                                    Icons.chevron_right_rounded,
+                                    color: isDark
+                                        ? Colors.white70
+                                        : Colors.black87,
+                                    size: 20.sp,
+                                  ),
                             isLast: true,
                           ),
                         ],
@@ -730,7 +769,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             SizedBox(height: 12.h),
                             ElevatedButton(
                               onPressed: () {
-                                context.read<BottomNavProvider>().updateIndex(1);
+                                context.read<BottomNavProvider>().updateIndex(
+                                  1,
+                                );
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF8C74F5),
@@ -897,22 +938,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   alignment: Alignment.center,
                   child: iconAsset != null
                       ? Image.asset(
-                    iconAsset,
-                    width: 16.w,
-                    height: 16.w,
-                    errorBuilder: (_, __, ___) {
-                      return Icon(
-                        icon ?? Icons.tune_rounded,
-                        size: 16.sp,
-                        color: iconColor ?? const Color(0xFFE53935),
-                      );
-                    },
-                  )
+                          iconAsset,
+                          width: 16.w,
+                          height: 16.w,
+                          errorBuilder: (_, __, ___) {
+                            return Icon(
+                              icon ?? Icons.tune_rounded,
+                              size: 16.sp,
+                              color: iconColor ?? const Color(0xFFE53935),
+                            );
+                          },
+                        )
                       : Icon(
-                    icon ?? Icons.tune_rounded,
-                    size: 16.sp,
-                    color: iconColor ?? const Color(0xFFE53935),
-                  ),
+                          icon ?? Icons.tune_rounded,
+                          size: 16.sp,
+                          color: iconColor ?? const Color(0xFFE53935),
+                        ),
                 ),
 
                 SizedBox(width: 9.w),
@@ -988,12 +1029,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         boxShadow: isDark
             ? null
             : [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: .025),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: .025),
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1115,10 +1156,10 @@ Future<void> clearUserSession(BuildContext context) async {
 }
 
 void _showLanguagesBottomSheet(
-    BuildContext context,
-    ProfileScreenProvider provider,
-    bool isDark,
-    ) {
+  BuildContext context,
+  ProfileScreenProvider provider,
+  bool isDark,
+) {
   final languages = provider.plansData?.data ?? [];
 
   // ⭐ Selection order maintain ஆக List பயன்படுத்துகிறோம்
@@ -1247,7 +1288,7 @@ void _showLanguagesBottomSheet(
 
                 AppText(
                   "Your post, their language – "
-                      "connect better, reach wider!",
+                  "connect better, reach wider!",
                   style: TextStyle(
                     color: isDark ? Colors.white : Colors.black,
                     fontSize: AppFontSize.fontSize14,
@@ -1296,8 +1337,8 @@ void _showLanguagesBottomSheet(
                           color: isSelected
                               ? const Color(0xFFFFD1D5)
                               : (isDark
-                              ? const Color(0xFF181818)
-                              : Colors.white),
+                                    ? const Color(0xFF181818)
+                                    : Colors.white),
                           borderRadius: BorderRadius.circular(22.r),
                           border: Border.all(
                             color: isSelected
@@ -1335,39 +1376,39 @@ void _showLanguagesBottomSheet(
                     onPressed: provider.isLanguageSaving
                         ? null
                         : () async {
-                      final List<String> orderedLanguages =
-                      List<String>.from(selectedCodes);
-                      debugPrint(
-                        "🌐 Selected language order: "
-                            "$orderedLanguages",
-                      );
-                      final success = await provider.saveLanguages(
-                        languages: orderedLanguages,
-                        notifyPush: true,
-                        notifyEmail: false,
-                        notifyWhatsapp: true,
-                      );
-                      if (!context.mounted) return;
-                      if (success) {
-                        Navigator.pop(context);
+                            final List<String> orderedLanguages =
+                                List<String>.from(selectedCodes);
+                            debugPrint(
+                              "🌐 Selected language order: "
+                              "$orderedLanguages",
+                            );
+                            final success = await provider.saveLanguages(
+                              languages: orderedLanguages,
+                              notifyPush: true,
+                              notifyEmail: false,
+                              notifyWhatsapp: true,
+                            );
+                            if (!context.mounted) return;
+                            if (success) {
+                              Navigator.pop(context);
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Language preferences updated successfully",
-                            ),
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Failed to update language preferences",
-                            ),
-                          ),
-                        );
-                      }
-                    },
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Language preferences updated successfully",
+                                  ),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Failed to update language preferences",
+                                  ),
+                                ),
+                              );
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       disabledBackgroundColor: Colors.grey,
@@ -1377,21 +1418,21 @@ void _showLanguagesBottomSheet(
                     ),
                     child: provider.isLanguageSaving
                         ? SizedBox(
-                      width: 20.w,
-                      height: 20.w,
-                      child: const CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
+                            width: 20.w,
+                            height: 20.w,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : Text(
-                      "Save",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                            "Save",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ),
 
