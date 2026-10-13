@@ -396,7 +396,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     planProvider.activePlanUid != null &&
                                     planProvider.activePlanUid!.isNotEmpty;
 
-
                                 if (hasActivePlan) {
                                   Navigator.pushNamed(
                                     context,
@@ -508,8 +507,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                                 final bool hasActivePlan =
                                     planProvider.activePlanUid != null &&
-                                        planProvider.activePlanUid!.isNotEmpty;
-
+                                    planProvider.activePlanUid!.isNotEmpty;
 
                                 if (hasActivePlan) {
                                   Navigator.pushNamed(
