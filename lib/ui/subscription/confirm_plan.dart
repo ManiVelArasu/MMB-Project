@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/component/appbar_widget.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'package:mmb_app/network/provider/plan_provider.dart';
 import 'package:mmb_app/ui/subscription/razor_pay.dart';
 
 import '../../Api Model/plans_type.dart';
-
+import '../../component/custom_widget.dart';
+import '../../utils/theme/app.colors.dart';
 
 class ConfirmPlanScreen extends StatelessWidget {
   final Plan plan;
@@ -21,10 +25,7 @@ class ConfirmPlanScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => PlanProvider(),
-      child: _ConfirmPlanContent(
-        plan: plan,
-        billing: billing,
-      ),
+      child: _ConfirmPlanContent(plan: plan, billing: billing),
     );
   }
 }
@@ -33,10 +34,7 @@ class _ConfirmPlanContent extends StatelessWidget {
   final Plan plan;
   final PlanBillingOption? billing;
 
-  const _ConfirmPlanContent({
-    required this.plan,
-    required this.billing,
-  });
+  const _ConfirmPlanContent({required this.plan, required this.billing});
 
   @override
   Widget build(BuildContext context) {
@@ -48,13 +46,12 @@ class _ConfirmPlanContent extends StatelessWidget {
               billing?.price?.toString() ??
               "0",
         ) ??
-            0;
+        0;
 
     final double gst = price * 0.18;
     final double total = price + gst;
 
-    final String cycle =
-    billing?.billingCycle?.toLowerCase() == "annual"
+    final String cycle = billing?.billingCycle?.toLowerCase() == "annual"
         ? "Annual"
         : "Monthly";
 
@@ -67,24 +64,7 @@ class _ConfirmPlanContent extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.red,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          "Confirm Plan",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+      appBar: CustomAppBar(title: "Confirm Plan", showRightIcon: false),
 
       body: SafeArea(
         child: Padding(
@@ -92,8 +72,59 @@ class _ConfirmPlanContent extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 16),
-        
-              // FEATURES
+
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEEEE), // Soft pink background
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                child: Row(
+                  children: [
+                    // Crown Icon Container
+                    Container(
+                      padding: EdgeInsets.all(8.r),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: Icon(
+                        Icons.workspace_premium_rounded, // Crown/Premium icon
+                        color: Colors.amber,
+                        size: 28.sp,
+                      ),
+                    ),
+                    SizedBox(width: 14.w),
+                    // Texts
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppText(
+                            "Make My Brand Premium",
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.appRed, // Red color title
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          AppText(
+                            "Unlock unlimited professional designs",
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 10),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -104,7 +135,7 @@ class _ConfirmPlanContent extends StatelessWidget {
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    AppText(
                       "Premium Features Included:",
                       style: TextStyle(
                         color: Colors.white,
@@ -113,126 +144,129 @@ class _ConfirmPlanContent extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 10),
-                    Text(
+                    AppText(
                       "• 500 Video Templates",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                     SizedBox(height: 6),
-                    Text(
+                    AppText(
                       "• AI Credits · Brand Series · Social Calendar",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                     SizedBox(height: 6),
-                    Text(
+                    AppText(
                       "• Watermark-free downloads & HD Export",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-        
+
               const SizedBox(height: 16),
-        
+
               // PRICE DETAILS
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.grey.shade200,
-                  ),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    AppText(
+                      "BILLING",
+                      style: TextStyle(
+                        fontSize: AppFontSize.fontSize12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.lightedGrey,
+                      ),
+                    ),
+                    SizedBox(height: 5),
                     Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           "Plan",
                           style: TextStyle(
                             color: Colors.grey,
+                            fontSize: AppFontSize.fontSize16,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Text(
+                        AppText(
                           "${plan.name ?? "Plan"} $cycle",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
-        
-                    const Divider(height: 20),
-        
+
+                    SizedBox(height: 5),
                     Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           "Price",
                           style: TextStyle(
                             color: Colors.grey,
+                            fontSize: AppFontSize.fontSize16,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Text(
+                        AppText(
                           "₹${formatAmount(price)}",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: AppFontSize.fontSize16,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
                     ),
-        
-                    const Divider(height: 20),
-        
+
+                    SizedBox(height: 5),
                     Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        AppText(
                           "GST (18%)",
                           style: TextStyle(
                             color: Colors.grey,
+                            fontSize: AppFontSize.fontSize16,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Text(
+                        AppText(
                           "₹${formatAmount(gst)}",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: AppFontSize.fontSize16,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
                     ),
-        
+
                     const Divider(height: 20),
-        
+
                     Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        AppText(
                           "Total",
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            color: Colors.black,
+                            fontSize: AppFontSize.fontSize16,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        Text(
+                        AppText(
                           "₹${formatAmount(total)}",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: AppFontSize.fontSize16,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -240,9 +274,9 @@ class _ConfirmPlanContent extends StatelessWidget {
                   ],
                 ),
               ),
-        
+
               const Spacer(),
-        
+
               // PAY BUTTON
               SizedBox(
                 width: double.infinity,
@@ -254,89 +288,91 @@ class _ConfirmPlanContent extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-        
+
                   onPressed: provider.isCreatingSubscription
                       ? null
                       : () async {
-                    if (billing?.id == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Billing option not available"),
-                        ),
-                      );
-                      return;
-                    }
-        
-                    final subscription = await context
-                        .read<PlanProvider>()
-                        .createSubscription(
-                      planBillingOptionId: int.parse(billing!.id!),
-                    );
-        
-                    if (!context.mounted) return;
-        
-                    if (subscription == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            provider.subscriptionError ??
-                                "Unable to start payment",
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-        
-                    debugPrint(
-                      "💳 Razorpay URL: ${subscription.shortUrl}",
-                    );
-        
-                    debugPrint(
-                      "💳 Subscription ID: ${subscription.subscriptionId}",
-                    );
-        
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChangeNotifierProvider.value(
-                          value: provider,
-                          child: RazorpaySubscriptionScreen(
-                            url: subscription.shortUrl,
-                            subscriptionId: subscription.subscriptionId,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-        
+                          if (billing?.id == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Billing option not available"),
+                              ),
+                            );
+                            return;
+                          }
+
+                          final subscription = await context
+                              .read<PlanProvider>()
+                              .createSubscription(
+                                planBillingOptionId: int.parse(billing!.id!),
+                              );
+
+                          if (!context.mounted) return;
+
+                          if (subscription == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  provider.subscriptionError ??
+                                      "Unable to start payment",
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          debugPrint(
+                            "💳 Razorpay URL: ${subscription.shortUrl}",
+                          );
+
+                          debugPrint(
+                            "💳 Subscription ID: ${subscription.subscriptionId}",
+                          );
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChangeNotifierProvider.value(
+                                value: provider,
+                                child: RazorpaySubscriptionScreen(
+                                  url: subscription.shortUrl,
+                                  subscriptionId: subscription.subscriptionId,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+
                   child: provider.isLoadingPlans
                       ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                      : Text(
-                    "PROCEED TO PAY ₹${formatAmount(total)}",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : AppText(
+                          "PROCEED TO PAY ₹${formatAmount(total)}",
+                          style:  TextStyle(
+                            fontSize: AppFontSize.fontSize18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
-        
+
               const SizedBox(height: 8),
-        
-              const Text(
+
+              AppText(
                 "By continuing, you agree to the Terms of Use & Refund Policy. "
-                    "Your subscription will renew automatically.",
+                "Your subscription will renew automatically.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: AppFontSize.fontSize11,
                   color: Colors.grey,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],
@@ -346,4 +382,3 @@ class _ConfirmPlanContent extends StatelessWidget {
     );
   }
 }
-

@@ -1,5 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../Api Model/plans_type.dart';
 
@@ -29,37 +32,59 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       }
     }
 
-    final String monthlyPrice = monthlyBilling?.price ?? "0";
-    final String annualPrice = annualBilling?.price ?? "0";
+    final String monthlyPrice = monthlyBilling?.discountedPrice?.isNotEmpty == true
+        ? monthlyBilling!.discountedPrice!
+        : (monthlyBilling?.price ?? "0");
+
+    final String annualPrice = annualBilling?.discountedPrice?.isNotEmpty == true
+        ? annualBilling!.discountedPrice!
+        : (annualBilling?.price ?? "0");
+
+    // Plan-ku ஏற்ற maathiri color styling
+    final String planName = widget.plan.name?.toLowerCase() ?? "";
+    Color themeColor;
+    List<Color> bgGradient;
+
+    if (planName.contains("basic")) {
+      themeColor = const Color(0xFF96C63F);
+      bgGradient = const [Color(0xFFE2F3CB), Color(0xFFF9FCF5)];
+    } else if (planName.contains("elite")) {
+      themeColor = const Color(0xFF9985ED);
+      bgGradient = const [Color(0xFFE5DEFF), Color(0xFFFAF8FF)];
+    } else {
+      // Premium & others
+      themeColor = const Color(0xFFF47BC5);
+      bgGradient = const [Color(0xFFFFD6EE), Color(0xFFFFF7FC)];
+    }
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFE2F3CB), Color(0xFFF9FCF5)],
+            colors: bgGradient,
           ),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20.0,
-              vertical: 12.0,
+            padding: EdgeInsets.symmetric(
+              horizontal: 20.w,
+              vertical: 12.h,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
+                // Header Back Button & Plan Title
                 Row(
                   children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFFE5E7),
+                        width: 38.w,
+                        height: 38.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.appWhite,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -69,12 +94,12 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: Text(
                         widget.plan.name ?? "Plan Details",
-                        style: const TextStyle(
-                          fontSize: 21,
+                        style: TextStyle(
+                          fontSize: 21.sp,
                           fontWeight: FontWeight.w800,
                           color: Colors.black,
                         ),
@@ -82,38 +107,35 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
 
+                // Pricing Cards (Monthly / Annual)
                 if (billingOptions.isNotEmpty)
                   Row(
                     children: [
                       if (monthlyBilling != null)
                         Expanded(
                           child: _buildPricingCard(
-                            amount: '₹${monthlyBilling.discountedPrice}',
-                            period: '/month',
+                            amount: '${monthlyBilling.discountedPrice?.isNotEmpty == true ? monthlyBilling.discountedPrice : monthlyBilling.price}',
+                            originalPrice: monthlyBilling.discountedPrice?.isNotEmpty == true ? monthlyBilling.price : null,
+                            period: '/m',
+                            discountText: monthlyBilling.discountLabel,
                             isSelected: isMonthlySelected,
-                            onTap: () =>
-                                setState(() => isMonthlySelected = true),
+                            themeColor: themeColor,
+                            onTap: () => setState(() => isMonthlySelected = true),
                           ),
                         ),
                       if (monthlyBilling != null && annualBilling != null)
-                        const SizedBox(width: 14),
+                        SizedBox(width: 14.w),
                       if (annualBilling != null)
                         Expanded(
                           child: _buildPricingCard(
-                            amount:
-                                (annualBilling.discountedPrice?.isNotEmpty ??
-                                    false)
-                                ? '₹${annualBilling.discountedPrice}'
-                                : '₹${annualBilling.price ?? '0'}',
-                            period: '/year',
+                            amount: '₹${annualBilling.discountedPrice?.isNotEmpty == true ? annualBilling.discountedPrice : annualBilling.price}',
+                            period: '/y',
+                            discountText: annualBilling.discountLabel,
                             isSelected: !isMonthlySelected,
-                            onTap: () {
-                              setState(() {
-                                isMonthlySelected = false;
-                              });
-                            },
+                            themeColor: themeColor,
+                            onTap: () => setState(() => isMonthlySelected = false),
                           ),
                         ),
                     ],
@@ -123,52 +145,53 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                     child: Text(
                       "Free Plan",
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 20.sp,
                         fontWeight: FontWeight.w800,
-                        color: Colors.green.shade700,
+                        color: themeColor,
                       ),
                     ),
                   ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20.h),
 
-                // 🚀 Plan Description (API-ல் உள்ள description)
+                // Plan Description
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                  padding: EdgeInsets.symmetric(horizontal: 10.w),
                   child: Text(
                     widget.plan.description ?? "",
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 13.5,
+                    style: TextStyle(
+                      fontSize: 13.5.sp,
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                       height: 1.3,
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20.h),
 
-                const Text(
+                Text(
                   "Features & Benefits",
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10.h),
 
+                // Features List
                 Column(
                   children: widget.plan.features.map((feature) {
                     bool isAvailable = feature.enabled ?? false;
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 10.0),
+                      padding: EdgeInsets.only(bottom: 10.h),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
                               color: isAvailable
-                                  ? const Color(0xFF81C784)
+                                  ? themeColor
                                   : Colors.grey.shade400,
                               shape: BoxShape.circle,
                             ),
@@ -178,12 +201,12 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                               size: 12,
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10.w),
                           Expanded(
                             child: Text(
                               feature.displayLabel ?? feature.label ?? "",
                               style: TextStyle(
-                                fontSize: 13.5,
+                                fontSize: 13.5.sp,
                                 fontWeight: FontWeight.w600,
                                 color: isAvailable
                                     ? Colors.black87
@@ -197,12 +220,12 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                   }).toList(),
                 ),
 
-                const SizedBox(height: 24),
+                SizedBox(height: 24.h),
 
                 // Start Button
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 52.h,
                   child: ElevatedButton(
                     onPressed: () {
                       final selectedBilling = isMonthlySelected
@@ -221,14 +244,14 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(16.r),
                       ),
                       elevation: 0,
                     ),
                     child: Text(
                       'START ${widget.plan.name?.toUpperCase() ?? "PLAN"}',
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         letterSpacing: 1.1,
@@ -236,7 +259,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
 
                 // Footer Information
                 Center(
@@ -250,12 +273,12 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                             : "You'll be charged ₹$annualPrice/year until cancelled.",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 11.5,
+                          fontSize: 11.5.sp,
                           fontWeight: FontWeight.w500,
                           color: Colors.grey.shade700,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6.h),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -266,7 +289,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                           Text(
                             ' | ',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 12.sp,
                               color: Colors.grey.shade700,
                             ),
                           ),
@@ -279,7 +302,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
               ],
             ),
           ),
@@ -291,7 +314,10 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
   Widget _buildPricingCard({
     required String amount,
     required String period,
+    String? originalPrice,
+    String? discountText,
     required bool isSelected,
+    required Color themeColor,
     required VoidCallback onTap,
   }) {
     return Stack(
@@ -300,14 +326,12 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
         GestureDetector(
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+            padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 8.w),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(14.r),
               border: Border.all(
-                color: isSelected
-                    ? const Color(0xFF81C784)
-                    : Colors.transparent,
+                color: isSelected ? themeColor : Colors.transparent,
                 width: 2,
               ),
               boxShadow: [
@@ -318,27 +342,63 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                 ),
               ],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  amount,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black,
+                // Price and Period Row
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      if (originalPrice != null && originalPrice != amount) ...[
+                        AppText(
+                          '₹$originalPrice',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade500,
+                            decoration: TextDecoration.lineThrough,
+                            decorationThickness: 1.5,
+                          ),
+                        ),
+                        SizedBox(width: 4.w),
+                      ],
+                      AppText(
+                        amount,
+                        style: TextStyle(
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
+                      AppText(
+                        period,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  period,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                if (discountText != null && discountText.isNotEmpty) ...[
+                  SizedBox(height: 2.h),
+                  AppText(
+                    "$discountText with yearly billing",
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    style: TextStyle(
+                      fontSize: 9.5.sp,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.appBlack,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -349,8 +409,8 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
             right: -4,
             child: Container(
               padding: const EdgeInsets.all(2),
-              decoration: const BoxDecoration(
-                color: Color(0xFF81C784),
+              decoration: BoxDecoration(
+                color: themeColor,
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.check, color: Colors.white, size: 14),
@@ -369,10 +429,10 @@ class TextStyleLink extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
-        fontSize: 12,
+      style: TextStyle(
+        fontSize: 12.sp,
         fontWeight: FontWeight.w600,
-        color: Color(0xFF385A80),
+        color: const Color(0xFF385A80),
       ),
     );
   }

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mmb_app/component/appbar_widget.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../network/provider/plan_provider.dart';
+import '../../utils/theme/app.fonts.dart';
 import 'invoice_screen.dart';
 
 class ManagePlanScreen extends StatelessWidget {
@@ -62,7 +65,7 @@ class _ManagePlanView extends StatelessWidget {
   }
 
   // ============================================================
-  // CURRENT PLAN FEATURES
+  // CURRENT PLAN FEATURES (Fixed to filter enabled ones)
   // ============================================================
 
   String _getFeaturesText(Map<String, dynamic>? data) {
@@ -84,28 +87,22 @@ class _ManagePlanView extends StatelessWidget {
       }
 
       final label = item["label"]?.toString() ?? "";
-      final remaining = item["remaining"];
+      final enabled = item["enabled"] == true;
       final limit = item["limit"];
-      final unlimited = item["unlimited"] == true;
 
       if (label.isEmpty) {
         continue;
       }
 
-      String text = label;
-
-      if (unlimited) {
-        text = "$label - Unlimited";
-      } else if (remaining != null) {
-        text = "$label - $remaining remaining";
-      } else if (limit != null) {
-        text = "$label - $limit";
+      // JSON data-voda structure-ku etra maathiri format panrom
+      if (enabled) {
+        featureTexts.add(label);
+      } else if (limit != null && limit is num && limit > 0) {
+        featureTexts.add("$limit $label");
       }
-
-      featureTexts.add(text);
     }
 
-    return featureTexts.join("\n");
+    return featureTexts.join(", ");
   }
 
   // ============================================================
@@ -157,61 +154,7 @@ class _ManagePlanView extends StatelessWidget {
       // ========================================================
       // APP BAR
       // ========================================================
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Container(
-            width: 28,
-            height: 28,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFE5E7),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.arrow_back, color: Colors.red, size: 17),
-          ),
-        ),
-
-        title: const AppText(
-          "Manage Plan",
-          style: TextStyle(
-            color: Color(0xFF171A2B),
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 14),
-            child: IconButton(
-              tooltip: "Go to Home",
-              onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  "/CustomBottomNavScreen",
-                  (route) => false,
-                );
-              },
-              icon: Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFE5E7),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.home_rounded,
-                  color: Colors.red,
-                  size: 19,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: CustomAppBar(title: "Manage Plan",showRightIcon: false,),
 
       // ========================================================
       // BODY
@@ -220,466 +163,411 @@ class _ManagePlanView extends StatelessWidget {
         child: provider.isLoadingSubscription && data == null
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
+          padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // =================================================
+              // CURRENT PLAN
+              // =================================================
+
+              const SizedBox(height: 2),
+
+              AppText(
+                "CURRENT PLAN",
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: AppFontSize.fontSize12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+
+              const SizedBox(height: 7),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(13, 14, 13, 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E2E2)),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // =================================================
-                    // CURRENT PLAN
-                    // =================================================
+                    // -----------------------------------------
+                    // PLAN NAME + PRICE
+                    // -----------------------------------------
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        AppText(
+                          planName,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF171A2B),
+                          ),
+                        ),
+                        AppText(
+                          "$currency $billingPrice/$billingCycle",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF171A2B),
+                          ),
+                        ),
+                      ],
+                    ),
 
                     const SizedBox(height: 2),
 
-                    const AppText(
-                      "CURRENT PLAN",
-                      style: TextStyle(
+                    // -----------------------------------------
+                    // RENEWAL
+                    // -----------------------------------------
+                    AppText(
+                      "${billingCycle[0].toUpperCase()}${billingCycle.substring(1)} "
+                          "Plan - Renewal on ${_formatDate(renewalDate)}",
+                      style: const TextStyle(
+                        fontSize: 9,
                         color: Colors.red,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
 
-                    const SizedBox(height: 7),
+                    const SizedBox(height: 6),
 
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(13, 14, 13, 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFE2E2E2)),
+                    // -----------------------------------------
+                    // FEATURES (Comma separated)
+                    // -----------------------------------------
+                    AppText(
+                      featuresText.isEmpty
+                          ? "No feature details available"
+                          : featuresText,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFF555555),
+                        height: 1.45,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // -----------------------------------------
-                          // PLAN NAME + PRICE
-                          // -----------------------------------------
+                    ),
 
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              AppText(
-                                planName,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF171A2B),
-                                ),
-                              ),
+                    const SizedBox(height: 8),
 
-                              AppText(
-                                "$currency $billingPrice/$billingCycle",
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF171A2B),
-                                ),
-                              ),
-                            ],
+                    // -----------------------------------------
+                    // STATUS
+                    // -----------------------------------------
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
                           ),
-
-                          const SizedBox(height: 2),
-
-                          // -----------------------------------------
-                          // RENEWAL
-                          // -----------------------------------------
-                          AppText(
-                            "${billingCycle[0].toUpperCase()}${billingCycle.substring(1)} "
-                            "Plan - Renewal on ${_formatDate(renewalDate)}",
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE1FAF3),
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: AppText(
+                            subscriptionStatus.toUpperCase(),
                             style: const TextStyle(
+                              color: Color(0xFF00A878),
+                              fontSize: 8,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (autoRenew)
+                          const AppText(
+                            "Auto-renew ON",
+                            style: TextStyle(
                               fontSize: 9,
-                              color: Colors.red,
+                              color: Color(0xFF555555),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-
-                          const SizedBox(height: 6),
-
-                          // -----------------------------------------
-                          // FEATURES
-                          // -----------------------------------------
-                          AppText(
-                            featuresText.isEmpty
-                                ? "No feature details available"
-                                : featuresText,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Color(0xFF555555),
-                              height: 1.45,
-                            ),
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          // -----------------------------------------
-                          // STATUS
-                          // -----------------------------------------
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE1FAF3),
-                                  borderRadius: BorderRadius.circular(7),
-                                ),
-                                child: AppText(
-                                  subscriptionStatus.toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Color(0xFF00A878),
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(width: 8),
-
-                              if (autoRenew)
-                                const AppText(
-                                  "Auto-renew ON",
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    color: Color(0xFF555555),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
+                  ],
+                ),
+              ),
 
-                    const SizedBox(height: 16),
-
-                    // =================================================
-                    // VIEW PLAN DETAILS
-                    // =================================================
-                    SizedBox(
-                      width: double.infinity,
-                      height: 43,
-                      child: OutlinedButton.icon(
+              const SizedBox(height: 16),
+              // =================================================
+              // PLAN BUTTONS
+              // =================================================
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 45,
+                      child: OutlinedButton(
                         onPressed: () {
-                          _showCurrentPlanDetails(
+                          Navigator.pushNamed(
                             context,
-                            planName: planName,
-                            billingPrice: billingPrice,
-                            billingCycle: billingCycle,
-                            renewalDate: renewalDate,
-                            subscriptionStatus: subscriptionStatus,
-                            autoRenew: autoRenew,
-                            featuresText: featuresText,
+                            "/PlanUsageScreen",
                           );
                         },
-                        icon: const Icon(Icons.visibility_outlined, size: 17),
-                        label: const AppText(
-                          "VIEW PLAN DETAILS",
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Colors.red),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
+                        child:  AppText(
+                          "PLAN USAGE",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: AppFontSize.fontSize16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: 10),
+                  const SizedBox(width: 9),
 
-                    // =================================================
-                    // PLAN BUTTONS
-                    // =================================================
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 45,
-                            child: OutlinedButton(
-                              onPressed: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  "/PlanUsageScreen",
-                                );
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.red),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              child: const AppText(
-                                "PLAN USAGE",
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                  Expanded(
+                    child: SizedBox(
+                      height: 45,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(20),
                               ),
                             ),
+                            builder: (context) {
+                              return const _ChangePlanBottomSheet();
+                            },
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-
-                        const SizedBox(width: 9),
-
-                        Expanded(
-                          child: SizedBox(
-                            height: 45,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.white,
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.vertical(
-                                      top: Radius.circular(20),
-                                    ),
-                                  ),
-                                  builder: (context) {
-                                    return const _ChangePlanBottomSheet();
-                                  },
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              child: const AppText(
-                                "CHANGE PLAN",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
+                        child:  AppText(
+                          "CHANGE PLAN",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: AppFontSize.fontSize16,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
+                      ),
                     ),
+                  ),
+                ],
+              ),
 
-                    const SizedBox(height: 18),
+              const SizedBox(height: 18),
 
-                    // =================================================
-                    // PAYMENT HISTORY
-                    // STATIC
-                    // =================================================
-                    Consumer<PlanProvider>(
-                      builder: (context, provider, child) {
-                        final items =
-                            provider.paymentHistoryData?.data?.items ?? [];
+              // =================================================
+              // PAYMENT HISTORY
+              // =================================================
+              Consumer<PlanProvider>(
+                builder: (context, provider, child) {
+                  final items =
+                      provider.paymentHistoryData?.data?.items ?? [];
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const AppText(
-                              "PAYMENT HISTORY",
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                       AppText(
+                        "PAYMENT HISTORY",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: AppFontSize.fontSize12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      if (provider.isLoadingPaymentHistory)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      else if (provider.paymentHistoryError != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
+                          child: AppText(
+                            provider.paymentHistoryError!,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 13,
+                            ),
+                          ),
+                        )
+                      else if (items.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: AppText(
+                                "No payment history found",
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
-
+                          )
+                        else
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: items.length,
+                            separatorBuilder: (_, __) =>
                             const SizedBox(height: 8),
+                            itemBuilder: (context, index) {
+                              final payment = items[index];
 
-                            if (provider.isLoadingPaymentHistory)
-                              const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 20),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
-                            else if (provider.paymentHistoryError != null)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                child: AppText(
-                                  provider.paymentHistoryError!,
-                                  style: const TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              )
-                            else if (items.isEmpty)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 20),
-                                child: Center(
-                                  child: AppText(
-                                    "No payment history found",
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              )
-                            else
-                              ListView.separated(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: items.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 8),
-                                itemBuilder: (context, index) {
-                                  final payment = items[index];
-
-                                  final status =
-                                      payment.status?.trim().toUpperCase() ??
+                              final status =
+                                  payment.status?.trim().toUpperCase() ??
                                       "UNKNOWN";
 
-                                  return _paymentCard(
-                                    status: _getPaymentStatusText(status),
-                                    statusColor: _getPaymentStatusColor(status),
-                                    statusBackground:
-                                        _getPaymentStatusBackground(status),
-                                    title:
-                                        payment.description
-                                                ?.trim()
-                                                .isNotEmpty ==
-                                            true
-                                        ? payment.description!.trim()
-                                        : "Payment",
-                                    date: _formatPaymentDate(payment.date),
-                                    amount: _formatPaymentAmount(
-                                      payment.amount,
-                                      payment.currency,
-                                    ),
-                                    invoice: "Invoice",
-                                    receipt: "Receipt",
-                                    onInvoiceTap: () async {
-                                      debugPrint("Invoice clicked");
+                              return _paymentCard(
+                                status: _getPaymentStatusText(status),
+                                statusColor: _getPaymentStatusColor(status),
+                                statusBackground:
+                                _getPaymentStatusBackground(status),
+                                title: payment.description
+                                    ?.trim()
+                                    .isNotEmpty ==
+                                    true
+                                    ? payment.description!.trim()
+                                    : "Payment",
+                                date: _formatPaymentDate(payment.date),
+                                amount: _formatPaymentAmount(
+                                  payment.amount,
+                                  payment.currency,
+                                ),
+                                invoice: "Invoice",
+                                receipt: "Receipt",
+                                onInvoiceTap: () async {
+                                  final invoiceId = provider
+                                      .paymentHistoryData
+                                      ?.data
+                                      ?.lastTransaction
+                                      ?.uid;
 
-                                      final invoiceId = provider
-                                          .paymentHistoryData
-                                          ?.data
-                                          ?.lastTransaction
-                                          ?.uid;
+                                  if (invoiceId == null ||
+                                      invoiceId.isEmpty) {
+                                    ScaffoldMessenger.of(
+                                      context,
+                                    ).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Invoice ID not found",
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
 
-                                      if (invoiceId == null ||
-                                          invoiceId.isEmpty) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              "Invoice ID not found",
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-
-                                      debugPrint("Invoice UID: $invoiceId");
-
-                                      final success = await provider.getInvoice(
-                                        invoiceId,
-                                      );
-
-                                      if (!context.mounted) return;
-
-                                      if (success &&
-                                          provider.invoiceHtml != null) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => InvoiceScreen(
-                                              html: provider.invoiceHtml ?? '',
-                                            ),
-                                          ),
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              provider.invoiceError ??
-                                                  "Unable to load invoice",
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    },
-
-                                    onReceiptTap: () async {
-                                      debugPrint("Invoice clicked");
-
-                                      final invoiceId = provider
-                                          .paymentHistoryData
-                                          ?.data
-                                          ?.lastTransaction
-                                          ?.uid;
-
-                                      if (invoiceId == null ||
-                                          invoiceId.isEmpty) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              "Invoice ID not found",
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-
-                                      debugPrint("Invoice UID: $invoiceId");
-
-                                      final success = await provider.getReceipt(
-                                        invoiceId,
-                                      );
-
-                                      if (!context.mounted) return;
-
-                                      if (success &&
-                                          provider.isReceiptHtml != null) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => InvoiceScreen(
-                                              html:
-                                                  provider.isReceiptHtml ?? '',
-                                            ),
-                                          ),
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              provider.invoiceError ??
-                                                  "Unable to load invoice",
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    },
+                                  final success = await provider.getInvoice(
+                                    invoiceId,
                                   );
+
+                                  if (!context.mounted) return;
+
+                                  if (success &&
+                                      provider.invoiceHtml != null) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => InvoiceScreen(
+                                          html: provider.invoiceHtml ?? '',
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(
+                                      context,
+                                    ).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          provider.invoiceError ??
+                                              "Unable to load invoice",
+                                        ),
+                                      ),
+                                    );
+                                  }
                                 },
-                              ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                                onReceiptTap: () async {
+                                  final invoiceId = provider
+                                      .paymentHistoryData
+                                      ?.data
+                                      ?.lastTransaction
+                                      ?.uid;
+
+                                  if (invoiceId == null ||
+                                      invoiceId.isEmpty) {
+                                    ScaffoldMessenger.of(
+                                      context,
+                                    ).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Invoice ID not found",
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  final success = await provider.getReceipt(
+                                    invoiceId,
+                                  );
+
+                                  if (!context.mounted) return;
+
+                                  if (success &&
+                                      provider.isReceiptHtml != null) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => InvoiceScreen(
+                                          html:
+                                          provider.isReceiptHtml ?? '',
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(
+                                      context,
+                                    ).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          provider.invoiceError ??
+                                              "Unable to load invoice",
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                    ],
+                  );
+                },
               ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -786,6 +674,7 @@ class _ManagePlanView extends StatelessWidget {
 
     return "Charged on ${date.day} ${months[date.month - 1]} ${date.year}";
   }
+
   // =============================================================
   // PAYMENT CARD
   // =============================================================
@@ -799,8 +688,6 @@ class _ManagePlanView extends StatelessWidget {
     required String amount,
     required String invoice,
     required String receipt,
-
-    // 👇 callbacks
     VoidCallback? onInvoiceTap,
     VoidCallback? onReceiptTap,
   }) {
@@ -824,16 +711,15 @@ class _ManagePlanView extends StatelessWidget {
                   color: statusBackground,
                   borderRadius: BorderRadius.circular(7),
                 ),
-                child: Text(
+                child: AppText(
                   status,
                   style: TextStyle(
                     color: statusColor,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
+                    fontSize: AppFontSize.fontSize12,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-
               Container(
                 width: 17,
                 height: 17,
@@ -849,45 +735,38 @@ class _ManagePlanView extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 6),
-
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: AppText(
                   title,
-                  style: const TextStyle(
+                  style:  TextStyle(
                     color: Color(0xFF171A2B),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
+                    fontSize: AppFontSize.fontSize14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-
               const SizedBox(width: 10),
-
               AppText(
                 amount,
-                style: const TextStyle(
+                style:  TextStyle(
                   color: Color(0xFF171A2B),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  fontSize: AppFontSize.fontSize18,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-
           const SizedBox(height: 3),
-
           AppText(
             date,
-            style: const TextStyle(color: Color(0xFF666666), fontSize: 9),
+            style:  TextStyle(color: Color(0xFF666666), fontSize: AppFontSize.fontSize12,
+              fontWeight: FontWeight.w400,),
           ),
-
           const SizedBox(height: 3),
-
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -902,9 +781,7 @@ class _ManagePlanView extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(width: 10),
-
               InkWell(
                 onTap: onReceiptTap,
                 child: AppText(
@@ -924,208 +801,7 @@ class _ManagePlanView extends StatelessWidget {
   }
 }
 
-// =================================================================
-// ============================================================
-// CURRENT PLAN DETAILS
-// ============================================================
-
-void _showCurrentPlanDetails(
-  BuildContext context, {
-  required String planName,
-  required String billingPrice,
-  required String billingCycle,
-  required String? renewalDate,
-  required String subscriptionStatus,
-  required bool autoRenew,
-  required String featuresText,
-}) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    builder: (sheetContext) {
-      final features = featuresText
-          .split('\n')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 42,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppText(
-                        planName,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF171A2B),
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE1FAF3),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: AppText(
-                        subscriptionStatus.toUpperCase(),
-                        style: const TextStyle(
-                          color: Color(0xFF00A878),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                AppText(
-                  billingPrice == "0"
-                      ? "Free Plan"
-                      : "₹$billingPrice / $billingCycle",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.red,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFAF9F6),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(
-                    children: [
-                      /*_detailItem(
-                          "Renewal date",
-                          _formatDate(renewalDate),
-                        ),*/
-                      const SizedBox(height: 10),
-                      _detailItem("Auto-renew", autoRenew ? "ON" : "OFF"),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const AppText(
-                  "What's included",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF171A2B),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                if (features.isEmpty)
-                  const AppText(
-                    "No feature details available",
-                    style: TextStyle(color: Colors.grey),
-                  )
-                else
-                  ...features.map(
-                    (feature) => Padding(
-                      padding: const EdgeInsets.only(bottom: 9),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: AppText(
-                              feature,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                height: 1.35,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(sheetContext),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const AppText(
-                      "DONE",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    },
-  );
-}
-
-Widget _detailItem(String title, String value) {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      AppText(title, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-      AppText(
-        value,
-        style: const TextStyle(
-          color: Color(0xFF171A2B),
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    ],
-  );
-}
-
 // CHANGE PLAN BOTTOM SHEET
-// =================================================================
-
 class _ChangePlanBottomSheet extends StatelessWidget {
   const _ChangePlanBottomSheet();
 
@@ -1149,9 +825,7 @@ class _ChangePlanBottomSheet extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
-
             Row(
               children: [
                 const Expanded(
@@ -1164,7 +838,6 @@ class _ChangePlanBottomSheet extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
@@ -1181,9 +854,7 @@ class _ChangePlanBottomSheet extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 14),
-
             const AppText(
               "SELECT THE PLAN",
               style: TextStyle(
@@ -1192,9 +863,7 @@ class _ChangePlanBottomSheet extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-
             const SizedBox(height: 7),
-
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
@@ -1216,7 +885,6 @@ class _ChangePlanBottomSheet extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-
                       AppText(
                         "₹999/mo",
                         style: TextStyle(
@@ -1226,9 +894,7 @@ class _ChangePlanBottomSheet extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   SizedBox(height: 7),
-
                   AppText(
                     "•  3,000 AI Credits + Business Listing",
                     style: TextStyle(fontSize: 9, color: Color(0xFF333333)),
@@ -1236,9 +902,7 @@ class _ChangePlanBottomSheet extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 14),
-
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
@@ -1256,7 +920,6 @@ class _ChangePlanBottomSheet extends StatelessWidget {
                         "Prorated difference",
                         style: TextStyle(fontSize: 10, color: Colors.grey),
                       ),
-
                       AppText(
                         "₹500",
                         style: TextStyle(
@@ -1266,9 +929,7 @@ class _ChangePlanBottomSheet extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   SizedBox(height: 9),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1279,7 +940,6 @@ class _ChangePlanBottomSheet extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-
                       AppText(
                         "₹500",
                         style: TextStyle(
@@ -1292,16 +952,13 @@ class _ChangePlanBottomSheet extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 40),
-
             SizedBox(
               width: double.infinity,
               height: 39,
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // Upgrade API / Payment
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
@@ -1320,13 +977,11 @@ class _ChangePlanBottomSheet extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 9),
-
             const Center(
               child: Text(
                 "Downgrades take effect from your next billing cycle instead of\n"
-                "charging you today.",
+                    "charging you today.",
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 8, color: Colors.grey, height: 1.4),
               ),

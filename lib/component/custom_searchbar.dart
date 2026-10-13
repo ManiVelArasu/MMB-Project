@@ -11,7 +11,7 @@ class CustomSearchBar extends StatelessWidget {
   final String suffixAsset;
   final Color fillColor;
   final Color? borderColor;
-
+  final bool showSuffixIcon;
   const CustomSearchBar({
     super.key,
     this.controller,
@@ -23,6 +23,7 @@ class CustomSearchBar extends StatelessWidget {
     this.suffixAsset = "assets/images/mic.png",
     this.fillColor = Colors.white,
     this.borderColor,
+    this.showSuffixIcon = true,
   });
 
   @override
@@ -71,7 +72,8 @@ class CustomSearchBar extends StatelessWidget {
           ),
 
           // Suffix Icon
-          suffixIcon: InkWell(
+          suffixIcon: showSuffixIcon
+              ? InkWell(
             onTap: onMicTap,
             borderRadius: BorderRadius.circular(30.r),
             child: Padding(
@@ -83,7 +85,8 @@ class CustomSearchBar extends StatelessWidget {
                 fit: BoxFit.contain,
               ),
             ),
-          ),
+          )
+              : null,
           filled: true,
           fillColor: fillColor,
           contentPadding: EdgeInsets.symmetric(

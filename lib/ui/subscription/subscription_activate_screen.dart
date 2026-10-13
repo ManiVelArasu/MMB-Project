@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/plan_provider.dart';
@@ -97,202 +100,98 @@ class _SubscriptionActivatedScreenState
                   children: [
                     const SizedBox(height: 20),
 
-                    const Icon(
-                      Icons.celebration,
-                      size: 64,
-                      color: Colors.amber,
-                    ),
+                   Image.asset("assets/images/celebration.png",width: 64,height: 64,),
 
                     const SizedBox(height: 12),
 
-                    const Text(
+                     AppText(
                       "SUBSCRIPTION ACTIVATED!",
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                        fontSize: AppFontSize.fontSize21,
+                        fontWeight: FontWeight.w700,
                         color: Colors.black,
                       ),
                     ),
 
                     const SizedBox(height: 4),
 
-                    Text(
+                    AppText(
                       "$planName is now active on your account.",
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                      style:  TextStyle(fontSize: AppFontSize.fontSize15,
+                          fontWeight: FontWeight.w400, color: Colors.grey),
                     ),
 
-                    const SizedBox(height: 24),
 
-                    // ------------------------------------------
-                    // SUBSCRIPTION DETAILS
-                    // ------------------------------------------
-
-                    /*   Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.grey.shade200,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "SUBSCRIPTION DETAILS",
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red,
-                            ),
-                          ),
-
-                          const SizedBox(height: 14),
-
-                          _detailRow(
-                            "Plan",
-                            planName,
-                          ),
-
-                          _detailRow(
-                            "Amount Paid",
-                            "$currency $amountPaid",
-                          ),
-
-                          _detailRow(
-                            "Billing",
-                            cycle,
-                          ),
-
-                          _detailRow(
-                            "Payment Method",
-                            paymentMethod.toUpperCase(),
-                          ),
-
-                          _detailRow(
-                            "Start Date",
-                            periodStart.isNotEmpty
-                                ? periodStart
-                                : _formatDate(startsAt),
-                          ),
-
-                          _detailRow(
-                            "End Date",
-                            periodEnd.isNotEmpty
-                                ? periodEnd
-                                : _formatDate(endsAt),
-                          ),
-                        ],
-                      ),
-                    ),*/
                     const SizedBox(height: 20),
 
                     // ------------------------------------------
                     // ACCESS LIST
                     // ------------------------------------------
-                    Expanded(
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "YOU NOW HAVE ACCESS TO",
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red,
-                              ),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16.r),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(16.r),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppText(
+                            "YOU NOW HAVE ACCESS TO",
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepOrange,
                             ),
+                          ),
+                          SizedBox(height: 12.h),
+                          features.isEmpty
+                              ? const AppText(
+                            "No features available",
+                            style: TextStyle(color: Colors.grey),
+                          )
+                              : ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: features.length,
+                            separatorBuilder: (_, __) => SizedBox(height: 10.h),
+                            itemBuilder: (context, index) {
+                              final feature = features[index];
 
-                            const SizedBox(height: 12),
+                              if (feature is! Map<String, dynamic>) {
+                                return const SizedBox();
+                              }
 
-                            Expanded(
-                              child: features.isEmpty
-                                  ? const Text(
-                                      "No features available",
-                                      style: TextStyle(color: Colors.grey),
-                                    )
-                                  : ListView.separated(
-                                      itemCount: features.length,
-                                      separatorBuilder: (_, __) =>
-                                          const SizedBox(height: 10),
-                                      itemBuilder: (context, index) {
-                                        final feature = features[index];
+                              // Correct label extraction from map
+                              final label = feature["label"]?.toString() ?? "";
+                              final enabled = feature["enabled"];
 
-                                        if (feature is! Map<String, dynamic>) {
-                                          return const SizedBox();
-                                        }
-
-                                        final label =
-                                            feature["label"]?.toString() ?? "";
-
-                                        final enabled = feature["enabled"];
-
-                                        final remaining = feature["remaining"];
-
-                                        final limit = feature["limit"];
-
-                                        return Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.check_circle,
-                                              color: Colors.green,
-                                              size: 20,
-                                            ),
-
-                                            const SizedBox(width: 10),
-
-                                            Expanded(
-                                              child: Text(
-                                                label,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-
-                                            if (remaining != null)
-                                              Text(
-                                                "$remaining",
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.red,
-                                                ),
-                                              ),
-
-                                            if (enabled == true)
-                                              const Icon(
-                                                Icons.check,
-                                                color: Colors.green,
-                                                size: 18,
-                                              ),
-
-                                            if (limit != null &&
-                                                remaining == null)
-                                              Text(
-                                                "$limit",
-                                                style: const TextStyle(
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                          ],
-                                        );
-                                      },
+                              return Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: Colors.amber,
+                                    size: 14.sp,
+                                  ),
+                                  SizedBox(width: 10.w),
+                                  Expanded(
+                                    child: AppText(
+                                      label,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: AppFontSize.fontSize15,
+                                        color: enabled == true ? Colors.black87 : Colors.grey.shade600,
+                                      ),
                                     ),
-                            ),
-                          ],
-                        ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
 
@@ -349,7 +248,7 @@ class _SubscriptionActivatedScreenState
                         onPressed: () {
                           Navigator.pushNamed(context, "/CustomBottomNavScreen");
                         },
-                        child: const Text(
+                        child: const AppText(
                           "GO TO MY SUBSCRIPTION",
                           style: TextStyle(
                             color: Colors.black87,
@@ -378,13 +277,13 @@ class _SubscriptionActivatedScreenState
         children: [
           SizedBox(
             width: 120,
-            child: Text(
+            child: AppText(
               title,
               style: const TextStyle(color: Colors.grey, fontSize: 13),
             ),
           ),
           Expanded(
-            child: Text(
+            child: AppText(
               value,
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             ),
@@ -394,17 +293,4 @@ class _SubscriptionActivatedScreenState
     );
   }
 
-  String _formatDate(String value) {
-    if (value.isEmpty) return "-";
-
-    try {
-      final date = DateTime.parse(value);
-
-      return "${date.day.toString().padLeft(2, '0')}/"
-          "${date.month.toString().padLeft(2, '0')}/"
-          "${date.year}";
-    } catch (_) {
-      return value;
-    }
-  }
 }

@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import '../../Api Model/special_days.dart';
 import '../../Repository/home_repository.dart';
@@ -17,21 +17,27 @@ class TemplateListProvider extends ChangeNotifier {
   Future<void> loadSpecialDays({
     String? type,
     String? range,
+    String? fromDate,
+    String? toDate,
   }) async {
     isLoading = true;
     notifyListeners();
 
     try {
-      late ApiResult<SpecialDays> response;
+      final ApiResult<SpecialDays> response;
 
-      if (type == "festival") {
-        // Festival → type and range only
+      // Date range selected: send only from and to dates.
+      if (fromDate != null && toDate != null) {
+        response = await HomeRepository.instance.specialDaysApi(
+          from: fromDate,
+          to: toDate,
+        );
+      } else if (type == 'festival') {
         response = await HomeRepository.instance.specialDaysApi(
           type: type,
           range: range,
         );
       } else if (selectedDate != null && selectedDate!.isNotEmpty) {
-        // Other types → selected date
         response = await HomeRepository.instance.specialDaysApi(
           from: selectedDate!,
           to: selectedDate!,
@@ -39,7 +45,7 @@ class TemplateListProvider extends ChangeNotifier {
       } else {
         response = await HomeRepository.instance.specialDaysApi(
           type: type,
-          range: range
+          range: range,
         );
       }
 

@@ -81,7 +81,7 @@ class _HomeScreenView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CustomSearchBar(
-                    hintText: "Find your Industry",
+                    hintText: "Search templates, Brand Series...",
                     prefixAsset: "assets/images/search.png",
                     suffixAsset: "assets/images/mic.png",
                     borderColor: AppColors.searchBorderColor,
@@ -93,7 +93,7 @@ class _HomeScreenView extends StatelessWidget {
                   _buildSectionHeader(
                     title: "My Space",
                     iconAsset: "assets/images/myspace.png",
-                    hasViewAll: true,
+                    hasViewAll: false,
                     isDark: isDark,
                   ),
                   SizedBox(height: 12.h),
@@ -176,14 +176,6 @@ class _HomeScreenView extends StatelessWidget {
                                     fontSize: AppFontSize.fontSize12,
                                     fontWeight: FontWeight.w700,
                                   ),
-                                ),
-                                SizedBox(width: 2.w),
-                                Icon(
-                                  Icons.chevron_right_rounded,
-                                  size: 19.sp,
-                                  color: isDark
-                                      ? Colors.grey.shade300
-                                      : Colors.grey.shade600,
                                 ),
                               ],
                             ),
@@ -523,7 +515,7 @@ class _HomeScreenView extends StatelessWidget {
                                   itemCount: category.children.length,
 
                                   separatorBuilder: (_, __) =>
-                                      SizedBox(width: 14.w),
+                                      SizedBox(width: 7.w),
 
                                   itemBuilder: (context, childIndex) {
                                     final child = category.children[childIndex];
@@ -767,17 +759,23 @@ class _HomeScreenView extends StatelessWidget {
                                   builder: (context, constraints) {
                                     final double screenWidth =
                                         constraints.maxWidth;
-                                    final double horizontalGap = 4.w;
-                                    final double verticalGap = 6.h;
+                                    final double totalHeight = 175.h;
 
-                                    // Each page occupies 92% of available width.
+                                    final double horizontalGap = 3.w;
+                                    final double verticalGap = 12.w;
+
+                                    // Each page occupies 92% of available width
                                     final double pageWidth = screenWidth * 0.92;
 
+                                    // Two cards per row with equal horizontal gap
                                     final double cardWidth =
-                                        (pageWidth - horizontalGap - 6.w) / 2;
+                                        (pageWidth - horizontalGap) / 2;
 
+                                    // Total height la irunthu outer padding-oda vertical spacing (verticalGap * 2) and middle vertical gap pogha baaki irukkira height-ah 2 rows-ku divide panrom
                                     final double cardHeight =
-                                        cardWidth * 9 / 16;
+                                        (totalHeight - (verticalGap * 3)) / 2;
+
+                                    // Four templates per page
                                     final int pageCount = (templates.length / 4)
                                         .ceil();
 
@@ -792,8 +790,9 @@ class _HomeScreenView extends StatelessWidget {
                                         return SizedBox(
                                           width: pageWidth,
                                           child: Padding(
-                                            padding: EdgeInsets.only(
-                                              right: 6.w,
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: horizontalGap,
+                                              vertical: verticalGap,
                                             ),
                                             child: Column(
                                               children: [
@@ -828,7 +827,9 @@ class _HomeScreenView extends StatelessWidget {
                                                     ],
                                                   ),
                                                 ),
-                                                SizedBox(height: verticalGap),
+                                                SizedBox(
+                                                  height: verticalGap,
+                                                ), // Mela irukkira card-kum keela irukkira card-kum ulla gap
                                                 SizedBox(
                                                   height: cardHeight,
                                                   child: Row(
@@ -890,7 +891,7 @@ class _HomeScreenView extends StatelessWidget {
                                   itemCount: templates.length,
 
                                   separatorBuilder: (_, __) =>
-                                      SizedBox(width: 12.w),
+                                      SizedBox(width: 0.5.w),
 
                                   itemBuilder: (context, templateIndex) {
                                     return SizedBox(
@@ -1918,23 +1919,22 @@ class _HomeScreenView extends StatelessWidget {
               child: Container(
                 padding: EdgeInsets.all(isSelected ? 8.r : 10.r),
                 decoration: BoxDecoration(
+                  // Screenshot-la irukkira mathiri soft light gradient background
                   gradient: LinearGradient(
-                    colors: item.gradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      item.gradientColors.last.withValues(
+                        alpha: 0.1,
+                      ), // Mela romba light-a irukum
+                      item.gradientColors.last.withValues(
+                        alpha: 0.25,
+                      ), // Keela konjam soft shade varum
+                    ],
                   ),
                   borderRadius: BorderRadius.circular(20.r),
                   border: isSelected
-                      ? Border.all(color: Colors.white, width: 2)
-                      : null,
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ]
+                      ? Border.all(color: Colors.black, width: 2)
                       : null,
                 ),
                 child: Column(
@@ -2147,7 +2147,26 @@ class _HomeScreenView extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           child: InkWell(
-            onTap: () {},
+            onTap: () {
+              final popularTemplates = context
+                  .read<HomeScreenProvider>()
+                  .popularTemplates;
+
+              final template = popularTemplates.isNotEmpty
+                  ? popularTemplates.first
+                  : null;
+
+              final templateUid = template?.uid?.trim() ?? '';
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => templateUid.isNotEmpty
+                      ? TemplateEditScreen(templateUid: templateUid)
+                      : const TemplateEditScreen(),
+                ),
+              );
+            },
             child: Image.asset('assets/images/frame_edit.png'),
           ),
         ),

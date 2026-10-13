@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mmb_app/component/appbar_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/plan_provider.dart';
@@ -46,36 +47,7 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
         return Scaffold(
           backgroundColor: Colors.white,
 
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            leading: IconButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              icon: Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFE5E7),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.arrow_back,
-                  size: 15,
-                  color: Colors.red,
-                ),
-              ),
-            ),
-            title: const Text(
-              "Confirm Cancellation",
-              style: TextStyle(
-                color: Color(0xFF171A2B),
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
+          appBar: CustomAppBar(title: "Confirm Cancellation",showRightIcon: false,),
 
           body: provider.isLoadingSubscription
               ? const Center(child: CircularProgressIndicator())

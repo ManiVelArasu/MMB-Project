@@ -61,8 +61,8 @@ class _CustomCreateBody extends StatelessWidget {
           ),
           body: SafeArea(
             child: RefreshIndicator(
-              onRefresh: () async{
-               await provider.refresh();
+              onRefresh: () async {
+                await provider.refresh();
               },
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -85,7 +85,7 @@ class _CustomCreateBody extends StatelessWidget {
                       SizedBox(height: 24.h),
 
                       _buildHeader(
-                        title: "Create your Own",
+                        title: "Create from Scratch",
                         iconAsset: "assets/images/myspace.png",
                         isDark: isDark,
                       ),

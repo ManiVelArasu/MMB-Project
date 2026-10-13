@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
+
+import '../../utils/theme/app.fonts.dart';
 
 class ChangePlanScreen extends StatefulWidget {
   final bool openCancelSheet;
@@ -91,12 +95,12 @@ class _ChangePlanScreenState extends State<ChangePlanScreen> {
 
                     Row(
                       children: [
-                        const Expanded(
-                          child: Text(
+                         Expanded(
+                          child: AppText(
                             "What's making you cancel?",
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
+                              fontSize: AppFontSize.fontSize18,
+                              fontWeight: FontWeight.w600,
                               color: Color(0xFF171A2B),
                             ),
                           ),
@@ -128,13 +132,12 @@ class _ChangePlanScreenState extends State<ChangePlanScreen> {
 
                     const SizedBox(height: 12),
 
-                    const Text(
-                      "Before you go, let us know why. It helps us improve\n"
-                          "Make My Brand for everyone.",
+                     AppText(
+                      "Before you go, let us know why. It helps us improve\n Make My Brand for everyone.",
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                        height: 1.5,
+                        fontSize: AppFontSize.fontSize16,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.appGrey
                       ),
                     ),
 
@@ -390,10 +393,11 @@ class _ChangePlanScreenState extends State<ChangePlanScreen> {
 
             const SizedBox(width: 10),
 
-            Text(
+            AppText(
               title,
-              style: const TextStyle(
-                fontSize: 13,
+              style:  TextStyle(
+                fontSize: AppFontSize.fontSize16,
+                fontWeight: FontWeight.w400,
                 color: Color(0xFF555555),
               ),
             ),

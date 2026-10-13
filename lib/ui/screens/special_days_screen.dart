@@ -91,8 +91,8 @@ class _SpecialDaysScreenView extends StatelessWidget {
                     "Find the Right Festival Templates",
                     style: TextStyle(
                       color: AppColors.appBlack,
-                      fontWeight: FontWeight.bold,
-                      fontSize: AppFontSize.fontSize18,
+                      fontWeight: FontWeight.w500,
+                      fontSize: AppFontSize.fontSize16,
                     ),
                   ),
 
@@ -101,15 +101,69 @@ class _SpecialDaysScreenView extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppColors.grey,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w400,
                       fontSize: AppFontSize.fontSize14,
                     ),
                   ),
 
                   SizedBox(height: 10.h),
 
-                  CustomSearchBar(
-                    hintText: 'Find your festival',
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomSearchBar(
+                          hintText: 'Search your festival',
+                          showSuffixIcon: false,
+                        ),
+                      ),
+                      SizedBox(width: 10.w),
+                      GestureDetector(
+                        onTap: () async {
+                          final DateTimeRange? dateRange = await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2035),
+                            initialDateRange: DateTimeRange(
+                              start: DateTime.now(),
+                              end: DateTime.now(),
+                            ),
+                            builder: (context, child) {
+                              return Theme(
+                                data: Theme.of(context).copyWith(
+                                  colorScheme: Theme.of(context).colorScheme.copyWith(
+                                    primary: const Color(0xFFE53935),
+                                  ),
+                                ),
+                                child: child!,
+                              );
+                            },
+                          );
+
+                          if (dateRange != null && context.mounted) {
+                            final String fromDate =
+                                '${dateRange.start.year}-'
+                                '${dateRange.start.month.toString().padLeft(2, '0')}-'
+                                '${dateRange.start.day.toString().padLeft(2, '0')}';
+
+                            final String toDate =
+                                '${dateRange.end.year}-'
+                                '${dateRange.end.month.toString().padLeft(2, '0')}-'
+                                '${dateRange.end.day.toString().padLeft(2, '0')}';
+
+                            await context.read<SpecialDaysProvider>().loadSpecialDays(
+                              fromDate: fromDate,
+                              toDate: toDate,
+                            );
+                          }
+                        },
+                        child: Image.asset(
+                          'assets/images/calender.png',
+                          width: 44.w,
+                          height: 44.h,
+                          fit: BoxFit.contain,
+                        ),
+                      )
+                    ],
                   ),
 
                   SizedBox(height: 15.h),

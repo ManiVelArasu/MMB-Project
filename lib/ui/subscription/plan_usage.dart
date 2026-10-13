@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
+import 'package:mmb_app/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../../Api Model/ai_top_up_model.dart' show AiTopUpData;
 import '../../Api Model/plan_usage.dart';
+import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
 import '../../network/provider/plan_provider.dart';
 
@@ -119,24 +121,7 @@ class _PlanUsageView extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFFAF9F6),
 
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: Colors.red),
-        ),
-
-        title: const AppText(
-          "Plan Usage",
-          style: TextStyle(
-            color: Color(0xFF171A2B),
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
+      appBar: CustomAppBar(title: "Plan Usage", showRightIcon: false),
 
       body: provider.isLoadingPlanUsage && provider.planUsageData == null
           ? const Center(child: CircularProgressIndicator(color: Colors.red))
@@ -264,7 +249,7 @@ class _PlanUsageView extends StatelessWidget {
                 child: AppText(
                   title,
                   style: TextStyle(
-                    fontSize: AppFontSize.fontSize16,
+                    fontSize: AppFontSize.fontSize15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.appBlack,
                   ),
@@ -287,8 +272,8 @@ class _PlanUsageView extends StatelessWidget {
                   "${_formatNumber(used)} / "
                   "${_formatNumber(limit)}",
                   style: TextStyle(
-                    fontSize: AppFontSize.fontSize16,
-                    fontWeight: FontWeight.w700,
+                    fontSize: AppFontSize.fontSize15,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.appBlack,
                   ),
                 ),
@@ -341,7 +326,7 @@ class _PlanUsageView extends StatelessWidget {
                   feature.label ?? "AI Credits",
                   style: TextStyle(
                     fontSize: AppFontSize.fontSize16,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.appBlack,
                   ),
                 ),
@@ -349,9 +334,9 @@ class _PlanUsageView extends StatelessWidget {
 
               AppText(
                 "Remaining ${_formatNumber(remaining)}",
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
+                style: TextStyle(
+                  fontSize: AppFontSize.fontSize24,
+                  fontWeight: FontWeight.w700,
                   color: Colors.red,
                 ),
               ),
@@ -568,10 +553,10 @@ class _PlanUsageView extends StatelessWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        child: const Text(
+        child: AppText(
           "TOP UP AI CREDITS",
           style: TextStyle(
-            fontSize: 11,
+            fontSize: AppFontSize.fontSize16,
             fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
@@ -647,12 +632,12 @@ class _PlanUsageView extends StatelessWidget {
 
                     Row(
                       children: [
-                        const Expanded(
-                          child: Text(
+                        Expanded(
+                          child: AppText(
                             'Top Up AI Credits',
                             style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
+                              fontSize: AppFontSize.fontSize18,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -665,21 +650,25 @@ class _PlanUsageView extends StatelessWidget {
 
                     const SizedBox(height: 8),
 
-                    const Text(
+                    AppText(
                       'Purchase additional credits. Top up credits persist '
                       'even if your subscription is cancelled.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: Colors.black54),
+                      style: TextStyle(
+                        fontSize: AppFontSize.fontSize12,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.black54,
+                      ),
                     ),
 
                     const SizedBox(height: 24),
 
-                    const Text(
+                    AppText(
                       'SELECT THE PLAN',
                       style: TextStyle(
                         color: Colors.red,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
+                        fontSize: AppFontSize.fontSize12,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
 
@@ -720,20 +709,21 @@ class _PlanUsageView extends StatelessWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
+                                AppText(
                                   '₹${plan.price ?? '0'}',
-                                  style: const TextStyle(
-                                    fontSize: 21,
-                                    fontWeight: FontWeight.w800,
+                                  style: TextStyle(
+                                    fontSize: AppFontSize.fontSize18,
+                                    fontWeight: FontWeight.w700,
                                     color: Color(0xFF171A2B),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                Text(
+                                AppText(
                                   '${plan.quantity ?? '0'} Credits',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 13,
+                                  style: TextStyle(
+                                    fontSize: AppFontSize.fontSize14,
+                                    fontWeight: FontWeight.w400,
                                     color: Color(0xFF171A2B),
                                   ),
                                 ),
@@ -745,37 +735,24 @@ class _PlanUsageView extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 32),
+                    ButtonWidget(
+                      buttonPress: () {
+                        final AiTopUpData selectedPlan = plans[selectedIndex];
+                        Navigator.pop(sheetContext);
 
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          final AiTopUpData selectedPlan = plans[selectedIndex];
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!context.mounted) return;
 
-                          Navigator.pop(sheetContext);
-
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (!context.mounted) return;
-
-                            _showAiTopUpBottomSheet(context, selectedPlan);
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF51F29),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          'CONTINUE',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
+                          _showAiTopUpBottomSheet(context, selectedPlan);
+                        });
+                      },
+                      title: "CONTINUE",
+                      textStyle: TextStyle( fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w700,color: AppColors.appWhite),
+                      textColor: AppColors.appWhite,
+                      decoration: BoxDecoration(
+                        color: AppColors.appRed,
+                        borderRadius: BorderRadius.circular(15),
                       ),
                     ),
                   ],
@@ -825,12 +802,12 @@ class _PlanUsageView extends StatelessWidget {
                 // TITLE
                 Row(
                   children: [
-                    const Expanded(
-                      child: Text(
+                    Expanded(
+                      child: AppText(
                         "Top Up AI Credits",
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
+                          fontSize: AppFontSize.fontSize16,
+                          fontWeight: FontWeight.w700,
                           color: Color(0xFF171A2B),
                         ),
                       ),
@@ -840,7 +817,11 @@ class _PlanUsageView extends StatelessWidget {
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      icon: const Icon(Icons.close, size: 21),
+                      icon: Icon(
+                        Icons.close,
+                        size: 21,
+                        color: AppColors.appRed,
+                      ),
                     ),
                   ],
                 ),
@@ -873,7 +854,7 @@ class _PlanUsageView extends StatelessWidget {
                             color: const Color(0xFFFF2027),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Text(
+                          child: AppText(
                             topUp.badge!.toString().toUpperCase(),
                             style: const TextStyle(
                               color: Colors.white,
@@ -886,11 +867,11 @@ class _PlanUsageView extends StatelessWidget {
                       const SizedBox(height: 12),
 
                       // NAME
-                      Text(
+                      AppText(
                         topUp.name ?? "AI Credits",
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
+                        style: TextStyle(
+                          fontSize: AppFontSize.fontSize16,
+                          fontWeight: FontWeight.w700,
                           color: Color(0xFF171A2B),
                         ),
                       ),
@@ -900,10 +881,11 @@ class _PlanUsageView extends StatelessWidget {
                       // DESCRIPTION
                       if (topUp.description != null &&
                           topUp.description!.isNotEmpty)
-                        Text(
+                        AppText(
                           topUp.description!,
-                          style: const TextStyle(
-                            fontSize: 11,
+                          style: TextStyle(
+                            fontSize: AppFontSize.fontSize12,
+                            fontWeight: FontWeight.w600,
                             color: Color(0xFF666666),
                           ),
                         ),
@@ -919,10 +901,10 @@ class _PlanUsageView extends StatelessWidget {
                             size: 20,
                           ),
                           const SizedBox(width: 7),
-                          Text(
+                          AppText(
                             "${topUp.quantity ?? 0} AI Credits",
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: AppFontSize.fontSize16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -937,18 +919,20 @@ class _PlanUsageView extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          AppText(
                             "Original Price",
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppFontSize.fontSize16,
+                              fontWeight: FontWeight.w700,
                               color: Color(0xFF777777),
                             ),
                           ),
 
-                          Text(
+                          AppText(
                             "₹${topUp.strikePrice ?? "0"}",
-                            style: const TextStyle(
-                              fontSize: 12,
+                            style: TextStyle(
+                              fontSize: AppFontSize.fontSize16,
+                              fontWeight: FontWeight.w700,
                               color: Color(0xFF888888),
                               decoration: TextDecoration.lineThrough,
                             ),
@@ -964,20 +948,20 @@ class _PlanUsageView extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          AppText(
                             "Actual Price",
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontSize.fontSize16,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF171A2B),
                             ),
                           ),
 
-                          Text(
+                          AppText(
                             "₹${topUp.price ?? "0"}",
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
+                            style: TextStyle(
+                              fontSize: AppFontSize.fontSize16,
+                              fontWeight: FontWeight.w700,
                               color: Color(0xFFFF2027),
                             ),
                           ),
@@ -990,17 +974,18 @@ class _PlanUsageView extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          AppText(
                             "GST",
                             style: TextStyle(
-                              fontSize: 10,
-                              color: Color(0xFF777777),
+                              fontSize: AppFontSize.fontSize10,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          Text(
+                          AppText(
                             "₹${topUp.gstAmount ?? "0"}",
-                            style: const TextStyle(
-                              fontSize: 10,
+                            style: TextStyle(
+                              fontSize: AppFontSize.fontSize10,
+                              fontWeight: FontWeight.w700,
                               color: Color(0xFF555555),
                             ),
                           ),
@@ -1017,18 +1002,18 @@ class _PlanUsageView extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          AppText(
                             "Total Price",
                             style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
+                              fontSize: AppFontSize.fontSize13,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          Text(
+                          AppText(
                             "₹${topUp.totalPrice ?? "0"}",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
+                            style: TextStyle(
+                              fontSize: AppFontSize.fontSize18,
+                              fontWeight: FontWeight.w700,
                               color: Color(0xFFFF2027),
                             ),
                           ),
@@ -1075,14 +1060,14 @@ class _PlanUsageView extends StatelessWidget {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
+                    child:  AppText(
                       "BUY NOW",
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
+                        fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),

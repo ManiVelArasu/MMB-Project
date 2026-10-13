@@ -708,16 +708,15 @@ class HomeScreenProvider extends ChangeNotifier {
       title: "CREATE NEW",
       icon: "assets/images/for_you.png",
       gradientColors: [
-        const Color(0xFFF2BA4E).withValues(alpha: 0.2),
+        const Color(0xFFF2BA4E).withValues(alpha: 0.3),
         const Color(0xFFF2BA4E),
       ],
     ),
-
     MySpaceModel(
       title: "FOR YOU",
       icon: "assets/images/user_tag.png",
       gradientColors: [
-        const Color(0xFF4ED8F2).withValues(alpha: 0.2),
+        const Color(0xFF4ED8F2).withValues(alpha: 0.3),
         const Color(0xFF4ED8F2),
       ],
     ),
@@ -726,7 +725,7 @@ class HomeScreenProvider extends ChangeNotifier {
       title: "FESTIVAL",
       icon: "assets/images/festival_calender.png",
       gradientColors: [
-        const Color(0xFFF24E86).withValues(alpha: 0.2),
+        const Color(0xFFF24E86).withValues(alpha: 0.3),
         const Color(0xFFF24E86),
       ],
     ),
@@ -735,8 +734,8 @@ class HomeScreenProvider extends ChangeNotifier {
       title: "MY BRAND",
       icon: "assets/images/briefcase.png",
       gradientColors: [
-        const Color(0xFFE8F5E9).withValues(alpha: 0.2),
-        const Color(0xFFA5D6A7),
+        const Color(0xFF69F24E).withValues(alpha: 0.3),
+        const Color(0xFF69F24E),
       ],
     ),
 
@@ -744,7 +743,7 @@ class HomeScreenProvider extends ChangeNotifier {
       title: "BRAND SERIES",
       icon: "assets/images/brand_series.png",
       gradientColors: [
-        const Color(0xFFF2BA4E).withValues(alpha: 0.2),
+        const Color(0xFFF2BA4E).withValues(alpha: 0.3),
         const Color(0xFFF2BA4E),
       ],
     ),
@@ -753,7 +752,7 @@ class HomeScreenProvider extends ChangeNotifier {
       title: "BRAND FRAMES",
       icon: "assets/images/b_brush.png",
       gradientColors: [
-        const Color(0xFF4ED8F2).withValues(alpha: 0.2),
+        const Color(0xFF4ED8F2).withValues(alpha: 0.3),
         const Color(0xFF4ED8F2),
       ],
     ),
@@ -762,8 +761,8 @@ class HomeScreenProvider extends ChangeNotifier {
       title: "AI HUB",
       icon: "assets/images/ai_tool.png",
       gradientColors: [
-        const Color(0xFFE8F5E9).withValues(alpha: 0.2),
-        const Color(0xFFA5D6A7),
+        const Color(0xFFF24E86).withValues(alpha: 0.3),
+        const Color(0xFFF24E86),
       ],
     ),
   ];

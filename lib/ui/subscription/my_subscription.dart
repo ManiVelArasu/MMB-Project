@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/plan_provider.dart';
@@ -342,9 +344,7 @@ class _MySubscriptionView extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFEAEAEA), width: 1),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFEAEAEA), width: 1)),
       ),
       child: Row(
         children: [
@@ -352,8 +352,8 @@ class _MySubscriptionView extends StatelessWidget {
             GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                width: 36,
-                height: 36,
+                width:42,
+                height: 42,
                 decoration: const BoxDecoration(
                   color: Color(0xFFFFE5E7),
                   shape: BoxShape.circle,
@@ -366,13 +366,14 @@ class _MySubscriptionView extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
+
           ],
-          const Expanded(
-            child: Text(
+          Expanded(
+            child: AppText(
               "My Subscription",
               style: TextStyle(
                 color: Color(0xFF171A2B),
-                fontSize: 21,
+                fontSize: AppFontSize.fontSize18,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -453,7 +454,7 @@ class _MySubscriptionView extends StatelessWidget {
                     color: const Color(0xFFFF2027),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
+                  child: const AppText(
                     "SUBSCRIPTION CANCELLED",
                     style: TextStyle(
                       color: Colors.white,
@@ -466,7 +467,7 @@ class _MySubscriptionView extends StatelessWidget {
                 const SizedBox(height: 18),
 
                 // END DATE
-                Text(
+                AppText(
                   "$planName access ends "
                   "$formattedEndDate",
                   style: const TextStyle(
@@ -478,7 +479,7 @@ class _MySubscriptionView extends StatelessWidget {
 
                 const SizedBox(height: 8),
 
-                Text(
+                AppText(
                   "You won't be charged again. "
                   "$planName features stay active "
                   "until your current cycle ends, "
@@ -511,7 +512,7 @@ class _MySubscriptionView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                const AppText(
                   "What's included",
                   style: TextStyle(
                     color: Color(0xFF171A2B),
@@ -544,10 +545,7 @@ class _MySubscriptionView extends StatelessWidget {
                 icon: const Icon(Icons.visibility_outlined, size: 18),
                 label: const Text(
                   "VIEW PLAN DETAILS",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFFF2027),
@@ -582,7 +580,7 @@ class _MySubscriptionView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
+              child: const AppText(
                 "REACTIVATE SUBSCRIPTION",
                 style: TextStyle(
                   color: Colors.white,
@@ -646,7 +644,7 @@ class _MySubscriptionView extends StatelessWidget {
             children: [
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
+                child: AppText(
                   featureList[i],
                   style: const TextStyle(
                     color: Colors.black,
@@ -709,12 +707,12 @@ class _MySubscriptionView extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    AppText(
                       planName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.black,
-                        fontSize: 25,
-                        fontWeight: FontWeight.w800,
+                        fontSize: AppFontSize.fontSize22,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
 
@@ -729,12 +727,12 @@ class _MySubscriptionView extends StatelessWidget {
                             : Colors.grey,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text(
+                      child: AppText(
                         status.toUpperCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
+                          fontSize: AppFontSize.fontSize11,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -743,25 +741,26 @@ class _MySubscriptionView extends StatelessWidget {
 
                 const SizedBox(height: 12),
 
-                Text(
+                AppText(
                   autoRenew
                       ? "Your plan will automatically renew next month."
                       : "Automatic renewal is turned off.",
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Color(0xFF59545D),
-                    fontSize: 12,
+                    fontSize: AppFontSize.fontSize14,
+                    fontWeight: FontWeight.w400,
                     height: 1.4,
                   ),
                 ),
 
                 const SizedBox(height: 12),
 
-                Text(
+                AppText(
                   featuresText.isEmpty ? "No features available" : featuresText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Color(0xFF59545D),
-                    fontSize: 12,
-                    height: 1.5,
+                    fontSize: AppFontSize.fontSize14,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
@@ -812,25 +811,25 @@ class _MySubscriptionView extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
+                        AppText(
                           "$daysRemaining",
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Color(0xFF171A2B),
-                            fontSize: 36,
+                            fontSize: AppFontSize.fontSize36,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
 
                         const SizedBox(width: 3),
 
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.only(bottom: 7),
-                          child: Text(
+                          child: AppText(
                             "Days",
                             style: TextStyle(
                               color: Color(0xFF171A2B),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                              fontSize: AppFontSize.fontSize14,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -839,11 +838,11 @@ class _MySubscriptionView extends StatelessWidget {
 
                     const SizedBox(height: 1),
 
-                    const Text(
+                    AppText(
                       "TILL RENEWAL",
                       style: TextStyle(
                         color: Color(0xFF666666),
-                        fontSize: 9,
+                        fontSize: AppFontSize.fontSize10,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.2,
                       ),
@@ -889,7 +888,7 @@ class _MySubscriptionView extends StatelessWidget {
                             "${paymentMethod.toUpperCase()}",
                 ),
 
-                if (paymentMethodDetail.isNotEmpty) ...[
+                /*if (paymentMethodDetail.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   _detailRow(
                     title: "Payment Detail",
@@ -913,7 +912,7 @@ class _MySubscriptionView extends StatelessWidget {
                   value:
                       "${billing["currency"] ?? "INR"} "
                       "${subscription["amount_paid"] ?? "-"}",
-                ),
+                ),*/
               ],
             ),
           ),
@@ -988,34 +987,29 @@ class _MySubscriptionView extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
+        AppText(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: Color(0xFF666666),
-            fontSize: 14,
+            fontSize: AppFontSize.fontSize15,
             fontWeight: FontWeight.w400,
           ),
         ),
 
         Flexible(
-          child: Text(
+          child: AppText(
             value,
             textAlign: TextAlign.right,
             style: TextStyle(
               color: valueColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+              fontSize: AppFontSize.fontSize15,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
       ],
     );
   }
-
-  // ==========================================================
-  // ACTION BUTTON
-  // ==========================================================
-
   Widget _buildActionButton({
     required String title,
     required Color backgroundColor,
@@ -1036,12 +1030,12 @@ class _MySubscriptionView extends StatelessWidget {
           ),
           elevation: 0,
         ),
-        child: Text(
+        child: AppText(
           title,
           style: TextStyle(
             color: textColor,
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
+              fontSize: AppFontSize.fontSize16,
+              fontWeight: FontWeight.w700
           ),
         ),
       ),

@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:mmb_app/Repository/home_repository.dart';
 
 import '../../Api Model/special_days.dart';
+import '../../Repository/home_repository.dart';
 import '../../core/api/models/api_result.dart';
 
 class SpecialDaysProvider extends ChangeNotifier {
@@ -13,7 +13,12 @@ class SpecialDaysProvider extends ChangeNotifier {
 
   SpecialDays? _specialDays;
   SpecialDays? get specialDays => _specialDays;
+
   Future<void> loadSpecialDays({
+    String? type,
+    String? range,
+    String? fromDate,
+    String? toDate,
     bool showLoader = true,
   }) async {
     if (showLoader) {
@@ -24,14 +29,28 @@ class SpecialDaysProvider extends ChangeNotifier {
     try {
       late ApiResult<SpecialDays> response;
 
-      if (selectedDate != null && selectedDate!.isNotEmpty) {
+      // Calendar date range selected
+      if (fromDate != null &&
+          fromDate.isNotEmpty &&
+          toDate != null &&
+          toDate.isNotEmpty) {
+        response = await HomeRepository.instance.specialDaysApi(
+          from: fromDate,
+          to: toDate,
+        );
+      } else if (selectedDate != null && selectedDate!.isNotEmpty) {
         response = await HomeRepository.instance.specialDaysApi(
           from: selectedDate!,
           to: selectedDate!,
         );
+      } else if (type == 'festival') {
+        response = await HomeRepository.instance.specialDaysApi(
+          type: type,
+          range: range,
+        );
       } else {
         response = await HomeRepository.instance.specialDaysApi(
-          range: 'year',
+          range: range ?? 'year',
         );
       }
 
@@ -43,8 +62,10 @@ class SpecialDaysProvider extends ChangeNotifier {
     } finally {
       if (showLoader) {
         isLoading = false;
-        notifyListeners();
       }
+
+      // Always notify when data loading finishes.
+      notifyListeners();
     }
   }
 }
