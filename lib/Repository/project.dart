@@ -15,12 +15,24 @@ class ProjectRepository {
   Future<ApiResult<dynamic>> createProject({
     required String name,
     required String content,
+    int? templateId,
   }) async {
+    final body = <String, dynamic>{
+      'name': name,
+      'content': content,
+    };
+
+    if (templateId != null) {
+      body['template_id'] = templateId; // int, not String
+    }
+
+    debugPrint('CREATE PROJECT BODY: $body');
+
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.project,
         method: ApiMethod.post,
-        body: {'name': name, 'content': content},
+        body: body,
       ),
       fromJson: (json) => json,
     );
@@ -35,23 +47,31 @@ class ProjectRepository {
   }) async {
     final uid = projectUid.trim();
 
+    if (uid.isEmpty) {
+      throw ArgumentError('Project UID cannot be empty');
+    }
+
     final body = <String, dynamic>{
-      'name': name,
+      'name': name.trim().isEmpty ? 'Untitled design' : name.trim(),
       'content': content,
-      if (thumbnailBase64 != null && thumbnailBase64.trim().isNotEmpty)
-        'thumbnail': thumbnailBase64.trim(),
     };
 
-    debugPrint('Thumbnail null: ${thumbnailBase64 == null}');
-    debugPrint('Thumbnail length: ${thumbnailBase64?.length}');
-    debugPrint(
-      'Thumbnail prefix: ${thumbnailBase64 == null ? 'null' : thumbnailBase64.substring(0, thumbnailBase64.length < 30 ? thumbnailBase64.length : 30)}',
-    );
+    // Send thumbnail only when actual image Base64 is available.
+    if (thumbnailBase64 != null &&
+        thumbnailBase64.trim().isNotEmpty) {
+      final thumbnail = thumbnailBase64.trim();
 
-    debugPrint(
-      '📤 UPDATE PROJECT BODY: '
-      '${{'name': name, 'content': content, 'thumbnail': thumbnailBase64 == null ? null : '[BASE64 IMAGE]'}}',
-    );
+      body['thumbnail'] = thumbnail.startsWith('data:image/')
+          ? thumbnail
+          : 'data:image/jpeg;base64,$thumbnail';
+    }
+    // Do not send thumbnailS3Key as the thumbnail image.
+    // The backend can retain the existing S3 key if supported.
+
+    debugPrint('📤 UPDATE PROJECT UID: $uid');
+    debugPrint('📤 UPDATE PROJECT BODY KEYS: ${body.keys.toList()}');
+    debugPrint('📤 THUMBNAIL INCLUDED: ${body.containsKey('thumbnail')}');
+    debugPrint('📤 UPDATE PROJECT CONTENT LENGTH: ${content.length}');
 
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
@@ -59,9 +79,13 @@ class ProjectRepository {
         method: ApiMethod.patch,
         body: body,
       ),
-      fromJson: (json) => json,
+      fromJson: (json) {
+        debugPrint('📥 UPDATE PROJECT RESPONSE: $json');
+        return json;
+      },
     );
   }
+
 
   Future<ApiResult<Map<String, dynamic>>> exportProject({
     required String projectUid,

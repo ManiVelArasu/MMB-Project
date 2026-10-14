@@ -1017,7 +1017,14 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         return false;
       }
 
-      final content = detail.data.content?.trim() ?? '';
+      // Updated model: data.items
+      if (detail.data.items.isEmpty) {
+        _templateDetailError = 'Template items are empty';
+        return false;
+      }
+
+      final template = detail.data.items.first;
+      final content = template.content?.trim() ?? '';
 
       if (content.isEmpty) {
         _templateDetailError = 'Template content is empty';
@@ -1026,23 +1033,15 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
       _templateDetail = detail;
 
-      // =========================================================
-      // DECODE JSON
-      // =========================================================
-
       dynamic decoded;
 
       try {
         decoded = jsonDecode(content);
       } catch (e) {
-        debugPrint('❌ Invalid JSON: $e');
+        debugPrint('❌ Invalid template JSON: $e');
         _templateDetailError = 'Invalid template content JSON';
         return false;
       }
-
-      // =========================================================
-      // ROOT
-      // =========================================================
 
       Map<String, dynamic>? root;
 
@@ -1050,112 +1049,64 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         root = Map<String, dynamic>.from(decoded);
       }
 
-      // =========================================================
-      // BACKGROUND
-      // =========================================================
-
+      // Background may be stored at the root (editor JSON) or inside the
+      // first page / Fabric document (the template API's Fabric JSON).
       if (root != null) {
-        final rootBackgroundValue =
-            root['backgroundColor'] ??
-                root['background'] ??
-                root['background_color'];
+        dynamic backgroundValue = root['backgroundColor'] ??
+            root['background'] ??
+            root['background_color'];
 
-        final rootBackgroundGradient = _parseGradient(rootBackgroundValue);
+        if (backgroundValue == null && root['pages'] is List) {
+          final pages = root['pages'] as List;
+          if (pages.isNotEmpty && pages.first is Map) {
+            final firstPage = Map<String, dynamic>.from(pages.first as Map);
+            final fabric = firstPage['fabric'];
+            backgroundValue = firstPage['backgroundColor'] ??
+                firstPage['background_color'] ??
+                (fabric is Map ? fabric['background'] : null);
+          }
+        }
 
-        if (rootBackgroundGradient != null) {
-          _importedBackgroundGradient = rootBackgroundGradient;
-
+        final backgroundGradient = _parseGradient(backgroundValue);
+        if (backgroundGradient != null) {
+          _importedBackgroundGradient = backgroundGradient;
           _backgroundColor = Colors.transparent;
           _hasImportedRootBackground = true;
         } else {
-          final rootBackground = _parseColor(rootBackgroundValue);
-
+          final background = _parseColor(backgroundValue);
           _hasImportedRootBackground =
-              rootBackground != null && rootBackground.alpha > 0;
-
+              background != null && background.alpha > 0;
           if (_hasImportedRootBackground) {
-            _backgroundColor = rootBackground!;
+            _backgroundColor = background!;
           }
         }
       }
 
-      // =========================================================
-      // FIND OBJECTS
-      // =========================================================
-
+      // Find objects
       List<dynamic> objects = [];
-      // Objects of page 2..n (multi-page templates). Previously only the
-      // first page was imported and every other page was silently dropped.
       final List<List<dynamic>> extraPageObjects = [];
-
-      // ---------------------------------------------------------
-      // CASE 1
-      // [
-      //   {...},
-      //   {...}
-      // ]
-      // ---------------------------------------------------------
 
       if (decoded is List) {
         objects = List<dynamic>.from(decoded);
-      }
-      // ---------------------------------------------------------
-      // CASE 2
-      // {
-      //   "objects": [...]
-      // }
-      // ---------------------------------------------------------
-      else if (root != null && root['objects'] is List) {
+      } else if (root != null && root['objects'] is List) {
         objects = List<dynamic>.from(root['objects']);
-      }
-      // ---------------------------------------------------------
-      // CASE 3
-      // {
-      //   "data": {
-      //      "objects": [...]
-      //   }
-      // }
-      // ---------------------------------------------------------
-      else if (root != null &&
+      } else if (root != null &&
           root['data'] is Map &&
           (root['data'] as Map)['objects'] is List) {
-        objects = List<dynamic>.from((root['data'] as Map)['objects'] as List);
-      }
-      // ---------------------------------------------------------
-      // CASE 4
-      // {
-      //   "data": [...]
-      // }
-      // ---------------------------------------------------------
-      else if (root != null && root['data'] is List) {
+        objects = List<dynamic>.from(
+          (root['data'] as Map)['objects'] as List,
+        );
+      } else if (root != null && root['data'] is List) {
         objects = List<dynamic>.from(root['data'] as List);
-      }
-      // ---------------------------------------------------------
-      // CASE 5
-      // {
-      //   "pages": [
-      //     {
-      //       "fabric": {
-      //         "objects": [...]
-      //       }
-      //     }
-      //   ]
-      // }
-      // ---------------------------------------------------------
-      else if (root != null && root['pages'] is List) {
+      } else if (root != null && root['pages'] is List) {
         final pages = root['pages'] as List;
 
         if (pages.isNotEmpty) {
           final firstPage = pages.first;
 
           if (firstPage is Map) {
-            // -----------------------------
-            // PAGE SIZE
-            // -----------------------------
-
             if (canvasWidth == null || canvasHeight == null) {
               final pageWidth = _toDouble(firstPage['width']);
-
               final pageHeight = _toDouble(firstPage['height']);
 
               if (pageWidth != null &&
@@ -1166,79 +1117,36 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               }
             }
 
-            // -----------------------------
-            // FABRIC
-            // -----------------------------
-
             final fabric = firstPage['fabric'];
 
             if (fabric is Map && fabric['objects'] is List) {
               objects = List<dynamic>.from(fabric['objects'] as List);
-            }
-            // -----------------------------
-            // PAGE OBJECTS
-            // -----------------------------
-            else if (firstPage['objects'] is List) {
-              objects = List<dynamic>.from(firstPage['objects'] as List);
+            } else if (firstPage['objects'] is List) {
+              objects = List<dynamic>.from(
+                firstPage['objects'] as List,
+              );
             }
           }
 
           for (final page in pages.skip(1)) {
             if (page is! Map) continue;
+
             final pageFabric = page['fabric'];
+
             if (pageFabric is Map && pageFabric['objects'] is List) {
               extraPageObjects.add(
                 List<dynamic>.from(pageFabric['objects'] as List),
               );
             } else if (page['objects'] is List) {
-              extraPageObjects.add(List<dynamic>.from(page['objects'] as List));
+              extraPageObjects.add(
+                List<dynamic>.from(page['objects'] as List),
+              );
             }
           }
         }
       }
 
-      // =========================================================
-      // NO OBJECTS
-      // =========================================================
-
-      if (objects.isEmpty) {
-        debugPrint(
-          '⚠️ Template has no objects. '
-              'Loading empty editor.',
-        );
-
-        // Empty template-யும் editor open ஆக வேண்டும்
-        // என்ற requirement-க்கு இது useful.
-        _items.clear();
-
-        if (canvasWidth != null &&
-            canvasHeight != null &&
-            canvasWidth > 0 &&
-            canvasHeight > 0) {
-          setCanvasSize(canvasWidth, canvasHeight);
-        } else if (root != null) {
-          final detected = _detectTemplateCanvasSize(root, objects);
-
-          if (detected != null) {
-            setCanvasSize(detected.width, detected.height);
-          }
-        }
-
-        isTemplateLoaded = true;
-        _templateDetailError = null;
-
-        debugPrint(
-          '✅ Empty template loaded: '
-              '${detail.data.name}',
-        );
-
-        return true;
-      }
-
-      // =========================================================
-      // CANVAS SIZE
-      // =========================================================
-
+      // Canvas size
       if (canvasWidth != null &&
           canvasHeight != null &&
           canvasWidth > 0 &&
@@ -1252,39 +1160,55 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         }
       }
 
-      // =========================================================
-      // FILTER VALID OBJECTS
-      // =========================================================
+      // Empty template
+      if (objects.isEmpty) {
+        debugPrint('⚠️ Template has no objects');
 
+        _items.clear();
+
+        if (canvasWidth != null &&
+            canvasHeight != null &&
+            canvasWidth > 0 &&
+            canvasHeight > 0) {
+          setCanvasSize(canvasWidth, canvasHeight);
+        }
+
+        isTemplateLoaded = true;
+        _templateDetailError = null;
+
+        debugPrint('✅ Empty template loaded: ${template.name}');
+        return true;
+      }
+
+      // Filter valid objects
       final validObjects = objects
           .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .where(
-            (object) => object['type'] != null || object['objectType'] != null,
+            (object) =>
+        object['type'] != null ||
+            object['objectType'] != null,
       )
           .toList();
 
       debugPrint('📦 API objects: ${objects.length}');
-
-      debugPrint(
-        '📦 Valid editor objects: '
-            '${validObjects.length}',
-      );
-
-      // =========================================================
-      // LOAD INTO EDITOR
-      // =========================================================
+      debugPrint('📦 Valid editor objects: ${validObjects.length}');
 
       final extraPages = extraPageObjects
           .map(
             (page) => page
             .whereType<Map>()
             .map((e) => Map<String, dynamic>.from(e))
-            .where((o) => o['type'] != null || o['objectType'] != null)
+            .where(
+              (object) =>
+          object['type'] != null ||
+              object['objectType'] != null,
+        )
             .toList(),
       )
           .toList();
 
+      // Load into editor
       loadItemsFromJson(
         validObjects,
         templateUid: safeUid,
@@ -1295,10 +1219,13 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       _templateDetailError = null;
 
       debugPrint(
-        '✅ Template loaded: '
-            '${detail.data.name} | '
+        '✅ Template loaded: ${template.name} | '
             '${_items.length} objects',
       );
+
+      debugPrint('Template ID: ${template.id}');
+      debugPrint('Template UID: ${template.uid}');
+      debugPrint('Thumbnail S3 Key: ${template.thumbnailS3Key}');
 
       return true;
     } catch (e, stackTrace) {
@@ -1314,7 +1241,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       isTemplateLoaded = false;
 
       debugPrint('❌ Template load failed [$safeUid]: $e');
-
       debugPrint('$stackTrace');
 
       return false;
@@ -1323,6 +1249,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       notifyListeners();
     }
   }
+
 
   Size? _detectTemplateCanvasSize(
       Map<String, dynamic> root,

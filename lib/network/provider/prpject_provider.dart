@@ -23,6 +23,9 @@ class ProjectProvider extends ChangeNotifier {
   int? _projectId;
   int? get projectId => _projectId;
 
+  int? _templateId;
+  int? get templateId => _templateId;
+
   String? _projectUid;
   String? get projectUid => _projectUid;
 
@@ -53,6 +56,11 @@ class ProjectProvider extends ChangeNotifier {
   String? _thumbnailS3Key;
   String? get thumbnailS3Key => _thumbnailS3Key;
 
+  void setTemplateId(int? value) {
+    _templateId = value;
+    notifyListeners();
+  }
+
   Future<void> fetchProject() async {
     print('asdsadsadsad');
     _isLoadingPlans = true;
@@ -77,8 +85,8 @@ class ProjectProvider extends ChangeNotifier {
         for (final project in _plansData!.data) {
           debugPrint(
             'Project: uid=${project.uid}, '
-                'name=${project.name}, '
-                'thumbnail=${project.thumbnailS3Key}',
+            'name=${project.name}, '
+            'thumbnail=${project.thumbnailS3Key}',
           );
         }
       } else {
@@ -98,9 +106,7 @@ class ProjectProvider extends ChangeNotifier {
     }
   }
 
-  Future<String?> exportProject({
-    required String projectUid,
-  }) async {
+  Future<String?> exportProject({required String projectUid}) async {
     if (projectUid.trim().isEmpty) {
       _exportError = 'Project UID not available';
       notifyListeners();
@@ -120,12 +126,11 @@ class ProjectProvider extends ChangeNotifier {
 
       final result = await repository.exportProject(
         projectUid: projectUid,
-        s3Key: _thumbnailS3Key??'',
+        s3Key: _thumbnailS3Key ?? '',
       );
 
       if (result.isFailure) {
-        _exportError =
-            result.error?.message ?? 'Export failed';
+        _exportError = result.error?.message ?? 'Export failed';
         return null;
       }
 
@@ -145,8 +150,7 @@ class ProjectProvider extends ChangeNotifier {
         return null;
       }
 
-      final returnedS3Key =
-      data['s3_key']?.toString().trim();
+      final returnedS3Key = data['s3_key']?.toString().trim();
 
       // Backend generated key
       if (returnedS3Key != null &&
@@ -187,21 +191,28 @@ class ProjectProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  bool isQuotaExceeded = false;
+
   Future<bool> createProject({
     required String name,
     required String content,
+    int? id,
   }) async {
-    _isLoading = true;
+    isQuotaExceeded = false;
     _errorMessage = null;
+    _isLoading = true;
     notifyListeners();
 
     try {
       final result = await repository.createProject(
         name: name,
         content: content,
+        templateId: id,
       );
 
       var success = false;
+
       result.when(
         success: (data) {
           success = true;
@@ -209,11 +220,28 @@ class ProjectProvider extends ChangeNotifier {
         },
         failure: (error) {
           _errorMessage = error.message;
+          if (error.statusCode == 402 ||
+              error.message.contains('QUOTA_EXCEEDED') ||
+              error.message.contains(
+                'Business Posts Templates limit reached',
+              )) {
+            isQuotaExceeded = true;
+          }
+
+          debugPrint('❌ CREATE PROJECT FAILED: ${error.message}');
+          debugPrint('📌 QUOTA EXCEEDED: $isQuotaExceeded');
         },
       );
+
       return success;
     } catch (e) {
       _errorMessage = e.toString();
+
+      if (_errorMessage!.contains('QUOTA_EXCEEDED') ||
+          _errorMessage!.contains('Business Posts Templates limit reached')) {
+        isQuotaExceeded = true;
+      }
+
       return false;
     } finally {
       _isLoading = false;
@@ -221,10 +249,7 @@ class ProjectProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateProject({
-    required String content,
-    String? name,
-  }) async {
+  Future<bool> updateProject({required String content, String? name}) async {
     final uid = _projectUid?.trim() ?? '';
 
     if (uid.isEmpty) {
@@ -242,6 +267,7 @@ class ProjectProvider extends ChangeNotifier {
         projectUid: uid,
         name: (name ?? _projectName ?? 'Untitled design').trim(),
         content: content,
+        thumbnailS3Key: _thumbnailS3Key,
       );
 
       var success = false;
@@ -250,21 +276,22 @@ class ProjectProvider extends ChangeNotifier {
         success: (data) {
           success = true;
 
+          debugPrint('================================');
+          debugPrint('✅ PROJECT PATCH SUCCESS');
+          debugPrint('PATCH RESPONSE: $data');
+          debugPrint('================================');
+
           _lastSavedContent = content;
 
           // IMPORTANT
-          _readProjectData(
-            data,
-            fallbackName: name,
-          );
+          _readProjectData(data, fallbackName: name);
 
+          debugPrint('🖼️ SAVED THUMBNAIL KEY: $_thumbnailS3Key');
         },
         failure: (error) {
           _errorMessage = error.message;
 
-          debugPrint(
-            '❌ PROJECT PATCH FAILED: ${error.message}',
-          );
+          debugPrint('❌ PROJECT PATCH FAILED: ${error.message}');
         },
       );
 
@@ -282,10 +309,7 @@ class ProjectProvider extends ChangeNotifier {
     }
   }
 
-  void _readProjectData(
-      dynamic response, {
-        String? fallbackName,
-      }) {
+  void _readProjectData(dynamic response, {String? fallbackName}) {
     try {
       if (response is! Map) {
         return;
@@ -294,50 +318,45 @@ class ProjectProvider extends ChangeNotifier {
       final rawData = response['data'];
 
       final Map data;
-
       if (rawData is Map) {
         data = rawData;
       } else {
         data = response;
       }
 
-      _projectUid =
-          data['uid']?.toString() ?? _projectUid;
+      _projectUid = data['uid']?.toString() ?? _projectUid;
 
-      _projectName =
-          data['name']?.toString() ??
-              fallbackName ??
-              _projectName;
+      _projectName = data['name']?.toString() ?? fallbackName ?? _projectName;
 
-      final thumbnailKey =
-      data['thumbnail_s3_key']?.toString().trim();
+      final thumbnailKey = data['thumbnail_s3_key']?.toString().trim();
 
       if (thumbnailKey != null &&
           thumbnailKey.isNotEmpty &&
           thumbnailKey != 'null') {
         _thumbnailS3Key = thumbnailKey;
-
-        debugPrint(
-          '✅ THUMBNAIL S3 KEY UPDATED: $_thumbnailS3Key',
-        );
+        debugPrint('✅ THUMBNAIL S3 KEY UPDATED: $_thumbnailS3Key');
       } else {
-        debugPrint(
-          '⚠️ PATCH response has no thumbnail_s3_key',
-        );
+        debugPrint('⚠️ Response has no thumbnail_s3_key');
       }
 
-      final id = data['id'];
+      final rawId = data['id'];
+      _projectId = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '');
 
-      _projectId = id is int
-          ? id
-          : int.tryParse(
-        id?.toString() ?? '',
-      );
+      // template_id may arrive as int or String.
+      final rawTemplateId = data['template_id'];
+
+      final int? parsedTemplateId = rawTemplateId is int
+          ? rawTemplateId
+          : int.tryParse(rawTemplateId?.toString() ?? '');
+
+      if (parsedTemplateId != null) {
+        _templateId = parsedTemplateId;
+      }
+
+      debugPrint('📌 PROJECT ID: $_projectId');
+      debugPrint('📌 PROJECT TEMPLATE ID: ${_templateId ?? 'null'}');
     } catch (e) {
-      debugPrint(
-        '❌ _readProjectData error: $e',
-      );
-
+      debugPrint('❌ _readProjectData error: $e');
       _projectName ??= fallbackName;
     }
   }

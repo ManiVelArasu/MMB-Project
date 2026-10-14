@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:archive/archive.dart';
 import 'package:dio/dio.dart';
@@ -376,6 +377,55 @@ class _EditorViewState extends State<EditorView> {
     });
   }
 
+  Future<String?> _getThumbnailBase64(
+      EditorProvider provider,
+      ) async {
+    try {
+      if (!mounted) return null;
+
+      setState(() {
+        _isCapturingThumbnail = true;
+      });
+
+      // Wait for selection overlay to disappear.
+      await WidgetsBinding.instance.endOfFrame;
+
+      final context = _canvasKey.currentContext;
+      if (context == null) return null;
+
+      final boundary =
+      context.findRenderObject() as RenderRepaintBoundary?;
+
+      if (boundary == null) return null;
+
+      final image = await boundary.toImage(pixelRatio: 1.0);
+
+      try {
+        final byteData = await image.toByteData(
+          format: ui.ImageByteFormat.png,
+        );
+
+        if (byteData == null) return null;
+
+        final bytes = byteData.buffer.asUint8List();
+
+        return 'data:image/png;base64,${base64Encode(bytes)}';
+      } finally {
+        image.dispose();
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Thumbnail capture failed: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      return null;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCapturingThumbnail = false;
+        });
+      }
+    }
+  }
+
   Future<void> _saveProjectNow() async {
     if (!_projectAutoSaveReady || !mounted) return;
 
@@ -407,12 +457,12 @@ class _EditorViewState extends State<EditorView> {
         if (content == _lastSavedProjectContent) {
           continue;
         }
-
+        final thumbnailBase64 = await _getThumbnailBase64(editorProvider);
         final saveResult = await ProjectRepository.instance.updateProject(
           projectUid: uid,
           name: projectProvider.projectName ?? 'Untitled design',
           content: content,
-          thumbnailS3Key: editorProvider.selectedMediaS3Key,
+          thumbnailBase64: thumbnailBase64, // ✅ Correct
         );
 
         final success = saveResult.when(
@@ -444,6 +494,49 @@ class _EditorViewState extends State<EditorView> {
     } finally {
       _projectSaveRunning = false;
     }
+  }
+
+  Future<void> _showPlanRequiredDialog() async {
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Plan Limit Reached',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            'You have reached your Business Posts Templates limit. '
+            'Please upgrade your plan or buy a top-up to continue.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                Navigator.of(context).maybePop();
+              },
+              child: const Text('Go Back'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+
+                // TODO: Navigate to your existing Buy Plan screen.
+                // Example:
+                // Get.to(() => const SubscriptionScreen());
+              },
+              child: const Text('Buy Plan'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _enableProjectAutoSave() {
@@ -487,8 +580,6 @@ class _EditorViewState extends State<EditorView> {
     // =====================================================
     // TEMPLATE DESIGN
     // =====================================================
-    // For an existing template, Template API MUST succeed first.
-    // Only after that do we create the project using the API content.
     if (uid.isNotEmpty) {
       debugPrint('========================================');
       debugPrint('📡 TEMPLATE API START');
@@ -505,6 +596,7 @@ class _EditorViewState extends State<EditorView> {
 
       if (!templateSuccess) {
         debugPrint('❌ TEMPLATE API FAILED');
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: AppText(
@@ -516,59 +608,91 @@ class _EditorViewState extends State<EditorView> {
       }
 
       final detail = editorProvider.templateDetail;
-      if (detail == null) {
-        debugPrint('❌ TEMPLATE DETAIL IS NULL');
+
+      if (detail == null || detail.data.items.isEmpty) {
+        debugPrint('❌ TEMPLATE DETAIL OR ITEMS EMPTY');
         return;
       }
 
-      final data = detail.data;
-      final templateName = data.name?.trim().isNotEmpty == true
-          ? data.name!.trim()
+      // Template API response
+      final data = detail.data.items.first;
+
+      // The API's template id is an integer (for example 32). Keep it as a
+      // string in ProjectProvider because the update repository accepts a
+      // nullable string templateId. Do not use uid/familyUid here.
+      final int? templateId = int.tryParse(data.id ?? '');
+      final int? templateUId = int.tryParse(data.familyId ?? '');
+      final templateUidFromApi = data.uid?.toString();
+      final thumbnailS3Key = data.thumbnailS3Key?.toString();
+      final templateName = data.name?.toString().trim().isNotEmpty == true
+          ? data.name.toString().trim()
           : 'Untitled design';
-      final templateContent = data.content?.trim().isNotEmpty == true
-          ? data.content!.trim()
-          : '{}';
+
+      // The template API's content is Fabric JSON. loadTemplateByUid() has
+      // already imported that Fabric JSON into EditorProvider. Project APIs
+      // must receive the app's editor JSON schema instead, so export the
+      // loaded canvas and JSON-encode it exactly once.
+      final selectedSize =
+          resizeCanvas ??
+          Size(editorProvider.canvasWidth, editorProvider.canvasHeight);
+      if (selectedSize.width > 0 && selectedSize.height > 0) {
+        editorProvider.setCanvasSize(selectedSize.width, selectedSize.height);
+      }
+      final templateContent = jsonEncode(
+        editorProvider.exportCurrentPageJson(),
+      );
 
       debugPrint('========================================');
       debugPrint('✅ TEMPLATE API SUCCESS');
+      debugPrint('Template ID: $templateId');
+      debugPrint('Template UID: $templateUidFromApi');
       debugPrint('Template Name: $templateName');
-      debugPrint('Template Content: $templateContent');
+      debugPrint('Thumbnail S3 Key: $thumbnailS3Key');
+      debugPrint('Editor JSON length: ${templateContent.length}');
       debugPrint('========================================');
 
       final projectSuccess = await projectProvider.createProject(
         name: templateName,
         content: templateContent,
+        id: templateUId,
       );
 
       if (!mounted) return;
 
       if (!projectSuccess) {
         debugPrint('❌ PROJECT CREATE FAILED');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: AppText(
-              projectProvider.errorMessage ?? 'Unable to create project',
+
+        if (projectProvider.isQuotaExceeded) {
+          await _showPlanRequiredDialog();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: AppText(
+                projectProvider.errorMessage ?? 'Unable to create project',
+              ),
             ),
-          ),
-        );
+          );
+        }
+
         return;
       }
 
+      // Preserve the template's numeric API id for every subsequent project
+      // update/autosave. Blank projects explicitly keep this value null.
+      projectProvider.setTemplateId(templateId);
       debugPrint('========================================');
       debugPrint('✅ PROJECT CREATED FROM TEMPLATE');
       debugPrint('Project ID: ${projectProvider.projectId}');
       debugPrint('Project UID: ${projectProvider.projectUid}');
       debugPrint('Project Name: ${projectProvider.projectName}');
+      debugPrint('Template ID: ${projectProvider.templateId}');
       debugPrint('========================================');
-
-      // Template API already set the exact canvas when supplied.
-      final selectedSize = resizeCanvas ?? _getCanvasSize();
-      editorProvider.setCanvasSize(selectedSize.width, selectedSize.height);
     } else {
       // =====================================================
       // CREATE NEW / BLANK DESIGN
       // =====================================================
       final canvasSize = resizeCanvas ?? _getCanvasSize();
+
       editorProvider.setCanvasSize(canvasSize.width, canvasSize.height);
 
       final projectName = _getProjectNameFromSize(widget.resizeSize);
@@ -582,12 +706,14 @@ class _EditorViewState extends State<EditorView> {
       final projectSuccess = await projectProvider.createProject(
         name: projectName,
         content: '{}',
+        id: 0,
       );
 
       if (!mounted) return;
 
       if (!projectSuccess) {
         debugPrint('❌ PROJECT CREATE FAILED');
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: AppText(
@@ -598,14 +724,17 @@ class _EditorViewState extends State<EditorView> {
         return;
       }
 
+      // Blank project has no template ID.
+      projectProvider.setTemplateId(null);
+
       debugPrint('✅ CREATE NEW PROJECT SUCCESS');
       debugPrint('Project UID: ${projectProvider.projectUid}');
     }
 
     _enableProjectAutoSave();
 
-    editorProvider.fetchFreePikAssets("furniture");
-    editorProvider.fetchFreePikStickers("stickers");
+    editorProvider.fetchFreePikAssets('furniture');
+    editorProvider.fetchFreePikStickers('stickers');
   }
 
   String _getProjectNameFromSize(String size) {
@@ -3028,7 +3157,7 @@ class _EditorViewState extends State<EditorView> {
   }
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     _projectSaveTimer?.cancel();
 
     // Best-effort final PATCH when the editor is closed. We deliberately call
@@ -3040,6 +3169,7 @@ class _EditorViewState extends State<EditorView> {
         final editorProvider = context.read<EditorProvider>();
         final uid = projectProvider.projectUid?.trim() ?? '';
         if (uid.isNotEmpty) {
+          final thumbnailBase64 = await _getThumbnailBase64(editorProvider);
           final content = jsonEncode(editorProvider.exportCurrentPageJson());
           if (content != _lastSavedProjectContent) {
             // ignore: discarded_futures
@@ -3047,7 +3177,7 @@ class _EditorViewState extends State<EditorView> {
               projectUid: uid,
               name: projectProvider.projectName ?? 'Untitled design',
               content: content,
-              thumbnailS3Key: editorProvider.selectedMediaS3Key,
+              thumbnailS3Key: thumbnailBase64,
             );
           }
         }
@@ -3063,7 +3193,7 @@ class _EditorViewState extends State<EditorView> {
     _musicPlayer.dispose();
     super.dispose();
   }
-
+  bool _isCapturingThumbnail = false;
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EditorProvider>();
@@ -3402,25 +3532,26 @@ class _EditorViewState extends State<EditorView> {
                                     },
                                   ),
 
-                                if (provider.selectedItemId != null)
+                                if (!_isCapturingThumbnail &&
+                                    provider.selectedItemId != null)
                                   ...(() {
                                     final selectedItems = provider.items
-                                        .where(
-                                          (e) =>
-                                              e.id == provider.selectedItemId,
-                                        )
+                                        .where((e) => e.id == provider.selectedItemId)
                                         .toList();
-                                    if (selectedItems.isEmpty)
+
+                                    if (selectedItems.isEmpty) {
                                       return <Widget>[];
+                                    }
+
                                     final selected = selectedItems.first;
+
                                     if (_isCanvasBackground(selected)) {
                                       return <Widget>[];
                                     }
+
                                     return <Widget>[
                                       _TransformSelectionOverlay(
-                                        key: ValueKey(
-                                          'selection_overlay_${selected.id}',
-                                        ),
+                                        key: ValueKey('selection_overlay_${selected.id}'),
                                         item: selected,
                                         scaleX: scaleX,
                                         scaleY: scaleY,
@@ -3459,6 +3590,14 @@ class _EditorViewState extends State<EditorView> {
     EditorProvider provider,
     double aspectRatio,
   ) {
+    final items = provider.templateDetail?.data.items ?? [];
+
+    final thumbnailKey = items.isNotEmpty ? items.first.thumbnailS3Key : null;
+
+    final thumbnailUrl = thumbnailKey != null && thumbnailKey.trim().isNotEmpty
+        ? '${ApiEndpoints.cdnImageUrl}/${thumbnailKey.trim()}'
+        : null;
+
     showDialog<void>(
       context: context,
       builder: (dialogContext) => Dialog(
@@ -3475,10 +3614,39 @@ class _EditorViewState extends State<EditorView> {
                 children: [
                   // Template background
                   Container(color: provider.backgroundColor),
-                  Image.network(
-                    "${ApiEndpoints.cdnImageUrl}/${provider.templateDetail?.data.thumbnailS3Key ?? ''}",
-                    fit: BoxFit.cover,
-                  ),
+
+                  // Thumbnail image
+                  if (thumbnailUrl != null)
+                    Image.network(
+                      thumbnailUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) {
+                          return child;
+                        }
+
+                        return const Center(child: CircularProgressIndicator());
+                      },
+                      errorBuilder: (_, error, stackTrace) {
+                        debugPrint('❌ Thumbnail load failed: $error');
+
+                        return const Center(
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    const Center(
+                      child: Icon(
+                        Icons.image_outlined,
+                        size: 40,
+                        color: Colors.grey,
+                      ),
+                    ),
                 ],
               ),
             ),

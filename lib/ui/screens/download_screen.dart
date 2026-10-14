@@ -53,17 +53,17 @@ class _MyDownloadScreenState extends State<MyDownloadScreen> {
               if (provider.isLoadingPlans) {
                 return const Center(child: CircularProgressIndicator());
               }
-          
+
               final projectList = provider.plansData;
-          
+
               if (projectList == null) {
                 return Center(
                   child: Text(provider.errorMessage ?? 'No projects found'),
                 );
               }
-          
+
               final projects = projectList.data;
-          
+
               if (projects.isEmpty) {
                 return Center(
                   child: Padding(
@@ -83,18 +83,18 @@ class _MyDownloadScreenState extends State<MyDownloadScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-          
+
                         const SizedBox(height: 8),
-          
+
                         const AppText(
                           'Your downloaded designs will appear here. '
                           'Create your first design and download it when it’s ready.',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 13, color: Colors.black54),
                         ),
-          
+
                         const SizedBox(height: 20),
-          
+
                         Row(
                           children: [
                             Flexible(
@@ -113,9 +113,9 @@ class _MyDownloadScreenState extends State<MyDownloadScreen> {
                                 ),
                               ),
                             ),
-          
+
                             const SizedBox(width: 8),
-          
+
                             Flexible(
                               child: ButtonWidget(
                                 buttonPress: () {
@@ -133,7 +133,7 @@ class _MyDownloadScreenState extends State<MyDownloadScreen> {
                   ),
                 );
               }
-          
+
               return RefreshIndicator(
                 onRefresh: provider.fetchProject,
                 child: GridView.builder(
@@ -148,7 +148,7 @@ class _MyDownloadScreenState extends State<MyDownloadScreen> {
                   itemCount: projects.length,
                   itemBuilder: (context, index) {
                     final project = projects[index];
-          
+
                     return _projectCard(context, project);
                   },
                 ),
