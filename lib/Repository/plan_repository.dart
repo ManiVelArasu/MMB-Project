@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart';
+
 import '../Api Model/ai_pack_data.dart';
 import '../Api Model/ai_top_up_model.dart';
 import '../Api Model/payment_history.dart';
@@ -131,10 +133,19 @@ class PlanRepository {
         endpoint: ApiEndpoints.subscriptionPayment,
         method: ApiMethod.get,
       ),
-      fromJson: (json) => PaymentHistory.fromJson(json),
+      fromJson: (json) {
+        debugPrint("💰 Payment History API Response: $json");
+
+        if (json is! Map<String, dynamic>) {
+          throw FormatException(
+            "Invalid payment history response: $json",
+          );
+        }
+
+        return PaymentHistory.fromJson(json);
+      },
     );
   }
-
   Future<ApiResult<PlanUsage>> planUsage() {
     return ApiRepository.instance.request<PlanUsage>(
       config: ApiRequestConfig(

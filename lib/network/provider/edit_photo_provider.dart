@@ -118,7 +118,7 @@ class EditPhotoProvider extends ChangeNotifier {
 
     businessNameController.text = me.data.name ?? '';
     emailController.text = me.data.email ?? '';
-    contactController.text = me.data.phone ?? provider.business?.phone ?? '';
+    contactController.text = me.data.phone?? '';
 
 
 

@@ -55,6 +55,7 @@ class _HomeScreenView extends StatelessWidget {
         homeScreenProvider.isLoadingPopularTemplates ||
         homeScreenProvider.isLoadingSpecialDays) {
       return const Scaffold(
+
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFFE53935)),
         ),
@@ -62,808 +63,601 @@ class _HomeScreenView extends StatelessWidget {
     }
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: const HomeCustomAppBar(),
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: const Color(0xFFE53935),
-          onRefresh: () async {
-            await context.read<HomeScreenProvider>().refreshHomeScreen();
-          },
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: size.width * 0.04,
-                vertical: size.height * 0.015,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CustomSearchBar(
-                    hintText: "Search templates, Brand Series...",
-                    prefixAsset: "assets/images/search.png",
-                    suffixAsset: "assets/images/mic.png",
-                    borderColor: AppColors.searchBorderColor,
-                    onChanged: (query) {},
+      body: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 300.h,
+            child: Image.asset(
+              "assets/images/plan_gradient.png",
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+          ),
+          SafeArea(
+            child: RefreshIndicator(
+              color: const Color(0xFFE53935),
+              onRefresh: () async {
+                await context.read<HomeScreenProvider>().refreshHomeScreen();
+              },
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: size.width * 0.04,
+                    vertical: size.height * 0.015,
                   ),
-
-                  SizedBox(height: 20.h),
-
-                  _buildSectionHeader(
-                    title: "My Space",
-                    iconAsset: "assets/images/myspace.png",
-                    hasViewAll: false,
-                    isDark: isDark,
-                  ),
-                  SizedBox(height: 12.h),
-                  _buildMySpaceList(homeScreenProvider, isDark, (item) {
-                    switch (item.title) {
-                      case "CREATE NEW":
-                        _showCreateNewDialog(context, isDark);
-                        break;
-
-                      case "FOR YOU":
-                        homeScreenProvider.setSelectedMySpace("FOR YOU");
-                        break;
-
-                      case "FESTIVAL":
-                        Navigator.pushNamed(
-                          context,
-                          "/TemplateListScreen",
-                          arguments: {"type": "holiday", "range": "year"},
-                        );
-                        break;
-
-                      case "MY BRAND":
-                        context.read<BottomNavProvider>().updateIndex(4);
-                        break;
-
-                      case "BRAND SERIES":
-                        context.read<BottomNavProvider>().updateIndex(1);
-                        break;
-
-                      case "BRAND FRAMES":
-                        Navigator.pushNamed(context, "/BusinessFrameScreen");
-                        break;
-
-                      case "AI HUB":
-                        Navigator.pushNamed(context, "/AiHubScreen");
-                        break;
-                    }
-                  }),
-
-                  SizedBox(height: 20.h),
-
-                  Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Image.asset(
-                        "assets/images/calendar.png",
-                        height: 32.h,
-                        width: 32.w,
+                      CustomSearchBar(
+                        hintText: "Search templates, Brand Series...",
+                        prefixAsset: "assets/images/search.png",
+                        suffixAsset: "assets/images/mic.png",
+                        borderColor: AppColors.searchBorderColor,
+                        onChanged: (query) {},
                       ),
-                      SizedBox(width: 8.w),
-                      AppText(
-                        "Special Days",
-                        style: TextStyle(
-                          color: isDark ? Colors.white : AppColors.darkBlack,
-                          fontSize: AppFontSize.fontSize18,
-                          fontWeight: FontWeight.w500,
-                        ),
+
+                      SizedBox(height: 20.h),
+
+                      _buildSectionHeader(
+                        title: "My Space",
+                        iconAsset: "assets/images/myspace.png",
+                        hasViewAll: false,
+                        isDark: isDark,
                       ),
-                      const Spacer(),
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(18.r),
-                          onTap: () {
-                            Navigator.pushNamed(context, "/SpecialDaysScreen");
-                          },
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 4.w,
-                              vertical: 5.h,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                AppText(
-                                  "VIEW ALL",
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? Colors.grey.shade400
-                                        : Colors.grey.shade600,
-                                    fontSize: AppFontSize.fontSize12,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
+                      SizedBox(height: 12.h),
+                      _buildMySpaceList(homeScreenProvider, isDark, (item) {
+                        switch (item.title) {
+                          case "CREATE NEW":
+                            Navigator.pushNamed(
+                              context,
+                              "/CustomSizeScreen",
+                            );
+                            break;
+                          case "FOR YOU":
+                            homeScreenProvider.setSelectedMySpace("FOR YOU");
+                            break;
+
+                          case "FESTIVAL":
+                            Navigator.pushNamed(
+                              context,
+                              "/TemplateListScreen",
+                              arguments: {"type": "holiday", "range": "year"},
+                            );
+                            break;
+
+                          case "MY BRAND":
+                            context.read<BottomNavProvider>().updateIndex(4);
+                            break;
+
+                          case "BRAND SERIES":
+                            context.read<BottomNavProvider>().updateIndex(1);
+                            break;
+
+                          case "BRAND FRAMES":
+                            Navigator.pushNamed(context, "/BusinessFrameScreen");
+                            break;
+
+                          case "AI HUB":
+                            Navigator.pushNamed(context, "/AiHubScreen");
+                            break;
+                        }
+                      }),
+
+                      SizedBox(height: 20.h),
+
+                      Row(
+                        children: [
+                          Image.asset(
+                            "assets/images/calendar.png",
+                            height: 32.h,
+                            width: 32.w,
+                          ),
+                          SizedBox(width: 8.w),
+                          AppText(
+                            "Special Days",
+                            style: TextStyle(
+                              color: isDark ? Colors.white : AppColors.darkBlack,
+                              fontSize: AppFontSize.fontSize18,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 12.h),
-
-                  _buildSpecialDaysCalendar(homeScreenProvider),
-                  SizedBox(height: 12.h),
-
-                  Row(
-                    children: [
-                      Image.asset(
-                        "assets/images/myzone.png",
-                        height: 32.h,
-                        width: 32.w,
-                      ),
-                      SizedBox(width: 8.w),
-                      AppText(
-                        "My Zone",
-                        style: TextStyle(
-                          color: isDark ? Colors.white : AppColors.darkBlack,
-                          fontSize: AppFontSize.fontSize18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 12.h),
-
-                  _buildMyZoneSlider(homeScreenProvider, isDark),
-
-                  SizedBox(height: 24.h),
-
-                  _buildMyFrameHeader(isDark, context),
-
-                  SizedBox(height: 16.h),
-
-                  _buildLeadBannerSlider(
-                    homeScreenProvider,
-                    isDark,
-                    me,
-                    context,
-                  ),
-
-                  SizedBox(height: 20.h),
-
-                  if (me?.data.accountType != "personal") ...[
-                    _buildSectionHeader(
-                      title: "My Brand Posts",
-                      iconAsset: "assets/images/my_brand_posts.png",
-                      hasViewAll: true,
-                      isDark: isDark,
-                    ),
-                    SizedBox(height: 12.h),
-
-                    SizedBox(
-                      height: 38.h,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.only(right: 8.w),
-                        itemCount: homeScreenProvider.keyWords.length,
-                        itemBuilder: (context, index) {
-                          final keywordItem =
-                              homeScreenProvider.keyWords[index];
-
-                          final keyword = keywordItem.name?.trim() ?? '';
-
-                          if (keyword.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-
-                          return Padding(
-                            padding: EdgeInsets.only(right: 8.w),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 14.w,
-                                vertical: 6.h,
-                              ),
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF1E1E1E)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(20.r),
-                                border: Border.all(
-                                  color: isDark
-                                      ? Colors.grey.shade800
-                                      : Colors.grey.shade300,
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: AppText(
-                                keyword,
-                                style: TextStyle(
-                                  color: isDark
-                                      ? Colors.white70
-                                      : Colors.black87,
-                                  fontSize: AppFontSize.fontSize11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    SizedBox(height: 16.h),
-
-                    SizedBox(
-                      height: 190.h,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.symmetric(horizontal: 4.w),
-                        itemCount: homeScreenProvider.popularTemplates.length,
-                        itemBuilder: (context, index) {
-                          final item =
-                              homeScreenProvider.popularTemplates[index];
-
-                          final thumbnailKey = item.thumbnailS3Key ?? '';
-
-                          final imageUrl = thumbnailKey.isEmpty
-                              ? ''
-                              : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
-
-                          return Padding(
-                            padding: EdgeInsets.only(right: 12.w),
+                          const Spacer(),
+                          Material(
+                            color: Colors.transparent,
                             child: InkWell(
+                              borderRadius: BorderRadius.circular(18.r),
                               onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  "/TemplateDetailScreen",
-                                  arguments: {"templateUid": item.uid},
-                                );
+                                Navigator.pushNamed(context, "/SpecialDaysScreen");
                               },
-                              borderRadius: BorderRadius.circular(20.r),
-                              child: Container(
-                                width: 145.w,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20.r),
-                                  color: isDark
-                                      ? const Color(0xFF1E1E1E)
-                                      : Colors.grey.shade100,
-                                  border: Border.all(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 4.w,
+                                  vertical: 5.h,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    AppText(
+                                      "VIEW ALL",
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? Colors.grey.shade400
+                                            : Colors.grey.shade600,
+                                        fontSize: AppFontSize.fontSize12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12.h),
+
+                      _buildSpecialDaysCalendar(homeScreenProvider),
+                      SizedBox(height: 12.h),
+
+                      Row(
+                        children: [
+                          Image.asset(
+                            "assets/images/myzone.png",
+                            height: 32.h,
+                            width: 32.w,
+                          ),
+                          SizedBox(width: 8.w),
+                          AppText(
+                            "My Zone",
+                            style: TextStyle(
+                              color: isDark ? Colors.white : AppColors.darkBlack,
+                              fontSize: AppFontSize.fontSize18,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12.h),
+
+                      _buildMyZoneSlider(homeScreenProvider, isDark),
+
+                      SizedBox(height: 24.h),
+
+                      _buildMyFrameHeader(isDark, context),
+
+                      SizedBox(height: 16.h),
+
+                      _buildLeadBannerSlider(
+                        homeScreenProvider,
+                        isDark,
+                        me,
+                        context,
+                      ),
+
+                      SizedBox(height: 20.h),
+
+                      if (me?.data.accountType != "personal") ...[
+                        _buildSectionHeader(
+                          title: "My Brand Posts",
+                          iconAsset: "assets/images/my_brand_posts.png",
+                          hasViewAll: true,
+                          isDark: isDark,
+                        ),
+                        SizedBox(height: 12.h),
+
+                        SizedBox(
+                          height: 38.h,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            padding: EdgeInsets.only(right: 8.w),
+                            itemCount: homeScreenProvider.keyWords.length,
+                            itemBuilder: (context, index) {
+                              final keywordItem =
+                                  homeScreenProvider.keyWords[index];
+
+                              final keyword = keywordItem.name?.trim() ?? '';
+
+                              if (keyword.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return Padding(
+                                padding: EdgeInsets.only(right: 8.w),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 14.w,
+                                    vertical: 6.h,
+                                  ),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
                                     color: isDark
-                                        ? Colors.grey.shade800
-                                        : Colors.grey.shade300,
-                                    width: 1.2,
-                                  ),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(20.r),
-                                  child: imageUrl.isEmpty
-                                      ? const Center(
-                                          child: Icon(
-                                            Icons.image_outlined,
-                                            color: Colors.grey,
-                                          ),
-                                        )
-                                      : buildProfileImage(imageUrl),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 12.h),
-                  ],
-
-                  if (me?.data.accountType != "personal") ...[
-                    _buildSectionHeader(
-                      title: "My Brand Video Posts",
-                      iconAsset: "assets/images/my_brand_posts.png",
-                      hasViewAll: true,
-                      isDark: isDark,
-                    ),
-
-                    SizedBox(height: 12.h),
-
-                    SizedBox(
-                      height: 38.h,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: homeScreenProvider.videoCategories.length,
-                        physics: const BouncingScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          bool isSelected =
-                              homeScreenProvider.selectedVideoCategoryIndex ==
-                              index;
-                          return GestureDetector(
-                            onTap: () => homeScreenProvider
-                                .updateVideoCategoryIndex(index),
-                            child: Container(
-                              margin: EdgeInsets.only(right: 10.w),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.w,
-                                vertical: 8.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? const Color(0xFF555555)
-                                    : (isDark
-                                          ? const Color(0xFF1E1E1E)
-                                          : Colors.white),
-                                borderRadius: BorderRadius.circular(20.r),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Colors.transparent
-                                      : (isDark
-                                            ? Colors.grey.shade700
-                                            : Colors.grey.shade400),
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: Center(
-                                child: AppText(
-                                  homeScreenProvider.videoCategories[index],
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? Colors.white
-                                        : (isDark
-                                              ? Colors.white70
-                                              : Colors.grey.shade800),
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    SizedBox(height: 16.h),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: homeScreenProvider.brandVideoPostsList.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12.w,
-                        mainAxisSpacing: 12.h,
-                        childAspectRatio: 1.0,
-                      ),
-                      itemBuilder: (context, index) {
-                        final videoData =
-                            homeScreenProvider.brandVideoPostsList[index];
-                        return BrandVideoCard(
-                          thumbnailUrl: videoData["thumbnail"] ?? '',
-                          videoUrl: videoData["videoUrl"] ?? '',
-                        );
-                      },
-                    ),
-                    SizedBox(height: 12.h),
-                  ],
-
-                  // பொதுவான டெம்ப்ளேட் வகைகள்
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: homeScreenProvider.templateCategories.length,
-
-                    itemBuilder: (context, index) {
-                      final category =
-                          homeScreenProvider.templateCategories[index];
-
-                      final categoryName = category.name?.trim() ?? '';
-
-                      final categoryLower = categoryName.toLowerCase();
-
-                      final slug = category.slug?.trim() ?? '';
-
-                      // ==========================================================
-                      // SPECIAL CATEGORY CHECK
-                      // ==========================================================
-
-                      final bool isSpecialCategory =
-                          categoryLower == 'celebrate moments' ||
-                          categoryLower == 'devotional/daily posts' ||
-                          categoryLower == 'devotional / daily posts';
-
-                      if (isSpecialCategory) {
-                        if (category.children.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-
-                        final categoryIcon =
-                            categoryLower == 'celebrate moments'
-                            ? 'assets/images/flash.png'
-                            : 'assets/images/devotional.png';
-
-                        return Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.fromLTRB(5.w, 14.h, 12.w, 16.h),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Image.asset(
-                                    categoryIcon,
-                                    width: 32.w,
-                                    height: 32.w,
-                                  ),
-
-                                  SizedBox(width: 8.w),
-
-                                  AppText(
-                                    categoryName,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: AppFontSize.fontSize18,
-                                      fontWeight: FontWeight.w500,
+                                        ? const Color(0xFF1E1E1E)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(20.r),
+                                    border: Border.all(
                                       color: isDark
-                                          ? Colors.white
-                                          : Colors.black,
+                                          ? Colors.grey.shade800
+                                          : Colors.grey.shade300,
+                                      width: 1.2,
                                     ),
                                   ),
-                                ],
-                              ),
+                                  child: AppText(
+                                    keyword,
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black87,
+                                      fontSize: AppFontSize.fontSize11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
 
-                              SizedBox(height: 12.h),
+                        SizedBox(height: 16.h),
 
-                              SizedBox(
-                                height: 105.h,
-                                child: ListView.separated(
-                                  scrollDirection: Axis.horizontal,
-                                  physics: const BouncingScrollPhysics(),
-                                  itemCount: category.children.length,
+                        SizedBox(
+                          height: 190.h,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            padding: EdgeInsets.symmetric(horizontal: 4.w),
+                            itemCount: homeScreenProvider.popularTemplates.length,
+                            itemBuilder: (context, index) {
+                              final item =
+                                  homeScreenProvider.popularTemplates[index];
 
-                                  separatorBuilder: (_, __) =>
-                                      SizedBox(width: 7.w),
+                              final thumbnailKey = item.thumbnailS3Key ?? '';
 
-                                  itemBuilder: (context, childIndex) {
-                                    final child = category.children[childIndex];
+                              final imageUrl = thumbnailKey.isEmpty
+                                  ? ''
+                                  : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
 
-                                    final childName = child.name?.trim() ?? '';
-
-                                    final childSlug = child.slug?.trim() ?? '';
-
-                                    final thumbnailKey =
-                                        child.iconS3Key?.trim() ?? '';
-
-                                    final imageUrl = thumbnailKey.isEmpty
-                                        ? ''
-                                        : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
-
-                                    return SizedBox(
-                                      width: 90.w,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(
-                                          12.r,
-                                        ),
-
-                                        onTap: () {
-                                          debugPrint(
-                                            "📂 CHILD CATEGORY: $childName",
-                                          );
-                                          debugPrint(
-                                            "📂 CHILD SLUG: $childSlug",
-                                          );
-
-                                          Navigator.pushNamed(
-                                            context,
-                                            "/TemplateDetailScreen",
-                                            arguments: {
-                                              "category": childSlug,
-                                              "categoryUid": child.uid,
-                                              "categoryName": child.name,
-                                            },
-                                          );
-                                        },
-
-                                        child: Column(
-                                          children: [
-                                            // ====================================
-                                            // CHILD THUMBNAIL
-                                            // ====================================
-                                            ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(10.r),
-                                              child: Container(
-                                                width: 84.w,
-                                                height: 84.w,
-                                                color: isDark
-                                                    ? const Color(0xFF252525)
-                                                    : Colors.grey.shade100,
-
-                                                child: imageUrl.isEmpty
-                                                    ? Icon(
-                                                        Icons.image_outlined,
-                                                        size: 28.sp,
-                                                        color: Colors.grey,
-                                                      )
-                                                    : Image.network(
-                                                        imageUrl,
-                                                        width: 150.w,
-                                                        height: 150.w,
-                                                        fit: BoxFit.cover,
-
-                                                        loadingBuilder:
-                                                            (
-                                                              context,
-                                                              child,
-                                                              loadingProgress,
-                                                            ) {
-                                                              if (loadingProgress ==
-                                                                  null) {
-                                                                return child;
-                                                              }
-
-                                                              return const Center(
-                                                                child: CircularProgressIndicator(
-                                                                  strokeWidth:
-                                                                      1.5,
-                                                                  color: Color(
-                                                                    0xFFE53935,
-                                                                  ),
-                                                                ),
-                                                              );
-                                                            },
-
-                                                        errorBuilder:
-                                                            (
-                                                              context,
-                                                              error,
-                                                              stackTrace,
-                                                            ) {
-                                                              return Icon(
-                                                                Icons
-                                                                    .broken_image_outlined,
-                                                                size: 28.sp,
-                                                                color:
-                                                                    Colors.grey,
-                                                              );
-                                                            },
-                                                      ),
-                                              ),
-                                            ),
-
-                                            SizedBox(height: 6.h),
-
-                                            // ====================================
-                                            // CHILD NAME
-                                            // ====================================
-                                            AppText(
-                                              childName,
-                                              textAlign: TextAlign.center,
-                                              maxLines: 2,
-                                              style: TextStyle(
-                                                fontSize:
-                                                    AppFontSize.fontSize12.sp,
-                                                fontWeight: FontWeight.w700,
-                                                height: 1.1,
-                                                color: isDark
-                                                    ? Colors.white
-                                                    : Colors.black,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
+                              return Padding(
+                                padding: EdgeInsets.only(right: 12.w),
+                                child: InkWell(
+                                  onTap: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      "/TemplateDetailScreen",
+                                      arguments: {"templateUid": item.uid},
                                     );
                                   },
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      // ==========================================================
-                      // NORMAL CATEGORY
-                      // ==========================================================
-
-                      if (slug.isEmpty) {
-                        return const SizedBox.shrink();
-                      }
-
-                      final categoryIcon =
-                          (category.iconS3Key?.trim().isNotEmpty ?? false)
-                          ? '${ApiEndpoints.cdnImageUrl}/${category.iconS3Key}'
-                          : '';
-
-                      final templates = homeScreenProvider.templatesForCategory(
-                        slug,
-                      );
-
-                      final isLoading = homeScreenProvider.isTemplateLoading(
-                        slug,
-                      );
-
-                      // ==========================================================
-                      // YOUTUBE THUMBNAIL CHECK
-                      // ==========================================================
-
-                      final bool isYoutubeThumbnail =
-                          slug.toLowerCase() == 'youtube-thumbnails' ||
-                          categoryLower == 'youtube thumbnails';
-
-                      return Padding(
-                        padding: EdgeInsets.only(top: 24.h),
-
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-
-                          children: [
-                            // ======================================================
-                            // CATEGORY HEADER
-                            // ======================================================
-
-                            _buildSectionHeader(
-                              title: categoryName,
-                              iconAsset: categoryIcon,
-                              hasViewAll: true,
-                              isDark: isDark,
-
-                              onViewAll: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  "/TemplateDetailScreen",
-                                  arguments: {"category": slug},
-                                );
-                              },
-                            ),
-
-                            SizedBox(height: 12.h),
-
-                            // ======================================================
-                            // LOADING
-                            // ======================================================
-                            if (isLoading)
-                              SizedBox(
-                                height: isYoutubeThumbnail ? 310.h : 165.h,
-
-                                child: const Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Color(0xFFE53935),
-                                  ),
-                                ),
-                              )
-                            // ======================================================
-                            // EMPTY
-                            // ======================================================
-                            else if (templates.isEmpty)
-                              SizedBox(
-                                height: isYoutubeThumbnail ? 250.h : 110.h,
-
-                                child: Center(
-                                  child: AppText(
-                                    'No templates available',
-
-                                    style: TextStyle(
+                                  borderRadius: BorderRadius.circular(20.r),
+                                  child: Container(
+                                    width: 145.w,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20.r),
                                       color: isDark
-                                          ? Colors.white54
-                                          : Colors.black45,
-                                      fontSize: 13.sp,
+                                          ? const Color(0xFF1E1E1E)
+                                          : Colors.grey.shade100,
+                                      border: Border.all(
+                                        color: isDark
+                                            ? Colors.grey.shade800
+                                            : Colors.grey.shade300,
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(20.r),
+                                      child: imageUrl.isEmpty
+                                          ? const Center(
+                                              child: Icon(
+                                                Icons.image_outlined,
+                                                color: Colors.grey,
+                                              ),
+                                            )
+                                          : buildProfileImage(imageUrl),
                                     ),
                                   ),
                                 ),
-                              )
-                            // ======================================================
-                            // YOUTUBE THUMBNAILS
-                            // 16:9 OLD YOUTUBE SIZE
-                            // 2 x 2 GRID + HORIZONTAL PAGE
-                            // ======================================================
-                            else if (isYoutubeThumbnail)
-                              SizedBox(
-                                height: 175.h,
-                                width: double.infinity,
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final double screenWidth =
-                                        constraints.maxWidth;
-                                    final double totalHeight = 175.h;
+                              );
+                            },
+                          ),
+                        ),
+                        SizedBox(height: 12.h),
+                      ],
 
-                                    final double horizontalGap = 3.w;
-                                    final double verticalGap = 12.w;
+                      if (me?.data.accountType != "personal") ...[
+                        _buildSectionHeader(
+                          title: "My Brand Video Posts",
+                          iconAsset: "assets/images/my_brand_posts.png",
+                          hasViewAll: true,
+                          isDark: isDark,
+                        ),
 
-                                    // Each page occupies 92% of available width
-                                    final double pageWidth = screenWidth * 0.92;
+                        SizedBox(height: 12.h),
 
-                                    // Two cards per row with equal horizontal gap
-                                    final double cardWidth =
-                                        (pageWidth - horizontalGap) / 2;
+                        SizedBox(
+                          height: 38.h,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: homeScreenProvider.videoCategories.length,
+                            physics: const BouncingScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              bool isSelected =
+                                  homeScreenProvider.selectedVideoCategoryIndex ==
+                                  index;
+                              return GestureDetector(
+                                onTap: () => homeScreenProvider
+                                    .updateVideoCategoryIndex(index),
+                                child: Container(
+                                  margin: EdgeInsets.only(right: 10.w),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 16.w,
+                                    vertical: 8.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFF555555)
+                                        : (isDark
+                                              ? const Color(0xFF1E1E1E)
+                                              : Colors.white),
+                                    borderRadius: BorderRadius.circular(20.r),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Colors.transparent
+                                          : (isDark
+                                                ? Colors.grey.shade700
+                                                : Colors.grey.shade400),
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: AppText(
+                                      homeScreenProvider.videoCategories[index],
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : (isDark
+                                                  ? Colors.white70
+                                                  : Colors.grey.shade800),
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
 
-                                    // Total height la irunthu outer padding-oda vertical spacing (verticalGap * 2) and middle vertical gap pogha baaki irukkira height-ah 2 rows-ku divide panrom
-                                    final double cardHeight =
-                                        (totalHeight - (verticalGap * 3)) / 2;
+                        SizedBox(height: 16.h),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: homeScreenProvider.brandVideoPostsList.length,
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12.w,
+                            mainAxisSpacing: 12.h,
+                            childAspectRatio: 1.0,
+                          ),
+                          itemBuilder: (context, index) {
+                            final videoData =
+                                homeScreenProvider.brandVideoPostsList[index];
+                            return BrandVideoCard(
+                              thumbnailUrl: videoData["thumbnail"] ?? '',
+                              videoUrl: videoData["videoUrl"] ?? '',
+                            );
+                          },
+                        ),
+                        SizedBox(height: 12.h),
+                      ],
 
-                                    // Four templates per page
-                                    final int pageCount = (templates.length / 4)
-                                        .ceil();
+                      // பொதுவான டெம்ப்ளேட் வகைகள்
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: homeScreenProvider.templateCategories.length,
 
-                                    return ListView.builder(
+                        itemBuilder: (context, index) {
+                          final category =
+                              homeScreenProvider.templateCategories[index];
+
+                          final categoryName = category.name?.trim() ?? '';
+
+                          final categoryLower = categoryName.toLowerCase();
+
+                          final slug = category.slug?.trim() ?? '';
+
+                          // ==========================================================
+                          // SPECIAL CATEGORY CHECK
+                          // ==========================================================
+
+                          final bool isSpecialCategory =
+                              categoryLower == 'celebrate moments' ||
+                              categoryLower == 'devotional/daily posts' ||
+                              categoryLower == 'devotional / daily posts';
+
+                          if (isSpecialCategory) {
+                            if (category.children.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+
+                            final categoryIcon =
+                                categoryLower == 'celebrate moments'
+                                ? 'assets/images/flash.png'
+                                : 'assets/images/devotional.png';
+
+                            return Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.fromLTRB(5.w, 14.h, 12.w, 16.h),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Image.asset(
+                                        categoryIcon,
+                                        width: 32.w,
+                                        height: 32.w,
+                                      ),
+
+                                      SizedBox(width: 8.w),
+
+                                      AppText(
+                                        categoryName,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: AppFontSize.fontSize18,
+                                          fontWeight: FontWeight.w500,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  SizedBox(height: 12.h),
+
+                                  SizedBox(
+                                    height: 105.h,
+                                    child: ListView.separated(
                                       scrollDirection: Axis.horizontal,
                                       physics: const BouncingScrollPhysics(),
-                                      padding: EdgeInsets.zero,
-                                      itemCount: pageCount,
-                                      itemBuilder: (context, pageIndex) {
-                                        final int startIndex = pageIndex * 4;
+                                      itemCount: category.children.length,
+
+                                      separatorBuilder: (_, __) =>
+                                          SizedBox(width: 7.w),
+
+                                      itemBuilder: (context, childIndex) {
+                                        final child = category.children[childIndex];
+
+                                        final childName = child.name?.trim() ?? '';
+
+                                        final childSlug = child.slug?.trim() ?? '';
+
+                                        final thumbnailKey =
+                                            child.iconS3Key?.trim() ?? '';
+
+                                        final imageUrl = thumbnailKey.isEmpty
+                                            ? ''
+                                            : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
 
                                         return SizedBox(
-                                          width: pageWidth,
-                                          child: Padding(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: horizontalGap,
-                                              vertical: verticalGap,
+                                          width: 90.w,
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              12.r,
                                             ),
+
+                                            onTap: () {
+                                              debugPrint(
+                                                "📂 CHILD CATEGORY: $childName",
+                                              );
+                                              debugPrint(
+                                                "📂 CHILD SLUG: $childSlug",
+                                              );
+
+                                              Navigator.pushNamed(
+                                                context,
+                                                "/TemplateDetailScreen",
+                                                arguments: {
+                                                  "category": childSlug,
+                                                  "categoryUid": child.uid,
+                                                  "categoryName": child.name,
+                                                },
+                                              );
+                                            },
+
                                             child: Column(
                                               children: [
-                                                SizedBox(
-                                                  height: cardHeight,
-                                                  child: Row(
-                                                    children: [
-                                                      Expanded(
-                                                        child: _buildApiTemplateCard(
-                                                          context,
-                                                          templates[startIndex],
-                                                          isDark,
-                                                          homeScreenProvider,
-                                                        ),
-                                                      ),
-                                                      SizedBox(
-                                                        width: horizontalGap,
-                                                      ),
-                                                      Expanded(
-                                                        child:
-                                                            startIndex + 1 <
-                                                                templates.length
-                                                            ? _buildApiTemplateCard(
-                                                                context,
-                                                                templates[startIndex +
-                                                                    1],
-                                                                isDark,
-                                                                homeScreenProvider,
-                                                              )
-                                                            : const SizedBox(),
-                                                      ),
-                                                    ],
+                                                // ====================================
+                                                // CHILD THUMBNAIL
+                                                // ====================================
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10.r),
+                                                  child: Container(
+                                                    width: 84.w,
+                                                    height: 84.w,
+                                                    color: isDark
+                                                        ? const Color(0xFF252525)
+                                                        : Colors.grey.shade100,
+
+                                                    child: imageUrl.isEmpty
+                                                        ? Icon(
+                                                            Icons.image_outlined,
+                                                            size: 28.sp,
+                                                            color: Colors.grey,
+                                                          )
+                                                        : Image.network(
+                                                            imageUrl,
+                                                            width: 150.w,
+                                                            height: 150.w,
+                                                            fit: BoxFit.cover,
+
+                                                            loadingBuilder:
+                                                                (
+                                                                  context,
+                                                                  child,
+                                                                  loadingProgress,
+                                                                ) {
+                                                                  if (loadingProgress ==
+                                                                      null) {
+                                                                    return child;
+                                                                  }
+
+                                                                  return const Center(
+                                                                    child: CircularProgressIndicator(
+                                                                      strokeWidth:
+                                                                          1.5,
+                                                                      color: Color(
+                                                                        0xFFE53935,
+                                                                      ),
+                                                                    ),
+                                                                  );
+                                                                },
+
+                                                            errorBuilder:
+                                                                (
+                                                                  context,
+                                                                  error,
+                                                                  stackTrace,
+                                                                ) {
+                                                                  return Icon(
+                                                                    Icons
+                                                                        .broken_image_outlined,
+                                                                    size: 28.sp,
+                                                                    color:
+                                                                        Colors.grey,
+                                                                  );
+                                                                },
+                                                          ),
                                                   ),
                                                 ),
-                                                SizedBox(
-                                                  height: verticalGap,
-                                                ), // Mela irukkira card-kum keela irukkira card-kum ulla gap
-                                                SizedBox(
-                                                  height: cardHeight,
-                                                  child: Row(
-                                                    children: [
-                                                      Expanded(
-                                                        child:
-                                                            startIndex + 2 <
-                                                                templates.length
-                                                            ? _buildApiTemplateCard(
-                                                                context,
-                                                                templates[startIndex +
-                                                                    2],
-                                                                isDark,
-                                                                homeScreenProvider,
-                                                              )
-                                                            : const SizedBox(),
-                                                      ),
-                                                      SizedBox(
-                                                        width: horizontalGap,
-                                                      ),
-                                                      Expanded(
-                                                        child:
-                                                            startIndex + 3 <
-                                                                templates.length
-                                                            ? _buildApiTemplateCard(
-                                                                context,
-                                                                templates[startIndex +
-                                                                    3],
-                                                                isDark,
-                                                                homeScreenProvider,
-                                                              )
-                                                            : const SizedBox(),
-                                                      ),
-                                                    ],
+
+                                                SizedBox(height: 6.h),
+
+                                                // ====================================
+                                                // CHILD NAME
+                                                // ====================================
+                                                AppText(
+                                                  childName,
+                                                  textAlign: TextAlign.center,
+                                                  maxLines: 2,
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                        AppFontSize.fontSize12.sp,
+                                                    fontWeight: FontWeight.w700,
+                                                    height: 1.1,
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : Colors.black,
                                                   ),
                                                 ),
                                               ],
@@ -871,52 +665,277 @@ class _HomeScreenView extends StatelessWidget {
                                           ),
                                         );
                                       },
-                                    );
-                                  },
-                                ),
-                              )
-                            // ======================================================
-                            // NORMAL CATEGORY
-                            // HORIZONTAL TEMPLATE SCROLL
-                            // ======================================================
-                            else
-                              SizedBox(
-                                height: 165.h,
-
-                                child: ListView.separated(
-                                  scrollDirection: Axis.horizontal,
-
-                                  physics: const BouncingScrollPhysics(),
-
-                                  itemCount: templates.length,
-
-                                  separatorBuilder: (_, __) =>
-                                      SizedBox(width: 0.5.w),
-
-                                  itemBuilder: (context, templateIndex) {
-                                    return SizedBox(
-                                      width: 145.w,
-
-                                      child: _buildApiTemplateCard(
-                                        context,
-                                        templates[templateIndex],
-                                        isDark,
-                                        homeScreenProvider,
-                                      ),
-                                    );
-                                  },
-                                ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                          ],
-                        ),
-                      );
-                    },
+                            );
+                          }
+
+                          // ==========================================================
+                          // NORMAL CATEGORY
+                          // ==========================================================
+
+                          if (slug.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+
+                          final categoryIcon =
+                              (category.iconS3Key?.trim().isNotEmpty ?? false)
+                              ? '${ApiEndpoints.cdnImageUrl}/${category.iconS3Key}'
+                              : '';
+
+                          final templates = homeScreenProvider.templatesForCategory(
+                            slug,
+                          );
+
+                          final isLoading = homeScreenProvider.isTemplateLoading(
+                            slug,
+                          );
+
+                          // ==========================================================
+                          // YOUTUBE THUMBNAIL CHECK
+                          // ==========================================================
+
+                          final bool isYoutubeThumbnail =
+                              slug.toLowerCase() == 'youtube-thumbnails' ||
+                              categoryLower == 'youtube thumbnails';
+
+                          return Padding(
+                            padding: EdgeInsets.only(top: 24.h),
+
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+
+                              children: [
+                                // ======================================================
+                                // CATEGORY HEADER
+                                // ======================================================
+
+                                _buildSectionHeader(
+                                  title: categoryName,
+                                  iconAsset: categoryIcon,
+                                  hasViewAll: true,
+                                  isDark: isDark,
+
+                                  onViewAll: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      "/TemplateDetailScreen",
+                                      arguments: {"category": slug},
+                                    );
+                                  },
+                                ),
+
+                                SizedBox(height: 12.h),
+
+                                // ======================================================
+                                // LOADING
+                                // ======================================================
+                                if (isLoading)
+                                  SizedBox(
+                                    height: isYoutubeThumbnail ? 310.h : 165.h,
+
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Color(0xFFE53935),
+                                      ),
+                                    ),
+                                  )
+                                // ======================================================
+                                // EMPTY
+                                // ======================================================
+                                else if (templates.isEmpty)
+                                  SizedBox(
+                                    height: isYoutubeThumbnail ? 250.h : 110.h,
+
+                                    child: Center(
+                                      child: AppText(
+                                        'No templates available',
+
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white54
+                                              : Colors.black45,
+                                          fontSize: 13.sp,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                // ======================================================
+                                // YOUTUBE THUMBNAILS
+                                // 16:9 OLD YOUTUBE SIZE
+                                // 2 x 2 GRID + HORIZONTAL PAGE
+                                // ======================================================
+                                else if (isYoutubeThumbnail)
+                                  SizedBox(
+                                    height: 175.h,
+                                    width: double.infinity,
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        final double screenWidth =
+                                            constraints.maxWidth;
+                                        final double totalHeight = 175.h;
+
+                                        final double horizontalGap = 3.w;
+                                        final double verticalGap = 12.w;
+
+                                        // Each page occupies 92% of available width
+                                        final double pageWidth = screenWidth * 0.92;
+
+                                        // Two cards per row with equal horizontal gap
+                                        final double cardWidth =
+                                            (pageWidth - horizontalGap) / 2;
+
+                                        // Total height la irunthu outer padding-oda vertical spacing (verticalGap * 2) and middle vertical gap pogha baaki irukkira height-ah 2 rows-ku divide panrom
+                                        final double cardHeight =
+                                            (totalHeight - (verticalGap * 3)) / 2;
+
+                                        // Four templates per page
+                                        final int pageCount = (templates.length / 4)
+                                            .ceil();
+
+                                        return ListView.builder(
+                                          scrollDirection: Axis.horizontal,
+                                          physics: const BouncingScrollPhysics(),
+                                          padding: EdgeInsets.zero,
+                                          itemCount: pageCount,
+                                          itemBuilder: (context, pageIndex) {
+                                            final int startIndex = pageIndex * 4;
+
+                                            return SizedBox(
+                                              width: pageWidth,
+                                              child: Padding(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: horizontalGap,
+                                                  vertical: verticalGap,
+                                                ),
+                                                child: Column(
+                                                  children: [
+                                                    SizedBox(
+                                                      height: cardHeight,
+                                                      child: Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child: _buildApiTemplateCard(
+                                                              context,
+                                                              templates[startIndex],
+                                                              isDark,
+                                                              homeScreenProvider,
+                                                            ),
+                                                          ),
+                                                          SizedBox(
+                                                            width: horizontalGap,
+                                                          ),
+                                                          Expanded(
+                                                            child:
+                                                                startIndex + 1 <
+                                                                    templates.length
+                                                                ? _buildApiTemplateCard(
+                                                                    context,
+                                                                    templates[startIndex +
+                                                                        1],
+                                                                    isDark,
+                                                                    homeScreenProvider,
+                                                                  )
+                                                                : const SizedBox(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    SizedBox(
+                                                      height: verticalGap,
+                                                    ), // Mela irukkira card-kum keela irukkira card-kum ulla gap
+                                                    SizedBox(
+                                                      height: cardHeight,
+                                                      child: Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child:
+                                                                startIndex + 2 <
+                                                                    templates.length
+                                                                ? _buildApiTemplateCard(
+                                                                    context,
+                                                                    templates[startIndex +
+                                                                        2],
+                                                                    isDark,
+                                                                    homeScreenProvider,
+                                                                  )
+                                                                : const SizedBox(),
+                                                          ),
+                                                          SizedBox(
+                                                            width: horizontalGap,
+                                                          ),
+                                                          Expanded(
+                                                            child:
+                                                                startIndex + 3 <
+                                                                    templates.length
+                                                                ? _buildApiTemplateCard(
+                                                                    context,
+                                                                    templates[startIndex +
+                                                                        3],
+                                                                    isDark,
+                                                                    homeScreenProvider,
+                                                                  )
+                                                                : const SizedBox(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  )
+                                // ======================================================
+                                // NORMAL CATEGORY
+                                // HORIZONTAL TEMPLATE SCROLL
+                                // ======================================================
+                                else
+                                  SizedBox(
+                                    height: 165.h,
+
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+
+                                      physics: const BouncingScrollPhysics(),
+
+                                      itemCount: templates.length,
+
+                                      separatorBuilder: (_, __) =>
+                                          SizedBox(width: 0.5.w),
+
+                                      itemBuilder: (context, templateIndex) {
+                                        return SizedBox(
+                                          width: 145.w,
+
+                                          child: _buildApiTemplateCard(
+                                            context,
+                                            templates[templateIndex],
+                                            isDark,
+                                            homeScreenProvider,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -1757,7 +1776,7 @@ class _HomeScreenView extends StatelessWidget {
                     );
                   },
                   onFavorite: () {
-                    final templateUid = template.uid?.trim() ?? '';
+                    final templateUid = template.familyUid?.trim() ?? '';
                     provider.favoriteTemplate(templateUid);
                   },
                 ),

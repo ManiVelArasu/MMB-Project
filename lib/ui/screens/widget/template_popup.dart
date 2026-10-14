@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import '../../../component/custom_widget.dart';
 import '../../../utils/theme/app.colors.dart';
 
-class TemplateActionPopup extends StatelessWidget {
+class TemplateActionPopup extends StatefulWidget {
   final VoidCallback onCustomize;
   final VoidCallback onFavorite;
 
@@ -14,57 +15,112 @@ class TemplateActionPopup extends StatelessWidget {
   });
 
   @override
+  State<TemplateActionPopup> createState() =>
+      _TemplateActionPopupState();
+}
+
+class _TemplateActionPopupState extends State<TemplateActionPopup> {
+  bool isPopupOpen = false;
+
+  @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      padding: EdgeInsets.zero,
-      constraints: BoxConstraints(minWidth: 80.w),
-      iconSize: 20.sp,
-      offset: Offset(0, 28.h),
-      color: Colors.white,
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
-      icon: Container(
-        width: 30.w,
-        height: 25.h,
-        decoration: BoxDecoration(
-          color: const Color(0xFF202020),
-          borderRadius: BorderRadius.circular(7.r),
-        ),
-        child: Icon(Icons.more_horiz, color: Colors.white, size: 21.sp),
-      ),
-      onSelected: (value) {
-        if (value == 'customize') {
-          onCustomize();
-        } else if (value == 'favorite') {
-          onFavorite();
-        }
-      },
-      itemBuilder: (context) => [
-        PopupMenuItem<String>(
-          value: 'customize',
-          child: Row(
-            children: [
-              Image.asset('assets/images/customise.png', width: 18, height: 18),
-              const SizedBox(width: 8),
-              AppText('Customize', style: TextStyle(color: AppColors.appBlack)),
-            ],
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Three-dot button
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              isPopupOpen = !isPopupOpen;
+            });
+          },
+          child: Container(
+            width: 30.w,
+            height: 25.h,
+            decoration: BoxDecoration(
+              color: const Color(0xFF202020),
+              borderRadius: BorderRadius.circular(7.r),
+            ),
+            child: Icon(
+              Icons.more_horiz,
+              color: Colors.white,
+              size: 21.sp,
+            ),
           ),
         ),
-        const PopupMenuItem<String>(
-          value: 'favorite',
-          child: Row(
-            children: [
-              Image(
-                image: AssetImage('assets/images/document-download1.png'),
-                width: 18,
-                height: 18,
+
+        // Popup inside the card
+        if (isPopupOpen)
+          Positioned(
+            top: 29.h,
+            right: 0,
+            child: Material(
+              color: Colors.white,
+              elevation: 8,
+              borderRadius: BorderRadius.circular(8.r),
+              child: SizedBox(
+                width: 135.w,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _menuItem(
+                      icon: 'assets/images/customise.png',
+                      title: 'Customize',
+                      onTap: () {
+                        setState(() => isPopupOpen = false);
+                        widget.onCustomize();
+                      },
+                    ),
+                    _menuItem(
+                      icon: 'assets/images/heart_circle.png',
+                      title: 'Favorite',
+                      onTap: () {
+                        setState(() => isPopupOpen = false);
+                        widget.onFavorite();
+                      },
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(width: 8),
-              AppText('Favorite', style: TextStyle(color: Colors.black)),
-            ],
+            ),
           ),
-        ),
       ],
+    );
+  }
+
+  Widget _menuItem({
+    required String icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: 8.w,
+          vertical: 10.h,
+        ),
+        child: Row(
+          children: [
+            Image.asset(
+              icon,
+              width: 18.w,
+              height: 18.h,
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: AppText(
+                title.toUpperCase(),
+                style: TextStyle(
+                  color: AppColors.appBlack,
+                  fontSize: AppFontSize.fontSize14,
+                  fontWeight: FontWeight.w400
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

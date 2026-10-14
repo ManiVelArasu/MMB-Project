@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../component/home_appbar.dart';
 import '../../network/provider/auth_provider.dart';
 import '../../network/provider/bottom_provider.dart';
+import '../../network/provider/business_provider.dart';
 import '../../network/provider/common_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/home_screen_provider.dart';
@@ -83,124 +84,261 @@ class _ProfileScreenState extends State<ProfileScreen> {
             statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
           ),
           child: Scaffold(
+            extendBodyBehindAppBar: true,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
             appBar: PreferredSize(
               preferredSize: Size.fromHeight(70.h),
               child: HomeCustomAppBar(),
             ),
-            body: SafeArea(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: size.width * 0.04,
-                    vertical: 12.h,
+
+            body: Stack(
+              children: [
+                // Background starts from the top, behind the AppBar
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 300.h,
+                  child: Image.asset(
+                    "assets/images/plan_gradient.png",
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (accountType == 'personal') ...[
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 10.h),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(28.r),
-                            border: Border.all(
-                              color: const Color(0xFFFFDADA),
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // =====================================================
-                              // TITLE + GIFT IMAGE
-                              // =====================================================
+                ),
 
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  AppText(
-                                    'Great News!',
-                                    style: TextStyle(
-                                      fontSize: 24.sp,
-                                      height: 1.1,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-
-                                  SizedBox(
-                                    width: 48.w,
-                                    height: 48.w,
-                                    child: Image.asset(
-                                      'assets/images/gift.png',
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                ],
+                // Existing body content
+                SafeArea(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: size.width * 0.04,
+                        vertical: 12.h,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (accountType == 'personal') ...[
+                            Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.fromLTRB(
+                                20.w,
+                                14.h,
+                                20.w,
+                                10.h,
                               ),
-
-                              SizedBox(height: 4.h),
-
-                              // =====================================================
-                              // 20 + FREE AI CREDITS
-                              // =====================================================
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  AppText(
-                                    '20',
-                                    style: TextStyle(
-                                      fontSize: 52.sp,
-                                      height: 0.9,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFFF5222D),
-                                    ),
-                                  ),
-
-                                  SizedBox(width: 12.w),
-
-                                  Expanded(
-                                    child: AppText(
-                                      'Free AI Credits\nhave been added to your account',
-                                      style: TextStyle(
-                                        fontSize: 13.sp,
-                                        height: 1.18,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              SizedBox(height: 4.h),
-
-                              // =====================================================
-                              // DESCRIPTION
-                              // =====================================================
-                              AppText(
-                                'Use your credits to explore AI tools and create\namazing content for yourself.',
-                                style: TextStyle(
-                                  fontSize: AppFontSize.fontSize13,
-                                  height: 1.25,
-                                  fontWeight: FontWeight.w400,
-                                  color: const Color(0xFF555555),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(28.r),
+                                border: Border.all(
+                                  color: const Color(0xFFFFDADA),
+                                  width: 1,
                                 ),
                               ),
-
-                              SizedBox(height: 7.h),
-
-                              Row(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // =====================================================
+                                  // TITLE + GIFT IMAGE
+                                  // =====================================================
+
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      AppText(
+                                        'Great News!',
+                                        style: TextStyle(
+                                          fontSize: 24.sp,
+                                          height: 1.1,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+
+                                      SizedBox(
+                                        width: 48.w,
+                                        height: 48.w,
+                                        child: Image.asset(
+                                          'assets/images/gift.png',
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  SizedBox(height: 4.h),
+
+                                  // =====================================================
+                                  // 20 + FREE AI CREDITS
+                                  // =====================================================
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      AppText(
+                                        '20',
+                                        style: TextStyle(
+                                          fontSize: 52.sp,
+                                          height: 0.9,
+                                          fontWeight: FontWeight.w800,
+                                          color: const Color(0xFFF5222D),
+                                        ),
+                                      ),
+
+                                      SizedBox(width: 12.w),
+
+                                      Expanded(
+                                        child: AppText(
+                                          'Free AI Credits\nhave been added to your account',
+                                          style: TextStyle(
+                                            fontSize: 13.sp,
+                                            height: 1.18,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  SizedBox(height: 4.h),
+
+                                  // =====================================================
+                                  // DESCRIPTION
+                                  // =====================================================
+                                  AppText(
+                                    'Use your credits to explore AI tools and create\namazing content for yourself.',
+                                    style: TextStyle(
+                                      fontSize: AppFontSize.fontSize13,
+                                      height: 1.25,
+                                      fontWeight: FontWeight.w400,
+                                      color: const Color(0xFF555555),
+                                    ),
+                                  ),
+
+                                  SizedBox(height: 7.h),
+
+                                  Row(
+                                    children: [
+                                      SizedBox(
+                                        height: 42.h,
+                                        child: ElevatedButton(
+                                          onPressed: () {},
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(
+                                              0xFFF5222D,
+                                            ),
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 12.w,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10.r),
+                                            ),
+                                          ),
+                                          child: AppText(
+                                            'EXPLORE AI TOOLS',
+                                            style: TextStyle(
+                                              fontSize: AppFontSize.fontSize13,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+
+                                      SizedBox(width: 10.w),
+
+                                      TextButton(
+                                        onPressed: () {
+                                          // Credit usage
+                                        },
+                                        style: TextButton.styleFrom(
+                                          padding: EdgeInsets.zero,
+                                          minimumSize: Size.zero,
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        child: AppText(
+                                          'CREDIT USAGE',
+                                          style: TextStyle(
+                                            fontSize: AppFontSize.fontSize13,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFFF5222D),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            SizedBox(height: 6.h),
+
+                            Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.fromLTRB(
+                                20.w,
+                                20.h,
+                                20.w,
+                                18.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF700000),
+                                borderRadius: BorderRadius.circular(28.r),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AppText(
+                                    'Set Up Your Business',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 21.sp,
+                                      height: 1.15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+
+                                  SizedBox(height: 5.h),
+
+                                  AppText(
+                                    accountType == 'personal'
+                                        ? 'Add your profile details, interests, and other information once, it makes your personal experience easier.'
+                                        : 'Add your business name, category, contact details, and other information once, it makes creating content for your business easier.',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13.sp,
+                                      height: 1.4,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+
+                                  SizedBox(height: 10.h),
+
                                   SizedBox(
                                     height: 42.h,
                                     child: ElevatedButton(
-                                      onPressed: () {},
+                                      onPressed: () {
+                                        if (accountType == 'personal') {
+                                          Navigator.pushNamed(
+                                            context,
+                                            "/EditProfileScreen",
+                                          );
+                                        } else {
+                                          Navigator.pushNamed(
+                                            context,
+                                            "/BusinessDetailsScreen",
+                                          );
+                                        }
+                                      },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: const Color(
                                           0xFFF5222D,
@@ -208,7 +346,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         foregroundColor: Colors.white,
                                         elevation: 0,
                                         padding: EdgeInsets.symmetric(
-                                          horizontal: 12.w,
+                                          horizontal: 16.w,
                                         ),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -217,7 +355,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         ),
                                       ),
                                       child: AppText(
-                                        'EXPLORE AI TOOLS',
+                                        accountType == 'personal'
+                                            ? 'COMPLETE MY PROFILE →'
+                                            : 'SET UP MY BUSINESS →',
                                         style: TextStyle(
                                           fontSize: AppFontSize.fontSize13,
                                           fontWeight: FontWeight.w700,
@@ -226,631 +366,544 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ),
                                     ),
                                   ),
-
-                                  SizedBox(width: 10.w),
-
-                                  TextButton(
-                                    onPressed: () {
-                                      // Credit usage
-                                    },
-                                    style: TextButton.styleFrom(
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: Size.zero,
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    child: AppText(
-                                      'CREDIT USAGE',
-                                      style: TextStyle(
-                                        fontSize: AppFontSize.fontSize13,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xFFF5222D),
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
-                            ],
-                          ),
-                        ),
+                            ),
 
-                        SizedBox(height: 6.h),
-
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 18.h),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF700000),
-                            borderRadius: BorderRadius.circular(28.r),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              AppText(
-                                'Set Up Your Business',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 21.sp,
-                                  height: 1.15,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-
-                              SizedBox(height: 5.h),
-
-                              AppText(
-                                accountType == 'personal'
-                                    ? 'Add your profile details, interests, and other information once, it makes your personal experience easier.'
-                                    : 'Add your business name, category, contact details, and other information once, it makes creating content for your business easier.',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13.sp,
-                                  height: 1.4,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-
-                              SizedBox(height: 10.h),
-
-                              SizedBox(
-                                height: 42.h,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    if (accountType == 'personal') {
+                            SizedBox(height: 10.h),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildActionCard(
+                                    title: 'My Profile',
+                                    imagePath: "assets/images/personalcard.png",
+                                    background: isDark
+                                        ? const Color(0xFFEFF9FF)
+                                        : const Color(0xFFD3EEFD),
+                                    onTap: () {
                                       Navigator.pushNamed(
                                         context,
-                                        "/EditProfileScreen",
+                                        "/BusinessProfileScreen",
+                                      );
+                                    },
+                                    isDark: isDark,
+                                  ),
+                                ),
+                                SizedBox(width: 8.w),
+                                Expanded(
+                                  child: _buildActionCard(
+                                    title: 'My Downloads',
+                                    imagePath:
+                                        "assets/images/document_download.png",
+                                    background: isDark
+                                        ? const Color(0xFF241D32)
+                                        : const Color(0xFFF0EAFE),
+                                    onTap: () {
+                                      print('asdsadsasadsadsa');
+                                      Navigator.pushNamed(
+                                        context,
+                                        "/MyDownloadsScreen",
+                                      );
+                                    },
+                                    isDark: isDark,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: 10.h),
+
+                            _buildSectionCard(
+                              title: 'My Zone',
+                              isDark: isDark,
+                              children: [
+                                _buildSettingsTile(
+                                  title: 'My Plan',
+                                  iconAsset: "assets/images/my_plan.png",
+                                  isDark: isDark,
+                                  onTap: () async {
+                                    final planProvider = PlanProvider();
+                                    await planProvider.fetchMySubscription();
+
+                                    if (!context.mounted) return;
+
+                                    final bool hasActivePlan =
+                                        planProvider.activePlanUid != null &&
+                                        planProvider.activePlanUid!.isNotEmpty;
+
+                                    if (hasActivePlan) {
+                                      Navigator.pushNamed(
+                                        context,
+                                        "/MySubscriptionScreen",
                                       );
                                     } else {
+                                      print("asdsadsds${hasActivePlan}");
                                       Navigator.pushNamed(
                                         context,
-                                        "/BusinessDetailsScreen",
+                                        "/PlansAndPricingScreen",
+                                        arguments: {"showSkip": true},
                                       );
                                     }
                                   },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFF5222D),
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 16.w,
+                                ),
+
+                                _buildSettingsTile(
+                                  title: 'Near Me',
+                                  iconAsset: "assets/images/shop.png",
+                                  isDark: isDark,
+                                  onTap: () {
+                                    /*Navigator.pushNamed(
+                                  context,
+                                  "/BusinessDetailsScreen",
+                                );*/
+                                  },
+                                ),
+                                _buildSettingsTile(
+                                  title: 'AI Hub',
+                                  iconAsset: "assets/images/ai_tool.png",
+                                  isDark: isDark,
+                                  onTap: () {},
+                                  isLast: true,
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: 20.h),
+                          ] else ...[
+                            Row(
+                              children: provider.quickActions.map((item) {
+                                return Expanded(
+                                  child: GestureDetector(
+                                    onTap: () => item.onTap(context),
+                                    child: Container(
+                                      margin: EdgeInsets.symmetric(
+                                        horizontal: 3.w,
+                                      ),
+                                      height: 76.h,
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? const Color(0xFF1D1D1D)
+                                            : null,
+                                        gradient: isDark
+                                            ? null
+                                            : LinearGradient(
+                                          colors: item.gradientColors,
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10.r),
+                                        border: Border.all(
+                                          color: isDark
+                                              ? Colors.white10
+                                              : Colors.black.withValues(alpha: .05),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Image.asset(
+                                            item.iconPath,
+                                            height: 25.h,
+                                            width: 25.w,
+                                            errorBuilder: (_, __, ___) {
+                                              return Icon(
+                                                Icons.dashboard_customize_rounded,
+                                                size: 24.sp,
+                                                color: const Color(0xFFE53935),
+                                              );
+                                            },
+                                          ),
+                                          SizedBox(height: 5.h),
+                                          AppText(
+                                            item.title,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: isDark ? Colors.white : Colors.black,
+                                              fontSize: AppFontSize.fontSize15,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            SizedBox(height: 10),
+                            _buildSectionCard(
+                              title: 'My Zone',
+                              isDark: isDark,
+                              children: [
+                                _buildSettingsTile(
+                                  title: 'My Plan',
+                                  iconAsset: "assets/images/my_plan.png",
+                                  isDark: isDark,
+                                  onTap: () async {
+                                    final planProvider = PlanProvider();
+                                    await planProvider.fetchMySubscription();
+
+                                    if (!context.mounted) return;
+
+                                    final bool hasActivePlan =
+                                        planProvider.activePlanUid != null &&
+                                        planProvider.activePlanUid!.isNotEmpty;
+
+                                    if (hasActivePlan) {
+                                      Navigator.pushNamed(
+                                        context,
+                                        "/MySubscriptionScreen",
+                                      );
+                                    } else {
+                                      print("asdsadsds${hasActivePlan}");
+                                      Navigator.pushNamed(
+                                        context,
+                                        "/PlansAndPricingScreen",
+                                        arguments: {"showSkip": true},
+                                      );
+                                    }
+                                  },
+                                ),
+                                _buildSettingsTile(
+                                  title: 'Brand Series',
+                                  iconAsset: "assets/images/direct.png",
+                                  isDark: isDark,
+                                  onTap: () {
+                                    context
+                                        .read<BottomNavProvider>()
+                                        .updateIndex(1);
+                                  },
+                                ),
+
+                                _buildSettingsTile(
+                                  title: 'Near Me',
+                                  iconAsset: "assets/images/shop.png",
+                                  isDark: isDark,
+                                  onTap: () {
+                                    /* Navigator.pushNamed(
+                                  context,
+                                  "/BusinessDetailsScreen",
+                                );*/
+                                  },
+                                ),
+                                _buildSettingsTile(
+                                  title: 'AI Hub',
+                                  iconAsset: "assets/images/ai_tool.png",
+                                  isDark: isDark,
+                                  onTap: () {},
+                                  isLast: true,
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 10.h),
+
+                            _buildSectionCard(
+                              title: "My Business Settings",
+                              isDark: isDark,
+                              children: [
+                                _buildSettingsTile(
+                                  title: "Preferred Languages",
+                                  subtitle: "English, தமிழ், हिंदी",
+                                  iconAsset:
+                                      "assets/images/message_favorite.png",
+                                  isDark: isDark,
+                                  onTap: () async {
+                                    await provider.fetchLanguage();
+
+                                    if (!context.mounted) return;
+
+                                    _showLanguagesBottomSheet(
+                                      context,
+                                      provider,
+                                      isDark,
+                                    );
+                                  },
+                                ),
+                                _buildSettingsTile(
+                                  title: "Add Watermark",
+                                  iconAsset: "assets/images/pet.png",
+                                  isDark: isDark,
+                                  trailingWidget: Switch(
+                                    value: provider.isWatermarkEnabled,
+                                    onChanged: (value) {
+                                      provider.toggleWatermark(value);
+                                    },
+                                  ),
+                                  isLast: true,
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: 20.h),
+                          ],
+
+                          _buildSectionCard(
+                            title: "Help & Support",
+                            isDark: isDark,
+                            children: [
+                              _buildSettingsTile(
+                                title: "Help & Support",
+                                iconAsset: "assets/images/help.png",
+                                isDark: isDark,
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/HelpSupportScreen",
+                                  );
+                                },
+                              ),
+                              _buildSettingsTile(
+                                title: "FAQs",
+                                iconAsset: "assets/images/faq.png",
+                                isDark: isDark,
+                                onTap: () {
+                                  Navigator.pushNamed(context, "/FaqScreen");
+                                },
+                                isLast: true,
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 20.h),
+
+                          // =====================================================
+                          // APP SETTINGS
+                          // =====================================================
+                          SizedBox(height: 20.h),
+
+                          _buildSectionCard(
+                            title: "App Settings",
+                            isDark: isDark,
+                            children: [
+                              _buildSettingsTile(
+                                title: "Dark Mode",
+                                iconAsset: "assets/images/moon.png",
+                                isDark: isDark,
+                                trailingWidget: Switch(
+                                  value: isDark,
+                                  activeThumbColor: const Color(0xFFE53935),
+                                  onChanged: (bool value) {
+                                    themeProvider.toggleTheme(value);
+                                  },
+                                ),
+                              ),
+                              _buildSettingsTile(
+                                title: "Notifications",
+                                iconAsset: "assets/images/notification.png",
+                                isDark: isDark,
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/NotificationScreen",
+                                  );
+                                },
+                                isLast: true,
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 20.h),
+
+                          // =====================================================
+                          // ABOUT APP
+                          // =====================================================
+                          SizedBox(height: 20.h),
+
+                          _buildSectionCard(
+                            title: "About App",
+                            isDark: isDark,
+                            children: [
+                              _buildSettingsTile(
+                                title: "Feedback",
+                                iconAsset: "assets/images/feedback.png",
+                                isDark: isDark,
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    "/FeedbackScreen",
+                                  );
+                                },
+                              ),
+                              _buildSettingsTile(
+                                title: "Privacy Policy",
+                                iconAsset: "assets/images/document_text.png",
+                                isDark: isDark,
+                                onTap: () {},
+                              ),
+                              _buildSettingsTile(
+                                title: "Terms & Conditions",
+                                iconAsset: "assets/images/document_text.png",
+                                isDark: isDark,
+                                onTap: () {},
+                              ),
+                              _buildSettingsTile(
+                                title: "Refund Policy",
+                                iconAsset: "assets/images/bill.png",
+                                isDark: isDark,
+                                onTap: () {},
+                              ),
+                              _buildSettingsTile(
+                                title: "Follow Us",
+                                iconAsset: "assets/images/people.png",
+                                isDark: isDark,
+                                onTap: () {},
+                              ),
+                              _buildSettingsTile(
+                                title: "Delete my Account",
+                                iconAsset: "assets/images/user_remove.png",
+                                isDark: isDark,
+                                onTap: provider.isDeactivateLoading
+                                    ? null
+                                    : () {
+                                        provider.showDeactivateDialog(context);
+                                      },
+                                trailingWidget: provider.isDeactivateLoading
+                                    ? SizedBox(
+                                        width: 20.w,
+                                        height: 20.w,
+                                        child: const CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.red,
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.chevron_right_rounded,
+                                        color: isDark
+                                            ? Colors.white70
+                                            : Colors.black87,
+                                        size: 20.sp,
+                                      ),
+                                isLast: true,
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 24.h),
+
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.all(18.r),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20.r),
+                              image: const DecorationImage(
+                                image: AssetImage("assets/images/offer bg.png"),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AppText(
+                                  "Build Your Brand with Brand Series",
+                                  style: TextStyle(
+                                    color: const Color(0xFF303F9F),
+                                    fontSize: AppFontSize.fontSize18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                SizedBox(height: 6.h),
+                                AppText(
+                                  "Create consistent social media designs \nfor your business, all in one place.",
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: AppFontSize.fontSize13,
+                                  ),
+                                ),
+                                SizedBox(height: 12.h),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    context
+                                        .read<BottomNavProvider>()
+                                        .updateIndex(1);
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF8C74F5),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10.r),
                                     ),
                                   ),
-                                  child: AppText(
-                                    accountType == 'personal'
-                                        ? 'COMPLETE MY PROFILE →'
-                                        : 'SET UP MY BUSINESS →',
-                                    style: TextStyle(
-                                      fontSize: AppFontSize.fontSize13,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
+                                  child: const AppText(
+                                    "Explore Now",
+                                    style: TextStyle(color: Colors.white),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
 
-                        SizedBox(height: 10.h),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildActionCard(
-                                title: 'My Profile',
-                                imagePath: "assets/images/personalcard.png",
-                                background: isDark
-                                    ? const Color(0xFFEFF9FF)
-                                    : const Color(0xFFD3EEFD),
-                                onTap: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    "/BusinessProfileScreen",
-                                  );
-                                },
-                                isDark: isDark,
-                              ),
-                            ),
-                            SizedBox(width: 8.w),
-                            Expanded(
-                              child: _buildActionCard(
-                                title: 'My Downloads',
-                                imagePath:
-                                    "assets/images/document_download.png",
-                                background: isDark
-                                    ? const Color(0xFF241D32)
-                                    : const Color(0xFFF0EAFE),
-                                onTap: () {
-                                  print('asdsadsasadsadsa');
-                                  Navigator.pushNamed(
-                                    context,
-                                    "/MyDownloadsScreen",
-                                  );
-                                },
-                                isDark: isDark,
-                              ),
-                            ),
-                          ],
-                        ),
+                          SizedBox(height: 20.h),
 
-                        SizedBox(height: 10.h),
+                          ButtonWidget(
+                            isLoading: provider.isLogoutLoading,
+                            buttonPress: () {
+                              final parentContext = context;
 
-                        _buildSectionCard(
-                          title: 'My Zone',
-                          isDark: isDark,
-                          children: [
-                            _buildSettingsTile(
-                              title: 'My Plan',
-                              iconAsset: "assets/images/my_plan.png",
-                              isDark: isDark,
-                              onTap: () async {
-                                final planProvider = PlanProvider();
-                                await planProvider.fetchMySubscription();
-
-                                if (!context.mounted) return;
-
-                                final bool hasActivePlan =
-                                    planProvider.activePlanUid != null &&
-                                    planProvider.activePlanUid!.isNotEmpty;
-
-                                if (hasActivePlan) {
-                                  Navigator.pushNamed(
-                                    context,
-                                    "/ManagePlanScreen",
-                                  );
-                                } else {
-                                  print("asdsadsds${hasActivePlan}");
-                                  Navigator.pushNamed(
-                                    context,
-                                    "/PlansAndPricingScreen",
-                                    arguments: {"showSkip": true},
-                                  );
-                                }
-                              },
-                            ),
-
-                            _buildSettingsTile(
-                              title: 'Near Me',
-                              iconAsset: "assets/images/shop.png",
-                              isDark: isDark,
-                              onTap: () {
-                                /*Navigator.pushNamed(
-                                  context,
-                                  "/BusinessDetailsScreen",
-                                );*/
-                              },
-                            ),
-                            _buildSettingsTile(
-                              title: 'AI Hub',
-                              iconAsset: "assets/images/ai_tool.png",
-                              isDark: isDark,
-                              onTap: () {},
-                              isLast: true,
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: 20.h),
-                      ] else ...[
-                        Row(
-                          children: provider.quickActions.map((item) {
-                            return Expanded(
-                              child: GestureDetector(
-                                onTap: () => item.onTap(context),
-                                child: Container(
-                                  margin: EdgeInsets.symmetric(horizontal: 3.w),
-                                  height: 76.h,
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? const Color(0xFF1D1D1D)
-                                        : item.backgroundColor,
-                                    borderRadius: BorderRadius.circular(10.r),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? Colors.white10
-                                          : Colors.black.withValues(alpha: .05),
+                              showDialog(
+                                context: parentContext,
+                                builder: (dialogContext) {
+                                  return AlertDialog(
+                                    title: const AppText("Logout"),
+                                    content: const AppText(
+                                      "Are you sure you want to logout?",
                                     ),
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Image.asset(
-                                        item.iconPath,
-                                        height: 25.h,
-                                        width: 25.w,
-                                        errorBuilder: (_, __, ___) {
-                                          return Icon(
-                                            Icons.dashboard_customize_rounded,
-                                            size: 24.sp,
-                                            color: const Color(0xFFE53935),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(dialogContext);
+                                        },
+                                        child: const AppText("Cancel"),
+                                      ),
+                                      TextButton(
+                                        onPressed: () async {
+                                          Navigator.pop(dialogContext);
+
+                                          await provider.logoutApi(
+                                            parentContext,
                                           );
                                         },
-                                      ),
-                                      SizedBox(height: 5.h),
-                                      AppText(
-                                        item.title,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: isDark
-                                              ? Colors.white
-                                              : Colors.black87,
-                                          fontSize: AppFontSize.fontSize10,
-                                          fontWeight: FontWeight.w800,
+                                        child: const AppText(
+                                          "Logout",
+                                          style: TextStyle(color: Colors.red),
                                         ),
                                       ),
                                     ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                        SizedBox(height: 10),
-                        _buildSectionCard(
-                          title: 'My Zone',
-                          isDark: isDark,
-                          children: [
-                            _buildSettingsTile(
-                              title: 'My Plan',
-                              iconAsset: "assets/images/my_plan.png",
-                              isDark: isDark,
-                              onTap: () async {
-                                final planProvider = PlanProvider();
-                                await planProvider.fetchMySubscription();
-
-                                if (!context.mounted) return;
-
-                                final bool hasActivePlan =
-                                    planProvider.activePlanUid != null &&
-                                    planProvider.activePlanUid!.isNotEmpty;
-
-                                if (hasActivePlan) {
-                                  Navigator.pushNamed(
-                                    context,
-                                    "/ManagePlanScreen",
                                   );
-                                } else {
-                                  print("asdsadsds${hasActivePlan}");
-                                  Navigator.pushNamed(
-                                    context,
-                                    "/PlansAndPricingScreen",
-                                    arguments: {"showSkip": true},
-                                  );
-                                }
-                              },
-                            ),
-                            _buildSettingsTile(
-                              title: 'Brand Series',
-                              iconAsset: "assets/images/direct.png",
-                              isDark: isDark,
-                              onTap: () {
-                                context.read<BottomNavProvider>().updateIndex(
-                                  1,
-                                );
-                              },
-                            ),
-
-                            _buildSettingsTile(
-                              title: 'Near Me',
-                              iconAsset: "assets/images/shop.png",
-                              isDark: isDark,
-                              onTap: () {
-                                /* Navigator.pushNamed(
-                                  context,
-                                  "/BusinessDetailsScreen",
-                                );*/
-                              },
-                            ),
-                            _buildSettingsTile(
-                              title: 'AI Hub',
-                              iconAsset: "assets/images/ai_tool.png",
-                              isDark: isDark,
-                              onTap: () {},
-                              isLast: true,
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 10.h),
-
-                        _buildSectionCard(
-                          title: "My Business Settings",
-                          isDark: isDark,
-                          children: [
-                            _buildSettingsTile(
-                              title: "Preferred Languages",
-                              subtitle: "English, தமிழ், हिंदी",
-                              iconAsset: "assets/images/message_favorite.png",
-                              isDark: isDark,
-                              onTap: () async {
-                                await provider.fetchLanguage();
-
-                                if (!context.mounted) return;
-
-                                _showLanguagesBottomSheet(
-                                  context,
-                                  provider,
-                                  isDark,
-                                );
-                              },
-                            ),
-                            _buildSettingsTile(
-                              title: "Add Watermark",
-                              iconAsset: "assets/images/pet.png",
-                              isDark: isDark,
-                              trailingWidget: Switch(
-                                value: provider.isWatermarkEnabled,
-                                onChanged: (value) {
-                                  provider.toggleWatermark(value);
                                 },
-                              ),
-                              isLast: true,
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: 20.h),
-                      ],
-
-                      _buildSectionCard(
-                        title: "Help & Support",
-                        isDark: isDark,
-                        children: [
-                          _buildSettingsTile(
-                            title: "Help & Support",
-                            iconAsset: "assets/images/help.png",
-                            isDark: isDark,
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                "/HelpSupportScreen",
                               );
                             },
-                          ),
-                          _buildSettingsTile(
-                            title: "FAQs",
-                            iconAsset: "assets/images/faq.png",
-                            isDark: isDark,
-                            onTap: () {
-                              Navigator.pushNamed(context, "/FaqScreen");
-                            },
-                            isLast: true,
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20.h),
-
-                      // =====================================================
-                      // APP SETTINGS
-                      // =====================================================
-                      SizedBox(height: 20.h),
-
-                      _buildSectionCard(
-                        title: "App Settings",
-                        isDark: isDark,
-                        children: [
-                          _buildSettingsTile(
-                            title: "Dark Mode",
-                            iconAsset: "assets/images/moon.png",
-                            isDark: isDark,
-                            trailingWidget: Switch(
-                              value: isDark,
-                              activeThumbColor: const Color(0xFFE53935),
-                              onChanged: (bool value) {
-                                themeProvider.toggleTheme(value);
-                              },
+                            title: "Logout",
+                            textStyle: TextStyle(
+                              color: Colors.red,
+                              fontSize: AppFontSize.fontSize16,
+                              fontWeight: FontWeight.bold,
                             ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: .1),
+                              borderRadius: BorderRadius.circular(16.r),
+                            ),
+                            height: 54.h,
                           ),
-                          _buildSettingsTile(
-                            title: "Notifications",
-                            iconAsset: "assets/images/notification.png",
-                            isDark: isDark,
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                "/NotificationScreen",
-                              );
-                            },
-                            isLast: true,
-                          ),
-                        ],
-                      ),
 
-                      SizedBox(height: 20.h),
+                          SizedBox(height: 12.h),
 
-                      // =====================================================
-                      // ABOUT APP
-                      // =====================================================
-                      SizedBox(height: 20.h),
-
-                      _buildSectionCard(
-                        title: "About App",
-                        isDark: isDark,
-                        children: [
-                          _buildSettingsTile(
-                            title: "Feedback",
-                            iconAsset: "assets/images/feedback.png",
-                            isDark: isDark,
-                            onTap: () {
-                              Navigator.pushNamed(context, "/FeedbackScreen");
-                            },
-                          ),
-                          _buildSettingsTile(
-                            title: "Privacy Policy",
-                            iconAsset: "assets/images/document_text.png",
-                            isDark: isDark,
-                            onTap: () {},
-                          ),
-                          _buildSettingsTile(
-                            title: "Terms & Conditions",
-                            iconAsset: "assets/images/document_text.png",
-                            isDark: isDark,
-                            onTap: () {},
-                          ),
-                          _buildSettingsTile(
-                            title: "Refund Policy",
-                            iconAsset: "assets/images/bill.png",
-                            isDark: isDark,
-                            onTap: () {},
-                          ),
-                          _buildSettingsTile(
-                            title: "Follow Us",
-                            iconAsset: "assets/images/people.png",
-                            isDark: isDark,
-                            onTap: () {},
-                          ),
-                          _buildSettingsTile(
-                            title: "Delete my Account",
-                            iconAsset: "assets/images/user_remove.png",
-                            isDark: isDark,
-                            onTap: provider.isDeactivateLoading
-                                ? null
-                                : () {
-                                    provider.showDeactivateDialog(context);
-                                  },
-                            trailingWidget: provider.isDeactivateLoading
-                                ? SizedBox(
-                                    width: 20.w,
-                                    height: 20.w,
-                                    child: const CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.red,
-                                    ),
-                                  )
-                                : Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: isDark
-                                        ? Colors.white70
-                                        : Colors.black87,
-                                    size: 20.sp,
-                                  ),
-                            isLast: true,
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: 24.h),
-
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.all(18.r),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20.r),
-                          image: const DecorationImage(
-                            image: AssetImage("assets/images/offer bg.png"),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            AppText(
-                              "Build Your Brand with Brand Series",
+                          Center(
+                            child: AppText(
+                              "App Version 1.2",
                               style: TextStyle(
-                                color: const Color(0xFF303F9F),
-                                fontSize: AppFontSize.fontSize18,
-                                fontWeight: FontWeight.w900,
+                                color: Colors.grey,
+                                fontSize: 12.sp,
                               ),
                             ),
-                            SizedBox(height: 6.h),
-                            AppText(
-                              "Create consistent social media designs \nfor your business, all in one place.",
-                              style: TextStyle(
-                                color: Colors.black87,
-                                fontSize: AppFontSize.fontSize13,
-                              ),
-                            ),
-                            SizedBox(height: 12.h),
-                            ElevatedButton(
-                              onPressed: () {
-                                context.read<BottomNavProvider>().updateIndex(
-                                  1,
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF8C74F5),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10.r),
-                                ),
-                              ),
-                              child: const AppText(
-                                "Explore Now",
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+
+                          SizedBox(height: 20.h),
+                        ],
                       ),
-
-                      SizedBox(height: 20.h),
-
-                      ButtonWidget(
-                        isLoading: provider.isLogoutLoading,
-                        buttonPress: () {
-                          final parentContext = context;
-
-                          showDialog(
-                            context: parentContext,
-                            builder: (dialogContext) {
-                              return AlertDialog(
-                                title: const AppText("Logout"),
-                                content: const AppText(
-                                  "Are you sure you want to logout?",
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(dialogContext);
-                                    },
-                                    child: const AppText("Cancel"),
-                                  ),
-                                  TextButton(
-                                    onPressed: () async {
-                                      Navigator.pop(dialogContext);
-
-                                      await provider.logoutApi(parentContext);
-                                    },
-                                    child: const AppText(
-                                      "Logout",
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                        title: "Logout",
-                        textStyle: TextStyle(
-                          color: Colors.red,
-                          fontSize: AppFontSize.fontSize16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: .1),
-                          borderRadius: BorderRadius.circular(16.r),
-                        ),
-                        height: 54.h,
-                      ),
-
-                      SizedBox(height: 12.h),
-
-                      Center(
-                        child: AppText(
-                          "App Version 1.2",
-                          style: TextStyle(color: Colors.grey, fontSize: 12.sp),
-                        ),
-                      ),
-
-                      SizedBox(height: 20.h),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         );
@@ -1057,27 +1110,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-Future<void> logoutUser(BuildContext context, AuthProvider authProvider) async {
-  final prefs = await SharedPreferences.getInstance();
-
-  await prefs.remove('is_business_completed');
-  await prefs.remove('saved_business_name');
-  await prefs.remove('saved_email');
-  await prefs.remove('saved_mobile_number');
-  await prefs.remove('saved_business_image_path');
-  await prefs.remove('is_logged_in');
-  await prefs.remove('auth_token');
-  await prefs.remove('refresh_token');
-  await prefs.remove('logo_s3_key');
-  await prefs.remove('profile_s3_key');
-  await prefs.remove('profile_photo_s3_key');
-  clearUserSession(context);
-
-  if (!context.mounted) return;
-
-  Navigator.pushNamedAndRemoveUntil(context, '/LoginScreen', (route) => false);
-}
-
 Future<void> clearUserSession(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
 
@@ -1134,6 +1166,11 @@ Future<void> clearUserSession(BuildContext context) async {
   // PROVIDER CLEAR
   // =========================================================
 
+  try {
+    context.read<BusinessProvider>().clearImage();
+  } catch (e) {
+    debugPrint('BusinessProvider clear error: $e');
+  }
   CommonProvider.instance.clearAll();
 
   try {
@@ -1379,6 +1416,12 @@ void _showLanguagesBottomSheet(
                             debugPrint(
                               "🌐 Selected language order: "
                               "$orderedLanguages",
+                            );
+                            final prefs = await SharedPreferences.getInstance();
+
+                            await prefs.setStringList(
+                              'selected_language_codes',
+                              orderedLanguages,
                             );
                             final success = await provider.saveLanguages(
                               languages: orderedLanguages,

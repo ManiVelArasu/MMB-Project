@@ -541,7 +541,6 @@ class PlanProvider extends ChangeNotifier {
             result.error?.message ?? "Unable to get payment history";
 
         debugPrint("❌ Payment History Error: $_paymentHistoryError");
-
         return false;
       }
 
@@ -554,18 +553,13 @@ class PlanProvider extends ChangeNotifier {
 
       _paymentHistory = response;
 
-      debugPrint("================================");
-      debugPrint("💰 PAYMENT HISTORY");
-      debugPrint("$_paymentHistory");
-      debugPrint("================================");
-
+      debugPrint("💰 PAYMENT HISTORY: $_paymentHistory");
       return true;
     } catch (e, stackTrace) {
-      _paymentHistoryError = e.toString();
+      _paymentHistoryError = "Unable to parse payment history";
 
       debugPrint("❌ Payment History Exception: $e");
       debugPrintStack(stackTrace: stackTrace);
-
       return false;
     } finally {
       _isLoadingPaymentHistory = false;

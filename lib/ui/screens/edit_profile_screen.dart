@@ -757,6 +757,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
 
           child: ButtonWidget(
             isLoading: provider.isSaving,
+            textColor: AppColors.appWhite,
             buttonPress: provider.isSaving || provider.isUploadingImage
                 ? null
                 : _saveProfile,

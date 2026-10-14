@@ -122,8 +122,11 @@ class BusinessProvider extends ChangeNotifier {
   String? _logoS3Key;
   String? get logoS3Key => _logoS3Key;
   String? _profileS3Key;
-
   String? get profileS3Key => _profileS3Key;
+
+  // True only when an image was uploaded successfully in this editing session.
+  bool _isNewLogoSelected = false;
+  bool _isNewProfileSelected = false;
 
   final CommonProvider provider = CommonProvider.instance;
 
@@ -170,7 +173,7 @@ class BusinessProvider extends ChangeNotifier {
 
                 debugPrint(
                   "✅ ACCOUNT TYPE UPDATED = "
-                  "${language.data.accountType}",
+                      "${language.data.accountType}",
                 );
               }
             }
@@ -225,6 +228,10 @@ class BusinessProvider extends ChangeNotifier {
     _savedImagePath = null;
     _isImageSelected = false;
     _processedImageBytes = null;
+    _logoS3Key = null;
+    _profileS3Key = null;
+    _isNewLogoSelected = false;
+    _isNewProfileSelected = false;
 
     nameController.clear();
     emailController.clear();
@@ -259,9 +266,13 @@ class BusinessProvider extends ChangeNotifier {
     if (accountType == 'personal') {
       _profileS3Key = prefs.getString('profile_s3_key');
       _logoS3Key = null;
+      _isNewProfileSelected = false;
+      _isNewLogoSelected = false;
     } else if (accountType == 'business') {
       _logoS3Key = prefs.getString('logo_s3_key');
       _profileS3Key = null;
+      _isNewLogoSelected = false;
+      _isNewProfileSelected = false;
     }
 
     if (imagePath != null && imagePath.isNotEmpty) {
@@ -316,12 +327,12 @@ class BusinessProvider extends ChangeNotifier {
 
       switch (accountType) {
         case 'personal':
-          // Personal -> users/{uid}/profile/...
+        // Personal -> users/{uid}/profile/...
           uploadSlot = 'profile_photo';
           break;
 
         case 'business':
-          // Business -> users/{uid}/logo/...
+        // Business -> users/{uid}/logo/...
           uploadSlot = 'business_logo';
           break;
 
@@ -353,12 +364,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-            slot: uploadSlot,
-          );
+        imageFile: imageFile,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+        slot: uploadSlot,
+      );
 
       bool success = false;
 
@@ -448,6 +459,9 @@ class BusinessProvider extends ChangeNotifier {
 
           if (accountType == 'personal') {
             _profileS3Key = key;
+            _logoS3Key = null;
+            _isNewProfileSelected = true;
+            _isNewLogoSelected = false;
 
             // Remove old business key
             await prefs.remove('logo_s3_key');
@@ -464,6 +478,9 @@ class BusinessProvider extends ChangeNotifier {
           // ========================================================
           else if (accountType == 'business') {
             _logoS3Key = key;
+            _profileS3Key = null;
+            _isNewLogoSelected = true;
+            _isNewProfileSelected = false;
 
             // Remove old personal key
             await prefs.remove('profile_photo_s3_key');
@@ -576,10 +593,10 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<Map<String, dynamic>?> businessUpdateApi(
-    BuildContext context,
-    String subIndustry,
-    String other,
-  ) async {
+      BuildContext context,
+      String subIndustry,
+      String other,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -667,8 +684,8 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>?> skipBusinessUpdateApi(
-    BuildContext context,
-  ) async {
+      BuildContext context,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -760,20 +777,26 @@ class BusinessProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final mobileNumber = prefs.getString('saved_mobile_number') ?? '';
       final name = nameController.text.trim();
       final email = emailController.text.trim();
       final phone = mobileController.text.trim();
 
-      // Logo select panniruntha mattum s3_key anuppum, illana null / empty-ah avoid pannum
+
       final logoS3Key = _logoS3Key?.trim();
-      final String? finalLogoKey = (logoS3Key != null && logoS3Key.isNotEmpty) ? logoS3Key : null;
+      final String? finalLogoKey =
+      (_isNewLogoSelected && _logoS3Key != null &&
+          _logoS3Key!.trim().isNotEmpty)
+          ? _logoS3Key!.trim()
+          : null;
 
       final result = await BusinessRepository.instance.updateBusinessDetails(
         businessUid: businessUid,
         name: name,
         email: email,
-        phone: phone,
-        logo_s3_key: finalLogoKey ?? '',
+        phone: mobileNumber,
+        logo_s3_key: finalLogoKey,
       );
 
       return await result.when(
@@ -785,6 +808,7 @@ class BusinessProvider extends ChangeNotifier {
           if (finalLogoKey != null && finalLogoKey.isNotEmpty) {
             await prefs.setString('logo_s3_key', finalLogoKey);
           }
+          _isNewLogoSelected = false;
 
           await prefs.setString('business_uid', businessUid);
 
@@ -834,7 +858,10 @@ class BusinessProvider extends ChangeNotifier {
 
       // Profile picture select panniruntha mattum key anuppum, illana null
       final profileS3Key = _profileS3Key?.trim();
-      final String? finalProfileKey = (profileS3Key != null && profileS3Key.isNotEmpty) ? profileS3Key : null;
+      final String? finalProfileKey =
+      (_isNewProfileSelected && profileS3Key != null && profileS3Key.isNotEmpty)
+          ? profileS3Key
+          : null;
 
       debugPrint("======================================");
       debugPrint("🚀 UPDATE PERSONAL DETAILS");
@@ -847,7 +874,7 @@ class BusinessProvider extends ChangeNotifier {
       final result = await GetMeRepository.instance.updatePersonalDetail(
         name,
         email,
-        finalProfileKey ?? '', // Oru vela repository empty string expect pannuchuna empty anuppalam, illana null pass pannanum.
+        finalProfileKey,
       );
 
       return await result.when(
@@ -884,6 +911,7 @@ class BusinessProvider extends ChangeNotifier {
             await prefs.remove('logo_s3_key');
           }
 
+          _isNewProfileSelected = false;
           _isUploading = false;
           notifyListeners();
 
@@ -932,7 +960,7 @@ class BusinessProvider extends ChangeNotifier {
     final savedLogoKey = prefs.getString('logo_s3_key');
     final savedProfileKey =
         prefs.getString('profile_s3_key') ??
-        prefs.getString('profile_photo_s3_key');
+            prefs.getString('profile_photo_s3_key');
 
     if (savedLogoKey != null && savedLogoKey.trim().isNotEmpty) {
       _logoS3Key = savedLogoKey.trim();
@@ -989,17 +1017,17 @@ class BusinessProvider extends ChangeNotifier {
 
     debugPrint(
       "✅ ACCOUNT TYPE UPDATED = "
-      "${provider.me?.data.accountType}",
+          "${provider.me?.data.accountType}",
     );
 
     debugPrint(
       "COMMON ACCOUNT TYPE = "
-      "${provider.accountType}",
+          "${provider.accountType}",
     );
 
     debugPrint(
       "IS PERSONAL = "
-      "${provider.isPersonal}",
+          "${provider.isPersonal}",
     );
 
     debugPrint("================================");
@@ -1054,7 +1082,8 @@ class BusinessProvider extends ChangeNotifier {
 
     // Email validation (Only wrong format check, empty check removed)
     final email = emailController.text.trim();
-    if (email.isNotEmpty && !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+    if (email.isNotEmpty &&
+        !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
       _emailError = "Please enter a valid email";
       isValid = false;
     } else {
@@ -1164,6 +1193,8 @@ class BusinessProvider extends ChangeNotifier {
     _selectedImage = null;
     _originalImage = null;
     _bgRemovedImage = null;
+    _isNewLogoSelected = false;
+    _isNewProfileSelected = false;
 
     _resetLivePreview();
 
@@ -1267,12 +1298,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-            slot: uploadSlot,
-          );
+        imageFile: imageFile,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+        slot: uploadSlot,
+      );
 
       bool success = false;
 
@@ -1332,6 +1363,9 @@ class BusinessProvider extends ChangeNotifier {
 
           if (accountType == "personal") {
             _profileS3Key = key;
+            _logoS3Key = null;
+            _isNewProfileSelected = true;
+            _isNewLogoSelected = false;
 
             await prefs.remove('logo_s3_key');
             await prefs.setString('profile_s3_key', key);
@@ -1342,6 +1376,9 @@ class BusinessProvider extends ChangeNotifier {
             debugPrint("📁 PROFILE S3 KEY → $key");
           } else {
             _logoS3Key = key;
+            _profileS3Key = null;
+            _isNewLogoSelected = true;
+            _isNewProfileSelected = false;
 
             await prefs.remove('profile_s3_key');
             await prefs.remove('profile_photo_s3_key');
@@ -1416,9 +1453,9 @@ class BusinessProvider extends ChangeNotifier {
   // ============================================================
 
   Future<void> pickImage(
-    BuildContext context, {
-    ImageSource source = ImageSource.gallery,
-  }) async {
+      BuildContext context, {
+        ImageSource source = ImageSource.gallery,
+      }) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -1471,12 +1508,12 @@ class BusinessProvider extends ChangeNotifier {
     AccTypeModel(
       title: "For my Business",
       description:
-          "Create branded designs tailored to your business and industry.",
+      "Create branded designs tailored to your business and industry.",
     ),
     AccTypeModel(
       title: "Personal Use",
       description:
-          "Create designs for festivals, birthdays, quotes, social posts, and more.",
+      "Create designs for festivals, birthdays, quotes, social posts, and more.",
     ),
   ];
 
@@ -2164,12 +2201,33 @@ class BusinessProvider extends ChangeNotifier {
             success = false;
             return;
           }
-          _logoS3Key = s3Key;
+          final prefs = await SharedPreferences.getInstance();
+          if (accountType == 'personal') {
+            _profileS3Key = s3Key;
+            _logoS3Key = null;
+            _isNewProfileSelected = true;
+            _isNewLogoSelected = false;
+            await prefs.remove('logo_s3_key');
+            await prefs.setString('profile_s3_key', s3Key);
+            await prefs.setString('profile_photo_s3_key', s3Key);
+          } else if (accountType == 'business') {
+            _logoS3Key = s3Key;
+            _profileS3Key = null;
+            _isNewLogoSelected = true;
+            _isNewProfileSelected = false;
+            await prefs.remove('profile_s3_key');
+            await prefs.remove('profile_photo_s3_key');
+            await prefs.setString('logo_s3_key', s3Key);
+          } else {
+            _errorMessage = 'Invalid account type';
+            success = false;
+            return;
+          }
           success = true;
 
           debugPrint("======================================");
           debugPrint("✅ S3 KEY SAVED");
-          debugPrint("$_logoS3Key");
+          debugPrint("S3 KEY: $s3Key");
           debugPrint("======================================");
         },
 

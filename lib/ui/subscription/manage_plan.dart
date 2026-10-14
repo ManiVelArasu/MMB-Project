@@ -1029,14 +1029,12 @@ class _ChangePlanBottomSheetState extends State<_ChangePlanBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<PlanProvider>();
-
     final activePlan = widget.currentPlanName.trim().toLowerCase();
 
-    // Filter out current active plan and lower plans if needed
     final plansList = (provider.plansData?.data ?? []).where((plan) {
       final pName = plan.name?.trim().toLowerCase() ?? "";
       if (activePlan.isNotEmpty && pName == activePlan) {
-        return false; // Hide current active plan
+        return false;
       }
       return true;
     }).toList();
@@ -1044,12 +1042,7 @@ class _ChangePlanBottomSheetState extends State<_ChangePlanBottomSheet> {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          12,
-          16,
-          MediaQuery.of(context).viewInsets.bottom + 18,
-        ),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 18),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1087,11 +1080,7 @@ class _ChangePlanBottomSheetState extends State<_ChangePlanBottomSheet> {
                         color: Color(0xFFFFE5E7),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.red,
-                        size: 13,
-                      ),
+                      child: const Icon(Icons.close, color: Colors.red, size: 13),
                     ),
                   ),
                 ],
@@ -1109,94 +1098,99 @@ class _ChangePlanBottomSheetState extends State<_ChangePlanBottomSheet> {
 
               provider.isLoadingPlans
                   ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: CircularProgressIndicator(),
-                      ),
-                    )
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: CircularProgressIndicator(),
+                ),
+              )
                   : plansList.isEmpty
                   ? const Padding(
-                      padding: EdgeInsets.all(10),
-                      child: Text(
-                        "No other upgrade plans available",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    )
+                padding: EdgeInsets.all(10),
+                child: Text("No other upgrade plans available", style: TextStyle(color: Colors.grey)),
+              )
                   : ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: plansList.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final plan = plansList[index];
-                        final billing = plan.planBillingOptions.isNotEmpty
-                            ? plan.planBillingOptions.first
-                            : null;
-                        final isSelected = selectedPlan?.uid == plan.uid;
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: plansList.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final plan = plansList[index];
+                  final billing = plan.planBillingOptions.isNotEmpty
+                      ? plan.planBillingOptions.first
+                      : null;
+                  final isSelected = selectedPlan?.uid == plan.uid;
+                  final isPremium = plan.name?.trim().toLowerCase().contains("premium") == true;
 
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedPlan = plan;
-                              selectedBilling = billing;
-                            });
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(11),
-                              border: Border.all(
-                                color: isSelected
-                                    ? Colors.red
-                                    : const Color(0xFFFFD5D8),
-                                width: isSelected ? 2 : 1,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    AppText(
-                                      plan.name ?? "Plan",
-                                      style: TextStyle(
-                                        fontSize: AppFontSize.fontSize18,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    AppText(
-                                      "₹${billing?.discountedPrice ?? billing?.price ?? '0'}/${billing?.billingCycle ?? 'mo'}"
-                                          .replaceAll("nthly", ""),
-                                      style: TextStyle(
-                                        fontSize: AppFontSize.fontSize18,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedPlan = plan;
+                        selectedBilling = billing;
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(11),
+                        border: Border.all(
+                          color: isSelected ? Colors.red : const Color(0xFFFFD5D8),
+                          width: isSelected ? 2 : 1,
+                        ),
+                        boxShadow: isPremium
+                            ? [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(isSelected ? 0.35 : 0.15),
+                            blurRadius: isSelected ? 10 : 6,
+                            spreadRadius: isSelected ? 2 : 1,
+                          )
+                        ]
+                            : [],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              AppText(
+                                plan.name ?? "Plan",
+                                style:  TextStyle(
+                                  fontSize: AppFontSize.fontSize18,
+
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                if (plan.description != null &&
-                                    plan.description!.isNotEmpty) ...[
-                                  const SizedBox(height: 5),
-                                  AppText(
-                                    "• ${plan.description}",
-                                    maxLines: 2,
-                                    style: TextStyle(
-                                      fontSize: AppFontSize.fontSize13,
-                                      fontWeight: FontWeight.w400,
-                                      color: Color(0xFF333333),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
+                              ),
+                              AppText(
+                                "₹${billing?.discountedPrice ?? billing?.price ?? '0'}/${billing?.billingCycle ?? 'mo'}".replaceAll("nthly", ""),
+                                style:  TextStyle(
+                                  fontSize: AppFontSize.fontSize18,
+
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
-                        );
-                      },
+                          if (plan.description != null && plan.description!.isNotEmpty) ...[
+                            const SizedBox(height: 5),
+                            AppText(
+                              "• ${plan.description}",
+                              maxLines: 2,
+                              style:  TextStyle(fontSize: AppFontSize.fontSize13,
+
+                                fontWeight: FontWeight.w400,
+
+                                color: Color(0xFF333333),),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
+                  );
+                },
+              ),
 
               const SizedBox(height: 14),
 
@@ -1213,17 +1207,15 @@ class _ChangePlanBottomSheetState extends State<_ChangePlanBottomSheet> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                         AppText(
+                        const AppText(
                           "Selected Plan",
-                          style: TextStyle(  fontSize: AppFontSize.fontSize15,
-                              fontWeight: FontWeight.w700, color: Colors.grey),
+                          style: TextStyle(fontSize: 10, color: Colors.grey),
                         ),
                         AppText(
                           selectedPlan?.name ?? "None selected",
-                          style:  TextStyle(
-                            fontSize: AppFontSize.fontSize15,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style:  TextStyle(   fontSize: AppFontSize.fontSize18,
+
+                            fontWeight: FontWeight.w600,),
                         ),
                       ],
                     ),
@@ -1233,17 +1225,15 @@ class _ChangePlanBottomSheetState extends State<_ChangePlanBottomSheet> {
                       children: [
                          AppText(
                           "Charged today",
-                          style: TextStyle(
-                            fontSize: AppFontSize.fontSize15,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: TextStyle(   fontSize: AppFontSize.fontSize18,
+
+                              fontWeight: FontWeight.w600,),
                         ),
                         AppText(
                           "₹${selectedBilling?.discountedPrice ?? selectedBilling?.price ?? '0'}",
-                          style:  TextStyle(
-                            fontSize: AppFontSize.fontSize15,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style:  TextStyle(   fontSize: AppFontSize.fontSize18,
+
+                            fontWeight: FontWeight.w600,),
                         ),
                       ],
                     ),
@@ -1264,64 +1254,58 @@ class _ChangePlanBottomSheetState extends State<_ChangePlanBottomSheet> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed:
-                      provider.isCreatingSubscription ||
-                          selectedBilling?.id == null
+                  onPressed: provider.isCreatingSubscription || selectedBilling?.id == null
                       ? null
                       : () async {
-                          final subscription = await provider
-                              .createSubscription(
-                                planBillingOptionId: int.parse(
-                                  selectedBilling!.id!,
-                                ),
-                              );
+                    final subscription = await provider.createSubscription(
+                      planBillingOptionId: int.parse(selectedBilling!.id!),
+                    );
 
-                          if (!context.mounted) return;
+                    if (!context.mounted) return;
 
-                          if (subscription == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  provider.subscriptionError ??
-                                      "Unable to start payment",
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-
-                          Navigator.pop(context);
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ChangeNotifierProvider.value(
-                                value: provider,
-                                child: RazorpaySubscriptionScreen(
-                                  url: subscription.shortUrl,
-                                  subscriptionId: subscription.subscriptionId,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                  child: provider.isCreatingSubscription
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const AppText(
-                          "PAY DIFFERENCE & UPGRADE",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                    if (subscription == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            provider.subscriptionError ?? "Unable to start payment",
                           ),
                         ),
+                      );
+                      return;
+                    }
+
+                    Navigator.pop(context);
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: provider,
+                          child: RazorpaySubscriptionScreen(
+                            url: subscription.shortUrl,
+                            subscriptionId: subscription.subscriptionId,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  child: provider.isCreatingSubscription
+                      ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const AppText(
+                    "PAY DIFFERENCE & UPGRADE",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ),
 
@@ -1330,11 +1314,7 @@ class _ChangePlanBottomSheetState extends State<_ChangePlanBottomSheet> {
                 child: Text(
                   "Downgrades take effect from your next billing cycle instead of\ncharging you today.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 8,
-                    color: Colors.grey,
-                    height: 1.4,
-                  ),
+                  style: TextStyle(fontSize: 8, color: Colors.grey, height: 1.4),
                 ),
               ),
             ],

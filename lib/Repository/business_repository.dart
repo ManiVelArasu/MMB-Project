@@ -71,22 +71,29 @@ class BusinessRepository {
     return result;
   }
 
+
   Future<ApiResult<dynamic>> updateBusinessDetails({
     required String businessUid,
     required String name,
     required String email,
     required String phone,
-    required String logo_s3_key,
+    String? logo_s3_key,
   }) {
     final Map<String, dynamic> body = {
-      "name": name,
-      "phone": phone,
-      "logo_s3_key": logo_s3_key,
+      "name": name.trim(),
+      "phone": phone.trim(),
     };
 
-    // Email entered only → send email
+    // Email இருந்தால் மட்டும் அனுப்பவும்.
     if (email.trim().isNotEmpty) {
       body["email"] = email.trim();
+    }
+
+    // New, valid image key இருந்தால் மட்டும் அனுப்பவும்.
+    final logoKey = logo_s3_key?.trim();
+
+    if (logoKey != null && logoKey.isNotEmpty) {
+      body["logo_s3_key"] = logoKey;
     }
 
     debugPrint("📤 BUSINESS DETAILS BODY: $body");
@@ -100,4 +107,5 @@ class BusinessRepository {
       fromJson: (json) => json,
     );
   }
+
 }

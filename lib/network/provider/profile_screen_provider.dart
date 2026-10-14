@@ -126,7 +126,10 @@ class ProfileScreenProvider extends ChangeNotifier {
     QuickActionModel(
       title: "Business\nProfile",
       iconPath: "assets/images/personalcard.png",
-      backgroundColor: const Color(0xFFE0F7FA),
+      gradientColors: [
+        Color(0xFFEFF9FF),
+        Color(0xFFD3EEFD),
+      ],
       onTap: (context) {
         Navigator.pushNamed(context, '/BusinessProfileScreen');
       },
@@ -134,7 +137,10 @@ class ProfileScreenProvider extends ChangeNotifier {
     QuickActionModel(
       title: "My\nDownloads",
       iconPath: "assets/images/document-download.png",
-      backgroundColor: const Color(0xFFEDE7F6),
+      gradientColors: [
+        Color(0xFFF6F4FF),
+        Color(0xFFEEEBFF),
+      ],
       onTap: (context) {
         Navigator.pushNamed(context, "/MyDownloadsScreen");
       },
@@ -142,7 +148,10 @@ class ProfileScreenProvider extends ChangeNotifier {
     QuickActionModel(
       title: "Festival\n Post",
       iconPath: "assets/images/festival_calender.png",
-      backgroundColor: const Color(0xFFFFECB3),
+      gradientColors: [
+        Color(0xFFFFFAF2),
+        Color(0xFFFFE8C6),
+      ],
       onTap: (context) {
         Navigator.pushNamed(context, "/SmCalendarScreen");
       },

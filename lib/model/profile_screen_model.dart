@@ -7,13 +7,13 @@ import 'package:flutter/material.dart';
 class QuickActionModel {
   final String title;
   final String iconPath;
-  final Color backgroundColor;
+  final List<Color> gradientColors;
   final Function(BuildContext context) onTap;
 
   QuickActionModel({
     required this.title,
     required this.iconPath,
-    required this.backgroundColor,
+    required this.gradientColors,
     required this.onTap,
   });
 }

@@ -353,7 +353,7 @@ class _MySubscriptionView extends StatelessWidget {
           if (!hideBackButton) ...[
             GestureDetector(
               onTap: () => Navigator.pop(context),
-              child:  Container(
+              child: Container(
                 height: 42.h,
                 width: 42.w,
                 decoration: BoxDecoration(
@@ -370,15 +370,14 @@ class _MySubscriptionView extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-
           ],
           Expanded(
             child: AppText(
               "My Subscription",
               style: TextStyle(
                 color: AppColors.appBlack,
-                fontSize: AppFontSize.fontSize18,
-                fontWeight: FontWeight.w700,
+                fontSize: AppFontSize.fontSize22,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -562,10 +561,6 @@ class _MySubscriptionView extends StatelessWidget {
             ),
             const SizedBox(height: 10),
           ],
-
-          // ====================================================
-          // REACTIVATE
-          // ====================================================
           SizedBox(
             width: 240,
             height: 53,
@@ -1014,6 +1009,7 @@ class _MySubscriptionView extends StatelessWidget {
       ],
     );
   }
+
   Widget _buildActionButton({
     required String title,
     required Color backgroundColor,
@@ -1038,8 +1034,8 @@ class _MySubscriptionView extends StatelessWidget {
           title,
           style: TextStyle(
             color: textColor,
-              fontSize: AppFontSize.fontSize16,
-              fontWeight: FontWeight.w700
+            fontSize: AppFontSize.fontSize16,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

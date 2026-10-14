@@ -15,6 +15,9 @@ import 'common_provider.dart';
 class HomeScreenProvider extends ChangeNotifier {
   bool _initialized = false;
 
+  // Keeps existing content visible while pull-to-refresh APIs run.
+  bool _isSilentRefresh = false;
+
   HomeScreenProvider({bool loadSpecialDaysOnInit = true}) {
     initialize(loadSpecialDaysOnInit: loadSpecialDaysOnInit);
   }
@@ -175,9 +178,11 @@ class HomeScreenProvider extends ChangeNotifier {
         return false;
       }
 
-      _isKeyWordsLoading = true;
+      if (!_isSilentRefresh) {
+        _isKeyWordsLoading = true;
+        notifyListeners();
+      }
       _keyWordsError = null;
-      notifyListeners();
 
       debugPrint("🚀 Calling Keywords API...");
 
@@ -310,10 +315,11 @@ class HomeScreenProvider extends ChangeNotifier {
   // ============================================================
 
   Future<void> fetchTemplateCategories() async {
-    _isLoadingCategories = true;
+    if (!_isSilentRefresh) {
+      _isLoadingCategories = true;
+      notifyListeners();
+    }
     _categoryErrorMessage = null;
-
-    notifyListeners();
 
     try {
       final result = await HomeRepository.instance.templateCategory();
@@ -441,13 +447,16 @@ class HomeScreenProvider extends ChangeNotifier {
     String? to,
     bool preserveCalendarRange = false,
   }) async {
-    _isLoadingSpecialDays = true;
+    if (!_isSilentRefresh) {
+      _isLoadingSpecialDays = true;
+      notifyListeners();
+    }
     _specialDaysError = null;
 
     if (range != null && range.isNotEmpty) {
       _selectedSpecialDaysRange = range;
     }
-    notifyListeners();
+    if (!_isSilentRefresh) notifyListeners();
 
     try {
       final result = await HomeRepository.instance.specialDaysApi(
@@ -535,6 +544,7 @@ class HomeScreenProvider extends ChangeNotifier {
       final response = await HomeRepository.instance.favorite(templateId);
 
       if (response.data != null) {
+
         notifyListeners();
       }
     } catch (e) {
@@ -552,9 +562,11 @@ class HomeScreenProvider extends ChangeNotifier {
 
     if (categorySlug.isEmpty) return;
 
-    _templateLoadingByCategory[categorySlug] = true;
+    if (!_isSilentRefresh) {
+      _templateLoadingByCategory[categorySlug] = true;
+      notifyListeners();
+    }
     _templateErrorByCategory[categorySlug] = null;
-    notifyListeners();
 
     try {
       final result = await HomeRepository.instance.templatesByCategory(
@@ -590,9 +602,11 @@ class HomeScreenProvider extends ChangeNotifier {
   Future<void> fetchTemplatesByPopular() async {
     debugPrint('🔥 fetchTemplatesByPopular START');
 
-    _isLoadingPopularTemplates = true;
+    if (!_isSilentRefresh) {
+      _isLoadingPopularTemplates = true;
+      notifyListeners();
+    }
     _popularTemplatesError = null;
-    notifyListeners();
 
     try {
       final industrySlug =
@@ -615,9 +629,18 @@ class HomeScreenProvider extends ChangeNotifier {
       debugPrint('🏭 Industry: $industrySlug');
       debugPrint('======================================');
 
+      final prefs = await SharedPreferences.getInstance();
+
+      final savedLanguages =
+          prefs.getStringList('selected_language_codes') ?? ['en'];
+
+      final language = savedLanguages.isNotEmpty
+          ? savedLanguages.first
+          : 'en';
+
       final result = await HomeRepository.instance.myBrandCategory(
-        industrySlug: '${provider.business?.businessCategory?.slug}',
-        language: 'en',
+        industrySlug: industrySlug,
+        language: language,
       );
 
       debugPrint('📦 API Success: ${result.isSuccess}');
@@ -818,14 +841,27 @@ class HomeScreenProvider extends ChangeNotifier {
   ];
 
   Future<void> refreshHomeScreen() async {
-    await Future.wait([
-      fetchTemplateCategories(),
-      fetchTemplatesByPopular(),
-      fetchSpecialDays(range: 'month'),
-      loadSavedBusinessData(),
-    ]);
+    // Keep the current UI visible; suppress section-level loading indicators.
+    _isSilentRefresh = true;
+    try {
+      await Future.wait([
+        fetchTemplateCategories(),
+        fetchSpecialDays(range: 'month'),
+        loadSavedBusinessData(),
+        if (provider.isBusiness) fetchTemplatesByPopular(),
+      ]);
 
-    await loadKeyWords(forceRefresh: true);
+      if (provider.isBusiness) {
+        await loadKeyWords(forceRefresh: true);
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Home refresh error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    } finally {
+      _isSilentRefresh = false;
+      // One final notification updates the screen with the refreshed data.
+      notifyListeners();
+    }
   }
 
   void clearUserData() {

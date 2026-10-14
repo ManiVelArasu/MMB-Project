@@ -91,23 +91,34 @@ class CustomScreenProvider extends ChangeNotifier {
   String? get plansErrorMessage => _plansErrorMessage;
   Future<void> fetchPlans({bool forceRefresh = false}) async {
     if (_isLoadingPlans) return;
-
     if (_plansData != null && !forceRefresh) return;
 
-    _isLoadingPlans = true;
+    // Show the full-screen loader only for the first load.
+    // During refresh, keep the existing data visible without loading UI.
+    final bool hasExistingData = _plansData != null;
+    if (!hasExistingData) {
+      _isLoadingPlans = true;
+      notifyListeners();
+    }
     _plansErrorMessage = null;
-    notifyListeners();
 
     try {
       final result = await _repository.industry();
 
       if (result.isSuccess && result.data != null) {
         _plansData = result.data;
+        _plansErrorMessage = null;
       } else {
-        _plansErrorMessage = result.error?.message ?? 'Something went wrong';
+        // Preserve the previous data if a background refresh fails.
+        if (_plansData == null) {
+          _plansErrorMessage = result.error?.message ?? 'Something went wrong';
+        }
       }
     } catch (e) {
-      _plansErrorMessage = e.toString();
+      // Do not replace an already-rendered screen with an error during refresh.
+      if (_plansData == null) {
+        _plansErrorMessage = e.toString();
+      }
     } finally {
       _isLoadingPlans = false;
       notifyListeners();

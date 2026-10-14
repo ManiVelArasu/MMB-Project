@@ -77,9 +77,9 @@ class _ButtonWidgetState extends State<ButtonWidget>
       onTapUp: widget.isLoading
           ? null
           : (details) {
-        _onTapUp(details);
-        widget.buttonPress?.call();
-      },
+              _onTapUp(details);
+              widget.buttonPress?.call();
+            },
       onTapCancel: widget.isLoading ? null : _onTapCancel,
       child: AnimatedScale(
         scale: _scale,
@@ -88,69 +88,69 @@ class _ButtonWidgetState extends State<ButtonWidget>
         child: Container(
           width: widget.width,
           height: widget.height ?? 48.h,
-          decoration: widget.decoration ??
+          decoration:
+              widget.decoration ??
               BoxDecoration(
                 color: widget.buttonColor,
                 borderRadius: BorderRadius.circular(20.r),
               ),
           child: widget.isLoading
               ? Center(
-            child: SizedBox(
-              height: 24,
-              width: 24,
-              child: CircularProgressIndicator(
-                color: widget.loaderColor,
-              ),
-            ),
-          )
-              : Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.w),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (widget.isLeftIconVisible)
-                  Padding(
-                    padding: EdgeInsets.only(right: 6.w),
-                    child: SvgPicture.asset(
-                      widget.icon!,
-                      height: widget.iconHeight!.h,
-                      width: widget.iconWidth!.w,
-                      color: widget.iconColor,
-                    ),
+                  child: SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(color: widget.loaderColor),
                   ),
-
-                // IMPORTANT:
-                // Flexible is directly inside Row
-                Flexible(
-                  child: Text(
-                    widget.title,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                    style: widget.textStyle ??
-                        TextStyle(
-                          color: widget.textColor,
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
+                )
+              : Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (widget.isLeftIconVisible)
+                        Padding(
+                          padding: EdgeInsets.only(right: 6.w),
+                          child: SvgPicture.asset(
+                            widget.icon!,
+                            height: widget.iconHeight!.h,
+                            width: widget.iconWidth!.w,
+                            color: widget.iconColor,
+                          ),
                         ),
+
+                      // IMPORTANT:
+                      // Flexible is directly inside Row
+                      Flexible(
+                        child: Text(
+                          widget.title.toUpperCase(),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                          style:
+                              widget.textStyle ??
+                              TextStyle(
+                                color: widget.textColor,
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+
+                      if (widget.isRightIconVisible)
+                        Padding(
+                          padding: EdgeInsets.only(left: 6.w),
+                          child: SvgPicture.asset(
+                            widget.icon!,
+                            height: widget.iconHeight!.h,
+                            width: widget.iconWidth!.w,
+                            color: widget.iconColor,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-
-                if (widget.isRightIconVisible)
-                  Padding(
-                    padding: EdgeInsets.only(left: 6.w),
-                    child: SvgPicture.asset(
-                      widget.icon!,
-                      height: widget.iconHeight!.h,
-                      width: widget.iconWidth!.w,
-                      color: widget.iconColor,
-                    ),
-                  ),
-              ],
-            ),
-          ),
         ),
       ),
     );

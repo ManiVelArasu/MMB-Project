@@ -45,8 +45,9 @@ class _ThemesScreenState extends State<ThemesScreen> {
           );
         }
 
-        if (provider.plansErrorMessage != null) {
+        if (provider.plansErrorMessage != null && provider.groups.isEmpty) {
           return Scaffold(
+            extendBodyBehindAppBar: true,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: Center(
               child: Text(
@@ -62,99 +63,115 @@ class _ThemesScreenState extends State<ThemesScreen> {
         final groups = provider.groups;
 
         return Scaffold(
+          extendBodyBehindAppBar: true,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(),
           ),
-          body: SafeArea(
-            child: RefreshIndicator(
-              color: const Color(0xFFE53935),
-              onRefresh: () async {
-                await context.read<ThemesScreenProvider>().refresh();
-              },
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: size.width * .04,
-                    vertical: 12.h,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      AppText(
-                        "Brand Series",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.appBlack,
-
-                          fontSize: AppFontSize.fontSize22,
-                        ),
+          body: Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 300.h,
+                child: Image.asset(
+                  "assets/images/plan_gradient.png",
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                ),
+              ),
+              SafeArea(
+                child: RefreshIndicator(
+                  color: const Color(0xFFE53935),
+                  onRefresh: () async {
+                    await context.read<ThemesScreenProvider>().refresh();
+                  },
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: size.width * .04,
+                        vertical: 12.h,
                       ),
-
-                      SizedBox(height: 2),
-
-                      // DESCRIPTION
-                      AppText(
-                        "Create a consistent brand identity with\n"
-                        "professionally designed template collections.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: AppFontSize.fontSize18,
-                          color: AppColors.lightTextGrey,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-
-                      SizedBox(height: 4),
-
-                      Column(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 4,
-                            runSpacing: 4,
+                          AppText(
+                            "Brand Series",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.appBlack,
+
+                              fontSize: AppFontSize.fontSize22,
+                            ),
+                          ),
+
+                          SizedBox(height: 2),
+
+                          // DESCRIPTION
+                          AppText(
+                            "Create a consistent brand identity with\n"
+                                "professionally designed template collections.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: AppFontSize.fontSize18,
+                              color: AppColors.lightTextGrey,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+
+                          SizedBox(height: 4),
+
+                          Column(
                             children: [
-                              _brandBadge("2,500+ TEMPLATES"),
-                              _brandBadge("50+ INDUSTRIES"),
-                              _brandBadge("FULLY CUSTOMIZABLE"),
-                              _brandBadge("INDUSTRY-SPECIFIC COLLECTIONS"),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 4,
+                                runSpacing: 4,
+                                children: [
+                                  _brandBadge("2,500+ TEMPLATES"),
+                                  _brandBadge("50+ INDUSTRIES"),
+                                  _brandBadge("FULLY CUSTOMIZABLE"),
+                                  _brandBadge("INDUSTRY-SPECIFIC COLLECTIONS"),
+                                ],
+                              ),
                             ],
+                          ),
+
+                          SizedBox(height: 10),
+
+                          /// Search
+                          CustomSearchBar(
+                            hintText: "Search Brand Series",
+                            prefixAsset: "assets/images/search.png",
+                            suffixAsset: "assets/images/mic.png",
+                            borderColor: const Color(0xFFFFCDD2),
+                            onChanged: (value) {},
+                          ),
+
+                          SizedBox(height: 20.h),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: groups.length,
+                            itemBuilder: (context, index) {
+                              final group = groups[index];
+                              return ThemeGroupSection(
+                                group: group,
+                                isDark: isDark,
+                              );
+                            },
                           ),
                         ],
                       ),
-
-                      SizedBox(height: 10),
-
-                      /// Search
-                      CustomSearchBar(
-                        hintText: "Search Brand Series",
-                        prefixAsset: "assets/images/search.png",
-                        suffixAsset: "assets/images/mic.png",
-                        borderColor: const Color(0xFFFFCDD2),
-                        onChanged: (value) {},
-                      ),
-
-                      SizedBox(height: 20.h),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: groups.length,
-                        itemBuilder: (context, index) {
-                          final group = groups[index];
-                          return ThemeGroupSection(
-                            group: group,
-                            isDark: isDark,
-                          );
-                        },
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         );
       },
@@ -255,67 +272,66 @@ class ThemeGroupSection extends StatelessWidget {
 
         group.variants.isEmpty
             ? Padding(
-                padding: EdgeInsets.symmetric(vertical: 20.h),
-                child: Center(
-                  child: AppText(
-                    "Variants for this series are on their way.",
-                    style: TextStyle(
-                      color: isDark
-                          ? Colors.grey.shade400
-                          : Colors.grey.shade600,
-                      fontSize: AppFontSize.fontSize14,
-                      fontWeight: FontWeight.w600,
-                    ),
+          padding: EdgeInsets.symmetric(vertical: 20.h),
+          child: Center(
+            child: AppText(
+              "Variants for this series are on their way.",
+              style: TextStyle(
+                color: isDark
+                    ? Colors.grey.shade400
+                    : Colors.grey.shade600,
+                fontSize: AppFontSize.fontSize14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        )
+            : SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: group.variants.map((variant) {
+              final thumbnailKey = variant.thumbnailS3Key;
+
+              final thumbnail =
+              thumbnailKey != null && thumbnailKey.isNotEmpty
+                  ? "${ApiEndpoints.cdnImageUrl}/$thumbnailKey"
+                  : null;
+
+              return Padding(
+                padding: EdgeInsets.only(right: 12.w),
+                child: SizedBox(
+                  width: 150.w,
+                  child: BrandSeriesCard(
+                    thumbnail: thumbnail,
+                    title: variant.name ?? "Theme",
+                    description:
+                    "${variant.businessCategories.length} Ready-to-Use Templates.",
+                    perfectFor: variant.businessCategories
+                        .map(
+                          (category) => category.name?.isNotEmpty == true
+                          ? category.name!
+                          : variant.description ?? '',
+                    )
+                        .where((slug) => slug.isNotEmpty)
+                        .join(", "),
+                    isLocked: false,
+                    isDark: isDark,
+                    onTap: variant.uid != null
+                        ? () {
+                      Navigator.pushNamed(
+                        context,
+                        "/ThemeSingleitemViewScreen",
+                        arguments: variant.uid,
+                      );
+                    }
+                        : null,
                   ),
                 ),
-              )
-            : SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: group.variants.map((variant) {
-                    final thumbnailKey = variant.thumbnailS3Key;
-
-                    final thumbnail =
-                        thumbnailKey != null && thumbnailKey.isNotEmpty
-                        ? "${ApiEndpoints.cdnImageUrl}/$thumbnailKey"
-                        : null;
-
-                    return Padding(
-                      padding: EdgeInsets.only(right: 12.w),
-                      child: SizedBox(
-                        width: 150.w,
-                        child: BrandSeriesCard(
-                          thumbnail: thumbnail,
-                          title: variant.name ?? "Theme",
-                          description:
-                              "${variant.businessCategories.length} Ready-to-Use Templates.",
-                          perfectFor: variant.businessCategories
-                              .map(
-                                (category) => category.name?.isNotEmpty == true
-                                    ? category.name!
-                                    : variant.description ?? '',
-                              )
-                              .where((slug) => slug.isNotEmpty)
-                              .join(", "),
-                          isLocked: false,
-                          isDark: isDark,
-                          onTap: variant.uid != null
-                              ? () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    "/ThemeSingleitemViewScreen",
-                                    arguments: variant.uid,
-                                  );
-                                }
-                              : null,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
+              );
+            }).toList(),
+          ),
+        ),
 
         SizedBox(height: 24.h),
       ],

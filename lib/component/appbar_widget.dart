@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/network/provider/common_provider.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/custom_theme_provider.dart';
@@ -250,9 +251,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.titleLarge?.copyWith(
-                        fontSize: AppFontSize.fontSize18,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : Colors.black,
+                        fontSize: AppFontSize.fontSize22,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : AppColors.appBlack,
                       ),
                     ),
                   ),

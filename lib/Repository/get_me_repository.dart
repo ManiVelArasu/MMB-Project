@@ -35,22 +35,28 @@ class GetMeRepository {
     );
   }
 
+
   Future<ApiResult<dynamic>> updatePersonalDetail(
       String? name,
       String? email,
       String? profile_photo_s3_key,
       ) {
-    final Map<String, dynamic> body = {
-      "name": name,
-      "profile_photo_s3_key": profile_photo_s3_key,
-    };
+    final Map<String, dynamic> body = {};
 
-    // Email entered இருந்தால் மட்டும் API-க்கு send செய்யவும்
+    if (name != null && name.trim().isNotEmpty) {
+      body["name"] = name.trim();
+    }
+
     if (email != null && email.trim().isNotEmpty) {
       body["email"] = email.trim();
     }
 
+    // New, valid profile image key இருந்தால் மட்டும் அனுப்பவும்.
+    final profileKey = profile_photo_s3_key?.trim();
 
+    if (profileKey != null && profileKey.isNotEmpty) {
+      body["profile_photo_s3_key"] = profileKey;
+    }
 
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
@@ -61,6 +67,7 @@ class GetMeRepository {
       fromJson: (json) => json,
     );
   }
+
 
   Future<ApiResult<BusinessModel>> businessApi() {
     return ApiRepository.instance.request<BusinessModel>(

@@ -32,6 +32,7 @@ import '../ui/screens/template_edit.dart';
 import '../ui/screens/theme_detail_screen.dart';
 import '../ui/screens/theme_single_item_view_screen.dart';
 
+import '../ui/screens/widget/custom_size_screen.dart';
 import '../ui/screens/widget/from_library.dart';
 import '../ui/splash/splash_screen.dart';
 import '../ui/subscription/change_plan_screen.dart';
@@ -330,6 +331,9 @@ class RouteGenerator {
       case "/ProfilePictureScreen":
         return MaterialPageRoute(
           builder: (context) => const ProfilePictureScreen(),
+        );case "/CustomSizeScreen":
+        return MaterialPageRoute(
+          builder: (context) => const CustomSizeScreen(),
         );
       case "/TemplateListScreen":
         final arguments = settings.arguments;

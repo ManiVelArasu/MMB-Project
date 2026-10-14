@@ -139,7 +139,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
     if (!isPersonal && !isBusiness) {
       debugPrint(
         "❌ Invalid account type: "
-            "${CommonProvider.instance.accountType}",
+        "${CommonProvider.instance.accountType}",
       );
       return;
     }
@@ -215,7 +215,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
 
       final bool hasActivePlan =
           planProvider.activePlanUid != null &&
-              planProvider.activePlanUid!.isNotEmpty;
+          planProvider.activePlanUid!.isNotEmpty;
 
       if (hasActivePlan || showSkip) {
         Navigator.pushReplacementNamed(context, "/CustomBottomNavScreen");
@@ -636,6 +636,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                             keyboardType: TextInputType.phone,
                             customColor: customColor,
                             theme: theme,
+                            editable: false,
                             onChanged: businessProvider.setMobileNumber,
                             errorMessage: businessProvider.mobileError,
                           ),
@@ -696,6 +697,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
     required String? errorMessage,
     required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
+    bool editable = true, // Added editable parameter with default true
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -704,6 +706,9 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
+            color: editable
+                ? Colors.transparent
+                : Colors.grey.shade100, // Background color change when disabled
             border: Border.all(
               color: errorMessage != null
                   ? Colors.red
@@ -727,7 +732,10 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
               TextFormField(
                 controller: controller,
                 keyboardType: keyboardType,
-                onChanged: onChanged,
+                onChanged: editable
+                    ? onChanged
+                    : null, // Disable change callback if not editable
+                readOnly: !editable, // Make it read-only if editable is false
                 decoration: InputDecoration(
                   hintText: hintText,
                   hintStyle: theme.bodyMedium!.copyWith(
@@ -740,7 +748,9 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                 ),
                 style: theme.bodyMedium!.copyWith(
                   fontWeight: FontWeight.w400,
-                  color: customColor.baseColor,
+                  color: editable
+                      ? customColor.baseColor
+                      : Colors.grey.shade600, // Dim text color if not editable
                 ),
               ),
             ],
