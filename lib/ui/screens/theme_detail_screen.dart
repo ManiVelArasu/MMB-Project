@@ -168,19 +168,14 @@ class ThemeDetailView extends StatelessWidget {
                                 : const Color(0xFFFFE4E5),
                             borderRadius:
                             BorderRadius.circular(20.r),
-                            border: Border.all(
-                              color: isDark
-                                  ? Colors.red.shade900
-                                  : Colors.red.shade100,
-                            ),
+
                           ),
                           child: AppText(
                             tag.name!,
                             style: TextStyle(
                               color: AppColors.appBlack,
-                              fontSize:
-                              AppFontSize.fontSize14,
-                              fontWeight: FontWeight.w500,
+                              fontSize: AppFontSize.fontSize14,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         );
@@ -388,15 +383,14 @@ class ThemeDetailView extends StatelessWidget {
                               color:
                               const Color(0xFFE53935),
                               borderRadius:
-                              BorderRadius.circular(10.r),
+                              BorderRadius.circular(15.r),
                             ),
                             child: AppText(
                               category,
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize:
-                                AppFontSize.fontSize14,
-                                fontWeight: FontWeight.w500,
+                                fontSize: AppFontSize.fontSize14,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           );

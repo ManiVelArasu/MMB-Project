@@ -503,8 +503,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         children: [
                                           Image.asset(
                                             item.iconPath,
-                                            height: 25.h,
-                                            width: 25.w,
+                                            height: 30.h,
+                                            width: 30.w,
                                             errorBuilder: (_, __, ___) {
                                               return Icon(
                                                 Icons.dashboard_customize_rounded,
@@ -521,7 +521,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             textAlign: TextAlign.center,
                                             style: TextStyle(
                                               color: isDark ? Colors.white : Colors.black,
-                                              fontSize: AppFontSize.fontSize15,
+                                              fontSize: AppFontSize.fontSize14,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),

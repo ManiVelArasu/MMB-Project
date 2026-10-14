@@ -183,8 +183,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF5F5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFFFD5D5)),
+        borderRadius: BorderRadius.circular(15),
       ),
       child: Text(
         text,
@@ -192,8 +191,8 @@ class _ThemesScreenState extends State<ThemesScreen> {
         softWrap: false,
         style: TextStyle(
           color: AppColors.appRed,
-          fontSize: AppFontSize.fontSize12,
-          fontWeight: FontWeight.w600,
+          fontSize: AppFontSize.fontSize14,
+          fontWeight: FontWeight.w400,
         ),
       ),
     );

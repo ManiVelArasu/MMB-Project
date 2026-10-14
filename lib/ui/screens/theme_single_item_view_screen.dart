@@ -328,19 +328,15 @@ class ThemeDetailView extends StatelessWidget {
                             color: isDark
                                 ? const Color(0xFF2A1A1C)
                                 : const Color(0xFFFFE9EB),
-                            borderRadius: BorderRadius.circular(18.r),
-                            border: Border.all(
-                              color: isDark
-                                  ? Colors.red.shade900
-                                  : Colors.red.shade100,
-                            ),
+                            borderRadius: BorderRadius.circular(15.r),
+
                           ),
                           child: AppText(
                             tag.toString(),
                             style: TextStyle(
                               color: AppColors.appBlack,
                               fontSize: AppFontSize.fontSize14,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         );
@@ -445,13 +441,9 @@ class ThemeDetailView extends StatelessWidget {
                                         ? const Color(0xFF2A1A1C)
                                         : const Color(0xFFFFF0F2),
 
-                                    borderRadius: BorderRadius.circular(20.r),
+                                    borderRadius: BorderRadius.circular(15.r),
 
-                                    border: Border.all(
-                                      color: isDark
-                                          ? Colors.red.shade900
-                                          : Colors.red.shade100,
-                                    ),
+
                                   ),
 
                                   child: Text(
@@ -461,7 +453,7 @@ class ThemeDetailView extends StatelessWidget {
                                       color: const Color(0xFFE53935),
 
                                       fontSize: AppFontSize.fontSize14,
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                 );

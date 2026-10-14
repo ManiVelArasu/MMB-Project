@@ -103,14 +103,10 @@ class _CustomAppBarState extends State<CustomAppBar> {
       final String accountType =
           provider.accountType?.trim().toLowerCase() ?? "";
 
-
-
       debugPrint(
         "📌 CUSTOM APP BAR ACCOUNT TYPE: "
         "$accountType",
       );
-
-
 
       if (accountType == "personal") {
         debugPrint(
@@ -250,7 +246,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                       displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.titleLarge?.copyWith(
+                      style: TextStyle(
                         fontSize: AppFontSize.fontSize22,
                         fontWeight: FontWeight.w600,
                         color: isDark ? Colors.white : AppColors.appBlack,
@@ -260,14 +256,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
               ],
             ),
 
-            // ======================================================
-            // RIGHT SIDE
-            // ======================================================
             actions: [
-              // ====================================================
-              // ACTION TEXT
-              // ====================================================
-
               if (widget.showActionText)
                 Padding(
                   padding: EdgeInsets.only(right: 12.w),

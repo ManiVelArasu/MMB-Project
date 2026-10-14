@@ -1,4 +1,3 @@
-
 class ProjectList {
   final bool success;
   final List<ProjectListModel> data;
