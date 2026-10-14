@@ -149,6 +149,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
                             prefixAsset: "assets/images/search.png",
                             suffixAsset: "assets/images/mic.png",
                             borderColor: const Color(0xFFFFCDD2),
+                            showSuffixIcon: false,
                             onChanged: (value) {},
                           ),
 
