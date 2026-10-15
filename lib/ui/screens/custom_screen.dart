@@ -111,7 +111,7 @@ class _CustomCreateBody extends StatelessWidget {
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
                               itemCount:
-                              templateSizes.length +
+                                  templateSizes.length +
                                   1, // Added +1 for the custom card
                               itemBuilder: (context, index) {
                                 // If it's the last item, render the Custom Box
@@ -162,7 +162,8 @@ class _CustomCreateBody extends StatelessWidget {
 
                                 final item = templateSizes[index];
 
-                                final width = int.tryParse(item.width ?? "0") ?? 0;
+                                final width =
+                                    int.tryParse(item.width ?? "0") ?? 0;
                                 final height =
                                     int.tryParse(item.height ?? "0") ?? 0;
 
@@ -194,7 +195,10 @@ class _CustomCreateBody extends StatelessWidget {
                                             alignment: Alignment.bottomCenter,
                                             child: Image.asset(
                                               buildTemplateImage(width, height),
-                                              height: getImageHeight(width, height),
+                                              height: getImageHeight(
+                                                width,
+                                                height,
+                                              ),
                                               fit: BoxFit.contain,
                                             ),
                                           ),
@@ -247,88 +251,100 @@ class _CustomCreateBody extends StatelessWidget {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: provider.aiToolsList.length,
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12.w,
-                              mainAxisSpacing: 12.h,
-                              childAspectRatio: 0.82,
-                            ),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 12.w,
+                                  mainAxisSpacing: 12.h,
+                                  childAspectRatio: 0.82,
+                                ),
                             itemBuilder: (context, index) {
                               final tool = provider.aiToolsList[index];
 
-                              return Container(
-                                padding: EdgeInsets.all(12.r),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? const Color(0xFF1E1E1E)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(16.r),
-                                  border: Border.all(
+                              return InkWell(
+                                onTap: () {
+                                  Navigator.pushNamed(context, tool.routeName);
+                                },
+
+                                child: Container(
+                                  padding: EdgeInsets.all(12.r),
+                                  decoration: BoxDecoration(
                                     color: isDark
-                                        ? Colors.grey.shade800
-                                        : const Color(0xFFE8EEF5),
-                                    width: 1.2,
+                                        ? const Color(0xFF1E1E1E)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(16.r),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? Colors.grey.shade800
+                                          : const Color(0xFFE8EEF5),
+                                      width: 1.2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: isDark ? 0.2 : 0.02,
+                                        ),
+                                        blurRadius: 8.r,
+                                        offset: Offset(0, 2.h),
+                                      ),
+                                    ],
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: isDark ? 0.2 : 0.02,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        height: 52.h,
+                                        width: 52.w,
+                                        child: tool.imagePath.trim().isNotEmpty
+                                            ? Image.asset(
+                                                tool.imagePath,
+                                                fit: BoxFit.contain,
+                                                errorBuilder:
+                                                    (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) => _buildFallbackIcon(),
+                                              )
+                                            : _buildFallbackIcon(),
                                       ),
-                                      blurRadius: 8.r,
-                                      offset: Offset(0, 2.h),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      height: 52.h,
-                                      width: 52.w,
-                                      child: tool.imagePath.trim().isNotEmpty
-                                          ? Image.asset(
-                                        tool.imagePath,
-                                        fit: BoxFit.contain,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                            _buildFallbackIcon(),
-                                      )
-                                          : _buildFallbackIcon(),
-                                    ),
 
-                                    SizedBox(height: 10.h),
+                                      SizedBox(height: 10.h),
 
-                                    // 2. TOOL TITLE
-                                    AppText(
-                                      tool.title,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: isDark ? Colors.white : Colors.black,
-                                        fontSize: 13.sp,
-                                        fontWeight: FontWeight.w800,
+                                      // 2. TOOL TITLE
+                                      AppText(
+                                        tool.title,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black,
+                                          fontSize: 13.sp,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
 
-                                    SizedBox(height: 4.h),
+                                      SizedBox(height: 4.h),
 
-                                    // 3. TOOL SUBTITLE
-                                    AppText(
-                                      tool.subtitle,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: isDark
-                                            ? Colors.grey.shade400
-                                            : Colors.grey.shade600,
-                                        fontSize: 9.5.sp,
-                                        fontWeight: FontWeight.w500,
-                                        height: 1.2,
+                                      // 3. TOOL SUBTITLE
+                                      AppText(
+                                        tool.subtitle,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.grey.shade400
+                                              : Colors.grey.shade600,
+                                          fontSize: 9.5.sp,
+                                          fontWeight: FontWeight.w500,
+                                          height: 1.2,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               );
                             },

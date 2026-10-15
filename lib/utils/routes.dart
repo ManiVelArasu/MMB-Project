@@ -14,6 +14,9 @@ import '../ui/industry/business_frame_screen.dart';
 import '../ui/industry/edit_photo_screen.dart';
 import '../ui/login/login_screen.dart';
 import '../ui/onboarding/onboarding_screen.dart';
+import '../ui/screens/ai_bg_remove_screen.dart';
+import '../ui/screens/ai_hub_screen.dart';
+import '../ui/screens/ai_imag_screen.dart';
 import '../ui/screens/business_profile_screen.dart';
 import '../ui/screens/download_screen.dart';
 import '../ui/screens/edit_profile_screen.dart';
@@ -331,10 +334,20 @@ class RouteGenerator {
       case "/ProfilePictureScreen":
         return MaterialPageRoute(
           builder: (context) => const ProfilePictureScreen(),
-        );case "/CustomSizeScreen":
+        );
+
+      case "/CustomSizeScreen":
         return MaterialPageRoute(
           builder: (context) => const CustomSizeScreen(),
         );
+
+      case "/AiHubScreen":
+        return MaterialPageRoute(builder: (context) => const AiHubScreen());
+      case "/AiHubPage":
+        return MaterialPageRoute(builder: (context) => const AiHubPage());
+
+      case '/AiRemoveBg':
+        return MaterialPageRoute(builder: (_) => const AiRemoveBgPage());
       case "/TemplateListScreen":
         final arguments = settings.arguments;
 

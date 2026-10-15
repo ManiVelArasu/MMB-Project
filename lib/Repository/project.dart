@@ -22,8 +22,8 @@ class ProjectRepository {
       'content': content,
     };
 
-    if (templateId != null) {
-      body['template_id'] = templateId; // int, not String
+    if (templateId != null && templateId > 0) {
+      body['template_id'] = templateId; // Only template-based projects send this field.
     }
 
     debugPrint('CREATE PROJECT BODY: $body');

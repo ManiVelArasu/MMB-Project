@@ -34,41 +34,49 @@ class CustomScreenProvider extends ChangeNotifier {
       title: "Logo Generator",
       subtitle: "Create professional logos in seconds",
       imagePath: 'assets/images/ai.png',
+      routeName: "/LogoGeneratorScreen",
     ),
     AIToolModel(
       title: "Magic Media",
       subtitle: "Create product backgrounds with AI",
       imagePath: 'assets/images/ai_image.png',
+      routeName: "/MagicMediaScreen",
     ),
     AIToolModel(
       title: "BG Remover",
       subtitle: "Remove backgrounds\ninstantly",
       imagePath: 'assets/images/bg_remover.png',
+      routeName: "/AiRemoveBg",
     ),
     AIToolModel(
       title: "AI Image",
       subtitle: "Generate Images\nusing AI",
       imagePath: 'assets/images/magic_media.png',
+      routeName: "/AiHubPage",
     ),
     AIToolModel(
       title: "Captions",
       subtitle: "Generate engaging captions",
       imagePath: 'assets/images/caption.png',
+      routeName: "/CaptionsScreen",
     ),
     AIToolModel(
       title: "SM Calendar",
       subtitle: "Generate monthly content calendars",
       imagePath: 'assets/images/sm_calender.png',
+      routeName: "/SocialCalendarFormScreen",
     ),
     AIToolModel(
       title: "Text to Audio",
       subtitle: "Convert text into natural AI voiceovers",
       imagePath: 'assets/images/text_to_audio.png',
+      routeName: "/TextToAudioScreen",
     ),
     AIToolModel(
       title: "Translate",
       subtitle: "Translate to multiple\nlanguages",
       imagePath: 'assets/images/translate.png',
+      routeName: "/AiHubScreen",
     ),
   ];
 

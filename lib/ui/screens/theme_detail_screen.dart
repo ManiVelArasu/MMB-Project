@@ -6,6 +6,7 @@ import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/theme_screen_model.dart';
+import '../../component/bottom_navigation.dart';
 import '../../component/custom_widget.dart';
 import '../../component/home_appbar.dart';
 import '../../component/network_image.dart';
@@ -13,19 +14,16 @@ import '../../core/api/api_endpoints.dart';
 import '../../network/provider/theme_screen_provider.dart';
 
 import '../../network/provider/custom_theme_provider.dart';
+
 class ThemeDetailScreen extends StatelessWidget {
   final ThemeItem? themeItem;
 
-  const ThemeDetailScreen({
-    super.key,
-    this.themeItem,
-  });
+  const ThemeDetailScreen({super.key, this.themeItem});
 
   @override
   Widget build(BuildContext context) {
     final ThemeItem? item =
-        themeItem ??
-            (ModalRoute.of(context)?.settings.arguments as ThemeItem?);
+        themeItem ?? (ModalRoute.of(context)?.settings.arguments as ThemeItem?);
 
     return ChangeNotifierProvider(
       create: (_) => ThemesScreenProvider(),
@@ -41,10 +39,7 @@ class ThemeDetailScreen extends StatelessWidget {
 class ThemeDetailView extends StatelessWidget {
   final ThemeItem? themeItem;
 
-  const ThemeDetailView({
-    super.key,
-    this.themeItem,
-  });
+  const ThemeDetailView({super.key, this.themeItem});
 
   @override
   Widget build(BuildContext context) {
@@ -56,31 +51,20 @@ class ThemeDetailView extends StatelessWidget {
         final String title = themeItem?.name ?? "";
 
         final String caption =
-            themeItem?.caption ??
-                "Bright ideas deserve bright branding";
+            themeItem?.caption ?? "Bright ideas deserve bright branding";
 
         final String description =
             themeItem?.description ??
-                "Fresh, vibrant, energetic visuals for businesses that want to grab attention instantly, while keeping every single post consistent, lively, and unmistakably you.";
+            "Fresh, vibrant, energetic visuals for businesses that want to grab attention instantly, while keeping every single post consistent, lively, and unmistakably you.";
 
-        final List<dynamic> tags =
-        themeItem?.tags.isNotEmpty == true
+        final List<dynamic> tags = themeItem?.tags.isNotEmpty == true
             ? themeItem!.tags
-            : [
-          "Fresh",
-          "Bright",
-          "Energetic",
-          "Modern",
-          "Friendly",
-        ];
+            : ["Fresh", "Bright", "Energetic", "Modern", "Friendly"];
 
-        final List<Variant> variants =
-            themeItem?.variants ?? [];
+        final List<Variant> variants = themeItem?.variants ?? [];
 
         return Scaffold(
-          backgroundColor:
-          Theme.of(context).scaffoldBackgroundColor,
-
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(),
@@ -90,13 +74,9 @@ class ThemeDetailView extends StatelessWidget {
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 16.w,
-                  vertical: 12.h,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                 child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // =====================================================
                     // TITLE
@@ -106,9 +86,7 @@ class ThemeDetailView extends StatelessWidget {
                       themeItem?.name ?? "",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w500,
                         fontSize: AppFontSize.fontSize22,
                       ),
@@ -116,27 +94,23 @@ class ThemeDetailView extends StatelessWidget {
 
                     SizedBox(height: 6.h),
 
-
                     AppText(
                       caption,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: const Color(0xFFE53935),
-                        fontSize:AppFontSize.fontSize13,
+                        fontSize: AppFontSize.fontSize13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
 
                     SizedBox(height: 10.h),
 
-
                     AppText(
                       description,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: isDark
-                            ? Colors.grey.shade300
-                            : Colors.black87,
+                        color: isDark ? Colors.grey.shade300 : Colors.black87,
                         fontSize: AppFontSize.fontSize18,
                         fontWeight: FontWeight.w400,
                         height: 1.4,
@@ -145,68 +119,57 @@ class ThemeDetailView extends StatelessWidget {
 
                     SizedBox(height: 16.h),
 
-
                     Wrap(
                       spacing: 8.w,
                       runSpacing: 8.h,
                       alignment: WrapAlignment.center,
                       children: themeItem!.stylePersonalities
                           .where(
-                            (tag) =>
-                        tag.name != null &&
-                            tag.name!.isNotEmpty,
-                      )
+                            (tag) => tag.name != null && tag.name!.isNotEmpty,
+                          )
                           .map((tag) {
-                        return Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12.w,
-                            vertical: 6.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF2A1A1C)
-                                : const Color(0xFFFFE4E5),
-                            borderRadius:
-                            BorderRadius.circular(20.r),
-
-                          ),
-                          child: AppText(
-                            tag.name!,
-                            style: TextStyle(
-                              color: AppColors.appBlack,
-                              fontSize: AppFontSize.fontSize14,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                            return Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 12.w,
+                                vertical: 6.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF2A1A1C)
+                                    : const Color(0xFFFFE4E5),
+                                borderRadius: BorderRadius.circular(20.r),
+                              ),
+                              child: AppText(
+                                tag.name!,
+                                style: TextStyle(
+                                  color: AppColors.appBlack,
+                                  fontSize: AppFontSize.fontSize14,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            );
+                          })
+                          .toList(),
                     ),
 
                     SizedBox(height: 20.h),
 
                     IntrinsicWidth(
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: 200.w,
-                        ),
+                        constraints: BoxConstraints(maxWidth: 200.w),
                         child: SizedBox(
                           height: 42.h,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                              const Color(0xFFE53935),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 18.w,
-                              ),
+                              backgroundColor: const Color(0xFFE53935),
+                              padding: EdgeInsets.symmetric(horizontal: 18.w),
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                BorderRadius.circular(10.r),
+                                borderRadius: BorderRadius.circular(10.r),
                               ),
                               elevation: 0,
                             ),
                             onPressed: () {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(
+                              ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: AppText(
                                     "Theme Unlocked Successfully!",
@@ -218,8 +181,7 @@ class ThemeDetailView extends StatelessWidget {
                               "Unlock $title →",
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize:
-                                AppFontSize.fontSize14,
+                                fontSize: AppFontSize.fontSize14,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -228,19 +190,14 @@ class ThemeDetailView extends StatelessWidget {
                       ),
                     ),
 
-
-
                     if (variants.isNotEmpty) ...[
                       SizedBox(height: 24.h),
 
-
                       GridView.builder(
                         shrinkWrap: true,
-                        physics:
-                        const NeverScrollableScrollPhysics(),
+                        physics: const NeverScrollableScrollPhysics(),
                         itemCount: variants.length,
-                        gridDelegate:
-                        SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 12.w,
                           mainAxisSpacing: 12.h,
@@ -249,39 +206,26 @@ class ThemeDetailView extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final variant = variants[index];
 
-                          final thumbnailKey =
-                              variant.thumbnailS3Key;
+                          final thumbnailKey = variant.thumbnailS3Key;
 
                           final thumbnail =
-                          thumbnailKey != null &&
-                              thumbnailKey.isNotEmpty
+                              thumbnailKey != null && thumbnailKey.isNotEmpty
                               ? "${ApiEndpoints.cdnImageUrl}/$thumbnailKey"
                               : null;
 
                           final variantName =
-                              variant.name ??
-                                  "$title-0${index + 1}";
+                              variant.name ?? "$title-0${index + 1}";
 
                           final variantDescription =
-                              variant.description
-                                  ?.toString() ??
-                                  description;
+                              variant.description?.toString() ?? description;
 
-                          final perfectFor =
-                          variant.businessCategories
+                          final perfectFor = variant.businessCategories
                               .map(
-                                (category) =>
-                            category.slug
-                                ?.isNotEmpty ==
-                                true
-                                ? category.slug!
-                                : variant.description ??
-                                '',
-                          )
-                              .where(
-                                (value) =>
-                            value.isNotEmpty,
-                          )
+                                (category) => category.slug?.isNotEmpty == true
+                                    ? category.slug!
+                                    : variant.description ?? '',
+                              )
+                              .where((value) => value.isNotEmpty)
                               .join(", ");
 
                           return BrandSeriesCard(
@@ -295,12 +239,12 @@ class ThemeDetailView extends StatelessWidget {
                             isDark: isDark,
                             onTap: variant.uid != null
                                 ? () {
-                              Navigator.pushNamed(
-                                context,
-                                "/ThemeSingleitemViewScreen",
-                                arguments: variant.uid,
-                              );
-                            }
+                                    Navigator.pushNamed(
+                                      context,
+                                      "/ThemeSingleitemViewScreen",
+                                      arguments: variant.uid,
+                                    );
+                                  }
                                 : null,
                           );
                         },
@@ -311,7 +255,6 @@ class ThemeDetailView extends StatelessWidget {
                       // ===================================================
                       // ALSO WORKS GREAT FOR
                       // ===================================================
-
                       Center(
                         child: Container(
                           padding: EdgeInsets.symmetric(
@@ -322,8 +265,7 @@ class ThemeDetailView extends StatelessWidget {
                             color: isDark
                                 ? const Color(0xFF1E1E1E)
                                 : Colors.grey.shade100,
-                            borderRadius:
-                            BorderRadius.circular(12.r),
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
                           child: AppText(
                             "Also works great for",
@@ -343,16 +285,13 @@ class ThemeDetailView extends StatelessWidget {
                       // ===================================================
                       // BEYOND THE OBVIOUS
                       // ===================================================
-
                       AppText(
                         "Beyond the obvious",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 20.sp,
                           fontWeight: FontWeight.w500,
-                          color: isDark
-                              ? Colors.white
-                              : Colors.black,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
 
@@ -361,40 +300,38 @@ class ThemeDetailView extends StatelessWidget {
                       // ===================================================
                       // BUSINESS CATEGORY CHIPS
                       // ===================================================
-
                       Wrap(
                         spacing: 8.w,
                         runSpacing: 8.h,
                         alignment: WrapAlignment.center,
-                        children: [
-                          "Cafe",
-                          "Juice Shop",
-                          "Organic Store",
-                          "Bakery",
-                          "Dessert Shop",
-                          "Smoothie Bar",
-                        ].map((category) {
-                          return Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16.w,
-                              vertical: 10.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color:
-                              const Color(0xFFE53935),
-                              borderRadius:
-                              BorderRadius.circular(15.r),
-                            ),
-                            child: AppText(
-                              category,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: AppFontSize.fontSize14,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                        children:
+                            [
+                              "Cafe",
+                              "Juice Shop",
+                              "Organic Store",
+                              "Bakery",
+                              "Dessert Shop",
+                              "Smoothie Bar",
+                            ].map((category) {
+                              return Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 16.w,
+                                  vertical: 10.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE53935),
+                                  borderRadius: BorderRadius.circular(15.r),
+                                ),
+                                child: AppText(
+                                  category,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: AppFontSize.fontSize14,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                       ),
 
                       SizedBox(height: 30.h),
