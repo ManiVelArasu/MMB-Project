@@ -422,14 +422,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   iconAsset: "assets/images/my_plan.png",
                                   isDark: isDark,
                                   onTap: () async {
+
                                     final planProvider = PlanProvider();
+
+                                    final bool hasActivePlan =
                                     await planProvider.fetchMySubscription();
 
                                     if (!context.mounted) return;
-
-                                    final bool hasActivePlan =
-                                        planProvider.activePlanUid != null &&
-                                        planProvider.activePlanUid!.isNotEmpty;
 
                                     if (hasActivePlan) {
                                       Navigator.pushNamed(
@@ -437,13 +436,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         "/MySubscriptionScreen",
                                       );
                                     } else {
-                                      print("asdsadsds${hasActivePlan}");
                                       Navigator.pushNamed(
                                         context,
-                                        "/PlansAndPricingScreen",
+                                        "/FreePlanScreen",
                                         arguments: {"showSkip": true},
                                       );
-                                    }
+                                    };
                                   },
                                 ),
 
@@ -542,28 +540,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   iconAsset: "assets/images/my_plan.png",
                                   isDark: isDark,
                                   onTap: () async {
-                                    final planProvider = PlanProvider();
-                                    await planProvider.fetchMySubscription();
 
-                                    if (!context.mounted) return;
+                                      final planProvider = PlanProvider();
 
-                                    final bool hasActivePlan =
-                                        planProvider.activePlanUid != null &&
-                                        planProvider.activePlanUid!.isNotEmpty;
+                                      final bool hasActivePlan =
+                                      await planProvider.fetchMySubscription();
 
-                                    if (hasActivePlan) {
-                                      Navigator.pushNamed(
-                                        context,
-                                        "/MySubscriptionScreen",
-                                      );
-                                    } else {
-                                      print("asdsadsds${hasActivePlan}");
-                                      Navigator.pushNamed(
-                                        context,
-                                        "/PlansAndPricingScreen",
-                                        arguments: {"showSkip": true},
-                                      );
-                                    }
+                                      if (!context.mounted) return;
+
+                                      if (hasActivePlan) {
+                                        Navigator.pushNamed(
+                                          context,
+                                          "/MySubscriptionScreen",
+                                        );
+                                      } else {
+                                        Navigator.pushNamed(
+                                          context,
+                                          "/FreePlanScreen",
+                                          arguments: {"showSkip": true},
+                                        );
+                                    };
                                   },
                                 ),
                                 _buildSettingsTile(

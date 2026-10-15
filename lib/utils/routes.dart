@@ -42,6 +42,7 @@ import '../ui/subscription/change_plan_screen.dart';
 import '../ui/subscription/confirm_cancel.dart';
 import '../ui/subscription/confirm_plan.dart';
 
+import '../ui/subscription/free_plan.dart';
 import '../ui/subscription/manage_plan.dart';
 import '../ui/subscription/my_subscription.dart';
 import '../ui/subscription/plan_detail_screen.dart';
@@ -347,7 +348,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (context) => const AiHubPage());
 
       case '/AiRemoveBg':
-        return MaterialPageRoute(builder: (_) => const AiRemoveBgPage());
+        return MaterialPageRoute(builder: (_) => const AiRemoveBgPage());  case '/FreePlanScreen':
+        return MaterialPageRoute(builder: (_) => const FreePlanScreen());
       case "/TemplateListScreen":
         final arguments = settings.arguments;
 

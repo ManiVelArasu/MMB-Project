@@ -267,9 +267,7 @@ class PlanProvider extends ChangeNotifier {
         return true;
       }
 
-      debugPrint(
-        "❌ PAYMENT VERIFY FAILED: ${result.error?.message}",
-      );
+      debugPrint("❌ PAYMENT VERIFY FAILED: ${result.error?.message}");
 
       return false;
     } catch (e, stackTrace) {
@@ -436,12 +434,20 @@ class PlanProvider extends ChangeNotifier {
       }
 
       _subscriptionData = data;
+      _subscriptionData = data;
 
       final hasActiveSubscription = data["has_active_subscription"] == true;
 
-      debugPrint("✅ Has active subscription: $hasActiveSubscription");
+      final plan = data["plan"];
 
-      return hasActiveSubscription;
+      final planType = plan is Map<String, dynamic>
+          ? (plan["plan_type"]?.toString().toLowerCase() ?? "free")
+          : "free";
+
+      debugPrint("Active subscription: $hasActiveSubscription");
+      debugPrint("Plan type: $planType");
+
+      return hasActiveSubscription && planType != "free";
     } catch (e, stackTrace) {
       _subscriptionError = e.toString();
 
@@ -662,6 +668,7 @@ class PlanProvider extends ChangeNotifier {
         return "PLAN";
     }
   }
+
   String? get activePlanUid {
     final plan = _subscriptionData?["plan"];
 
