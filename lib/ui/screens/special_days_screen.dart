@@ -34,9 +34,9 @@ class _SpecialDaysScreenView extends StatelessWidget {
     final isDark = context.watch<CustomThemeProvider>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF121212)
-          : const Color(0xFFF8F8F8),
+      extendBodyBehindAppBar: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
 
       appBar: CustomAppBar(
         showTitle: true,
@@ -44,170 +44,187 @@ class _SpecialDaysScreenView extends StatelessWidget {
         showRightIcon: false,
       ),
 
-      body: SafeArea(
-        child: Consumer<SpecialDaysProvider>(
-          builder: (context, provider, _) {
+      body: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 300.h,
+            child: Image.asset(
+              "assets/images/plan_gradient.png",
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+          ),
+          SafeArea(
+            child: Consumer<SpecialDaysProvider>(
+              builder: (context, provider, _) {
 
-            // First screen load மட்டும் loader
-            if (provider.isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFFE53935),
-                ),
-              );
-            }
-
-            final specialDays = provider.specialDays?.data ?? [];
-
-            final List<SpecialDayTemplateItem> templates = [];
-
-            for (final specialDay in specialDays) {
-              for (final template in specialDay.templates) {
-                templates.add(
-                  SpecialDayTemplateItem(
-                    template: template,
-                    specialDayName: specialDay.name ?? '',
-                  ),
-                );
-              }
-            }
-
-            if (templates.isEmpty) {
-              return _EmptyState(
-                isDark: isDark,
-              );
-            }
-
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                12.w,
-                12.h,
-                12.w,
-                30.h,
-              ),
-              child: Column(
-                children: [
-                  AppText(
-                    "Find the Right Festival Templates",
-                    style: TextStyle(
-                      color: AppColors.appBlack,
-                      fontWeight: FontWeight.w500,
-                      fontSize: AppFontSize.fontSize16,
+                // First screen load மட்டும் loader
+                if (provider.isLoading) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFFE53935),
                     ),
+                  );
+                }
+
+                final specialDays = provider.specialDays?.data ?? [];
+
+                final List<SpecialDayTemplateItem> templates = [];
+
+                for (final specialDay in specialDays) {
+                  for (final template in specialDay.templates) {
+                    templates.add(
+                      SpecialDayTemplateItem(
+                        template: template,
+                        specialDayName: specialDay.name ?? '',
+                      ),
+                    );
+                  }
+                }
+
+                if (templates.isEmpty) {
+                  return _EmptyState(
+                    isDark: isDark,
+                  );
+                }
+
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    12.w,
+                    12.h,
+                    12.w,
+                    30.h,
                   ),
-
-                  AppText(
-                    "Choose the festival to discover ready-to-edit designs for promotions, offers, announcements, and everyday marketing.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.grey,
-                      fontWeight: FontWeight.w400,
-                      fontSize: AppFontSize.fontSize14,
-                    ),
-                  ),
-
-                  SizedBox(height: 10.h),
-
-                  Row(
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: CustomSearchBar(
-                          hintText: 'Search your festival',
-                          showSuffixIcon: false,
+                      AppText(
+                        "Find the Right Festival Templates",
+                        style: TextStyle(
+                          color: AppColors.appBlack,
+                          fontWeight: FontWeight.w600,
+                          fontSize: AppFontSize.fontSize18,
                         ),
                       ),
-                      SizedBox(width: 10.w),
-                      GestureDetector(
-                        onTap: () async {
-                          final DateTimeRange? dateRange = await showDateRangePicker(
-                            context: context,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2035),
-                            initialDateRange: DateTimeRange(
-                              start: DateTime.now(),
-                              end: DateTime.now(),
+
+                      AppText(
+                        "Choose the festival to discover ready-to-edit designs for promotions, offers, announcements, and everyday marketing.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppColors.lightedGrey,
+                          fontWeight: FontWeight.w400,
+                          fontSize: AppFontSize.fontSize14,
+                        ),
+                      ),
+
+                      SizedBox(height: 10.h),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomSearchBar(
+                              hintText: 'Search your festival',
+                              showSuffixIcon: false,
                             ),
-                            builder: (context, child) {
-                              return Theme(
-                                data: Theme.of(context).copyWith(
-                                  colorScheme: Theme.of(context).colorScheme.copyWith(
-                                    primary: const Color(0xFFE53935),
-                                  ),
+                          ),
+                          SizedBox(width: 10.w),
+                          GestureDetector(
+                            onTap: () async {
+                              final DateTime today = DateUtils.dateOnly(DateTime.now());
+
+                              final DateTimeRange? dateRange = await showDateRangePicker(
+                                context: context,
+                                firstDate: today,
+                                lastDate: DateTime(2035),
+                                initialDateRange: DateTimeRange(
+                                  start: today,
+                                  end: today,
                                 ),
-                                child: child!,
+                                builder: (context, child) {
+                                  return Theme(
+                                    data: Theme.of(context).copyWith(
+                                      colorScheme: Theme.of(context).colorScheme.copyWith(
+                                        primary: const Color(0xFFE53935),
+                                      ),
+                                    ),
+                                    child: child!,
+                                  );
+                                },
+                              );
+
+                              if (dateRange != null && context.mounted) {
+                                final String fromDate =
+                                    '${dateRange.start.year}-'
+                                    '${dateRange.start.month.toString().padLeft(2, '0')}-'
+                                    '${dateRange.start.day.toString().padLeft(2, '0')}';
+
+                                final String toDate =
+                                    '${dateRange.end.year}-'
+                                    '${dateRange.end.month.toString().padLeft(2, '0')}-'
+                                    '${dateRange.end.day.toString().padLeft(2, '0')}';
+
+                                await context.read<SpecialDaysProvider>().loadSpecialDays(
+                                  fromDate: fromDate,
+                                  toDate: toDate,
+                                );
+                              }
+                            },
+                            child: Image.asset(
+                              'assets/images/calender.png',
+                              width: 44.w,
+                              height: 44.h,
+                              fit: BoxFit.contain,
+                            ),
+                          )
+                        ],
+                      ),
+
+                      SizedBox(height: 15.h),
+
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: () {
+                            // Refresh-ல் full screen loader வராது
+                            return provider.loadSpecialDays(
+                              showLoader: false,
+                            );
+                          },
+                          child: GridView.builder(
+                            padding: EdgeInsets.only(
+                              bottom: 40.h,
+                            ),
+                            physics: const AlwaysScrollableScrollPhysics(
+                              parent: BouncingScrollPhysics(),
+                            ),
+                            gridDelegate:
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 10.w,
+                              mainAxisSpacing: 10.h,
+                              childAspectRatio: 0.78,
+                            ),
+                            itemCount: templates.length,
+                            itemBuilder: (context, index) {
+                              final item = templates[index];
+
+                              return _TemplateCard(
+                                template: item.template,
+                                specialDayName: item.specialDayName,
+                                isDark: isDark,
                               );
                             },
-                          );
-
-                          if (dateRange != null && context.mounted) {
-                            final String fromDate =
-                                '${dateRange.start.year}-'
-                                '${dateRange.start.month.toString().padLeft(2, '0')}-'
-                                '${dateRange.start.day.toString().padLeft(2, '0')}';
-
-                            final String toDate =
-                                '${dateRange.end.year}-'
-                                '${dateRange.end.month.toString().padLeft(2, '0')}-'
-                                '${dateRange.end.day.toString().padLeft(2, '0')}';
-
-                            await context.read<SpecialDaysProvider>().loadSpecialDays(
-                              fromDate: fromDate,
-                              toDate: toDate,
-                            );
-                          }
-                        },
-                        child: Image.asset(
-                          'assets/images/calender.png',
-                          width: 44.w,
-                          height: 44.h,
-                          fit: BoxFit.contain,
+                          ),
                         ),
-                      )
+                      ),
                     ],
                   ),
-
-                  SizedBox(height: 15.h),
-
-                  Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: () {
-                        // Refresh-ல் full screen loader வராது
-                        return provider.loadSpecialDays(
-                          showLoader: false,
-                        );
-                      },
-                      child: GridView.builder(
-                        padding: EdgeInsets.only(
-                          bottom: 40.h,
-                        ),
-                        physics: const AlwaysScrollableScrollPhysics(
-                          parent: BouncingScrollPhysics(),
-                        ),
-                        gridDelegate:
-                        SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 10.w,
-                          mainAxisSpacing: 10.h,
-                          childAspectRatio: 0.78,
-                        ),
-                        itemCount: templates.length,
-                        itemBuilder: (context, index) {
-                          final item = templates[index];
-
-                          return _TemplateCard(
-                            template: item.template,
-                            specialDayName: item.specialDayName,
-                            isDark: isDark,
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        )
+                );
+              },
+            )
+          ),
+        ],
       ),
     );
   }

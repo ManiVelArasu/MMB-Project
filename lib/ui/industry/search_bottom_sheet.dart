@@ -247,6 +247,7 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
                           );
                         },
                   title: "CONTINUE",
+                  textColor: AppColors.appWhite,
                 ),
               ),
             ),

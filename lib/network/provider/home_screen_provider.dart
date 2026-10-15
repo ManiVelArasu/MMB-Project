@@ -598,102 +598,63 @@ class HomeScreenProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  String? selectedKeyword;
+  Future<void> fetchTemplatesByPopular({String? keyword}) async {
+    debugPrint('🔥 API function started');
 
-  Future<void> fetchTemplatesByPopular() async {
-    debugPrint('🔥 fetchTemplatesByPopular START');
-
-    if (!_isSilentRefresh) {
-      _isLoadingPopularTemplates = true;
-      notifyListeners();
-    }
+    selectedKeyword = keyword;
+    _isLoadingPopularTemplates = true;
     _popularTemplatesError = null;
+    notifyListeners();
 
     try {
       final industrySlug =
           provider.business?.businessCategory?.slug?.trim() ?? '';
 
-      debugPrint(
-        '🏭 Industry Slug: "${provider.business?.businessCategory?.slug}"',
-      );
-
-      if (industrySlug.isEmpty) {
-        _popularTemplates = [];
-        _popularTemplatesError = 'Industry not available';
-
-        debugPrint('❌ Industry slug is empty');
-        return;
-      }
-
-      debugPrint('======================================');
-      debugPrint('🔥 FETCH POPULAR TEMPLATES');
-      debugPrint('🏭 Industry: $industrySlug');
-      debugPrint('======================================');
-
       final prefs = await SharedPreferences.getInstance();
-
       final savedLanguages =
           prefs.getStringList('selected_language_codes') ?? ['en'];
 
-      final language = savedLanguages.isNotEmpty
-          ? savedLanguages.first
-          : 'en';
+      final language =
+      savedLanguages.isNotEmpty ? savedLanguages.first : 'en';
 
-      final result = await HomeRepository.instance.myBrandCategory(
+      debugPrint('🏷️ Keyword: $keyword');
+      debugPrint('🏭 Industry: $industrySlug');
+      debugPrint('🌐 Language: $language');
+
+      final result =
+      await HomeRepository.instance.myBrandCategory(
         industrySlug: industrySlug,
         language: language,
+        keyword: keyword??'',
       );
 
-      debugPrint('📦 API Success: ${result.isSuccess}');
-      debugPrint('📦 API Data: ${result.data}');
-      debugPrint('📦 API Error: ${result.error?.message}');
+      debugPrint('📡 API success: ${result.isSuccess}');
+      debugPrint('📦 API response: ${result.data}');
 
       if (result.isSuccess && result.data != null) {
         final response = result.data!;
 
-        debugPrint('🔥 POPULAR RESPONSE: $response');
-        debugPrint('🔥 Response success: ${response.success}');
-        debugPrint('🔥 Categories: ${response.data?.length}');
-
         if (response.success == true) {
           _popularTemplates = response.data ?? [];
-
-          debugPrint(
-            '✅ Popular categories count: '
-            '${_popularTemplates.length}',
-          );
-
-          for (final category in _popularTemplates) {
-            debugPrint(
-              '➡️ ${category.name} | '
-              'slug=${category.slug} | '
-              'uid=${category.uid}',
-            );
-          }
-
           _popularTemplatesError = null;
         } else {
           _popularTemplates = [];
-          _popularTemplatesError = 'Failed to load popular templates';
+          _popularTemplatesError = 'Failed to load templates';
         }
       } else {
         _popularTemplates = [];
-
         _popularTemplatesError =
             result.error?.message ?? 'Network Error Occurred';
-
-        debugPrint('❌ Popular API failed: $_popularTemplatesError');
       }
     } catch (e, stackTrace) {
-      _popularTemplates = [];
       _popularTemplatesError = e.toString();
-
-      debugPrint('❌ Popular Templates API Error: $e');
+      debugPrint('❌ API Error: $e');
       debugPrintStack(stackTrace: stackTrace);
     } finally {
       _isLoadingPopularTemplates = false;
       notifyListeners();
-
-      debugPrint('🔥 fetchTemplatesByPopular END');
+      debugPrint('🏁 API function ended');
     }
   }
 

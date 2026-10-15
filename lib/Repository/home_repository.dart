@@ -58,6 +58,7 @@ class HomeRepository {
   Future<ApiResult<TemplateCategoriesModel>> myBrandCategory({
     required String industrySlug,
     required String language,
+    required String keyword,
   }) async {
     final result = await ApiRepository.instance
         .request<TemplateCategoriesModel>(
@@ -68,7 +69,8 @@ class HomeRepository {
               "industry": industrySlug,
               "template_type": "image",
               "is_popular": "1",
-              "language":language
+              "language": language,
+              "tags": keyword,
             },
           ),
           fromJson: (json) =>

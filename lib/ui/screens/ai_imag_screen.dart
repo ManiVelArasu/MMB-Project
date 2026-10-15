@@ -353,7 +353,7 @@ class AiImageScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.auto_awesome, size: 14, color: accent),
+        Image.asset("assets/images/magicpen.png",width: 18,height: 18,),
         const SizedBox(width: 6),
         Row(
           children: [

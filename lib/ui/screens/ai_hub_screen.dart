@@ -275,7 +275,7 @@ class _AiHubView extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.auto_awesome, color: _red, size: 12),
+              Image.asset("assets/images/magicpen.png",width: 18,height: 18,),
               const SizedBox(width: 6),
               AppText(
                 '${provider.creditsAvailable} AI Credits Available',

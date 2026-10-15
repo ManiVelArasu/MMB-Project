@@ -52,12 +52,12 @@ class _HomeScreenView extends StatelessWidget {
 
     if (homeScreenProvider.isLoadingCategories ||
         homeScreenProvider.isKeyWordsLoading ||
-        homeScreenProvider.isLoadingPopularTemplates ||
         homeScreenProvider.isLoadingSpecialDays) {
       return const Scaffold(
-
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFFE53935)),
+          child: CircularProgressIndicator(
+            color: Color(0xFFE53935),
+          ),
         ),
       );
     }
@@ -271,32 +271,42 @@ class _HomeScreenView extends StatelessWidget {
 
                               return Padding(
                                 padding: EdgeInsets.only(right: 8.w),
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 14.w,
-                                    vertical: 6.h,
-                                  ),
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? const Color(0xFF1E1E1E)
-                                        : Colors.white,
-                                    borderRadius: BorderRadius.circular(20.r),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? Colors.grey.shade800
-                                          : Colors.grey.shade300,
-                                      width: 1.2,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20.r),
+                                  onTap: () async {
+                                    await homeScreenProvider.fetchTemplatesByPopular(
+                                      keyword: keyword,
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 14.w,
+                                      vertical: 6.h,
                                     ),
-                                  ),
-                                  child: AppText(
-                                    keyword,
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? Colors.white70
-                                          : Colors.black87,
-                                      fontSize: AppFontSize.fontSize11,
-                                      fontWeight: FontWeight.w700,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: homeScreenProvider.selectedKeyword == keyword
+                                          ? const Color(0xFFFFECEE)
+                                          : isDark
+                                          ? const Color(0xFF1E1E1E)
+                                          : Colors.white,
+                                      borderRadius: BorderRadius.circular(20.r),
+                                      border: Border.all(
+                                        color: homeScreenProvider.selectedKeyword == keyword
+                                            ? Colors.red
+                                            : isDark
+                                            ? Colors.grey.shade800
+                                            : Colors.grey.shade300,
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: AppText(
+                                      keyword,
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white70 : Colors.black87,
+                                        fontSize: AppFontSize.fontSize11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -309,16 +319,37 @@ class _HomeScreenView extends StatelessWidget {
 
                         SizedBox(
                           height: 190.h,
-                          child: ListView.builder(
+                          child: homeScreenProvider.isLoadingPopularTemplates
+                              ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFE53935),
+                              strokeWidth: 2,
+                            ),
+                          )
+                              : homeScreenProvider.popularTemplates.isEmpty
+                              ? Center(
+                            child: AppText(
+                              'No templates available',
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white54
+                                    : Colors.black45,
+                                fontSize: 13.sp,
+                              ),
+                            ),
+                          )
+                              : ListView.builder(
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
                             padding: EdgeInsets.symmetric(horizontal: 4.w),
-                            itemCount: homeScreenProvider.popularTemplates.length,
+                            itemCount:
+                            homeScreenProvider.popularTemplates.length,
                             itemBuilder: (context, index) {
                               final item =
-                                  homeScreenProvider.popularTemplates[index];
+                              homeScreenProvider.popularTemplates[index];
 
-                              final thumbnailKey = item.thumbnailS3Key ?? '';
+                              final thumbnailKey =
+                                  item.thumbnailS3Key ?? '';
 
                               final imageUrl = thumbnailKey.isEmpty
                                   ? ''
@@ -331,14 +362,17 @@ class _HomeScreenView extends StatelessWidget {
                                     Navigator.pushNamed(
                                       context,
                                       "/TemplateDetailScreen",
-                                      arguments: {"templateUid": item.uid},
+                                      arguments: {
+                                        "templateUid": item.uid,
+                                      },
                                     );
                                   },
                                   borderRadius: BorderRadius.circular(20.r),
                                   child: Container(
                                     width: 145.w,
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20.r),
+                                      borderRadius:
+                                      BorderRadius.circular(20.r),
                                       color: isDark
                                           ? const Color(0xFF1E1E1E)
                                           : Colors.grey.shade100,
@@ -346,18 +380,18 @@ class _HomeScreenView extends StatelessWidget {
                                         color: isDark
                                             ? Colors.grey.shade800
                                             : Colors.grey.shade300,
-                                        width: 1.2,
                                       ),
                                     ),
                                     child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(20.r),
+                                      borderRadius:
+                                      BorderRadius.circular(20.r),
                                       child: imageUrl.isEmpty
                                           ? const Center(
-                                              child: Icon(
-                                                Icons.image_outlined,
-                                                color: Colors.grey,
-                                              ),
-                                            )
+                                        child: Icon(
+                                          Icons.image_outlined,
+                                          color: Colors.grey,
+                                        ),
+                                      )
                                           : buildProfileImage(imageUrl),
                                     ),
                                   ),
@@ -513,7 +547,7 @@ class _HomeScreenView extends StatelessWidget {
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           fontSize: AppFontSize.fontSize18,
-                                          fontWeight: FontWeight.w500,
+                                          fontWeight: FontWeight.w400,
                                           color: isDark
                                               ? Colors.white
                                               : Colors.black,
@@ -779,7 +813,7 @@ class _HomeScreenView extends StatelessWidget {
                                         final double totalHeight = 175.h;
 
                                         final double horizontalGap = 3.w;
-                                        final double verticalGap = 12.w;
+                                        final double verticalGap = 13.w;
 
                                         // Each page occupies 92% of available width
                                         final double pageWidth = screenWidth * 0.92;
@@ -1764,20 +1798,12 @@ class _HomeScreenView extends StatelessWidget {
                 top: 5.h,
                 right: 5.w,
                 child: TemplateActionPopup(
-                  onCustomize: () {
-                    if (templateUid.isEmpty) return;
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            TemplateEditScreen(templateUid: templateUid),
-                      ),
-                    );
-                  },
+                  onCustomize: openCustomize,
                   onFavorite: () {
-                    final templateUid = template.familyUid?.trim() ?? '';
-                    provider.favoriteTemplate(templateUid);
+                    final familyUid = template.familyUid?.trim() ?? '';
+                    if (familyUid.isNotEmpty) {
+                      provider.favoriteTemplate(familyUid);
+                    }
                   },
                 ),
               ),

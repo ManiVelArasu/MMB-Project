@@ -78,14 +78,6 @@ class BusinessCategoryChooseViewScreen extends StatelessWidget {
                       height: 22,
                     ),
                   ),
-                  suffixIcon: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: SvgPicture.asset(
-                      "assets/icons/mic.svg",
-                      width: 22,
-                      height: 22,
-                    ),
-                  ),
                   contentPadding: const EdgeInsets.symmetric(
                     vertical: 20,
                     horizontal: 12,
@@ -129,7 +121,7 @@ class BusinessCategoryChooseViewScreen extends StatelessWidget {
                               categoryName,
                               style: const TextStyle(
                                 fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w400,
                                 color: Colors.black87,
                               ),
                             ),

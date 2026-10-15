@@ -375,7 +375,9 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                                             "OR",
                                             style: theme.bodyMedium!.copyWith(
                                               color: customColor.blackColor,
-                                              fontWeight: FontWeight.w700,
+                                              fontSize: AppFontSize.fontSize13,
+                                              fontWeight:
+                                              FontWeight.w600,
                                             ),
                                           ),
                                         ),
@@ -398,8 +400,8 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                                             },
                                             child: Container(
                                               height: 120.h,
-                                              width: 130.w,
-                                              padding: const EdgeInsets.all(16),
+                                              width: 120.w,
+                                              padding: const EdgeInsets.all(12),
                                               decoration: BoxDecoration(
                                                 borderRadius:
                                                     BorderRadius.circular(16),
@@ -425,8 +427,9 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                                                         .copyWith(
                                                           color: customColor
                                                               .blackColor,
-                                                          fontWeight:
-                                                              FontWeight.w700,
+                                                      fontSize: AppFontSize.fontSize13,
+                                                      fontWeight:
+                                                      FontWeight.w600,
                                                         ),
                                                   ),
                                                 ],
@@ -447,8 +450,8 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                                             },
                                             child: Container(
                                               height: 120.h,
-                                              width: 130.w,
-                                              padding: const EdgeInsets.all(16),
+                                              width: 120.w,
+                                              padding: const EdgeInsets.all(12),
                                               decoration: BoxDecoration(
                                                 borderRadius:
                                                     BorderRadius.circular(16),
@@ -470,12 +473,12 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
 
                                                   AppText(
                                                     "Create with AI",
-                                                    style: theme.bodyMedium!
-                                                        .copyWith(
+                                                    style:TextStyle(
                                                           color: customColor
                                                               .blackColor,
+                                                          fontSize: AppFontSize.fontSize13,
                                                           fontWeight:
-                                                              FontWeight.w700,
+                                                              FontWeight.w600,
                                                         ),
                                                   ),
                                                 ],

@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mmb_app/component/appbar_widget.dart';
+import 'package:mmb_app/component/home_appbar.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/custom_widget.dart';
@@ -40,14 +42,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.red),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar:CustomAppBar(showTitle: false,showRightIcon: false,),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -144,8 +139,24 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                         industryProvider.selectedCategorySlug == category.slug;
 
                     return ChoiceChip(
-                      label: AppText(name),
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (selected) ...[
+                            const SizedBox(width: 5),
+                            Image.asset(
+                              'assets/images/red_tick.png',
+                              width: 14,
+                              height: 14,
+                            ),
+                          ],
+                          SizedBox(width: 2,),
+                          AppText(name),
+
+                        ],
+                      ),
                       selected: selected,
+                      showCheckmark: false,
                       selectedColor: const Color(0xFFFFECEE),
                       backgroundColor: Colors.grey.shade100,
                       labelStyle: TextStyle(
@@ -176,6 +187,7 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
                           selected: industryProvider.showOtherInput,
                           selectedColor: const Color(0xFFFFECEE),
                           backgroundColor: Colors.grey.shade100,
+
                           labelStyle: TextStyle(
                             color: industryProvider.showOtherInput
                                 ? Colors.red
