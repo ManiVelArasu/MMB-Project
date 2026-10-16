@@ -330,7 +330,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         if (accountType == 'personal') {
                                           Navigator.pushNamed(
                                             context,
-                                            "/EditProfileScreen",
+                                            "/BusinessCategoryChooseScreen",
                                           );
                                         } else {
                                           Navigator.pushNamed(
@@ -422,11 +422,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   iconAsset: "assets/images/my_plan.png",
                                   isDark: isDark,
                                   onTap: () async {
-
                                     final planProvider = PlanProvider();
 
                                     final bool hasActivePlan =
-                                    await planProvider.fetchMySubscription();
+                                        await planProvider
+                                            .fetchMySubscription();
 
                                     if (!context.mounted) return;
 
@@ -441,7 +441,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         "/FreePlanScreen",
                                         arguments: {"showSkip": true},
                                       );
-                                    };
+                                    }
+                                    ;
                                   },
                                 ),
 
@@ -485,19 +486,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         gradient: isDark
                                             ? null
                                             : LinearGradient(
-                                          colors: item.gradientColors,
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
+                                                colors: item.gradientColors,
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              ),
+                                        borderRadius: BorderRadius.circular(
+                                          10.r,
                                         ),
-                                        borderRadius: BorderRadius.circular(10.r),
                                         border: Border.all(
                                           color: isDark
                                               ? Colors.white10
-                                              : Colors.black.withValues(alpha: .05),
+                                              : Colors.black.withValues(
+                                                  alpha: .05,
+                                                ),
                                         ),
                                       ),
                                       child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Image.asset(
                                             item.iconPath,
@@ -505,7 +511,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             width: 30.w,
                                             errorBuilder: (_, __, ___) {
                                               return Icon(
-                                                Icons.dashboard_customize_rounded,
+                                                Icons
+                                                    .dashboard_customize_rounded,
                                                 size: 24.sp,
                                                 color: const Color(0xFFE53935),
                                               );
@@ -518,7 +525,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             overflow: TextOverflow.ellipsis,
                                             textAlign: TextAlign.center,
                                             style: TextStyle(
-                                              color: isDark ? Colors.white : Colors.black,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : Colors.black,
                                               fontSize: AppFontSize.fontSize14,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -540,26 +549,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   iconAsset: "assets/images/my_plan.png",
                                   isDark: isDark,
                                   onTap: () async {
+                                    final planProvider = PlanProvider();
 
-                                      final planProvider = PlanProvider();
+                                    final bool hasActivePlan =
+                                        await planProvider
+                                            .fetchMySubscription();
 
-                                      final bool hasActivePlan =
-                                      await planProvider.fetchMySubscription();
+                                    if (!context.mounted) return;
 
-                                      if (!context.mounted) return;
-
-                                      if (hasActivePlan) {
-                                        Navigator.pushNamed(
-                                          context,
-                                          "/MySubscriptionScreen",
-                                        );
-                                      } else {
-                                        Navigator.pushNamed(
-                                          context,
-                                          "/FreePlanScreen",
-                                          arguments: {"showSkip": true},
-                                        );
-                                    };
+                                    if (hasActivePlan) {
+                                      Navigator.pushNamed(
+                                        context,
+                                        "/MySubscriptionScreen",
+                                      );
+                                    } else {
+                                      Navigator.pushNamed(
+                                        context,
+                                        "/FreePlanScreen",
+                                        arguments: {"showSkip": true},
+                                      );
+                                    }
+                                    ;
                                   },
                                 ),
                                 _buildSettingsTile(

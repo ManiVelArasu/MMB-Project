@@ -60,23 +60,39 @@ class HomeRepository {
     required String language,
     required String keyword,
   }) async {
-    final result = await ApiRepository.instance
-        .request<TemplateCategoriesModel>(
-          config: ApiRequestConfig(
-            endpoint: ApiEndpoints.templates,
-            method: ApiMethod.get,
-            queryParams: {
-              "industry": industrySlug,
-              "template_type": "image",
-              "is_popular": "1",
-              "language": language,
-              "tags": keyword,
-            },
+    final queryParams = <String, dynamic>{
+      "template_type": "image",
+      "is_popular": "1",
+      "language": language,
+    };
+
+    final industry = industrySlug.trim();
+    final searchKeyword = keyword.trim();
+
+    // Industry empty இல்லையென்றால் மட்டும் send ஆகும்
+    if (industry.isNotEmpty) {
+      queryParams["industry"] = industry;
+    }
+
+    // Keyword empty இல்லையென்றால் மட்டும் send ஆகும்
+    if (searchKeyword.isNotEmpty) {
+      queryParams["tags"] = searchKeyword;
+    }
+
+    debugPrint("Industry: [$industry]");
+    debugPrint("Query params: $queryParams");
+
+    return ApiRepository.instance.request<TemplateCategoriesModel>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.templates,
+        method: ApiMethod.get,
+        queryParams: queryParams,
+      ),
+      fromJson: (json) =>
+          TemplateCategoriesModel.fromJson(
+            json as Map<String, dynamic>,
           ),
-          fromJson: (json) =>
-              TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
-        );
-    return result;
+    );
   }
 
   Future<ApiResult<SpecialDays>> specialDaysApi({

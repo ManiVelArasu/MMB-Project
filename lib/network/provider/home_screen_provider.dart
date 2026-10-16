@@ -544,7 +544,6 @@ class HomeScreenProvider extends ChangeNotifier {
       final response = await HomeRepository.instance.favorite(templateId);
 
       if (response.data != null) {
-
         notifyListeners();
       }
     } catch (e) {
@@ -598,6 +597,7 @@ class HomeScreenProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   String? selectedKeyword;
   Future<void> fetchTemplatesByPopular({String? keyword}) async {
     debugPrint('🔥 API function started');
@@ -615,18 +615,16 @@ class HomeScreenProvider extends ChangeNotifier {
       final savedLanguages =
           prefs.getStringList('selected_language_codes') ?? ['en'];
 
-      final language =
-      savedLanguages.isNotEmpty ? savedLanguages.first : 'en';
+      final language = savedLanguages.isNotEmpty ? savedLanguages.first : 'en';
 
       debugPrint('🏷️ Keyword: $keyword');
       debugPrint('🏭 Industry: $industrySlug');
       debugPrint('🌐 Language: $language');
 
-      final result =
-      await HomeRepository.instance.myBrandCategory(
+      final result = await HomeRepository.instance.myBrandCategory(
         industrySlug: industrySlug,
         language: language,
-        keyword: keyword??'',
+        keyword: keyword ?? '',
       );
 
       debugPrint('📡 API success: ${result.isSuccess}');

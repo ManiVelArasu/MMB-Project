@@ -71,21 +71,19 @@ class BusinessRepository {
     return result;
   }
 
-  Future<ApiResult<Map<String, dynamic>>> fromLibrary(String category) async {
-    final Map<String, dynamic> body = {'category': 'profile_pics'};
-
-    debugPrint('⏭️ SKIP REQUEST BODY: $body');
-
-    final result = await ApiRepository.instance.request<Map<String, dynamic>>(
+  Future<ApiResult<dynamic>> fromLibrary(
+      String category,
+      ) async {
+    return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
-        endpoint: ApiEndpoints.asset(category),
+        endpoint: ApiEndpoints.asset,
         method: ApiMethod.get,
-        body: body,
+        queryParams: {
+          "category": category,
+        },
       ),
-      fromJson: (json) => json['data'] as Map<String, dynamic>,
+      fromJson: (json) => json,
     );
-
-    return result;
   }
 
   Future<ApiResult<dynamic>> updateBusinessDetails({

@@ -334,7 +334,7 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (context) => const MyUploadsScreen());
       case "/ProfilePictureScreen":
         return MaterialPageRoute(
-          builder: (context) => const ProfilePictureScreen(),
+          builder: (context) => const FromLibraryScreen(),
         );
 
       case "/CustomSizeScreen":

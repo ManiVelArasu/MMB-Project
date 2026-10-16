@@ -14,6 +14,7 @@ import '../../network/provider/special_days_provider.dart';
 import '../../network/provider/template_list_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
+import 'festival_template_list_screen.dart';
 
 class TemplateListScreen extends StatelessWidget {
   final String? type;
@@ -82,7 +83,7 @@ class _TemplateListScreenView extends StatelessWidget {
                   for (final template in specialDay.templates) {
                     templates.add(
                       SpecialDayTemplateItem(
-                        template: template,
+                        template: specialDay,
                         specialDayName: specialDay.name ?? '',
                       ),
                     );
@@ -129,27 +130,34 @@ class _TemplateListScreenView extends StatelessWidget {
                           SizedBox(width: 10.w),
                           GestureDetector(
                             onTap: () async {
-                              final DateTime today = DateUtils.dateOnly(DateTime.now());
-
-                              final DateTimeRange? dateRange = await showDateRangePicker(
-                                context: context,
-                                firstDate: today,
-                                lastDate: DateTime(2035),
-                                initialDateRange: DateTimeRange(
-                                  start: today,
-                                  end: today,
-                                ),
-                                builder: (context, child) {
-                                  return Theme(
-                                    data: Theme.of(context).copyWith(
-                                      colorScheme: Theme.of(context).colorScheme.copyWith(
-                                        primary: const Color(0xFFE53935),
-                                      ),
-                                    ),
-                                    child: child!,
-                                  );
-                                },
+                              final DateTime today = DateUtils.dateOnly(
+                                DateTime.now(),
                               );
+
+                              final DateTimeRange? dateRange =
+                                  await showDateRangePicker(
+                                    context: context,
+                                    firstDate: today,
+                                    lastDate: DateTime(2035),
+                                    initialDateRange: DateTimeRange(
+                                      start: today,
+                                      end: today,
+                                    ),
+                                    builder: (context, child) {
+                                      return Theme(
+                                        data: Theme.of(context).copyWith(
+                                          colorScheme: Theme.of(context)
+                                              .colorScheme
+                                              .copyWith(
+                                                primary: const Color(
+                                                  0xFFE53935,
+                                                ),
+                                              ),
+                                        ),
+                                        child: child!,
+                                      );
+                                    },
+                                  );
 
                               if (dateRange != null && context.mounted) {
                                 final String fromDate =
@@ -162,10 +170,12 @@ class _TemplateListScreenView extends StatelessWidget {
                                     '${dateRange.end.month.toString().padLeft(2, '0')}-'
                                     '${dateRange.end.day.toString().padLeft(2, '0')}';
 
-                                await context.read<TemplateListProvider>().loadSpecialDays(
-                                  fromDate: fromDate,
-                                  toDate: toDate,
-                                );
+                                await context
+                                    .read<TemplateListProvider>()
+                                    .loadSpecialDays(
+                                      fromDate: fromDate,
+                                      toDate: toDate,
+                                    );
                               }
                             },
                             child: Image.asset(
@@ -174,7 +184,7 @@ class _TemplateListScreenView extends StatelessWidget {
                               height: 44.h,
                               fit: BoxFit.contain,
                             ),
-                          )
+                          ),
                         ],
                       ),
 
@@ -182,29 +192,32 @@ class _TemplateListScreenView extends StatelessWidget {
 
                       Expanded(
                         child: RefreshIndicator(
-                          onRefresh: () {
-                            // Refresh-ல் full screen loader வராது
-                            return provider.loadSpecialDays();
-                          },
+                          onRefresh: () => provider.loadSpecialDays(),
                           child: GridView.builder(
                             padding: EdgeInsets.only(bottom: 40.h),
                             physics: const AlwaysScrollableScrollPhysics(
                               parent: BouncingScrollPhysics(),
                             ),
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 10.w,
-                              mainAxisSpacing: 10.h,
-                              childAspectRatio: 0.78,
-                            ),
-                            itemCount: templates.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 10.w,
+                                  mainAxisSpacing: 10.h,
+                                  childAspectRatio: 0.78,
+                                ),
+                            itemCount: specialDays.length,
                             itemBuilder: (context, index) {
-                              final item = templates[index];
+                              final item = specialDays[index];
+
+                              if (item.templates.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
 
                               return _TemplateCard(
-                                template: item.template,
-                                specialDayName: item.specialDayName,
+                                specialDay: item,
+                                specialDayName: item.name ?? '',
                                 isDark: isDark,
+                                templateCount: item.templates.length,
                               );
                             },
                           ),
@@ -222,24 +235,22 @@ class _TemplateListScreenView extends StatelessWidget {
   }
 }
 
-// ============================================================
-// TEMPLATE CARD
-// ============================================================
-
 class _TemplateCard extends StatelessWidget {
-  final Template template;
+  final SpecialDaysList specialDay;
   final String specialDayName;
   final bool isDark;
+  final int templateCount;
 
   const _TemplateCard({
-    required this.template,
+    required this.specialDay,
     required this.specialDayName,
     required this.isDark,
+    required this.templateCount,
   });
 
   @override
   Widget build(BuildContext context) {
-    final key = template.thumbnailS3Key?.trim() ?? '';
+    final key = specialDay.thumbnailS3Key?.trim() ?? '';
 
     final imageUrl = key.isEmpty
         ? ''
@@ -249,11 +260,9 @@ class _TemplateCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        final templateUid = template.uid?.trim() ?? '';
-
-        if (templateUid.isEmpty) {
+        if (specialDay.templates.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Template UID not available')),
+            const SnackBar(content: Text('No templates available')),
           );
           return;
         }
@@ -261,82 +270,66 @@ class _TemplateCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => TemplateEditScreen(templateUid: templateUid),
+            builder: (_) => SpecialDayTemplatesScreen(
+              specialDayName: specialDayName,
+              templates: specialDay.templates,
+            ),
           ),
         );
       },
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          // IMAGE CARD
           Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(
-                  color: isDark ? Colors.white10 : const Color(0xFFEAEAEA),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(.05),
-                    blurRadius: 7,
-                    offset: const Offset(0, 2),
+            child: Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: imageUrl.isEmpty
-                  ? Container(
-                      color: const Color(0xFFFFE5E5),
-                      child: Icon(
-                        Icons.image_outlined,
-                        color: const Color(0xFFE53935),
-                        size: 38.sp,
-                      ),
-                    )
-                  : CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(
-                        color: isDark
-                            ? const Color(0xFF292929)
-                            : const Color(0xFFF3F3F3),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFFE53935),
+                  clipBehavior: Clip.antiAlias,
+                  child: imageUrl.isEmpty
+                      ? const Center(child: Icon(Icons.image_outlined))
+                      : CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorWidget: (_, __, ___) => const Center(
+                            child: Icon(Icons.image_not_supported_rounded),
                           ),
                         ),
-                      ),
-                      errorWidget: (_, __, ___) => Container(
-                        color: const Color(0xFFFFE5E5),
-                        child: Icon(
-                          Icons.image_not_supported_rounded,
-                          color: const Color(0xFFE53935),
-                          size: 32.sp,
-                        ),
+                ),
+                Positioned(
+                  top: 8.h,
+                  right: 8.w,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 9.w,
+                      vertical: 5.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE53935),
+                      borderRadius: BorderRadius.circular(20.r),
+                    ),
+                    child: Text(
+                      '$templateCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
+                  ),
+                ),
+              ],
             ),
           ),
-
-          // TEXT BELOW IMAGE CARD
           Padding(
-            padding: EdgeInsets.only(
-              top: 6.h,
-              left: 4.w,
-              right: 4.w,
-              bottom: 4.h,
-            ),
+            padding: EdgeInsets.only(top: 6.h),
             child: AppText(
               specialDayName,
               maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppFontSize.fontSize12,
@@ -399,7 +392,7 @@ class _EmptyState extends StatelessWidget {
 }
 
 class SpecialDayTemplateItem {
-  final Template template;
+  final SpecialDaysList template;
   final String specialDayName;
 
   SpecialDayTemplateItem({

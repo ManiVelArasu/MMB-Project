@@ -173,7 +173,7 @@ class BusinessProvider extends ChangeNotifier {
 
                 debugPrint(
                   "✅ ACCOUNT TYPE UPDATED = "
-                      "${language.data.accountType}",
+                  "${language.data.accountType}",
                 );
               }
             }
@@ -327,12 +327,12 @@ class BusinessProvider extends ChangeNotifier {
 
       switch (accountType) {
         case 'personal':
-        // Personal -> users/{uid}/profile/...
+          // Personal -> users/{uid}/profile/...
           uploadSlot = 'profile_photo';
           break;
 
         case 'business':
-        // Business -> users/{uid}/logo/...
+          // Business -> users/{uid}/logo/...
           uploadSlot = 'business_logo';
           break;
 
@@ -364,12 +364,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-        imageFile: imageFile,
-        filename: filename,
-        width: 1080,
-        height: 1080,
-        slot: uploadSlot,
-      );
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+            slot: uploadSlot,
+          );
 
       bool success = false;
 
@@ -593,10 +593,10 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<Map<String, dynamic>?> businessUpdateApi(
-      BuildContext context,
-      String subIndustry,
-      String other,
-      ) async {
+    BuildContext context,
+    String subIndustry,
+    String other,
+  ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -684,8 +684,8 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>?> skipBusinessUpdateApi(
-      BuildContext context,
-      ) async {
+    BuildContext context,
+  ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -768,9 +768,9 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<bool> updateBusinessDetails(
-      BuildContext context,
-      String businessUid,
-      ) async {
+    BuildContext context,
+    String businessUid,
+  ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -783,11 +783,11 @@ class BusinessProvider extends ChangeNotifier {
       final email = emailController.text.trim();
       final phone = mobileController.text.trim();
 
-
       final logoS3Key = _logoS3Key?.trim();
       final String? finalLogoKey =
-      (_isNewLogoSelected && _logoS3Key != null &&
-          _logoS3Key!.trim().isNotEmpty)
+          (_isNewLogoSelected &&
+              _logoS3Key != null &&
+              _logoS3Key!.trim().isNotEmpty)
           ? _logoS3Key!.trim()
           : null;
 
@@ -859,7 +859,9 @@ class BusinessProvider extends ChangeNotifier {
       // Profile picture select panniruntha mattum key anuppum, illana null
       final profileS3Key = _profileS3Key?.trim();
       final String? finalProfileKey =
-      (_isNewProfileSelected && profileS3Key != null && profileS3Key.isNotEmpty)
+          (_isNewProfileSelected &&
+              profileS3Key != null &&
+              profileS3Key.isNotEmpty)
           ? profileS3Key
           : null;
 
@@ -960,7 +962,7 @@ class BusinessProvider extends ChangeNotifier {
     final savedLogoKey = prefs.getString('logo_s3_key');
     final savedProfileKey =
         prefs.getString('profile_s3_key') ??
-            prefs.getString('profile_photo_s3_key');
+        prefs.getString('profile_photo_s3_key');
 
     if (savedLogoKey != null && savedLogoKey.trim().isNotEmpty) {
       _logoS3Key = savedLogoKey.trim();
@@ -1017,17 +1019,17 @@ class BusinessProvider extends ChangeNotifier {
 
     debugPrint(
       "✅ ACCOUNT TYPE UPDATED = "
-          "${provider.me?.data.accountType}",
+      "${provider.me?.data.accountType}",
     );
 
     debugPrint(
       "COMMON ACCOUNT TYPE = "
-          "${provider.accountType}",
+      "${provider.accountType}",
     );
 
     debugPrint(
       "IS PERSONAL = "
-          "${provider.isPersonal}",
+      "${provider.isPersonal}",
     );
 
     debugPrint("================================");
@@ -1298,12 +1300,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-        imageFile: imageFile,
-        filename: filename,
-        width: 1080,
-        height: 1080,
-        slot: uploadSlot,
-      );
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+            slot: uploadSlot,
+          );
 
       bool success = false;
 
@@ -1453,9 +1455,9 @@ class BusinessProvider extends ChangeNotifier {
   // ============================================================
 
   Future<void> pickImage(
-      BuildContext context, {
-        ImageSource source = ImageSource.gallery,
-      }) async {
+    BuildContext context, {
+    ImageSource source = ImageSource.gallery,
+  }) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -1508,12 +1510,12 @@ class BusinessProvider extends ChangeNotifier {
     AccTypeModel(
       title: "For my Business",
       description:
-      "Create branded designs tailored to your business and industry.",
+          "Create branded designs tailored to your business and industry.",
     ),
     AccTypeModel(
       title: "Personal Use",
       description:
-      "Create designs for festivals, birthdays, quotes, social posts, and more.",
+          "Create designs for festivals, birthdays, quotes, social posts, and more.",
     ),
   ];
 
@@ -1557,6 +1559,50 @@ class BusinessProvider extends ChangeNotifier {
   // ============================================================
   // APPLY CROP
   // ============================================================
+  List<dynamic> _libraryImages = [];
+  List<dynamic> get libraryImages => _libraryImages;
+
+  bool _isLoadingLibrary = false;
+  bool get isLoadingLibrary => _isLoadingLibrary;
+
+  String? _libraryError;
+  String? get libraryError => _libraryError;
+
+  Future<void> fetchLibraryImages(String category) async {
+    _isLoadingLibrary = true;
+    _libraryError = null;
+    notifyListeners();
+
+    try {
+      final result = await BusinessRepository.instance.fromLibrary("profile-pics");
+
+      if (result.isSuccess && result.data != null) {
+        final response = result.data;
+
+        debugPrint('Library response: $response');
+
+        if (response is Map<String, dynamic> &&
+            response['data'] is List) {
+          _libraryImages = List<dynamic>.from(
+            response['data'] as List,
+          );
+        } else {
+          _libraryImages = [];
+          _libraryError = 'Invalid library response format';
+        }
+      } else {
+        _libraryImages = [];
+        _libraryError =
+            result.error?.message ?? 'Unable to load images';
+      }
+    } catch (e) {
+      _libraryImages = [];
+      _libraryError = e.toString();
+    } finally {
+      _isLoadingLibrary = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> applyCrop() async {
     if (_selectedImage == null) {
@@ -1641,9 +1687,23 @@ class BusinessProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // APPLY ROTATE
-  // ============================================================
+
+
+  void setLibraryImage(File imageFile) {
+    _selectedImage = imageFile;
+    _originalImage = imageFile;
+
+    _hasChanges = false;
+    _isApplied = false;
+    _processedImageBytes = null;
+    _isProcessingBackground = false;
+
+    _resetLivePreview();
+
+    notifyListeners();
+  }
+
+
 
   Future<void> applyRotate() async {
     if (_selectedImage == null) {

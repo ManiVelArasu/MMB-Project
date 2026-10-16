@@ -760,8 +760,9 @@ class BusinessProfileView extends StatelessWidget {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                          ImageViewerScreen(imagePath: personalUrl),
+                                      builder: (_) => ImageViewerScreen(
+                                        imagePath: personalUrl,
+                                      ),
                                     ),
                                   );
                                 },
@@ -860,7 +861,10 @@ class BusinessProfileView extends StatelessWidget {
                               const Color(0xFFEEEBFF),
                             ],
                             onTap: () {
-                              Navigator.pushNamed(context, '/MyDownloadsScreen');
+                              Navigator.pushNamed(
+                                context,
+                                '/MyDownloadsScreen',
+                              );
                             },
                           ),
                         ),

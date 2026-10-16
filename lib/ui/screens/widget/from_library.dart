@@ -1,199 +1,225 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
 
-class ProfilePictureScreen extends StatefulWidget {
-  const ProfilePictureScreen({super.key});
+import 'package:flutter/material.dart';
+import 'package:mmb_app/component/appbar_widget.dart';
+import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/core/api/api_endpoints.dart';
+import 'package:mmb_app/network/provider/business_provider.dart';
+import 'package:mmb_app/ui/industry/edit_photo_screen.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+
+class FromLibraryScreen extends StatefulWidget {
+  const FromLibraryScreen({super.key});
 
   @override
-  State<ProfilePictureScreen> createState() => _ProfilePictureScreenState();
+  State<FromLibraryScreen> createState() => _FromLibraryScreenState();
 }
 
-class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
-  int selectedIndex = 4;
+class _FromLibraryScreenState extends State<FromLibraryScreen> {
+  bool _isSelectingImage = false;
 
-  final List<String> images = [
-    'assets/images/avatar1.png',
-    'assets/images/avatar2.png',
-    'assets/images/avatar3.png',
-    'assets/images/avatar4.png',
-    'assets/images/avatar5.png',
-    'assets/images/avatar6.png',
-    'assets/images/avatar7.png',
-    'assets/images/avatar8.png',
-    'assets/images/avatar9.png',
-    'assets/images/avatar10.png',
-    'assets/images/avatar11.png',
-    'assets/images/avatar12.png',
-    'assets/images/avatar13.png',
-    'assets/images/avatar14.png',
-    'assets/images/avatar15.png',
-  ];
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      context.read<BusinessProvider>().fetchLibraryImages('profile-pics');
+    });
+  }
+
+  Future<File> _downloadLibraryImage(String imageUrl) async {
+    final client = HttpClient();
+
+    try {
+      final request = await client.getUrl(Uri.parse(imageUrl));
+      final response = await request.close();
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw HttpException('Image download failed: ${response.statusCode}');
+      }
+
+      final bytes = await response.fold<List<int>>(
+        <int>[],
+        (previous, chunk) => previous..addAll(chunk),
+      );
+
+      if (bytes.isEmpty) {
+        throw const HttpException('Downloaded image is empty');
+      }
+
+      final directory = await getTemporaryDirectory();
+      final file = File(
+        '${directory.path}/library_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+
+      await file.writeAsBytes(bytes, flush: true);
+      return file;
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  Future<void> _onImageTap(Map<String, dynamic> image) async {
+    if (_isSelectingImage) return;
+
+    final provider = context.read<BusinessProvider>();
+
+    final rawKey = image['s3_key'] ?? image['thumbnail_s3_key'];
+
+    if (rawKey == null || rawKey.toString().trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Image URL not found')));
+      return;
+    }
+
+    setState(() => _isSelectingImage = true);
+
+    try {
+      final imageKey = rawKey.toString().replaceFirst(RegExp(r'^/+'), '');
+
+      final imageUrl = '${ApiEndpoints.cdnImageUrl}/$imageKey';
+
+      final file = await _downloadLibraryImage(imageUrl);
+
+      if (!mounted) return;
+
+      // Same provider instance used by BusinessDetailsScreen.
+      provider.setLibraryImage(file);
+
+      // Close FromLibrary first, so the existing editor's
+      // upload/background-removal flow returns to the previous screen.
+      final navigator = Navigator.of(context, rootNavigator: true);
+
+      navigator.pop();
+
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      if (!navigator.mounted) return;
+
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider<BusinessProvider>.value(
+            value: provider,
+            child: const EditPhotoScreen(),
+          ),
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Library image selection error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Unable to open image: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSelectingImage = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<BusinessProvider>();
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Back button
-            Padding(
-              padding: const EdgeInsets.only(left: 14, top: 12),
-              child: InkWell(
-                onTap: () => Navigator.pop(context),
-                borderRadius: BorderRadius.circular(30),
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFFE5E5),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 13,
-                    color: Color(0xFFFF252B),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 42),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14),
-              child: Text(
-                'MMB Library',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14),
-              child: Text(
-                'Select your profile picture',
-                style: TextStyle(fontSize: 14, color: Colors.black),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Profile images grid
-            Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: images.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: 0.95,
-                ),
-                itemBuilder: (context, index) {
-                  final isSelected = selectedIndex == index;
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedIndex = index;
-                      });
-                    },
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2),
-                            border: Border.all(
-                              color: isSelected
-                                  ? const Color(0xFFFF252B)
-                                  : Colors.transparent,
-                              width: 1.5,
+      appBar: CustomAppBar( showRightIcon: false,showTitle: false,),
+      body: Stack(
+        children: [
+          if (provider.isLoadingLibrary)
+            const Center(child: CircularProgressIndicator())
+          else if (provider.libraryError != null)
+            Center(child: Text(provider.libraryError!))
+          else if (provider.libraryImages.isEmpty)
+            const Center(child: Text('No images found'))
+          else
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 15, right: 15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText(
+                      "MMB Library",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: AppFontSize.fontSize22,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    AppText(
+                      "Select your profile picture",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w400,
+                        fontSize: AppFontSize.fontSize18,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Expanded(
+                      child: GridView.builder(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
                             ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(1),
-                            child: Image.asset(
-                              images[index],
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: const Color(0xFFF0F0F0),
-                                  child: const Icon(
-                                    Icons.person,
-                                    size: 45,
-                                    color: Colors.grey,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
+                        itemCount: provider.libraryImages.length,
+                        itemBuilder: (context, index) {
+                          final image = provider.libraryImages[index];
 
-                        if (isSelected)
-                          Positioned(
-                            top: -5,
-                            left: -4,
-                            child: Container(
-                              width: 17,
-                              height: 17,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFFF252B),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 12,
+                          final imageKey =
+                              image['thumbnail_s3_key'] ?? image['s3_key'];
+
+                          if (imageKey == null) {
+                            return const Center(
+                              child: Icon(Icons.broken_image),
+                            );
+                          }
+
+                          final imageUrl =
+                              '${ApiEndpoints.cdnImageUrl}/$imageKey';
+
+                          return InkWell(
+                            onTap: _isSelectingImage
+                                ? null
+                                : () => _onImageTap(image),
+                            borderRadius: BorderRadius.circular(10),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Center(
+                                    child: Icon(Icons.broken_image),
+                                  );
+                                },
                               ),
                             ),
-                          ),
-                      ],
+                          );
+                        },
+                      ),
                     ),
-                  );
-                },
-              ),
-            ),
-
-            // Continue button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-              child: SizedBox(
-                width: double.infinity,
-                height: 51,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final selectedImage = images[selectedIndex];
-
-                    // TODO: Save selectedImage and navigate
-                    // to the next screen.
-                    debugPrint('Selected profile: $selectedImage');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF2028),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                  ),
-                  child: const Text(
-                    'CONTINUE',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                  ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+
+          if (_isSelectingImage)
+            Container(
+              color: Colors.black26,
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+        ],
       ),
     );
   }
