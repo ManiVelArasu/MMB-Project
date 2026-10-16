@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/appbar_widget.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
+import 'package:mmb_app/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../Api Model/plans_type.dart';
 import '../../component/custom_widget.dart';
 import '../../network/provider/plan_provider.dart';
-import '../../utils/theme/app.colors.dart';
-import '../../utils/theme/app.fonts.dart';
 
 class FreePlanScreen extends StatelessWidget {
   final bool showSkip;
@@ -73,7 +73,7 @@ class _PlansAndPricingBody extends StatelessWidget {
                       children: [
                         _buildFreeCard(),
                         SizedBox(height: 10.h),
-                        _buildTrialCard(),
+                        _buildTrialCard(context),
                         SizedBox(height: 10.h),
 
                         ListView.builder(
@@ -121,8 +121,8 @@ class _PlansAndPricingBody extends StatelessWidget {
               AppText(
                 'Free',
                 style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w800,
+                  fontSize: AppFontSize.fontSize22,
+                  fontWeight: FontWeight.w700,
                   color: Colors.black,
                 ),
               ),
@@ -137,8 +137,8 @@ class _PlansAndPricingBody extends StatelessWidget {
                   'ACTIVE',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 8.sp,
-                    fontWeight: FontWeight.w800,
+                    fontSize: AppFontSize.fontSize11,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -150,9 +150,10 @@ class _PlansAndPricingBody extends StatelessWidget {
             'Upgrade anytime to unlock more templates, AI '
             'credits and watermark-free downloads.',
             style: TextStyle(
-              fontSize: 10.sp,
+              fontSize: AppFontSize.fontSize14,
+              fontWeight: FontWeight.w400,
               height: 1.35,
-              color: const Color(0xFF554653),
+              color: AppColors.lightedGrey,
             ),
           ),
         ],
@@ -160,7 +161,7 @@ class _PlansAndPricingBody extends StatelessWidget {
     );
   }
 
-  Widget _buildTrialCard() {
+  Widget _buildTrialCard(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(15.r),
       decoration: BoxDecoration(
@@ -184,8 +185,8 @@ class _PlansAndPricingBody extends StatelessWidget {
               'LIMITED OFFER',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 8.sp,
-                fontWeight: FontWeight.w800,
+                fontSize: AppFontSize.fontSize11,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -194,8 +195,8 @@ class _PlansAndPricingBody extends StatelessWidget {
             'Start Your 7-Day Premium Trial',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w800,
+              fontSize: AppFontSize.fontSize18,
+              fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(height: 4.h),
@@ -204,7 +205,8 @@ class _PlansAndPricingBody extends StatelessWidget {
             'templates, AI tools and watermark-free downloads.',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.92),
-              fontSize: 10.sp,
+              fontSize: AppFontSize.fontSize14,
+              fontWeight: FontWeight.w400,
               height: 1.35,
             ),
           ),
@@ -217,8 +219,8 @@ class _PlansAndPricingBody extends StatelessWidget {
                 '₹10',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.w900,
+                  fontSize: AppFontSize.fontSize32,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               SizedBox(width: 5.w),
@@ -226,35 +228,27 @@ class _PlansAndPricingBody extends StatelessWidget {
                 'one-time · 7 days',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 11.sp,
+                  fontSize: AppFontSize.fontSize18,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
           SizedBox(height: 8.h),
+
           SizedBox(
             height: 32.h,
-            child: ElevatedButton(
-              onPressed: () {
-                // Keep your existing trial/payment function here.
+            width: 164,
+            child: ButtonWidget(
+              buttonPress: () {
+                showReviewOrderDialog(context);
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF252D),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: EdgeInsets.symmetric(horizontal: 12.w),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(7.r),
-                ),
-              ),
-              child: AppText(
-                'START FREE TRIAL →',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10.sp,
-                  fontWeight: FontWeight.w800,
-                ),
+              title: 'Start Free Trial →',
+              buttonColor: AppColors.appRed,
+              textStyle: TextStyle(
+                color: AppColors.appWhite,
+                fontSize: AppFontSize.fontSize14,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -364,9 +358,9 @@ class _PlansAndPricingBody extends StatelessWidget {
                   plan.name ?? 'Plan',
                   maxLines: 1,
                   style: TextStyle(
+                    fontSize: AppFontSize.fontSize18,
+                    fontWeight: FontWeight.w600,
                     color: Colors.black,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -375,13 +369,13 @@ class _PlansAndPricingBody extends StatelessWidget {
                 priceText,
                 style: TextStyle(
                   color: Colors.black,
-                  fontSize: 21.sp,
-                  fontWeight: FontWeight.w900,
+                  fontSize: AppFontSize.fontSize18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               SizedBox(width: 3.w),
               AppText(
-                periodText,
+                periodText.replaceAll("nth", ""),
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 9.sp,
@@ -394,17 +388,18 @@ class _PlansAndPricingBody extends StatelessWidget {
           AppText(
             descriptions,
             style: TextStyle(
-              fontSize: 10.sp,
-              height: 1.3,
+              fontSize: AppFontSize.fontSize14,
+              fontWeight: FontWeight.w400,
               color: Colors.black87,
+              height: 1.3,
             ),
           ),
           SizedBox(height: 5.h),
           AppText(
             'Includes:',
             style: TextStyle(
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
+              fontSize: AppFontSize.fontSize15,
               color: Colors.black,
             ),
           ),
@@ -412,8 +407,8 @@ class _PlansAndPricingBody extends StatelessWidget {
           AppText(
             includes[colorIndex],
             style: TextStyle(
-              fontSize: 9.sp,
-              height: 1.3,
+              fontWeight: FontWeight.w400,
+              fontSize: AppFontSize.fontSize14,
               color: Colors.black87,
             ),
           ),
@@ -437,8 +432,8 @@ class _PlansAndPricingBody extends StatelessWidget {
                           'VIEW FEATURES',
                           maxLines: 1,
                           style: TextStyle(
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.w700,
+                            fontSize: AppFontSize.fontSize11,
+                            fontWeight: FontWeight.w600,
                             color: buttonColor,
                           ),
                         ),
@@ -521,8 +516,8 @@ class _PlansAndPricingBody extends StatelessWidget {
               'MOST POPULAR',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 8.sp,
-                fontWeight: FontWeight.w800,
+                fontSize: AppFontSize.fontSize10,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -530,4 +525,340 @@ class _PlansAndPricingBody extends StatelessWidget {
       ],
     );
   }
+}
+
+class ReviewOrderDialog extends StatefulWidget {
+  const ReviewOrderDialog({super.key});
+
+  @override
+  State<ReviewOrderDialog> createState() => _ReviewOrderDialogState();
+}
+
+class _ReviewOrderDialogState extends State<ReviewOrderDialog> {
+  late Razorpay razorpay;
+
+  @override
+  void initState() {
+    super.initState();
+
+    razorpay = Razorpay();
+
+    razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccess);
+
+    razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentError);
+
+    razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWallet);
+
+    debugPrint("✅ Razorpay callbacks registered");
+  }
+
+  Future<void> handlePaymentSuccess(PaymentSuccessResponse response) async {
+    debugPrint("🎉 HANDLE PAYMENT SUCCESS CALLED");
+    debugPrint("Payment ID: ${response.paymentId}");
+    debugPrint("Order ID: ${response.orderId}");
+    debugPrint("Signature: ${response.signature}");
+
+    if (response.orderId == null ||
+        response.paymentId == null ||
+        response.signature == null) {
+      debugPrint("❌ Razorpay response data missing");
+      return;
+    }
+
+    final provider = context.read<PlanProvider>();
+
+    try {
+      final success = await provider.verifyAiPayment(
+        razorpayOrderId: response.orderId!,
+        razorpayPaymentId: response.paymentId!,
+        razorpaySignature: response.signature!,
+      );
+
+      debugPrint("Payment verification result: $success");
+
+      if (!mounted) return;
+
+      if (success) {
+        debugPrint("✅ Payment verified. Navigating...");
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+          "/SubscriptionActivatedScreen",
+          (route) => false,
+        );
+
+        // Refresh usage separately
+        try {
+          await provider.fetchPlanUsage();
+        } catch (e) {
+          debugPrint("⚠️ Plan usage refresh failed: $e");
+        }
+      } else {
+        debugPrint("❌ Payment verification failed");
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              provider.cancelPlanError ?? "Payment verification failed",
+            ),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint("❌ Payment success handler error: $e");
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  void handlePaymentError(PaymentFailureResponse response) {
+    debugPrint('❌ Payment failed: ${response.message}');
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(response.message ?? 'Payment failed')),
+    );
+  }
+
+  void handleExternalWallet(ExternalWalletResponse response) {
+    debugPrint('Wallet: ${response.walletName}');
+  }
+
+  @override
+  void dispose() {
+    razorpay.clear();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(18.r),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppText(
+                'Review Your Order',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(height: 4.h),
+              AppText(
+                'Please review your order details before proceeding to secure payment.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  color: Colors.black,
+                  height: 1.3,
+                ),
+              ),
+              SizedBox(height: 20.h),
+
+              // Selected plan
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 10.w),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFE6E8),
+                  borderRadius: BorderRadius.circular(9.r),
+                ),
+                child: Column(
+                  children: [
+                    AppText(
+                      'All-Access Pass',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                      ),
+                    ),
+                    SizedBox(height: 3.h),
+                    AppText(
+                      '7 Days Premium Access',
+                      style: TextStyle(fontSize: 10.sp, color: Colors.black),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 16.h),
+
+              _sectionTitle('PAYMENT SUMMARY'),
+              _summaryRow('Subtotal', '₹10.00'),
+              _summaryRow('GST (18%)', '₹1.80'),
+              _summaryRow('Total Payable', '₹11.80', isBold: true),
+
+              SizedBox(height: 14.h),
+
+              /*_sectionTitle('BILLING DETAILS'),
+              _summaryRow('Business Name', 'testing'),
+              _summaryRow('Mobile', '+919789575284'),
+
+              SizedBox(height: 14.h),*/
+              SizedBox(
+                width: double.infinity,
+                height: 38.h,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    debugPrint("🟡 Subscription access API started");
+
+                    final planProvider = context.read<PlanProvider>();
+
+                    final bool success = await planProvider
+                        .sSubscriptionAccess();
+
+                    debugPrint("🟡 Subscription access result: $success");
+
+                    if (!context.mounted) return;
+
+                    if (!success) {
+                      debugPrint("❌ Subscription access API failed");
+                      return;
+                    }
+
+                    final data = planProvider.subscriptionAccessData;
+
+                    if (data == null || data['order_id'] == null) {
+                      debugPrint("❌ Order ID missing");
+                      return;
+                    }
+
+                    final options = {
+                      'key': 'rzp_test_TWag5Xvk4KWWgY',
+                      'order_id': data['order_id'],
+                      'amount': ((data['amount'] as num) * 100).round(),
+                      'currency': data['currency'] ?? 'INR',
+                      'name': 'Make My Brand',
+                      'description': '${data['pass_days']} Days Premium Access',
+                      'prefill': {'contact': '', 'email': ''},
+                      'notes': {
+                        'payment_uid': data['payment_uid'],
+                        'user_subscription_uid': data['user_subscription_uid'],
+                      },
+                    };
+
+                    try {
+                      debugPrint("🟡 Opening Razorpay...");
+                      razorpay.open(options);
+                    } catch (e, stackTrace) {
+                      debugPrint("❌ Razorpay open error: $e");
+                      debugPrintStack(stackTrace: stackTrace);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF2029),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                  ),
+                  child: AppText(
+                    'PROCEED TO SECURE PAYMENT',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 12.h),
+
+              AppText(
+                "🔒 You'll be redirected to Razorpay to complete your payment securely.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 9.sp,
+                  color: Colors.black,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: 5.h),
+        child: AppText(
+          title,
+          style: TextStyle(
+            fontSize: 10.sp,
+            fontWeight: FontWeight.w800,
+            color: Colors.black,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryRow(String title, String value, {bool isBold = false}) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 9.h),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFE3E3E3), width: 0.7),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: AppText(
+              title,
+              style: TextStyle(
+                fontSize: 10.sp,
+                color: Colors.black87,
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+              ),
+            ),
+          ),
+          Flexible(
+            child: AppText(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 10.sp,
+                color: Colors.black,
+                fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> showReviewOrderDialog(BuildContext context) {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    builder: (_) => const ReviewOrderDialog(),
+  );
 }

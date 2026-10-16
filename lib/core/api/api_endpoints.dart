@@ -74,6 +74,8 @@ class ApiEndpoints {
   static const String cancelPlan = '/subscriptions/me/cancel-renewal';
   static const String aiPlan = '/quota/packs';
   static const String verify = '/subscriptions/payment/verify';
+  static const String access = '/subscriptions/access-pass';
+  static String asset(String category) => '/assets/${category}';
   static String quota(String quotaId) => '/quota/packs/${quotaId}/purchase';
   static String favoriteTemplate(String templateId) =>
       '/users/me/favourites/templates/${templateId}';

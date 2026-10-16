@@ -59,6 +59,7 @@ class BusinessProfileView extends StatelessWidget {
         }
 
         return Scaffold(
+          extendBodyBehindAppBar: true,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Stack(
             children: [
@@ -716,272 +717,286 @@ class BusinessProfileView extends StatelessWidget {
     final String personalUrl =
         '${ApiEndpoints.cdnImageUrl}/${provider.me?.data.profilePhotoS3Key ?? ''}';
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: CustomAppBar(showRightIcon: false),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ----------------------------------------------------------------
-              // HEADER + PERSONAL PROFILE
-              // ----------------------------------------------------------------
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(vertical: 12.h),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 70.w,
-                      height: 70.w,
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                      child: ClipOval(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      ImageViewerScreen(imagePath: personalUrl),
-                                ),
-                              );
-                            },
-                            child: Image.network(
-                              personalUrl,
-                              fit: BoxFit.cover,
-                              width: 70.w,
-                              height: 70.w,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.asset(
-                                  'assets/images/BName.png',
+      body: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 300.h,
+            child: Image.asset(
+              "assets/images/plan_gradient.png",
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 70.w,
+                          height: 70.w,
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          child: ClipOval(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          ImageViewerScreen(imagePath: personalUrl),
+                                    ),
+                                  );
+                                },
+                                child: Image.network(
+                                  personalUrl,
                                   fit: BoxFit.cover,
                                   width: 70.w,
                                   height: 70.w,
-                                );
-                              },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Image.asset(
+                                      'assets/images/BName.png',
+                                      fit: BoxFit.cover,
+                                      width: 70.w,
+                                      height: 70.w,
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
 
-                    SizedBox(height: 10.h),
+                        SizedBox(height: 10.h),
 
-                    AppText(
-                      "${provider.me!.data.name!.isEmpty ? "${provider.me?.data.name}" : provider.me?.data.name}",
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-
-                    SizedBox(height: 8.h),
-
-                    InkWell(
-                      onTap: () async {
-                        final result = await Navigator.pushNamed(
-                          context,
-                          "/EditProfileScreen",
-                        );
-
-                        if (!context.mounted) return;
-
-                        if (result == true) {
-                          debugPrint(
-                            "🔄 Edit Profile returned TRUE"
-                            " → refreshing profile API",
-                          );
-
-                          await context
-                              .read<BusinessProfileProvider>()
-                              .refreshProfileAfterEdit();
-                        }
-                      },
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          AppText(
-                            "EDIT PROFILE",
-                            style: TextStyle(
-                              color: AppColors.appRed,
-                              fontSize: AppFontSize.fontSize12,
-                              fontWeight: FontWeight.w900,
-                            ),
+                        AppText(
+                          "${provider.me!.data.name!.isEmpty ? "${provider.me?.data.name}" : provider.me?.data.name}",
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.w900,
                           ),
-                          SizedBox(width: 4.w),
-                          Image.asset(
-                            "assets/images/edit_profile.png",
-                            width: 16,
-                            height: 16,
+                        ),
+                        SizedBox(height: 4.h),
+
+                        SizedBox(height: 8.h),
+
+                        InkWell(
+                          onTap: () async {
+                            final result = await Navigator.pushNamed(
+                              context,
+                              "/EditProfileScreen",
+                            );
+
+                            if (!context.mounted) return;
+
+                            if (result == true) {
+                              debugPrint(
+                                "🔄 Edit Profile returned TRUE"
+                                " → refreshing profile API",
+                              );
+
+                              await context
+                                  .read<BusinessProfileProvider>()
+                                  .refreshProfileAfterEdit();
+                            }
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              AppText(
+                                "EDIT PROFILE",
+                                style: TextStyle(
+                                  color: AppColors.appRed,
+                                  fontSize: AppFontSize.fontSize12,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              SizedBox(width: 4.w),
+                              Image.asset(
+                                "assets/images/edit_profile.png",
+                                width: 16,
+                                height: 16,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+
+                        SizedBox(height: 16.h),
+                      ],
                     ),
+                  ),
 
-                    SizedBox(height: 16.h),
-                  ],
-                ),
-              ),
-
-              // ----------------------------------------------------------------
-              // MY DOWNLOADS + MEDIA LIBRARY
-              // ----------------------------------------------------------------
-              Padding(
-                padding: EdgeInsets.fromLTRB(14.w, 10.h, 14.w, 12.h),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _personalActionCard(
-                        title: "My Downloads",
-                        imagePath: "assets/images/document_download.png",
-                        gradientColors: [
-                          const Color(0xFFF6F4FF),
-                          const Color(0xFFEEEBFF),
-                        ],
-                        onTap: () {
-                          Navigator.pushNamed(context, '/MyDownloadsScreen');
-                        },
-                      ),
+                  // ----------------------------------------------------------------
+                  // MY DOWNLOADS + MEDIA LIBRARY
+                  // ----------------------------------------------------------------
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(14.w, 10.h, 14.w, 12.h),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _personalActionCard(
+                            title: "My Downloads",
+                            imagePath: "assets/images/document_download.png",
+                            gradientColors: [
+                              const Color(0xFFF6F4FF),
+                              const Color(0xFFEEEBFF),
+                            ],
+                            onTap: () {
+                              Navigator.pushNamed(context, '/MyDownloadsScreen');
+                            },
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: _personalActionCard(
+                            title: "Media Library",
+                            imagePath: "assets/images/media.png",
+                            gradientColors: [
+                              const Color(0xFFFFFAF2),
+                              const Color(0xFFFFE8C6),
+                            ],
+                            onTap: () {
+                              Navigator.pushNamed(context, '/MyUploadsScreen');
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(width: 10.w),
-                    Expanded(
-                      child: _personalActionCard(
-                        title: "Media Library",
-                        imagePath: "assets/images/media.png",
-                        gradientColors: [
-                          const Color(0xFFFFFAF2),
-                          const Color(0xFFFFE8C6),
-                        ],
-                        onTap: () {
-                          Navigator.pushNamed(context, '/MyUploadsScreen');
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
 
-              Divider(
-                height: 1,
-                color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-              ),
+                  Divider(
+                    height: 1,
+                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                  ),
 
-              Padding(
-                padding: EdgeInsets.fromLTRB(14.w, 13.h, 14.w, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(14.w, 13.h, 14.w, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Icon(
-                              Icons.layers_rounded,
-                              color: const Color(0xFFE53935),
-                              size: 21.sp,
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.layers_rounded,
+                                  color: const Color(0xFFE53935),
+                                  size: 21.sp,
+                                ),
+                                SizedBox(width: 7.w),
+                                Text(
+                                  "Your Frames",
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface,
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
                             ),
-                            SizedBox(width: 7.w),
-                            Text(
-                              "Your Frames",
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface,
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          height: 30.w,
-                          width: 30.w,
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF3A2022)
-                                : const Color(0xFFFFE1E4),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.add_rounded,
-                            color: const Color(0xFFE53935),
-                            size: 20.sp,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 11.h),
-
-                    // Tabs exactly like the reference layout.
-                    Row(
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Static Frames",
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface,
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            SizedBox(height: 4.h),
                             Container(
-                              height: 3.h,
-                              width: 88.w,
+                              height: 30.w,
+                              width: 30.w,
                               decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF3A2022)
+                                    : const Color(0xFFFFE1E4),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.add_rounded,
                                 color: const Color(0xFFE53935),
-                                borderRadius: BorderRadius.circular(4.r),
+                                size: 20.sp,
                               ),
                             ),
                           ],
                         ),
-                        SizedBox(width: 20.w),
-                        Text(
-                          "Animated Frames",
-                          style: TextStyle(
-                            color: Colors.grey.shade400,
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w600,
+
+                        SizedBox(height: 11.h),
+
+                        // Tabs exactly like the reference layout.
+                        Row(
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Static Frames",
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface,
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                SizedBox(height: 4.h),
+                                Container(
+                                  height: 3.h,
+                                  width: 88.w,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE53935),
+                                    borderRadius: BorderRadius.circular(4.r),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(width: 20.w),
+                            Text(
+                              "Animated Frames",
+                              style: TextStyle(
+                                color: Colors.grey.shade400,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        SizedBox(height: 11.h),
+
+                        SizedBox(
+                          height: 145.h,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            children: [
+                              _personalFrameCard(isDark: isDark, price: "Free"),
+                              _personalFrameCard(
+                                isDark: isDark,
+                                price: "Rs.0 (Rs.100 Unlocked)",
+                              ),
+                              _personalFrameCard(isDark: isDark, price: "Free"),
+                            ],
                           ),
                         ),
                       ],
                     ),
+                  ),
 
-                    SizedBox(height: 11.h),
-
-                    SizedBox(
-                      height: 145.h,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        children: [
-                          _personalFrameCard(isDark: isDark, price: "Free"),
-                          _personalFrameCard(
-                            isDark: isDark,
-                            price: "Rs.0 (Rs.100 Unlocked)",
-                          ),
-                          _personalFrameCard(isDark: isDark, price: "Free"),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  SizedBox(height: 20.h),
+                ],
               ),
-
-              SizedBox(height: 20.h),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

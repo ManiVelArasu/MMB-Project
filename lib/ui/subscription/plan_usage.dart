@@ -1037,7 +1037,7 @@ class _PlanUsageView extends StatelessWidget {
                         topUp.uid ?? '',
                       );
                       final options = {
-                        'key': 'rzp_test_TWag5Xvk4KWWgY', // ✅ Razorpay KEY ID
+                        'key': 'rzp_test_TWag5Xvk4KWWgY',
                         'amount': 5900, // ₹59
                         'currency': 'INR',
                         'order_id':

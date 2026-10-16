@@ -75,6 +75,17 @@ class PlanRepository {
       fromJson: (json) => json,
     );
   }
+
+  Future<ApiResult<dynamic>> subscriptionAccess() {
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.access,
+        method: ApiMethod.post,
+      ),
+      fromJson: (json) => json,
+    );
+  }
+
   Future<ApiResult<AiPackPaymentData>> quota(String quotaId) {
     return ApiRepository.instance.request<AiPackPaymentData>(
       config: ApiRequestConfig(
@@ -137,15 +148,14 @@ class PlanRepository {
         debugPrint("💰 Payment History API Response: $json");
 
         if (json is! Map<String, dynamic>) {
-          throw FormatException(
-            "Invalid payment history response: $json",
-          );
+          throw FormatException("Invalid payment history response: $json");
         }
 
         return PaymentHistory.fromJson(json);
       },
     );
   }
+
   Future<ApiResult<PlanUsage>> planUsage() {
     return ApiRepository.instance.request<PlanUsage>(
       config: ApiRequestConfig(

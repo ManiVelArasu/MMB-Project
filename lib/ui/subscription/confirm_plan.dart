@@ -68,7 +68,7 @@ class _ConfirmPlanContent extends StatelessWidget {
 
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.only(left: 12,right: 12),
+          padding: const EdgeInsets.only(left: 12, right: 12),
           child: Column(
             children: [
               Container(
@@ -133,27 +133,32 @@ class _ConfirmPlanContent extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppText(" Premium Features Included:",style: TextStyle( fontSize:AppFontSize.fontSize17,
-                      fontWeight: FontWeight.w700,color: AppColors.appWhite),),
-                    SizedBox(height: 10,),
+                    AppText(
+                      " Premium Features Included:",
+                      style: TextStyle(
+                        fontSize: AppFontSize.fontSize17,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.appWhite,
+                      ),
+                    ),
+                    SizedBox(height: 10),
                     Row(
                       children: [
-
                         Container(
                           width: 8,
                           height: 8,
-                          decoration:  BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.statusYellowColor,
                             shape: BoxShape.circle,
                           ),
                         ),
                         const SizedBox(width: 8),
-                         Expanded(
+                        Expanded(
                           child: AppText(
                             "500 Video Templates",
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize:AppFontSize.fontSize15,
+                              fontSize: AppFontSize.fontSize15,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -166,18 +171,18 @@ class _ConfirmPlanContent extends StatelessWidget {
                         Container(
                           width: 8,
                           height: 8,
-                          decoration:  BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.statusYellowColor,
                             shape: BoxShape.circle,
                           ),
                         ),
                         const SizedBox(width: 8),
-                         Expanded(
+                        Expanded(
                           child: AppText(
                             "AI Credits · Brand Series · Social Calendar",
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize:AppFontSize.fontSize15,
+                              fontSize: AppFontSize.fontSize15,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -190,18 +195,18 @@ class _ConfirmPlanContent extends StatelessWidget {
                         Container(
                           width: 8,
                           height: 8,
-                          decoration:  BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.statusYellowColor,
                             shape: BoxShape.circle,
                           ),
                         ),
                         const SizedBox(width: 8),
-                         Expanded(
+                        Expanded(
                           child: AppText(
                             "Watermark-free downloads & HD Export",
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize:AppFontSize.fontSize15,
+                              fontSize: AppFontSize.fontSize15,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -211,7 +216,6 @@ class _ConfirmPlanContent extends StatelessWidget {
                   ],
                 ),
               ),
-
 
               const SizedBox(height: 16),
 
@@ -405,7 +409,7 @@ class _ConfirmPlanContent extends StatelessWidget {
                         )
                       : AppText(
                           "PROCEED TO PAY ₹${formatAmount(total)}",
-                          style:  TextStyle(
+                          style: TextStyle(
                             fontSize: AppFontSize.fontSize18,
                             color: Colors.white,
                             fontWeight: FontWeight.w700,

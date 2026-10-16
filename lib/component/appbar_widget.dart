@@ -248,7 +248,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: AppFontSize.fontSize22,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: isDark ? Colors.white : AppColors.appBlack,
                       ),
                     ),

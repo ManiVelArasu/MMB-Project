@@ -559,8 +559,8 @@ class _PlansAndPricingBody extends StatelessWidget {
                 AppText(
                   "VIEW FEATURES",
                   style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w800,
+                    fontSize: AppFontSize.fontSize11,
+                    fontWeight: FontWeight.w600,
                     color:
                         buttonColor, // Card-oda button color-e view features-kum varum
                     letterSpacing: 0.5,

@@ -67,6 +67,12 @@ class PlanProvider extends ChangeNotifier {
   String? _cancelPlanError;
   String? get cancelPlanError => _cancelPlanError;
 
+  bool _isSubscriptionAccess = false;
+  bool get isSubscriptionAccessPlan => _isSubscriptionAccess;
+
+  String? _isSubscriptionAccessError;
+  String? get isSubscriptionAccessError => _isSubscriptionAccessError;
+
   bool _isInvoiceLoading = false;
 
   String? _invoiceError;
@@ -94,6 +100,8 @@ class PlanProvider extends ChangeNotifier {
 
   String? _aiTopUpError;
   String? get aiTopUpError => _aiTopUpError;
+
+  Map<String, dynamic>? subscriptionAccessData;
 
   Future<bool> fetchAiTopUp() async {
     _isLoadingAiTopUp = true;
@@ -242,6 +250,70 @@ class PlanProvider extends ChangeNotifier {
       return false;
     } finally {
       _isCancellingPlan = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> sSubscriptionAccess() async {
+    if (_isSubscriptionAccess) return false;
+
+    _isSubscriptionAccess = true;
+    _isSubscriptionAccessError = null;
+    notifyListeners();
+
+    try {
+      final result = await _repository.subscriptionAccess();
+
+      if (result.isFailure) {
+        _isSubscriptionAccessError =
+            result.error?.message ?? "Unable to create payment order";
+
+        debugPrint("❌ Subscription Access Error: $_isSubscriptionAccessError");
+        return false;
+      }
+
+      final response = result.data;
+
+      debugPrint("================================");
+      debugPrint("📦 SUBSCRIPTION ACCESS RESPONSE");
+      debugPrint("$response");
+      debugPrint("================================");
+
+      if (response is! Map<String, dynamic>) {
+        _isSubscriptionAccessError = "Invalid API response";
+        return false;
+      }
+
+      if (response['success'] != true) {
+        _isSubscriptionAccessError =
+            response['message']?.toString() ??
+                "Unable to create payment order";
+        return false;
+      }
+
+      final data = response['data'];
+
+      if (data is! Map<String, dynamic>) {
+        _isSubscriptionAccessError = "Payment order data not available";
+        return false;
+      }
+
+      subscriptionAccessData = Map<String, dynamic>.from(data);
+
+      debugPrint("✅ Order ID: ${data['order_id']}");
+      debugPrint("✅ Amount: ${data['amount']}");
+      debugPrint("✅ Currency: ${data['currency']}");
+
+      return true;
+    } catch (e, stackTrace) {
+      _isSubscriptionAccessError = e.toString();
+
+      debugPrint("❌ Subscription Access Exception: $e");
+      debugPrintStack(stackTrace: stackTrace);
+
+      return false;
+    } finally {
+      _isSubscriptionAccess = false;
       notifyListeners();
     }
   }

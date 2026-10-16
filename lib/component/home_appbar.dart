@@ -312,7 +312,7 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
                         style: TextStyle(
                           color: isDark ? Colors.white : AppColors.appBlack,
                           fontSize: AppFontSize.fontSize22,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
