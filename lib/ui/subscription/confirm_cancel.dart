@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mmb_app/component/appbar_widget.dart';
+import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/plan_provider.dart';
@@ -31,6 +34,11 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
         final data = provider.subscriptionData;
 
         final plan = data?["plan"];
+        final billingData = data?["billing"];
+
+        final String billing = billingData is Map
+            ? "${billingData["currency"] ?? "INR"} ${billingData["price"] ?? "0.00"}"
+            : "INR 0.00";
 
         final String planName = plan is Map
             ? plan["name"]?.toString() ?? "Premium"
@@ -47,7 +55,10 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
         return Scaffold(
           backgroundColor: Colors.white,
 
-          appBar: CustomAppBar(title: "Confirm Cancellation",showRightIcon: false,),
+          appBar: CustomAppBar(
+            title: "Confirm Cancellation",
+            showRightIcon: false,
+          ),
 
           body: provider.isLoadingSubscription
               ? const Center(child: CircularProgressIndicator())
@@ -75,25 +86,24 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
 
                         const SizedBox(height: 12),
 
-                        Text(
+                        AppText(
                           "Sure you want to cancel $planName?",
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: TextStyle(
+                            fontSize: AppFontSize.fontSize14,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
 
                         const SizedBox(height: 8),
 
-                        Text(
-                          "Your $planName access continues until $expiryDate.\n"
-                          "After that, your plan won't renew and you'll move\n"
-                          "to the Free plan.",
+                        AppText(
+                          "Your $planName access continues until $expiryDate.After that, your plan won't renew and you'll move to the Free plan.",
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey,
+                          style: TextStyle(
+                            fontSize: AppFontSize.fontSize14,
+                            fontWeight: FontWeight.w400,
+                            color: AppColors.lightedShadedGrey,
                             height: 1.5,
                           ),
                         ),
@@ -108,12 +118,11 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
                             color: const Color(0xFFFFE5E7),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Text(
-                            "💡 Cost was the reason? Switching to Basic keeps\n"
-                            "templates & AI tools from just ₹199/mo — no need to\n"
-                            "lose everything.",
+                          child: AppText(
+                            "💡 Cost was the reason? Switching to Basic keeps\ntemplates & AI tools from just ${billing.replaceAll("INR", "")} — no need to lose everything.",
                             style: TextStyle(
-                              fontSize: 9,
+                              fontSize: AppFontSize.fontSize13,
+                              fontWeight: FontWeight.w600,
                               color: Color(0xFF666666),
                               height: 1.5,
                             ),
@@ -134,21 +143,43 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              AppText(
                                 "YOU'LL LOSE ACCESS TO",
                                 style: TextStyle(
-                                  fontSize: 9,
+                                  fontSize: AppFontSize.fontSize14,
                                   color: Colors.grey,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
 
                               const SizedBox(height: 8),
 
                               if (features.isEmpty)
-                                const Text(
-                                  "❌ Premium plan features",
-                                  style: TextStyle(fontSize: 10),
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 15,
+                                      height: 15,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFFFE5E7),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.red,
+                                        size: 8,
+                                      ),
+                                    ),
+                                    SizedBox(width: 5),
+                                    AppText(
+                                      "Premium plan features",
+                                      style: TextStyle(
+                                        fontSize: AppFontSize.fontSize16,
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                  ],
                                 )
                               else
                                 ...features.map(
@@ -164,7 +195,7 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
                           ),
                         ),
 
-                        const Spacer(),
+                        SizedBox(height: 25),
 
                         // KEEP PLAN
                         SizedBox(
@@ -181,12 +212,12 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: const Text(
+                            child: AppText(
                               "KEEP MY PLAN",
                               style: TextStyle(
+                                fontSize: AppFontSize.fontSize16,
                                 color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -209,7 +240,7 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
                               ),
                             ),
                             child: provider.isCancellingPlan
-                                ? const SizedBox(
+                                ? SizedBox(
                                     height: 18,
                                     width: 18,
                                     child: CircularProgressIndicator(
@@ -217,12 +248,12 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
                                       color: Colors.red,
                                     ),
                                   )
-                                : const Text(
+                                : AppText(
                                     "CONFIRM CANCELLATION",
                                     style: TextStyle(
+                                      fontSize: AppFontSize.fontSize16,
                                       color: Colors.red,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w800,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                           ),
@@ -238,9 +269,7 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
     );
   }
 
-  Future<void> _confirmCancellation(
-      PlanProvider provider,
-      ) async {
+  Future<void> _confirmCancellation(PlanProvider provider) async {
     final success = await provider.cancelSubscription();
 
     if (!mounted) return;
@@ -248,26 +277,21 @@ class _ConfirmCancellationScreenState extends State<ConfirmCancellationScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            "Your subscription has been cancelled successfully.",
-          ),
+          content: Text("Your subscription has been cancelled successfully."),
         ),
       );
 
       Navigator.pushNamedAndRemoveUntil(
         context,
         "/MySubscriptionScreen",
-            (route) => false,
-        arguments: {
-          "hideBackButton": true,
-        },
+        (route) => false,
+        arguments: {"hideBackButton": true},
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            provider.cancelPlanError ??
-                "Unable to cancel subscription.",
+            provider.cancelPlanError ?? "Unable to cancel subscription.",
           ),
         ),
       );

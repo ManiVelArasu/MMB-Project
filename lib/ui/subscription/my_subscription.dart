@@ -377,7 +377,7 @@ class _MySubscriptionView extends StatelessWidget {
               style: TextStyle(
                 color: AppColors.appBlack,
                 fontSize: AppFontSize.fontSize22,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
