@@ -5,6 +5,7 @@ import 'package:mmb_app/component/appbar_widget.dart';
 import 'package:mmb_app/component/bottom_navigation.dart';
 import 'package:mmb_app/component/custom_searchbar.dart';
 import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/component/home_appbar.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
@@ -40,7 +41,10 @@ class _AiHubView extends StatelessWidget {
         return Scaffold(
           extendBodyBehindAppBar: true,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: CustomAppBar(title: "AI HUB", showRightIcon: false),
+          appBar: HomeCustomAppBar(
+            showApiName: false,
+            customName: 'AI HUB',
+          ),
           body: Stack(
             children: [
               Positioned(

@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
 import '../../component/custom_searchbar.dart';
+import '../../component/home_appbar.dart';
 import '../../network/provider/ai_hub_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
@@ -37,7 +38,7 @@ class AiRemoveBgScreen extends StatelessWidget {
         return Scaffold(
           extendBodyBehindAppBar: true,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: CustomAppBar(title: "AI HUB", showRightIcon: false),
+          appBar: HomeCustomAppBar(showApiName: false, customName: 'AI HUB'),
           body: Stack(
             children: [
               Positioned(
@@ -119,7 +120,7 @@ class AiRemoveBgScreen extends StatelessWidget {
         Container(
           height: 90,
           width: 90,
-          child: Image.asset('assets/images/bg_remover.png')
+          child: Image.asset('assets/images/bg_remover.png'),
         ),
         const SizedBox(height: 12),
         Container(
@@ -128,15 +129,17 @@ class AiRemoveBgScreen extends StatelessWidget {
             color: const Color(0xFFF3F3F3),
             borderRadius: BorderRadius.circular(20),
           ),
-          child:  AppText(
+          child: AppText(
             'Background Remover',
-            style: TextStyle( fontSize: AppFontSize.fontSize16,
+            style: TextStyle(
+              fontSize: AppFontSize.fontSize16,
               fontWeight: FontWeight.w400,
-              color: Colors.black54,),
+              color: Colors.black54,
+            ),
           ),
         ),
         const SizedBox(height: 12),
-         AppText(
+        AppText(
           'Remove Image Backgrounds\nInstantly',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -145,13 +148,15 @@ class AiRemoveBgScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-         AppText(
+        AppText(
           'Upload a product or portrait image and remove '
           'the background automatically.',
           textAlign: TextAlign.center,
-          style: TextStyle( fontSize: AppFontSize.fontSize13,
+          style: TextStyle(
+            fontSize: AppFontSize.fontSize13,
             fontWeight: FontWeight.w400,
-            color: Colors.black87,),
+            color: Colors.black87,
+          ),
         ),
       ],
     );
@@ -163,18 +168,22 @@ class AiRemoveBgScreen extends StatelessWidget {
       children: [
         const Divider(color: borderColor),
         const SizedBox(height: 16),
-         AppText(
+        AppText(
           'What would you like to create?',
-          style: TextStyle( fontSize: AppFontSize.fontSize18,
-            fontWeight: FontWeight.w400,),
+          style: TextStyle(
+            fontSize: AppFontSize.fontSize18,
+            fontWeight: FontWeight.w400,
+          ),
         ),
         const SizedBox(height: 10),
-         AppText(
+        AppText(
           'Let AI generate logos, product images, captions, '
           'videos, and marketing content for your business.',
-          style: TextStyle(fontSize: AppFontSize.fontSize14,
+          style: TextStyle(
+            fontSize: AppFontSize.fontSize14,
             fontWeight: FontWeight.w400,
-            color: Colors.black54,),
+            color: Colors.black54,
+          ),
         ),
       ],
     );
@@ -321,24 +330,28 @@ class AiRemoveBgScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset("assets/images/magicpen.png",width: 18,height: 18,),
+          Image.asset("assets/images/magicpen.png", width: 18, height: 18),
 
           const SizedBox(width: 7),
           Flexible(
             child: AppText(
               '${provider.availableCredits} AI Credits Available',
-              style:  TextStyle(  fontSize: AppFontSize.fontSize13,
+              style: TextStyle(
+                fontSize: AppFontSize.fontSize13,
                 fontWeight: FontWeight.w400,
-                color: AppColors.appBlack,),
+                color: AppColors.appBlack,
+              ),
             ),
           ),
           const SizedBox(width: 4),
           Flexible(
             child: AppText(
               '${provider.creditsPerImage} credits will be used',
-              style:  TextStyle(  fontSize: AppFontSize.fontSize13,
+              style: TextStyle(
+                fontSize: AppFontSize.fontSize13,
                 fontWeight: FontWeight.w400,
-                color: AppColors.appRed,),
+                color: AppColors.appRed,
+              ),
             ),
           ),
         ],

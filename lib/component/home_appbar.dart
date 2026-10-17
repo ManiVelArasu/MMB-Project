@@ -14,12 +14,16 @@ class HomeCustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String notificationCount;
   final VoidCallback? onMagicWandTap;
   final VoidCallback? onNotificationTap;
+  final bool showApiName;
+  final String? customName;
 
   const HomeCustomAppBar({
     super.key,
     this.notificationCount = "2",
     this.onMagicWandTap,
     this.onNotificationTap,
+    this.showApiName = true,
+    this.customName,
   });
 
   @override
@@ -308,7 +312,9 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       AppText(
-                        displayName,
+                        widget.showApiName
+                            ? displayName
+                            : (widget.customName ?? ''),
                         style: TextStyle(
                           color: isDark ? Colors.white : AppColors.appBlack,
                           fontSize: AppFontSize.fontSize22,

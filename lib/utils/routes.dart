@@ -20,6 +20,7 @@ import '../ui/screens/ai_imag_screen.dart';
 import '../ui/screens/business_profile_screen.dart';
 import '../ui/screens/download_screen.dart';
 import '../ui/screens/edit_profile_screen.dart';
+import '../ui/screens/explore_ai_tool_screen.dart';
 import '../ui/screens/faq_screen.dart';
 import '../ui/screens/my_product_screen.dart';
 import '../ui/screens/my_upload_screen.dart';
@@ -348,8 +349,13 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (context) => const AiHubPage());
 
       case '/AiRemoveBg':
-        return MaterialPageRoute(builder: (_) => const AiRemoveBgPage());  case '/FreePlanScreen':
+        return MaterialPageRoute(builder: (_) => const AiRemoveBgPage());
+
+      case '/FreePlanScreen':
         return MaterialPageRoute(builder: (_) => const FreePlanScreen());
+
+      case '/ExploreAiToolScreen':
+        return MaterialPageRoute(builder: (_) => const ExploreAiToolScreen());
       case "/TemplateListScreen":
         final arguments = settings.arguments;
 

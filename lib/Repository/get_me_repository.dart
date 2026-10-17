@@ -35,12 +35,11 @@ class GetMeRepository {
     );
   }
 
-
   Future<ApiResult<dynamic>> updatePersonalDetail(
-      String? name,
-      String? email,
-      String? profile_photo_s3_key,
-      ) {
+    String? name,
+    String? email,
+    String? profile_photo_s3_key,
+  ) {
     final Map<String, dynamic> body = {};
 
     if (name != null && name.trim().isNotEmpty) {
@@ -67,7 +66,6 @@ class GetMeRepository {
       fromJson: (json) => json,
     );
   }
-
 
   Future<ApiResult<BusinessModel>> businessApi() {
     return ApiRepository.instance.request<BusinessModel>(

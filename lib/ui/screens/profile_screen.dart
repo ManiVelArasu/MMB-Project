@@ -227,7 +227,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       SizedBox(
                                         height: 42.h,
                                         child: ElevatedButton(
-                                          onPressed: () {},
+                                          onPressed: () {
+                                            Navigator.pushNamed(
+                                              context,
+                                              "/ExploreAiToolScreen",
+                                            );
+                                          },
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: const Color(
                                               0xFFF5222D,
@@ -328,10 +333,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     child: ElevatedButton(
                                       onPressed: () {
                                         if (accountType == 'personal') {
-                                          Navigator.pushNamed(
-                                            context,
-                                            "/BusinessCategoryChooseScreen",
-                                          );
+                                          provider.updateAccountType(context);
                                         } else {
                                           Navigator.pushNamed(
                                             context,
@@ -461,7 +463,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   title: 'AI Hub',
                                   iconAsset: "assets/images/ai_tool.png",
                                   isDark: isDark,
-                                  onTap: () {},
+                                  onTap: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      "/ExploreAiToolScreen",
+                                    );
+                                  },
                                   isLast: true,
                                 ),
                               ],

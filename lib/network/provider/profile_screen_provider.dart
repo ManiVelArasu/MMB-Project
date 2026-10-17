@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Api Model/language_model.dart';
+import '../../Api Model/me_api.dart';
 import '../../Repository/auth_repository.dart';
+import '../../Repository/get_me_repository.dart';
 import '../../Repository/profile_repository.dart';
 import '../../core/api/api_handler.dart';
 import '../../model/profile_screen_model.dart';
@@ -29,6 +31,14 @@ class ProfileScreenProvider extends ChangeNotifier {
   bool _isLanguageSaving = false;
 
   bool get isLanguageSaving => _isLanguageSaving;
+
+  bool _isAccountTypeUpdating = false;
+
+  bool get isAccountTypeUpdating => _isAccountTypeUpdating;
+
+  String? _errorMessage;
+
+  String? get errorMessage => _errorMessage;
 
   Future<bool> saveLanguages({
     required List<String> languages,
@@ -61,7 +71,7 @@ class ProfileScreenProvider extends ChangeNotifier {
 
       debugPrint(
         "❌ Language preference failed: "
-            "${result.error?.message}",
+        "${result.error?.message}",
       );
 
       return false;
@@ -73,6 +83,78 @@ class ProfileScreenProvider extends ChangeNotifier {
     } finally {
       _isLanguageSaving = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> updateAccountType(BuildContext context) async {
+    _isAccountTypeUpdating = true;
+    notifyListeners();
+
+    try {
+      final result =
+      await GetMeRepository.instance.updateMe("business");
+
+      return await result.when(
+        success: (data) async {
+          final prefs = await SharedPreferences.getInstance();
+
+          await prefs.setString(
+            'selected_account_type',
+            'For my Business',
+          );
+
+          await prefs.setBool('is_personal_use', false);
+
+          // Update existing user data
+          try {
+            if (data is Map<String, dynamic>) {
+              final meData = data['data'];
+
+              if (meData is Map<String, dynamic>) {
+                final language = Language.fromJson({
+                  "success": true,
+                  "data": meData,
+                });
+
+                debugPrint(
+                  "ACCOUNT TYPE UPDATED = "
+                      "${language.data.accountType}",
+                );
+              }
+            }
+          } catch (e) {
+            debugPrint("Failed to update local user data: $e");
+          }
+
+          _isAccountTypeUpdating = false;
+          notifyListeners();
+
+          // Navigate after API success
+          if (context.mounted) {
+            Navigator.pushNamed(
+              context,
+              "/BusinessCategoryChooseScreen",
+            );
+          }
+
+          return true;
+        },
+        failure: (error) {
+          _errorMessage = error.message;
+          _isAccountTypeUpdating = false;
+          notifyListeners();
+
+          return false;
+        },
+      );
+    } catch (e) {
+      debugPrint("updateAccountType error: $e");
+
+      _errorMessage = e.toString();
+      _isAccountTypeUpdating = false;
+      notifyListeners();
+
+      return false;
     }
   }
 
@@ -94,7 +176,7 @@ class ProfileScreenProvider extends ChangeNotifier {
 
       debugPrint(
         "❌ Account deactivate failed: "
-            "${result.error?.message}",
+        "${result.error?.message}",
       );
 
       _isDeactivateLoading = false;
@@ -126,10 +208,7 @@ class ProfileScreenProvider extends ChangeNotifier {
     QuickActionModel(
       title: "Business\nProfile",
       iconPath: "assets/images/personalcard.png",
-      gradientColors: [
-        Color(0xFFEFF9FF),
-        Color(0xFFD3EEFD),
-      ],
+      gradientColors: [Color(0xFFEFF9FF), Color(0xFFD3EEFD)],
       onTap: (context) {
         Navigator.pushNamed(context, '/BusinessProfileScreen');
       },
@@ -137,10 +216,7 @@ class ProfileScreenProvider extends ChangeNotifier {
     QuickActionModel(
       title: "My\nDownloads",
       iconPath: "assets/images/document-download.png",
-      gradientColors: [
-        Color(0xFFF6F4FF),
-        Color(0xFFEEEBFF),
-      ],
+      gradientColors: [Color(0xFFF6F4FF), Color(0xFFEEEBFF)],
       onTap: (context) {
         Navigator.pushNamed(context, "/MyDownloadsScreen");
       },
@@ -148,10 +224,7 @@ class ProfileScreenProvider extends ChangeNotifier {
     QuickActionModel(
       title: "Festival\n Post",
       iconPath: "assets/images/festival_calender.png",
-      gradientColors: [
-        Color(0xFFFFFAF2),
-        Color(0xFFFFE8C6),
-      ],
+      gradientColors: [Color(0xFFFFFAF2), Color(0xFFFFE8C6)],
       onTap: (context) {
         Navigator.pushNamed(context, "/SmCalendarScreen");
       },
@@ -165,8 +238,10 @@ class ProfileScreenProvider extends ChangeNotifier {
       await AuthRepository.instance.logout();
 
       if (context.mounted) {
-        final businessProvider =
-        Provider.of<BusinessProvider>(context, listen: false);
+        final businessProvider = Provider.of<BusinessProvider>(
+          context,
+          listen: false,
+        );
 
         // Clear image and its related state
         businessProvider.clearImage();
@@ -183,19 +258,16 @@ class ProfileScreenProvider extends ChangeNotifier {
 
       if (!context.mounted) return;
 
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        "/LoginScreen",
-            (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil("/LoginScreen", (route) => false);
     } catch (e) {
       _isLogoutLoading = false;
       notifyListeners();
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Logout failed. Please try again."),
-          ),
+          const SnackBar(content: Text("Logout failed. Please try again.")),
         );
       }
     }
@@ -232,7 +304,7 @@ class ProfileScreenProvider extends ChangeNotifier {
           ),
           content: const Text(
             "Are you sure you want to delete your account?\n\n"
-                "Your account will be permanently deleted within 24 hours.",
+            "Your account will be permanently deleted within 24 hours.",
           ),
           actions: [
             TextButton(
@@ -248,8 +320,8 @@ class ProfileScreenProvider extends ChangeNotifier {
               onPressed: _isDeactivateLoading
                   ? null
                   : () {
-                Navigator.pop(dialogContext, true);
-              },
+                      Navigator.pop(dialogContext, true);
+                    },
               child: const Text("YES", style: TextStyle(color: Colors.white)),
             ),
           ],

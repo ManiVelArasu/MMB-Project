@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 
+import '../../component/home_appbar.dart';
 import '../../network/provider/ai_hub_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
@@ -36,7 +37,10 @@ class AiImageScreen extends StatelessWidget {
         return Scaffold(
           extendBodyBehindAppBar: true,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: CustomAppBar(title: "AI HUB", showRightIcon: false),
+          appBar: HomeCustomAppBar(
+            showApiName: false,
+            customName: 'AI HUB',
+          ),
           body: Stack(
             children: [
               Positioned(

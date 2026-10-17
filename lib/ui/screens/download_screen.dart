@@ -171,13 +171,13 @@ class _MyDownloadScreenState extends State<MyDownloadScreen> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
+       /* Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => TemplateEditScreen(templateUid: project.uid),
           ),
         );
-        debugPrint('Project UID: ${project.uid}');
+        debugPrint('Project UID: ${project.uid}');*/
       },
       child: Container(
         decoration: BoxDecoration(
