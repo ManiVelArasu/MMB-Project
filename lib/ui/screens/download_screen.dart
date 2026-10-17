@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
@@ -7,160 +9,294 @@ import '../../Api Model/project_list.dart';
 import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../network/provider/my_upload_provider.dart';
 import '../../network/provider/prpject_provider.dart';
 import '../screens/template_edit.dart';
 
-class MyDownloadScreen extends StatefulWidget {
+class MyDownloadScreen extends StatelessWidget {
   const MyDownloadScreen({super.key});
 
   @override
-  State<MyDownloadScreen> createState() => _MyDownloadScreenState();
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<UploadProvider>(create: (_) => UploadProvider()),
+        ChangeNotifierProvider<ProjectProvider>(
+          create: (_) => ProjectProvider()..fetchProject(),
+        ),
+      ],
+      child: const _MyUploadsView(),
+    );
+  }
 }
 
-class _MyDownloadScreenState extends State<MyDownloadScreen> {
-  late final ProjectProvider projectProvider;
-
-  @override
-  void initState() {
-    super.initState();
-
-    projectProvider = ProjectProvider();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      projectProvider.fetchProject();
-    });
-  }
-
-  @override
-  void dispose() {
-    projectProvider.dispose();
-    super.dispose();
-  }
+class _MyUploadsView extends StatelessWidget {
+  const _MyUploadsView();
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<ProjectProvider>.value(
-      value: projectProvider,
-      child: Scaffold(
-        appBar: const CustomAppBar(
-          title: 'My Downloads',
-          showTitle: true,
-          showRightIcon: false,
-        ),
-        body: SafeArea(
-          child: Consumer<ProjectProvider>(
-            builder: (context, provider, child) {
-              if (provider.isLoadingPlans) {
-                return const Center(child: CircularProgressIndicator());
-              }
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F7F7),
 
-              final projectList = provider.plansData;
+      appBar: CustomAppBar(title: 'My Download', showRightIcon: false),
 
-              if (projectList == null) {
-                return Center(
-                  child: Text(provider.errorMessage ?? 'No projects found'),
-                );
-              }
+      body: Consumer<UploadProvider>(
+        builder: (context, provider, child) {
+          return Column(
+            children: [
+              // Images / Videos tabs
+              Container(
+                width: double.infinity,
+                color: const Color(0xFFF7F7F7),
+                padding: const EdgeInsets.only(left: 10, top: 14, bottom: 10),
+                child: Row(
+                  children: [
+                    _tab("Images", provider),
+                    const SizedBox(width: 24),
+                    _tab("Videos", provider),
+                  ],
+                ),
+              ),
 
-              final projects = projectList.data;
-
-              if (projects.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          "assets/images/no_downloads.png",
-                          width: 140,
-                          height: 140,
+              Expanded(
+                child: Consumer<ProjectProvider>(
+                  builder: (context, projectProvider, child) {
+                    if (projectProvider.isLoadingPlans) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFED1C24),
                         ),
-                        const AppText(
-                          'No Downloads Yet',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                      );
+                    }
 
-                        const SizedBox(height: 8),
 
-                        const AppText(
-                          'Your downloaded designs will appear here. '
-                          'Create your first design and download it when it’s ready.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 13, color: Colors.black54),
-                        ),
 
-                        const SizedBox(height: 20),
+                    final downloadedProjects =
+                        projectProvider.plansData?.data ?? [];
+                    final uploadedImages = provider.uploads
+                        .where((item) => !item.isVideo)
+                        .toList();
 
-                        Row(
-                          children: [
-                            Flexible(
-                              child: ButtonWidget(
-                                buttonPress: () {
-                                  // Explore Templates
-                                },
-                                title: "Explore Templates",
-                                textColor: AppColors.appRed,
-                                buttonColor: AppColors.appWhite,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: AppColors.appRed),
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(15),
+                    final uploadedVideos = provider.uploads
+                        .where((item) => item.isVideo)
+                        .toList();
+
+
+                    // IMAGES TAB
+                    if (provider.selectedTab == "Images") {
+                      if (uploadedImages.isEmpty &&
+                          downloadedProjects.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 15),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  "assets/images/no_downloads.png",
+                                  width: 140,
+                                  height: 140,
+                                ),
+                                const AppText(
+                                  'No Downloads Yet',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                              ),
+
+                                const SizedBox(height: 8),
+
+                                const AppText(
+                                  'Your downloaded designs will appear here. '
+                                  'Create your first design and download it when it’s ready.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 20),
+
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: ButtonWidget(
+                                        buttonPress: () {
+                                          // Explore Templates
+                                        },
+                                        title: "Explore Templates",
+                                        textColor: AppColors.appRed,
+                                        buttonColor: AppColors.appWhite,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: AppColors.appRed,
+                                          ),
+                                          borderRadius: BorderRadius.all(
+                                            Radius.circular(15),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    const SizedBox(width: 8),
+
+                                    Flexible(
+                                      child: ButtonWidget(
+                                        buttonPress: () {
+                                          // Create a Design
+                                        },
+                                        title: "Create a Design",
+                                        textColor: AppColors.appWhite,
+                                        buttonColor: AppColors.appRed,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
+                          ),
+                        );
+                      }
 
-                            const SizedBox(width: 8),
+                      return SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Uploaded images
+                            if (uploadedImages.isNotEmpty) ...[
+                              const Text(
+                                "My Uploads",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF111827),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildMasonryGrid(
+                                context,
+                                uploadedImages,
+                                provider,
+                              ),
+                            ],
 
-                            Flexible(
-                              child: ButtonWidget(
-                                buttonPress: () {
-                                  // Create a Design
+                            // Downloaded projects
+                            if (downloadedProjects.isNotEmpty) ...[
+                              GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: downloadedProjects.length,
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2,
+                                      crossAxisSpacing: 12,
+                                      mainAxisSpacing: 14,
+                                      childAspectRatio: 0.78,
+                                    ),
+                                itemBuilder: (context, index) {
+                                  final project = downloadedProjects[index];
+
+                                  return _buildDownloadedProjectCard(project);
                                 },
-                                title: "Create a Design",
-                                textColor: AppColors.appWhite,
-                                buttonColor: AppColors.appRed,
                               ),
-                            ),
+                            ],
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              }
+                      );
+                    }
 
-              return RefreshIndicator(
-                onRefresh: provider.fetchProject,
-                child: GridView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 14,
-                    childAspectRatio: 0.78,
-                  ),
-                  itemCount: projects.length,
-                  itemBuilder: (context, index) {
-                    final project = projects[index];
+                    // VIDEOS TAB
+                    if (uploadedVideos.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(
+                                "assets/images/no_downloads.png",
+                                width: 140,
+                                height: 140,
+                              ),
+                              const AppText(
+                                'No Downloads Yet',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
 
-                    return _projectCard(context, project);
+                              const SizedBox(height: 8),
+
+                              const AppText(
+                                'Your downloaded designs will appear here. '
+                                'Create your first design and download it when it’s ready.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black54,
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: ButtonWidget(
+                                      buttonPress: () {
+                                        // Explore Templates
+                                      },
+                                      title: "Explore Templates",
+                                      textColor: AppColors.appRed,
+                                      buttonColor: AppColors.appWhite,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: AppColors.appRed,
+                                        ),
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(15),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 8),
+
+                                  Flexible(
+                                    child: ButtonWidget(
+                                      buttonPress: () {
+                                        // Create a Design
+                                      },
+                                      title: "Create a Design",
+                                      textColor: AppColors.appWhite,
+                                      buttonColor: AppColors.appRed,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return _buildMasonryGrid(context, uploadedVideos, provider);
                   },
                 ),
-              );
-            },
-          ),
-        ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _projectCard(BuildContext context, ProjectListModel project) {
+  Widget _buildDownloadedProjectCard(ProjectListModel project) {
     final key = project.thumbnailS3Key?.trim() ?? '';
 
     final imageUrl = key.isEmpty
@@ -169,102 +305,313 @@ class _MyDownloadScreenState extends State<MyDownloadScreen> {
         ? key
         : '${ApiEndpoints.cdnImageUrl}/$key';
 
-    return GestureDetector(
-      onTap: () {
-       /* Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => TemplateEditScreen(templateUid: project.uid),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 7,
+            offset: const Offset(0, 2),
           ),
-        );
-        debugPrint('Project UID: ${project.uid}');*/
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 7,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // IMAGE
-            Expanded(
-              child: SizedBox(
-                width: double.infinity,
-                child: imageUrl.isEmpty
-                    ? Container(
-                        color: Colors.grey.shade100,
-                        child: const Center(
-                          child: Icon(
-                            Icons.image_outlined,
-                            size: 40,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      )
-                    : CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) {
-                          return Container(
-                            color: Colors.grey.shade100,
-                            child: const Center(
-                              child: SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        errorWidget: (context, url, error) {
-                          return Container(
-                            color: Colors.grey.shade100,
-                            child: const Center(
-                              child: Icon(
-                                Icons.broken_image_outlined,
-                                size: 35,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          );
-                        },
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: SizedBox(
+              width: double.infinity,
+              child: imageUrl.isEmpty
+                  ? Container(
+                      color: Colors.grey.shade100,
+                      child: const Icon(
+                        Icons.image_outlined,
+                        size: 40,
+                        color: Colors.grey,
                       ),
+                    )
+                  : CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      errorWidget: (context, url, error) => const Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          size: 35,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+            child: Text(
+              project.name?.trim().isNotEmpty == true
+                  ? project.name!
+                  : 'Untitled Project',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // NAME
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-              child: Text(
-                project.name?.trim().isNotEmpty == true
-                    ? project.name!
-                    : 'Untitled Project',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+  Widget _buildMasonryGrid(
+    BuildContext context,
+    List<UploadItem> items,
+    UploadProvider provider,
+  ) {
+    final leftItems = <UploadItem>[];
+    final rightItems = <UploadItem>[];
+
+    for (int i = 0; i < items.length; i++) {
+      if (i.isEven) {
+        leftItems.add(items[i]);
+      } else {
+        rightItems.add(items[i]);
+      }
+    }
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              children: leftItems.map((item) {
+                return _buildUploadItem(context, item, provider);
+              }).toList(),
+            ),
+          ),
+
+          const SizedBox(width: 14),
+
+          Expanded(
+            child: Column(
+              children: rightItems.map((item) {
+                return _buildUploadItem(context, item, provider);
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUploadItem(
+    BuildContext context,
+    UploadItem item,
+    UploadProvider provider,
+  ) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          children: [
+            // Image
+            if (item.isVideo)
+              Container(
+                width: double.infinity,
+                height: 180,
+                color: Colors.black,
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.play_circle_outline,
+                  color: Colors.white,
+                  size: 42,
                 ),
+              )
+            else
+              Image.file(
+                File(item.path),
+                width: double.infinity,
+                fit: BoxFit.fitWidth,
+              ),
+
+            // 3 Dot
+            Positioned(
+              top: 8,
+              right: 8,
+              child: PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                iconSize: 22,
+                color: Colors.white,
+                elevation: 5,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                icon: Container(
+                  width: 27,
+                  height: 27,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: const Icon(
+                    Icons.more_horiz,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                onSelected: (value) {
+                  if (value == "download") {
+                    //_downloadItem(context, item);
+                  } else if (value == "delete") {
+                    provider.deleteUpload(item.id);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem<String>(
+                    value: "download",
+                    height: 38,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.file_download_outlined,
+                          size: 17,
+                          color: Colors.black,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "DOWNLOAD",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: "delete",
+                    height: 38,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          size: 17,
+                          color: Colors.black,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "DELETE",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _tab(String title, UploadProvider provider) {
+    final selected = provider.selectedTab == title;
+
+    return GestureDetector(
+      onTap: () {
+        provider.selectTab(title);
+      },
+      child: Container(
+        padding: const EdgeInsets.only(bottom: 5),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: selected ? const Color(0xFFED1C24) : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: selected ? Colors.black : const Color(0xFFC8C8C8),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showUploadMenu(
+    BuildContext context,
+    UploadItem item,
+    UploadProvider provider,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+
+              ListTile(
+                leading: const Icon(Icons.download, size: 22),
+                title: const Text(
+                  "DOWNLOAD",
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                },
+              ),
+
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.red,
+                  size: 22,
+                ),
+                title: const Text(
+                  "DELETE",
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                onTap: () {
+                  provider.deleteUpload(item.id);
+                  Navigator.pop(context);
+                },
+              ),
+
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
     );
   }
 }

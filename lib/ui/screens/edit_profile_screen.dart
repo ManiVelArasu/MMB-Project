@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/ui/screens/widget/change_number.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:mmb_app/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -163,8 +164,8 @@ class _EditProfileViewState extends State<_EditProfileView> {
         AppText(
           "Personal Details",
           style: TextStyle(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.w900,
+            fontSize: AppFontSize.fontSize22,
+            fontWeight: FontWeight.w600,
             color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
@@ -172,9 +173,9 @@ class _EditProfileViewState extends State<_EditProfileView> {
         AppText(
           "Please provide your personal details to help\nus personalize your experience.",
           style: TextStyle(
-            fontSize: 12.5.sp,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
+            fontSize: AppFontSize.fontSize16,
+            fontWeight: FontWeight.w400,
+
           ),
         ),
         SizedBox(height: 16.h),
@@ -507,9 +508,9 @@ class _EditProfileViewState extends State<_EditProfileView> {
         AppText(
           "Find business category that matches your Products/Services",
           style: TextStyle(
-            fontSize: 13.sp,
-            color: Colors.black87,
-            fontWeight: FontWeight.w600,
+            fontSize: AppFontSize.fontSize16,
+            fontWeight: FontWeight.w400,
+
           ),
         ),
 
@@ -517,12 +518,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
 
         CustomSearchBar(
           hintText: "Find your Industry",
-
-          prefixAsset: "assets/images/search.png",
-
-          suffixAsset: "assets/images/mic.png",
-
-          borderColor: AppColors.searchBorderColor,
+          showSuffixIcon: false,
 
           onChanged: (query) {
             provider.industryController.text = query;
@@ -534,8 +530,8 @@ class _EditProfileViewState extends State<_EditProfileView> {
         AppText(
           "Business Details",
           style: TextStyle(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.w900,
+            fontSize: AppFontSize.fontSize22,
+            fontWeight: FontWeight.w600,
             color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
@@ -545,9 +541,9 @@ class _EditProfileViewState extends State<_EditProfileView> {
         AppText(
           "Please provide your business details to help us personalize your experience.",
           style: TextStyle(
-            fontSize: 12.5.sp,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
+            fontSize: AppFontSize.fontSize16,
+            fontWeight: FontWeight.w400,
+
           ),
         ),
 

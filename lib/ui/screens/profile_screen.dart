@@ -605,7 +605,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   title: 'AI Hub',
                                   iconAsset: "assets/images/ai_tool.png",
                                   isDark: isDark,
-                                  onTap: () {},
+                                  onTap: () { Navigator.pushNamed(
+                                    context,
+                                    "/ExploreAiToolScreen",
+                                  );},
                                   isLast: true,
                                 ),
                               ],

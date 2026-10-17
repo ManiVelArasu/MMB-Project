@@ -61,6 +61,7 @@ class BusinessProfileView extends StatelessWidget {
         return Scaffold(
           extendBodyBehindAppBar: true,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar:   CustomAppBar(showTitle: false,showRightIcon: false,),
           body: Stack(
             children: [
               Positioned.fill(
@@ -70,6 +71,7 @@ class BusinessProfileView extends StatelessWidget {
                 ),
               ),
               SafeArea(
+
                 child: provider.isKeyWordsLoading
                     ? Center(child: CircularProgressIndicator())
                     : SingleChildScrollView(
@@ -86,32 +88,6 @@ class BusinessProfileView extends StatelessWidget {
 
                               child: Column(
                                 children: [
-                                  // Back Arrow
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: GestureDetector(
-                                      onTap: () => Navigator.pop(context),
-                                      child: Container(
-                                        height: 38.h,
-                                        width: 38.w,
-                                        decoration: BoxDecoration(
-                                          color: isDark
-                                              ? const Color(0xFF2A1A1C)
-                                              : const Color(0xFFFFECEE),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.arrow_back_rounded,
-                                          color: const Color(0xFFE53935),
-                                          size: 20.sp,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-                                  SizedBox(height: 8.h),
-
-                                  // Profile Logo
                                   Container(
                                     width: 70.w,
                                     height: 70.w,
