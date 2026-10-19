@@ -12,18 +12,20 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;
   final bool showTitle;
 
-  /// Right Icon
+  // Back Button
+  final VoidCallback? onBackPressed;
+
+  // Right Icon
   final bool showRightIcon;
   final VoidCallback? onRightIconTap;
   final String? badgeCount;
+  final String? rightImage;
+  final double rightImageSize;
 
-  /// Action Text
+  // Action Text
   final bool showActionText;
   final String actionText;
   final VoidCallback? onActionTextTap;
-
-  /// Back Button
-  final VoidCallback? onBackPressed;
 
   const CustomAppBar({
     super.key,
@@ -37,6 +39,8 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
     this.showRightIcon = true,
     this.onRightIconTap,
     this.badgeCount = "2",
+    this.rightImage,
+    this.rightImageSize = 30,
 
     // Action Text
     this.showActionText = false,
@@ -63,10 +67,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
     });
   }
 
-  // ============================================================
   // LOAD USER DATA BASED ON ACCOUNT TYPE
-  // ============================================================
-
   Future<void> _loadUserData() async {
     if (_apiCalled) return;
 
@@ -75,79 +76,46 @@ class _CustomAppBarState extends State<CustomAppBar> {
     final provider = CommonProvider.instance;
 
     try {
-      // ========================================================
-      // If account type is not available yet,
-      // first call ME API.
-      // ========================================================
-
+      // Load ME API if account type is not available.
       if (provider.accountType == null ||
           provider.accountType!.trim().isEmpty) {
-        debugPrint(
-          "⚠️ Account type not available."
-          " Calling ME API...",
-        );
+        debugPrint("Account type not available. Calling ME API...");
 
         final bool meSuccess = await provider.loadMe(forceRefresh: true);
 
         if (!meSuccess) {
-          debugPrint("❌ ME API failed");
-
+          debugPrint("ME API failed");
           return;
         }
       }
 
-      // ========================================================
-      // GET ACCOUNT TYPE
-      // ========================================================
-
       final String accountType =
           provider.accountType?.trim().toLowerCase() ?? "";
 
-      debugPrint(
-        "📌 CUSTOM APP BAR ACCOUNT TYPE: "
-        "$accountType",
-      );
+      debugPrint("CUSTOM APP BAR ACCOUNT TYPE: $accountType");
 
       if (accountType == "personal") {
-        debugPrint(
-          "👤 PERSONAL ACCOUNT"
-          " → Calling ME API",
-        );
-
         await provider.loadMe(forceRefresh: true);
-
         return;
       }
+
       if (accountType == "business") {
-        debugPrint(
-          "🏢 BUSINESS ACCOUNT"
-          " → Calling BUSINESS API",
-        );
-
         await provider.loadBusiness(forceRefresh: true);
-
         return;
       }
 
-      debugPrint("⚠️ Unknown account type: $accountType");
+      debugPrint("Unknown account type: $accountType");
     } catch (e, stackTrace) {
-      debugPrint("❌ CustomAppBar API error: $e");
-
+      debugPrint("CustomAppBar API error: $e");
       debugPrintStack(stackTrace: stackTrace);
     }
   }
 
-  // ============================================================
   // GET DISPLAY NAME
-  // ============================================================
-
   String _getDisplayName(CommonProvider provider) {
     final String? accountType = provider.accountType?.trim().toLowerCase();
 
-    // ==========================================================
-    // PERSONAL
-    // ==========================================================
-
+    // PERSONAL ACCOUNT
     if (accountType == "personal") {
       final String? name = provider.me?.data.name?.trim();
 
@@ -158,10 +126,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
       return widget.title;
     }
 
-    // ==========================================================
-    // BUSINESS
-    // ==========================================================
-
+    // BUSINESS ACCOUNT
     if (accountType == "business") {
       final String? businessName = provider.business?.name?.trim();
 
@@ -172,26 +137,17 @@ class _CustomAppBarState extends State<CustomAppBar> {
       return widget.title;
     }
 
-    // ==========================================================
-    // FALLBACK
-    // ==========================================================
-
     return widget.title;
   }
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<CustomThemeProvider>();
-
-    final isDark = themeProvider.isDarkMode;
-
+    final bool isDark = themeProvider.isDarkMode;
     final theme = Theme.of(context).textTheme;
 
-    // This rebuilds whenever CommonProvider
-    // calls notifyListeners().
     final provider = CommonProvider.instance;
 
-    // Listen to CommonProvider changes.
     return ListenableBuilder(
       listenable: provider,
       builder: (context, _) {
@@ -209,12 +165,15 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
             title: Row(
               children: [
-                // ==================================================
                 // BACK BUTTON
-                // ==================================================
-
                 InkWell(
-                  onTap: widget.onBackPressed ?? () => Navigator.pop(context),
+                  onTap:
+                      widget.onBackPressed ??
+                      () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        }
+                      },
                   borderRadius: BorderRadius.circular(24.r),
                   child: Container(
                     height: 42.h,
@@ -237,9 +196,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
                 SizedBox(width: 12.w),
 
-                // ==================================================
                 // TITLE
-                // ==================================================
                 if (widget.showTitle)
                   Expanded(
                     child: Text(
@@ -256,7 +213,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
               ],
             ),
 
+            // ACTIONS
             actions: [
+              // ACTION TEXT
               if (widget.showActionText)
                 Padding(
                   padding: EdgeInsets.only(right: 12.w),
@@ -281,9 +240,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
                   ),
                 ),
 
-              // ====================================================
-              // RIGHT ICON
-              // ====================================================
+              // CUSTOM RIGHT ICON
+              // RIGHT IMAGE
               if (widget.showRightIcon)
                 Padding(
                   padding: EdgeInsets.only(right: 16.w),
@@ -293,33 +251,34 @@ class _CustomAppBarState extends State<CustomAppBar> {
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        Container(
+                        Padding(
                           padding: EdgeInsets.all(6.r),
-                          child: Icon(
-                            Icons.layers_rounded,
-                            color: const Color(0xFFE53935),
-                            size: 30.sp,
-                          ),
+                          child: widget.rightImage != null
+                              ? Image.asset(
+                            widget.rightImage!,
+                            width: widget.rightImageSize.w,
+                            height: widget.rightImageSize.h,
+                            fit: BoxFit.contain,
+                          )
+                              : const SizedBox.shrink(),
                         ),
 
-                        // ==========================================
                         // BADGE
-                        // ==========================================
                         if (widget.badgeCount != null)
                           Positioned(
                             top: 2,
                             left: 2,
                             child: Container(
                               padding: EdgeInsets.all(4.r),
+                              constraints: BoxConstraints(
+                                minWidth: 18.w,
+                                minHeight: 18.h,
+                              ),
                               decoration: BoxDecoration(
                                 color: isDark
                                     ? Colors.red.shade800
                                     : const Color(0xFF1E293B),
                                 shape: BoxShape.circle,
-                              ),
-                              constraints: BoxConstraints(
-                                minWidth: 18.w,
-                                minHeight: 18.h,
                               ),
                               child: Center(
                                 child: AppText(

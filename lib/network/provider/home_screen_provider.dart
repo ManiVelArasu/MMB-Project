@@ -46,7 +46,7 @@ class HomeScreenProvider extends ChangeNotifier {
       await Future.wait([
         fetchTemplateCategories(),
         loadSavedBusinessData(),
-        if (provider.isBusiness) fetchTemplatesByPopular(),
+        fetchTemplatesByPopular(),
         if (loadSpecialDaysOnInit) fetchSpecialDays(range: 'month'),
       ]);
 

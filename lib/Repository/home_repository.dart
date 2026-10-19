@@ -64,12 +64,12 @@ class HomeRepository {
       "template_type": "image",
       "is_popular": "1",
       "language": language,
+      "industry": industrySlug,
     };
 
     final industry = industrySlug.trim();
     final searchKeyword = keyword.trim();
 
-    // Industry empty இல்லையென்றால் மட்டும் send ஆகும்
     if (industry.isNotEmpty) {
       queryParams["industry"] = industry;
     }
@@ -89,9 +89,7 @@ class HomeRepository {
         queryParams: queryParams,
       ),
       fromJson: (json) =>
-          TemplateCategoriesModel.fromJson(
-            json as Map<String, dynamic>,
-          ),
+          TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
     );
   }
 

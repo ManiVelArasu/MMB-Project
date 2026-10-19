@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/network/provider/common_provider.dart';
+import 'package:mmb_app/ui/screens/widget/business_card.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
@@ -61,7 +62,30 @@ class BusinessProfileView extends StatelessWidget {
         return Scaffold(
           extendBodyBehindAppBar: true,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar:   CustomAppBar(showTitle: false,showRightIcon: false,),
+          appBar: CustomAppBar(
+            showRightIcon: true,
+            rightImage: "assets/images/edit_profile1.png",
+            badgeCount: null,
+            onRightIconTap: () async {
+              final result = await Navigator.pushNamed(
+                context,
+                "/EditProfileScreen",
+              );
+
+              if (!context.mounted) return;
+
+              if (result == true) {
+                debugPrint(
+                  "🔄 Edit Profile returned TRUE"
+                  " → refreshing profile API",
+                );
+
+                await context
+                    .read<BusinessProfileProvider>()
+                    .refreshProfileAfterEdit();
+              }
+            },
+          ),
           body: Stack(
             children: [
               Positioned.fill(
@@ -71,7 +95,6 @@ class BusinessProfileView extends StatelessWidget {
                 ),
               ),
               SafeArea(
-
                 child: provider.isKeyWordsLoading
                     ? Center(child: CircularProgressIndicator())
                     : SingleChildScrollView(
@@ -158,52 +181,18 @@ class BusinessProfileView extends StatelessWidget {
                                   ),
 
                                   SizedBox(height: 8.h),
-
-                                  InkWell(
-                                    onTap: () async {
-                                      final result = await Navigator.pushNamed(
-                                        context,
-                                        "/EditProfileScreen",
-                                      );
-
-                                      if (!context.mounted) return;
-
-                                      if (result == true) {
-                                        debugPrint(
-                                          "🔄 Edit Profile returned TRUE"
-                                          " → refreshing profile API",
-                                        );
-
-                                        await context
-                                            .read<BusinessProfileProvider>()
-                                            .refreshProfileAfterEdit();
-                                      }
+                                  BusinessCategoryCard(
+                                    category: provider.businessName.isEmpty
+                                        ? "${provider.commonProvider.business?.name}"
+                                        : provider.businessName,
+                                    subCategories:
+                                        "${provider.commonProvider.business?.businessCategory?.slug ?? provider.commonProvider.business?.businessCategory?.parent?.slug}",
+                                    onEditTap: () {
+                                      debugPrint('Edit business category');
+                                      // Navigate to edit screen or open dialog
                                     },
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        AppText(
-                                          "EDIT BUSINESS DETAILS",
-                                          style: TextStyle(
-                                            color: const Color(0xFFE53935),
-                                            fontSize: 11.sp,
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                        SizedBox(width: 4.w),
-                                        Icon(
-                                          Icons.edit_note_rounded,
-                                          color: const Color(0xFFE53935),
-                                          size: 16.sp,
-                                        ),
-                                      ],
-                                    ),
                                   ),
-
-                                  SizedBox(height: 16.h),
-
+                                  SizedBox(height: 8.h),
                                   Row(
                                     children: [
                                       _buildActionCard(
@@ -695,7 +684,50 @@ class BusinessProfileView extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: CustomAppBar(showRightIcon: false),
+      appBar: CustomAppBar(
+        showRightIcon: true,
+        rightImage: "assets/images/edit_profile1.png",
+        badgeCount: null,
+        onRightIconTap: provider.accountType == "personal"
+            ? () async {
+                final result = await Navigator.pushNamed(
+                  context,
+                  "/EditProfileScreen",
+                );
+
+                if (!context.mounted) return;
+
+                if (result == true) {
+                  debugPrint(
+                    "🔄 Edit Profile returned TRUE"
+                    " → refreshing profile API",
+                  );
+
+                  await context
+                      .read<BusinessProfileProvider>()
+                      .refreshProfileAfterEdit();
+                }
+              }
+            : () async {
+                final result = await Navigator.pushNamed(
+                  context,
+                  "/EditProfileScreen",
+                );
+
+                if (!context.mounted) return;
+
+                if (result == true) {
+                  debugPrint(
+                    "🔄 Edit Profile returned TRUE"
+                    " → refreshing profile API",
+                  );
+
+                  await context
+                      .read<BusinessProfileProvider>()
+                      .refreshProfileAfterEdit();
+                }
+              },
+      ),
       body: Stack(
         children: [
           Positioned(
@@ -772,51 +804,6 @@ class BusinessProfileView extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 4.h),
-
-                        SizedBox(height: 8.h),
-
-                        InkWell(
-                          onTap: () async {
-                            final result = await Navigator.pushNamed(
-                              context,
-                              "/EditProfileScreen",
-                            );
-
-                            if (!context.mounted) return;
-
-                            if (result == true) {
-                              debugPrint(
-                                "🔄 Edit Profile returned TRUE"
-                                " → refreshing profile API",
-                              );
-
-                              await context
-                                  .read<BusinessProfileProvider>()
-                                  .refreshProfileAfterEdit();
-                            }
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              AppText(
-                                "EDIT PROFILE",
-                                style: TextStyle(
-                                  color: AppColors.appRed,
-                                  fontSize: AppFontSize.fontSize12,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              SizedBox(width: 4.w),
-                              Image.asset(
-                                "assets/images/edit_profile.png",
-                                width: 16,
-                                height: 16,
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        SizedBox(height: 16.h),
                       ],
                     ),
                   ),
