@@ -188,8 +188,10 @@ class BusinessProfileView extends StatelessWidget {
                                     subCategories:
                                         "${provider.commonProvider.business?.businessCategory?.slug ?? provider.commonProvider.business?.businessCategory?.parent?.slug}",
                                     onEditTap: () {
-                                      debugPrint('Edit business category');
-                                      // Navigate to edit screen or open dialog
+                                      Navigator.pushNamed(
+                                        context,
+                                        "/BusinessCategoryChooseScreen",
+                                      );
                                     },
                                   ),
                                   SizedBox(height: 8.h),
