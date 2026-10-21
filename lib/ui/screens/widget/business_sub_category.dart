@@ -1,0 +1,343 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:mmb_app/component/appbar_widget.dart';
+import 'package:mmb_app/component/home_appbar.dart';
+import 'package:provider/provider.dart';
+
+import '../../../component/custom_widget.dart';
+import '../../../network/provider/business_change_provider.dart';
+import '../../../network/provider/industry_provider.dart';
+import '../../../utils/theme/app.colors.dart';
+import '../../../utils/theme/app.fonts.dart';
+import '../../../widgets/button_widget.dart';
+
+class BusinessSubCategoryChooseView extends StatelessWidget {
+  const BusinessSubCategoryChooseView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<BusinessPatchProvider>(
+          create: (_) => BusinessPatchProvider(),
+        ),
+        ChangeNotifierProvider<IndustryProvider>(
+          create: (_) => IndustryProvider()..loadSavedCategory(),
+        ),
+      ],
+      child: const BusinessSubCategoryView(),
+    );
+  }
+}
+
+// 🚀 2. Your Main View Widget
+class BusinessSubCategoryView extends StatefulWidget {
+  const BusinessSubCategoryView({super.key});
+
+  @override
+  State<BusinessSubCategoryView> createState() =>
+      _BusinessSubCategoryViewState();
+}
+
+class _BusinessSubCategoryViewState extends State<BusinessSubCategoryView> {
+  @override
+  Widget build(BuildContext context) {
+    print('asdsadsadsadasdas');
+    final accountProvider = context.watch<BusinessPatchProvider>();
+    final industryProvider = context.watch<IndustryProvider>();
+
+    //  bool isBusiness = accountProvider.currentIndex == 0;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: CustomAppBar(showTitle: false, showRightIcon: false),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText(
+                "Select Your Business Category",
+                style: TextStyle(
+                  fontSize: AppFontSize.fontSize22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              AppText(
+                "Business Category",
+                style: TextStyle(
+                  fontSize: AppFontSize.fontSize12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFECEE),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: AppText(
+                  industryProvider.savedCategoryName,
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: AppFontSize.fontSize16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              const SizedBox(height: 4),
+              if (industryProvider.childCategories.isEmpty) ...[
+                AppText(
+                  "Can't find your business type?",
+                  style: TextStyle(
+                    fontSize: AppFontSize.fontSize15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                AppText(
+                  "Choose Other and enter your business type. We'll review new requests "
+                  "and continuously expand our industry database to improve template "
+                  "recommendations.",
+                  style: TextStyle(
+                    fontSize: AppFontSize.fontSize12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ] else ...[
+                AppText(
+                  "Choose a specialization",
+                  style: TextStyle(
+                    fontSize: AppFontSize.fontSize15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                AppText(
+                  "Select the option that best describes your business.",
+                  style: TextStyle(
+                    fontSize: AppFontSize.fontSize12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ...industryProvider.childCategories.map((category) {
+                    final name = category.name ?? '';
+                    final selected =
+                        industryProvider.selectedCategorySlug == category.slug;
+
+                    return ChoiceChip(
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (selected) ...[
+                            const SizedBox(width: 5),
+                            Image.asset(
+                              'assets/images/red_tick.png',
+                              width: 14,
+                              height: 14,
+                            ),
+                          ],
+                          SizedBox(width: 2),
+                          AppText(name),
+                        ],
+                      ),
+                      selected: selected,
+                      showCheckmark: false,
+                      selectedColor: const Color(0xFFFFECEE),
+                      backgroundColor: Colors.grey.shade100,
+                      labelStyle: TextStyle(
+                        color: selected ? Colors.red : Colors.black87,
+                        fontSize: AppFontSize.fontSize13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: selected
+                              ? Colors.red.shade300
+                              : Colors.grey.shade300,
+                        ),
+                      ),
+                      onSelected: (value) {
+                        if (value) {
+                          industryProvider.selectSpecialization(category);
+                        }
+                      },
+                    );
+                  }),
+
+                  // Always keep Other as the LAST option.
+                  industryProvider.childCategories.isNotEmpty
+                      ? ChoiceChip(
+                          label: const AppText("Other"),
+                          selected: industryProvider.showOtherInput,
+                          selectedColor: const Color(0xFFFFECEE),
+                          backgroundColor: Colors.grey.shade100,
+
+                          labelStyle: TextStyle(
+                            color: industryProvider.showOtherInput
+                                ? Colors.red
+                                : Colors.black87,
+                            fontSize: AppFontSize.fontSize13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: industryProvider.showOtherInput
+                                  ? Colors.red.shade300
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
+                          onSelected: (value) {
+                            if (value) {
+                              industryProvider.setSelectedSpecialization(
+                                "Other",
+                              );
+                            }
+                          },
+                        )
+                      : SimpleDialog(),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              if (industryProvider.showOtherInput) ...[
+                TextField(
+                  controller: industryProvider.otherController,
+
+                  onChanged: (value) {
+                    if (value.trim().isNotEmpty) {
+                      industryProvider.clearOtherError();
+                    }
+                  },
+
+                  decoration: InputDecoration(
+                    hintText: "Please enter your business type",
+
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: AppFontSize.fontSize13,
+                    ),
+
+                    errorText: industryProvider.otherError,
+
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red),
+                    ),
+
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red),
+                    ),
+
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              const SizedBox(height: 10),
+
+              if (industryProvider.childCategories.isNotEmpty) ...[
+                AppText(
+                  "Your business type will be reviewed before being added to your profile.",
+                  style: TextStyle(color: AppColors.appGrey),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AppText(
+                      "Nothing Matched?",
+                      style: TextStyle(
+                        color: AppColors.appBlack,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        // accountProvider.skipBusinessUpdateApi(context);
+                      },
+                      child: AppText(
+                        " Skip",
+                        style: TextStyle(color: AppColors.appRed),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 20),
+              ButtonWidget(
+                isLoading: accountProvider.isUploading,
+                buttonPress: () {
+                  // Other selected
+                  if (industryProvider.showOtherInput) {
+                    final other = industryProvider.otherController.text.trim();
+
+                    if (other.isEmpty) {
+                      industryProvider.validateOther(other);
+                      return;
+                    }
+                  }
+
+                  accountProvider.businessPatchApi(
+                    context,
+                    industryProvider.selectedCategorySlug ?? '',
+                    industryProvider.otherController.text.trim(),
+                  );
+                },
+                title: "CONTINUE",
+                textStyle: TextStyle(
+                  color: AppColors.appWhite,
+                  fontWeight: FontWeight.w700,
+                ),
+
+                decoration: BoxDecoration(
+                  color: AppColors.appRed,
+                  borderRadius: BorderRadius.all(Radius.circular(15)),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

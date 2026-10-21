@@ -15,6 +15,7 @@ import 'core/api/api_handler.dart';
 import 'core/api/api_interceptor.dart';
 import 'core/api/enums/api_content_type.dart';
 import 'core/api/enums/toast_position.dart';
+import 'network/provider/bottom_provider.dart';
 import 'network/provider/business_provider.dart';
 import 'network/provider/custom_theme_provider.dart';
 import 'network/provider/common_provider.dart';
@@ -182,6 +183,7 @@ class _MyAppState extends State<MyApp> {
       builder: (context, child) {
         return MultiProvider(
           providers: [
+            ChangeNotifierProvider(create: (_) => BottomNavProvider()),
             ChangeNotifierProvider(create: (_) => CustomThemeProvider()),
             ChangeNotifierProvider(create: (_) => BusinessProvider()),
             ChangeNotifierProvider(create: (_) => PlanProvider()),

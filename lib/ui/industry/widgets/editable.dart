@@ -349,6 +349,42 @@ class EditableItemWidget extends StatelessWidget {
       );
     }
 
+    // Explicitly render image/shape layers. Previously they fell through
+    // to the text renderer, leaving only selection handles visible.
+    if (item.type == 'image' || item.type == 'shape') {
+      final source = (item.contentUrl ?? '').trim();
+      if (source.isEmpty) return const SizedBox.shrink();
+
+      final isHttp =
+          source.startsWith('http://') || source.startsWith('https://');
+      final isFileUri = source.startsWith('file://');
+      final localPath = isFileUri ? source.replaceFirst('file://', '') : source;
+
+      if (isHttp) {
+        return Image.network(
+          source,
+          width: item.width,
+          height: item.height,
+          fit: BoxFit.contain,
+          errorBuilder: (_, error, stackTrace) {
+            debugPrint('Editor image failed to load: $source | $error');
+            return const SizedBox.shrink();
+          },
+        );
+      }
+
+      return Image.file(
+        File(localPath),
+        width: item.width,
+        height: item.height,
+        fit: BoxFit.contain,
+        errorBuilder: (_, error, stackTrace) {
+          debugPrint('Editor local image failed to load: $localPath | $error');
+          return const SizedBox.shrink();
+        },
+      );
+    }
+
     if (item.type == 'svg_group' || item.type == 'svg_element') {
       return SizedBox(
         width: item.width,

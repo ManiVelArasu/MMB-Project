@@ -20,11 +20,11 @@ class BusinessCategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.only(left: 15,right: 15,top: 10,bottom: 10),
+      padding: EdgeInsets.only(left: 15, right: 15, top: 10, bottom: 10),
       decoration: BoxDecoration(
         color: const Color(0xFFF8F8F8),
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: const Color(0xFFFFDDE0), width: 1.5),
+        border: Border.all(color: const Color(0xFFFFE4E5), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +69,7 @@ class BusinessCategoryCard extends StatelessWidget {
               height: 1.15,
             ),
           ),
-
+          SizedBox(height: 4.h),
           // Subcategories
           AppText(
             subCategories,

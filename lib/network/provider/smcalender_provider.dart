@@ -20,11 +20,11 @@ class SmCalendarProvider extends ChangeNotifier {
       id: "1",
       title: "August month Calendar",
       frequency: "3 posts per week",
-      platformAndPosts: "Instagram / 12 posts",
+      platformAndPosts: "Instagram, Facebook / 12 posts",
     ),
     CalendarItemModel(
       id: "2",
-      title: "September month Calendar",
+      title: "July month Calendar",
       frequency: "3 posts per week",
       platformAndPosts: "Instagram, Facebook / 12 posts",
     ),

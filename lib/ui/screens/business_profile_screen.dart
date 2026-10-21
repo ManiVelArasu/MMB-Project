@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../network/provider/bottom_provider.dart';
 import '../../network/provider/business_provider.dart';
 import '../../network/provider/businessprofile_provider.dart';
 
@@ -63,6 +64,16 @@ class BusinessProfileView extends StatelessWidget {
           extendBodyBehindAppBar: true,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: CustomAppBar(
+            onBackPressed: () {
+              final navProvider = context.read<BottomNavProvider>();
+
+              navProvider.updateIndex(3);
+
+              Navigator.popUntil(
+                context,
+                    (route) => route.isFirst,
+              );
+            },
             showRightIcon: true,
             rightImage: "assets/images/edit_profile1.png",
             badgeCount: null,
@@ -183,14 +194,14 @@ class BusinessProfileView extends StatelessWidget {
                                   SizedBox(height: 8.h),
                                   BusinessCategoryCard(
                                     category: provider.businessName.isEmpty
-                                        ? "${provider.commonProvider.business?.name}"
+                                        ? "${provider.commonProvider.business?.businessCategory?.parent?.slug}"
                                         : provider.businessName,
                                     subCategories:
                                         "${provider.commonProvider.business?.businessCategory?.slug ?? provider.commonProvider.business?.businessCategory?.parent?.slug}",
                                     onEditTap: () {
                                       Navigator.pushNamed(
                                         context,
-                                        "/BusinessCategoryChooseScreen",
+                                        "/BusinessCategorySearchScreen",
                                       );
                                     },
                                   ),
@@ -199,11 +210,11 @@ class BusinessProfileView extends StatelessWidget {
                                     children: [
                                       _buildActionCard(
                                         onCallBack: () {},
-                                        title: "ABOUT",
+                                        title: "ABOUT BUSINESS",
                                         iconAsset: "assets/images/about.png",
                                         bgColor: isDark
-                                            ? const Color(0xFF332211)
-                                            : const Color(0xFFFFDBB9),
+                                            ? const Color(0xFFEFF9FF)
+                                            : const Color(0xFFD3EEFD),
                                         isDark: isDark,
                                       ),
                                       SizedBox(width: 10.w),
@@ -218,8 +229,8 @@ class BusinessProfileView extends StatelessWidget {
                                         title: "MY PRODUCTS",
                                         iconAsset: "assets/images/product.png",
                                         bgColor: isDark
-                                            ? const Color(0xFF113338)
-                                            : const Color(0xFF72E8F5),
+                                            ? const Color(0xFFF6F4FF)
+                                            : const Color(0xFFEEEBFF),
                                         isDark: isDark,
                                       ),
                                       SizedBox(width: 10.w),
@@ -230,11 +241,11 @@ class BusinessProfileView extends StatelessWidget {
                                             "/MyUploadsScreen",
                                           );
                                         },
-                                        title: "UPLOADS",
+                                        title: "Media Library",
                                         iconAsset: "assets/images/uploads.png",
                                         bgColor: isDark
-                                            ? const Color(0xFF1D3315)
-                                            : const Color(0xFF9AE278),
+                                            ? const Color(0xFFFFFAF2)
+                                            : const Color(0xFFFFE8C6),
                                         isDark: isDark,
                                       ),
                                     ],
@@ -2272,8 +2283,18 @@ Widget _buildActionCard({
         height: 100.h,
         padding: EdgeInsets.all(8.r),
         decoration: BoxDecoration(
-          color: bgColor,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [
+                    bgColor.withValues(alpha: 0.9),
+                    bgColor.withValues(alpha: 0.5),
+                  ]
+                : [bgColor, bgColor.withValues(alpha: 0.5)],
+          ),
           borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: bgColor.withValues(alpha: 0.25), width: 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

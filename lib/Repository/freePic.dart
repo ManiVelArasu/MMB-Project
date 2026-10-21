@@ -32,27 +32,48 @@ class AssetCategoryItem {
     return AssetCategoryItem(
       id: json['id'] is num ? (json['id'] as num).toInt() : null,
       name: json['name']?.toString() ?? '',
-      s3Key: (json['s3_key'] ?? json['key'] ?? json['path'] ??
-          json['url'] ?? json['asset_url'] ?? json['preview_url'] ?? '')
+      s3Key:
+      (json['s3_key'] ??
+          json['key'] ??
+          json['path'] ??
+          json['url'] ??
+          json['asset_url'] ??
+          json['preview_url'] ??
+          '')
           .toString(),
-      thumbnailS3Key: (json['thumbnail_s3_key'] ??
-          json['thumbnail_url'] ?? json['thumbnailUrl'] ??
-          json['preview_url'] ?? json['previewUrl'])?.toString(),
+      thumbnailS3Key:
+      (json['thumbnail_s3_key'] ??
+          json['thumbnail_url'] ??
+          json['thumbnailUrl'] ??
+          json['preview_url'] ??
+          json['previewUrl'])
+          ?.toString(),
       assetType: (json['asset_type'] ?? json['type'] ?? '').toString(),
-      isPremium: json['is_premium'] == 1 || json['is_premium'] == true,
-      isLocked: json['is_locked'] == true,
+      isPremium: json['is_premium'] == 1 ||
+          json['is_premium'] == true ||
+          json['is_premium']?.toString().toLowerCase() == 'true',
+      isLocked: json['is_locked'] == true ||
+          json['is_locked'] == 1 ||
+          json['is_locked']?.toString().toLowerCase() == 'true',
     );
   }
 
   String get previewKey {
-    final key = (thumbnailS3Key ?? '').trim().isNotEmpty
-        ? thumbnailS3Key!.trim()
-        : s3Key.trim();
+    final thumbnail = (thumbnailS3Key ?? '').trim();
+    final asset = s3Key.trim();
+
+    final key = thumbnail.isNotEmpty ? thumbnail : asset;
 
     if (key.isEmpty) return '';
-    if (key.startsWith('http://') || key.startsWith('https://')) return key;
 
-    return '${FreePikService.assetCdnBaseUrl}/${key.replaceFirst(RegExp(r'^/+'), '')}';
+    if (key.startsWith('http://') ||
+        key.startsWith('https://')) {
+      return key;
+    }
+
+    final base = FreePikService.assetCdnBaseUrl.replaceFirst(RegExp(r'/+$'), '');
+    final path = key.replaceFirst(RegExp(r'^/+'), '');
+    return '$base/$path';
   }
 }
 
@@ -115,13 +136,18 @@ class FreePikService {
       // {data:{items:[...]}}. Accept all of them.
       dynamic data = decoded;
       if (data is Map) {
-        data = data['items'] ?? data['data'] ?? data['assets'];
+        data = data['items'] ?? data['data'] ?? data['assets'] ?? data['results'];
         if (data is Map) {
-          data = data['items'] ?? data['assets'] ?? data['results'];
+          data = data['items'] ??
+              data['assets'] ??
+              data['results'] ??
+              data['data'];
         }
       }
       if (data is! List) {
-        debugPrint('Assets API [$slug] returned unexpected shape: ${response.body}');
+        debugPrint(
+          'Assets API [$slug] returned unexpected shape: ${response.body}',
+        );
         return <AssetCategoryItem>[];
       }
 
@@ -131,19 +157,25 @@ class FreePikService {
         final item = Map<String, dynamic>.from(raw);
         // Accept backend naming variants. If a direct URL is supplied, keep
         // it as s3Key so previewKey returns the URL unchanged.
-        final directUrl = (item['url'] ??
+        final directUrl =
+        (item['url'] ??
             item['asset_url'] ??
             item['preview_url'] ??
             item['previewUrl'] ??
             item['thumbnail_url'] ??
-            item['thumbnailUrl'])?.toString().trim();
-        if ((item['s3_key'] == null || item['s3_key'].toString().trim().isEmpty) &&
-            directUrl != null && directUrl.isNotEmpty) {
+            item['thumbnailUrl'])
+            ?.toString()
+            .trim();
+        if ((item['s3_key'] == null ||
+            item['s3_key'].toString().trim().isEmpty) &&
+            directUrl != null &&
+            directUrl.isNotEmpty) {
           item['s3_key'] = directUrl;
         }
         if ((item['thumbnail_s3_key'] == null ||
             item['thumbnail_s3_key'].toString().trim().isEmpty) &&
-            directUrl != null && directUrl.isNotEmpty) {
+            directUrl != null &&
+            directUrl.isNotEmpty) {
           item['thumbnail_s3_key'] = directUrl;
         }
         final parsed = AssetCategoryItem.fromJson(item);
@@ -407,8 +439,7 @@ class FreePikService {
             final value = src[key]?.toString().trim();
             if (value != null &&
                 value.isNotEmpty &&
-                (value.startsWith('http://') ||
-                    value.startsWith('https://'))) {
+                (value.startsWith('http://') || value.startsWith('https://'))) {
               urls.add(value);
               imageUrlAdded = true;
               break;
@@ -430,8 +461,7 @@ class FreePikService {
             final value = item[key]?.toString().trim();
             if (value != null &&
                 value.isNotEmpty &&
-                (value.startsWith('http://') ||
-                    value.startsWith('https://'))) {
+                (value.startsWith('http://') || value.startsWith('https://'))) {
               urls.add(value);
               break;
             }

@@ -1843,25 +1843,32 @@ class _EditorViewState extends State<EditorView> {
                 AssetCategoryItem item, {
                   bool isShape = false,
                 }) {
-              final url = item.previewKey;
-              final isLocalShape = url.startsWith('assets/shapes/');
+              final previewUrl = item.previewKey;
+
+              final rawAssetKey = item.s3Key.trim();
+              final assetUrl = rawAssetKey.startsWith('http://') ||
+                  rawAssetKey.startsWith('https://')
+                  ? rawAssetKey
+                  : '${FreePikService.assetCdnBaseUrl}/${rawAssetKey.replaceFirst(RegExp(r'^/+'), '')}';
 
               return elementCard(
-                url,
+                previewUrl,
                 locked: item.isLocked,
                 onTap: item.isLocked
                     ? null
                     : () async {
-                  if (isLocalShape) {
-                    await _addLocalShape(modalContext, provider, url);
-                  } else if (isShape) {
-                    // Remote shapes can be SVGs. Rasterize them to a
-                    // local PNG image so the existing canvas renderer
-                    // displays them immediately after selection.
-                    await _addRemoteShape(modalContext, provider, url);
+                  if (isShape) {
+                    // Canvas-ல் original SVG-ஐ PNG-ஆக மாற்றி சேர்க்கவும்.
+                    await _addRemoteShape(
+                      modalContext,
+                      provider,
+                      assetUrl,
+                    );
                   } else {
-                    // Other API assets are normal image layers.
-                    provider.addImage(url, isLocal: false);
+                    provider.addImage(
+                      previewUrl,
+                      isLocal: false,
+                    );
 
                     if (modalContext.mounted) {
                       Navigator.pop(modalContext);
@@ -2037,6 +2044,18 @@ class _EditorViewState extends State<EditorView> {
                           : provider.isElementCategoryLoading(query))
                           ? const Center(
                         child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                          : (isStickerProxyCategory(query)
+                          ? stickerItems.isEmpty
+                          : assetItems.isEmpty)
+                          ? const Center(
+                        child: AppText(
+                          'No items found. Please try again.',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                          ),
+                        ),
                       )
                           : GridView.builder(
                         padding: const EdgeInsets.fromLTRB(4, 4, 4, 20),

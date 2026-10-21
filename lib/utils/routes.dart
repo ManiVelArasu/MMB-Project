@@ -36,6 +36,8 @@ import '../ui/screens/template_edit.dart';
 import '../ui/screens/theme_detail_screen.dart';
 import '../ui/screens/theme_single_item_view_screen.dart';
 
+import '../ui/screens/widget/business_search_screen.dart';
+import '../ui/screens/widget/business_sub_category.dart';
 import '../ui/screens/widget/custom_size_screen.dart';
 import '../ui/screens/widget/from_library.dart';
 import '../ui/splash/splash_screen.dart';
@@ -356,6 +358,15 @@ class RouteGenerator {
 
       case '/ExploreAiToolScreen':
         return MaterialPageRoute(builder: (_) => const ExploreAiToolScreen());
+
+      case '/BusinessCategorySearchScreen':
+        return MaterialPageRoute(
+          builder: (_) => const BusinessCategorySearchScreen(),
+        );
+        case '/BusinessSubCategoryChooseView':
+        return MaterialPageRoute(
+          builder: (_) => const BusinessSubCategoryChooseView(),
+        );
       case "/TemplateListScreen":
         final arguments = settings.arguments;
 

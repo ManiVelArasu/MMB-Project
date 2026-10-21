@@ -170,6 +170,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                   onTap:
                       widget.onBackPressed ??
                       () {
+                    print("""object""");
                         if (Navigator.canPop(context)) {
                           Navigator.pop(context);
                         }
@@ -255,11 +256,11 @@ class _CustomAppBarState extends State<CustomAppBar> {
                           padding: EdgeInsets.all(6.r),
                           child: widget.rightImage != null
                               ? Image.asset(
-                            widget.rightImage!,
-                            width: widget.rightImageSize.w,
-                            height: widget.rightImageSize.h,
-                            fit: BoxFit.contain,
-                          )
+                                  widget.rightImage!,
+                                  width: widget.rightImageSize.w,
+                                  height: widget.rightImageSize.h,
+                                  fit: BoxFit.contain,
+                                )
                               : const SizedBox.shrink(),
                         ),
 

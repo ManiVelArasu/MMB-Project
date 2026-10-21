@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/component/appbar_widget.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 
 import 'package:provider/provider.dart';
 import '../../component/custom_widget.dart';
@@ -30,217 +32,293 @@ class SmCalendarView extends StatelessWidget {
     return Consumer<SmCalendarProvider>(
       builder: (context, provider, child) {
         return Scaffold(
+          extendBodyBehindAppBar: true,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20.w,
-                      vertical: 16.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF2A1A1C)
-                          : AppColors.litePink,
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(30.r),
-                        bottomRight: Radius.circular(30.r),
+          appBar: CustomAppBar(
+            title: "My Monthly SM Calendars",
+            showRightIcon: false,
+          ),
+          body: Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 150.h,
+                child: Stack(
+                  children: [
+                    // Background image
+                    Positioned.fill(
+                      child: Image.asset(
+                        "assets/images/sm_mask.png",
+                        fit: BoxFit.cover,
+                        alignment: Alignment.topCenter,
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+
+                    // Text over the image
+                    Positioned(
+                      left: 16.w,
+                      right: 16.w,
+                      bottom: 12.h,
+                      child: AppText(
+                        "Plan your content with AI and get ready-to-use posts tailored to your business.",
+                        style: TextStyle(
+                          color: AppColors.appGrey,
+                          fontSize: AppFontSize.fontSize14,
+                          height: 1.4,
+                          fontWeight: FontWeight.w400,
+
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SafeArea(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 20.w,
+                          vertical: 16.h,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            GestureDetector(
-                              onTap: () => Navigator.pop(context),
-                              behavior: HitTestBehavior.opaque,
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  right: 12.w,
-                                  top: 4.h,
-                                  bottom: 4.h,
-                                ),
-                                child: Image.asset(
-                                  "assets/images/back.png",
-                                  width: 26.w,
-                                  height: 26.h,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 14.w),
+                            SizedBox(height: 10.h),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(height: 24.h),
+
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             AppText(
-                              "My Monthly SM Calendars",
+                              "My AI Social Media Calendar",
                               style: TextStyle(
                                 color: isDark
                                     ? Colors.white
                                     : Theme.of(context).colorScheme.onSurface,
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.w900,
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w600,
                               ),
+                            ),
+
+                            SizedBox(height: 16.h),
+
+                            // CALENDARS LIST
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: provider.calendars.length,
+                              itemBuilder: (context, index) {
+                                final item = provider.calendars[index];
+
+                                final isMonthly = item.title.toLowerCase().contains('month');
+                                final monthName = item.title
+                                    .replaceAll('month Calendar', '')
+                                    .replaceAll('month calendar', '')
+                                    .trim();
+
+                                return Container(
+                                  width: double.infinity,
+                                  margin: EdgeInsets.only(bottom: 14.h),
+                                  padding: EdgeInsets.all(16.r),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? const Color(0xFF1E1E1E)
+                                        : (index == 0
+                                        ? const Color(0xFFFFE5E5)
+                                        : const Color(0xFFF7F7F7)),
+                                    borderRadius: BorderRadius.circular(20.r),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Monthly / Weekly badge
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 8.w,
+                                          vertical: 4.h,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red,
+                                          borderRadius: BorderRadius.circular(6.r),
+                                        ),
+                                        child: AppText(
+                                          isMonthly ? 'MONTHLY' : 'WEEKLY',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10.sp,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+
+                                      SizedBox(height: 5.h),
+
+                                      // Month name
+                                      AppText(
+                                        monthName,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : Colors.black87,
+                                          fontSize: 18.sp,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+
+                                      SizedBox(height: 2.h),
+
+                                      // Platforms
+                                      AppText(
+                                        item.platformAndPosts.toLowerCase().contains('facebook')
+                                            ? 'Instagram + Facebook'
+                                            : 'Instagram',
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white70 : Colors.black87,
+                                          fontSize: 12.5.sp,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+
+                                      SizedBox(height: 12.h),
+
+                                      // Stats row
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                AppText(
+                                                  'Total posts',
+                                                  style: TextStyle(
+                                                    color: isDark
+                                                        ? Colors.grey.shade400
+                                                        : Colors.black87,
+                                                    fontSize: 11.sp,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 2.h),
+                                                AppText(
+                                                  '12 Posts',
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.white : Colors.black,
+                                                    fontSize: 16.sp,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                AppText(
+                                                  'Posting cadence',
+                                                  style: TextStyle(
+                                                    color: isDark
+                                                        ? Colors.grey.shade400
+                                                        : Colors.black87,
+                                                    fontSize: 11.sp,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 2.h),
+                                                AppText(
+                                                  '3 / week',
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.white : Colors.black,
+                                                    fontSize: 16.sp,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                AppText(
+                                                  'Used credits',
+                                                  style: TextStyle(
+                                                    color: isDark
+                                                        ? Colors.grey.shade400
+                                                        : Colors.black87,
+                                                    fontSize: 11.sp,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 2.h),
+                                                AppText(
+                                                  isMonthly ? '24' : '8',
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.white : Colors.black,
+                                                    fontSize: 16.sp,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
+                      ),
 
-                        SizedBox(height: 20.h),
+                      SizedBox(height: 20.h),
 
-                        AppText(
-                          "Plan your content with ease using our AI-powered calendar. Get ready-to-use post ideas and matching content tailored for your brand. All in just a few taps!",
-                          style: TextStyle(
-                            color: isDark
-                                ? Colors.grey.shade400
-                                : Colors.grey.shade700,
-                            fontSize: 13.5.sp,
-                            height: 1.4,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: 10.h),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: 24.h),
-
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20.w),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText(
-                          "My SM Calendars",
-                          style: TextStyle(
-                            color: isDark
-                                ? Colors.white
-                                : Theme.of(context).colorScheme.onSurface,
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-
-                        SizedBox(height: 16.h),
-
-                        // CALENDARS LIST
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: provider.calendars.length,
-                          itemBuilder: (context, index) {
-                            final item = provider.calendars[index];
-
-                            return Container(
-                              width: double.infinity,
-                              margin: EdgeInsets.only(bottom: 14.h),
-                              padding: EdgeInsets.all(16.r),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF1E1E1E)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(16.r),
-                                border: Border.all(
-                                  color: isDark
-                                      ? Colors.grey.shade800
-                                      : Colors.grey.shade200,
-                                  width: 1.2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(
-                                      alpha: isDark ? 0.2 : 0.02,
-                                    ),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AppText(
-                                    item.title,
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black87,
-                                      fontSize: 16.sp,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-
-                                  SizedBox(height: 4.h),
-
-                                  AppText(
-                                    item.frequency,
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? Colors.grey.shade400
-                                          : Colors.grey.shade600,
-                                      fontSize: 12.5.sp,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-
-                                  SizedBox(height: 10.h),
-                                  AppText(
-                                    item.platformAndPosts,
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? Colors.white70
-                                          : AppColors.appBlack,
-                                      fontSize: 14.sp,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ],
+                            ),
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                "/SocialCalendarFormScreen",
+                              );
+                            },
+                            child: const Text(
+                              "GENERATE",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: 20.h),
-
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20.w),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.pushNamed(
-                            context,
-                            "/SocialCalendarFormScreen",
-                          );
-                        },
-                        child: const Text(
-                          "GENERATE",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 20),
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         );
       },

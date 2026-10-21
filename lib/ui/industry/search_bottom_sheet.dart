@@ -212,31 +212,32 @@ class _SearchBottomSheetState extends State<SearchBottomSheet>
                           final selectedCat = provider.selectedCategory;
 
                           if (selectedCat != null) {
-                            if (selectedCat != null) {
-                              final categoryId = selectedCat.id?.toString() ?? "";
-                              final categoryName = selectedCat.name?.trim() ?? "";
-                              final categorySlug = selectedCat.slug?.trim() ?? "";
+                            final categoryId =
+                                selectedCat.id?.toString() ?? "";
+                            final categoryName =
+                                selectedCat.name?.trim() ?? "";
+                            final categorySlug =
+                                selectedCat.slug?.trim() ?? "";
 
-                              await prefs.setString(
-                                'saved_category_id',
-                                categoryId,
-                              );
+                            await prefs.setString(
+                              'saved_category_id',
+                              categoryId,
+                            );
 
-                              await prefs.setString(
-                                'saved_category_name',
-                                categoryName,
-                              );
+                            await prefs.setString(
+                              'saved_category_name',
+                              categoryName,
+                            );
 
-                              await prefs.setString(
-                                'saved_category_slug',
-                                categorySlug,
-                              );
+                            await prefs.setString(
+                              'saved_category_slug',
+                              categorySlug,
+                            );
 
-                              debugPrint("✅ Selected Category");
-                              debugPrint("ID   : $categoryId");
-                              debugPrint("Name : $categoryName");
-                              debugPrint("Slug : $categorySlug");
-                            }
+                            debugPrint("✅ Selected Category");
+                            debugPrint("ID   : $categoryId");
+                            debugPrint("Name : $categoryName");
+                            debugPrint("Slug : $categorySlug");
                           }
 
                           if (!context.mounted) return;
