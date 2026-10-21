@@ -30,13 +30,15 @@ class TemplateListScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) =>
           TemplateListProvider()..loadSpecialDays(type: type, range: range),
-      child: const _TemplateListScreenView(),
+      child:  _TemplateListScreenView(type,range),
     );
   }
 }
 
 class _TemplateListScreenView extends StatelessWidget {
-  const _TemplateListScreenView();
+  final String? type;
+  final String? range;
+  const _TemplateListScreenView( this.type, this.range);
 
   @override
   Widget build(BuildContext context) {
@@ -192,7 +194,7 @@ class _TemplateListScreenView extends StatelessWidget {
 
                       Expanded(
                         child: RefreshIndicator(
-                          onRefresh: () => provider.loadSpecialDays(),
+                          onRefresh: () => provider.loadSpecialDays(type: type, range: range),
                           child: GridView.builder(
                             padding: EdgeInsets.only(bottom: 40.h),
                             physics: const AlwaysScrollableScrollPhysics(

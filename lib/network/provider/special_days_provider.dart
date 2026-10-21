@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Api Model/special_days.dart';
 import '../../Repository/home_repository.dart';
@@ -27,6 +28,11 @@ class SpecialDaysProvider extends ChangeNotifier {
     }
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedLanguages =
+          prefs.getStringList('selected_language_codes') ?? ['en'];
+
+      final language = savedLanguages.isNotEmpty ? savedLanguages.first : 'en';
       late ApiResult<SpecialDays> response;
 
       // Calendar date range selected
@@ -37,20 +43,24 @@ class SpecialDaysProvider extends ChangeNotifier {
         response = await HomeRepository.instance.specialDaysApi(
           from: fromDate,
           to: toDate,
+          language: language,
         );
       } else if (selectedDate != null && selectedDate!.isNotEmpty) {
         response = await HomeRepository.instance.specialDaysApi(
           from: selectedDate!,
           to: selectedDate!,
+          language: language,
         );
       } else if (type == 'festival') {
         response = await HomeRepository.instance.specialDaysApi(
           type: type,
           range: range,
+          language: language,
         );
       } else {
         response = await HomeRepository.instance.specialDaysApi(
           range: range ?? 'year',
+          language: language,
         );
       }
 

@@ -98,6 +98,7 @@ class HomeRepository {
     String? from,
     String? to,
     String? type,
+    String? language,
   }) async {
     final Map<String, dynamic> queryParams = {};
 
@@ -111,7 +112,9 @@ class HomeRepository {
     if (type != null && type.isNotEmpty) {
       queryParams["type"] = type;
     }
-
+    if (language != null && language.isNotEmpty) {
+      queryParams["language"] = language;
+    }
     debugPrint("📅 Special Days API Params: $queryParams");
 
     final result = await ApiRepository.instance.request<SpecialDays>(

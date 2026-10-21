@@ -2200,7 +2200,7 @@ class _HomeScreenView extends StatelessWidget {
         "description": "Find ready-made templates designed for your industry",
         "button": "BROWSE TEMPLATES",
         "onTap": () {
-          // Navigator.pushNamed(context, "/TemplateScreen");
+          Navigator.pushNamed(context, "/SpecialDaysScreen");
         },
         "gradient": const [Color(0xFFEEF4FF), Color(0xFFEEEAFF)],
         "titleColor": const Color(0xFF8D77FB),
@@ -2212,7 +2212,7 @@ class _HomeScreenView extends StatelessWidget {
             "Generate logos, remove backgrounds, create images, and write caption instantly",
         "button": "EXPLORE AI",
         "onTap": () {
-          // Navigator.pushNamed(context, "/AIScreen");
+          Navigator.pushNamed(context, "/ExploreAiToolScreen");
         },
         "gradient": const [Color(0xFFFFFBEE), Color(0xFFEAFEFF)],
         "titleColor": const Color(0xFF26A3D9),

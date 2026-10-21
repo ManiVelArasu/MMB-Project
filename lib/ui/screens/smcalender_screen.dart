@@ -68,7 +68,6 @@ class SmCalendarView extends StatelessWidget {
                           fontSize: AppFontSize.fontSize14,
                           height: 1.4,
                           fontWeight: FontWeight.w400,
-
                         ),
                       ),
                     ),
@@ -89,9 +88,7 @@ class SmCalendarView extends StatelessWidget {
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 10.h),
-                          ],
+                          children: [SizedBox(height: 10.h)],
                         ),
                       ),
 
@@ -123,7 +120,9 @@ class SmCalendarView extends StatelessWidget {
                               itemBuilder: (context, index) {
                                 final item = provider.calendars[index];
 
-                                final isMonthly = item.title.toLowerCase().contains('month');
+                                final isMonthly = item.title
+                                    .toLowerCase()
+                                    .contains('month');
                                 final monthName = item.title
                                     .replaceAll('month Calendar', '')
                                     .replaceAll('month calendar', '')
@@ -137,12 +136,13 @@ class SmCalendarView extends StatelessWidget {
                                     color: isDark
                                         ? const Color(0xFF1E1E1E)
                                         : (index == 0
-                                        ? const Color(0xFFFFE5E5)
-                                        : const Color(0xFFF7F7F7)),
+                                              ? const Color(0xFFFFE5E5)
+                                              : const Color(0xFFF7F7F7)),
                                     borderRadius: BorderRadius.circular(20.r),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       // Monthly / Weekly badge
                                       Container(
@@ -152,7 +152,9 @@ class SmCalendarView extends StatelessWidget {
                                         ),
                                         decoration: BoxDecoration(
                                           color: Colors.red,
-                                          borderRadius: BorderRadius.circular(6.r),
+                                          borderRadius: BorderRadius.circular(
+                                            6.r,
+                                          ),
                                         ),
                                         child: AppText(
                                           isMonthly ? 'MONTHLY' : 'WEEKLY',
@@ -170,7 +172,9 @@ class SmCalendarView extends StatelessWidget {
                                       AppText(
                                         monthName,
                                         style: TextStyle(
-                                          color: isDark ? Colors.white : Colors.black87,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black87,
                                           fontSize: 18.sp,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -180,11 +184,15 @@ class SmCalendarView extends StatelessWidget {
 
                                       // Platforms
                                       AppText(
-                                        item.platformAndPosts.toLowerCase().contains('facebook')
+                                        item.platformAndPosts
+                                                .toLowerCase()
+                                                .contains('facebook')
                                             ? 'Instagram + Facebook'
                                             : 'Instagram',
                                         style: TextStyle(
-                                          color: isDark ? Colors.white70 : Colors.black87,
+                                          color: isDark
+                                              ? Colors.white70
+                                              : Colors.black87,
                                           fontSize: 12.5.sp,
                                           fontWeight: FontWeight.w400,
                                         ),
@@ -194,11 +202,13 @@ class SmCalendarView extends StatelessWidget {
 
                                       // Stats row
                                       Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 AppText(
                                                   'Total posts',
@@ -213,7 +223,9 @@ class SmCalendarView extends StatelessWidget {
                                                 AppText(
                                                   '12 Posts',
                                                   style: TextStyle(
-                                                    color: isDark ? Colors.white : Colors.black,
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : Colors.black,
                                                     fontSize: 16.sp,
                                                     fontWeight: FontWeight.w600,
                                                   ),
@@ -223,7 +235,8 @@ class SmCalendarView extends StatelessWidget {
                                           ),
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 AppText(
                                                   'Posting cadence',
@@ -238,7 +251,9 @@ class SmCalendarView extends StatelessWidget {
                                                 AppText(
                                                   '3 / week',
                                                   style: TextStyle(
-                                                    color: isDark ? Colors.white : Colors.black,
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : Colors.black,
                                                     fontSize: 16.sp,
                                                     fontWeight: FontWeight.w600,
                                                   ),
@@ -248,7 +263,8 @@ class SmCalendarView extends StatelessWidget {
                                           ),
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 AppText(
                                                   'Used credits',
@@ -263,7 +279,9 @@ class SmCalendarView extends StatelessWidget {
                                                 AppText(
                                                   isMonthly ? '24' : '8',
                                                   style: TextStyle(
-                                                    color: isDark ? Colors.white : Colors.black,
+                                                    color: isDark
+                                                        ? Colors.white
+                                                        : Colors.black,
                                                     fontSize: 16.sp,
                                                     fontWeight: FontWeight.w600,
                                                   ),
@@ -302,7 +320,7 @@ class SmCalendarView extends StatelessWidget {
                                 "/SocialCalendarFormScreen",
                               );
                             },
-                            child: const Text(
+                            child: const AppText(
                               "GENERATE",
                               style: TextStyle(
                                 color: Colors.white,

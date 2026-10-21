@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
@@ -32,14 +34,14 @@ class _SocialCalendarResultScreenState
         builder: (context, provider, themeProvider, child) {
           final isDark = themeProvider.isDarkMode;
 
-          return SafeArea(
-            child: Scaffold(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              appBar: const CustomAppBar(
-                title: "SM Calendar",
-                showRightIcon: false,
-              ),
-              body: Column(
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            appBar: const CustomAppBar(
+              title: "SM Calendar",
+              showRightIcon: false,
+            ),
+            body: SafeArea(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
@@ -50,7 +52,7 @@ class _SocialCalendarResultScreenState
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        AppText(
                           "Your SM Calendar for the month",
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -153,7 +155,7 @@ class _SocialCalendarResultScreenState
                                   ),
                                 ),
                                 child: Center(
-                                  child: Text(
+                                  child: AppText(
                                     "$dayNum",
                                     style: TextStyle(
                                       fontSize: 12,
@@ -186,7 +188,7 @@ class _SocialCalendarResultScreenState
                         bool isSelected = provider.selectedWeekTab == weekNum;
                         return GestureDetector(
                           onTap: () => provider.setWeekTab(weekNum),
-                          child: Text(
+                          child: AppText(
                             "Week $weekNum",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
@@ -269,13 +271,13 @@ class _SocialCalendarResultScreenState
                                         context,
                                       ).showSnackBar(
                                         const SnackBar(
-                                          content: Text(
+                                          content: AppText(
                                             "Calendar Downloaded Successfully!",
                                           ),
                                         ),
                                       );
                                     },
-                                    child: const Text(
+                                    child: const AppText(
                                       "DOWNLOAD",
                                       style: TextStyle(
                                         color: Colors.red,
@@ -302,13 +304,13 @@ class _SocialCalendarResultScreenState
                                         context,
                                       ).showSnackBar(
                                         const SnackBar(
-                                          content: Text(
+                                          content: AppText(
                                             "Calendar Saved Successfully!",
                                           ),
                                         ),
                                       );
                                     },
-                                    child: const Text(
+                                    child: const AppText(
                                       "SAVE",
                                       style: TextStyle(
                                         color: Colors.white,
@@ -334,8 +336,8 @@ class _SocialCalendarResultScreenState
                               onPressed: () {
                                 provider.generateTemplates();
                               },
-                              child: const Text(
-                                "GENERATE TEMPLATES",
+                              child: const AppText(
+                                "USE TEMPLATES",
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -396,7 +398,7 @@ class _SocialCalendarResultScreenState
         children: [
           Row(
             children: [
-              Text(
+              AppText(
                 postNumber,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -416,7 +418,7 @@ class _SocialCalendarResultScreenState
                       : const Color(0xFFFFECEE),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
+                child: AppText(
                   date,
                   style: const TextStyle(
                     color: Colors.red,
@@ -428,7 +430,7 @@ class _SocialCalendarResultScreenState
             ],
           ),
           const SizedBox(height: 10),
-          Text(
+          AppText(
             "Topic: $topic",
             style: TextStyle(
               fontWeight: FontWeight.bold,
@@ -497,7 +499,7 @@ class _SocialCalendarResultScreenState
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            AppText(
               "VIEW ALL",
               style: TextStyle(
                 color: isDark ? Colors.white : Colors.black,
@@ -518,10 +520,10 @@ class _DayHeaderLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
+    return AppText(
       label,
       style: TextStyle(
-        fontSize: 10,
+        fontSize: AppFontSize.fontSize10,
         fontWeight: FontWeight.bold,
         color: Colors.grey.shade700,
       ),

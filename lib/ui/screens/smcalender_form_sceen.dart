@@ -76,7 +76,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
             top: 0,
             left: 0,
             right: 0,
-            height: 245.h,
+
             child: Stack(
               children: [
                 Positioned.fill(
@@ -95,7 +95,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                       children: [
                         AppText(
                           'Plan your content with AI and get ready-to-use '
-                              'posts tailored to your business.',
+                          'posts tailored to your business.',
                           style: TextStyle(
                             color: AppColors.appGrey,
                             fontSize: 12.sp,
@@ -119,67 +119,21 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                                   'MONTHLY',
                                   selectedMode == 'MONTHLY',
                                 ),
-                                _modeButton(
-                                  'WEEKLY',
-                                  selectedMode == 'WEEKLY',
-                                ),
+                                _modeButton('WEEKLY', selectedMode == 'WEEKLY'),
                               ],
                             ),
                           ),
                         ),
 
                         SizedBox(height: 10.h),
-
-                        if (selectedMode == 'MONTHLY')
-                          Container(
-                            height: 40.h,
-                            padding: EdgeInsets.symmetric(horizontal: 12.w),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: provider.months.contains(
-                                  provider.selectedMonth,
-                                )
-                                    ? provider.selectedMonth
-                                    : null,
-                                hint: const Text('Select month'),
-                                isExpanded: true,
-                                items: provider.months.map((month) {
-                                  return DropdownMenuItem<String>(
-                                    value: month,
-                                    child: Text(month),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  if (value != null) provider.setMonth(value);
-                                },
-                              ),
-                            ),
-                          )
-                        else
-                          Center(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Aug 17 – Aug 23, 2026',
-                                  style: TextStyle(
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                SizedBox(width: 6.w),
-                                Icon(
-                                  Icons.calendar_month,
-                                  color: Colors.red,
-                                  size: 16.sp,
-                                ),
-                              ],
-                            ),
+                        Center(
+                          child: Column(
+                            children: [
+                              AppText("1 AI-generated post = 2 AI Credits"),
+                              AppText("1 AI-generated post = 2 AI Credits"),
+                            ],
                           ),
+                        ),
                       ],
                     ),
                   ),
@@ -190,7 +144,55 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
           SafeArea(
             child: Column(
               children: [
-                SizedBox(height: 200.h),
+                SizedBox(height: 180.h),
+                if (selectedMode == 'MONTHLY')
+                  Container(
+                    height: 40.h,
+                    padding: EdgeInsets.symmetric(horizontal: 12.w),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: provider.months.contains(provider.selectedMonth)
+                            ? provider.selectedMonth
+                            : null,
+                        hint: AppText('Select month'),
+                        isExpanded: true,
+                        items: provider.months.map((month) {
+                          return DropdownMenuItem<String>(
+                            value: month,
+                            child: AppText(month),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) provider.setMonth(value);
+                        },
+                      ),
+                    ),
+                  )
+                else
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppText(
+                          'Aug 17 – Aug 23, 2026',
+                          style: TextStyle(
+                            fontSize: AppFontSize.fontSize18,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(width: 6.w),
+                        Icon(
+                          Icons.calendar_month,
+                          color: Colors.red,
+                          size: 16.sp,
+                        ),
+                      ],
+                    ),
+                  ),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.symmetric(horizontal: 12.w),
@@ -353,7 +355,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                           borderRadius: BorderRadius.circular(11.r),
                         ),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         if (provider.selectedPlatforms.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -376,11 +378,43 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                           return;
                         }
 
-                        Navigator.pushNamed(
-                          context,
-                          '/SocialCalendarResultScreen',
-                          arguments: provider,
+                        final int totalPosts = selectedMode == 'MONTHLY'
+                            ? provider.postsPerWeek * 4
+                            : provider.postsPerWeek;
+
+                        final int creditsRequired = totalPosts * 2;
+
+                        final bool? confirmed = await showDialog<bool>(
+                          context: context,
+                          barrierDismissible: true,
+                          builder: (dialogContext) {
+                            return _buildCalendarPlanDialog(
+                              month: selectedMode == 'MONTHLY'
+                                  ? '${provider.selectedMonth} 2026'
+                                  : 'Aug 17 – Aug 23, 2026',
+                              totalPosts: totalPosts,
+                              platforms: provider.selectedPlatforms.toList(),
+                              goals: selectedGoals.toList(),
+                              tone: provider.selectedTone,
+                              credits: creditsRequired,
+                              remainingCredits: 60 - creditsRequired,
+                              onUpgrade: () {
+                                Navigator.pop(dialogContext);
+                                // TODO: உங்கள் existing Top-Up / Upgrade screen-க்கு navigate செய்யவும்.
+                              },
+                            );
+                          },
                         );
+
+                        if (!context.mounted) return;
+
+                        if (confirmed == true) {
+                          Navigator.pushNamed(
+                            context,
+                            '/SocialCalendarResultScreen',
+                            arguments: provider,
+                          );
+                        }
                       },
                       child: Text(
                         'GENERATE',
@@ -400,6 +434,187 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
     );
   }
 
+  Widget _buildCalendarPlanDialog({
+    required String month,
+    required int totalPosts,
+    required List<String> platforms,
+    required List<String> goals,
+    required String tone,
+    required int credits,
+    required int remainingCredits,
+    required VoidCallback onUpgrade,
+  }) {
+    return Dialog(
+      backgroundColor: Colors.white,
+      insetPadding: EdgeInsets.symmetric(horizontal: 18.w),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(12.w, 22.h, 12.w, 12.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Icon(
+                Icons.warning_rounded,
+                color: const Color(0xFFFFB6A8),
+                size: 38.sp,
+              ),
+            ),
+
+            SizedBox(height: 8.h),
+
+            Center(
+              child: AppText(
+                'Your Calendar Plan',
+                style: TextStyle(
+                  fontSize: 17.sp,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+
+            SizedBox(height: 16.h),
+
+            Center(
+              child: AppText(
+                month,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: Colors.red,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+
+            SizedBox(height: 20.h),
+
+            Wrap(
+              spacing: 6.w,
+              runSpacing: 4.h,
+              children: [
+                AppText(
+                  '$totalPosts Posts',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+                AppText(
+                  platforms.join(' + '),
+                  style: TextStyle(fontSize: 12.sp, color: Colors.black54),
+                ),
+              ],
+            ),
+
+            SizedBox(height: 14.h),
+
+            _dialogInfo(title: 'Goals', value: goals.join(' + ')),
+
+            SizedBox(height: 14.h),
+
+            _dialogInfo(title: 'Tone', value: tone),
+
+            SizedBox(height: 14.h),
+
+            const AppText(
+              'Estimated Usage',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.black,
+              ),
+            ),
+
+            SizedBox(height: 3.h),
+
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 4.h,
+              children: [
+                AppText(
+                  '$credits AI Credits',
+                  style: TextStyle(fontSize: 12.sp, color: Colors.black54),
+                ),
+                AppText(
+                  '($remainingCredits credits remaining)',
+                  style: TextStyle(fontSize: 11.sp, color: Colors.red),
+                ),
+              ],
+            ),
+
+            SizedBox(height: 20.h),
+
+            Center(
+              child: InkWell(
+                onTap: onUpgrade,
+                child: AppText(
+                  'Low AI credits: Top-Up/Upgrade',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: Colors.red,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ),
+
+            SizedBox(height: 14.h),
+
+            SizedBox(
+              width: double.infinity,
+              height: 44.h,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF51F27),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(context, true);
+                },
+                child: AppText(
+                  'Generate Calendar: $credits Credits',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dialogInfo({required String title, required String value}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText(
+          title,
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w700,
+            color: Colors.black,
+          ),
+        ),
+        SizedBox(height: 3.h),
+        AppText(
+          value.isEmpty ? '-' : value,
+          style: TextStyle(fontSize: 12.sp, height: 1.4, color: Colors.black54),
+        ),
+      ],
+    );
+  }
+
   Widget _modeButton(String title, bool selected) {
     return GestureDetector(
       onTap: () {
@@ -411,7 +626,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
           color: selected ? const Color(0xFFF51F27) : Colors.white,
           borderRadius: BorderRadius.circular(24),
         ),
-        child: Text(
+        child: AppText(
           title,
           style: TextStyle(
             fontSize: 10,
@@ -432,11 +647,11 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Flexible(
-          child: Text(
+          child: AppText(
             title,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+            style: TextStyle(
+              fontSize: AppFontSize.fontSize18,
+              fontWeight: FontWeight.w500,
               color: Color(0xFF222222),
             ),
           ),
@@ -489,7 +704,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
               const Icon(Icons.check, color: Colors.white, size: 10),
               const SizedBox(width: 3),
             ],
-            Text(
+            AppText(
               label,
               style: TextStyle(
                 fontSize: 9,
