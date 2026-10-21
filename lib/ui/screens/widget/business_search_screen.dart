@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mmb_app/ui/industry/search_bottom_sheet.dart';
+import 'package:mmb_app/ui/screens/widget/search_sub_category.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -285,7 +286,7 @@ class BusinessCategoryChooseSearchViewScreen extends StatelessWidget {
                 minChildSize: 0.5,
                 maxChildSize: 0.95,
                 builder: (context, scrollController) {
-                  return SearchBottomSheet(
+                  return SearchSubCategoryBottomSheet(
                     scrollController: scrollController,
                     sheetController: sheetController,
                   );

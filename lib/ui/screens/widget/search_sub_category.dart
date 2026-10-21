@@ -1,0 +1,261 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../component/custom_widget.dart';
+import '../../../network/provider/industry_provider.dart';
+import '../../../utils/theme/app.colors.dart';
+import '../../../widgets/button_widget.dart';
+
+
+class SearchSubCategoryBottomSheet extends StatefulWidget {
+  final ScrollController scrollController;
+  final DraggableScrollableController sheetController;
+
+  const SearchSubCategoryBottomSheet({
+    super.key,
+    required this.scrollController,
+    required this.sheetController,
+  });
+
+  @override
+  State<SearchSubCategoryBottomSheet> createState() => _SearchSubCategoryBottomSheetState();
+}
+
+class _SearchSubCategoryBottomSheetState extends State<SearchSubCategoryBottomSheet>
+    with WidgetsBindingObserver {
+  final TextEditingController _searchController = TextEditingController();
+
+  final FocusNode _focusNode = FocusNode();
+  void _animateSheet(double size) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !widget.sheetController.isAttached) {
+        return;
+      }
+
+      widget.sheetController.animateTo(
+        size,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
+
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        _animateSheet(0.95);
+      } else {
+        _animateSheet(0.75);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _searchController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+
+    if (views.isEmpty) return;
+
+    final bottom = views.first.viewInsets.bottom;
+
+    if (bottom > 0) {
+      _animateSheet(0.95);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<IndustryProvider>();
+
+    return SafeArea(
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+
+            Container(
+              width: 60,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppText(
+                          "Choose your Preferences",
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  AppText(
+                    "Find business category that matches your Products/Services",
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  TextFormField(
+                    controller: _searchController,
+                    focusNode: _focusNode,
+                    onChanged: (value) {
+                      provider.filterCategories(value);
+                      setState(() {});
+                    },
+                    decoration: InputDecoration(
+                      hintText: "Find your Industry",
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          provider.clearSearch();
+                          setState(() {});
+                        },
+                      )
+                          : const Icon(Icons.mic),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Expanded(
+              child: provider.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : provider.categories.isEmpty
+                  ? Center(
+                child: AppText(
+                  provider.isSearching
+                      ? "No Search Found"
+                      : "No Data Found",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              )
+                  : ListView.builder(
+                controller: widget.scrollController,
+                itemCount: provider.categories.length,
+                itemBuilder: (context, index) {
+                  final item = provider.categories[index];
+                  final isSelected =
+                      provider.selectedCategory?.id == item.id;
+
+                  return Material(
+                    color: Colors.transparent,
+                    child: ListTile(
+                      title: Text(item.name ?? ""),
+                      selected: isSelected,
+                      onTap: () {
+                        provider.selectCategory(item);
+                        _searchController.text = item.name ?? "";
+                        setState(() {});
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ButtonWidget(
+                  decoration: BoxDecoration(
+                    color: AppColors.appRed,
+                    borderRadius: BorderRadius.all(Radius.circular(15)),
+                  ),
+                  buttonPress: provider.selectedCategory == null
+                      ? null
+                      : () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    final selectedCat = provider.selectedCategory;
+
+                    if (selectedCat != null) {
+                      final categoryId =
+                          selectedCat.id?.toString() ?? "";
+                      final categoryName =
+                          selectedCat.name?.trim() ?? "";
+                      final categorySlug =
+                          selectedCat.slug?.trim() ?? "";
+
+                      await prefs.setString(
+                        'saved_category_id',
+                        categoryId,
+                      );
+
+                      await prefs.setString(
+                        'saved_category_name',
+                        categoryName,
+                      );
+
+                      await prefs.setString(
+                        'saved_category_slug',
+                        categorySlug,
+                      );
+
+                      debugPrint("✅ Selected Category");
+                      debugPrint("ID   : $categoryId");
+                      debugPrint("Name : $categoryName");
+                      debugPrint("Slug : $categorySlug");
+                    }
+
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+                    Navigator.pushNamed(
+                      context,
+                      "/BusinessSubCategoryChooseView",
+                    );
+                  },
+                  title: "CONTINUE",
+                  textColor: AppColors.appWhite,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
