@@ -172,9 +172,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                                   SizedBox(height: 4.h),
 
-                                  // =====================================================
-                                  // 20 + FREE AI CREDITS
-                                  // =====================================================
                                   Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.center,
@@ -485,7 +482,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       margin: EdgeInsets.symmetric(
                                         horizontal: 3.w,
                                       ),
-                                      height:110,
+                                      height: 110,
                                       width: 110,
                                       decoration: BoxDecoration(
                                         color: isDark
@@ -606,10 +603,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   title: 'AI Hub',
                                   iconAsset: "assets/images/ai_tool.png",
                                   isDark: isDark,
-                                  onTap: () { Navigator.pushNamed(
-                                    context,
-                                    "/ExploreAiToolScreen",
-                                  );},
+                                  onTap: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      "/ExploreAiToolScreen",
+                                    );
+                                  },
                                   isLast: true,
                                 ),
                               ],
@@ -699,7 +698,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 iconAsset: "assets/images/moon.png",
                                 isDark: isDark,
                                 trailingWidget: Switch(
-
                                   value: isDark,
                                   activeThumbColor: AppColors.appRed,
                                   onChanged: (bool value) {
@@ -1050,7 +1048,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: isDark ? Colors.white38 : AppColors.lightedGrey,
+                            color: isDark
+                                ? Colors.white38
+                                : AppColors.lightedGrey,
                             fontSize: AppFontSize.fontSize14,
                             fontWeight: FontWeight.w400,
                           ),
@@ -1327,7 +1327,7 @@ void _showLanguagesBottomSheet(
                         borderRadius: BorderRadius.circular(6.r),
                       ),
                       child: AppText(
-                        "${selectedCodes.length}",
+                        "${languages.length}",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: AppFontSize.fontSize17,
@@ -1388,27 +1388,27 @@ void _showLanguagesBottomSheet(
                         height: 40.h,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: isSelected
+                          color: isActive
                               ? const Color(0xFFFFD1D5)
                               : (isDark
                                     ? const Color(0xFF181818)
                                     : Colors.white),
                           borderRadius: BorderRadius.circular(22.r),
                           border: Border.all(
-                            color: isSelected
+                            color: isActive
                                 ? Colors.red
                                 : const Color(0xFFFFBFC4),
-                            width: isSelected ? 1.5 : 1,
+                            width: isActive ? 1.5 : 1,
                           ),
                         ),
                         child: AppText(
                           language.name ?? "",
                           style: TextStyle(
-                            color: isSelected
+                            color: isActive
                                 ? Colors.red
                                 : (isDark ? Colors.white : Colors.black),
                             fontSize: 15.sp,
-                            fontWeight: isSelected
+                            fontWeight: isActive
                                 ? FontWeight.w700
                                 : FontWeight.w500,
                           ),
