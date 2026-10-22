@@ -377,9 +377,7 @@ class _EditorViewState extends State<EditorView> {
     });
   }
 
-  Future<String?> _getThumbnailBase64(
-      EditorProvider provider,
-      ) async {
+  Future<String?> _getThumbnailBase64(EditorProvider provider) async {
     try {
       if (!mounted) return null;
 
@@ -393,17 +391,14 @@ class _EditorViewState extends State<EditorView> {
       final context = _canvasKey.currentContext;
       if (context == null) return null;
 
-      final boundary =
-      context.findRenderObject() as RenderRepaintBoundary?;
+      final boundary = context.findRenderObject() as RenderRepaintBoundary?;
 
       if (boundary == null) return null;
 
       final image = await boundary.toImage(pixelRatio: 1.0);
 
       try {
-        final byteData = await image.toByteData(
-          format: ui.ImageByteFormat.png,
-        );
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
         if (byteData == null) return null;
 
@@ -698,8 +693,7 @@ class _EditorViewState extends State<EditorView> {
       final projectName = _getProjectNameFromSize(widget.resizeSize);
 
       final now = DateTime.now().toUtc().toIso8601String();
-      final blankDesignId =
-          'blank-${DateTime.now().microsecondsSinceEpoch}';
+      final blankDesignId = 'blank-${DateTime.now().microsecondsSinceEpoch}';
       final blankContent = jsonEncode({
         'version': 1,
         'metadata': {
@@ -715,10 +709,7 @@ class _EditorViewState extends State<EditorView> {
             'name': 'Page 1',
             'width': canvasSize.width.toInt(),
             'height': canvasSize.height.toInt(),
-            'fabric': {
-              'objects': <dynamic>[],
-              'background': '#ffffff',
-            },
+            'fabric': {'objects': <dynamic>[], 'background': '#ffffff'},
           },
         ],
         'assets': <dynamic>[],
@@ -1846,7 +1837,8 @@ class _EditorViewState extends State<EditorView> {
               final previewUrl = item.previewKey;
 
               final rawAssetKey = item.s3Key.trim();
-              final assetUrl = rawAssetKey.startsWith('http://') ||
+              final assetUrl =
+              rawAssetKey.startsWith('http://') ||
                   rawAssetKey.startsWith('https://')
                   ? rawAssetKey
                   : '${FreePikService.assetCdnBaseUrl}/${rawAssetKey.replaceFirst(RegExp(r'^/+'), '')}';
@@ -1865,10 +1857,7 @@ class _EditorViewState extends State<EditorView> {
                       assetUrl,
                     );
                   } else {
-                    provider.addImage(
-                      previewUrl,
-                      isLocal: false,
-                    );
+                    provider.addImage(previewUrl, isLocal: false);
 
                     if (modalContext.mounted) {
                       Navigator.pop(modalContext);
@@ -2099,9 +2088,15 @@ class _EditorViewState extends State<EditorView> {
                             source: ImageSource.camera,
                           );
                           if (image == null || !sheetOpen) return;
-                          final ok = await provider.uploadPickedMediaImage(
+                          // Start upload without waiting so the bottom sheet
+                          // rebuilds immediately and shows local preview + loader.
+                          final uploadFuture = provider.uploadPickedMediaImage(
                             File(image.path),
                           );
+                          if (sheetContext.mounted && sheetOpen) {
+                            setSheetState(() {});
+                          }
+                          final ok = await uploadFuture;
                           if (!sheetContext.mounted || !sheetOpen) return;
                           setSheetState(() {});
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -2125,9 +2120,15 @@ class _EditorViewState extends State<EditorView> {
                             source: ImageSource.gallery,
                           );
                           if (image == null || !sheetOpen) return;
-                          final ok = await provider.uploadPickedMediaImage(
+                          // Start upload without waiting so the bottom sheet
+                          // rebuilds immediately and shows local preview + loader.
+                          final uploadFuture = provider.uploadPickedMediaImage(
                             File(image.path),
                           );
+                          if (sheetContext.mounted && sheetOpen) {
+                            setSheetState(() {});
+                          }
+                          final ok = await uploadFuture;
                           if (!sheetContext.mounted || !sheetOpen) return;
                           setSheetState(() {});
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -2187,26 +2188,114 @@ class _EditorViewState extends State<EditorView> {
                       itemBuilder: (_, index) {
                         final image = provider.uploadedMediaImages[index];
                         final url = image['url'] ?? '';
+                        final localPath = image['localPath'] ?? '';
+                        final isUploading = image['uploading'] == 'true';
+                        final hasLocalFile = localPath.isNotEmpty &&
+                            File(localPath).existsSync();
                         return GestureDetector(
-                          onTap: () {
-                            final key = image['key'];
-                            if (key != null && key.isNotEmpty) {
+                          onTap: isUploading
+                              ? null
+                              : () {
+                            final key = image['key'] ?? '';
+                            if (key.isNotEmpty) {
                               provider.selectedMediaS3Key = key;
                             }
-                            provider.addImage(url, isLocal: false);
+                            final source = url.isNotEmpty
+                                ? url
+                                : localPath;
+                            if (source.isEmpty) return;
+                            provider.addImage(
+                              source,
+                              isLocal: url.isEmpty,
+                            );
                             Navigator.pop(modalContext);
                           },
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(10),
-                            child: Image.network(
-                              url,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                color: Colors.black12,
-                                child: const Icon(
-                                  Icons.broken_image_outlined,
-                                ),
-                              ),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                if (hasLocalFile)
+                                  Image.file(
+                                    File(localPath),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, error, stackTrace) {
+                                      debugPrint(
+                                        'Local media thumbnail error: $error',
+                                      );
+                                      return Container(
+                                        color: Colors.black12,
+                                        child: const Icon(
+                                          Icons.broken_image_outlined,
+                                        ),
+                                      );
+                                    },
+                                  )
+                                else if (url.isNotEmpty)
+                                  Image.network(
+                                    url,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (
+                                        context,
+                                        child,
+                                        progress,
+                                        ) {
+                                      if (progress == null) return child;
+                                      return Container(
+                                        color: Colors.black12,
+                                        alignment: Alignment.center,
+                                        child: const CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (_, error, stackTrace) {
+                                      debugPrint(
+                                        'Network media thumbnail error: $error',
+                                      );
+                                      return Container(
+                                        color: Colors.black12,
+                                        child: const Icon(
+                                          Icons.broken_image_outlined,
+                                        ),
+                                      );
+                                    },
+                                  )
+                                else
+                                  Container(
+                                    color: Colors.black12,
+                                    child: const Icon(
+                                      Icons.image_outlined,
+                                    ),
+                                  ),
+                                if (isUploading)
+                                  Container(
+                                    color: Colors.black45,
+                                    alignment: Alignment.center,
+                                    child: const Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        SizedBox(height: 6),
+                                        Text(
+                                          'Uploading...',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         );
@@ -3241,6 +3330,7 @@ class _EditorViewState extends State<EditorView> {
     _musicPlayer.dispose();
     super.dispose();
   }
+
   bool _isCapturingThumbnail = false;
   @override
   Widget build(BuildContext context) {
@@ -3584,7 +3674,10 @@ class _EditorViewState extends State<EditorView> {
                                     provider.selectedItemId != null)
                                   ...(() {
                                     final selectedItems = provider.items
-                                        .where((e) => e.id == provider.selectedItemId)
+                                        .where(
+                                          (e) =>
+                                      e.id == provider.selectedItemId,
+                                    )
                                         .toList();
 
                                     if (selectedItems.isEmpty) {
@@ -3599,7 +3692,9 @@ class _EditorViewState extends State<EditorView> {
 
                                     return <Widget>[
                                       _TransformSelectionOverlay(
-                                        key: ValueKey('selection_overlay_${selected.id}'),
+                                        key: ValueKey(
+                                          'selection_overlay_${selected.id}',
+                                        ),
                                         item: selected,
                                         scaleX: scaleX,
                                         scaleY: scaleY,
@@ -5353,12 +5448,19 @@ class _EditorViewState extends State<EditorView> {
       bool isDark,
       ) {
     final id = provider.selectedItemId;
-    if (id == null) return const SizedBox.shrink();
+    if (id == null || provider.items.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-    final item = provider.items.firstWhere(
+    final itemIndex = provider.items.indexWhere(
           (e) => e.id == id,
-      orElse: () => provider.items.first,
     );
+
+    if (itemIndex == -1) {
+      return const SizedBox.shrink();
+    }
+
+    final item = provider.items[itemIndex];
 
     const filters = <String>[
       'normal',
@@ -6265,9 +6367,7 @@ class _EditorViewState extends State<EditorView> {
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 Navigator.pop(sheetContext);
-                                Fluttertoast.showToast(
-                                  msg: 'Text to Audio coming soon',
-                                );
+                                _showTextToAudioBottomSheet(context, provider, isDark);
                               },
                               icon: const Icon(Icons.graphic_eq, size: 16),
                               label: const Text('TEXT TO AUDIO'),
@@ -6365,6 +6465,306 @@ class _EditorViewState extends State<EditorView> {
             icon: const Icon(Icons.close, color: Colors.white, size: 18),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showTextToAudioBottomSheet(
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
+    final textController = TextEditingController();
+    String selectedVoice = 'Female';
+    bool isConverting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+            return Padding(
+              padding: EdgeInsets.only(bottom: keyboardHeight),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(18),
+                  ),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Drag handle
+                      Center(
+                        child: Container(
+                          width: 48,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // Header
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Text to Audio',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: isConverting
+                                ? null
+                                : () => Navigator.pop(sheetContext),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              width: 25,
+                              height: 25,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFE7E7),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Text input
+                      TextField(
+                        controller: textController,
+                        minLines: 4,
+                        maxLines: 5,
+                        maxLength: 1000,
+                        decoration: InputDecoration(
+                          hintText: 'Type the text to convert',
+                          hintStyle: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                          ),
+                          counterStyle: const TextStyle(fontSize: 10),
+                          contentPadding: const EdgeInsets.all(10),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFF0F0F0),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFF0F0F0),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFFFBDBD),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      // Voice selection and convert button
+                      Row(
+                        children: [
+                          const Text(
+                            'Select voice',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          _voiceButton(
+                            icon: Icons.record_voice_over,
+                            selected: selectedVoice == 'Female',
+                            color: const Color(0xFFFFD8ED),
+                            onTap: () {
+                              setSheetState(() {
+                                selectedVoice = 'Female';
+                              });
+                            },
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          _voiceButton(
+                            icon: Icons.face_rounded,
+                            selected: selectedVoice == 'Male',
+                            color: const Color(0xFFDCE7FF),
+                            onTap: () {
+                              setSheetState(() {
+                                selectedVoice = 'Male';
+                              });
+                            },
+                          ),
+
+                          const Spacer(),
+
+                          SizedBox(
+                            height: 34,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.black,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                              ),
+                              onPressed: isConverting
+                                  ? null
+                                  : () async {
+                                final text = textController.text.trim();
+
+                                if (text.isEmpty) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Please enter text to convert',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setSheetState(() {
+                                  isConverting = true;
+                                });
+
+                                try {
+                                  // Connect your TTS API here.
+                                  // It should return an audio file or URL.
+                                  /* await _generateTextAudio(
+                                    text: text,
+                                    voice: selectedVoice,
+                                    provider: provider,
+                                  );*/
+
+                                  if (!sheetContext.mounted) return;
+
+                                  Navigator.pop(sheetContext);
+
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Audio generated successfully',
+                                      ),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  debugPrint('TTS error: $e');
+
+                                  if (!sheetContext.mounted) return;
+
+                                  setSheetState(() {
+                                    isConverting = false;
+                                  });
+
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Audio generation failed. Please try again.',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: isConverting
+                                  ? const SizedBox(
+                                width: 15,
+                                height: 15,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                                  : const Text(
+                                'CONVERT',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _voiceButton({
+    required IconData icon,
+    required bool selected,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(25),
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: selected ? Colors.redAccent : Colors.transparent,
+            width: 1.2,
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 17,
+          color: selected ? Colors.redAccent : Colors.blueAccent,
+        ),
       ),
     );
   }

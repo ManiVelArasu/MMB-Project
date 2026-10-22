@@ -80,7 +80,7 @@ class HelpSupportScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              Text(
+                              AppText(
                                 "Get instant help through live chat. Our support team is ready to assist you with your queries.",
                                 style: TextStyle(
                                   fontSize: 14,

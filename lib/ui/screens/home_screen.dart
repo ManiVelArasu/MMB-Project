@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/ui/screens/video_widget/video_widget.dart';
+import 'package:mmb_app/ui/screens/widget/download.dart';
 import 'package:mmb_app/ui/screens/widget/dwonload_widget.dart';
 import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:provider/provider.dart';
@@ -139,7 +140,10 @@ class _HomeScreenView extends StatelessWidget {
                             break;
 
                           case "AI HUB":
-                            Navigator.pushNamed(context, "/AiHubScreen");
+                            Navigator.pushNamed(
+                              context,
+                              "/ExploreAiToolScreen",
+                            );
                             break;
                         }
                       }),
@@ -433,49 +437,63 @@ class _HomeScreenView extends StatelessWidget {
                           height: 38.h,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
-                            itemCount:
-                                homeScreenProvider.videoCategories.length,
                             physics: const BouncingScrollPhysics(),
+                            padding: EdgeInsets.only(right: 8.w),
+                            itemCount: homeScreenProvider.keyWords.length,
                             itemBuilder: (context, index) {
-                              bool isSelected =
-                                  homeScreenProvider
-                                      .selectedVideoCategoryIndex ==
-                                  index;
-                              return GestureDetector(
-                                onTap: () => homeScreenProvider
-                                    .updateVideoCategoryIndex(index),
-                                child: Container(
-                                  margin: EdgeInsets.only(right: 10.w),
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 16.w,
-                                    vertical: 8.h,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(0xFF555555)
-                                        : (isDark
-                                              ? const Color(0xFF1E1E1E)
-                                              : Colors.white),
-                                    borderRadius: BorderRadius.circular(20.r),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? Colors.transparent
-                                          : (isDark
-                                                ? Colors.grey.shade700
-                                                : Colors.grey.shade400),
-                                      width: 1.2,
+                              final keywordItem =
+                                  homeScreenProvider.keyWords[index];
+
+                              final keyword = keywordItem.name?.trim() ?? '';
+
+                              if (keyword.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return Padding(
+                                padding: EdgeInsets.only(right: 8.w),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20.r),
+                                  onTap: () async {
+                                    await homeScreenProvider
+                                        .fetchTemplatesByPopular(
+                                          keyword: keyword,
+                                        );
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 14.w,
+                                      vertical: 6.h,
                                     ),
-                                  ),
-                                  child: Center(
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          homeScreenProvider.selectedKeyword ==
+                                              keyword
+                                          ? const Color(0xFFFFECEE)
+                                          : isDark
+                                          ? const Color(0xFF1E1E1E)
+                                          : Colors.white,
+                                      borderRadius: BorderRadius.circular(20.r),
+                                      border: Border.all(
+                                        color:
+                                            homeScreenProvider
+                                                    .selectedKeyword ==
+                                                keyword
+                                            ? Colors.red
+                                            : isDark
+                                            ? Colors.grey.shade800
+                                            : Colors.grey.shade300,
+                                        width: 1.2,
+                                      ),
+                                    ),
                                     child: AppText(
-                                      homeScreenProvider.videoCategories[index],
+                                      keyword,
                                       style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : (isDark
-                                                  ? Colors.white70
-                                                  : Colors.grey.shade800),
-                                        fontSize: 12.sp,
+                                        color: isDark
+                                            ? Colors.white70
+                                            : Colors.black87,
+                                        fontSize: AppFontSize.fontSize11,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -721,7 +739,7 @@ class _HomeScreenView extends StatelessWidget {
                                                     fontSize: AppFontSize
                                                         .fontSize12
                                                         .sp,
-                                                    fontWeight: FontWeight.w700,
+                                                    fontWeight: FontWeight.w400,
                                                     height: 1.1,
                                                     color: isDark
                                                         ? Colors.white
@@ -1383,6 +1401,19 @@ class _HomeScreenView extends StatelessWidget {
                           TemplateEditScreen(templateUid: templateUid),
                     ),
                   );
+                },
+                showDownload: true,
+
+                onDownload: () async {
+                  final thumbnailUrl = template.thumbnailS3Key?.trim() ?? '';
+
+                  if (thumbnailUrl.isEmpty) return;
+
+                  final imageUrl = thumbnailUrl.startsWith('http')
+                      ? thumbnailUrl
+                      : '${ApiEndpoints.cdnImageUrl}/$thumbnailUrl';
+
+                  await downloadThumbnail(imageUrl);
                 },
                 onFavorite: () {
                   final templateUid = template.familyUid?.trim() ?? '';

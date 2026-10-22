@@ -9,13 +9,16 @@ import '../../../utils/theme/app.fonts.dart';
 class TemplateActionPopup extends StatefulWidget {
   final VoidCallback onCustomize;
   final VoidCallback onFavorite;
+  final VoidCallback? onDownload;
+  final bool showDownload;
 
   const TemplateActionPopup({
     super.key,
     required this.onCustomize,
     required this.onFavorite,
+    this.onDownload,
+    this.showDownload = false,
   });
-
   @override
   State<TemplateActionPopup> createState() => _TemplateActionPopupState();
 }
@@ -70,6 +73,21 @@ class _TemplateActionPopupState extends State<TemplateActionPopup> {
                           widget.onCustomize();
                         },
                       ),
+                      if (widget.showDownload && widget.onDownload != null) ...[
+                        Divider(
+                          height: 1,
+                          thickness: 0.5,
+                          color: Colors.grey.shade300,
+                        ),
+                        _menuItem(
+                          icon: 'assets/images/download.png',
+                          title: 'Download',
+                          onTap: () {
+                            _closePopup();
+                            widget.onDownload!();
+                          },
+                        ),
+                      ],
                       Divider(
                         height: 1,
                         thickness: 0.5,

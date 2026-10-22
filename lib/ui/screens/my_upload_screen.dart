@@ -66,7 +66,7 @@ class _MyUploadsView extends StatelessWidget {
 
         titleSpacing: 8,
 
-        title: const Text(
+        title: const AppText(
           "My Uploads",
           style: TextStyle(
             color: Color(0xFF111827),
@@ -106,7 +106,7 @@ class _MyUploadsView extends StatelessWidget {
                   color: Color(0xFFED1C24),
                 ),
               ),
-              label: const Text(
+              label: const AppText(
                 "ADD NEW",
                 style: TextStyle(
                   fontSize: 9,
@@ -244,7 +244,7 @@ class _MyUploadsView extends StatelessWidget {
                           children: [
                             // Uploaded images
                             if (uploadedImages.isNotEmpty) ...[
-                              const Text(
+                              const AppText(
                                 "My Uploads",
                                 style: TextStyle(
                                   fontSize: 16,
@@ -429,7 +429,7 @@ class _MyUploadsView extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-            child: Text(
+            child: AppText(
               project.name?.trim().isNotEmpty == true
                   ? project.name!
                   : 'Untitled Project',
@@ -568,7 +568,7 @@ class _MyUploadsView extends StatelessWidget {
                           color: Colors.black,
                         ),
                         SizedBox(width: 8),
-                        Text(
+                        AppText(
                           "DOWNLOAD",
                           style: TextStyle(
                             fontSize: 12,
@@ -590,7 +590,7 @@ class _MyUploadsView extends StatelessWidget {
                           color: Colors.black,
                         ),
                         SizedBox(width: 8),
-                        Text(
+                        AppText(
                           "DELETE",
                           style: TextStyle(
                             fontSize: 12,
@@ -626,7 +626,7 @@ class _MyUploadsView extends StatelessWidget {
             ),
           ),
         ),
-        child: Text(
+        child: AppText(
           title,
           style: TextStyle(
             fontSize: 14,
@@ -658,7 +658,7 @@ class _MyUploadsView extends StatelessWidget {
 
               ListTile(
                 leading: const Icon(Icons.download, size: 22),
-                title: const Text(
+                title: const AppText(
                   "DOWNLOAD",
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
@@ -673,7 +673,7 @@ class _MyUploadsView extends StatelessWidget {
                   color: Colors.red,
                   size: 22,
                 ),
-                title: const Text(
+                title: const AppText(
                   "DELETE",
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),

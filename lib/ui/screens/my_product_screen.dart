@@ -3,6 +3,7 @@ import 'package:mmb_app/ui/screens/widget/product_card.dart';
 import 'package:mmb_app/ui/screens/widget/prouduct_service_sheet.dart';
 import 'package:provider/provider.dart';
 
+import '../../component/custom_widget.dart';
 import '../../network/provider/my_product_provider.dart';
 import '../../network/provider/my_upload_provider.dart';
 
@@ -55,7 +56,7 @@ class _ProductsView extends StatelessWidget {
 
         titleSpacing: 6,
 
-        title: const Text(
+        title: const AppText(
           "My Products",
           style: TextStyle(
             color: Color(0xFF111827),
@@ -97,7 +98,7 @@ class _ProductsView extends StatelessWidget {
                   color: Color(0xFFED1C24),
                 ),
               ),
-              label: const Text(
+              label: const AppText(
                 "ADD NEW",
                 style: TextStyle(
                   fontSize: 9,
@@ -123,7 +124,7 @@ class _ProductsView extends StatelessWidget {
                   10,
                   9,
                 ),
-                child: const Text(
+                child: const AppText(
                   "Everything you offer, in one place, shown on your store\n"
                       "page and Near Me listing.",
                   style: TextStyle(
@@ -171,8 +172,8 @@ class _ProductsView extends StatelessWidget {
 
               Expanded(
                 child: provider.filteredProducts.isEmpty
-                    ? const Center(
-                  child: Text(
+                    ?  Center(
+                  child: AppText(
                     "No products found",
                     style: TextStyle(
                       color: Colors.grey,
@@ -240,7 +241,7 @@ class _ProductsView extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            AppText(
               text,
               style: TextStyle(
                 color: selected
@@ -262,7 +263,7 @@ class _ProductsView extends StatelessWidget {
                     : const Color(0xFFFFE5E5),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(
+              child: AppText(
                 "$count",
                 style: TextStyle(
                   color: const Color(0xFFED1C24),

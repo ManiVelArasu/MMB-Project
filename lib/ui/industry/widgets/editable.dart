@@ -34,7 +34,7 @@ class EditableItemWidget extends StatelessWidget {
     return Selector<EditorProvider, _ItemViewState>(
       selector: (_, provider) {
         final currentItem = provider.items.firstWhere(
-              (e) => e.id == item.id,
+          (e) => e.id == item.id,
           orElse: () => item,
         );
         return _ItemViewState(
@@ -50,8 +50,11 @@ class EditableItemWidget extends StatelessWidget {
         final provider = context.read<EditorProvider>();
 
         final isBackground = _isCanvasBackground(currentItem);
-        final normalizedItemType = (currentItem.type ?? '').trim().toLowerCase();
-        final isTextItem = normalizedItemType == 'text' ||
+        final normalizedItemType = (currentItem.type ?? '')
+            .trim()
+            .toLowerCase();
+        final isTextItem =
+            normalizedItemType == 'text' ||
             normalizedItemType == 'textbox' ||
             normalizedItemType == 'i-text' ||
             normalizedItemType == 'itext';
@@ -71,10 +74,7 @@ class EditableItemWidget extends StatelessWidget {
                 : HitTestBehavior.opaque,
             onTap: () {
               if (isTextItem && !isBackground) {
-                onItemSelected(
-                  currentItem.type ?? '',
-                  currentItem.id!,
-                );
+                onItemSelected(currentItem.type ?? '', currentItem.id!);
 
                 _showTextEditorDialog(
                   context,
@@ -83,37 +83,43 @@ class EditableItemWidget extends StatelessWidget {
                   currentItem.text ?? '',
                 );
               } else if (!isSelected) {
-                onItemSelected(
-                  currentItem.type ?? '',
-                  currentItem.id!,
-                );
+                onItemSelected(currentItem.type ?? '', currentItem.id!);
               }
             },
-            onScaleStart: isSelected ? (details) {
-              final latest = provider.items.where((e) => e.id == currentItem.id);
-              gestureStartScale = latest.isNotEmpty && latest.first.scale.isFinite
-                  ? latest.first.scale
-                  : 1.0;
-            } : null,
-            onScaleUpdate: isSelected ? (details) {
-              final latest = provider.items.where((e) => e.id == currentItem.id);
-              if (latest.isEmpty) return;
+            onScaleStart: isSelected
+                ? (details) {
+                    final latest = provider.items.where(
+                      (e) => e.id == currentItem.id,
+                    );
+                    gestureStartScale =
+                        latest.isNotEmpty && latest.first.scale.isFinite
+                        ? latest.first.scale
+                        : 1.0;
+                  }
+                : null,
+            onScaleUpdate: isSelected
+                ? (details) {
+                    final latest = provider.items.where(
+                      (e) => e.id == currentItem.id,
+                    );
+                    if (latest.isEmpty) return;
 
-              final latestItem = latest.first;
-              final nextScale = (gestureStartScale * details.scale)
-                  .clamp(0.05, 10.0)
-                  .toDouble();
+                    final latestItem = latest.first;
+                    final nextScale = (gestureStartScale * details.scale)
+                        .clamp(0.05, 10.0)
+                        .toDouble();
 
-              final nextPosition =
-                  latestItem.position + details.focalPointDelta;
+                    final nextPosition =
+                        latestItem.position + details.focalPointDelta;
 
-              provider.updateItemTransform(
-                latestItem.id!,
-                scale: nextScale,
-                position: nextPosition,
-                clampToFrame: false,
-              );
-            } : null,
+                    provider.updateItemTransform(
+                      latestItem.id!,
+                      scale: nextScale,
+                      position: nextPosition,
+                      clampToFrame: false,
+                    );
+                  }
+                : null,
             onDoubleTap: () {
               if (isTextItem && !isBackground) {
                 _showTextEditorDialog(
@@ -144,7 +150,11 @@ class EditableItemWidget extends StatelessWidget {
                           height: bodyHeight,
                           child: Opacity(
                             opacity: currentItem.opacity.clamp(0.0, 1.0),
-                            child: _buildItemContent(currentItem, context, isBackground: isBackground),
+                            child: _buildItemContent(
+                              currentItem,
+                              context,
+                              isBackground: isBackground,
+                            ),
                           ),
                         ),
                       ],
@@ -160,27 +170,25 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   static Widget buildStandaloneMediaContent(
-      BuildContext context,
-      EditorItem item,
-      ) {
+    BuildContext context,
+    EditorItem item,
+  ) {
     final widget = EditableItemWidget(item: item, onItemSelected: (_, __) {});
     return widget._buildItemContent(item, context, isBackground: true);
   }
 
   Future<void> _showTextEditorDialog(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      String initialText,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+    String initialText,
+  ) async {
     final matchingItems = provider.items.where((e) => e.id == itemId);
 
     if (itemId.isEmpty || matchingItems.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(
-            content: Text('Please select a text item first.'),
-          ),
+          const SnackBar(content: Text('Please select a text item first.')),
         );
       }
       return;
@@ -218,25 +226,15 @@ class EditableItemWidget extends StatelessWidget {
             minLines: 1,
             maxLines: 5,
             textInputAction: TextInputAction.newline,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 16),
             decoration: const InputDecoration(
               hintText: 'Type text here...',
-              hintStyle: TextStyle(
-                color: Colors.white54,
-              ),
+              hintStyle: TextStyle(color: Colors.white54),
               enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(
-                  color: Colors.amberAccent,
-                ),
+                borderSide: BorderSide(color: Colors.amberAccent),
               ),
               focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(
-                  color: Colors.amberAccent,
-                  width: 2,
-                ),
+                borderSide: BorderSide(color: Colors.amberAccent, width: 2),
               ),
             ),
           ),
@@ -245,12 +243,7 @@ class EditableItemWidget extends StatelessWidget {
               onPressed: () {
                 Navigator.of(dialogContext).pop(null);
               },
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  color: Colors.grey,
-                ),
-              ),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -279,9 +272,7 @@ class EditableItemWidget extends StatelessWidget {
     if (!stillExists) {
       if (context.mounted) {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(
-            content: Text('This text item no longer exists.'),
-          ),
+          const SnackBar(content: Text('This text item no longer exists.')),
         );
       }
       return;
@@ -337,10 +328,10 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _buildItemContent(
-      EditorItem item,
-      BuildContext context, {
-        bool isBackground = false,
-      }) {
+    EditorItem item,
+    BuildContext context, {
+    bool isBackground = false,
+  }) {
     if (item.type == 'video') {
       return SizedBox(
         width: item.width,
@@ -349,57 +340,87 @@ class EditableItemWidget extends StatelessWidget {
       );
     }
 
-    // Explicitly render image/shape layers. Previously they fell through
-    // to the text renderer, leaving only selection handles visible.
     if (item.type == 'image' || item.type == 'shape') {
       final source = (item.contentUrl ?? '').trim();
-      if (source.isEmpty) return const SizedBox.shrink();
+
+      if (source.isEmpty) {
+        return const SizedBox.shrink();
+      }
 
       final isHttp =
           source.startsWith('http://') || source.startsWith('https://');
-      final isFileUri = source.startsWith('file://');
-      final localPath = isFileUri ? source.replaceFirst('file://', '') : source;
 
-      if (isHttp) {
+      final image = isHttp
+          ? Image.network(
+              source,
+              fit: isBackground ? BoxFit.cover : BoxFit.contain,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, error, stackTrace) {
+                debugPrint('Background image error: $error');
+                return const SizedBox.shrink();
+              },
+            )
+          : Image.file(
+              File(
+                source.startsWith('file://')
+                    ? source.replaceFirst('file://', '')
+                    : source,
+              ),
+              fit: isBackground ? BoxFit.cover : BoxFit.contain,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, error, stackTrace) {
+                debugPrint('Local image error: $error');
+                return const SizedBox.shrink();
+              },
+            );
+
+      return SizedBox.expand(child: image);
+    }
+
+    if (item.type == 'svg_group' || item.type == 'svg_element') {
+      final source = (item.contentUrl ?? '').trim();
+
+      if (source.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      final isImageUrl = RegExp(
+        r'\.(png|jpe?g|webp|gif)(\?.*)?$',
+        caseSensitive: false,
+      ).hasMatch(source);
+
+      if (isImageUrl) {
         return Image.network(
           source,
           width: item.width,
           height: item.height,
           fit: BoxFit.contain,
-          errorBuilder: (_, error, stackTrace) {
-            debugPrint('Editor image failed to load: $source | $error');
-            return const SizedBox.shrink();
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+
+            return const Center(
+              child: CircularProgressIndicator(strokeWidth: 1.5),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('Sticker load failed: $source | $error');
+            return const Icon(Icons.broken_image);
           },
         );
       }
 
-      return Image.file(
-        File(localPath),
+      return SvgPicture.string(
+        source,
         width: item.width,
         height: item.height,
         fit: BoxFit.contain,
-        errorBuilder: (_, error, stackTrace) {
-          debugPrint('Editor local image failed to load: $localPath | $error');
-          return const SizedBox.shrink();
-        },
-      );
-    }
-
-    if (item.type == 'svg_group' || item.type == 'svg_element') {
-      return SizedBox(
-        width: item.width,
-        height: item.height,
-        child: SvgPicture.string(
-          item.contentUrl ?? '',
-          width: item.width,
-          height: item.height,
-          fit: BoxFit.fill,
-          placeholderBuilder: (_) => const Center(
-            child: SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 1.5),
-            ),
+        placeholderBuilder: (_) => const Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 1.5),
           ),
         ),
       );
@@ -464,12 +485,12 @@ class _ItemViewState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is _ItemViewState &&
-              runtimeType == other.runtimeType &&
-              currentItem == other.currentItem &&
-              isSelected == other.isSelected &&
-              flipX == other.flipX &&
-              flipY == other.flipY;
+      other is _ItemViewState &&
+          runtimeType == other.runtimeType &&
+          currentItem == other.currentItem &&
+          isSelected == other.isSelected &&
+          flipX == other.flipX &&
+          flipY == other.flipY;
 
   @override
   int get hashCode => Object.hash(currentItem, isSelected, flipX, flipY);

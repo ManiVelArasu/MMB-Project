@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
 
 import '../network/provider/bottom_provider.dart';
 import 'package:provider/provider.dart';
@@ -23,8 +25,12 @@ class CustomBottomNavScreen extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => BottomNavProvider()),
         ChangeNotifierProvider(create: (_) => HomeScreenProvider()),
-        ChangeNotifierProvider(create: (_) => ThemesScreenProvider()..fetchPlans()),
-        ChangeNotifierProvider(create: (_) => CustomScreenProvider()..fetchPlans()),
+        ChangeNotifierProvider(
+          create: (_) => ThemesScreenProvider()..fetchPlans(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CustomScreenProvider()..fetchPlans(),
+        ),
 
         ChangeNotifierProvider(create: (_) => ProfileScreenProvider()),
       ],
@@ -64,98 +70,98 @@ class CustomBottomNavView extends StatelessWidget {
               children: _screens,
             ),
             floatingActionButtonLocation:
-            FloatingActionButtonLocation.centerDocked,
+                FloatingActionButtonLocation.centerDocked,
             floatingActionButton: isKeyboardOpen
                 ? null
                 : Container(
-              height: 72.h,
-              width: 72.w,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFFFFECEE),
-                  width: 4.w,
-                ),
-              ),
-              child: FloatingActionButton(
-                onPressed: () {
-                  navProvider.updateIndex(2);
-                },
-                backgroundColor: const Color(0xFFE53935),
-                elevation: 4,
-                shape: const CircleBorder(),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      "assets/images/my_pagelogo.png",
-                      height: 20.h,
-                      width: 20.w,
-                      color: Colors.white,
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Icons.grid_view_rounded,
-                        color: Colors.white,
-                        size: 20.sp,
+                    height: 72.h,
+                    width: 72.w,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFFFECEE),
+                        width: 4.w,
                       ),
                     ),
-                    SizedBox(height: 2.h),
-                    Text(
-                      "MY\nPAGE",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9.sp,
-                        fontWeight: FontWeight.w900,
-                        height: 0.9,
+                    child: FloatingActionButton(
+                      onPressed: () {
+                        navProvider.updateIndex(2);
+                      },
+                      backgroundColor: const Color(0xFFE53935),
+                      elevation: 4,
+                      shape: const CircleBorder(),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            "assets/images/my_pagelogo.png",
+                            height: 20.h,
+                            width: 20.w,
+                            color: Colors.white,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.grid_view_rounded,
+                              color: Colors.white,
+                              size: 20.sp,
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          AppText(
+                            "MY\nPAGE",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.w900,
+                              height: 0.9,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
             bottomNavigationBar: isKeyboardOpen
                 ? const SizedBox.shrink()
                 : BottomAppBar(
-              color: const Color(0xFF1E2B58),
-              shape: const CircularNotchedRectangle(),
-              notchMargin: 6.r,
-              padding: EdgeInsets.zero,
-              child: SizedBox(
-                height: 65.h,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavItem(
-                      context: context,
-                      imagePath: "assets/images/edit.png",
-                      label: "CUSTOM",
-                      index: 0,
-                    ),
-                    _buildNavItem(
-                      context: context,
-                      imagePath: "assets/images/themes.png",
-                      label: "B-SERIES",
-                      index: 1,
-                    ),
+                    color: const Color(0xFF1E2B58),
+                    shape: const CircularNotchedRectangle(),
+                    notchMargin: 6.r,
+                    padding: EdgeInsets.zero,
+                    child: SizedBox(
+                      height: 65.h,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildNavItem(
+                            context: context,
+                            imagePath: "assets/images/edit.png",
+                            label: "CUSTOM",
+                            index: 0,
+                          ),
+                          _buildNavItem(
+                            context: context,
+                            imagePath: "assets/images/themes.png",
+                            label: "B-SERIES",
+                            index: 1,
+                          ),
 
-                    SizedBox(width: 48.w),
+                          SizedBox(width: 48.w),
 
-                    _buildNavItem(
-                      context: context,
-                      imagePath: "assets/images/nearme.png",
-                      label: "NEAR ME",
-                      index: 3,
+                          _buildNavItem(
+                            context: context,
+                            imagePath: "assets/images/nearme.png",
+                            label: "NEAR ME",
+                            index: 3,
+                          ),
+                          _buildNavItem(
+                            context: context,
+                            imagePath: "assets/images/you.png",
+                            label: "YOU",
+                            index: 4,
+                          ),
+                        ],
+                      ),
                     ),
-                    _buildNavItem(
-                      context: context,
-                      imagePath: "assets/images/you.png",
-                      label: "YOU",
-                      index: 4,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
           ),
         );
       },
@@ -190,7 +196,7 @@ class CustomBottomNavView extends StatelessWidget {
               height: 20.h,
               width: 20.w,
               fit: BoxFit.contain,
-              color: isSelected ? const Color(0xFF4ED8F2) : Colors.white,
+              color: isSelected ? AppColors.appRed : Colors.white,
               errorBuilder: (context, error, stackTrace) => Icon(
                 Icons.grid_view_rounded,
                 size: 20.sp,
@@ -199,12 +205,12 @@ class CustomBottomNavView extends StatelessWidget {
             ),
           ),
           SizedBox(height: 4.h),
-          Text(
+          AppText(
             label,
             style: TextStyle(
               fontSize: 10.sp,
               fontWeight: FontWeight.w800,
-              color: isSelected ? const Color(0xFF4ED8F2) : Colors.white,
+              color: isSelected ? AppColors.appRed : Colors.white,
               letterSpacing: 0.5,
             ),
           ),

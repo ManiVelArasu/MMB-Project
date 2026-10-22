@@ -46,27 +46,27 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       final dio = Dio();
       final resolvedContentType =
           contentType ??
-          (filename.toLowerCase().endsWith('.png')
-              ? 'image/png'
-              : 'image/jpeg');
+              (filename.toLowerCase().endsWith('.png')
+                  ? 'image/png'
+                  : 'image/jpeg');
 
       debugPrint('🚀 MEDIA UPLOAD | slot=$slot | filename=$filename');
 
       final initResult = await ApiRepository.instance
           .request<Map<String, dynamic>>(
-            config: ApiRequestConfig(
-              endpoint: ApiEndpoints.fileUpload,
-              method: ApiMethod.post,
-              body: {
-                "target": {"slot": slot},
-                "filename": filename,
-                "content_type": resolvedContentType,
-              },
-            ),
-            fromJson: (json) {
-              return Map<String, dynamic>.from(json['data'] as Map);
-            },
-          );
+        config: ApiRequestConfig(
+          endpoint: ApiEndpoints.fileUpload,
+          method: ApiMethod.post,
+          body: {
+            "target": {"slot": slot},
+            "filename": filename,
+            "content_type": resolvedContentType,
+          },
+        ),
+        fromJson: (json) {
+          return Map<String, dynamic>.from(json['data'] as Map);
+        },
+      );
 
       String? uploadUrl;
       String? uploadKey;
@@ -123,35 +123,45 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
       final confirmResult = await ApiRepository.instance
           .request<Map<String, dynamic>>(
-            config: ApiRequestConfig(
-              endpoint: '/uploads/confirm',
-              method: ApiMethod.post,
-              body: {
-                'uploads': [
-                  {
-                    'key': uploadKey,
-                    'width': width,
-                    'height': height,
-                    'filename': filename,
-                  },
-                ],
+        config: ApiRequestConfig(
+          endpoint: '/uploads/confirm',
+          method: ApiMethod.post,
+          body: {
+            'uploads': [
+              {
+                'key': uploadKey,
+                'width': width,
+                'height': height,
+                'filename': filename,
               },
-            ),
-            fromJson: (json) => Map<String, dynamic>.from(json['data'] as Map),
-          );
+            ],
+          },
+        ),
+        fromJson: (json) => Map<String, dynamic>.from(json['data'] as Map),
+      );
 
       confirmResult.when(
         success: (data) {
           lastUploadedS3Key = uploadKey;
           if (slot == 'media_library') {
-            uploadedMediaImages.removeWhere((item) => item['key'] == uploadKey);
+            // Replace the temporary local preview only after S3 upload AND
+            // confirm succeed, so the thumbnail remains visible throughout.
+            uploadedMediaImages.removeWhere(
+                  (item) =>
+              item['key'] == uploadKey ||
+                  item['localPath'] == imageFile.path,
+            );
             uploadedMediaImages.insert(0, {
               'key': uploadKey!,
               'url': assetCdnUrl(uploadKey),
               'filename': filename,
               'localPath': imageFile.path,
+              'uploading': 'false',
             });
           }
+          debugPrint('Uploaded image key: $uploadKey');
+          debugPrint('Uploaded image URL: ${assetCdnUrl(uploadKey)}');
+          debugPrint('Local image path: ${imageFile.path}');
           debugPrint('✅ Upload confirmed: $uploadKey');
           notifyListeners();
         },
@@ -172,6 +182,19 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   Future<bool> uploadPickedMediaImage(File imageFile) async {
     if (isUploadingMediaImage) return false;
     isUploadingMediaImage = true;
+    // Show the picked image immediately while presign/S3/confirm runs.
+    uploadedMediaImages.removeWhere(
+          (item) => item['localPath'] == imageFile.path,
+    );
+    uploadedMediaImages.insert(0, {
+      'key': '',
+      'url': '',
+      'filename': imageFile.uri.pathSegments.isNotEmpty
+          ? imageFile.uri.pathSegments.last
+          : 'uploading_image.jpg',
+      'localPath': imageFile.path,
+      'uploading': 'true',
+    });
     notifyListeners();
     try {
       final bytes = await imageFile.readAsBytes();
@@ -194,8 +217,23 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       return result.when(success: (_) => true, failure: (_) => false);
     } catch (e) {
       debugPrint('❌ Could not upload picked image: $e');
+      uploadedMediaImages.removeWhere(
+            (item) => item['localPath'] == imageFile.path,
+      );
       return false;
     } finally {
+      // Remove the temporary tile on failure; successful uploads have already
+      // replaced it with the confirmed media item above.
+      final stillTemporary = uploadedMediaImages.any(
+            (item) =>
+        item['localPath'] == imageFile.path &&
+            item['uploading'] == 'true',
+      );
+      if (stillTemporary) {
+        uploadedMediaImages.removeWhere(
+              (item) => item['localPath'] == imageFile.path,
+        );
+      }
       isUploadingMediaImage = false;
       notifyListeners();
     }
@@ -536,16 +574,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final limitX = extentXAtOne <= 0
         ? 10.0
         : math.min(
-            centerX / extentXAtOne,
-            (canvasWidth - centerX) / extentXAtOne,
-          );
+      centerX / extentXAtOne,
+      (canvasWidth - centerX) / extentXAtOne,
+    );
 
     final limitY = extentYAtOne <= 0
         ? 10.0
         : math.min(
-            centerY / extentYAtOne,
-            (canvasHeight - centerY) / extentYAtOne,
-          );
+      centerY / extentYAtOne,
+      (canvasHeight - centerY) / extentYAtOne,
+    );
 
     final maxAllowed = math.max(0.05, math.min(10.0, math.min(limitX, limitY)));
 
@@ -609,10 +647,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool isEcommerceLoading = false;
 
   Future<List<String>> _fetchFreepikCategory(
-    String query, {
-    required void Function(bool) setLoading,
-    required void Function(List<String>) setData,
-  }) async {
+      String query, {
+        required void Function(bool) setLoading,
+        required void Function(List<String>) setData,
+      }) async {
     setLoading(true);
     notifyListeners();
     try {
@@ -720,11 +758,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Loads one element category without touching backgroundAssets or the
   /// generic freePikAssets list.
   Future<void> fetchElementCategory(
-    String query, {
-    int page = 1,
-    int limit = 4,
-    bool append = false,
-  }) async {
+      String query, {
+        int page = 1,
+        int limit = 4,
+        bool append = false,
+      }) async {
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) return;
 
@@ -779,7 +817,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         for (final item in merged) {
           final key =
               item.id?.toString() ??
-              '${item.name}|${item.s3Key}|${item.s3Key ?? ''}';
+                  '${item.name}|${item.s3Key}|${item.s3Key ?? ''}';
           unique[key] = item;
         }
 
@@ -792,9 +830,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             .map((e) => e.previewKey)
             .where(
               (e) =>
-                  e.trim().isNotEmpty &&
-                  !items.any((x) => x.previewKey == e && x.isLocked),
-            )
+          e.trim().isNotEmpty &&
+              !items.any((x) => x.previewKey == e && x.isLocked),
+        )
             .toSet()
             .toList();
       } else {
@@ -902,7 +940,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           for (final item in allAssetItems) {
             final key =
                 item.id?.toString() ??
-                '${item.name}|${item.s3Key}|${item.thumbnailS3Key ?? ''}';
+                    '${item.name}|${item.s3Key}|${item.thumbnailS3Key ?? ''}';
             unique[key] = item;
           }
 
@@ -991,10 +1029,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Loads the template detail API and converts its Fabric JSON `content`
   /// into the editor's existing EditorItem list.
   Future<bool> loadTemplateByUid(
-    String uid, {
-    double? canvasWidth,
-    double? canvasHeight,
-  }) async {
+      String uid, {
+        double? canvasWidth,
+        double? canvasHeight,
+      }) async {
     final safeUid = uid.trim();
 
     if (safeUid.isEmpty) {
@@ -1061,8 +1099,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       if (root != null) {
         dynamic backgroundValue =
             root['backgroundColor'] ??
-            root['background'] ??
-            root['background_color'];
+                root['background'] ??
+                root['background_color'];
 
         if (backgroundValue == null && root['pages'] is List) {
           final pages = root['pages'] as List;
@@ -1071,8 +1109,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             final fabric = firstPage['fabric'];
             backgroundValue =
                 firstPage['backgroundColor'] ??
-                firstPage['background_color'] ??
-                (fabric is Map ? fabric['background'] : null);
+                    firstPage['background_color'] ??
+                    (fabric is Map ? fabric['background'] : null);
           }
         }
 
@@ -1189,7 +1227,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           .map((e) => Map<String, dynamic>.from(e))
           .where(
             (object) => object['type'] != null || object['objectType'] != null,
-          )
+      )
           .toList();
 
       debugPrint('📦 API objects: ${objects.length}');
@@ -1198,14 +1236,14 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       final extraPages = extraPageObjects
           .map(
             (page) => page
-                .whereType<Map>()
-                .map((e) => Map<String, dynamic>.from(e))
-                .where(
-                  (object) =>
-                      object['type'] != null || object['objectType'] != null,
-                )
-                .toList(),
-          )
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .where(
+              (object) =>
+          object['type'] != null || object['objectType'] != null,
+        )
+            .toList(),
+      )
           .toList();
 
       // Load into editor
@@ -1220,7 +1258,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
       debugPrint(
         '✅ Template loaded: ${template.name} | '
-        '${_items.length} objects',
+            '${_items.length} objects',
       );
 
       debugPrint('Template ID: ${template.id}');
@@ -1251,9 +1289,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   Size? _detectTemplateCanvasSize(
-    Map<String, dynamic> root,
-    List<dynamic> objects,
-  ) {
+      Map<String, dynamic> root,
+      List<dynamic> objects,
+      ) {
     // 1. Fabric root width / height
     final rootWidth = _toDouble(root['width']);
     final rootHeight = _toDouble(root['height']);
@@ -1330,10 +1368,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     // `Textbox`, `IText`, etc.). Keep one canonical type inside the editor.
     final normalizedType = (type ?? '').trim().toLowerCase();
     selectedItemType =
-        (normalizedType == 'textbox' ||
-            normalizedType == 'i-text' ||
-            normalizedType == 'itext' ||
-            normalizedType == 'text')
+    (normalizedType == 'textbox' ||
+        normalizedType == 'i-text' ||
+        normalizedType == 'itext' ||
+        normalizedType == 'text')
         ? 'text'
         : type;
     selectedItemId = id;
@@ -1454,7 +1492,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final parsedUri = Uri.tryParse(src);
     final isAbsoluteHttp =
         parsedUri != null &&
-        (parsedUri.scheme == 'http' || parsedUri.scheme == 'https');
+            (parsedUri.scheme == 'http' || parsedUri.scheme == 'https');
     final isLegacyTemplateHost =
         src.contains('temp-m2b-assets.s3.') || src.contains('amazonaws.com');
     if (isAbsoluteHttp && !isLegacyTemplateHost) {
@@ -1494,8 +1532,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   // group (recursively) into independent layers, applying the group's
   // translate / scale / rotate / flip / opacity to each child.
   List<Map<String, dynamic>> _flattenFabricObjects(
-    List<Map<String, dynamic>> input,
-  ) {
+      List<Map<String, dynamic>> input,
+      ) {
     final out = <Map<String, dynamic>>[];
     for (final json in input) {
       if (json['visible'] == false) continue; // hidden layers stay hidden
@@ -1571,11 +1609,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void loadItemsFromJson(
-    List<Map<String, dynamic>> jsonList, {
-    String? templateUid,
-    List<List<Map<String, dynamic>>> extraPages = const [],
-    bool appendAsPage = false,
-  }) {
+      List<Map<String, dynamic>> jsonList, {
+        String? templateUid,
+        List<List<Map<String, dynamic>>> extraPages = const [],
+        bool appendAsPage = false,
+      }) {
     try {
       jsonList = _flattenFabricObjects(jsonList);
 
@@ -1602,7 +1640,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       // Some Fabric templates contain a white/transparent helper rect plus
       // the actual textured background image. The helper must not replace it.
       final hasFullCanvasImage = jsonList.any(
-        (json) => _isTemplateBackgroundObject(
+            (json) => _isTemplateBackgroundObject(
           json,
           canvasWidth: canvasWidth,
           canvasHeight: canvasHeight,
@@ -1629,10 +1667,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         final hasTextValue = json['text'] != null;
         final isTextObject =
             type == 'textbox' ||
-            type == 'i-text' ||
-            type == 'itext' ||
-            type == 'text' ||
-            hasTextValue;
+                type == 'i-text' ||
+                type == 'itext' ||
+                type == 'text' ||
+                hasTextValue;
 
         // Admin Fabric JSON commonly contains a full-page `clip` rect. It is
         // a clipping definition, not a visible design layer. Painting it
@@ -1641,7 +1679,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         if (objectName == 'clip') {
           final fill = _parseColor(json['fill']);
           if ((_backgroundColor == Colors.white ||
-                  _backgroundColor.alpha == 0) &&
+              _backgroundColor.alpha == 0) &&
               fill != null &&
               fill.alpha > 0) {
             _backgroundColor = fill;
@@ -1791,10 +1829,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             type == 'path') {
           final isFullCanvasRect =
               type == 'rect' &&
-              importedPosition.dx.abs() < 1.0 &&
-              importedPosition.dy.abs() < 1.0 &&
-              (width - canvasWidth).abs() < 2.0 &&
-              (height - canvasHeight).abs() < 2.0;
+                  importedPosition.dx.abs() < 1.0 &&
+                  importedPosition.dy.abs() < 1.0 &&
+                  (width - canvasWidth).abs() < 2.0 &&
+                  (height - canvasHeight).abs() < 2.0;
 
           // A full-canvas rect in Fabric templates is often the clip/page
           // background. Treat its fill as the page background instead of
@@ -1836,7 +1874,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             outlineColor: rawStroke ?? const Color(0xFFD9D9D9),
             outlineWidth: rawStrokeWidth,
             borderRadius:
-                _toDouble(json['rx']) ?? _toDouble(json['ry']) ?? 16.0,
+            _toDouble(json['rx']) ?? _toDouble(json['ry']) ?? 16.0,
           );
           _items.add(shapeItem);
           _templateRawObjects[id] = Map<String, dynamic>.from(json);
@@ -1857,9 +1895,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           // become a blank white canvas while loading.
           final isFullCanvas =
               importedPosition.dx.abs() < 1.0 &&
-              importedPosition.dy.abs() < 1.0 &&
-              (width - canvasWidth).abs() < 2.0 &&
-              (height - canvasHeight).abs() < 2.0;
+                  importedPosition.dy.abs() < 1.0 &&
+                  (width - canvasWidth).abs() < 2.0 &&
+                  (height - canvasHeight).abs() < 2.0;
           final fill = _parseColor(json['fill']);
           if (isFullCanvas && fill != null && fill.alpha > 0) {
             _backgroundColor = fill;
@@ -1997,10 +2035,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   String _outlineStyleFromFabric(
-    dynamic dashArray, {
-    double strokeWidth = 0,
-    String? strokeCap,
-  }) {
+      dynamic dashArray, {
+        double strokeWidth = 0,
+        String? strokeCap,
+      }) {
     if (dashArray is! List || dashArray.isEmpty || strokeWidth <= 0) {
       return 'solid';
     }
@@ -2197,26 +2235,51 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// otherwise the PNG is kept as the group's source and can be split into
   /// raster child elements when the user presses UNGROUP ELEMENTS.
   void addFreePikElement(String thumbnailUrl) {
-    final svg = FreePikService.svgForThumbnail(thumbnailUrl);
+    debugPrint('Sticker URL: $thumbnailUrl');
+
+    final uri = Uri.tryParse(thumbnailUrl);
+    final path = uri?.path.toLowerCase() ?? '';
+
+    final isRasterImage = path.endsWith('.png') ||
+        path.endsWith('.jpg') ||
+        path.endsWith('.jpeg') ||
+        path.endsWith('.webp');
+
+    final svg = isRasterImage
+        ? null
+        : FreePikService.svgForThumbnail(thumbnailUrl);
+
+    debugPrint('Is raster image: $isRasterImage');
+    debugPrint('SVG available: ${svg != null}');
 
     _saveState();
-    final id = 'svg_group_${DateTime.now().microsecondsSinceEpoch}';
+
+    final id = 'element_${DateTime.now().microsecondsSinceEpoch}';
+
     _items.add(
       EditorItem(
         id: id,
-        type: 'svg_group',
-        contentUrl: (svg != null && svg.trim().isNotEmpty) ? svg : thumbnailUrl,
+        type: isRasterImage ? 'image' : 'svg_group',
+        contentUrl: isRasterImage
+            ? thumbnailUrl
+            : (svg != null && svg.trim().isNotEmpty
+            ? svg
+            : thumbnailUrl),
         position: const Offset(100, 150),
         width: 220,
         height: 220,
         isLocal: false,
-        text: (svg != null && svg.trim().isNotEmpty)
+        text: isRasterImage
+            ? 'image'
+            : (svg != null && svg.trim().isNotEmpty
             ? 'svg_group'
-            : 'raster_group',
+            : 'raster_group'),
       ),
     );
-    selectedItemType = 'svg_group';
+
+    selectedItemType = isRasterImage ? 'image' : 'svg_group';
     selectedItemId = id;
+
     notifyListeners();
   }
 
@@ -2469,7 +2532,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           r'''\bviewBox\s*=\s*["']([^"']+)["']''',
           caseSensitive: false,
         ).firstMatch(attrs)?.group(1) ??
-        '0 0 512 512';
+            '0 0 512 512';
 
     final root = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="$viewBox">';
     final tokens = RegExp(
@@ -2558,11 +2621,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
   void addVideo(
-    String videoUrl, {
-    bool isLocal = false,
-    double width = 600,
-    double height = 400,
-  }) {
+      String videoUrl, {
+        bool isLocal = false,
+        double width = 600,
+        double height = 400,
+      }) {
     if (videoUrl.trim().isEmpty) return;
 
     _saveState();
@@ -2687,11 +2750,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void updateImageColorAdjustments(
-    String id, {
-    double? brightness,
-    double? contrast,
-    double? saturation,
-  }) {
+      String id, {
+        double? brightness,
+        double? contrast,
+        double? saturation,
+      }) {
     final index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _saveState();
@@ -3104,11 +3167,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// each handle changes the corresponding width/height and the opposite
   /// edge/corner stays anchored.
   void updateItemSize(
-    String id, {
-    required double width,
-    required double height,
-    Offset? position,
-  }) {
+      String id, {
+        required double width,
+        required double height,
+        Offset? position,
+      }) {
     final index = _items.indexWhere((e) => e.id == id);
     if (index == -1) return;
 
@@ -3165,17 +3228,17 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       debugPrint("Searching Pexels videos: $searchQuery");
 
       _pexelsVideoAssets =
-          await FreePikService.searchPexelsVideoAssets(
-            searchQuery,
-            page: 1,
-            limit: 24,
-          ).timeout(
-            const Duration(seconds: 15),
-            onTimeout: () {
-              debugPrint("Pexels video search timeout");
-              return <PexelsVideoAsset>[];
-            },
-          );
+      await FreePikService.searchPexelsVideoAssets(
+        searchQuery,
+        page: 1,
+        limit: 24,
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          debugPrint("Pexels video search timeout");
+          return <PexelsVideoAsset>[];
+        },
+      );
 
       debugPrint("Pexels videos found: ${_pexelsVideoAssets.length}");
     } catch (e, stackTrace) {
@@ -3190,12 +3253,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setBackgroundImage(
-    String imageUrl, {
-    double canvasWidth = 1080.0,
-    double canvasHeight = 1080.0,
-    double? sourceWidth,
-    double? sourceHeight,
-  }) {
+      String imageUrl, {
+        double canvasWidth = 1080.0,
+        double canvasHeight = 1080.0,
+        double? sourceWidth,
+        double? sourceHeight,
+      }) {
     _saveState();
     _removeBackgroundLayers();
     _backgroundColor = Colors.transparent;
@@ -3225,12 +3288,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setBackgroundVideo(
-    String videoUrl, {
-    double canvasWidth = 1080.0,
-    double canvasHeight = 1080.0,
-    double? sourceWidth,
-    double? sourceHeight,
-  }) {
+      String videoUrl, {
+        double canvasWidth = 1080.0,
+        double canvasHeight = 1080.0,
+        double? sourceWidth,
+        double? sourceHeight,
+      }) {
     _saveState();
     _removeBackgroundLayers();
     _backgroundColor = Colors.transparent;
@@ -3240,7 +3303,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         ? sourceWidth
         : canvasWidth;
     final sh =
-        (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
+    (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
         ? sourceHeight
         : canvasHeight;
 
@@ -3275,8 +3338,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   String? get backgroundImageUrl {
     final bgItem = _items.firstWhere(
-      (item) =>
-          item.position.dx == 0 &&
+          (item) =>
+      item.position.dx == 0 &&
           item.position.dy == 0 &&
           item.type == 'image',
       orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
@@ -3286,8 +3349,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   String? get backgroundVideoUrl {
     final bgItem = _items.firstWhere(
-      (item) =>
-          item.position.dx == 0 &&
+          (item) =>
+      item.position.dx == 0 &&
           item.position.dy == 0 &&
           item.type == 'video',
       orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
@@ -3296,13 +3359,13 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void replaceBackgroundImage(
-    String imageUrl,
-    String selectedItemIdToRemove, {
-    double canvasWidth = 1080.0,
-    double canvasHeight = 1350.0,
-    double? sourceWidth,
-    double? sourceHeight,
-  }) {
+      String imageUrl,
+      String selectedItemIdToRemove, {
+        double canvasWidth = 1080.0,
+        double canvasHeight = 1350.0,
+        double? sourceWidth,
+        double? sourceHeight,
+      }) {
     _saveState();
     _removeBackgroundLayers();
     _items.removeWhere((item) => item.id == selectedItemIdToRemove);
@@ -3390,11 +3453,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   bool _isTemplateBackgroundObject(
-    Map<String, dynamic> json, {
-    double? canvasWidth,
-    double? canvasHeight,
-    bool tolerant = false,
-  }) {
+      Map<String, dynamic> json, {
+        double? canvasWidth,
+        double? canvasHeight,
+        bool tolerant = false,
+      }) {
     final type = json['type']?.toString().toLowerCase().trim();
     if (type != 'image') return false;
 
@@ -3425,7 +3488,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     final coversCanvas =
         renderedWidth >= cw * coverageRatio &&
-        renderedHeight >= ch * coverageRatio;
+            renderedHeight >= ch * coverageRatio;
 
     return atOrigin && coversCanvas;
   }
@@ -3497,12 +3560,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _syncCurrentPage();
     final source = duplicateCurrent
         ? _items
-              .map(
-                (e) => e.copyWith(
-                  id: '${DateTime.now().microsecondsSinceEpoch}_${e.id}',
-                ),
-              )
-              .toList()
+        .map(
+          (e) => e.copyWith(
+        id: '${DateTime.now().microsecondsSinceEpoch}_${e.id}',
+      ),
+    )
+        .toList()
         : <EditorItem>[];
     _pages.add(source);
     _currentPageIndex = _pages.length - 1;
@@ -3633,7 +3696,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     debugPrint(
       'FULL PAGE PASTED: ${pastedItems.length} items -> '
-      'Page ${_currentPageIndex + 1}',
+          'Page ${_currentPageIndex + 1}',
     );
 
     return true;
@@ -3684,12 +3747,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Updates position, scale and rotation in a single provider notification.
   /// Used by interactive canvas/background gestures.
   void updateItemTransform(
-    String id, {
-    Offset? position,
-    double? scale,
-    double? rotation,
-    bool clampToFrame = true,
-  }) {
+      String id, {
+        Offset? position,
+        double? scale,
+        double? rotation,
+        bool clampToFrame = true,
+      }) {
     final index = _items.indexWhere((item) => item.id == id);
     if (index == -1) return;
 
