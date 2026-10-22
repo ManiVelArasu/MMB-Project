@@ -485,7 +485,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       margin: EdgeInsets.symmetric(
                                         horizontal: 3.w,
                                       ),
-                                      height: 76.h,
+                                      height:110,
+                                      width: 110,
                                       decoration: BoxDecoration(
                                         color: isDark
                                             ? const Color(0xFF1D1D1D)
@@ -643,6 +644,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   isDark: isDark,
                                   trailingWidget: Switch(
                                     value: provider.isWatermarkEnabled,
+                                    activeThumbColor: AppColors.appRed,
                                     onChanged: (value) {
                                       provider.toggleWatermark(value);
                                     },
@@ -697,8 +699,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 iconAsset: "assets/images/moon.png",
                                 isDark: isDark,
                                 trailingWidget: Switch(
+
                                   value: isDark,
-                                  activeThumbColor: const Color(0xFFE53935),
+                                  activeThumbColor: AppColors.appRed,
                                   onChanged: (bool value) {
                                     themeProvider.toggleTheme(value);
                                   },
@@ -1047,9 +1050,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: isDark ? Colors.white38 : AppColors.appBlack,
+                            color: isDark ? Colors.white38 : AppColors.lightedGrey,
                             fontSize: AppFontSize.fontSize14,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ],

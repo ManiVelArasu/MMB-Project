@@ -79,4 +79,6 @@ class ApiEndpoints {
   static String quota(String quotaId) => '/quota/packs/${quotaId}/purchase';
   static String favoriteTemplate(String templateId) =>
       '/users/me/favourites/templates/${templateId}';
+
+  static String get productList => '/products';
 }
