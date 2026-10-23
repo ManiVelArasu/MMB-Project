@@ -1402,30 +1402,220 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     required double scaleX,
     required double scaleY,
   }) {
-    final visualWidth = width * scaleX.abs();
-    final visualHeight = height * scaleY.abs();
+    final visualWidth = width * scaleX;
+    final visualHeight = height * scaleY;
     var x = left;
     var y = top;
 
-    switch ((json['originX']?.toString() ?? 'left').toLowerCase()) {
-      case 'center':
-        x -= visualWidth / 2.0;
-        break;
-      case 'right':
-        x -= visualWidth;
-        break;
+    final originX = (json['originX']?.toString() ?? 'left').toLowerCase();
+    final originY = (json['originY']?.toString() ?? 'top').toLowerCase();
+
+    if (originX == 'center') {
+      x -= visualWidth / 2.0;
+    } else if (originX == 'right') {
+      x -= visualWidth;
     }
 
-    switch ((json['originY']?.toString() ?? 'top').toLowerCase()) {
-      case 'center':
-        y -= visualHeight / 2.0;
-        break;
-      case 'bottom':
-        y -= visualHeight;
-        break;
+    if (originY == 'center') {
+      y -= visualHeight / 2.0;
+    } else if (originY == 'bottom') {
+      y -= visualHeight;
     }
 
     return Offset(x, y);
+  }
+
+  void loadItemsFromJson(
+      List<Map<String, dynamic>> jsonList, {
+        String? templateUid,
+        List<List<Map<String, dynamic>>> extraPages = const [],
+        bool appendAsPage = false,
+      }) {
+    try {
+      jsonList = _flattenFabricObjects(jsonList);
+
+      _items.clear();
+      if (!appendAsPage) {
+        _templateRawObjects.clear();
+        _templateBackgroundIds.clear();
+        _templateFlipX.clear();
+        _templateFlipY.clear();
+        _outlineStyles.clear();
+        _outlineJoins.clear();
+        _textLetterSpacing.clear();
+        _textLineSpacing.clear();
+        _textAlignment.clear();
+        _textWeight.clear();
+        _textStyle.clear();
+        _textUnderline.clear();
+      }
+
+      var idIndex = 0;
+      for (final json in jsonList) {
+        final rawType = (json['type']?.toString() ?? '').trim();
+        final type = rawType.toLowerCase();
+        final objectName = (json['name']?.toString() ?? '').trim().toLowerCase();
+
+        if (objectName == 'clip') {
+          final fill = _parseColor(json['fill']);
+          if ((_backgroundColor == Colors.white || _backgroundColor.alpha == 0) &&
+              fill != null &&
+              fill.alpha > 0) {
+            _backgroundColor = fill;
+          }
+          continue;
+        }
+
+        final rawLeft = _toDouble(json['left']) ?? 0.0;
+        final rawTop = _toDouble(json['top']) ?? 0.0;
+        final width = math.max(1.0, _toDouble(json['width']) ?? 100.0);
+        final height = math.max(1.0, _toDouble(json['height']) ?? 100.0);
+        final scaleX = _toDouble(json['scaleX']) ?? 1.0;
+        final scaleY = _toDouble(json['scaleY']) ?? 1.0;
+
+        final importedPosition = _fabricTopLeft(
+          json: json,
+          left: rawLeft,
+          top: rawTop,
+          width: width,
+          height: height,
+          scaleX: scaleX,
+          scaleY: scaleY,
+        );
+
+        final safeScale = scaleX.abs().clamp(0.01, 10.0);
+        final importedHeight = height * (scaleY.abs() / safeScale);
+        final angleDegrees = _toDouble(json['angle']) ?? 0.0;
+        final rotation = angleDegrees * math.pi / 180.0;
+        final opacity = (_toDouble(json['opacity']) ?? 1.0).clamp(0.0, 1.0);
+        final id = 'template_${DateTime.now().microsecondsSinceEpoch}_${idIndex++}';
+
+        final hasTextValue = json['text'] != null;
+        final isTextObject =
+            type == 'textbox' ||
+                type == 'i-text' ||
+                type == 'itext' ||
+                type == 'text' ||
+                hasTextValue;
+
+        if (isTextObject) {
+          final fontSize = _toDouble(json['fontSize']) ?? 36.0;
+          final text = json['text']?.toString() ?? '';
+
+          final item = EditorItem(
+            id: id,
+            type: 'text',
+            text: text,
+            position: importedPosition,
+            width: width,
+            height: importedHeight,
+            scale: safeScale,
+            rotation: rotation,
+            opacity: opacity,
+            fontSize: fontSize,
+            color: _parseColor(json['fill']) ?? Colors.black,
+            fontFamily: _cleanFontFamily(json['fontFamily']),
+          );
+          _items.add(item);
+          _templateRawObjects[id] = Map<String, dynamic>.from(json);
+          _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
+          _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
+
+          final charSpacing = _toDouble(json['charSpacing']) ?? 0.0;
+          _textLetterSpacing[id] = (fontSize * charSpacing / 1000.0)
+              .clamp(-20.0, 50.0)
+              .toDouble();
+          _textLineSpacing[id] = _effectiveTextLineHeight(
+            rawLineHeight: _toDouble(json['lineHeight']) ?? 1.0,
+            fontSize: fontSize,
+            objectHeight: height,
+            text: text,
+          );
+          _textAlignment[id] = _parseTextAlign(json['textAlign']);
+          _textWeight[id] = _parseFontWeight(json['fontWeight']);
+          _textStyle[id] = (json['fontStyle']?.toString() == 'italic')
+              ? FontStyle.italic
+              : FontStyle.normal;
+          _textUnderline[id] = json['underline'] == true;
+        } else if (type == 'image') {
+          final imageUrl = _resolveTemplateSrc(
+            json['src']?.toString() ?? '',
+            templateUid,
+          );
+          if (imageUrl.isNotEmpty) {
+            final isTemplateBackground = _isTemplateBackgroundObject(
+              json,
+              canvasWidth: canvasWidth,
+              canvasHeight: canvasHeight,
+              tolerant: true,
+            );
+
+            final imageItem = EditorItem(
+              id: id,
+              type: 'image',
+              contentUrl: imageUrl,
+              position: isTemplateBackground ? Offset.zero : importedPosition,
+              width: isTemplateBackground ? canvasWidth : width,
+              height: isTemplateBackground ? canvasHeight : importedHeight,
+              scale: isTemplateBackground ? 1.0 : safeScale,
+              rotation: isTemplateBackground ? 0.0 : rotation,
+              opacity: opacity,
+              isLocal: false,
+            );
+            _items.add(imageItem);
+
+            if (isTemplateBackground) {
+              _templateBackgroundIds.add(id);
+            }
+
+            _templateRawObjects[id] = Map<String, dynamic>.from(json);
+            _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
+            _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
+          }
+        } else {
+          // Shapes, Rect, Path, etc.
+          final rawStroke = _parseColor(json['stroke']);
+          final rawStrokeWidth = _toDouble(json['strokeWidth']) ?? 0.0;
+
+          final shapeItem = EditorItem(
+            id: id,
+            type: 'shape',
+            text: type,
+            position: importedPosition,
+            width: width,
+            height: importedHeight,
+            scale: safeScale,
+            rotation: rotation,
+            opacity: opacity,
+            color: _parseColor(json['fill']),
+            outlineColor: rawStroke ?? const Color(0xFFD9D9D9),
+            outlineWidth: rawStrokeWidth,
+            borderRadius: _toDouble(json['rx']) ?? _toDouble(json['ry']) ?? 16.0,
+          );
+          _items.add(shapeItem);
+          _templateRawObjects[id] = Map<String, dynamic>.from(json);
+          _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
+          _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
+        }
+      }
+
+      isTemplateLoaded = true;
+      if (appendAsPage) {
+        _pages.add(_items.map((e) => e.copyWith()).toList());
+        return;
+      }
+
+      _pages
+        ..clear()
+        ..add(_items.map((e) => e.copyWith()).toList());
+      _currentPageIndex = 0;
+      notifyListeners();
+    } catch (e, stackTrace) {
+      isTemplateLoaded = false;
+      debugPrint('JSON Load Error: $e');
+      debugPrint('$stackTrace');
+      notifyListeners();
+    }
   }
 
   String _cleanFontFamily(dynamic value) {
@@ -1606,414 +1796,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       out.addAll(_flattenFabricObjects(flatChildren));
     }
     return out;
-  }
-
-  void loadItemsFromJson(
-      List<Map<String, dynamic>> jsonList, {
-        String? templateUid,
-        List<List<Map<String, dynamic>>> extraPages = const [],
-        bool appendAsPage = false,
-      }) {
-    try {
-      jsonList = _flattenFabricObjects(jsonList);
-
-      _items.clear();
-      if (!appendAsPage) {
-        _templateRawObjects.clear();
-        _templateBackgroundIds.clear();
-        _templateFlipX.clear();
-        _templateFlipY.clear();
-        _outlineStyles.clear();
-        _outlineJoins.clear();
-        // IMPORTANT: preserve the background loaded from the API/template JSON.
-        // loadTemplateDetail() resolves backgroundColor before this method.
-        // Resetting it here makes the canvas white even though the API returns a color.
-        _textLetterSpacing.clear();
-        _textLineSpacing.clear();
-        _textAlignment.clear();
-        _textWeight.clear();
-        _textStyle.clear();
-        _textUnderline.clear();
-      }
-
-      // Detect a real full-page image BEFORE importing any full-page rect.
-      // Some Fabric templates contain a white/transparent helper rect plus
-      // the actual textured background image. The helper must not replace it.
-      final hasFullCanvasImage = jsonList.any(
-            (json) => _isTemplateBackgroundObject(
-          json,
-          canvasWidth: canvasWidth,
-          canvasHeight: canvasHeight,
-          tolerant: true,
-        ),
-      );
-
-      debugPrint(
-        '🖼️ Template full-canvas image detected: $hasFullCanvasImage',
-      );
-
-      var idIndex = 0;
-      for (final json in jsonList) {
-        final rawType = (json['type']?.toString() ?? '').trim();
-        final type = rawType.toLowerCase();
-        final objectName = (json['name']?.toString() ?? '')
-            .trim()
-            .toLowerCase();
-
-        // Fabric/API versions are inconsistent about text object names.
-        // Examples: Text, text, IText, i-text, Textbox, textbox.
-        // Some templates also omit/rename the type but still contain a `text`
-        // property. Treat every such object as an editable text layer.
-        final hasTextValue = json['text'] != null;
-        final isTextObject =
-            type == 'textbox' ||
-                type == 'i-text' ||
-                type == 'itext' ||
-                type == 'text' ||
-                hasTextValue;
-
-        // Admin Fabric JSON commonly contains a full-page `clip` rect. It is
-        // a clipping definition, not a visible design layer. Painting it
-        // causes the editor to show a black/solid canvas instead of the same
-        // background seen in the template preview.
-        if (objectName == 'clip') {
-          final fill = _parseColor(json['fill']);
-          if ((_backgroundColor == Colors.white ||
-              _backgroundColor.alpha == 0) &&
-              fill != null &&
-              fill.alpha > 0) {
-            _backgroundColor = fill;
-          }
-          continue;
-        }
-        final rawLeft = _toDouble(json['left']) ?? 0.0;
-        final rawTop = _toDouble(json['top']) ?? 0.0;
-        final width = math.max(1.0, _toDouble(json['width']) ?? 100.0);
-        final height = math.max(1.0, _toDouble(json['height']) ?? 100.0);
-        final scaleXRaw = _toDouble(json['scaleX']) ?? 1.0;
-        final scaleYRaw = _toDouble(json['scaleY']) ?? 1.0;
-        final scaleX = scaleXRaw.abs() < 0.0001 ? 1.0 : scaleXRaw;
-        final scaleY = scaleYRaw.abs() < 0.0001 ? 1.0 : scaleYRaw;
-        final importedPosition = _fabricTopLeft(
-          json: json,
-          left: rawLeft,
-          top: rawTop,
-          width: width,
-          height: height,
-          scaleX: scaleX,
-          scaleY: scaleY,
-        );
-
-        // Fabric stores X/Y scaling independently. EditorItem currently has
-        // one uniform `scale`, so preserve the non-uniform Y scaling by
-        // baking only the Y/X ratio into the item's layout height. The
-        // existing canvas-level scaleX then produces:
-        //
-        //   visualWidth  = width  * scaleX
-        //   visualHeight = height * scaleY
-        //
-        // This keeps the imported template geometry identical to Fabric
-        // while still allowing the user to resize the item uniformly later.
-        final safeScaleX = scaleX.abs() < 0.0001 ? 1.0 : scaleX.abs();
-        final scale = safeScaleX;
-        final importedHeight = height * (scaleY.abs() / safeScaleX);
-        final angleDegrees = _toDouble(json['angle']) ?? 0.0;
-        final rotation = angleDegrees * math.pi / 180.0;
-        final opacity = (_toDouble(json['opacity']) ?? 1.0).clamp(0.0, 1.0);
-        final id =
-            'template_${DateTime.now().microsecondsSinceEpoch}_${idIndex++}';
-
-        if (isTextObject) {
-          final fontSize = _toDouble(json['fontSize']) ?? 36.0;
-          final text = json['text']?.toString() ?? '';
-
-          // Keep Fabric's box and scale separate. The complete text object
-          // is scaled by the canvas renderer, so font size and wrapping keep
-          // the same relationship as the API/Fabric preview.
-          final rawWidth = math.max(1.0, _toDouble(json['width']) ?? 1.0);
-          final textScaleX = scaleX.abs().clamp(0.01, 10.0).toDouble();
-          final textScaleY = scaleY.abs().clamp(0.01, 10.0).toDouble();
-          final textHeight = math.max(1.0, height * (textScaleY / textScaleX));
-
-          final item = EditorItem(
-            id: id,
-            type: 'text',
-            text: text,
-            position: importedPosition,
-            width: rawWidth,
-            height: textHeight,
-            scale: textScaleX,
-            rotation: rotation,
-            opacity: opacity,
-            fontSize: fontSize,
-            color: _parseColor(json['fill']) ?? Colors.black,
-            fontFamily: _cleanFontFamily(json['fontFamily']),
-          );
-          _items.add(item);
-          _templateRawObjects[id] = Map<String, dynamic>.from(json);
-          _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
-          _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
-          final charSpacing = _toDouble(json['charSpacing']) ?? 0.0;
-          // Fabric charSpacing is measured in 1/1000 of the font size.
-          _textLetterSpacing[id] = (fontSize * charSpacing / 1000.0)
-              .clamp(-20.0, 50.0)
-              .toDouble();
-          _textLineSpacing[id] = _effectiveTextLineHeight(
-            rawLineHeight: _toDouble(json['lineHeight']) ?? 1.0,
-            fontSize: fontSize,
-            objectHeight: height,
-            text: text,
-          );
-          _textAlignment[id] = _parseTextAlign(json['textAlign']);
-          _textWeight[id] = _parseFontWeight(json['fontWeight']);
-          _textStyle[id] = (json['fontStyle']?.toString() == 'italic')
-              ? FontStyle.italic
-              : FontStyle.normal;
-          _textUnderline[id] = json['underline'] == true;
-        } else if (type == 'image') {
-          final imageUrl = _resolveTemplateSrc(
-            json['src']?.toString() ?? '',
-            templateUid,
-          );
-          if (imageUrl.isNotEmpty) {
-            final isTemplateBackground = _isTemplateBackgroundObject(
-              json,
-              canvasWidth: canvasWidth,
-              canvasHeight: canvasHeight,
-              tolerant: true,
-            );
-
-            final imageItem = EditorItem(
-              id: id,
-              type: 'image',
-              contentUrl: imageUrl,
-              // A template background is a canvas layer, not a normal image.
-              position: isTemplateBackground ? Offset.zero : importedPosition,
-              width: isTemplateBackground ? canvasWidth : width,
-              height: isTemplateBackground ? canvasHeight : importedHeight,
-              scale: isTemplateBackground
-                  ? 1.0
-                  : scale.clamp(0.05, 10.0).toDouble(),
-              rotation: isTemplateBackground ? 0.0 : rotation,
-              opacity: opacity,
-              isLocal: false,
-            );
-            _items.add(imageItem);
-
-            if (isTemplateBackground) {
-              _templateBackgroundIds.add(id);
-            }
-
-            _templateRawObjects[id] = Map<String, dynamic>.from(json);
-            _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
-            _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
-          }
-        } else if (type == 'rect' ||
-            type == 'roundrect' ||
-            type == 'roundedrect' ||
-            type == 'circle' ||
-            type == 'ellipse' ||
-            type == 'triangle' ||
-            type == 'diamond' ||
-            type == 'pentagon' ||
-            type == 'hexagon' ||
-            type == 'octagon' ||
-            type == 'star' ||
-            type == 'heart' ||
-            type == 'arch' ||
-            type == 'shield' ||
-            type == 'crescent' ||
-            type == 'polygon' ||
-            type == 'polyline' ||
-            type == 'line' ||
-            type == 'path') {
-          final isFullCanvasRect =
-              type == 'rect' &&
-                  importedPosition.dx.abs() < 1.0 &&
-                  importedPosition.dy.abs() < 1.0 &&
-                  (width - canvasWidth).abs() < 2.0 &&
-                  (height - canvasHeight).abs() < 2.0;
-
-          // A full-canvas rect in Fabric templates is often the clip/page
-          // background. Treat its fill as the page background instead of
-          // adding another giant editable object over every layer.
-          if (isFullCanvasRect) {
-            // A real full-page image is the visual background. Do not let a
-            // helper/clip white rect replace it with a plain white canvas.
-            if (!hasFullCanvasImage) {
-              final gradient = _parseGradient(json['fill']);
-              if (gradient != null) {
-                _importedBackgroundGradient = gradient;
-              } else {
-                final fill = _parseColor(json['fill']);
-                if (fill != null && fill.alpha > 0) {
-                  _backgroundColor = fill;
-                }
-              }
-            }
-            continue;
-          }
-
-          final rawStroke = _parseColor(json['stroke']);
-          final rawStrokeWidth = _toDouble(json['strokeWidth']) ?? 0.0;
-          final rawDash = json['strokeDashArray'];
-          final rawJoin = json['strokeLineJoin']?.toString().toLowerCase();
-          final rawCap = json['strokeLineCap']?.toString().toLowerCase();
-
-          final shapeItem = EditorItem(
-            id: id,
-            type: 'shape',
-            text: type,
-            position: importedPosition,
-            width: width,
-            height: importedHeight,
-            scale: scale.clamp(0.05, 10.0).toDouble(),
-            rotation: rotation,
-            opacity: opacity,
-            color: _parseColor(json['fill']),
-            outlineColor: rawStroke ?? const Color(0xFFD9D9D9),
-            outlineWidth: rawStrokeWidth,
-            borderRadius:
-            _toDouble(json['rx']) ?? _toDouble(json['ry']) ?? 16.0,
-          );
-          _items.add(shapeItem);
-          _templateRawObjects[id] = Map<String, dynamic>.from(json);
-          _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
-          _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
-
-          // Keep the API/Fabric outline settings as the source of truth.
-          // The editor UI is only a controller for these values.
-          _outlineStyles[id] = _outlineStyleFromFabric(
-            rawDash,
-            strokeWidth: rawStrokeWidth,
-            strokeCap: rawCap,
-          );
-          _outlineJoins[id] = _outlineJoinFromFabric(rawJoin);
-
-          // The Fabric `clip` object represents the canvas background.
-          // Keep its fill as the editor canvas color so the template does not
-          // become a blank white canvas while loading.
-          final isFullCanvas =
-              importedPosition.dx.abs() < 1.0 &&
-                  importedPosition.dy.abs() < 1.0 &&
-                  (width - canvasWidth).abs() < 2.0 &&
-                  (height - canvasHeight).abs() < 2.0;
-          final fill = _parseColor(json['fill']);
-          if (isFullCanvas && fill != null && fill.alpha > 0) {
-            _backgroundColor = fill;
-          }
-        } else {
-          // Forward-compatible Fabric import: preserve any object carrying
-          // text, src, path, points or geometry instead of silently dropping
-          // it when the admin adds a new Fabric type.
-          final rawSrc = json['src']?.toString() ?? '';
-          final rawText = json['text']?.toString() ?? '';
-          final rawPath = json['path'];
-          final inferredType = rawSrc.trim().isNotEmpty
-              ? 'image'
-              : (rawText.trim().isNotEmpty ? 'text' : 'shape');
-          if (inferredType == 'image') {
-            final imageUrl = _resolveTemplateSrc(rawSrc, templateUid);
-            if (imageUrl.isNotEmpty) {
-              final imageItem = EditorItem(
-                id: id,
-                type: 'image',
-                contentUrl: imageUrl,
-                position: importedPosition,
-                width: width,
-                height: importedHeight,
-                scale: scale.clamp(0.05, 10.0).toDouble(),
-                rotation: rotation,
-                opacity: opacity,
-                isLocal: false,
-              );
-              _items.add(imageItem);
-
-              if (_isTemplateBackgroundObject(
-                json,
-                canvasWidth: canvasWidth,
-                canvasHeight: canvasHeight,
-              )) {
-                _templateBackgroundIds.add(id);
-              }
-
-              _templateRawObjects[id] = Map<String, dynamic>.from(json);
-              _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
-              _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
-            }
-          } else if (inferredType == 'text') {
-            final item = EditorItem(
-              id: id,
-              type: 'text',
-              text: rawText,
-              position: importedPosition,
-              width: width,
-              height: importedHeight,
-              scale: scale.clamp(0.05, 10.0).toDouble(),
-              rotation: rotation,
-              opacity: opacity,
-              fontSize: _toDouble(json['fontSize']) ?? 36.0,
-              color: _parseColor(json['fill']),
-              fontFamily: json['fontFamily']?.toString() ?? 'Roboto',
-            );
-            _items.add(item);
-            _templateRawObjects[id] = Map<String, dynamic>.from(json);
-            _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
-            _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
-          } else if (rawPath is List ||
-              json['points'] is List ||
-              type.isNotEmpty) {
-            final item = EditorItem(
-              id: id,
-              type: 'shape',
-              text: type.isEmpty ? 'rect' : type,
-              position: importedPosition,
-              width: width,
-              height: importedHeight,
-              scale: scale.clamp(0.05, 10.0).toDouble(),
-              rotation: rotation,
-              opacity: opacity,
-              color: _parseColor(json['fill']),
-            );
-            _items.add(item);
-            _templateRawObjects[id] = Map<String, dynamic>.from(json);
-            _templateFlipX[id] = json['flipX'] == true || scaleX < 0;
-            _templateFlipY[id] = json['flipY'] == true || scaleY < 0;
-          }
-        }
-      }
-
-      isTemplateLoaded = true;
-
-      // Extra pages (2..n) are imported through this same method and only
-      // appended to the page list.
-      if (appendAsPage) {
-        _pages.add(_items.map((e) => e.copyWith()).toList());
-        return;
-      }
-
-      _pages
-        ..clear()
-        ..add(_items.map((e) => e.copyWith()).toList());
-      _currentPageIndex = 0;
-
-      for (final page in extraPages) {
-        loadItemsFromJson(page, templateUid: templateUid, appendAsPage: true);
-      }
-
-      if (_pages.length > 1) {
-        // Back to page 1 on the canvas.
-        _items
-          ..clear()
-          ..addAll(_pages.first.map((e) => e.copyWith()));
-      }
-      notifyListeners();
-    } catch (e, stackTrace) {
-      isTemplateLoaded = false;
-      debugPrint('JSON Load Error: $e');
-      debugPrint('$stackTrace');
-      notifyListeners();
-    }
   }
 
   TextAlign _parseTextAlign(dynamic value) {
@@ -3813,5 +3595,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _items[index] = transformed.copyWith(position: nextPosition);
 
     notifyListeners();
+  }
+  
+  // Call this when user finished panning/scaling/rotating 
+  // so the final state is committed to history for Undo/Redo.
+  void commitTransform() {
+    _saveState();
   }
 }

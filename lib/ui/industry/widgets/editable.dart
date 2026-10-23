@@ -285,6 +285,88 @@ class EditableItemWidget extends StatelessWidget {
     }
   }
 
+  Widget _buildFabricShape(EditorItem item, Map<String, dynamic> raw) {
+    final type = (raw['type']?.toString() ?? item.text ?? '').toLowerCase();
+    final fill = _parseShapeColor(raw['fill']) ?? item.color;
+    final stroke = _parseShapeColor(raw['stroke']) ?? item.outlineColor;
+    final strokeWidth = _number(raw['strokeWidth']) ?? item.outlineWidth;
+
+    if (type == 'circle' || type == 'ellipse') {
+      return CustomPaint(
+        size: Size(item.width, item.height),
+        painter: _FabricShapePainter(
+          type: type,
+          fill: fill,
+          stroke: stroke,
+          strokeWidth: strokeWidth,
+          radiusX: _number(raw['radius']) ?? item.width / 2,
+          radiusY: _number(raw['ry']) ?? item.height / 2,
+          pathData: raw['path'],
+        ),
+      );
+    }
+
+    if (type == 'rect' || type == 'rectangle') {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: fill ?? Colors.transparent,
+          border: strokeWidth > 0
+              ? Border.all(color: stroke, width: strokeWidth)
+              : null,
+          borderRadius: BorderRadius.circular(
+            (_number(raw['rx']) ?? _number(raw['ry']) ?? item.borderRadius)
+                .clamp(0.0, math.min(item.width, item.height) / 2),
+          ),
+        ),
+        child: const SizedBox.expand(),
+      );
+    }
+
+    // Fabric Path objects are used for the small white room icons. Draw their
+    // M/L/C/Q/Z commands instead of dropping them as empty shapes.
+    return CustomPaint(
+      size: Size(item.width, item.height),
+      painter: _FabricShapePainter(
+        type: type,
+        fill: fill,
+        stroke: stroke,
+        strokeWidth: strokeWidth,
+        radiusX: item.width / 2,
+        radiusY: item.height / 2,
+        pathData: raw['path'],
+      ),
+    );
+  }
+
+  Color? _parseShapeColor(dynamic value) {
+    if (value == null || value == '' || value == 'none') return null;
+    if (value is Color) return value;
+    final text = value.toString().trim();
+    final rgba = RegExp(r'rgba?\(([^)]+)\)').firstMatch(text);
+    if (rgba != null) {
+      final parts = rgba.group(1)!.split(',').map((v) => v.trim()).toList();
+      if (parts.length >= 3) {
+        final r = double.tryParse(parts[0])?.round() ?? 0;
+        final g = double.tryParse(parts[1])?.round() ?? 0;
+        final b = double.tryParse(parts[2])?.round() ?? 0;
+        final a = parts.length > 3 ? (double.tryParse(parts[3]) ?? 1.0) : 1.0;
+        return Color.fromRGBO(r.clamp(0, 255), g.clamp(0, 255), b.clamp(0, 255), a.clamp(0.0, 1.0));
+      }
+    }
+    var hex = text.replaceFirst('#', '');
+    if (hex.length == 6) hex = 'FF$hex';
+    if (hex.length == 8) {
+      final value = int.tryParse(hex, radix: 16);
+      if (value != null) return Color(value);
+    }
+    return null;
+  }
+
+  double? _number(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '');
+  }
+
   Widget _buildItemContent(
       EditorItem item,
       BuildContext context, {
@@ -298,7 +380,13 @@ class EditableItemWidget extends StatelessWidget {
       );
     }
 
-    if (item.type == 'image' || item.type == 'shape') {
+    if (item.type == 'shape') {
+      final provider = context.read<EditorProvider>();
+      final raw = provider.templateRawObject(item.id ?? '') ?? const <String, dynamic>{};
+      return _buildFabricShape(item, raw);
+    }
+
+    if (item.type == 'image') {
       final source = (item.contentUrl ?? '').trim();
 
       if (source.isEmpty) {
@@ -404,33 +492,21 @@ class EditableItemWidget extends StatelessWidget {
 
     final textWidget = Text(
       textValue,
-      maxLines: null,
-      softWrap: true,
+      maxLines: isMultiline ? null : 1,
+      softWrap: isMultiline,
       textAlign: editorProvider.textAlignment(id),
       overflow: TextOverflow.visible,
       style: textStyle,
     );
 
-    // Calculate unconstrained natural width to prevent 1-2px font differences
-    // from causing unexpected word wraps on initial load.
-    final painter = TextPainter(
-      text: TextSpan(text: textValue, style: textStyle),
-      maxLines: null,
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    final naturalWidth = painter.width;
-
-    // If width was explicitly squeezed (e.g. by dragging horizontal handles),
-    // it will be significantly smaller than natural width.
-    // Otherwise, pad the width slightly to prevent unwanted wrapping.
-    final renderWidth = (item.width < naturalWidth - 5.0)
-        ? item.width
-        : math.max(item.width, naturalWidth + 2.0);
+    // For single-line text, do not force a narrow width that causes wrapping.
+    // For multiline text, respect the item width.
+    final renderWidth = isMultiline
+        ? math.max(12.0, item.width)
+        : double.infinity;
 
     return SizedBox(
-      width: math.max(1.0, renderWidth),
-      // Do not restrict height, so text can freely expand vertically when wrapped
+      width: isMultiline ? renderWidth : null,
       child: Align(
         alignment: switch (editorProvider.textAlignment(id)) {
           TextAlign.center => Alignment.topCenter,
@@ -442,6 +518,79 @@ class EditableItemWidget extends StatelessWidget {
       ),
     );
   }
+}
+
+class _FabricShapePainter extends CustomPainter {
+  final String type;
+  final Color? fill;
+  final Color? stroke;
+  final double strokeWidth;
+  final double radiusX;
+  final double radiusY;
+  final dynamic pathData;
+
+  const _FabricShapePainter({
+    required this.type,
+    required this.fill,
+    required this.stroke,
+    required this.strokeWidth,
+    required this.radiusX,
+    required this.radiusY,
+    required this.pathData,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (type == 'circle' || type == 'ellipse') {
+      final center = Offset(size.width / 2, size.height / 2);
+      final radius = math.min(size.width, size.height) / 2;
+      if (fill != null) {
+        canvas.drawCircle(center, radius, Paint()..color = fill!);
+      }
+      if (stroke != null && strokeWidth > 0) {
+        final outlinePaint = Paint()
+          ..color = stroke!
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth;
+        canvas.drawCircle(center, radius - strokeWidth / 2, outlinePaint);
+      }
+      return;
+    }
+
+    if (pathData is! List) return;
+    final path = Path();
+    for (final rawCommand in pathData as List) {
+      if (rawCommand is! List || rawCommand.isEmpty) continue;
+      final command = rawCommand.first.toString().toUpperCase();
+      double n(int i) => i < rawCommand.length ? (rawCommand[i] as num).toDouble() : 0.0;
+      switch (command) {
+        case 'M': path.moveTo(n(1), n(2)); break;
+        case 'L': path.lineTo(n(1), n(2)); break;
+        case 'C': path.cubicTo(n(1), n(2), n(3), n(4), n(5), n(6)); break;
+        case 'Q': path.quadraticBezierTo(n(1), n(2), n(3), n(4)); break;
+        case 'Z': path.close(); break;
+      }
+    }
+    if (fill != null) {
+      final fillPaint = Paint()
+        ..color = fill!
+        ..style = PaintingStyle.fill;
+      canvas.drawPath(path, fillPaint);
+    }
+    if (stroke != null && strokeWidth > 0) {
+      final outlinePaint = Paint()
+        ..color = stroke!
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth;
+      canvas.drawPath(path, outlinePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _FabricShapePainter oldDelegate) =>
+      oldDelegate.type != type || oldDelegate.fill != fill ||
+          oldDelegate.stroke != stroke || oldDelegate.strokeWidth != strokeWidth ||
+          oldDelegate.pathData != pathData;
 }
 
 class _ItemViewState {
