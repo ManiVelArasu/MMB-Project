@@ -2190,8 +2190,9 @@ class _EditorViewState extends State<EditorView> {
                         final url = image['url'] ?? '';
                         final localPath = image['localPath'] ?? '';
                         final isUploading = image['uploading'] == 'true';
-                        final hasLocalFile = localPath.isNotEmpty &&
-                            File(localPath).existsSync();
+                        final hasLocalFile =
+                            localPath.isNotEmpty &&
+                                File(localPath).existsSync();
                         return GestureDetector(
                           onTap: isUploading
                               ? null
@@ -2235,16 +2236,15 @@ class _EditorViewState extends State<EditorView> {
                                   Image.network(
                                     url,
                                     fit: BoxFit.cover,
-                                    loadingBuilder: (
-                                        context,
-                                        child,
-                                        progress,
-                                        ) {
-                                      if (progress == null) return child;
+                                    loadingBuilder:
+                                        (context, child, progress) {
+                                      if (progress == null)
+                                        return child;
                                       return Container(
                                         color: Colors.black12,
                                         alignment: Alignment.center,
-                                        child: const CircularProgressIndicator(
+                                        child:
+                                        const CircularProgressIndicator(
                                           strokeWidth: 2,
                                         ),
                                       );
@@ -2278,7 +2278,8 @@ class _EditorViewState extends State<EditorView> {
                                         SizedBox(
                                           width: 24,
                                           height: 24,
-                                          child: CircularProgressIndicator(
+                                          child:
+                                          CircularProgressIndicator(
                                             strokeWidth: 2.5,
                                             color: Colors.white,
                                           ),
@@ -5452,9 +5453,7 @@ class _EditorViewState extends State<EditorView> {
       return const SizedBox.shrink();
     }
 
-    final itemIndex = provider.items.indexWhere(
-          (e) => e.id == id,
-    );
+    final itemIndex = provider.items.indexWhere((e) => e.id == id);
 
     if (itemIndex == -1) {
       return const SizedBox.shrink();
@@ -6367,7 +6366,11 @@ class _EditorViewState extends State<EditorView> {
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 Navigator.pop(sheetContext);
-                                _showTextToAudioBottomSheet(context, provider, isDark);
+                                _showTextToAudioBottomSheet(
+                                  context,
+                                  provider,
+                                  isDark,
+                                );
                               },
                               icon: const Icon(Icons.graphic_eq, size: 16),
                               label: const Text('TEXT TO AUDIO'),
@@ -6494,9 +6497,7 @@ class _EditorViewState extends State<EditorView> {
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(18),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
                 ),
                 child: SafeArea(
                   top: false,
@@ -6654,8 +6655,9 @@ class _EditorViewState extends State<EditorView> {
                                 final text = textController.text.trim();
 
                                 if (text.isEmpty) {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(
+                                  ScaffoldMessenger.of(
+                                    context,
+                                  ).showSnackBar(
                                     const SnackBar(
                                       content: Text(
                                         'Please enter text to convert',
@@ -6682,8 +6684,9 @@ class _EditorViewState extends State<EditorView> {
 
                                   Navigator.pop(sheetContext);
 
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(
+                                  ScaffoldMessenger.of(
+                                    context,
+                                  ).showSnackBar(
                                     const SnackBar(
                                       content: Text(
                                         'Audio generated successfully',
@@ -6699,8 +6702,9 @@ class _EditorViewState extends State<EditorView> {
                                     isConverting = false;
                                   });
 
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(
+                                  ScaffoldMessenger.of(
+                                    context,
+                                  ).showSnackBar(
                                     const SnackBar(
                                       content: Text(
                                         'Audio generation failed. Please try again.',
@@ -7349,17 +7353,17 @@ class _TransformSelectionOverlayState
   Offset _startFocalPoint = Offset.zero;
   Offset _rotationCenterGlobal = Offset.zero;
   double _rotationStartAngle = 0.0;
+  double _resizeStartScale = 1.0;
+  double _resizeStartWidth = 150.0;
+  double _resizeStartHeight = 150.0;
+
+  Offset _resizeStartPosition = Offset.zero;
+  Offset _resizeStartGlobal = Offset.zero;
 
   // Actual source-image aspect ratio. The editor renders normal images with
   // BoxFit.contain, so the visible pixels can be smaller than item.width/height.
   double _imageAspectRatio = 1.0;
   bool _imageAspectReady = false;
-
-  double _resizeStartScale = 1.0;
-  Offset _resizeStartLocal = Offset.zero;
-  Offset _resizeStartGlobal = Offset.zero;
-  Offset _resizeStartPosition = Offset.zero;
-
   EditorProvider get _provider => context.read<EditorProvider>();
 
   // Normal media items are rendered inside a Transform.scale(scaleX), so
@@ -7394,30 +7398,58 @@ class _TransformSelectionOverlayState
       ),
       maxLines: null,
       textDirection: TextDirection.ltr,
-    )..layout();
+    )..layout(
+      maxWidth: widget.item.width > 12.0 ? widget.item.width : double.infinity,
+    );
     return Size(math.max(1.0, painter.width), math.max(1.0, painter.height));
   }
 
   double get _baseVisualWidth {
     if (!_isText) return widget.item.width;
-    final textValueForBounds = widget.item.text ?? '';
-    final isMultilineForBounds =
-        textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
+
     final w = widget.item.width;
-    return isMultilineForBounds
-        ? (w > 0 ? w : _naturalTextSize.width)
-        : _naturalTextSize.width;
+    final natW = _naturalTextSize.width;
+
+    // Match the exact wrapping threshold logic from editable.dart
+    if (w < natW - 5.0) {
+      return w; // Squeezed textbox
+    } else {
+      return math.max(w, natW + 2.0); // Buffer applied
+    }
   }
 
   double get _baseVisualHeight {
     if (!_isText) return widget.item.height;
+
+    // For text, the selection height should match what is actually rendered.
+    // If it's wrapped (squeezed width), the height will increase.
+    final w = _baseVisualWidth;
+    final id = widget.item.id ?? '';
     final textValueForBounds = widget.item.text ?? '';
-    final isMultilineForBounds =
-        textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
-    final h = widget.item.height;
-    return isMultilineForBounds
-        ? (h > 0 ? h : _naturalTextSize.height)
-        : _naturalTextSize.height;
+
+    final painter = TextPainter(
+      text: TextSpan(
+        text: textValueForBounds,
+        style: TextStyle(
+          fontSize: widget.item.fontSize,
+          color: widget.item.color ?? Colors.black,
+          fontWeight: _provider.textWeight(id),
+          fontStyle: _provider.textStyle(id),
+          decoration: _provider.textUnderline(id)
+              ? TextDecoration.underline
+              : TextDecoration.none,
+          letterSpacing: _provider.textLetterSpacing(id),
+          height: _provider.textLineSpacing(id),
+          fontFamily: (widget.item.fontFamily).trim().isEmpty
+              ? null
+              : widget.item.fontFamily.trim(),
+        ),
+      ),
+      maxLines: null,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: w); // Layout WITH the constrained width to get true height
+
+    return math.max(widget.item.height, painter.height);
   }
 
   double get _width => _baseVisualWidth * widget.item.scale * widget.scaleX;
@@ -7427,12 +7459,6 @@ class _TransformSelectionOverlayState
           widget.item.scale *
           (widget.isBackground ? widget.scaleY : widget.scaleX);
 
-  // Text now has a natural-size layout box, so its selection rectangle starts
-  // exactly at item.position and only compensates for center scaling using the
-  // measured text dimensions. Media keeps the same behavior.
-  // Fabric `left` / `top` are the object's top-left origin. The rendered
-  // EditableItemWidget also scales from top-left, so the selection overlay
-  // must use the exact same origin with no center compensation.
   double get _left => widget.item.position.dx * widget.scaleX;
 
   double get _top => widget.item.position.dy * widget.scaleY;
@@ -7493,48 +7519,10 @@ class _TransformSelectionOverlayState
           widget.item.scale *
           (widget.isBackground ? widget.scaleY : widget.scaleX);
 
-  // Exact visible rectangle produced by BoxFit.contain inside the item's
-  // layout box. The API/template item width/height is the layout box, not
-  // necessarily the visible image rectangle. For example, a landscape image
-  // inside a tall box leaves empty space above/below. The selection border
-  // and handles must surround only the rendered image area.
+  // Since items (images/shapes) now use BoxFit.fill instead of BoxFit.contain,
+  // the visual rectangle is exactly the scaled layout box.
   Rect get _visualRect {
-    final boxW = _baseBoxWidth;
-    final boxH = _baseBoxHeight;
-
-    if (!_imageAspectReady ||
-        !_imageAspectRatio.isFinite ||
-        _imageAspectRatio <= 0 ||
-        boxW <= 0 ||
-        boxH <= 0) {
-      return Rect.fromLTWH(0, 0, boxW, boxH);
-    }
-
-    final boxAspect = boxW / boxH;
-    double visibleW;
-    double visibleH;
-
-    if (_imageAspectRatio > boxAspect) {
-      // Image is wider than the layout box. BoxFit.contain uses full width
-      // and centers the remaining vertical space.
-      visibleW = boxW;
-      visibleH = boxW / _imageAspectRatio;
-    } else {
-      // Image is taller/narrower than the layout box. BoxFit.contain uses
-      // full height and centers the remaining horizontal space.
-      visibleH = boxH;
-      visibleW = boxH * _imageAspectRatio;
-    }
-
-    visibleW = visibleW.clamp(0.0, boxW).toDouble();
-    visibleH = visibleH.clamp(0.0, boxH).toDouble();
-
-    return Rect.fromLTWH(
-      (boxW - visibleW) / 2,
-      (boxH - visibleH) / 2,
-      visibleW,
-      visibleH,
-    );
+    return Rect.fromLTWH(0, 0, _baseBoxWidth, _baseBoxHeight);
   }
 
   // Match the rounded/pill shape used by template buttons.  The dotted
@@ -7650,21 +7638,10 @@ class _TransformSelectionOverlayState
                     ),
                   ),
                   ...[
-                    _buildHandle(
-                      alignment: Alignment.topLeft,
-                      cursor: SystemMouseCursors.resizeUpLeft,
-                      width: visual.width,
-                      height: visual.height,
-                    ),
+                    // Thin side visuals have a generous transparent hit target.
                     _buildHandle(
                       alignment: Alignment.topCenter,
                       cursor: SystemMouseCursors.resizeUp,
-                      width: visual.width,
-                      height: visual.height,
-                    ),
-                    _buildHandle(
-                      alignment: Alignment.topRight,
-                      cursor: SystemMouseCursors.resizeUpRight,
                       width: visual.width,
                       height: visual.height,
                     ),
@@ -7681,14 +7658,27 @@ class _TransformSelectionOverlayState
                       height: visual.height,
                     ),
                     _buildHandle(
-                      alignment: Alignment.bottomLeft,
-                      cursor: SystemMouseCursors.resizeDownLeft,
+                      alignment: Alignment.bottomCenter,
+                      cursor: SystemMouseCursors.resizeDown,
+                      width: visual.width,
+                      height: visual.height,
+                    ),
+                    // Corners last: priority over overlapping side hit areas.
+                    _buildHandle(
+                      alignment: Alignment.topLeft,
+                      cursor: SystemMouseCursors.resizeUpLeft,
                       width: visual.width,
                       height: visual.height,
                     ),
                     _buildHandle(
-                      alignment: Alignment.bottomCenter,
-                      cursor: SystemMouseCursors.resizeDown,
+                      alignment: Alignment.topRight,
+                      cursor: SystemMouseCursors.resizeUpRight,
+                      width: visual.width,
+                      height: visual.height,
+                    ),
+                    _buildHandle(
+                      alignment: Alignment.bottomLeft,
+                      cursor: SystemMouseCursors.resizeDownLeft,
                       width: visual.width,
                       height: visual.height,
                     ),
@@ -7699,53 +7689,6 @@ class _TransformSelectionOverlayState
                       height: visual.height,
                     ),
                   ],
-
-                  // 3-dot control is outside the image selection rectangle.
-                  Positioned(
-                    left: visual.width + 10,
-                    top: (visual.height / 2.0) - 26.0,
-                    width: 52,
-                    height: 52,
-                    child: Material(
-                      color: Colors.transparent,
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        onTap: () {
-                          final id = widget.item.id;
-                          if (id != null && id.isNotEmpty) {
-                            _provider.setSelectedItem(widget.item.type, id);
-                          }
-                        },
-                        customBorder: const CircleBorder(),
-                        child: Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFF2196F3),
-                              width: 2.5,
-                            ),
-                            boxShadow: const [
-                              BoxShadow(
-                                blurRadius: 6,
-                                offset: Offset(0, 2),
-                                color: Color(0x33000000),
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.more_horiz_rounded,
-                              size: 25,
-                              color: Color(0xFF222222),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -7793,8 +7736,17 @@ class _TransformSelectionOverlayState
     final box = _overlayKey.currentContext?.findRenderObject();
     final visual = _visualRect;
     if (box is RenderBox) {
+      // _overlayKey belongs to the padded Stack inside the rotated widget.
+      // Convert the visible image center into that Stack's local coordinates
+      // by including the same padding used by Positioned/selection handles.
+      // Omitting this offset makes the rotation pivot 24px up/left, causing
+      // images to orbit/jump away from their original position while rotating.
+      const double expandPadding = 24.0;
       return box.localToGlobal(
-        Offset(visual.left + visual.width / 2, visual.top + visual.height / 2),
+        Offset(
+          expandPadding + visual.left + visual.width / 2,
+          expandPadding + visual.top + visual.height / 2,
+        ),
       );
     }
     return Offset.zero;
@@ -7816,7 +7768,8 @@ class _TransformSelectionOverlayState
     required double width,
     required double height,
   }) {
-    const handleSize = 48.0;
+    // Visual lines are thin, but each has a generous transparent hit target.
+    const handleSize = 56.0;
     final targetX = (alignment.x + 1) / 2 * width;
     final targetY = (alignment.y + 1) / 2 * height;
 
@@ -7831,62 +7784,106 @@ class _TransformSelectionOverlayState
           _resizeStartScale = widget.item.scale.isFinite
               ? widget.item.scale
               : 1.0;
+          _resizeStartWidth = widget.item.width;
+          _resizeStartHeight = widget.item.height;
           _resizeStartPosition = widget.item.position;
           _resizeStartGlobal = details.globalPosition;
         },
+
         onPanUpdate: (details) {
-          final baseWidth = math.max(1.0, widget.item.width);
-          final baseHeight = math.max(1.0, widget.item.height);
+          final baseWidth = math.max(1.0, _resizeStartWidth);
+          final baseHeight = math.max(1.0, _resizeStartHeight);
           final globalDelta = details.globalPosition - _resizeStartGlobal;
           final canvasDx = globalDelta.dx / widget.scaleX;
           final canvasDy =
               globalDelta.dy /
                   (widget.isBackground ? widget.scaleY : widget.scaleX);
+
           final angle = widget.item.rotation.isFinite
               ? widget.item.rotation
               : 0.0;
           final cosA = math.cos(angle);
           final sinA = math.sin(angle);
+
+          // Convert movement into the selected element's local coordinates.
           final dx = canvasDx * cosA + canvasDy * sinA;
           final dy = -canvasDx * sinA + canvasDy * cosA;
 
-          double deltaScale;
-          if (alignment.x == 0) {
-            deltaScale = alignment.y == 1 ? dy / baseHeight : -dy / baseHeight;
-          } else if (alignment.y == 0) {
-            deltaScale = alignment.x == 1 ? dx / baseWidth : -dx / baseWidth;
-          } else {
-            final sx = alignment.x == 1 ? dx / baseWidth : -dx / baseWidth;
-            final sy = alignment.y == 1 ? dy / baseHeight : -dy / baseHeight;
-            deltaScale = sx.abs() >= sy.abs() ? sx : sy;
+          // Left/right resize width only, anchoring the opposite edge.
+          if (alignment.y == 0) {
+            final signedDx = alignment.x == 1 ? dx : -dx;
+            final nextWidth = (baseWidth + signedDx)
+                .clamp(12.0, 4000.0)
+                .toDouble();
+            final delta = nextWidth - baseWidth;
+            final localAnchorX = alignment.x == -1 ? -delta : 0.0;
+
+            _provider.updateItemTransform(
+              widget.item.id ?? '',
+              width: nextWidth,
+              position: Offset(
+                _resizeStartPosition.dx + localAnchorX * cosA,
+                _resizeStartPosition.dy + localAnchorX * sinA,
+              ),
+              clampToFrame: false,
+            );
+            return;
           }
 
-          final newScale = (_resizeStartScale + deltaScale)
+          // Top/bottom resize height only, anchoring the opposite edge.
+          if (alignment.x == 0) {
+            final signedDy = alignment.y == 1 ? dy : -dy;
+            final nextHeight = (baseHeight + signedDy)
+                .clamp(12.0, 4000.0)
+                .toDouble();
+            final delta = nextHeight - baseHeight;
+            final localAnchorY = alignment.y == -1 ? -delta : 0.0;
+
+            _provider.updateItemTransform(
+              widget.item.id ?? '',
+              height: nextHeight,
+              position: Offset(
+                _resizeStartPosition.dx - localAnchorY * sinA,
+                _resizeStartPosition.dy + localAnchorY * cosA,
+              ),
+              clampToFrame: false,
+            );
+            return;
+          }
+
+          // Corner handles resize proportionally and keep the opposite corner.
+          final sx = alignment.x == 1 ? dx / baseWidth : -dx / baseWidth;
+          final sy = alignment.y == 1 ? dy / baseHeight : -dy / baseHeight;
+          final deltaScale = sx.abs() >= sy.abs() ? sx : sy;
+          final nextScale = (_resizeStartScale + deltaScale)
               .clamp(0.02, 10.0)
               .toDouble();
-          final scaleDelta = newScale - _resizeStartScale;
+          final scaleDelta = nextScale - _resizeStartScale;
 
-          final anchorX = alignment.x == -1 ? -baseWidth * scaleDelta : 0.0;
-          final anchorY = alignment.y == -1 ? -baseHeight * scaleDelta : 0.0;
-
-          final correctedX = anchorX * cosA - anchorY * sinA;
-          final correctedY = anchorX * sinA + anchorY * cosA;
-          final nextPosition = Offset(
-            _resizeStartPosition.dx + correctedX,
-            _resizeStartPosition.dy + correctedY,
-          );
+          final localAnchorX = alignment.x == -1
+              ? -baseWidth * scaleDelta
+              : 0.0;
+          final localAnchorY = alignment.y == -1
+              ? -baseHeight * scaleDelta
+              : 0.0;
 
           _provider.updateItemTransform(
             widget.item.id ?? '',
-            scale: newScale,
-            position: nextPosition,
-
+            scale: nextScale,
+            position: Offset(
+              _resizeStartPosition.dx +
+                  localAnchorX * cosA -
+                  localAnchorY * sinA,
+              _resizeStartPosition.dy +
+                  localAnchorX * sinA +
+                  localAnchorY * cosA,
+            ),
             clampToFrame: false,
           );
         },
         child: MouseRegion(
           cursor: cursor,
-          child: const Center(child: _ResizeHandleVisual()),
+          child: Center(child: _ResizeHandleVisual(alignment: alignment)),
         ),
       ),
     );
@@ -7894,18 +7891,40 @@ class _TransformSelectionOverlayState
 }
 
 class _ResizeHandleVisual extends StatelessWidget {
-  const _ResizeHandleVisual();
+  final Alignment alignment;
+
+  const _ResizeHandleVisual({required this.alignment});
 
   @override
   Widget build(BuildContext context) {
+    // Middle handles use thin lines; corner handles stay round.
+    if (alignment.x == 0) {
+      return Container(
+        width: 20,
+        height: 3,
+        decoration: BoxDecoration(
+          color: const Color(0xFF3568F5),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      );
+    }
+    if (alignment.y == 0) {
+      return Container(
+        width: 3,
+        height: 20,
+        decoration: BoxDecoration(
+          color: const Color(0xFF3568F5),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      );
+    }
     return Container(
-      width: 16,
-      height: 16,
+      width: 12,
+      height: 12,
       decoration: BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF0066FF), width: 3.5),
-        boxShadow: const [BoxShadow(color: Color(0x77000000), blurRadius: 4)],
+        border: Border.all(color: const Color(0xFF3568F5), width: 1.5),
       ),
     );
   }
@@ -7916,14 +7935,20 @@ class _RotationHandleVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 16,
-      height: 16,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF0066FF), width: 3.5),
-        boxShadow: const [BoxShadow(color: Color(0x77000000), blurRadius: 4)],
+    return SizedBox(
+      width: 24,
+      height: 36,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: 1, height: 12, color: const Color(0xFF3568F5)),
+          const SizedBox(height: 1),
+          const Icon(
+            Icons.rotate_right_rounded,
+            size: 15,
+            color: Color(0xFF555F63),
+          ),
+        ],
       ),
     );
   }
@@ -8016,61 +8041,22 @@ class _ImageSelectionPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0) return;
 
-    if (style != 'none' && outlineWidth > 0) {
-      final width = outlineWidth.clamp(1.0, 20.0).toDouble();
-      final paint = Paint()
-        ..color = outlineColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = width
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round;
-
-      final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-      final radius = borderRadius
-          .clamp(0.0, math.min(rect.width, rect.height) / 2.0)
-          .toDouble();
-      final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-
-      if (style == 'solid') {
-        canvas.drawRRect(rrect, paint);
-      } else {
-        _drawDashedRRect(
-          canvas,
-          rrect,
-          paint,
-          dash: style == 'dashed' ? 8.0 : 1.5,
-          gap: style == 'dashed' ? 5.0 : 4.0,
-          dotted: style == 'dotted' || style == 'fine_dotted',
-        );
-      }
-      return;
-    }
-
-    // Default editor selection border (blue dotted outline)
-    const selectionColor = Color(0xFF0066FF);
+    // Selection frame is editor UI, not the object's actual outline/stroke.
+    // Keep it consistently blue like Canva; line color/thickness controls
+    // continue to affect the design object only.
+    const selectionColor = Color(0xFF3568F5);
     const strokeWidth = 2.0;
-
-    final borderPaint = Paint()
-      ..color = selectionColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    // Align the rect to the exact edges (0 inset) so it sits directly on the border line
     final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-
     final radius = borderRadius
         .clamp(0.0, math.min(rect.width, rect.height) / 2.0)
         .toDouble();
-    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-
-    _drawDashedRRect(
-      canvas,
-      rrect,
-      borderPaint,
-      dash: 3.5,
-      gap: 3.5,
-      dotted: true,
+    final paint = Paint()
+      ..color = selectionColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, Radius.circular(radius)),
+      paint,
     );
   }
 

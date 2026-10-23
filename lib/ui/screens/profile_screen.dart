@@ -1216,8 +1216,11 @@ void _showLanguagesBottomSheet(
 ) {
   final languages = provider.plansData?.data ?? [];
 
-  // ⭐ Selection order maintain ஆக List பயன்படுத்துகிறோம்
-  final List<String> selectedCodes = ["en", "ta", "hi"];
+  final List<String> selectedCodes = languages
+      .where((language) => language.isActive == 1)
+      .map((language) => language.code.trim())
+      .where((code) => code.isNotEmpty)
+      .toList();
 
   showModalBottomSheet(
     context: context,
@@ -1227,277 +1230,218 @@ void _showLanguagesBottomSheet(
       return StatefulBuilder(
         builder: (context, setModalState) {
           return Container(
-            width: double.infinity,
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.62,
-            ),
-            padding: EdgeInsets.only(
-              top: 10.h,
-              left: 18.w,
-              right: 18.w,
-              bottom: 24.h,
-            ),
+            padding: EdgeInsets.all(20.w),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF181818) : Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // =========================================================
-                // DRAG HANDLE
-                // =========================================================
-                Center(
-                  child: Container(
-                    width: 82.w,
-                    height: 4.h,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: 10.h),
-
-                // =========================================================
-                // HEADER
-                // =========================================================
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppText(
-                        "Languages",
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pop(sheetContext);
-                      },
-                      child: Container(
-                        width: 32.w,
-                        height: 32.w,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF3A2020)
-                              : const Color(0xFFFFE8E8),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.close_rounded,
-                          color: Colors.red,
-                          size: 20.sp,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 28.h),
-
-                // =========================================================
-                // SELECTED LANGUAGE COUNT
-                // =========================================================
-                Row(
-                  children: [
-                    AppText(
-                      "Selected Languages",
-                      style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black,
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-
-                    SizedBox(width: 8.w),
-
-                    Container(
-                      width: 34.w,
-                      height: 34.w,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(6.r),
-                      ),
-                      child: AppText(
-                        "${languages.length}",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: AppFontSize.fontSize17,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 16.h),
-
-                AppText(
-                  "Your post, their language – "
-                  "connect better, reach wider!",
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black,
-                    fontSize: AppFontSize.fontSize14,
-                    fontWeight: FontWeight.w500,
-                    height: 1.4,
-                  ),
-                ),
-
-                SizedBox(height: 18.h),
-
-                // =========================================================
-                // LANGUAGES
-                // =========================================================
-                Wrap(
-                  spacing: 10.w,
-                  runSpacing: 10.h,
-                  children: languages.map((language) {
-                    final String code = language.code.trim() ?? "";
-
-                    final bool isSelected = selectedCodes.contains(code);
-
-                    final bool isActive = language.isActive == 1;
-
-                    return GestureDetector(
-                      onTap: () {
-                        if (!isActive || code.isEmpty) return;
-
-                        setModalState(() {
-                          if (isSelected) {
-                            // ⭐ Remove selected language
-                            selectedCodes.remove(code);
-                          } else {
-                            // ⭐ IMPORTANT:
-                            // New language always gets added at END.
-                            // So first selected language remains first.
-                            selectedCodes.add(code);
-                          }
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        width: 108.w,
-                        height: 40.h,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? const Color(0xFFFFD1D5)
-                              : (isDark
-                                    ? const Color(0xFF181818)
-                                    : Colors.white),
-                          borderRadius: BorderRadius.circular(22.r),
-                          border: Border.all(
-                            color: isActive
-                                ? Colors.red
-                                : const Color(0xFFFFBFC4),
-                            width: isActive ? 1.5 : 1,
-                          ),
-                        ),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Expanded(
                         child: AppText(
-                          language.name ?? "",
+                          'Languages',
                           style: TextStyle(
-                            color: isActive
-                                ? Colors.red
-                                : (isDark ? Colors.white : Colors.black),
-                            fontSize: 15.sp,
-                            fontWeight: isActive
-                                ? FontWeight.w700
-                                : FontWeight.w500,
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
-
-                SizedBox(height: 10.h),
-
-                // =========================================================
-                // SAVE
-                // =========================================================
-                SizedBox(
-                  width: double.infinity,
-                  height: 48.h,
-                  child: ElevatedButton(
-                    onPressed: provider.isLanguageSaving
-                        ? null
-                        : () async {
-                            final List<String> orderedLanguages =
-                                List<String>.from(selectedCodes);
-                            debugPrint(
-                              "🌐 Selected language order: "
-                              "$orderedLanguages",
-                            );
-                            final prefs = await SharedPreferences.getInstance();
-
-                            await prefs.setStringList(
-                              'selected_language_codes',
-                              orderedLanguages,
-                            );
-                            final success = await provider.saveLanguages(
-                              languages: orderedLanguages,
-                              notifyPush: true,
-                              notifyEmail: false,
-                              notifyWhatsapp: true,
-                            );
-                            if (!context.mounted) return;
-                            if (success) {
-                              Navigator.pop(context);
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    "Language preferences updated successfully",
-                                  ),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    "Failed to update language preferences",
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      disabledBackgroundColor: Colors.grey,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
+                      IconButton(
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                        },
+                        icon: Icon(
+                          Icons.close,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
                       ),
+                    ],
+                  ),
+
+                  SizedBox(height: 8.h),
+
+                  AppText(
+                    'Your post, their language – connect better, reach wider!',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: isDark ? Colors.white70 : Colors.black54,
                     ),
-                    child: provider.isLanguageSaving
-                        ? SizedBox(
-                            width: 20.w,
-                            height: 20.w,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            "Save",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.w700,
+                  ),
+
+                  SizedBox(height: 16.h),
+
+                  // Selected count
+                  AppText(
+                    '${selectedCodes.length} languages selected',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+
+                  SizedBox(height: 16.h),
+
+                  // Language list from API
+                  Wrap(
+                    spacing: 10.w,
+                    runSpacing: 10.h,
+                    children: languages.map((language) {
+                      final String code = language.code.trim();
+                      final bool isActive = language.isActive == 1;
+                      final bool isSelected = selectedCodes.contains(code);
+
+                      return GestureDetector(
+                        onTap: () {
+                          if (!isActive || code.isEmpty) return;
+
+                          setModalState(() {
+                            if (isSelected) {
+                              selectedCodes.remove(code);
+                            } else {
+                              selectedCodes.add(code);
+                            }
+                          });
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 10.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFFFFD1D5)
+                                : (isDark ? const Color(0xFF252525) : Colors.white),
+                            borderRadius: BorderRadius.circular(22.r),
+                            border: Border.all(
+                              color: isSelected ? Colors.red : Colors.grey.shade300,
+                              width: isSelected ? 1.5 : 1,
                             ),
                           ),
-                  ),
-                ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AppText(
+                                language.name ?? '',
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.red
+                                      : (isDark ? Colors.white : Colors.black),
+                                  fontSize: 14.sp,
+                                  fontWeight:
+                                  isSelected ? FontWeight.w700 : FontWeight.w500,
+                                ),
+                              ),
 
-                SizedBox(height: 20.h),
-              ],
+                              // Select pannina mattum tick varum
+                              if (isSelected) ...[
+                                SizedBox(width: 6.w),
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 16.sp,
+                                  color: Colors.red,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+
+                  SizedBox(height: 24.h),
+
+                  // Save button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48.h,
+                    child: ElevatedButton(
+                      onPressed: provider.isLanguageSaving
+                          ? null
+                          : () async {
+                              final List<String> selectedLanguageCodes =
+                                  List<String>.from(selectedCodes);
+
+                              debugPrint(
+                                'Selected language codes: '
+                                '$selectedLanguageCodes',
+                              );
+
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+
+                              await prefs.setStringList(
+                                'selected_language_codes',
+                                selectedLanguageCodes,
+                              );
+
+                              final success = await provider.saveLanguages(
+                                languages: selectedLanguageCodes,
+                                notifyPush: true,
+                                notifyEmail: false,
+                                notifyWhatsapp: true,
+                              );
+
+                              if (!sheetContext.mounted) return;
+
+                              if (success) {
+                                Navigator.pop(sheetContext);
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Language preferences updated successfully',
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Failed to update language preferences',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.grey,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                      ),
+                      child: provider.isLanguageSaving
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              'Save',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+
+                  SizedBox(height: 8.h),
+                ],
+              ),
             ),
           );
         },

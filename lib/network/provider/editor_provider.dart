@@ -2668,21 +2668,20 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   void updateRotation(String id, double rot) {
     final index = _items.indexWhere((e) => e.id == id);
-    if (index == -1) return;
+    if (index == -1 || !rot.isFinite) return;
 
+    // Rotation must update only the angle. Re-fitting the rotated bounding
+    // box on every pointer move changes scale and clamps position, which makes
+    // image layers shrink and jump away from where the user placed them.
     _saveState();
-
     final current = _items[index];
-    if (_isBackgroundLayer(current)) {
-      _items[index] = current.copyWith(rotation: rot);
-    } else {
-      final rotated = current.copyWith(rotation: rot);
-      final safeScale = _maxScaleForFrame(rotated, rotated.scale);
-      final resized = rotated.copyWith(scale: safeScale);
-      _items[index] = resized.copyWith(
-        position: _clampPositionForFrame(resized, resized.position),
-      );
-    }
+    _items[index] = current.copyWith(
+      rotation: rot,
+      position: _isBackgroundLayer(current) ? Offset.zero : current.position,
+      scale: current.scale,
+      width: current.width,
+      height: current.height,
+    );
     notifyListeners();
   }
 
@@ -3751,6 +3750,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         Offset? position,
         double? scale,
         double? rotation,
+        double? width,
+        double? height,
         bool clampToFrame = true,
       }) {
     final index = _items.indexWhere((item) => item.id == id);
@@ -3763,28 +3764,46 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         position: Offset.zero,
         scale: scale ?? current.scale,
         rotation: rotation ?? current.rotation,
+        width: width ?? current.width,
+        height: height ?? current.height,
       );
+
       notifyListeners();
       return;
     }
 
-    final nextRotation = rotation ?? current.rotation;
+    final nextRotation = (rotation ?? current.rotation).isFinite
+        ? (rotation ?? current.rotation)
+        : current.rotation;
+
+    // Rotation-only gestures must never trigger frame-fit scaling or
+    // position clamping. Those corrections made images shrink and jump
+    // toward a different canvas location while the rotation handle moved.
+    final rotationOnly = rotation != null &&
+        position == null &&
+        scale == null &&
+        width == null &&
+        height == null;
+
+    if (rotationOnly) {
+      _items[index] = current.copyWith(rotation: nextRotation);
+      notifyListeners();
+      return;
+    }
+
     final rotated = current.copyWith(rotation: nextRotation);
-
-    final requestedScale = (scale ?? current.scale).isFinite
-        ? (scale ?? current.scale)
-        : current.scale;
-
-    // Interactive resize must be free-form. The old implementation always
-    // passed the scale through _maxScaleForFrame(), which silently reduced
-    // the scale whenever the element approached/exceeded the canvas bounds.
-    // That made the resize handle feel stuck and also prevented an element
-    // from being moved to many valid positions. Only clamp when the caller
-    // explicitly asks for frame clamping.
-    final safeScale = clampToFrame
+    final requestedScale = scale ?? current.scale;
+    final safeScale = !requestedScale.isFinite
+        ? current.scale
+        : clampToFrame
         ? _maxScaleForFrame(rotated, requestedScale)
         : requestedScale.clamp(0.02, 10.0).toDouble();
-    final transformed = rotated.copyWith(scale: safeScale);
+
+    final transformed = rotated.copyWith(
+      scale: safeScale,
+      width: (width ?? current.width).clamp(12.0, 4000.0).toDouble(),
+      height: (height ?? current.height).clamp(12.0, 4000.0).toDouble(),
+    );
 
     final requestedPosition = position ?? current.position;
     final nextPosition = clampToFrame
@@ -3792,6 +3811,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         : requestedPosition;
 
     _items[index] = transformed.copyWith(position: nextPosition);
+
     notifyListeners();
   }
 }

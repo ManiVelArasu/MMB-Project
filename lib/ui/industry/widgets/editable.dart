@@ -34,7 +34,7 @@ class EditableItemWidget extends StatelessWidget {
     return Selector<EditorProvider, _ItemViewState>(
       selector: (_, provider) {
         final currentItem = provider.items.firstWhere(
-          (e) => e.id == item.id,
+              (e) => e.id == item.id,
           orElse: () => item,
         );
         return _ItemViewState(
@@ -55,16 +55,13 @@ class EditableItemWidget extends StatelessWidget {
             .toLowerCase();
         final isTextItem =
             normalizedItemType == 'text' ||
-            normalizedItemType == 'textbox' ||
-            normalizedItemType == 'i-text' ||
-            normalizedItemType == 'itext';
+                normalizedItemType == 'textbox' ||
+                normalizedItemType == 'i-text' ||
+                normalizedItemType == 'itext';
 
         final bodyWidth = math.max(1.0, currentItem.width).toDouble();
         final bodyHeight = math.max(1.0, currentItem.height).toDouble();
 
-        double gestureStartScale = currentItem.scale.isFinite
-            ? currentItem.scale
-            : 1.0;
 
         return KeyedSubtree(
           key: ValueKey(currentItem.id),
@@ -72,54 +69,14 @@ class EditableItemWidget extends StatelessWidget {
             behavior: isTextItem
                 ? HitTestBehavior.deferToChild
                 : HitTestBehavior.opaque,
+            // Single tap selects an element; double tap edits text.
+            // Move/resize/rotate are handled by the selection overlay to avoid
+            // competing gestures on the same canvas element.
             onTap: () {
-              if (isTextItem && !isBackground) {
-                onItemSelected(currentItem.type ?? '', currentItem.id!);
-
-                _showTextEditorDialog(
-                  context,
-                  provider,
-                  currentItem.id!,
-                  currentItem.text ?? '',
-                );
-              } else if (!isSelected) {
+              if (!isSelected) {
                 onItemSelected(currentItem.type ?? '', currentItem.id!);
               }
             },
-            onScaleStart: isSelected
-                ? (details) {
-                    final latest = provider.items.where(
-                      (e) => e.id == currentItem.id,
-                    );
-                    gestureStartScale =
-                        latest.isNotEmpty && latest.first.scale.isFinite
-                        ? latest.first.scale
-                        : 1.0;
-                  }
-                : null,
-            onScaleUpdate: isSelected
-                ? (details) {
-                    final latest = provider.items.where(
-                      (e) => e.id == currentItem.id,
-                    );
-                    if (latest.isEmpty) return;
-
-                    final latestItem = latest.first;
-                    final nextScale = (gestureStartScale * details.scale)
-                        .clamp(0.05, 10.0)
-                        .toDouble();
-
-                    final nextPosition =
-                        latestItem.position + details.focalPointDelta;
-
-                    provider.updateItemTransform(
-                      latestItem.id!,
-                      scale: nextScale,
-                      position: nextPosition,
-                      clampToFrame: false,
-                    );
-                  }
-                : null,
             onDoubleTap: () {
               if (isTextItem && !isBackground) {
                 _showTextEditorDialog(
@@ -130,11 +87,12 @@ class EditableItemWidget extends StatelessWidget {
                 );
               }
             },
-            child: Transform.rotate(
-              angle: currentItem.rotation,
-              child: Transform.scale(
-                scale: currentItem.scale.clamp(0.01, 10.0),
-                alignment: Alignment.topLeft,
+            child: Transform.scale(
+              scale: currentItem.scale.clamp(0.01, 10.0),
+              alignment: Alignment.topLeft,
+              child: Transform.rotate(
+                angle: currentItem.rotation,
+                alignment: Alignment.center,
                 child: Transform.scale(
                   scaleX: state.flipX ? -1 : 1,
                   scaleY: state.flipY ? -1 : 1,
@@ -170,19 +128,19 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   static Widget buildStandaloneMediaContent(
-    BuildContext context,
-    EditorItem item,
-  ) {
+      BuildContext context,
+      EditorItem item,
+      ) {
     final widget = EditableItemWidget(item: item, onItemSelected: (_, __) {});
     return widget._buildItemContent(item, context, isBackground: true);
   }
 
   Future<void> _showTextEditorDialog(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-    String initialText,
-  ) async {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      String initialText,
+      ) async {
     final matchingItems = provider.items.where((e) => e.id == itemId);
 
     if (itemId.isEmpty || matchingItems.isEmpty) {
@@ -328,10 +286,10 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _buildItemContent(
-    EditorItem item,
-    BuildContext context, {
-    bool isBackground = false,
-  }) {
+      EditorItem item,
+      BuildContext context, {
+        bool isBackground = false,
+      }) {
     if (item.type == 'video') {
       return SizedBox(
         width: item.width,
@@ -352,29 +310,29 @@ class EditableItemWidget extends StatelessWidget {
 
       final image = isHttp
           ? Image.network(
-              source,
-              fit: isBackground ? BoxFit.cover : BoxFit.contain,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (_, error, stackTrace) {
-                debugPrint('Background image error: $error');
-                return const SizedBox.shrink();
-              },
-            )
+        source,
+        fit: isBackground ? BoxFit.cover : BoxFit.fill,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, error, stackTrace) {
+          debugPrint('Background image error: $error');
+          return const SizedBox.shrink();
+        },
+      )
           : Image.file(
-              File(
-                source.startsWith('file://')
-                    ? source.replaceFirst('file://', '')
-                    : source,
-              ),
-              fit: isBackground ? BoxFit.cover : BoxFit.contain,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (_, error, stackTrace) {
-                debugPrint('Local image error: $error');
-                return const SizedBox.shrink();
-              },
-            );
+        File(
+          source.startsWith('file://')
+              ? source.replaceFirst('file://', '')
+              : source,
+        ),
+        fit: isBackground ? BoxFit.cover : BoxFit.fill,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, error, stackTrace) {
+          debugPrint('Local image error: $error');
+          return const SizedBox.shrink();
+        },
+      );
 
       return SizedBox.expand(child: image);
     }
@@ -447,15 +405,32 @@ class EditableItemWidget extends StatelessWidget {
     final textWidget = Text(
       textValue,
       maxLines: null,
-      softWrap: isMultiline,
+      softWrap: true,
       textAlign: editorProvider.textAlignment(id),
       overflow: TextOverflow.visible,
       style: textStyle,
     );
 
+    // Calculate unconstrained natural width to prevent 1-2px font differences
+    // from causing unexpected word wraps on initial load.
+    final painter = TextPainter(
+      text: TextSpan(text: textValue, style: textStyle),
+      maxLines: null,
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    final naturalWidth = painter.width;
+
+    // If width was explicitly squeezed (e.g. by dragging horizontal handles),
+    // it will be significantly smaller than natural width.
+    // Otherwise, pad the width slightly to prevent unwanted wrapping.
+    final renderWidth = (item.width < naturalWidth - 5.0)
+        ? item.width
+        : math.max(item.width, naturalWidth + 2.0);
+
     return SizedBox(
-      width: math.max(1.0, item.width).toDouble(),
-      height: math.max(1.0, item.height).toDouble(),
+      width: math.max(1.0, renderWidth),
+      // Do not restrict height, so text can freely expand vertically when wrapped
       child: Align(
         alignment: switch (editorProvider.textAlignment(id)) {
           TextAlign.center => Alignment.topCenter,
@@ -485,12 +460,12 @@ class _ItemViewState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is _ItemViewState &&
-          runtimeType == other.runtimeType &&
-          currentItem == other.currentItem &&
-          isSelected == other.isSelected &&
-          flipX == other.flipX &&
-          flipY == other.flipY;
+          other is _ItemViewState &&
+              runtimeType == other.runtimeType &&
+              currentItem == other.currentItem &&
+              isSelected == other.isSelected &&
+              flipX == other.flipX &&
+              flipY == other.flipY;
 
   @override
   int get hashCode => Object.hash(currentItem, isSelected, flipX, flipY);
