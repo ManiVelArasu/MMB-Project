@@ -7940,7 +7940,7 @@ class _ResizeHandleVisual extends StatelessWidget {
   }
 }
 
-class _RotationHandleVisual extends StatelessWidget {
+class _RotationHandleVisual extends StatelessWidget { 
   final double angle;
 
   const _RotationHandleVisual({this.angle = 0.0});
