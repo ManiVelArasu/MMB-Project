@@ -503,11 +503,11 @@ class _EditorViewState extends State<EditorView> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text(
+          title: const AppText(
             'Plan Limit Reached',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          content: const Text(
+          content: const AppText(
             'You have reached your Business Posts Templates limit. '
                 'Please upgrade your plan or buy a top-up to continue.',
           ),
@@ -517,7 +517,7 @@ class _EditorViewState extends State<EditorView> {
                 Navigator.of(dialogContext).pop();
                 Navigator.of(context).maybePop();
               },
-              child: const Text('Go Back'),
+              child: const AppText('Go Back'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -527,7 +527,7 @@ class _EditorViewState extends State<EditorView> {
                 // Example:
                 // Get.to(() => const SubscriptionScreen());
               },
-              child: const Text('Buy Plan'),
+              child: const AppText('Buy Plan'),
             ),
           ],
         );
@@ -964,98 +964,320 @@ class _EditorViewState extends State<EditorView> {
     }
   }
 
+
   void _showFramesBottomSheet(
       BuildContext context,
       EditorProvider provider,
       bool isDark,
       ) {
-    showModalBottomSheet(
+    int selectedTab = 0;
+
+    final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black;
+    final mutedColor = isDark ? Colors.white54 : Colors.black26;
+    final cardBorder = isDark ? Colors.white24 : Colors.grey.shade300;
+
+    final staticFrames = <Map<String, String>>[
+      {
+        'asset': 'assets/images/thumbnail1.png',
+        'name': 'Free',
+        'price': '',
+      },
+      {
+        'asset': 'assets/images/thumbnail1.png',
+        'name': 'Rs.0 (Rs.100 Unlocked)',
+        'price': '',
+      },
+      {
+        'asset': 'assets/images/thumbnail1.png',
+        'name': 'Free',
+        'price': '',
+      },
+      {
+        'asset': 'assets/images/thumbnail1.png',
+        'name': 'Free',
+        'price': '',
+      },
+    ];
+
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.45,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  AppText(
-                    "My Frames",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => Navigator.pop(modalContext),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF2A1A1C)
-                            : Colors.red.shade50,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.red,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final frames = staticFrames;
+
+            return Container(
+              height: MediaQuery.of(sheetContext).size.height * 0.50,
+              padding: const EdgeInsets.fromLTRB(20, 12, 0, 16),
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
               ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: GridView.builder(
-                  scrollDirection: Axis.horizontal,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 1,
-                    mainAxisSpacing: 14,
-                  ),
-                  itemCount: 4,
-                  itemBuilder: (context, index) {
-                    return GestureDetector(
-                      onTap: () {
-                        provider.setSelectedFrame(
-                          "assets/images/thumbnail1.png",
-                        );
-                        Navigator.pop(modalContext);
-                      },
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Drag handle
+                    Center(
                       child: Container(
+                        width: 100,
+                        height: 5,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: isDark
-                              ? const Color(0xFF2C2C2C)
-                              : Colors.grey.shade50,
+                          color: mutedColor,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.image_rounded,
-                            size: 40,
-                            color: Colors.blueAccent,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.only(right: 20),
+                      child: Row(
+                        children: [
+                          AppText(
+                            'My Frames',
+                            style: TextStyle(
+                              fontSize: AppFontSize.fontSize18,
+                              fontWeight: FontWeight.w500,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFFE5E7),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.circle,
+                                color: Color(0xFFEF2029),
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+
+                          // Edit button
+                          _frameHeaderButton(
+                            icon: Icons.edit_outlined,
+                            onTap: () {
+                              // Add your existing frame edit action here.
+                            },
+                          ),
+                          const SizedBox(width: 12),
+
+                          // Add button
+                          _frameHeaderButton(
+                            icon: Icons.add,
+                            onTap: () {
+                              // Add your existing create-frame action here.
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Tabs
+                    Padding(
+                      padding: const EdgeInsets.only(right: 20),
+                      child: Row(
+                        children: [
+                          _frameTab(
+                            title: 'Static Frames',
+                            selected: selectedTab == 0,
+                            onTap: () {
+                              setSheetState(() => selectedTab = 0);
+                            },
+                            textColor: textColor,
+                            mutedColor: mutedColor,
+                          ),
+                          const SizedBox(width: 22),
+                          _frameTab(
+                            title: 'Animated Frames',
+                            selected: selectedTab == 1,
+                            onTap: () {
+                              setSheetState(() => selectedTab = 1);
+                            },
+                            textColor: textColor,
+                            mutedColor: mutedColor,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+
+                    // Frame cards
+                    Expanded(
+                      child: selectedTab == 0
+                          ? ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(
+                          right: 20,
+                          bottom: 12,
+                        ),
+                        itemCount: frames.length,
+                        separatorBuilder: (_, __) =>
+                        const SizedBox(width: 16),
+                        itemBuilder: (context, index) {
+                          final frame = frames[index];
+
+                          return SizedBox(
+                            width: 105,
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      provider.setSelectedFrame(
+                                        frame['asset']!,
+                                      );
+                                      Navigator.pop(modalContext);
+                                    },
+                                    child: Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? const Color(0xFF2C2C2C)
+                                            : Colors.white,
+                                        border: Border.all(
+                                          color: cardBorder,
+                                        ),
+                                        borderRadius:
+                                        BorderRadius.circular(12),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius:
+                                        BorderRadius.circular(11),
+                                        child: Image.asset(
+                                          frame['asset']!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (
+                                              context,
+                                              error,
+                                              stackTrace,
+                                              ) {
+                                            return const Center(
+                                              child: Icon(
+                                                Icons
+                                                    .image_outlined,
+                                                size: 42,
+                                                color: Colors.blue,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 7),
+                                AppText(
+                                  frame['name']!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: textColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      )
+                          : Center(
+                        child: AppText(
+                          'No animated frames available',
+                          style: TextStyle(
+                            color: mutedColor,
+                            fontSize: 14,
                           ),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
+
+  Widget _frameHeaderButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFE5E7),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          icon,
+          color: const Color(0xFFFF252D),
+          size: 22,
+        ),
+      ),
+    );
+  }
+
+  Widget _frameTab({
+    required String title,
+    required bool selected,
+    required VoidCallback onTap,
+    required Color textColor,
+    required Color mutedColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 5),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText(
+              title,
+              style: TextStyle(
+                fontSize: AppFontSize.fontSize18,
+                fontWeight: FontWeight.w500,
+                color: selected ? textColor : mutedColor,
+              ),
+            ),
+            const SizedBox(height: 5),
+            if (selected)
+              Container(
+                height: 2,
+                width: title == 'Static Frames' ? 142 : 160,
+                color: const Color(0xFFFF252D),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   void _showTemplatesBottomSheet(
       BuildContext context,
@@ -8025,7 +8247,7 @@ class _RotationHandleVisual extends StatelessWidget {
               color: Colors.black.withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Text(
+            child: AppText(
               '${displayDegrees}°',
               style: const TextStyle(
                 color: Colors.white,
