@@ -81,4 +81,7 @@ class ApiEndpoints {
       '/users/me/favourites/templates/${templateId}';
 
   static String get productList => '/products';
+
+
+  static String get upload => '/uploads';
 }

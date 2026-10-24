@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/network/provider/common_provider.dart';
+import 'package:mmb_app/ui/screens/profile_screen.dart';
 import 'package:mmb_app/ui/screens/widget/business_card.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
@@ -65,14 +66,23 @@ class BusinessProfileView extends StatelessWidget {
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: CustomAppBar(
             onBackPressed: () {
-              final navProvider = context.read<BottomNavProvider>();
 
-              navProvider.updateIndex(3);
+                debugPrint('Back pressed');
 
-              Navigator.popUntil(
-                context,
-                    (route) => route.isFirst,
-              );
+                final navProvider = context.read<BottomNavProvider>();
+                navProvider.updateIndex(3);
+
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ProfileScreen(),
+                    ),
+                  );
+                }
+
             },
             showRightIcon: true,
             rightImage: "assets/images/edit_profile1.png",
@@ -293,8 +303,8 @@ class BusinessProfileView extends StatelessWidget {
                                               color: Theme.of(
                                                 context,
                                               ).colorScheme.onSurface,
-                                              fontSize: 18.sp,
-                                              fontWeight: FontWeight.w800,
+                                              fontSize: AppFontSize.fontSize18,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                         ],
@@ -543,8 +553,8 @@ class BusinessProfileView extends StatelessWidget {
                                           color: Theme.of(
                                             context,
                                           ).colorScheme.onSurface,
-                                          fontSize: 18.sp,
-                                          fontWeight: FontWeight.w800,
+                                          fontSize: AppFontSize.fontSize18,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                       AppText(
@@ -883,7 +893,7 @@ class BusinessProfileView extends StatelessWidget {
                                   size: 21.sp,
                                 ),
                                 SizedBox(width: 7.w),
-                                Text(
+                                AppText(
                                   "Your Frames",
                                   style: TextStyle(
                                     color: theme.colorScheme.onSurface,
@@ -919,7 +929,7 @@ class BusinessProfileView extends StatelessWidget {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                AppText(
                                   "Static Frames",
                                   style: TextStyle(
                                     color: theme.colorScheme.onSurface,
@@ -939,7 +949,7 @@ class BusinessProfileView extends StatelessWidget {
                               ],
                             ),
                             SizedBox(width: 20.w),
-                            Text(
+                            AppText(
                               "Animated Frames",
                               style: TextStyle(
                                 color: Colors.grey.shade400,
@@ -1009,7 +1019,7 @@ class BusinessProfileView extends StatelessWidget {
               fit: BoxFit.contain,
             ),
             SizedBox(height: 4.h),
-            Text(
+            AppText(
               title,
               style: TextStyle(
                 color: AppColors.appBlack,
@@ -1096,7 +1106,7 @@ class BusinessProfileView extends StatelessWidget {
             ),
           ),
           SizedBox(height: 5.h),
-          Text(
+          AppText(
             price,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1317,12 +1327,12 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     size: 21.sp,
                   ),
                   SizedBox(width: 8.w),
-                  Text(
+                  AppText(
                     "Brand Kit",
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w800,
+                      color: AppColors.appBlack,
+                      fontSize: AppFontSize.fontSize18,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],

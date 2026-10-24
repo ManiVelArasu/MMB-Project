@@ -1117,8 +1117,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: isDark ? Colors.white : AppColors.darkBlack,
-                fontSize: AppFontSize.fontSize16,
-                fontWeight: FontWeight.w600,
+                fontSize: AppFontSize.fontSize18,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),

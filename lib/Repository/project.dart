@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/cupertino.dart';
 
+import '../Api Model/my_uploads.dart';
 import '../Api Model/project_list.dart';
 import '../core/api/api_endpoints.dart';
 import '../core/api/api_repository.dart';
@@ -17,13 +18,11 @@ class ProjectRepository {
     required String content,
     int? templateId,
   }) async {
-    final body = <String, dynamic>{
-      'name': name,
-      'content': content,
-    };
+    final body = <String, dynamic>{'name': name, 'content': content};
 
     if (templateId != null && templateId > 0) {
-      body['template_id'] = templateId; // Only template-based projects send this field.
+      body['template_id'] =
+          templateId; // Only template-based projects send this field.
     }
 
     debugPrint('CREATE PROJECT BODY: $body');
@@ -57,8 +56,7 @@ class ProjectRepository {
     };
 
     // Send thumbnail only when actual image Base64 is available.
-    if (thumbnailBase64 != null &&
-        thumbnailBase64.trim().isNotEmpty) {
+    if (thumbnailBase64 != null && thumbnailBase64.trim().isNotEmpty) {
       final thumbnail = thumbnailBase64.trim();
 
       body['thumbnail'] = thumbnail.startsWith('data:image/')
@@ -85,7 +83,6 @@ class ProjectRepository {
       },
     );
   }
-
 
   Future<ApiResult<Map<String, dynamic>>> exportProject({
     required String projectUid,
@@ -130,6 +127,26 @@ class ProjectRepository {
         }
 
         throw Exception('Invalid project list response: ${json.runtimeType}');
+      },
+    );
+  }
+
+  Future<ApiResult<MyUploads>> uploads() async {
+    return ApiRepository.instance.request<MyUploads>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.upload,
+        method: ApiMethod.get,
+      ),
+      fromJson: (json) {
+        debugPrint('MY UPLOADS RESPONSE: $json');
+
+        if (json is Map<String, dynamic>) {
+          return MyUploads.fromJson(json);
+        }
+
+        throw Exception(
+          'Invalid uploads response: ${json.runtimeType}',
+        );
       },
     );
   }

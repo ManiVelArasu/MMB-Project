@@ -31,6 +31,78 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   String? lastUploadedS3Key;
   String? selectedMediaS3Key;
   bool isUploadingMediaImage = false;
+  bool isLoadingMyUploads = false;
+  bool hasFetchedMyUploads = false;
+  String? myUploadsError;
+
+  /// Loads the user's previously uploaded Media Library images from the API.
+  /// Keeps any in-progress local preview tiles already shown in the grid.
+  Future<void> loadMyUploads({bool forceRefresh = false}) async {
+    if (isLoadingMyUploads) return;
+    if (hasFetchedMyUploads && !forceRefresh) return;
+
+    isLoadingMyUploads = true;
+    myUploadsError = null;
+    notifyListeners();
+
+    try {
+      final result = await ApiRepository.instance
+          .request<Map<String, dynamic>>(
+        config: ApiRequestConfig(
+          endpoint: ApiEndpoints.upload,
+          method: ApiMethod.get,
+        ),
+        fromJson: (json) => Map<String, dynamic>.from(json as Map),
+      );
+
+      result.when(
+        success: (response) {
+          final rawData = response['data'];
+          if (rawData is! List) {
+            throw const FormatException('Invalid MyUploads response: data is not a list');
+          }
+
+          final apiImages = <Map<String, String>>[];
+          for (final rawItem in rawData) {
+            if (rawItem is! Map) continue;
+            final item = Map<String, dynamic>.from(rawItem);
+            final key = (item['s3_key'] ?? item['key'] ?? '').toString();
+            if (key.isEmpty) continue;
+            apiImages.add({
+              'key': key,
+              'url': assetCdnUrl(key),
+              'filename': (item['original_filename'] ?? item['filename'] ?? '').toString(),
+              'localPath': '',
+              'uploading': 'false',
+            });
+          }
+
+          // Keep local/in-progress previews; replace server-backed items with
+          // the latest API result to avoid duplicates after each refresh.
+          final localPreviews = uploadedMediaImages
+              .where((item) =>
+          (item['uploading'] == 'true') ||
+              ((item['key'] ?? '').isEmpty &&
+                  (item['localPath'] ?? '').isNotEmpty))
+              .toList();
+          uploadedMediaImages
+            ..clear()
+            ..addAll(localPreviews)
+            ..addAll(apiImages);
+          hasFetchedMyUploads = true;
+        },
+        failure: (error) {
+          myUploadsError = error.message;
+        },
+      );
+    } catch (e) {
+      myUploadsError = e.toString();
+      debugPrint('❌ MyUploads API failed: $e');
+    } finally {
+      isLoadingMyUploads = false;
+      notifyListeners();
+    }
+  }
 
   /// Presign -> upload bytes to S3 -> confirm the uploaded object.
   /// `slot` must be one accepted by the backend upload API.
@@ -3596,8 +3668,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     notifyListeners();
   }
-  
-  // Call this when user finished panning/scaling/rotating 
+
+  // Call this when user finished panning/scaling/rotating
   // so the final state is committed to history for Undo/Redo.
   void commitTransform() {
     _saveState();

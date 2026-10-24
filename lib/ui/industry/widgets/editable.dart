@@ -1,21 +1,190 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'dart:typed_data';
-import 'package:extended_image/extended_image.dart';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/flutter_svg.dart' as svg;
+import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
+
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
 import '../../../Api Model/editor_model.dart';
 import '../../../network/provider/editor_provider.dart';
-import 'package:image/image.dart' as img;
 
 import '../../screens/video_widget/editor_video.dart';
-import '../../screens/video_widget/video_widget.dart';
+
+/// Applies a raster mask's alpha channel to its child. Transparent pixels in
+/// the mask hide the photo; opaque pixels reveal it.
+class _AlphaImageMask extends StatefulWidget {
+  final String maskUrl;
+  final Widget child;
+
+  const _AlphaImageMask({required this.maskUrl, required this.child});
+
+  @override
+  State<_AlphaImageMask> createState() => _AlphaImageMaskState();
+}
+
+class _AlphaImageMaskState extends State<_AlphaImageMask> {
+  ImageStream? _stream;
+  ImageStreamListener? _listener;
+  ui.Image? _maskImage;
+  Object? _error;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadMask();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AlphaImageMask oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.maskUrl != widget.maskUrl) _loadMask();
+  }
+
+  Future<void> _loadMask() async {
+    if (_listener != null) _stream?.removeListener(_listener!);
+    _stream = null;
+    _listener = null;
+    _maskImage = null;
+    _error = null;
+
+    final url = widget.maskUrl.trim();
+    if (url.isEmpty) return;
+
+    try {
+      final uri = Uri.parse(url);
+      final path = uri.path.toLowerCase();
+      final isSvg = path.endsWith('.svg') || path.endsWith('.svgz');
+
+      if (isSvg) {
+        final response = await HttpClient().getUrl(uri).then((r) => r.close());
+
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw Exception('Mask request failed: HTTP ${response.statusCode}');
+        }
+
+        final svgText = await response.transform(const Utf8Decoder()).join();
+
+        final loader = svg.SvgStringLoader(svgText);
+
+        final pictureInfo = await vg.loadPicture(
+          svg.SvgStringLoader(svgText),
+          null,
+        );
+
+        final picture = pictureInfo.picture;
+
+        final svgWidth = pictureInfo.size.width;
+        final svgHeight = pictureInfo.size.height;
+
+        if (!svgWidth.isFinite ||
+            !svgHeight.isFinite ||
+            svgWidth <= 0 ||
+            svgHeight <= 0) {
+          picture.dispose();
+          throw Exception('Invalid SVG dimensions: $svgWidth x $svgHeight');
+        }
+
+        final width = svgWidth.ceil().clamp(1, 2048);
+        final height = svgHeight.ceil().clamp(1, 2048);
+
+        final image = await picture.toImage(width, height);
+        picture.dispose();
+
+        if (!mounted) {
+          image.dispose();
+          return;
+        }
+
+        setState(() {
+          _maskImage = image;
+          _error = null;
+        });
+
+        return;
+      }
+
+      final stream = NetworkImage(
+        url,
+      ).resolve(createLocalImageConfiguration(context));
+      _stream = stream;
+      _listener = ImageStreamListener(
+        (info, synchronousCall) {
+          if (!mounted) return;
+          setState(() {
+            _maskImage = info.image;
+            _error = null;
+          });
+        },
+        onError: (Object error, StackTrace? stackTrace) {
+          if (!mounted) return;
+          setState(() => _error = error);
+          debugPrint('Image mask load failed: $error');
+        },
+      );
+      stream.addListener(_listener!);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error);
+      debugPrint('Image mask load failed: $error');
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_listener != null) _stream?.removeListener(_listener!);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mask = _maskImage;
+
+    // Mask load aagura varaikkum original photo visible-a irukkum.
+    if (mask == null) {
+      return widget.child;
+    }
+
+    return ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (bounds) {
+        final scaleX = bounds.width / mask.width;
+        final scaleY = bounds.height / mask.height;
+
+        final matrix = Float64List.fromList([
+          scaleX,
+          0,
+          0,
+          0,
+          0,
+          scaleY,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+        ]);
+
+        return ImageShader(mask, TileMode.clamp, TileMode.clamp, matrix);
+      },
+      child: widget.child,
+    );
+  }
+}
 
 class EditableItemWidget extends StatelessWidget {
   final EditorItem item;
@@ -29,12 +198,10 @@ class EditableItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // FIX: Using Selector or Consumer instead of full build listen: true
-    // prevents unnecessary tree deactivation conflicts during Dialog pop.
     return Selector<EditorProvider, _ItemViewState>(
       selector: (_, provider) {
         final currentItem = provider.items.firstWhere(
-              (e) => e.id == item.id,
+          (e) => e.id == item.id,
           orElse: () => item,
         );
         return _ItemViewState(
@@ -55,13 +222,12 @@ class EditableItemWidget extends StatelessWidget {
             .toLowerCase();
         final isTextItem =
             normalizedItemType == 'text' ||
-                normalizedItemType == 'textbox' ||
-                normalizedItemType == 'i-text' ||
-                normalizedItemType == 'itext';
+            normalizedItemType == 'textbox' ||
+            normalizedItemType == 'i-text' ||
+            normalizedItemType == 'itext';
 
         final bodyWidth = math.max(1.0, currentItem.width).toDouble();
         final bodyHeight = math.max(1.0, currentItem.height).toDouble();
-
 
         return KeyedSubtree(
           key: ValueKey(currentItem.id),
@@ -69,9 +235,6 @@ class EditableItemWidget extends StatelessWidget {
             behavior: isTextItem
                 ? HitTestBehavior.deferToChild
                 : HitTestBehavior.opaque,
-            // Single tap selects an element; double tap edits text.
-            // Move/resize/rotate are handled by the selection overlay to avoid
-            // competing gestures on the same canvas element.
             onTap: () {
               if (!isSelected) {
                 onItemSelected(currentItem.type ?? '', currentItem.id!);
@@ -128,19 +291,19 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   static Widget buildStandaloneMediaContent(
-      BuildContext context,
-      EditorItem item,
-      ) {
+    BuildContext context,
+    EditorItem item,
+  ) {
     final widget = EditableItemWidget(item: item, onItemSelected: (_, __) {});
     return widget._buildItemContent(item, context, isBackground: true);
   }
 
   Future<void> _showTextEditorDialog(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      String initialText,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+    String initialText,
+  ) async {
     final matchingItems = provider.items.where((e) => e.id == itemId);
 
     if (itemId.isEmpty || matchingItems.isEmpty) {
@@ -160,10 +323,6 @@ class EditableItemWidget extends StatelessWidget {
     );
 
     String? savedText;
-
-    // FIX: Remove manual controller.dispose() entirely inside try/finally.
-    // Let the Dialog and Flutter widgets clean up naturally without triggering
-    // the "used after being disposed" assertion error during exit animations.
     savedText = await showDialog<String>(
       context: context,
       barrierDismissible: false,
@@ -350,7 +509,12 @@ class EditableItemWidget extends StatelessWidget {
         final g = double.tryParse(parts[1])?.round() ?? 0;
         final b = double.tryParse(parts[2])?.round() ?? 0;
         final a = parts.length > 3 ? (double.tryParse(parts[3]) ?? 1.0) : 1.0;
-        return Color.fromRGBO(r.clamp(0, 255), g.clamp(0, 255), b.clamp(0, 255), a.clamp(0.0, 1.0));
+        return Color.fromRGBO(
+          r.clamp(0, 255),
+          g.clamp(0, 255),
+          b.clamp(0, 255),
+          a.clamp(0.0, 1.0),
+        );
       }
     }
     var hex = text.replaceFirst('#', '');
@@ -367,11 +531,125 @@ class EditableItemWidget extends StatelessWidget {
     return double.tryParse(value?.toString() ?? '');
   }
 
+  List<double>? _getFilterMatrix(String type) {
+    switch (type) {
+      case 'grayscale':
+        return [
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+        ];
+      case 'sepia':
+        return [
+          0.393,
+          0.769,
+          0.189,
+          0,
+          0,
+          0.349,
+          0.686,
+          0.168,
+          0,
+          0,
+          0.272,
+          0.534,
+          0.131,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+        ];
+      case 'vintage':
+        return [
+          1.2,
+          0.2,
+          0.1,
+          0,
+          -20,
+          0.1,
+          1.0,
+          0.2,
+          0,
+          -20,
+          0.1,
+          0.1,
+          0.8,
+          0,
+          -20,
+          0,
+          0,
+          0,
+          1,
+          0,
+        ];
+      default:
+        return null;
+    }
+  }
+
+  List<double> _getBcsMatrix(
+    double brightness,
+    double contrast,
+    double saturation,
+  ) {
+    final b = brightness;
+    final c = contrast;
+    final s = saturation;
+
+    final t = (1 - c) * 128 + b * 255;
+    final sr = (1 - s) * 0.3086;
+    final sg = (1 - s) * 0.6094;
+    final sb = (1 - s) * 0.0820;
+
+    return [
+      c * (sr + s),
+      c * sg,
+      c * sb,
+      0,
+      t,
+      c * sr,
+      c * (sg + s),
+      c * sb,
+      0,
+      t,
+      c * sr,
+      c * sg,
+      c * (sb + s),
+      0,
+      t,
+      0,
+      0,
+      0,
+      1,
+      0,
+    ];
+  }
+
   Widget _buildItemContent(
-      EditorItem item,
-      BuildContext context, {
-        bool isBackground = false,
-      }) {
+    EditorItem item,
+    BuildContext context, {
+    bool isBackground = false,
+  }) {
     if (item.type == 'video') {
       return SizedBox(
         width: item.width,
@@ -382,7 +660,9 @@ class EditableItemWidget extends StatelessWidget {
 
     if (item.type == 'shape') {
       final provider = context.read<EditorProvider>();
-      final raw = provider.templateRawObject(item.id ?? '') ?? const <String, dynamic>{};
+      final raw =
+          provider.templateRawObject(item.id ?? '') ??
+          const <String, dynamic>{};
       return _buildFabricShape(item, raw);
     }
 
@@ -398,31 +678,81 @@ class EditableItemWidget extends StatelessWidget {
 
       final image = isHttp
           ? Image.network(
-        source,
-        fit: isBackground ? BoxFit.cover : BoxFit.fill,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, error, stackTrace) {
-          debugPrint('Background image error: $error');
-          return const SizedBox.shrink();
-        },
-      )
+              source,
+              fit: isBackground ? BoxFit.cover : BoxFit.fill,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, error, stackTrace) {
+                debugPrint('Background image error: $error');
+                return const SizedBox.shrink();
+              },
+            )
           : Image.file(
-        File(
-          source.startsWith('file://')
-              ? source.replaceFirst('file://', '')
-              : source,
-        ),
-        fit: isBackground ? BoxFit.cover : BoxFit.fill,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, error, stackTrace) {
-          debugPrint('Local image error: $error');
-          return const SizedBox.shrink();
-        },
-      );
+              File(
+                source.startsWith('file://')
+                    ? source.replaceFirst('file://', '')
+                    : source,
+              ),
+              fit: isBackground ? BoxFit.cover : BoxFit.fill,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, error, stackTrace) {
+                debugPrint('Local image error: $error');
+                return const SizedBox.shrink();
+              },
+            );
 
-      return SizedBox.expand(child: image);
+      Widget filteredImage = image;
+
+      if (item.filterType != null && item.filterType != 'normal') {
+        final matrix = _getFilterMatrix(item.filterType!);
+        if (matrix != null) {
+          filteredImage = ColorFiltered(
+            colorFilter: ColorFilter.matrix(matrix),
+            child: filteredImage,
+          );
+        }
+      }
+
+      if (item.brightness != 0 ||
+          item.contrast != 1.0 ||
+          item.saturation != 1.0) {
+        final bcsMatrix = _getBcsMatrix(
+          item.brightness,
+          item.contrast,
+          item.saturation,
+        );
+        filteredImage = ColorFiltered(
+          colorFilter: ColorFilter.matrix(bcsMatrix),
+          child: filteredImage,
+        );
+      }
+
+      final editorProvider = context.read<EditorProvider>();
+      final apiMaskUrl = editorProvider.imageMaskUrl(item.id ?? '');
+      final hasApiMask = apiMaskUrl != null && apiMaskUrl.trim().isNotEmpty;
+
+      Widget maskedImage = filteredImage;
+      if (hasApiMask) {
+        // Load the mask as an actual image shader and use its alpha channel
+        // to clip the selected image. Do not paint the black mask asset on top
+        // of the photo: that was causing the solid black rectangle/shape.
+        maskedImage = _AlphaImageMask(
+          maskUrl: apiMaskUrl!,
+          child: filteredImage,
+        );
+      } else {
+        final rawTemplate = editorProvider.templateRawObject(item.id ?? '');
+        final clipPath = rawTemplate?['clipPath'];
+        if (clipPath is Map) {
+          final clipType = clipPath['type']?.toString().toLowerCase() ?? 'rect';
+          if (clipType == 'circle' || clipType == 'ellipse') {
+            maskedImage = ClipOval(child: filteredImage);
+          }
+        }
+      }
+
+      return SizedBox.expand(child: maskedImage);
     }
 
     if (item.type == 'svg_group' || item.type == 'svg_element') {
@@ -562,13 +892,24 @@ class _FabricShapePainter extends CustomPainter {
     for (final rawCommand in pathData as List) {
       if (rawCommand is! List || rawCommand.isEmpty) continue;
       final command = rawCommand.first.toString().toUpperCase();
-      double n(int i) => i < rawCommand.length ? (rawCommand[i] as num).toDouble() : 0.0;
+      double n(int i) =>
+          i < rawCommand.length ? (rawCommand[i] as num).toDouble() : 0.0;
       switch (command) {
-        case 'M': path.moveTo(n(1), n(2)); break;
-        case 'L': path.lineTo(n(1), n(2)); break;
-        case 'C': path.cubicTo(n(1), n(2), n(3), n(4), n(5), n(6)); break;
-        case 'Q': path.quadraticBezierTo(n(1), n(2), n(3), n(4)); break;
-        case 'Z': path.close(); break;
+        case 'M':
+          path.moveTo(n(1), n(2));
+          break;
+        case 'L':
+          path.lineTo(n(1), n(2));
+          break;
+        case 'C':
+          path.cubicTo(n(1), n(2), n(3), n(4), n(5), n(6));
+          break;
+        case 'Q':
+          path.quadraticBezierTo(n(1), n(2), n(3), n(4));
+          break;
+        case 'Z':
+          path.close();
+          break;
       }
     }
     if (fill != null) {
@@ -588,9 +929,11 @@ class _FabricShapePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _FabricShapePainter oldDelegate) =>
-      oldDelegate.type != type || oldDelegate.fill != fill ||
-          oldDelegate.stroke != stroke || oldDelegate.strokeWidth != strokeWidth ||
-          oldDelegate.pathData != pathData;
+      oldDelegate.type != type ||
+      oldDelegate.fill != fill ||
+      oldDelegate.stroke != stroke ||
+      oldDelegate.strokeWidth != strokeWidth ||
+      oldDelegate.pathData != pathData;
 }
 
 class _ItemViewState {
@@ -609,12 +952,12 @@ class _ItemViewState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is _ItemViewState &&
-              runtimeType == other.runtimeType &&
-              currentItem == other.currentItem &&
-              isSelected == other.isSelected &&
-              flipX == other.flipX &&
-              flipY == other.flipY;
+      other is _ItemViewState &&
+          runtimeType == other.runtimeType &&
+          currentItem == other.currentItem &&
+          isSelected == other.isSelected &&
+          flipX == other.flipX &&
+          flipY == other.flipY;
 
   @override
   int get hashCode => Object.hash(currentItem, isSelected, flipX, flipY);
