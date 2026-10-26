@@ -3960,7 +3960,7 @@ class _EditorViewState extends State<EditorView> {
                 onX: () => (),
                 onLinkedIn: () => (),
                 onPinterest: () => (),
-                onBoost: () => _showBoostBottomSheet(context, provider, isDark),
+                onBoost: () => (),
                 onWhatsApp: () => (),
                 onMessenger: () => (),
                 onDrive: () => (),
