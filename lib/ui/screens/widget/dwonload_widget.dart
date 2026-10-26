@@ -215,8 +215,8 @@ class CommonShareBottomSheet {
                     height: 54.w,
                     decoration: BoxDecoration(
                       color: isDark
-                          ? const Color(0xFF303030)
-                          : const Color(0xFFF3F4F6),
+                          ? const Color(0xFFFFE4E5)
+                          : const Color(0xFFFFE4E5),
                       borderRadius: BorderRadius.circular(16.r),
                     ),
                     child: Icon(
