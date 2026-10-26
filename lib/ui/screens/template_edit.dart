@@ -141,6 +141,7 @@ class EditorView extends StatefulWidget {
 
 class _EditorViewState extends State<EditorView> {
   bool _showFlipOptions = false;
+  bool _showImageFilters = false;
   final AudioPlayer _musicPlayer = AudioPlayer();
   StreamSubscription<Duration>? _musicPositionSubscription;
   StreamSubscription<Duration>? _musicDurationSubscription;
@@ -208,25 +209,33 @@ class _EditorViewState extends State<EditorView> {
       EditorProvider provider,
       String itemId,
       ) async {
-    final item = provider.items.where((e) => e.id == itemId).isEmpty
-        ? null
-        : provider.items.firstWhere((e) => e.id == itemId);
-    if (item == null ||
-        item.type != 'image' ||
+    final matchingItems = provider.items.where((e) => e.id == itemId);
+
+    if (matchingItems.isEmpty) return;
+
+    final item = matchingItems.first;
+
+    if (item.type != 'image' ||
         (item.contentUrl ?? '').isEmpty) {
       return;
     }
 
     final sourcePath = await _prepareCropSource(item.contentUrl!);
+
     if (sourcePath == null) {
-      Fluttertoast.showToast(msg: 'Unable to open image for crop');
+      Fluttertoast.showToast(
+        msg: 'Unable to open image for crop',
+      );
       return;
     }
 
     final cropped = await ImageCropper().cropImage(
       sourcePath: sourcePath,
-      compressFormat: ImageCompressFormat.jpg,
-      compressQuality: 95,
+
+      // Preserve transparency
+      compressFormat: ImageCompressFormat.png,
+      compressQuality: 100,
+
       uiSettings: [
         AndroidUiSettings(
           toolbarTitle: 'Crop Image',
@@ -235,7 +244,10 @@ class _EditorViewState extends State<EditorView> {
           lockAspectRatio: false,
           hideBottomControls: false,
         ),
-        IOSUiSettings(title: 'Crop Image', aspectRatioLockEnabled: false),
+        IOSUiSettings(
+          title: 'Crop Image',
+          aspectRatioLockEnabled: false,
+        ),
       ],
     );
 
@@ -5318,61 +5330,62 @@ class _EditorViewState extends State<EditorView> {
       ),
       child: Column(
         children: [
-          SizedBox(
-            height: 64,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              children: [
-                _shapeColorTool(
-                  'FILL',
-                  fillColor,
-                      () => _showShapeColorPicker(
-                    context,
-                    provider,
-                    id,
-                    isOutline: false,
+          if (!_showImageFilters)
+            SizedBox(
+              height: 64,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                children: [
+                  _shapeColorTool(
+                    'FILL',
+                    fillColor,
+                        () => _showShapeColorPicker(
+                      context,
+                      provider,
+                      id,
+                      isOutline: false,
+                    ),
                   ),
-                ),
-                _shapeColorTool(
-                  'OUTLINE',
-                  outlineColor,
-                      () => _showShapeColorPicker(
-                    context,
-                    provider,
-                    id,
-                    isOutline: true,
+                  _shapeColorTool(
+                    'OUTLINE',
+                    outlineColor,
+                        () => _showShapeColorPicker(
+                      context,
+                      provider,
+                      id,
+                      isOutline: true,
+                    ),
                   ),
-                ),
-                _bottomTool(
-                  Icons.flip_to_front_rounded,
-                  'FRONT',
-                      () => provider.bringToFront(id),
-                ),
-                _bottomTool(
-                  Icons.flip_to_back_rounded,
-                  'BACK',
-                      () => provider.sendToBack(id),
-                ),
-                _bottomTool(
-                  Icons.copy_rounded,
-                  'DUPLICATE',
-                      () => provider.duplicateItem(id),
-                ),
-                _bottomTool(
-                  Icons.delete_outline_rounded,
-                  'DELETE',
-                      () => provider.removeItem(id),
-                  danger: true,
-                ),
-                _bottomTool(
-                  Icons.close_rounded,
-                  'CLOSE',
-                  provider.clearSelection,
-                ),
-              ],
+                  _bottomTool(
+                    Icons.flip_to_front_rounded,
+                    'FRONT',
+                        () => provider.bringToFront(id),
+                  ),
+                  _bottomTool(
+                    Icons.flip_to_back_rounded,
+                    'BACK',
+                        () => provider.sendToBack(id),
+                  ),
+                  _bottomTool(
+                    Icons.copy_rounded,
+                    'DUPLICATE',
+                        () => provider.duplicateItem(id),
+                  ),
+                  _bottomTool(
+                    Icons.delete_outline_rounded,
+                    'DELETE',
+                        () => provider.removeItem(id),
+                    danger: true,
+                  ),
+                  _bottomTool(
+                    Icons.close_rounded,
+                    'CLOSE',
+                    provider.clearSelection,
+                  ),
+                ],
+              ),
             ),
-          ),
           const SizedBox(height: 4),
           Expanded(
             child: ListView(
@@ -5766,389 +5779,412 @@ class _EditorViewState extends State<EditorView> {
     ];
 
     return Container(
-      height: 300,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : Colors.black,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
+        height: 92,
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1A1A1A) : Colors.black,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
           SizedBox(
-            height: 64,
-            child: ListView(
-              key: PageStorageKey<String>('image-tools-$id'),
-              scrollDirection: Axis.horizontal,
-              controller: ScrollController(),
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              children: [
-                _bottomTool(Icons.wallpaper_rounded, 'REPLACE BG', () async {
-                  final url = item.contentUrl;
-                  if (url != null && url.isNotEmpty) {
-                    await _confirmReplaceBackground(
-                      context,
-                      provider,
-                      url,
-                      selectedItemId: id,
-                    );
-                  }
-                }),
-                _bottomTool(
-                  Icons.crop_rounded,
-                  'CROP',
-                      () => _cropSelectedImage(context, provider, id),
-                ),
-                _bottomTool(Icons.photo_library_rounded, 'PHOTO', () async {
-                  final image = await ImagePicker().pickImage(
-                    source: ImageSource.gallery,
-                  );
-                  if (image != null)
-                    provider.addImage(image.path, isLocal: true);
-                }),
-                _bottomTool(
-                  Icons.flip_rounded,
-                  'FLIP',
-                      () => setState(() => _showFlipOptions = !_showFlipOptions),
-                  selected: _showFlipOptions,
-                ),
-                _bottomTool(
-                  Icons.flip_to_front_rounded,
-                  'FRONT',
-                      () => provider.bringToFront(id),
-                ),
-                _bottomTool(
-                  Icons.flip_to_back_rounded,
-                  'BACK',
-                      () => provider.sendToBack(id),
-                ),
-                _bottomTool(
-                  Icons.copy_rounded,
-                  'DUPLICATE',
-                      () => provider.duplicateItem(id),
-                ),
-                _bottomTool(
-                  Icons.delete_outline_rounded,
-                  'DELETE',
-                      () => provider.removeItem(id),
-                  danger: true,
-                ),
-                _bottomTool(
-                  Icons.close_rounded,
-                  'CLOSE',
-                  provider.clearSelection,
-                ),
-              ],
-            ),
-          ),
-          if (_showFlipOptions)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(14, 2, 14, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 6),
-                    child: AppText(
-                      'Flip',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _flipOption(
-                          Icons.flip_rounded,
-                          'Flip Horizontal',
-                              () => provider.flipImageHorizontal(id),
-                        ),
-                      ),
-                      Expanded(
-                        child: _flipOption(
-                          Icons.flip_rounded,
-                          'Flip Vertical',
-                              () => provider.flipImageVertical(id),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          SizedBox(
-            height: 64,
-            child: ListView(
-              key: PageStorageKey<String>('image-filter-tools-$id'),
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              children: [
-                _labelledHorizontalList(
-                  'FILTER',
-                  filters,
-                      (value) => provider.setImageFilter(id, value),
-                  selected: item.filterType,
-                ),
-                _bottomTool(
-                  Icons.category_rounded,
-                  'MASK',
-                      () => _showApiMaskSheet(context, provider, id),
-                  selected:
-                  provider.imageMaskUrl(id) != null ||
-                      (item.text != null &&
-                          item.text!.trim().isNotEmpty &&
-                          item.text != 'image'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Expanded(
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              children: [
-                _bottomSliderTool(
-                  'FILTER INTENSITY',
-                  provider.imageFilterIntensity(id),
-                  0,
-                  1,
-                      (v) => provider.updateImageFilterIntensity(id, v),
-                ),
-                _bottomSliderTool(
-                  'BRIGHTNESS',
-                  item.brightness,
-                  -1,
-                  1,
-                      (v) =>
-                      provider.updateImageColorAdjustments(id, brightness: v),
-                ),
-                _bottomSliderTool(
-                  'CONTRAST',
-                  item.contrast,
-                  .5,
-                  2,
-                      (v) => provider.updateImageColorAdjustments(id, contrast: v),
-                ),
-                _bottomSliderTool(
-                  'TINT',
-                  provider.imageTint(id),
-                  -100,
-                  100,
-                      (v) => provider.updateImageTint(id, v),
-                ),
-                _bottomSliderTool(
-                  'SATURATION',
-                  item.saturation,
-                  0,
-                  2,
-                      (v) =>
-                      provider.updateImageColorAdjustments(id, saturation: v),
-                ),
-                _bottomSliderTool(
-                  'BLUR',
-                  provider.imageBlur(id),
-                  0,
-                  20,
-                      (v) => provider.updateImageBlur(id, v),
-                ),
-                _buildSizeStepControl(item, (delta) {
-                  final next = (item.scale + delta).clamp(0.05, 10.0);
-                  provider.updateScale(id, next.toDouble());
-                }),
-                _bottomSliderTool(
-                  'SCALE',
-                  item.scale.clamp(.5, 3.0),
-                  .5,
-                  3,
-                      (v) => provider.updateScale(id, v),
-                ),
-                _bottomSliderTool(
-                  'ROTATION',
-                  item.rotation.clamp(0.0, math.pi * 2),
-                  0,
-                  math.pi * 2,
-                      (v) => provider.updateRotation(id, v),
-                ),
-                _bottomSliderTool(
-                  'OPACITY',
-                  item.opacity.clamp(0.0, 1.0),
-                  0,
-                  1,
-                      (v) => provider.updateOpacity(id, v),
-                ),
-                _outlineStyleTools(
-                  provider.outlineStyle(id),
-                      (style) => provider.updateOutlineStyle(id, style),
-                ),
-                _bottomSliderTool(
-                  'OUTLINE WIDTH',
-                  item.outlineWidth.clamp(0.0, 20.0),
-                  0,
-                  20,
-                      (v) => provider.updateOutline(
-                    id,
-                    v,
-                    item.outlineColor ?? const Color(0xFFD9D9D9),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+          height: 64,
+          child: ListView(
+            key: PageStorageKey<String>('image-tools-$id'),
+            scrollDirection: Axis.horizontal,
+            controller: ScrollController(),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            children: [
+              _bottomTool(Icons.file_upload_outlined, 'UPLOADS',
+                      () => _showMediaBottomSheet(context, provider, isDark)),
+              _bottomTool(Icons.photo_library_outlined, 'IMAGES',
+                      () => _showMediaBottomSheet(context, provider, isDark)),
+              _bottomTool(Icons.crop, 'CROP',
+                      () => _cropSelectedImage(context, provider, id)),
+              _bottomTool(Icons.wallpaper_outlined, 'SET US BG', () async {
+                final url = item.contentUrl;
+                if (url != null && url.isNotEmpty) {
+                  await _confirmReplaceBackground(context, provider, url,
+                      selectedItemId: id);
+                }
+              }),
+              _bottomTool(Icons.layers_outlined, 'MASK',
+                      () => _showApiMaskSheet(context, provider, id)),
+              _bottomTool(Icons.auto_fix_high_outlined, 'REMOVE BG',
+                      () => _showRemoveBackgroundSheet(
+                        context,
+                        isDark,
+                        onSlideComplete: () {
+                          // Connect your actual background-removal API here.
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Slide completed. Connect the background-removal API here.'),
+                            ),
+                          );
+                        },
+                      )),
 
-  Widget _buildSizeStepControl(
-      EditorItem item,
-      ValueChanged<double> onChanged,
-      ) {
-    final percent = (item.scale * 100).round().clamp(5, 1000);
-
-    return Container(
-      width: 150,
-      height: 72,
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFF20242C),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF3A3F49)),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            tooltip: 'Decrease size',
-            visualDensity: VisualDensity.compact,
-            onPressed: () => onChanged(-0.05),
-            icon: const Icon(
-              Icons.remove_circle_outline_rounded,
-              color: Colors.white,
-              size: 24,
-            ),
+              _bottomTool(Icons.tune_rounded, 'ADJUST',
+                      () => _showAdjustSheet(context, provider, id, isDark)),
+              _bottomTool(Icons.edit_outlined, 'EDIT',
+                      () => _showEditSheet(context, provider, id, isDark)),
+              _bottomTool(Icons.layers, 'LAYER',
+                      () => _showLayerSheet(context, provider, id, isDark)),
+              _bottomTool(Icons.lock_outline, 'LOCK', () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Lock action is not connected yet.')),
+                );
+              }),
+            ],
           ),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const AppText(
-                  'SIZE',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                AppText(
-                  '$percent%',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: 'Increase size',
-            visualDensity: VisualDensity.compact,
-            onPressed: () => onChanged(0.05),
-            icon: const Icon(
-              Icons.add_circle_outline_rounded,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _outlineStyleTools(String selected, ValueChanged<String> onChanged) {
-    const styles = <String>['none', 'solid', 'dashed', 'dotted', 'fine_dotted'];
-    const labels = <String>['None', 'Solid', 'Dashed', 'Dotted', 'Fine Dotted'];
-
-    return SizedBox(
-      width: 310,
-      height: 88,
+        ),
+        if (_showFlipOptions && !_showImageFilters)
+    Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 2, 14, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 5),
+            padding: EdgeInsets.only(bottom: 6),
             child: AppText(
-              'OUTLINE',
+              'Flip',
               style: TextStyle(
-                color: Colors.white70,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          SizedBox(
-            height: 58,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: styles.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, index) {
-                final style = styles[index];
-                final isSelected = selected == style;
-                return GestureDetector(
-                  onTap: () => onChanged(style),
-                  child: SizedBox(
-                    width: 54,
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 50,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(0xFFFFECEE)
-                                : const Color(0xFFF3F3F3),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: isSelected
-                                  ? const Color(0xFFE53935)
-                                  : Colors.transparent,
-                            ),
-                          ),
-                          child: CustomPaint(
-                            painter: _OutlineStylePreviewPainter(style),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        AppText(
-                          labels[index],
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: isSelected
-                                ? const Color(0xFFE53935)
-                                : Colors.white70,
-                            fontSize: 8,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+          Row(
+            children: [
+              Expanded(
+                child: _flipOption(
+                  Icons.flip_rounded,
+                  'Flip Horizontal',
+                      () => provider.flipImageHorizontal(id),
+                ),
+              ),
+              Expanded(
+                child: _flipOption(
+                  Icons.flip_rounded,
+                  'Flip Vertical',
+                      () => provider.flipImageVertical(id),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+    ],
+    ),
+    );
+  }
+  void _showImageToolPanel(
+      BuildContext context,
+      EditorProvider provider,
+      String id,
+      String panel,
+      bool isDark,
+      ) {
+    final item = provider.items.firstWhere(
+          (item) => item.id == id,
+    );
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Container(
+          height: 220,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.black,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(20),
             ),
           ),
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.all(12),
+            children: [
+              if (panel == 'transparency')
+                SizedBox(
+                  width: 220,
+                  child: Column(
+                    children: [
+                      const Text(
+                        'TRANSPARENCY',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: item.opacity.clamp(0.0, 1.0),
+                          min: 0,
+                          max: 1,
+                          onChanged: (value) {
+                            provider.updateOpacity(id, value);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (panel == 'position') ...[
+                _bottomTool(
+                  Icons.flip_to_front,
+                  'FRONT',
+                      () => provider.bringToFront(id),
+                ),
+                _bottomTool(
+                  Icons.flip_to_back,
+                  'BACK',
+                      () => provider.sendToBack(id),
+                ),
+                _bottomTool(
+                  Icons.copy,
+                  'DUPLICATE',
+                      () => provider.duplicateItem(id),
+                ),
+              ],
+              if (panel == 'magic') ...[
+                _bottomTool(
+                  Icons.crop,
+                  'CROP',
+                      () => _cropSelectedImage(context, provider, id),
+                ),
+                _bottomTool(
+                  Icons.flip,
+                  'FLIP',
+                      () => setState(() {
+                    _showFlipOptions = !_showFlipOptions;
+                  }),
+                ),
+                _bottomTool(
+                  Icons.category,
+                  'MASK',
+                      () => _showApiMaskSheet(context, provider, id),
+                ),
+                _bottomTool(
+                  Icons.filter,
+                  'FILTER',
+                      () {
+                    // Call your existing filter panel here.
+                  },
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+
+  Widget _sheetShell({
+    required bool isDark,
+    required String title,
+    required Widget child,
+    double height = 250,
+  }) {
+    return Container(
+      height: height,
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 58,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade400,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: AppText(title, style: const TextStyle(
+                  fontSize: 15, fontWeight: FontWeight.w700))),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close, color: Colors.red),
+              ),
+            ],
+          ),
+          Expanded(child: child),
         ],
       ),
     );
   }
+
+  void _showAdjustSheet(BuildContext context, EditorProvider provider,
+      String id, bool isDark) {
+    showModalBottomSheet<void>(
+      context: context, backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final current = provider.items.firstWhere((e) => e.id == id);
+        return SafeArea(
+          child: StatefulBuilder(builder: (ctx, setSheetState) {
+            final item = provider.items.firstWhere((e) => e.id == id);
+            return _sheetShell(
+              isDark: isDark, title: 'Adjust', height: 245,
+              child: Column(children: [
+                _compactAdjustSlider('Opacity', item.opacity, 0, 1,
+                        (v) { provider.updateOpacity(id, v); setSheetState(() {}); }),
+                _compactAdjustSlider('Rotate', item.rotation, 0, math.pi * 2,
+                        (v) { provider.updateRotation(id, v); setSheetState(() {}); }),
+                const Align(alignment: Alignment.centerLeft,
+                    child: AppText('Flip', style: TextStyle(fontWeight: FontWeight.w600))),
+                Row(children: [
+                  Expanded(child: TextButton.icon(
+                      onPressed: () => provider.flipImageHorizontal(id),
+                      icon: const Icon(Icons.flip), label: const Text('HORIZONTAL'))),
+                  Expanded(child: TextButton.icon(
+                      onPressed: () => provider.flipImageVertical(id),
+                      icon: const Icon(Icons.flip), label: const Text('VERTICAL'))),
+                ]),
+              ]),
+            );
+          }),
+        );
+      },
+    );
+  }
+
+  Widget _compactAdjustSlider(String label, double value, double min,
+      double max, ValueChanged<double> onChanged) {
+    final shown = value.clamp(min, max).toDouble();
+    return Row(children: [
+      SizedBox(width: 72, child: AppText(label, style: const TextStyle(fontSize: 12))),
+      Expanded(child: Slider(min: min, max: max, value: shown, onChanged: onChanged)),
+      SizedBox(width: 35, child: AppText(
+          label == 'Rotate' ? '${(shown * 180 / math.pi).round()}°' : '${(shown * 100).round()}',
+          textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w600))),
+    ]);
+  }
+
+  void _showEditSheet(BuildContext context, EditorProvider provider,
+      String id, bool isDark) {
+    const filters = ['normal', 'festive', 'drama', 'cali', 'epic', 'street',
+      'grayscale', 'rosie', 'edge', 'nordic', 'selfie', 'blues', 'whimsical',
+      'summer', 'retro'];
+    showModalBottomSheet<void>(
+      context: context, backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: StatefulBuilder(builder: (ctx, setSheetState) {
+          final item = provider.items.firstWhere((e) => e.id == id);
+          return _sheetShell(
+            isDark: isDark, title: 'Filters', height: 420,
+            child: Column(children: [
+              SizedBox(height: 76, child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: filters.map((filter) => GestureDetector(
+                  onTap: () { provider.setImageFilter(id, filter); setSheetState(() {}); },
+                  child: Container(
+                    width: 62, margin: const EdgeInsets.only(right: 7, top: 4),
+                    decoration: BoxDecoration(
+                      color: item.filterType == filter
+                          ? Colors.red.withValues(alpha: .15)
+                          : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: item.filterType == filter
+                          ? Colors.red : Colors.transparent),
+                    ),
+                    child: Center(child: Text(
+                        filter[0].toUpperCase() + filter.substring(1),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 10))),
+                  ),
+                )).toList(),
+              )),
+              Expanded(child: ListView(children: [
+                _compactAdjustSlider('Intensity', provider.imageFilterIntensity(id),
+                    0, 1, (v) { provider.updateImageFilterIntensity(id, v); setSheetState(() {}); }),
+                _compactAdjustSlider('Brightness', item.brightness, -1, 1,
+                        (v) { provider.updateImageColorAdjustments(id, brightness: v); setSheetState(() {}); }),
+                _compactAdjustSlider('Contrast', item.contrast, .5, 2,
+                        (v) { provider.updateImageColorAdjustments(id, contrast: v); setSheetState(() {}); }),
+                _compactAdjustSlider('Saturation', item.saturation, 0, 2,
+                        (v) { provider.updateImageColorAdjustments(id, saturation: v); setSheetState(() {}); }),
+                _compactAdjustSlider('Blur', provider.imageBlur(id), 0, 20,
+                        (v) { provider.updateImageBlur(id, v); setSheetState(() {}); }),
+              ])),
+              SizedBox(width: double.infinity, child: OutlinedButton(
+                  onPressed: () {
+                    provider.setImageFilter(id, 'normal');
+                    provider.updateImageFilterIntensity(id, 1);
+                    provider.updateImageColorAdjustments(id, brightness: 0, contrast: 1, saturation: 1);
+                    provider.updateImageBlur(id, 0);
+                    setSheetState(() {});
+                  },
+                  child: const Text('REVERT TO ORIGINAL'))),
+            ]),
+          );
+        }),
+      ),
+    );
+  }
+
+  void _showLayerSheet(BuildContext context, EditorProvider provider,
+      String id, bool isDark) {
+    showModalBottomSheet<void>(
+      context: context, backgroundColor: Colors.transparent,
+      builder: (ctx) => SafeArea(
+        child: _sheetShell(
+          isDark: isDark, title: 'Layer', 
+          child: Column(children: [
+            Row(children: [
+              Expanded(child: ElevatedButton.icon(
+                  onPressed: () { provider.bringToFront(id); Navigator.pop(ctx); },
+                  icon: const Icon(Icons.flip_to_front), label: const Text('Forward'))),
+              const SizedBox(width: 8),
+              Expanded(child: ElevatedButton.icon(
+                  onPressed: () { provider.sendToBack(id); Navigator.pop(ctx); },
+                  icon: const Icon(Icons.flip_to_back), label: const Text('Backward'))),
+            ]),
+            Row(children: [
+              Expanded(child: ElevatedButton(
+                  onPressed: () { provider.bringToFront(id); Navigator.pop(ctx); },
+                  child: const Text('To Front'))),
+              const SizedBox(width: 8),
+              Expanded(child: ElevatedButton(
+                  onPressed: () { provider.sendToBack(id); Navigator.pop(ctx); },
+                  child: const Text('To Back'))),
+            ]),
+            const Align(alignment: Alignment.centerLeft,
+                child: AppText('Nudge', style: TextStyle(fontWeight: FontWeight.w600))),
+            const Text('Use arrow keys or drag the selected image to adjust its position.'),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  void _showRemoveBackgroundSheet(
+      BuildContext context,
+      bool isDark, {
+        required VoidCallback onSlideComplete,
+      }) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _RemoveBackgroundSlideSheet(
+        isDark: isDark,
+        onSlideComplete: onSlideComplete,
+      ),
+    );
+  }
+
+
 
   Widget _flipOption(IconData icon, String label, VoidCallback onTap) {
     return InkWell(
@@ -6178,6 +6214,7 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
+
   Widget _bottomTool(
       dynamic icon,
       String label,
@@ -6186,41 +6223,55 @@ class _EditorViewState extends State<EditorView> {
         bool danger = false,
       }) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(right: 5),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
-          constraints: const BoxConstraints(minWidth: 58),
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+          width: 62,
+          height: 52,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 6,
+          ),
           decoration: BoxDecoration(
             color: danger
                 ? Colors.red.withValues(alpha: .16)
                 : selected
                 ? Colors.amber.withValues(alpha: .18)
                 : const Color(0xFF1F232C),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: selected ? Colors.amber : Colors.white10),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? Colors.amber : Colors.white10,
+            ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Icon OR Image.asset
               if (icon is IconData)
-                Icon(icon, color: danger ? Colors.red : Colors.white, size: 19)
+                Icon(
+                  icon,
+                  color: danger ? Colors.red : Colors.white,
+                  size: 18,
+                )
               else if (icon is Widget)
-                SizedBox(width: 19, height: 19, child: icon),
-
-              const SizedBox(height: 3),
-
-              AppText(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: AppFontSize.fontSize10,
-                  fontWeight: FontWeight.w500,
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: icon,
+                ),
+              const SizedBox(height: 4),
+              Flexible(
+                child: AppText(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -6229,6 +6280,7 @@ class _EditorViewState extends State<EditorView> {
       ),
     );
   }
+
 
   Widget _colorTool(Color color, VoidCallback onTap) {
     return Padding(
@@ -8586,6 +8638,195 @@ class _InteractiveBackgroundLayerState
                   ),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class _RemoveBackgroundSlideSheet extends StatefulWidget {
+  const _RemoveBackgroundSlideSheet({
+    required this.isDark,
+    required this.onSlideComplete,
+  });
+
+  final bool isDark;
+  final VoidCallback onSlideComplete;
+
+  @override
+  State<_RemoveBackgroundSlideSheet> createState() =>
+      _RemoveBackgroundSlideSheetState();
+}
+
+class _RemoveBackgroundSlideSheetState
+    extends State<_RemoveBackgroundSlideSheet> {
+  double _progress = 0;
+  bool _completed = false;
+
+  void _updateDrag(DragUpdateDetails details, double width) {
+    if (_completed || width <= 0) return;
+    setState(() {
+      _progress = (_progress + details.delta.dx / width).clamp(0.0, 1.0);
+    });
+  }
+
+  void _finishDrag() {
+    if (_progress >= 0.92 && !_completed) {
+      setState(() {
+        _progress = 1;
+        _completed = true;
+      });
+      // The action is invoked only after the slider reaches the end.
+      widget.onSlideComplete();
+      Navigator.of(context).pop();
+    } else {
+      setState(() => _progress = 0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = widget.isDark;
+    final foreground = dark ? Colors.white : const Color(0xFF171717);
+    final trackColor = dark ? const Color(0xFF353535) : Colors.white;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+      decoration: BoxDecoration(
+        color: dark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 124,
+              height: 6,
+              decoration: BoxDecoration(
+                color: dark ? Colors.white30 : const Color(0xFFCCCCCC),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Remove Background',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: foreground,
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () => Navigator.of(context).pop(),
+                  borderRadius: BorderRadius.circular(30),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFE5E5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.close, color: Colors.red, size: 25),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                return GestureDetector(
+                  onHorizontalDragUpdate: (details) =>
+                      _updateDrag(details, width),
+                  onHorizontalDragEnd: (_) => _finishDrag(),
+                  onTapDown: (details) {
+                    if (details.localPosition.dx > width * 0.75) {
+                      setState(() => _progress = 1);
+                      _finishDrag();
+                    }
+                  },
+                  child: Container(
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: trackColor,
+                      border: Border.all(
+                        color: const Color(0xFFFF202A),
+                        width: 1.5,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Stack(
+                      children: [
+                        Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            _completed
+                                ? 'Removing Background...'
+                                : 'Slide to remove Background',
+                            style: TextStyle(
+                              color: foreground.withValues(alpha: .75),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: FractionallySizedBox(
+                            widthFactor: _progress.clamp(0.0, 1.0),
+                            heightFactor: 1,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0x22FF202A),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment(_progress * 2 - 1, 0),
+                          child: Container(
+                            width: 58,
+                            height: 58,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF202A),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.cloud_upload_outlined,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Icon(Icons.auto_awesome, color: Colors.red, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '20 AI Credits Available',
+                    style: TextStyle(color: foreground, fontSize: 16),
+                  ),
+                ),
+                const Text(
+                  '2 credits will be used',
+                  style: TextStyle(color: Colors.red, fontSize: 15),
+                ),
+              ],
             ),
           ],
         ),
