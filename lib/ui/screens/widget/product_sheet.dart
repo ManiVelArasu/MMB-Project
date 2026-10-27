@@ -2,19 +2,18 @@ import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 import 'package:mmb_app/network/provider/product_provider.dart';
+import '../../../Api Model/product_model.dart';
+import '../../../Api Model/product_model.dart';
 
 class AddProductServiceSheet extends StatefulWidget {
-  const AddProductServiceSheet({
-    super.key,
+  final ProductListData? product;
 
-  });
-
-
+  const AddProductServiceSheet({super.key, this.product});
 
   @override
-  State<AddProductServiceSheet> createState() =>
-      _AddProductServiceSheetState();
+  State<AddProductServiceSheet> createState() => _AddProductServiceSheetState();
 }
+
 class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
   final _formKey = GlobalKey<FormState>();
 
@@ -26,6 +25,24 @@ class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
 
   String _selectedType = 'product';
   bool _isLoading = false;
+
+  bool get _isEditing => widget.product != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final item = widget.product;
+    if (item != null) {
+      _nameController.text = item.name ?? '';
+      _unitController.text = item.unit ?? '';
+      _descriptionController.text = item.description ?? '';
+      _priceController.text = item.price?.toString() ?? '';
+      _offerPriceController.text = item.offerPrice?.toString() ?? '';
+      _selectedType = item.type?.toLowerCase() == 'service'
+          ? 'service'
+          : 'product';
+    }
+  }
 
   static const Color primaryRed = Color(0xFFFF202B);
   static const Color lightPink = Color(0xFFFFF0F1);
@@ -49,14 +66,24 @@ class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
     setState(() => _isLoading = true);
 
     try {
-      final success = await provider.addProductService(
-        type: _selectedType,
-        name: _nameController.text.trim(),
-        unit: _unitController.text.trim(),
-        description: _descriptionController.text.trim(),
-        price: _priceController.text.trim(),
-        offerPrice: _offerPriceController.text.trim(),
-      );
+      final success = widget.product != null
+          ? await provider.editProductService(
+              id: widget.product!.id?.toString() ?? '',
+              type: _selectedType,
+              name: _nameController.text.trim(),
+              unit: _unitController.text.trim(),
+              description: _descriptionController.text.trim(),
+              price: _priceController.text.trim(),
+              offerPrice: _offerPriceController.text.trim(),
+            )
+          : await provider.addProductService(
+              type: _selectedType,
+              name: _nameController.text.trim(),
+              unit: _unitController.text.trim(),
+              description: _descriptionController.text.trim(),
+              price: _priceController.text.trim(),
+              offerPrice: _offerPriceController.text.trim(),
+            );
 
       if (!mounted) return;
 
@@ -71,7 +98,10 @@ class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              provider.errorMessage ?? 'Product creation failed',
+              provider.errorMessage ??
+                  (widget.product != null
+                      ? 'Product update failed'
+                      : 'Product creation failed'),
             ),
           ),
         );
@@ -79,16 +109,15 @@ class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add item: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to add item: $e')));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -123,14 +152,16 @@ class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
                     ),
                   ),
                   const SizedBox(height: 18),
-      
+
                   // Header
                   Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Add New Products/Services',
-                          style: TextStyle(
+                          _isEditing
+                              ? 'Edit Product/Service'
+                              : 'Add New Products/Services',
+                          style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF202020),
@@ -157,7 +188,7 @@ class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
                     ],
                   ),
                   const SizedBox(height: 18),
-      
+
                   // Product / Service selection
                   Row(
                     children: [
@@ -181,21 +212,21 @@ class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
                     ],
                   ),
                   const SizedBox(height: 14),
-      
+
                   _inputField(
                     controller: _nameController,
                     label: 'Product Name',
                     hint: 'Enter name',
                   ),
                   const SizedBox(height: 10),
-      
+
                   _inputField(
                     controller: _unitController,
                     label: 'Unit/Weight',
                     hint: 'e.g. 1 Kg',
                   ),
                   const SizedBox(height: 10),
-      
+
                   _inputField(
                     controller: _descriptionController,
                     label: 'Description',
@@ -204,7 +235,7 @@ class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
                     maxLength: 500,
                   ),
                   const SizedBox(height: 10),
-      
+
                   // Prices
                   Row(
                     children: [
@@ -228,7 +259,7 @@ class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
                     ],
                   ),
                   const SizedBox(height: 12),
-      
+
                   // Upload button - UI only
                   InkWell(
                     onTap: () {
@@ -275,7 +306,7 @@ class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
                     ),
                   ),
                   const SizedBox(height: 20),
-      
+
                   // Bottom buttons
                   Row(
                     children: [
@@ -323,7 +354,11 @@ class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
                                   ),
                                 )
                               : Text(
-                                  isProduct ? 'ADD PRODUCT' : 'ADD SERVICE',
+                                  _isEditing
+                                      ? 'SAVE CHANGES'
+                                      : (isProduct
+                                            ? 'ADD PRODUCT'
+                                            : 'ADD SERVICE'),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                   ),

@@ -70,6 +70,102 @@ class ProductsProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> editProductService({
+    required String id,
+    required String type,
+    required String name,
+    required String unit,
+    required String description,
+    required String price,
+    required String offerPrice,
+  }) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+    try {
+      final parsedPrice = num.tryParse(price.trim());
+      final parsedOfferPrice = num.tryParse(offerPrice.trim());
+      if (id.trim().isEmpty) {
+        errorMessage = 'Product ID not found';
+        return false;
+      }
+      if (parsedPrice == null || parsedOfferPrice == null) {
+        errorMessage = 'Enter valid prices';
+        return false;
+      }
+      final body = <String, dynamic>{
+        'id': id,
+        'type': type,
+        'name': name.trim(),
+        'unit': unit.trim(),
+        'description': description.trim(),
+        'price': parsedPrice,
+        'offer_price': parsedOfferPrice,
+      };
+      final result = await ProductRepository.instance.editProductService(body: body);
+      final response = result.data;
+      final success = response is Map
+          ? response['success'] == true
+          : response?.success == true;
+      if (success) return true;
+      errorMessage = 'Unable to update $type';
+      return false;
+    } catch (e) {
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> setProductActive({
+    required String id,
+    required bool isActive,
+  }) async {
+    try {
+      final result = await ProductRepository.instance.editProductService(
+        body: {'id': id, 'is_active': isActive},
+      );
+      final response = result.data;
+      final success = response is Map
+          ? response['success'] == true
+          : response?.success == true;
+      if (!success) {
+        errorMessage = 'Unable to update product status';
+        notifyListeners();
+        return false;
+      }
+      await fetchProducts();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteProduct(String id) async {
+    try {
+      final result = await ProductRepository.instance.deleteProductService(id);
+      final response = result.data;
+      final success = response is Map
+          ? response['success'] == true
+          : response?.success == true;
+      if (!success) {
+        errorMessage = 'Unable to delete product';
+        notifyListeners();
+        return false;
+      }
+      await fetchProducts();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> addProductService({
     required String type,
     required String name,
@@ -153,9 +249,9 @@ class ProductsProvider extends ChangeNotifier {
 
   int get productsCount =>
       int.tryParse(_counts?.products ?? '') ??
-      _products.where((e) => e.type?.toLowerCase() == 'product').length;
+          _products.where((e) => e.type?.toLowerCase() == 'product').length;
 
   int get servicesCount =>
       int.tryParse(_counts?.services ?? '') ??
-      _products.where((e) => e.type?.toLowerCase() == 'service').length;
+          _products.where((e) => e.type?.toLowerCase() == 'service').length;
 }

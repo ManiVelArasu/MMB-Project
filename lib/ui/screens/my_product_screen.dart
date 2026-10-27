@@ -6,6 +6,7 @@ import '../../component/custom_widget.dart';
 
 import '../../network/provider/my_upload_provider.dart';
 import '../../network/provider/product_provider.dart';
+import '../../Api Model/product_model.dart';
 import '../../utils/theme/app.fonts.dart';
 
 class ProductsScreen extends StatelessWidget {
@@ -53,7 +54,7 @@ class _ProductsView extends StatelessWidget {
 
         titleSpacing: 6,
 
-        title:  AppText(
+        title: AppText(
           "My Products",
           style: TextStyle(
             color: Color(0xFF111827),
@@ -110,7 +111,7 @@ class _ProductsView extends StatelessWidget {
                   width: double.infinity,
                   color: Colors.white,
                   padding: const EdgeInsets.fromLTRB(10, 7, 10, 9),
-                  child:  AppText(
+                  child: AppText(
                     "Everything you offer, in one place, shown on your store page and Near Me listing.",
                     style: TextStyle(
                       fontSize: AppFontSize.fontSize14,
@@ -120,7 +121,7 @@ class _ProductsView extends StatelessWidget {
                     ),
                   ),
                 ),
-        
+
                 // Filter section
                 Container(
                   width: double.infinity,
@@ -144,9 +145,9 @@ class _ProductsView extends StatelessWidget {
                     ],
                   ),
                 ),
-        
+
                 const SizedBox(height: 8),
-        
+
                 Expanded(
                   child: provider.filteredProducts.isEmpty
                       ? Center(
@@ -167,8 +168,106 @@ class _ProductsView extends StatelessWidget {
                               ),
                           itemCount: provider.filteredProducts.length,
                           itemBuilder: (context, index) {
+                            final item = provider.filteredProducts[index];
+
                             return ProductCard(
-                              item: provider.filteredProducts[index],
+                              item: item,
+                              onToggleActive: (value) async {
+                                final id = item.id?.toString() ?? '';
+
+                                if (id.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Product ID not found'),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                final success = await provider.setProductActive(
+                                  id: id,
+                                  isActive: value,
+                                );
+
+                                if (!context.mounted) return;
+
+                                if (!success) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        provider.errorMessage ??
+                                            'Unable to update status',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+
+                              // Edit
+                              onEdit: () {
+                                showAddProductServiceSheet(
+                                  context,
+                                  product: item,
+                                );
+                              },
+
+                              // Delete
+                              onDelete: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (dialogContext) => AlertDialog(
+                                    title: const Text('Delete product?'),
+                                    content: Text(
+                                      'Are you sure you want to delete ${item.name ?? 'this item'}?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(dialogContext, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(dialogContext, true),
+                                        child: const Text(
+                                          'Delete',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirm != true || !context.mounted) return;
+
+                                final id = item.id?.toString() ?? '';
+
+                                if (id.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Product ID not found'),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                final success = await provider.deleteProduct(
+                                  id,
+                                );
+
+                                if (!context.mounted) return;
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      success
+                                          ? 'Product deleted successfully'
+                                          : provider.errorMessage ??
+                                                'Unable to delete product',
+                                    ),
+                                  ),
+                                );
+                              },
                             );
                           },
                         ),
@@ -232,8 +331,9 @@ class _ProductsView extends StatelessWidget {
   }
 
   Future<void> showAddProductServiceSheet(
-      BuildContext context,
-      ) async {
+    BuildContext context, {
+    ProductListData? product,
+  }) async {
     final productsProvider = context.read<ProductsProvider>();
 
     debugPrint('6. OPENING ADD SHEET');
@@ -246,7 +346,7 @@ class _ProductsView extends StatelessWidget {
       builder: (sheetContext) {
         return ChangeNotifierProvider<ProductsProvider>.value(
           value: productsProvider,
-          child: const AddProductServiceSheet(),
+          child: AddProductServiceSheet(product: product),
         );
       },
     );
@@ -259,5 +359,4 @@ class _ProductsView extends StatelessWidget {
       debugPrint('9. FETCH PRODUCTS COMPLETED');
     }
   }
-
 }

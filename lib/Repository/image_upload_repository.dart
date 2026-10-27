@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image/image.dart' as img;
 
 import '../core/api/api_endpoints.dart';
 import '../core/api/api_repository.dart';
@@ -30,6 +31,66 @@ class MediaUploadRepository {
       // ============================================================
       // 1. PRESIGN
       // ============================================================
+      final extension = filename.split('.').last.toLowerCase();
+
+      final contentType = switch (extension) {
+        'jpg' || 'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'webp' => 'image/webp',
+        _ => '',
+      };
+
+      if (contentType.isEmpty) {
+        return ApiResult.failure(
+          ApiError(
+            message: 'Unsupported image format: .$extension',
+            type: ApiErrorType.unknown,
+          ),
+        );
+      }
+
+      // Normalize image bytes so the uploaded bytes match the filename and
+      // content type expected by the presign/confirm APIs.
+      final originalBytes = await imageFile.readAsBytes();
+      final decodedImage = img.decodeImage(originalBytes);
+
+      if (decodedImage == null) {
+        return ApiResult.failure(
+          ApiError(
+            message: 'Selected file is not a valid image.',
+            type: ApiErrorType.unknown,
+          ),
+        );
+      }
+
+      late final List<int> uploadBytes;
+      switch (extension) {
+        case 'png':
+          uploadBytes = img.encodePng(decodedImage);
+          break;
+        case 'jpg':
+        case 'jpeg':
+          uploadBytes = img.encodeJpg(decodedImage, quality: 95);
+          break;
+        case 'webp':
+          final isWebP = originalBytes.length >= 12 &&
+              String.fromCharCodes(originalBytes.sublist(0, 4)) == 'RIFF' &&
+              String.fromCharCodes(originalBytes.sublist(8, 12)) == 'WEBP';
+          if (!isWebP) {
+            return ApiResult.failure(
+              ApiError(
+                message: 'The selected file is not actually a WebP image. '
+                    'Use a .png or .jpg filename, or convert it to WebP first.',
+                type: ApiErrorType.unknown,
+              ),
+            );
+          }
+          uploadBytes = originalBytes;
+          break;
+      }
+
+      final uploadWidth = decodedImage.width;
+      final uploadHeight = decodedImage.height;
 
       debugPrint("======================================");
       debugPrint("🚀 MEDIA UPLOAD");
@@ -47,7 +108,7 @@ class MediaUploadRepository {
               "slot": slot,
             },
             "filename": filename,
-            "content_type": "image/jpeg",
+            "content_type": contentType,
           },
         ),
         fromJson: (json) {
@@ -104,7 +165,7 @@ class MediaUploadRepository {
       // 2. S3 UPLOAD
       // ============================================================
 
-      final bytes = await imageFile.readAsBytes();
+      final bytes = uploadBytes;
 
       final Map<String, dynamic> s3Headers = {
         Headers.contentLengthHeader: bytes.length,
@@ -116,7 +177,7 @@ class MediaUploadRepository {
         data: Stream.fromIterable([bytes]),
         options: Options(
           headers: s3Headers,
-          contentType: 'image/jpeg',
+          contentType: contentType,
         ),
       );
 

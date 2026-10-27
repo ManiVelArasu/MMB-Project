@@ -8,11 +8,22 @@ import '../../../utils/theme/app.fonts.dart';
 
 class ProductCard extends StatelessWidget {
   final ProductListData item;
+  final ValueChanged<bool>? onToggleActive;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
-  const ProductCard({super.key, required this.item});
+  const ProductCard({
+    super.key,
+    required this.item,
+    this.onToggleActive,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isActive = item.isActive == '1' || item.isActive == 'true';
+
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -39,9 +50,8 @@ class ProductCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(
+              Expanded(
                 child: AppText(
                   item.name ?? '',
                   maxLines: 1,
@@ -52,10 +62,10 @@ class ProductCard extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(width: 4),
               AppText(
-                '${item.unit}kg' ?? '',
+                '${item.unit ?? ''}kg',
                 maxLines: 1,
-                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: AppFontSize.fontSize16,
                   fontWeight: FontWeight.w600,
@@ -66,13 +76,12 @@ class ProductCard extends StatelessWidget {
           const SizedBox(height: 4),
           AppText(
             item.description ?? '',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: AppFontSize.fontSize14,
               fontWeight: FontWeight.w400,
             ),
-
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
           Row(
@@ -84,25 +93,64 @@ class ProductCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              const SizedBox(width: 6),
               AppText(
-                '₹ ${item.price}',
+                '₹ ${item.price ?? '0'}',
                 style: TextStyle(
                   fontSize: AppFontSize.fontSize12,
                   decoration: TextDecoration.lineThrough,
                   fontWeight: FontWeight.w400,
-                  color: AppColors.appRed
+                  color: AppColors.appRed,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            item.isActive == '1' ? '🔴 ACTIVE' : 'INACTIVE',
-            style: TextStyle(
-              fontSize: AppFontSize.fontSize14,
-
-              fontWeight: FontWeight.w400,
-            ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  isActive ? 'AC' : 'IN',
+                  style: TextStyle(
+                    fontSize: AppFontSize.fontSize10,
+                    fontWeight: FontWeight.w600,
+                    color: isActive ? Colors.green : Colors.grey,
+                  ),
+                ),
+              ),
+              Transform.scale(
+                scale: 0.5,
+                child: CupertinoSwitch(
+                  value: isActive,
+                  activeTrackColor: Colors.green,
+                  onChanged: onToggleActive,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Edit',
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
+                onPressed: onEdit,
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  size: 20,
+                  color: Colors.blue,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Delete',
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
+                onPressed: onDelete,
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 20,
+                  color: Colors.red,
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -6,10 +7,13 @@ import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'
+    show consolidateHttpClientResponseBytes, mapEquals;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/flutter_svg.dart' as svg;
+
 import '../../../Api Model/editor_model.dart';
 import '../../../network/provider/editor_provider.dart';
 import 'package:image/image.dart' as img;
@@ -45,6 +49,7 @@ class EditableItemWidget extends StatelessWidget {
           filterIntensity: provider.imageFilterIntensity(currentItem.id ?? ''),
           tint: provider.imageTint(currentItem.id ?? ''),
           blur: provider.imageBlur(currentItem.id ?? ''),
+          maskUrl: provider.imageMaskUrl(currentItem.id ?? ''),
         );
       },
       builder: (context, state, child) {
@@ -64,7 +69,6 @@ class EditableItemWidget extends StatelessWidget {
 
         final bodyWidth = math.max(1.0, currentItem.width).toDouble();
         final bodyHeight = math.max(1.0, currentItem.height).toDouble();
-
 
         return KeyedSubtree(
           key: ValueKey(currentItem.id),
@@ -289,10 +293,26 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   List<double> _identityMatrix() => const <double>[
-    1, 0, 0, 0, 0,
-    0, 1, 0, 0, 0,
-    0, 0, 1, 0, 0,
-    0, 0, 0, 1, 0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 
   List<double> _mixMatrices(List<double> a, List<double> b, double amount) {
@@ -316,10 +336,26 @@ class EditableItemWidget extends StatelessWidget {
     final sb = 0.0722 * (1.0 - s);
     // Saturation/luminance matrix with contrast and brightness applied.
     return <double>[
-      (sr + s) * c, sg * c, sb * c, 0, b + 128 * (1 - c),
-      sr * c, (sg + s) * c, sb * c, 0, b + 128 * (1 - c),
-      sr * c, sg * c, (sb + s) * c, 0, b + 128 * (1 - c),
-      0, 0, 0, 1, 0,
+      (sr + s) * c,
+      sg * c,
+      sb * c,
+      0,
+      b + 128 * (1 - c),
+      sr * c,
+      (sg + s) * c,
+      sb * c,
+      0,
+      b + 128 * (1 - c),
+      sr * c,
+      sg * c,
+      (sb + s) * c,
+      0,
+      b + 128 * (1 - c),
+      0,
+      0,
+      0,
+      1,
+      0,
     ];
   }
 
@@ -328,76 +364,238 @@ class EditableItemWidget extends StatelessWidget {
       case 'festive':
       case 'summer':
         return const <double>[
-          1.12, 0, 0, 0, 8,
-          0, 1.04, 0, 0, 3,
-          0, 0, 0.82, 0, 0,
-          0, 0, 0, 1, 0,
+          // Strong warm/golden treatment so Festive is visibly different
+          // from Normal, including on mostly grey product photos.
+          1.22,
+          0,
+          0,
+          0,
+          24,
+          0,
+          1.08,
+          0,
+          0,
+          8,
+          0,
+          0,
+          0.58,
+          0,
+          -6,
+          0,
+          0,
+          0,
+          1,
+          0,
         ];
       case 'drama':
         return const <double>[
-          1.18, 0, 0, 0, 0,
-          0, 0.86, 0, 0, 0,
-          0, 0, 1.18, 0, 8,
-          0, 0, 0, 1, 0,
+          1.18,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.86,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1.18,
+          0,
+          8,
+          0,
+          0,
+          0,
+          1,
+          0,
         ];
       case 'cali':
         return const <double>[
-          0.88, 0, 0, 0, 12,
-          0, 0.94, 0, 0, 8,
-          0, 0, 0.82, 0, 4,
-          0, 0, 0, 1, 0,
+          0.88,
+          0,
+          0,
+          0,
+          12,
+          0,
+          0.94,
+          0,
+          0,
+          8,
+          0,
+          0,
+          0.82,
+          0,
+          4,
+          0,
+          0,
+          0,
+          1,
+          0,
         ];
       case 'epic':
         return const <double>[
-          1.12, 0, 0, 0, 0,
-          0, 1.08, 0, 0, 0,
-          0, 0, 1.02, 0, 0,
-          0, 0, 0, 1, 0,
+          1.12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1.08,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1.02,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
         ];
       case 'street':
       case 'retro':
         return const <double>[
-          0.92, 0, 0, 0, 10,
-          0, 0.86, 0, 0, 5,
-          0, 0, 0.72, 0, 0,
-          0, 0, 0, 1, 0,
+          0.92,
+          0,
+          0,
+          0,
+          10,
+          0,
+          0.86,
+          0,
+          0,
+          5,
+          0,
+          0,
+          0.72,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
         ];
       case 'grayscale':
         return const <double>[
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0, 0, 0, 1, 0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
         ];
       case 'rosie':
       case 'whimsical':
         return const <double>[
-          1.02, 0, 0, 0, 8,
-          0, 0.90, 0, 0, 0,
-          0, 0, 1.08, 0, 10,
-          0, 0, 0, 1, 0,
+          1.02,
+          0,
+          0,
+          0,
+          8,
+          0,
+          0.90,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1.08,
+          0,
+          10,
+          0,
+          0,
+          0,
+          1,
+          0,
         ];
       case 'edge':
         return const <double>[
-          1.25, 0, 0, 0, 0,
-          0, 1.25, 0, 0, 0,
-          0, 0, 1.25, 0, 0,
-          0, 0, 0, 1, 0,
+          1.25,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1.25,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1.25,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
         ];
       case 'nordic':
       case 'blues':
         return const <double>[
-          0.88, 0, 0, 0, 0,
-          0, 0.96, 0, 0, 3,
-          0, 0, 1.18, 0, 12,
-          0, 0, 0, 1, 0,
+          0.88,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.96,
+          0,
+          0,
+          3,
+          0,
+          0,
+          1.18,
+          0,
+          12,
+          0,
+          0,
+          0,
+          1,
+          0,
         ];
       case 'selfie':
         return const <double>[
-          1.08, 0, 0, 0, 8,
-          0, 1.02, 0, 0, 4,
-          0, 0, 0.92, 0, 0,
-          0, 0, 0, 1, 0,
+          1.08,
+          0,
+          0,
+          0,
+          8,
+          0,
+          1.02,
+          0,
+          0,
+          4,
+          0,
+          0,
+          0.92,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
         ];
       case 'normal':
       case '':
@@ -416,6 +614,15 @@ class EditableItemWidget extends StatelessWidget {
         width: item.width,
         height: item.height,
         child: EditorVideoWidget(videoUrl: item.contentUrl ?? ''),
+      );
+    }
+
+    if (item.type == 'shape') {
+      final provider = context.read<EditorProvider>();
+      final raw = provider.templateRawObject(item.id ?? '');
+      if (raw == null) return const SizedBox.shrink();
+      return SizedBox.expand(
+        child: CustomPaint(painter: _FabricShapePainter(raw)),
       );
     }
 
@@ -455,8 +662,6 @@ class EditableItemWidget extends StatelessWidget {
         },
       );
 
-      // Render the image first, then layer effects on top of it. Keep the
-      // source image intact; a missing/unknown filter must never hide it.
       final provider = context.read<EditorProvider>();
       final id = item.id ?? '';
       final intensity = provider.imageFilterIntensity(id).clamp(0.0, 1.0);
@@ -508,6 +713,11 @@ class EditableItemWidget extends StatelessWidget {
         );
       }
 
+      final maskUrl = provider.imageMaskUrl(id);
+      if (maskUrl != null && maskUrl.trim().isNotEmpty) {
+        rendered = _NetworkAlphaMask(maskUrl: maskUrl, child: rendered);
+      }
+
       return SizedBox.expand(child: rendered);
     }
 
@@ -543,7 +753,7 @@ class EditableItemWidget extends StatelessWidget {
         );
       }
 
-      return SvgPicture.string(
+      return svg.SvgPicture.string(
         source,
         width: item.width,
         height: item.height,
@@ -614,6 +824,7 @@ class _ItemViewState {
   final double filterIntensity;
   final double tint;
   final double blur;
+  final String? maskUrl;
 
   _ItemViewState({
     required this.currentItem,
@@ -623,6 +834,7 @@ class _ItemViewState {
     required this.filterIntensity,
     required this.tint,
     required this.blur,
+    required this.maskUrl,
   });
 
   @override
@@ -636,8 +848,299 @@ class _ItemViewState {
               flipY == other.flipY &&
               filterIntensity == other.filterIntensity &&
               tint == other.tint &&
-              blur == other.blur;
+              blur == other.blur &&
+              maskUrl == other.maskUrl;
 
   @override
-  int get hashCode => Object.hash(currentItem, isSelected, flipX, flipY, filterIntensity, tint, blur);
+  int get hashCode => Object.hash(
+    currentItem,
+    isSelected,
+    flipX,
+    flipY,
+    filterIntensity,
+    tint,
+    blur,
+    maskUrl,
+  );
+}
+
+/// Applies a transparent PNG mask to the image content without changing the
+/// canvas item geometry or selection overlay.
+class _NetworkAlphaMask extends StatefulWidget {
+  final String maskUrl;
+  final Widget child;
+
+  const _NetworkAlphaMask({required this.maskUrl, required this.child});
+
+  @override
+  State<_NetworkAlphaMask> createState() => _NetworkAlphaMaskState();
+}
+
+class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
+  ui.Image? _maskImage;
+  ImageStream? _stream;
+  ImageStreamListener? _listener;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveMask();
+  }
+
+  @override
+  void didUpdateWidget(covariant _NetworkAlphaMask oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.maskUrl != widget.maskUrl) {
+      _removeListener();
+      _maskImage?.dispose();
+      _maskImage = null;
+      _failed = false;
+      _resolveMask();
+    }
+  }
+
+  Future<void> _resolveMask() async {
+    try {
+      final uri = Uri.tryParse(widget.maskUrl);
+      if (uri == null ||
+          !uri.hasScheme ||
+          !(uri.scheme == 'http' || uri.scheme == 'https')) {
+        throw const FormatException('Mask URL is not a valid HTTP(S) URL');
+      }
+
+      // Fetch the bytes directly instead of using NetworkImage's platform
+      // decoder. Some CDN mask assets are served in formats the Android image
+      // decoder cannot decode. Re-encode supported raster formats as PNG.
+      final client = HttpClient();
+      Uint8List bytes;
+      try {
+        final request = await client.getUrl(uri);
+        request.headers.set(
+          HttpHeaders.acceptHeader,
+          'image/png,image/jpeg,image/webp,image/*,*/*;q=0.8',
+        );
+        final response = await request.close();
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw HttpException(
+            'Mask request failed with HTTP ${response.statusCode}',
+            uri: uri,
+          );
+        }
+        bytes = await consolidateHttpClientResponseBytes(response);
+      } finally {
+        client.close(force: true);
+      }
+
+      // CDN mask assets may be SVG or raster images. Convert either format
+      // into a ui.Image so the same alpha-mask shader can render it.
+      final trimmedText = utf8.decode(bytes, allowMalformed: true).trimLeft();
+      final isSvg =
+          trimmedText.startsWith('<svg') ||
+              (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
+              trimmedText.startsWith('<!DOCTYPE svg');
+
+      ui.Image decodedImage;
+      if (isSvg) {
+        final svgText = utf8.decode(bytes, allowMalformed: false);
+        final pictureInfo = await svg.vg.loadPicture(
+          svg.SvgStringLoader(svgText),
+          null,
+        );
+        try {
+          final width = pictureInfo.size.width.ceil().clamp(1, 4096).toInt();
+          final height = pictureInfo.size.height.ceil().clamp(1, 4096).toInt();
+          decodedImage = await pictureInfo.picture.toImage(width, height);
+        } finally {
+          pictureInfo.picture.dispose();
+        }
+      } else {
+        final decoded = img.decodeImage(bytes);
+        if (decoded == null) {
+          final preview = utf8
+              .decode(bytes.take(180).toList(), allowMalformed: true)
+              .replaceAll(RegExp(r'\\s+'), ' ');
+          throw FormatException(
+            'Mask response is not SVG or a supported raster image. '
+                'Response begins with: $preview',
+          );
+        }
+        final pngBytes = Uint8List.fromList(img.encodePng(decoded));
+        final codec = await ui.instantiateImageCodec(pngBytes);
+        try {
+          final frame = await codec.getNextFrame();
+          decodedImage = frame.image;
+        } finally {
+          codec.dispose();
+        }
+      }
+
+      if (!mounted) {
+        decodedImage.dispose();
+        return;
+      }
+      setState(() {
+        _maskImage?.dispose();
+        _maskImage = decodedImage;
+        _failed = false;
+      });
+    } catch (error, stackTrace) {
+      if (mounted) setState(() => _failed = true);
+      debugPrint('Image mask load failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  void _removeListener() {
+    if (_stream != null && _listener != null) {
+      _stream!.removeListener(_listener!);
+    }
+    _stream = null;
+    _listener = null;
+  }
+
+  @override
+  void dispose() {
+    _removeListener();
+    _maskImage?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mask = _maskImage;
+    // On failure keep the original image visible rather than hiding the canvas.
+    if (mask == null || _failed) return widget.child;
+    return ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (Rect bounds) {
+        final sx = bounds.width / mask.width;
+        final sy = bounds.height / mask.height;
+        return ImageShader(
+          mask,
+          TileMode.clamp,
+          TileMode.clamp,
+          Float64List.fromList(<double>[
+            sx,
+            0,
+            0,
+            0,
+            0,
+            sy,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+          ]),
+          filterQuality: FilterQuality.medium,
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+/// Renders Fabric.js Rect, Circle and Path objects imported from a template.
+class _FabricShapePainter extends CustomPainter {
+  _FabricShapePainter(this.raw);
+  final Map<String, dynamic> raw;
+
+  double _n(dynamic v, [double fallback = 0]) =>
+      v is num ? v.toDouble() : double.tryParse('$v') ?? fallback;
+
+  Color? _c(dynamic value) {
+    if (value == null || value == '' || value == 'transparent') return null;
+    final s = value.toString().trim();
+    final m = RegExp(
+      r'rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)',
+    ).firstMatch(s);
+    if (m != null) {
+      final a = (_n(m.group(4), 1).clamp(0.0, 1.0) * 255).round();
+      return Color.fromARGB(
+        a,
+        _n(m.group(1)).round().clamp(0, 255),
+        _n(m.group(2)).round().clamp(0, 255),
+        _n(m.group(3)).round().clamp(0, 255),
+      );
+    }
+    var h = s.replaceFirst('#', '');
+    if (h.length == 6) h = 'FF$h';
+    final valueInt = h.length == 8 ? int.tryParse(h, radix: 16) : null;
+    return valueInt == null ? null : Color(valueInt);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = _n(raw['width'], size.width).abs();
+    final h = _n(raw['height'], size.height).abs();
+    if (w <= 0 || h <= 0 || size.isEmpty) return;
+    final sx = size.width / w, sy = size.height / h;
+    canvas.save();
+    canvas.scale(sx, sy);
+    final fill = _c(raw['fill']), stroke = _c(raw['stroke']);
+    final sw = _n(raw['strokeWidth']) / math.max(0.01, (sx + sy) / 2);
+    final fp = Paint()..style = PaintingStyle.fill;
+    final sp = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = sw;
+    final type = (raw['type'] ?? '').toString().toLowerCase();
+
+    if (type == 'circle' || type == 'ellipse') {
+      final r = Rect.fromLTWH(0, 0, w, h);
+      if (fill != null) canvas.drawOval(r, fp..color = fill);
+      if (stroke != null && sw > 0)
+        canvas.drawOval(r.deflate(sw / 2), sp..color = stroke);
+    } else if (type == 'rect' || type == 'rectangle') {
+      final rx = _n(raw['rx']).clamp(0.0, w / 2);
+      final ry = _n(raw['ry'], rx).clamp(0.0, h / 2);
+      final path = Path()
+        ..addRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(0, 0, w, h),
+            Radius.elliptical(rx, ry),
+          ),
+        );
+      if (fill != null) canvas.drawPath(path, fp..color = fill);
+      if (stroke != null && sw > 0) canvas.drawPath(path, sp..color = stroke);
+    } else if (type == 'path' && raw['path'] is List) {
+      final path = Path();
+      Offset? start;
+      for (final entry in raw['path'] as List) {
+        if (entry is! List || entry.isEmpty) continue;
+        final cmd = entry.first.toString().toUpperCase();
+        double v(int i) => i < entry.length ? _n(entry[i]) : 0;
+        switch (cmd) {
+          case 'M':
+            path.moveTo(v(1), v(2));
+            start = Offset(v(1), v(2));
+            break;
+          case 'L':
+            path.lineTo(v(1), v(2));
+          break;
+          case 'C':
+            path.cubicTo(v(1), v(2), v(3), v(4), v(5), v(6));
+            break;
+          case 'Q':
+            path.quadraticBezierTo(v(1), v(2), v(3), v(4));
+            break;
+          case 'Z':
+            path.close();
+            break;
+        }
+      }
+      if (fill != null) canvas.drawPath(path, fp..color = fill);
+      if (stroke != null && sw > 0) canvas.drawPath(path, sp..color = stroke);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _FabricShapePainter oldDelegate) =>
+      !mapEquals(oldDelegate.raw, raw);
 }

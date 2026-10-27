@@ -3115,6 +3115,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _saveState();
     _removeBackgroundLayers();
     _backgroundColor = Colors.transparent;
+    // A newly selected background must replace the template's original root paint too.
+    _importedBackgroundGradient = null;
+    _hasImportedRootBackground = false;
 
     final bgId = 'bg_${DateTime.now().millisecondsSinceEpoch}';
     // Backgrounds are always anchored to the CURRENT editor canvas.
@@ -3150,6 +3153,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _saveState();
     _removeBackgroundLayers();
     _backgroundColor = Colors.transparent;
+    // A newly selected background must replace the template's original root paint too.
+    _importedBackgroundGradient = null;
+    _hasImportedRootBackground = false;
 
     final bgId = 'bg_video_${DateTime.now().millisecondsSinceEpoch}';
     final sw = (sourceWidth != null && sourceWidth.isFinite && sourceWidth > 0)
@@ -3223,6 +3229,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _removeBackgroundLayers();
     _items.removeWhere((item) => item.id == selectedItemIdToRemove);
     _backgroundColor = Colors.transparent;
+    // A newly selected background must replace the template's original root paint too.
+    _importedBackgroundGradient = null;
+    _hasImportedRootBackground = false;
 
     final bgId = 'bg_${DateTime.now().millisecondsSinceEpoch}';
     // Keep the background layer exactly the current canvas size.
@@ -3383,6 +3392,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     // A color background replaces any image/video background.
     _removeBackgroundLayers();
+    // The selected solid color replaces any imported template background/gradient.
+    _importedBackgroundGradient = null;
+    _hasImportedRootBackground = false;
     _backgroundColor = color;
     selectedItemId = null;
     selectedItemType = null;
