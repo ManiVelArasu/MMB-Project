@@ -94,7 +94,6 @@ class ProductsProvider extends ChangeNotifier {
         return false;
       }
       final body = <String, dynamic>{
-        'id': id,
         'type': type,
         'name': name.trim(),
         'unit': unit.trim(),
@@ -102,7 +101,10 @@ class ProductsProvider extends ChangeNotifier {
         'price': parsedPrice,
         'offer_price': parsedOfferPrice,
       };
-      final result = await ProductRepository.instance.editProductService(body: body);
+      final result = await ProductRepository.instance.editProductService(
+        body: body,
+        id: id,
+      );
       final response = result.data;
       final success = response is Map
           ? response['success'] == true
@@ -125,17 +127,21 @@ class ProductsProvider extends ChangeNotifier {
   }) async {
     try {
       final result = await ProductRepository.instance.editProductService(
-        body: {'id': id, 'is_active': isActive},
+        body: {'is_active': isActive ? 1 : 0},
+        id: id,
       );
+
       final response = result.data;
       final success = response is Map
           ? response['success'] == true
           : response?.success == true;
+
       if (!success) {
         errorMessage = 'Unable to update product status';
         notifyListeners();
         return false;
       }
+
       await fetchProducts();
       return true;
     } catch (e) {
@@ -229,8 +235,6 @@ class ProductsProvider extends ChangeNotifier {
 
       errorMessage = 'Unable to add $type';
       return false;
-
-
     } catch (e) {
       errorMessage = e.toString();
       return false;
@@ -249,9 +253,9 @@ class ProductsProvider extends ChangeNotifier {
 
   int get productsCount =>
       int.tryParse(_counts?.products ?? '') ??
-          _products.where((e) => e.type?.toLowerCase() == 'product').length;
+      _products.where((e) => e.type?.toLowerCase() == 'product').length;
 
   int get servicesCount =>
       int.tryParse(_counts?.services ?? '') ??
-          _products.where((e) => e.type?.toLowerCase() == 'service').length;
+      _products.where((e) => e.type?.toLowerCase() == 'service').length;
 }

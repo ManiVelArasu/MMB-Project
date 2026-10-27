@@ -68,7 +68,7 @@ class _AddProductServiceSheetState extends State<AddProductServiceSheet> {
     try {
       final success = widget.product != null
           ? await provider.editProductService(
-              id: widget.product!.id?.toString() ?? '',
+              id: widget.product!.uid?.toString() ?? '',
               type: _selectedType,
               name: _nameController.text.trim(),
               unit: _unitController.text.trim(),

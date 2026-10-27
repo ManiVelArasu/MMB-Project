@@ -238,15 +238,17 @@ class BusinessProvider extends ChangeNotifier {
     mobileController.clear();
 
     final prefs = await SharedPreferences.getInstance();
-
     await prefs.remove('is_business_completed');
     await prefs.remove('saved_business_name');
     await prefs.remove('saved_email');
     await prefs.remove('saved_mobile_number');
     await prefs.remove('saved_business_image_path');
+
     await prefs.remove('profile_s3_key');
     await prefs.remove('profile_photo_s3_key');
     await prefs.remove('logo_s3_key');
+
+    await prefs.remove('business_uid');
 
     notifyListeners();
   }

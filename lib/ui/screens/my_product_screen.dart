@@ -159,13 +159,14 @@ class _ProductsView extends StatelessWidget {
                       : GridView.builder(
                           padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
                           physics: const BouncingScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                                childAspectRatio: .68,
-                              ),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount:
+                                2, // ஒரு வளைக்கு எத்தனை கார்டுகள் இருக்க வேண்டும்
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio:
+                                0.68, // இந்த மதிப்பை 0.7 அல்லது 0.65 என்று குறைத்தால் கார்டு இன்னும் அகலமாகவும் பெரிதாகவும் தோன்றும்
+                          ),
                           itemCount: provider.filteredProducts.length,
                           itemBuilder: (context, index) {
                             final item = provider.filteredProducts[index];
@@ -173,7 +174,7 @@ class _ProductsView extends StatelessWidget {
                             return ProductCard(
                               item: item,
                               onToggleActive: (value) async {
-                                final id = item.id?.toString() ?? '';
+                                final id = item.uid?.toString() ?? '';
 
                                 if (id.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(

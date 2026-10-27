@@ -38,10 +38,11 @@ class ProductRepository {
 
   Future<ApiResult<dynamic>> editProductService({
     required Map<String, dynamic> body,
+    required String id
   }) {
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
-        endpoint: ApiEndpoints.productList,
+        endpoint: ApiEndpoints.productListTemplate(id),
         method: ApiMethod.patch,
         body: body,
       ),

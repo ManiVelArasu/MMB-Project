@@ -23,136 +23,145 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = item.isActive == '1' || item.isActive == 'true';
+    final imageUrl = "item.image" ?? '';
 
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFFFDCDD)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 1. Product Image
           Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F3F3),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.image_outlined,
-                size: 40,
-                color: Colors.grey,
-              ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
+                    )
+                  : _buildPlaceholderImage(),
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: AppText(
-                  item.name ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: AppFontSize.fontSize16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              AppText(
-                '${item.unit ?? ''}kg',
-                maxLines: 1,
-                style: TextStyle(
-                  fontSize: AppFontSize.fontSize16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+
+          AppText(
+            '${item.name ?? ''}, ${item.unit ?? ''}Kg',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: AppFontSize.fontSize14,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+            ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           AppText(
             item.description ?? '',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: AppFontSize.fontSize14,
+              fontSize: AppFontSize.fontSize11,
               fontWeight: FontWeight.w400,
+              color: Colors.black87,
+              height: 1.1,
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
+          const SizedBox(height: 6),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
+            runSpacing: 2,
             children: [
               AppText(
-                '₹ ${item.offerPrice ?? '0'}',
+                '₹ ${item.offerPrice ?? item.price ?? '0'}',
                 style: TextStyle(
-                  fontSize: AppFontSize.fontSize16,
-                  fontWeight: FontWeight.w600,
+                  fontSize: AppFontSize.fontSize14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black,
                 ),
               ),
-              const SizedBox(width: 6),
-              AppText(
-                '₹ ${item.price ?? '0'}',
-                style: TextStyle(
-                  fontSize: AppFontSize.fontSize12,
-                  decoration: TextDecoration.lineThrough,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.appRed,
+              if (item.offerPrice != null && item.offerPrice != item.price)
+                AppText(
+                  '₹ ${item.price ?? '0'}',
+                  style: TextStyle(
+                    fontSize: AppFontSize.fontSize12,
+                    decoration: TextDecoration.lineThrough,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.appRed,
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 6),
+
+          // Divider Line
+          const Divider(height: 1, thickness: 0.5, color: Color(0xFFFFDCDD)),
+          const SizedBox(height: 4),
+
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  isActive ? 'AC' : 'IN',
-                  style: TextStyle(
-                    fontSize: AppFontSize.fontSize10,
-                    fontWeight: FontWeight.w600,
-                    color: isActive ? Colors.green : Colors.grey,
-                  ),
+              AppText(
+                isActive ? 'ACTIVE' : 'INACTIVE',
+                style: TextStyle(
+                  fontSize: AppFontSize.fontSize10,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
                 ),
               ),
+
               Transform.scale(
-                scale: 0.5,
+                scale: 0.45,
                 child: CupertinoSwitch(
                   value: isActive,
                   activeTrackColor: Colors.green,
                   onChanged: onToggleActive,
                 ),
               ),
-              IconButton(
-                tooltip: 'Edit',
-                visualDensity: VisualDensity.compact,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                padding: EdgeInsets.zero,
-                onPressed: onEdit,
-                icon: const Icon(
-                  Icons.edit_outlined,
-                  size: 20,
-                  color: Colors.blue,
-                ),
-              ),
-              IconButton(
-                tooltip: 'Delete',
-                visualDensity: VisualDensity.compact,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                padding: EdgeInsets.zero,
+              _buildActionButton(icon: Icons.edit_outlined, onPressed: onEdit),
+              const SizedBox(width: 2),
+              _buildActionButton(
+                icon: Icons.delete_outline,
                 onPressed: onDelete,
-                icon: const Icon(
-                  Icons.delete_outline,
-                  size: 20,
-                  color: Colors.red,
-                ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderImage() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F3F3),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Icon(Icons.image_outlined, size: 35, color: Colors.grey),
+    );
+  }
+
+  Widget _buildActionButton({required IconData icon, VoidCallback? onPressed}) {
+    return Material(
+      color: const Color(0xFFEFEFEF),
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.all(
+            4,
+          ), // பட்டன் பேடிங் குறைக்கப்பட்டுள்ள்ளது
+          child: Icon(icon, size: 15, color: Colors.black87),
+        ),
       ),
     );
   }

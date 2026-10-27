@@ -38,7 +38,7 @@ class EditableItemWidget extends StatelessWidget {
     return Selector<EditorProvider, _ItemViewState>(
       selector: (_, provider) {
         final currentItem = provider.items.firstWhere(
-              (e) => e.id == item.id,
+          (e) => e.id == item.id,
           orElse: () => item,
         );
         return _ItemViewState(
@@ -63,9 +63,9 @@ class EditableItemWidget extends StatelessWidget {
             .toLowerCase();
         final isTextItem =
             normalizedItemType == 'text' ||
-                normalizedItemType == 'textbox' ||
-                normalizedItemType == 'i-text' ||
-                normalizedItemType == 'itext';
+            normalizedItemType == 'textbox' ||
+            normalizedItemType == 'i-text' ||
+            normalizedItemType == 'itext';
 
         final bodyWidth = math.max(1.0, currentItem.width).toDouble();
         final bodyHeight = math.max(1.0, currentItem.height).toDouble();
@@ -135,19 +135,19 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   static Widget buildStandaloneMediaContent(
-      BuildContext context,
-      EditorItem item,
-      ) {
+    BuildContext context,
+    EditorItem item,
+  ) {
     final widget = EditableItemWidget(item: item, onItemSelected: (_, __) {});
     return widget._buildItemContent(item, context, isBackground: true);
   }
 
   Future<void> _showTextEditorDialog(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      String initialText,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+    String initialText,
+  ) async {
     final matchingItems = provider.items.where((e) => e.id == itemId);
 
     if (itemId.isEmpty || matchingItems.isEmpty) {
@@ -318,7 +318,7 @@ class EditableItemWidget extends StatelessWidget {
   List<double> _mixMatrices(List<double> a, List<double> b, double amount) {
     return List<double>.generate(
       20,
-          (i) => a[i] + (b[i] - a[i]) * amount,
+      (i) => a[i] + (b[i] - a[i]) * amount,
       growable: false,
     );
   }
@@ -605,10 +605,10 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _buildItemContent(
-      EditorItem item,
-      BuildContext context, {
-        bool isBackground = false,
-      }) {
+    EditorItem item,
+    BuildContext context, {
+    bool isBackground = false,
+  }) {
     if (item.type == 'video') {
       return SizedBox(
         width: item.width,
@@ -622,7 +622,9 @@ class EditableItemWidget extends StatelessWidget {
       final raw = provider.templateRawObject(item.id ?? '');
       if (raw == null) return const SizedBox.shrink();
       return SizedBox.expand(
-        child: CustomPaint(painter: _FabricShapePainter(raw)),
+        child: CustomPaint(
+          painter: _FabricShapePainter(raw, fillColor: item.color),
+        ),
       );
     }
 
@@ -638,29 +640,29 @@ class EditableItemWidget extends StatelessWidget {
 
       final image = isHttp
           ? Image.network(
-        source,
-        fit: isBackground ? BoxFit.cover : BoxFit.fill,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, error, stackTrace) {
-          debugPrint('Background image error: $error');
-          return const SizedBox.shrink();
-        },
-      )
+              source,
+              fit: isBackground ? BoxFit.cover : BoxFit.fill,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, error, stackTrace) {
+                debugPrint('Background image error: $error');
+                return const SizedBox.shrink();
+              },
+            )
           : Image.file(
-        File(
-          source.startsWith('file://')
-              ? source.replaceFirst('file://', '')
-              : source,
-        ),
-        fit: isBackground ? BoxFit.cover : BoxFit.fill,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, error, stackTrace) {
-          debugPrint('Local image error: $error');
-          return const SizedBox.shrink();
-        },
-      );
+              File(
+                source.startsWith('file://')
+                    ? source.replaceFirst('file://', '')
+                    : source,
+              ),
+              fit: isBackground ? BoxFit.cover : BoxFit.fill,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, error, stackTrace) {
+                debugPrint('Local image error: $error');
+                return const SizedBox.shrink();
+              },
+            );
 
       final provider = context.read<EditorProvider>();
       final id = item.id ?? '';
@@ -840,16 +842,16 @@ class _ItemViewState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is _ItemViewState &&
-              runtimeType == other.runtimeType &&
-              currentItem == other.currentItem &&
-              isSelected == other.isSelected &&
-              flipX == other.flipX &&
-              flipY == other.flipY &&
-              filterIntensity == other.filterIntensity &&
-              tint == other.tint &&
-              blur == other.blur &&
-              maskUrl == other.maskUrl;
+      other is _ItemViewState &&
+          runtimeType == other.runtimeType &&
+          currentItem == other.currentItem &&
+          isSelected == other.isSelected &&
+          flipX == other.flipX &&
+          flipY == other.flipY &&
+          filterIntensity == other.filterIntensity &&
+          tint == other.tint &&
+          blur == other.blur &&
+          maskUrl == other.maskUrl;
 
   @override
   int get hashCode => Object.hash(
@@ -937,8 +939,8 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
       final trimmedText = utf8.decode(bytes, allowMalformed: true).trimLeft();
       final isSvg =
           trimmedText.startsWith('<svg') ||
-              (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
-              trimmedText.startsWith('<!DOCTYPE svg');
+          (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
+          trimmedText.startsWith('<!DOCTYPE svg');
 
       ui.Image decodedImage;
       if (isSvg) {
@@ -962,7 +964,7 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
               .replaceAll(RegExp(r'\\s+'), ' ');
           throw FormatException(
             'Mask response is not SVG or a supported raster image. '
-                'Response begins with: $preview',
+            'Response begins with: $preview',
           );
         }
         final pngBytes = Uint8List.fromList(img.encodePng(decoded));
@@ -1048,14 +1050,20 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
 
 /// Renders Fabric.js Rect, Circle and Path objects imported from a template.
 class _FabricShapePainter extends CustomPainter {
-  _FabricShapePainter(this.raw);
+  _FabricShapePainter(this.raw, {this.fillColor});
   final Map<String, dynamic> raw;
+  final Color? fillColor;
 
   double _n(dynamic v, [double fallback = 0]) =>
       v is num ? v.toDouble() : double.tryParse('$v') ?? fallback;
 
   Color? _c(dynamic value) {
-    if (value == null || value == '' || value == 'transparent') return null;
+    if (value is Color) return value;
+    if (value == null ||
+        value == '' ||
+        value.toString().toLowerCase() == 'transparent' ||
+        value.toString().toLowerCase() == 'none')
+      return null;
     final s = value.toString().trim();
     final m = RegExp(
       r'rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)',
@@ -1069,7 +1077,21 @@ class _FabricShapePainter extends CustomPainter {
         _n(m.group(3)).round().clamp(0, 255),
       );
     }
+    const named = <String, Color>{
+      'white': Colors.white,
+      'black': Colors.black,
+      'red': Colors.red,
+      'green': Colors.green,
+      'blue': Colors.blue,
+      'yellow': Colors.yellow,
+      'orange': Colors.orange,
+      'grey': Colors.grey,
+      'gray': Colors.grey,
+    };
+    final namedColor = named[s.toLowerCase()];
+    if (namedColor != null) return namedColor;
     var h = s.replaceFirst('#', '');
+    if (h.startsWith('0x')) h = h.substring(2);
     if (h.length == 6) h = 'FF$h';
     final valueInt = h.length == 8 ? int.tryParse(h, radix: 16) : null;
     return valueInt == null ? null : Color(valueInt);
@@ -1083,7 +1105,10 @@ class _FabricShapePainter extends CustomPainter {
     final sx = size.width / w, sy = size.height / h;
     canvas.save();
     canvas.scale(sx, sy);
-    final fill = _c(raw['fill']), stroke = _c(raw['stroke']);
+    // Prefer the live model colour so picker changes repaint immediately,
+    // even when the template's original fill format is not a hex string.
+    final fill = fillColor ?? _c(raw['fill']);
+    final stroke = _c(raw['stroke']);
     final sw = _n(raw['strokeWidth']) / math.max(0.01, (sx + sy) / 2);
     final fp = Paint()..style = PaintingStyle.fill;
     final sp = Paint()
@@ -1122,7 +1147,7 @@ class _FabricShapePainter extends CustomPainter {
             break;
           case 'L':
             path.lineTo(v(1), v(2));
-          break;
+            break;
           case 'C':
             path.cubicTo(v(1), v(2), v(3), v(4), v(5), v(6));
             break;
@@ -1142,5 +1167,5 @@ class _FabricShapePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _FabricShapePainter oldDelegate) =>
-      !mapEquals(oldDelegate.raw, raw);
+      !mapEquals(oldDelegate.raw, raw) || oldDelegate.fillColor != fillColor;
 }
