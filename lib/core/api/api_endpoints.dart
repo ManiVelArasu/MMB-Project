@@ -85,4 +85,5 @@ class ApiEndpoints {
       '/products/${templateId}';
 
   static String get upload => '/uploads';
+
 }

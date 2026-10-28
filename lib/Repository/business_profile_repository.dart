@@ -1,3 +1,4 @@
+import '../Api Model/frames_model.dart';
 import '../Api Model/key_words_model.dart';
 import '../core/api/api_endpoints.dart';
 import '../core/api/api_repository.dart';
@@ -18,6 +19,19 @@ class BusinessProfileRepository {
         method: ApiMethod.get,
       ),
       fromJson: (json) => KeyWordsModel.fromJson(json),
+    );
+  }
+
+  Future<ApiResult<FramesData>> frames(String type) {
+    return ApiRepository.instance.request<FramesData>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.frames,
+        method: ApiMethod.get,
+        queryParams: {
+          "frame_type": type,
+        },
+      ),
+      fromJson: (json) => FramesData.fromJson(json),
     );
   }
 }

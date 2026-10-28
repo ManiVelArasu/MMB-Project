@@ -398,11 +398,10 @@ class BusinessProfileView extends StatelessWidget {
                                     child: ListView.builder(
                                       scrollDirection: Axis.horizontal,
                                       physics: const BouncingScrollPhysics(),
-                                      itemCount: provider.staticFrames.length,
+                                      itemCount: provider.selectedFrames.length,
                                       itemBuilder: (context, index) {
-                                        final frame =
-                                            provider.staticFrames[index];
-
+                                        final frame = provider.selectedFrames[index];
+                                        final image = frame.thumbnailS3Key;
                                         return Container(
                                           width: 110.w,
                                           margin: EdgeInsets.only(right: 12.w),
@@ -452,9 +451,8 @@ class BusinessProfileView extends StatelessWidget {
                                                           left: 0,
                                                           right: 0,
                                                           child: Center(
-                                                            child: Image.asset(
-                                                              "assets/images/abslogo.png",
-                                                              height: 18.h,
+                                                            child: Image.network(
+                                                             "${ApiEndpoints.cdnImageUrl}/${image}",
                                                               errorBuilder:
                                                                   (
                                                                     _,
@@ -471,20 +469,6 @@ class BusinessProfileView extends StatelessWidget {
                                                             ),
                                                           ),
                                                         ),
-                                                        Positioned(
-                                                          bottom: 4.h,
-                                                          left: 4.w,
-                                                          right: 4.w,
-                                                          child:
-                                                              provider
-                                                                  .isSolidBanner
-                                                              ? _buildSolidBanner(
-                                                                  provider,
-                                                                )
-                                                              : _buildOutlineBanner(
-                                                                  provider,
-                                                                ),
-                                                        ),
                                                       ],
                                                     ),
                                                   ),
@@ -492,20 +476,15 @@ class BusinessProfileView extends StatelessWidget {
                                               ),
                                               SizedBox(height: 6.h),
                                               AppText(
-                                                frame["price"] ??
-                                                    (index == 0
-                                                        ? "Free"
-                                                        : "Rs.0 (Rs.100 Unlocked)"),
+                                                frame.price ?? 'Free',
                                                 style: TextStyle(
                                                   fontSize: 11.sp,
                                                   fontWeight: FontWeight.w700,
-                                                  color: isDark
-                                                      ? Colors.white70
-                                                      : Colors.black87,
+                                                  color: isDark ? Colors.white70 : Colors.black87,
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                              ),
+                                              )
                                             ],
                                           ),
                                         );
@@ -1375,7 +1354,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          AppText(
             title,
             style: TextStyle(
               color: selected
@@ -1441,7 +1420,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                AppText(
                   "Business Logo",
                   style: TextStyle(
                     fontSize: 13.sp,
@@ -1449,7 +1428,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                   ),
                 ),
                 SizedBox(height: 4.h),
-                Text(
+                AppText(
                   "Your primary brand logo",
                   style: TextStyle(
                     fontSize: 11.sp,
@@ -1472,7 +1451,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
+            AppText(
               "Colors",
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
@@ -1501,7 +1480,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                 color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
               ),
             ),
-            child: Text(
+            child: AppText(
               "No brand colors added. Tap + to add a color.",
               style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
             ),
@@ -1550,7 +1529,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                AppText(
                   palette.name,
                   style: TextStyle(
                     fontSize: 11.sp,
@@ -1559,7 +1538,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                   ),
                 ),
                 SizedBox(height: 2.h),
-                Text(
+                AppText(
                   _hex(color),
                   style: TextStyle(
                     fontSize: 10.sp,
@@ -1593,25 +1572,6 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
     );
   }
 
-  Future<void> _selectSingleColor(BuildContext context, int index) async {
-    if (index < 0 || index >= palettes.length) return;
-
-    final palette = palettes[index];
-    if (palette.colors.isEmpty) return;
-
-    // Keep this color as the currently selected brand color.
-    // The selected color is independent from every other color.
-    setState(() {
-      for (int i = 0; i < palettes.length; i++) {
-        palettes[i] = _BrandPalette(
-          name: palettes[i].name,
-          colors: List<Color>.from(palettes[i].colors),
-          isSelected: i == index,
-        );
-      }
-    });
-  }
-
   Widget _buildFontsTab(BuildContext context, bool isDark) {
     return Column(
       children: fonts.asMap().entries.map((entry) {
@@ -1634,7 +1594,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    AppText(
                       '${font.title}, ${font.family} - ${font.size}',
                       style: TextStyle(
                         fontFamily: font.family,
@@ -1644,7 +1604,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                       ),
                     ),
                     SizedBox(height: 3.h),
-                    Text(
+                    AppText(
                       font.family,
                       style: TextStyle(
                         fontFamily: font.family,
@@ -1692,7 +1652,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
               title: Row(
                 children: [
                   Expanded(
-                    child: Text(
+                    child: AppText(
                       'Edit ${current.title} Font',
                       style: TextStyle(
                         fontSize: 15.sp,
@@ -1712,7 +1672,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    AppText(
                       'Font Family',
                       style: TextStyle(
                         fontSize: 11.sp,
@@ -1757,7 +1717,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                                           : const Color(0xFFF5F5F5)),
                                 borderRadius: BorderRadius.circular(7.r),
                               ),
-                              child: Text(
+                              child: AppText(
                                 'Aa',
                                 style: TextStyle(
                                   fontFamily: fontName,
@@ -1770,7 +1730,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                                 ),
                               ),
                             ),
-                            title: Text(
+                            title: AppText(
                               fontName,
                               style: TextStyle(
                                 fontFamily: fontName,
@@ -1792,7 +1752,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                       ),
                     ),
                     SizedBox(height: 14.h),
-                    Text(
+                    AppText(
                       'Preview',
                       style: TextStyle(
                         fontSize: 11.sp,
@@ -1800,7 +1760,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                       ),
                     ),
                     SizedBox(height: 5.h),
-                    Text(
+                    AppText(
                       'Aa ${current.title}',
                       style: TextStyle(
                         fontFamily: selectedFont,
@@ -1811,7 +1771,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     SizedBox(height: 8.h),
                     Row(
                       children: [
-                        Text(
+                        AppText(
                           'Size ${selectedSize.toInt()}',
                           style: TextStyle(fontSize: 11.sp),
                         ),
@@ -1833,7 +1793,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('CANCEL'),
+                  child: const AppText('CANCEL'),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -1846,7 +1806,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     });
                     Navigator.pop(dialogContext);
                   },
-                  child: const Text('SAVE'),
+                  child: const AppText('SAVE'),
                 ),
               ],
             );
@@ -1911,7 +1871,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
               title: Row(
                 children: [
                   Expanded(
-                    child: Text(
+                    child: AppText(
                       "Choose Your Brand Colors",
                       style: TextStyle(
                         fontSize: 15.sp,
@@ -1956,7 +1916,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                AppText(
                                   "Custom Colors",
                                   style: TextStyle(
                                     fontSize: 12.sp,
@@ -1964,7 +1924,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                                   ),
                                 ),
                                 SizedBox(height: 2.h),
-                                Text(
+                                AppText(
                                   "Add your brand color using HEX codes or the color picker.",
                                   style: TextStyle(
                                     fontSize: 10.sp,
@@ -1978,7 +1938,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                       ),
                     ),
                     SizedBox(height: 12.h),
-                    Text(
+                    AppText(
                       "HEX Color",
                       style: TextStyle(
                         fontSize: 11.sp,
@@ -2013,7 +1973,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                       },
                     ),
                     SizedBox(height: 14.h),
-                    Text(
+                    AppText(
                       "Popular Brand Color Palettes",
                       style: TextStyle(
                         fontSize: 12.sp,
@@ -2049,7 +2009,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              AppText(
                                 palette.name,
                                 style: TextStyle(
                                   fontSize: 10.sp,
@@ -2110,7 +2070,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text("Cancel"),
+                  child: const AppText("Cancel"),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -2131,7 +2091,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
 
                     Navigator.pop(dialogContext);
                   },
-                  child: const Text("Add Color"),
+                  child: const AppText("Add Color"),
                 ),
               ],
             );
@@ -2189,93 +2149,6 @@ class _BrandFont {
   final int size;
 
   const _BrandFont(this.title, this.family, this.size);
-}
-
-Widget _buildOutlineBanner(BusinessProfileProvider businessProvider) {
-  return Container(
-    padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-    decoration: const BoxDecoration(
-      border: Border(top: BorderSide(color: Color(0xFF0066FF), width: 1.5)),
-    ),
-    child: Row(
-      children: [
-        Icon(Icons.phone, color: const Color(0xFF0066FF), size: 6.sp),
-        SizedBox(width: 2.w),
-        Expanded(
-          child: AppText(
-            businessProvider.mobileNumber.isEmpty
-                ? "+91 9876543210"
-                : businessProvider.mobileNumber,
-            style: TextStyle(
-              color: const Color(0xFF0066FF),
-              fontSize: 5.5.sp,
-              fontWeight: FontWeight.w600,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10.r),
-            border: Border.all(color: const Color(0xFF0066FF), width: 0.8),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.message, size: 5.sp, color: const Color(0xFF0066FF)),
-              SizedBox(width: 1.w),
-              Icon(Icons.facebook, size: 5.sp, color: const Color(0xFF0066FF)),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildSolidBanner(BusinessProfileProvider businessProvider) {
-  return Container(
-    padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 3.h),
-    decoration: BoxDecoration(
-      color: const Color(0xFF0066FF),
-      borderRadius: BorderRadius.circular(4.r),
-    ),
-    child: Row(
-      children: [
-        Icon(Icons.phone, color: Colors.white, size: 6.sp),
-        SizedBox(width: 2.w),
-        Expanded(
-          child: AppText(
-            businessProvider.mobileNumber.isEmpty
-                ? "+91 9876543210"
-                : businessProvider.mobileNumber,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 5.5.sp,
-              fontWeight: FontWeight.w600,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10.r),
-            border: Border.all(color: Colors.white, width: 0.8),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.message, size: 5.sp, color: Colors.white),
-              SizedBox(width: 1.w),
-              Icon(Icons.facebook, size: 5.sp, color: Colors.white),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
 }
 
 Widget _buildActionCard({
