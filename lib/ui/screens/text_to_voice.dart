@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../component/appbar_widget.dart';
+import '../../component/custom_widget.dart';
 import '../../network/provider/ai_hub_provider.dart';
 
 const Color _voiceRed = Color(0xFFF5222D);
 const Color _voiceBorder = Color(0xFFFFDCDD);
 const Color _voiceSoftRed = Color(0xFFFFF1F2);
-const Color _voiceMuted = Color(0xFF777777);
 
 class TextToVoiceScreen extends StatelessWidget {
   const TextToVoiceScreen({super.key});
@@ -29,49 +30,26 @@ class _TextToVoiceView extends StatelessWidget {
       builder: (context, provider, _) {
         return Scaffold(
           backgroundColor: Colors.white,
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            surfaceTintColor: Colors.white,
-            leading: Padding(
-              padding: const EdgeInsets.only(left: 12, top: 8, bottom: 8),
-              child: _circleIcon(
-                icon: Icons.arrow_back,
-                onTap: () => Navigator.maybePop(context),
-              ),
-            ),
-            title: const Text(
-              'Text to Voice',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 21,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: _circleIcon(
-                  icon: Icons.power_settings_new,
-                  onTap: () => provider.stopVoice(),
-                ),
-              ),
-            ],
+          appBar: CustomAppBar(
+            showRightIcon: true,
+            rightImage: "assets/images/content.png",
+            badgeCount: null,
           ),
+
           body: SafeArea(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(17, 18, 17, 24),
               children: [
                 Row(
                   children: [
-                     SizedBox(
+                    SizedBox(
                       width: 76,
                       height: 64,
-                      child: Image.asset("assets/images/text_to_audio.png")
+                      child: Image.asset("assets/images/text_to_audio.png"),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
+                    Expanded(
+                      child: AppText(
                         'Convert your content into natural-sounding voiceovers.',
                         style: TextStyle(
                           fontSize: 13,
@@ -100,7 +78,7 @@ class _TextToVoiceView extends StatelessWidget {
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           hintText:
-                          'A premium coffee shop interior with warm lighting, modern furniture and a cup of cappuccino on the table',
+                              'A premium coffee shop interior with warm lighting, modern furniture and a cup of cappuccino on the table',
                           hintStyle: TextStyle(
                             color: Color(0xFFC6C6C6),
                             height: 1.35,
@@ -148,17 +126,17 @@ class _TextToVoiceView extends StatelessWidget {
                                 ),
                                 child: provider.isConvertingVoice
                                     ? const Padding(
-                                  padding: EdgeInsets.all(8),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: _voiceRed,
-                                  ),
-                                )
+                                        padding: EdgeInsets.all(8),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: _voiceRed,
+                                        ),
+                                      )
                                     : const Icon(
-                                  Icons.play_arrow_rounded,
-                                  color: _voiceRed,
-                                  size: 27,
-                                ),
+                                        Icons.play_arrow_rounded,
+                                        color: _voiceRed,
+                                        size: 27,
+                                      ),
                               ),
                             ),
                           ],
@@ -172,7 +150,7 @@ class _TextToVoiceView extends StatelessWidget {
                   children: const [
                     Icon(Icons.auto_awesome, color: _voiceRed, size: 16),
                     SizedBox(width: 10),
-                    Text(
+                    AppText(
                       '20 AI Credits Available',
                       style: TextStyle(fontSize: 12),
                     ),
@@ -180,10 +158,7 @@ class _TextToVoiceView extends StatelessWidget {
                     Expanded(
                       child: Text(
                         '6 credits will be used',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _voiceRed,
-                        ),
+                        style: TextStyle(fontSize: 12, color: _voiceRed),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -191,7 +166,7 @@ class _TextToVoiceView extends StatelessWidget {
                 ),
                 if (provider.voiceErrorMessage != null) ...[
                   const SizedBox(height: 10),
-                  Text(
+                  AppText(
                     provider.voiceErrorMessage!,
                     style: const TextStyle(color: _voiceRed, fontSize: 12),
                   ),
@@ -276,10 +251,11 @@ class _TextToVoiceView extends StatelessWidget {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(9),
                                   ),
-                                  padding:
-                                  const EdgeInsets.symmetric(vertical: 13),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 13,
+                                  ),
                                 ),
-                                child: const Text(
+                                child: const AppText(
                                   'REGENERATE',
                                   style: TextStyle(fontWeight: FontWeight.w700),
                                 ),
@@ -294,7 +270,7 @@ class _TextToVoiceView extends StatelessWidget {
                                       provider.voiceErrorMessage != null) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(
+                                        content: AppText(
                                           provider.voiceErrorMessage!,
                                         ),
                                       ),
@@ -308,10 +284,11 @@ class _TextToVoiceView extends StatelessWidget {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(9),
                                   ),
-                                  padding:
-                                  const EdgeInsets.symmetric(vertical: 13),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 13,
+                                  ),
                                 ),
-                                child: const Text(
+                                child: const AppText(
                                   'DOWNLOAD',
                                   style: TextStyle(fontWeight: FontWeight.w700),
                                 ),
@@ -372,10 +349,12 @@ class _TextToVoiceView extends StatelessWidget {
           icon: const Icon(Icons.keyboard_arrow_down, size: 17),
           style: const TextStyle(color: Colors.black87, fontSize: 12),
           items: values
-              .map((item) => DropdownMenuItem(
-            value: item,
-            child: Text(item, overflow: TextOverflow.ellipsis),
-          ))
+              .map(
+                (item) => DropdownMenuItem(
+                  value: item,
+                  child: Text(item, overflow: TextOverflow.ellipsis),
+                ),
+              )
               .toList(),
           onChanged: onChanged,
         ),

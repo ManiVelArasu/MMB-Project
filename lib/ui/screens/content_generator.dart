@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mmb_app/component/appbar_widget.dart';
+import 'package:mmb_app/component/home_appbar.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/ai_hub_provider.dart';
@@ -8,7 +10,6 @@ const Color _red = Color(0xFFF5222D);
 const Color _border = Color(0xFFFFDCDD);
 const Color _softRed = Color(0xFFFFE8E8);
 const Color _muted = Color(0xFF777777);
-
 
 class ContentGeneratorScreen extends StatelessWidget {
   const ContentGeneratorScreen({super.key});
@@ -20,12 +21,10 @@ class ContentGeneratorScreen extends StatelessWidget {
 }
 
 class ContentGeneratorView extends StatelessWidget {
-
   const ContentGeneratorView({super.key});
 
   @override
   Widget build(BuildContext context) {
-
     return ChangeNotifierProvider<AiHubProvider>(
       create: (_) => AiHubProvider(),
       child: const _ContentGeneratorBody(),
@@ -34,21 +33,23 @@ class ContentGeneratorView extends StatelessWidget {
 }
 
 class _ContentGeneratorBody extends StatelessWidget {
-
   const _ContentGeneratorBody({super.key});
 
   @override
   Widget build(BuildContext context) {
-
     return Consumer<AiHubProvider>(
       builder: (context, provider, child) {
         // உங்கள் existing Content Generator UI-ஐ இங்கே வைக்கவும்.
         return Scaffold(
           backgroundColor: Colors.white,
+          appBar: CustomAppBar(
+            showRightIcon: true,
+            rightImage: "assets/images/content.png",
+            badgeCount: null,
+          ),
           body: SafeArea(
             child: Column(
               children: [
-                _header(context),
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(18, 8, 18, 22),
@@ -70,8 +71,7 @@ class _ContentGeneratorBody extends StatelessWidget {
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: provider.suggestions.length,
-                          separatorBuilder: (_, __) =>
-                          const SizedBox(width: 8),
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
                           itemBuilder: (context, index) {
                             final suggestion = provider.suggestions[index];
                             return InkWell(
@@ -80,8 +80,9 @@ class _ContentGeneratorBody extends StatelessWidget {
                               borderRadius: BorderRadius.circular(18),
                               child: Container(
                                 alignment: Alignment.center,
-                                padding:
-                                const EdgeInsets.symmetric(horizontal: 13),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 13,
+                                ),
                                 decoration: BoxDecoration(
                                   border: Border.all(color: _border),
                                   borderRadius: BorderRadius.circular(18),
@@ -111,7 +112,8 @@ class _ContentGeneratorBody extends StatelessWidget {
                           ),
                           children: [
                             TextSpan(
-                              text: 'AI can make mistakes, please check for accuracy. See ',
+                              text:
+                                  'AI can make mistakes, please check for accuracy. See ',
                             ),
                             TextSpan(
                               text: 'terms',
@@ -132,8 +134,7 @@ class _ContentGeneratorBody extends StatelessWidget {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Icon(Icons.auto_awesome,
-                              color: _red, size: 15),
+                          const Icon(Icons.auto_awesome, color: _red, size: 15),
                           const SizedBox(width: 9),
                           Text(
                             '${provider.creditsAvailable} AI Credits Available',
@@ -157,10 +158,7 @@ class _ContentGeneratorBody extends StatelessWidget {
                         const SizedBox(height: 10),
                         Text(
                           provider.errorMessage!,
-                          style: const TextStyle(
-                            color: _red,
-                            fontSize: 12,
-                          ),
+                          style: const TextStyle(color: _red, fontSize: 12),
                         ),
                       ],
                       if (provider.isGenerating) ...[
@@ -195,38 +193,7 @@ class _ContentGeneratorBody extends StatelessWidget {
   }
 }
 
-
-
-Widget _header(BuildContext context) {
-  return Padding(
-    padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
-    child: Row(
-      children: [
-        _circleButton(
-          icon: Icons.arrow_back,
-          onTap: () => Navigator.of(context).maybePop(),
-        ),
-        const SizedBox(width: 14),
-        const Expanded(
-          child: Text(
-            'Content Generator',
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
-              color: Colors.black,
-            ),
-          ),
-        ),
-      Image.asset("assets/images/content.png",height:35,width:35,)
-      ],
-    ),
-  );
-}
-
-Widget _circleButton({
-  required IconData icon,
-  required VoidCallback onTap,
-}) {
+Widget _circleButton({required IconData icon, required VoidCallback onTap}) {
   return Material(
     color: _softRed,
     shape: const CircleBorder(),
@@ -253,7 +220,7 @@ Widget _intro() {
           color: const Color(0xFFF4E7FF),
           borderRadius: BorderRadius.circular(16),
         ),
-        child:Image.asset("assets/images/caption.png"),
+        child: Image.asset("assets/images/caption.png"),
       ),
       const SizedBox(width: 14),
       const Expanded(
@@ -293,7 +260,7 @@ Widget _promptBox(BuildContext context, AiHubProvider provider) {
           decoration: const InputDecoration(
             border: InputBorder.none,
             hintText:
-            'A premium coffee shop interior with warm lighting, modern furniture and a cup of cappuccino on the table',
+                'A premium coffee shop interior with warm lighting, modern furniture and a cup of cappuccino on the table',
             hintStyle: TextStyle(
               fontSize: 12,
               height: 1.35,
@@ -334,25 +301,25 @@ Widget _promptBox(BuildContext context, AiHubProvider provider) {
                 onTap: provider.isGenerating
                     ? null
                     : () async {
-                  FocusScope.of(context).unfocus();
-                  await provider.generateContent();
-                },
+                        FocusScope.of(context).unfocus();
+                        await provider.generateContent();
+                      },
                 child: SizedBox(
                   width: 27,
                   height: 27,
                   child: provider.isGenerating
                       ? const Padding(
-                    padding: EdgeInsets.all(6),
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: _red,
-                    ),
-                  )
+                          padding: EdgeInsets.all(6),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: _red,
+                          ),
+                        )
                       : const Icon(
-                    Icons.play_arrow_rounded,
-                    color: _red,
-                    size: 23,
-                  ),
+                          Icons.play_arrow_rounded,
+                          color: _red,
+                          size: 23,
+                        ),
                 ),
               ),
             ),
@@ -364,11 +331,11 @@ Widget _promptBox(BuildContext context, AiHubProvider provider) {
 }
 
 Widget _dropdown(
-    BuildContext context, {
-      required String label,
-      required List<String> options,
-      required ValueChanged<String> onSelected,
-    }) {
+  BuildContext context, {
+  required String label,
+  required List<String> options,
+  required ValueChanged<String> onSelected,
+}) {
   return PopupMenuButton<String>(
     onSelected: onSelected,
     color: Colors.white,
@@ -377,10 +344,10 @@ Widget _dropdown(
     itemBuilder: (context) => options
         .map(
           (option) => PopupMenuItem<String>(
-        value: option,
-        child: Text(option, style: const TextStyle(fontSize: 12)),
-      ),
-    )
+            value: option,
+            child: Text(option, style: const TextStyle(fontSize: 12)),
+          ),
+        )
         .toList(),
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -396,8 +363,11 @@ Widget _dropdown(
             style: const TextStyle(fontSize: 11, color: Color(0xFF444444)),
           ),
           const SizedBox(width: 7),
-          const Icon(Icons.keyboard_arrow_down,
-              size: 16, color: Color(0xFF555555)),
+          const Icon(
+            Icons.keyboard_arrow_down,
+            size: 16,
+            color: Color(0xFF555555),
+          ),
         ],
       ),
     ),
@@ -437,9 +407,9 @@ Widget _resultCard(BuildContext context, AiHubProvider provider) {
           runSpacing: 6,
           children: [
             _tag(provider.tone == 'Tone' ? 'Promotional' : provider.tone),
-            _tag(provider.language == 'Language'
-                ? 'English'
-                : provider.language),
+            _tag(
+              provider.language == 'Language' ? 'English' : provider.language,
+            ),
           ],
         ),
         const SizedBox(height: 14),
@@ -500,10 +470,7 @@ Widget _tag(String label) {
   );
 }
 
-Widget _outlineButton({
-  required String label,
-  required VoidCallback? onTap,
-}) {
+Widget _outlineButton({required String label, required VoidCallback? onTap}) {
   return SizedBox(
     height: 34,
     child: OutlinedButton(
@@ -512,28 +479,20 @@ Widget _outlineButton({
         foregroundColor: _red,
         side: const BorderSide(color: _red),
         padding: const EdgeInsets.symmetric(horizontal: 5),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(9),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
       ),
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Text(
           label,
-          style: const TextStyle(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700),
         ),
       ),
     ),
   );
 }
 
-Widget _solidButton({
-  required String label,
-  required VoidCallback onTap,
-}) {
+Widget _solidButton({required String label, required VoidCallback onTap}) {
   return SizedBox(
     height: 34,
     child: ElevatedButton(
@@ -543,25 +502,17 @@ Widget _solidButton({
         foregroundColor: Colors.white,
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 5),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(9),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-        ),
+        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700),
       ),
     ),
   );
 }
 
-Future<void> _editContent(
-    BuildContext context,
-    AiHubProvider provider,
-    ) async {
+Future<void> _editContent(BuildContext context, AiHubProvider provider) async {
   final controller = TextEditingController(text: provider.generatedContent);
 
   final updated = await showDialog<String>(
@@ -595,4 +546,3 @@ Future<void> _editContent(
   }
   controller.dispose();
 }
-

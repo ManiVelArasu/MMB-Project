@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 
 
+import '../../component/appbar_widget.dart';
 import '../../network/provider/ai_hub_provider.dart';
 
 const Color _red = Color(0xFFF5222D);
@@ -40,10 +41,14 @@ class _GenerateImagesView extends StatelessWidget {
       builder: (context, provider, _) {
         return Scaffold(
           backgroundColor: Colors.white,
+          appBar: CustomAppBar(
+            showRightIcon: true,
+            rightImage: "assets/images/content.png",
+            badgeCount: null,
+          ),
           body: SafeArea(
             child: Column(
               children: [
-                _header(context),
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
