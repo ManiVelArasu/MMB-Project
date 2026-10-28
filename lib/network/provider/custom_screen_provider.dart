@@ -34,13 +34,13 @@ class CustomScreenProvider extends ChangeNotifier {
       title: "Logo Generator",
       subtitle: "Create professional logos in seconds",
       imagePath: 'assets/images/ai.png',
-      routeName: "/LogoGeneratorScreen",
+      routeName: "/ContentGeneratorScreen",
     ),
     AIToolModel(
       title: "Magic Media",
       subtitle: "Create product backgrounds with AI",
       imagePath: 'assets/images/ai_image.png',
-      routeName: "/MagicMediaScreen",
+      routeName: '/GenerateImagesScreen',
     ),
     AIToolModel(
       title: "BG Remover",
@@ -58,7 +58,7 @@ class CustomScreenProvider extends ChangeNotifier {
       title: "Captions",
       subtitle: "Generate engaging captions",
       imagePath: 'assets/images/caption.png',
-      routeName: "/CaptionsScreen",
+      routeName: "/ContentGeneratorScreen",
     ),
     AIToolModel(
       title: "SM Calendar",
@@ -70,7 +70,7 @@ class CustomScreenProvider extends ChangeNotifier {
       title: "Text to Audio",
       subtitle: "Convert text into natural AI voiceovers",
       imagePath: 'assets/images/text_to_audio.png',
-      routeName: "/TextToAudioScreen",
+      routeName: "/TextToVoiceScreen",
     ),
     AIToolModel(
       title: "Translate",

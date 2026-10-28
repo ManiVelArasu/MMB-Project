@@ -18,10 +18,12 @@ import '../ui/screens/ai_bg_remove_screen.dart';
 import '../ui/screens/ai_hub_screen.dart';
 import '../ui/screens/ai_imag_screen.dart';
 import '../ui/screens/business_profile_screen.dart';
+import '../ui/screens/content_generator.dart';
 import '../ui/screens/download_screen.dart';
 import '../ui/screens/edit_profile_screen.dart';
 import '../ui/screens/explore_ai_tool_screen.dart';
 import '../ui/screens/faq_screen.dart';
+import '../ui/screens/generate_image.dart';
 import '../ui/screens/my_product_screen.dart';
 import '../ui/screens/my_upload_screen.dart';
 import '../ui/screens/notification_screen.dart';
@@ -33,6 +35,7 @@ import '../ui/screens/social_calender_result_screen.dart';
 import '../ui/screens/special_days_screen.dart';
 import '../ui/screens/template_detail_screen.dart';
 import '../ui/screens/template_edit.dart';
+import '../ui/screens/text_to_voice.dart';
 import '../ui/screens/theme_detail_screen.dart';
 import '../ui/screens/theme_single_item_view_screen.dart';
 
@@ -363,9 +366,18 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (_) => const BusinessCategorySearchScreen(),
         );
-        case '/BusinessSubCategoryChooseView':
+      case '/ContentGeneratorScreen':
+        return MaterialPageRoute(
+          builder: (_) => const ContentGeneratorScreen(),
+        );
+      case '/GenerateImagesScreen':
+        return MaterialPageRoute(builder: (_) => const GenerateImagesScreen());
+      case '/BusinessSubCategoryChooseView':
         return MaterialPageRoute(
           builder: (_) => const BusinessSubCategoryChooseView(),
+        ); case '/TextToVoiceScreen':
+        return MaterialPageRoute(
+          builder: (_) => const TextToVoiceScreen(),
         );
       case "/TemplateListScreen":
         final arguments = settings.arguments;

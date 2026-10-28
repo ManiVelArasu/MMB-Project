@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class AiHubProvider extends ChangeNotifier {
   // ---------------- CONTENT GENERATOR ----------------
@@ -63,12 +64,12 @@ class AiHubProvider extends ChangeNotifier {
 
       if (prompt.contains('diwali') || prompt.contains('jewellery')) {
         generatedContent =
-            '"Make this Diwali shine brighter with our '
+        '"Make this Diwali shine brighter with our '
             'exclusive jewellery collection. Enjoy 20% off '
             'selected designs — for a limited time only. ✨"';
       } else {
         generatedContent =
-            'Bring your idea to life! '
+        'Bring your idea to life! '
             '${promptController.text.trim()} '
             '— crafted with care to help your brand stand out.';
       }
@@ -80,6 +81,11 @@ class AiHubProvider extends ChangeNotifier {
     }
   }
 
+  void updateGeneratedContent(String value) {
+    generatedContent = value;
+    notifyListeners();
+  }
+
   Future<void> regenerateContent() async {
     await generateContent();
   }
@@ -88,7 +94,7 @@ class AiHubProvider extends ChangeNotifier {
 
   final TextEditingController promptImageController = TextEditingController(
     text:
-        'A premium coffee shop interior with warm lighting, '
+    'A premium coffee shop interior with warm lighting, '
         'modern furniture and a cup of cappuccino on the table',
   );
 
@@ -189,7 +195,7 @@ class AiHubProvider extends ChangeNotifier {
 
       // Demo image only; this is NOT AI-generated.
       generatedImageUrl =
-          'https://images.unsplash.com/photo-1554118811-1e0d58224f24'
+      'https://images.unsplash.com/photo-1554118811-1e0d58224f24'
           '?auto=format&fit=crop&w=1000&q=85';
 
       availableCredits -= creditsPerImage;
@@ -301,6 +307,140 @@ class AiHubProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+
+  // ---------------- TEXT TO VOICE ----------------
+
+  final TextEditingController textToVoiceController = TextEditingController();
+  final FlutterTts _flutterTts = FlutterTts();
+
+  String voiceLanguage = 'English';
+  String voiceGender = 'Male';
+  String voiceStyle = 'Energetic';
+  bool isConvertingVoice = false;
+  bool isSpeakingVoice = false;
+  String? voiceErrorMessage;
+  bool hasVoiceResult = false;
+
+  final List<String> voiceLanguages = const ['English', 'Tamil', 'Hindi'];
+  final List<String> voiceGenders = const ['Male', 'Female'];
+  final List<String> voiceStyles = const [
+    'Energetic', 'Calm', 'Friendly', 'Professional'
+  ];
+
+  void setVoiceLanguage(String? value) {
+    if (value == null) return;
+    voiceLanguage = value;
+    notifyListeners();
+  }
+
+
+  void setVoiceGender(String? value) {
+    if (value == null) return;
+    voiceGender = value;
+    notifyListeners();
+  }
+
+  void setVoiceStyle(String? value) {
+    if (value == null) return;
+    voiceStyle = value;
+    notifyListeners();
+  }
+
+  void setVoiceText(String value) {
+    voiceErrorMessage = null;
+    hasVoiceResult = false;
+    notifyListeners();
+  }
+
+  Future<bool> generateVoice() async {
+    final text = textToVoiceController.text.trim();
+    if (text.isEmpty) {
+      voiceErrorMessage = 'Please enter text to convert to voice.';
+      notifyListeners();
+      return false;
+    }
+    if (isConvertingVoice) return false;
+
+    isConvertingVoice = true;
+    voiceErrorMessage = null;
+    notifyListeners();
+
+    try {
+      await _flutterTts.stop();
+      final locale = switch (voiceLanguage) {
+        'Tamil' => 'ta-IN',
+        'Hindi' => 'hi-IN',
+        _ => 'en-US',
+      };
+      await _flutterTts.setLanguage(locale);
+      await _flutterTts.setSpeechRate(switch (voiceStyle) {
+        'Calm' => 0.38,
+        'Professional' => 0.45,
+        'Friendly' => 0.48,
+        _ => 0.55,
+      });
+      await _flutterTts.setPitch(voiceGender == 'Female' ? 1.25 : 0.85);
+      _flutterTts.setStartHandler(() {
+        isSpeakingVoice = true;
+        notifyListeners();
+      });
+      _flutterTts.setCompletionHandler(() {
+        isSpeakingVoice = false;
+        notifyListeners();
+      });
+      _flutterTts.setCancelHandler(() {
+        isSpeakingVoice = false;
+        notifyListeners();
+      });
+      _flutterTts.setErrorHandler((message) {
+        isSpeakingVoice = false;
+        voiceErrorMessage = 'Voice playback failed: $message';
+        notifyListeners();
+      });
+
+      hasVoiceResult = true;
+      await _flutterTts.speak(text);
+      return true;
+    } catch (e) {
+      voiceErrorMessage = 'Unable to convert text to voice: $e';
+      hasVoiceResult = false;
+      return false;
+    } finally {
+      isConvertingVoice = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> playVoice() async {
+    final text = textToVoiceController.text.trim();
+    if (text.isEmpty) return;
+    if (isSpeakingVoice) {
+      await _flutterTts.stop();
+      isSpeakingVoice = false;
+      notifyListeners();
+    } else {
+      await generateVoice();
+    }
+  }
+
+  Future<void> stopVoice() async {
+    try {
+      await _flutterTts.stop();
+    } catch (e) {
+      debugPrint('TTS stop error: $e');
+    }
+  }
+  Future<void> regenerateVoice() async {
+    await generateVoice();
+  }
+
+  Future<void> downloadVoice() async {
+    voiceErrorMessage =
+    'To download an audio file, connect a TTS API that returns an audio file URL.';
+    notifyListeners();
+  }
+
+
   // ---------------- BOTTOM NAVIGATION ----------------
 
   void selectBottomItem(int index) {
@@ -312,6 +452,8 @@ class AiHubProvider extends ChangeNotifier {
   void dispose() {
     promptController.dispose();
     promptImageController.dispose();
+    textToVoiceController.dispose();
+    _flutterTts.stop();
     super.dispose();
   }
 }
