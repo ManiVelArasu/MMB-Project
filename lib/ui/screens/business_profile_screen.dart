@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/network/provider/common_provider.dart';
@@ -66,23 +67,19 @@ class BusinessProfileView extends StatelessWidget {
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: CustomAppBar(
             onBackPressed: () {
+              debugPrint('Back pressed');
 
-                debugPrint('Back pressed');
+              final navProvider = context.read<BottomNavProvider>();
+              navProvider.updateIndex(3);
 
-                final navProvider = context.read<BottomNavProvider>();
-                navProvider.updateIndex(3);
-
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                } else {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ProfileScreen(),
-                    ),
-                  );
-                }
-
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              }
             },
             showRightIcon: true,
             rightImage: "assets/images/edit_profile1.png",
@@ -400,7 +397,8 @@ class BusinessProfileView extends StatelessWidget {
                                       physics: const BouncingScrollPhysics(),
                                       itemCount: provider.selectedFrames.length,
                                       itemBuilder: (context, index) {
-                                        final frame = provider.selectedFrames[index];
+                                        final frame =
+                                            provider.selectedFrames[index];
                                         final image = frame.thumbnailS3Key;
                                         return Container(
                                           width: 110.w,
@@ -451,19 +449,18 @@ class BusinessProfileView extends StatelessWidget {
                                                           left: 0,
                                                           right: 0,
                                                           child: Center(
-                                                            child: Image.network(
-                                                             "${ApiEndpoints.cdnImageUrl}/${image}",
-                                                              errorBuilder:
+                                                            child: CachedNetworkImage(
+                                                              imageUrl:
+                                                                  "${ApiEndpoints.cdnImageUrl}/${image}",
+                                                              errorWidget:
                                                                   (
                                                                     _,
                                                                     __,
                                                                     ___,
-                                                                  ) => Icon(
-                                                                    Icons
-                                                                        .auto_awesome,
-                                                                    size: 16.sp,
-                                                                    color: const Color(
-                                                                      0xFFE53935,
+                                                                  ) => const Center(
+                                                                    child: Icon(
+                                                                      Icons
+                                                                          .image_not_supported_rounded,
                                                                     ),
                                                                   ),
                                                             ),
@@ -480,11 +477,13 @@ class BusinessProfileView extends StatelessWidget {
                                                 style: TextStyle(
                                                   fontSize: 11.sp,
                                                   fontWeight: FontWeight.w700,
-                                                  color: isDark ? Colors.white70 : Colors.black87,
+                                                  color: isDark
+                                                      ? Colors.white70
+                                                      : Colors.black87,
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                              )
+                                              ),
                                             ],
                                           ),
                                         );
