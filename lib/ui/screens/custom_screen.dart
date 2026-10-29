@@ -110,22 +110,20 @@ class _CustomCreateBody extends StatelessWidget {
                             height: 210.h,
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
-                              itemCount:
-                                  templateSizes.length +
-                                  1, // Added +1 for the custom card
+                              itemCount: templateSizes.length + 1, // +1 for the custom card
                               itemBuilder: (context, index) {
-                                // If it's the last item, render the Custom Box
+                                final borderColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+                                final boxColor = isDark ? Colors.grey[900] : Colors.white;
+
+                                // Last item => Custom Size card
                                 if (index == templateSizes.length) {
                                   return InkWell(
                                     onTap: () {
-                                      // 👉 Ingaethaanga antha custom size bottomsheet-ah open panrom
                                       showModalBottomSheet(
                                         context: context,
                                         isScrollControlled: true,
                                         backgroundColor: Colors.transparent,
-                                        builder: (context) {
-                                          return const _CustomSizeBottomSheet(); // KEEZHE IRUKKIRA BOTTOMSHEET CLASS
-                                        },
+                                        builder: (context) => const _CustomSizeBottomSheet(),
                                       );
                                     },
                                     child: Container(
@@ -135,10 +133,35 @@ class _CustomCreateBody extends StatelessWidget {
                                         children: [
                                           SizedBox(
                                             height: 130.h,
-                                            child: Image.asset(
-                                              "assets/images/custom.png",
-                                              width: 120,
-                                              height: 90,
+                                            width: 95.w,
+                                            child: Align(
+                                              alignment: Alignment.bottomCenter,
+                                              child: Container(
+                                                // Image size: 90 x 130, border adhukku veliya
+                                                width: 120.w,
+                                                height: 120.h,
+                                                decoration: BoxDecoration(
+                                                  color: boxColor,
+                                                  borderRadius: BorderRadius.circular(16.r),
+                                                  border: Border.all(color: borderColor, width: 1.5),
+                                                ),
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.circular(14.5.r),
+                                                  child: SizedBox(
+                                                    height: 130.h,
+                                                    width: 95.w,
+                                                    child: Align(
+                                                      alignment: Alignment.bottomCenter,
+                                                      child: Image.asset(
+                                                        "assets/images/custom.png",
+                                                        width: 90.w,
+                                                        height: 130.h,
+                                                        fit: BoxFit.contain,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                           ),
                                           SizedBox(height: 8.h),
@@ -149,9 +172,7 @@ class _CustomCreateBody extends StatelessWidget {
                                             style: TextStyle(
                                               fontSize: 11.sp,
                                               fontWeight: FontWeight.w700,
-                                              color: isDark
-                                                  ? Colors.white
-                                                  : Colors.black,
+                                              color: isDark ? Colors.white : Colors.black,
                                             ),
                                           ),
                                         ],
@@ -162,10 +183,23 @@ class _CustomCreateBody extends StatelessWidget {
 
                                 final item = templateSizes[index];
 
-                                final width =
-                                    int.tryParse(item.width ?? "0") ?? 0;
-                                final height =
-                                    int.tryParse(item.height ?? "0") ?? 0;
+                                final width = int.tryParse(item.width ?? "0") ?? 0;
+                                final height = int.tryParse(item.height ?? "0") ?? 0;
+
+// Image height - ungaloda already irukkura function, maatha vendam
+                                final double imgH = getImageHeight(width, height);
+
+// Image width ratio padi
+                                final double ratio = (width > 0 && height > 0) ? width / height : 1.0;
+                                final double imgW = imgH * ratio;
+
+// Border = image size + padding
+                                final double pad = 6.w;
+                                final double boxH = imgH + pad * 2;
+                                final double boxW = imgW + pad * 2;
+
+// Text-ku idam venum, column width min 85
+                                final double itemWidth = boxW < 85.w ? 85.w : boxW;
 
                                 return InkWell(
                                   onTap: () {
@@ -173,33 +207,40 @@ class _CustomCreateBody extends StatelessWidget {
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) => TemplateEditScreen(
-                                          canvasWidth: width > 0
-                                              ? width.toDouble()
-                                              : null,
-                                          canvasHeight: height > 0
-                                              ? height.toDouble()
-                                              : null,
+                                          canvasWidth: width > 0 ? width.toDouble() : null,
+                                          canvasHeight: height > 0 ? height.toDouble() : null,
                                         ),
                                       ),
                                     );
                                   },
                                   child: Container(
-                                    width: 95.w,
+                                    width: itemWidth,
                                     margin: EdgeInsets.only(right: 12.w),
                                     child: Column(
                                       children: [
-                                        /// Fixed Preview Area
+                                        /// Fixed preview area, ellaa cards-um bottom-la align
                                         SizedBox(
                                           height: 130.h,
+                                          width: itemWidth,
                                           child: Align(
                                             alignment: Alignment.bottomCenter,
-                                            child: Image.asset(
-                                              buildTemplateImage(width, height),
-                                              height: getImageHeight(
-                                                width,
-                                                height,
+                                            child: Container(
+                                              width: boxW,
+                                              height: boxH,
+                                              padding: EdgeInsets.all(pad),
+                                              decoration: BoxDecoration(
+                                                color: isDark ? Colors.grey[900] : Colors.white,
+                                                borderRadius: BorderRadius.circular(12.r),
+                                                border: Border.all(
+                                                  color: isDark ? Colors.grey[700]! : Colors.grey[100]!,
+                                                  width: 1.5,
+                                                ),
                                               ),
-                                              fit: BoxFit.contain,
+                                              child: Image.asset(
+                                                buildTemplateImage(width, height),
+                                                height: imgH,
+                                                fit: BoxFit.contain,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -213,9 +254,7 @@ class _CustomCreateBody extends StatelessWidget {
                                           style: TextStyle(
                                             fontSize: 11.sp,
                                             fontWeight: FontWeight.w700,
-                                            color: isDark
-                                                ? Colors.white
-                                                : Colors.black,
+                                            color: isDark ? Colors.white : Colors.black,
                                           ),
                                         ),
 
@@ -382,13 +421,16 @@ class _CustomCreateBody extends StatelessWidget {
 
   String buildTemplateImage(int width, int height) {
     if (width == 1080 && height == 1080) {
-      return "assets/images/landscape.png";
+      return "assets/images/insta_post.png";
     } else if (width == 1080 && height == 1350) {
       return "assets/images/potrait.png";
     } else if (width == 1080 && height == 1920) {
       return "assets/images/post_1920.png";
     } else if (width == 1440 && height == 1080) {
       return "assets/images/post_1440.png";
+    }
+    else if (width == 1920 && height == 1080) {
+      return "assets/images/youtube_thumbnail.png";
     }
     return "assets/images/post_1440.png";
   }
