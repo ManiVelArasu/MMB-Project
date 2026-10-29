@@ -534,7 +534,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                   ? Colors.white
                                                   : Colors.black,
                                               fontSize: AppFontSize.fontSize14,
-                                              fontWeight: FontWeight.w400,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                         ],
