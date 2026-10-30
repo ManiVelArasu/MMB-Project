@@ -48,15 +48,13 @@ class _HomeScreenView extends StatelessWidget {
     final isDark = themeProvider.isDarkMode;
 
     if (homeScreenProvider.isLoadingCategories ||
-        homeScreenProvider.isKeyWordsLoading ||
-        homeScreenProvider.isLoadingSpecialDays) {
+        homeScreenProvider.isKeyWordsLoading) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFFE53935)),
         ),
       );
     }
-
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -1060,7 +1058,7 @@ class _HomeScreenView extends StatelessWidget {
       height: 40.h,
       decoration: BoxDecoration(
         color: const Color(0xFFFFE5E5),
-        borderRadius: BorderRadius.circular(20.r),
+        borderRadius: BorderRadius.circular(15.r),
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(
@@ -1074,8 +1072,8 @@ class _HomeScreenView extends StatelessWidget {
               _monthName(month),
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w800,
+                fontSize: AppFontSize.fontSize16,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1094,14 +1092,14 @@ class _HomeScreenView extends StatelessWidget {
                   onTap: () => provider.setSelectedDate(date),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    width: 48.w,
-                    height: 44.h,
+                    width: 24,
+                    height: 24,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: isSelected
                           ? Colors.white
                           : const Color(0xFFFFF7F7),
-                      borderRadius: BorderRadius.circular(12.r),
+                      borderRadius: BorderRadius.circular(8.r),
                       border: Border.all(
                         color: isSelected
                             ? const Color(0xFFF51B23)
@@ -1112,8 +1110,8 @@ class _HomeScreenView extends StatelessWidget {
                     child: AppText(
                       '${date.day}',
                       style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w800,
+                        fontSize: AppFontSize.fontSize12,
+                        fontWeight: FontWeight.w600,
                         color: Colors.black,
                       ),
                     ),

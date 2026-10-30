@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
@@ -89,7 +91,7 @@ class _CustomCreateBody extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           CustomSearchBar(
-                            hintText: "Find your Industry",
+                            hintText: "Search templates, Brand Series...",
                             prefixAsset: "assets/images/search.png",
                             suffixAsset: "assets/images/mic.png",
                             borderColor: const Color(0xFFFFCDD2),
@@ -100,6 +102,8 @@ class _CustomCreateBody extends StatelessWidget {
 
                           _buildHeader(
                             title: "Create from Scratch",
+                            subtitle: "Choose a canvas size to start designing",
+
                             iconAsset: "assets/images/myspace.png",
                             isDark: isDark,
                           ),
@@ -112,12 +116,14 @@ class _CustomCreateBody extends StatelessWidget {
                               scrollDirection: Axis.horizontal,
                               itemCount: templateSizes.length + 1, // +1 for the custom card
                               itemBuilder: (context, index) {
-                                final borderColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
-                                final boxColor = isDark ? Colors.grey[900] : Colors.white;
-
-                                // Last item => Custom Size card
+                                // ---------- Custom Size card ----------
                                 if (index == templateSizes.length) {
-                                  return InkWell(
+                                  return _buildSizeCard(
+                                    isDark: isDark,
+                                    imgW: 70.w,
+                                    imgH: 90.h,
+                                    title: "Custom Size",
+                                    image: Image.asset("assets/images/custom.png", fit: BoxFit.contain),
                                     onTap: () {
                                       showModalBottomSheet(
                                         context: context,
@@ -126,82 +132,28 @@ class _CustomCreateBody extends StatelessWidget {
                                         builder: (context) => const _CustomSizeBottomSheet(),
                                       );
                                     },
-                                    child: Container(
-                                      width: 95.w,
-                                      margin: EdgeInsets.only(right: 12.w),
-                                      child: Column(
-                                        children: [
-                                          SizedBox(
-                                            height: 130.h,
-                                            width: 95.w,
-                                            child: Align(
-                                              alignment: Alignment.bottomCenter,
-                                              child: Container(
-                                                // Image size: 90 x 130, border adhukku veliya
-                                                width: 120.w,
-                                                height: 120.h,
-                                                decoration: BoxDecoration(
-                                                  color: boxColor,
-                                                  borderRadius: BorderRadius.circular(16.r),
-                                                  border: Border.all(color: borderColor, width: 1.5),
-                                                ),
-                                                child: ClipRRect(
-                                                  borderRadius: BorderRadius.circular(14.5.r),
-                                                  child: SizedBox(
-                                                    height: 130.h,
-                                                    width: 95.w,
-                                                    child: Align(
-                                                      alignment: Alignment.bottomCenter,
-                                                      child: Image.asset(
-                                                        "assets/images/custom.png",
-                                                        width: 90.w,
-                                                        height: 130.h,
-                                                        fit: BoxFit.contain,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(height: 8.h),
-                                          AppText(
-                                            "Custom Size",
-                                            textAlign: TextAlign.center,
-                                            maxLines: 2,
-                                            style: TextStyle(
-                                              fontSize: 11.sp,
-                                              fontWeight: FontWeight.w700,
-                                              color: isDark ? Colors.white : Colors.black,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
                                   );
                                 }
 
+                                // ---------- Template size cards (API) ----------
                                 final item = templateSizes[index];
-
                                 final width = int.tryParse(item.width ?? "0") ?? 0;
                                 final height = int.tryParse(item.height ?? "0") ?? 0;
 
-// Image height - ungaloda already irukkura function, maatha vendam
                                 final double imgH = getImageHeight(width, height);
-
-// Image width ratio padi
                                 final double ratio = (width > 0 && height > 0) ? width / height : 1.0;
                                 final double imgW = imgH * ratio;
 
-// Border = image size + padding
-                                final double pad = 6.w;
-                                final double boxH = imgH + pad * 2;
-                                final double boxW = imgW + pad * 2;
-
-// Text-ku idam venum, column width min 85
-                                final double itemWidth = boxW < 85.w ? 85.w : boxW;
-
-                                return InkWell(
+                                return _buildSizeCard(
+                                  isDark: isDark,
+                                  imgW: imgW,
+                                  imgH: imgH,
+                                  title: item.name ?? "",
+                                  subtitle: "${item.width} × ${item.height}",
+                                  image: Image.asset(
+                                    buildTemplateImage(width, height),
+                                    fit: BoxFit.contain,
+                                  ),
                                   onTap: () {
                                     Navigator.push(
                                       context,
@@ -213,73 +165,15 @@ class _CustomCreateBody extends StatelessWidget {
                                       ),
                                     );
                                   },
-                                  child: Container(
-                                    width: itemWidth,
-                                    margin: EdgeInsets.only(right: 12.w),
-                                    child: Column(
-                                      children: [
-                                        /// Fixed preview area, ellaa cards-um bottom-la align
-                                        SizedBox(
-                                          height: 130.h,
-                                          width: itemWidth,
-                                          child: Align(
-                                            alignment: Alignment.bottomCenter,
-                                            child: Container(
-                                              width: boxW,
-                                              height: boxH,
-                                              padding: EdgeInsets.all(pad),
-                                              decoration: BoxDecoration(
-                                                color: isDark ? Colors.grey[900] : Colors.white,
-                                                borderRadius: BorderRadius.circular(12.r),
-                                                border: Border.all(
-                                                  color: isDark ? Colors.grey[700]! : Colors.grey[100]!,
-                                                  width: 1.5,
-                                                ),
-                                              ),
-                                              child: Image.asset(
-                                                buildTemplateImage(width, height),
-                                                height: imgH,
-                                                fit: BoxFit.contain,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-
-                                        SizedBox(height: 8.h),
-
-                                        AppText(
-                                          item.name ?? "",
-                                          textAlign: TextAlign.center,
-                                          maxLines: 2,
-                                          style: TextStyle(
-                                            fontSize: 11.sp,
-                                            fontWeight: FontWeight.w700,
-                                            color: isDark ? Colors.white : Colors.black,
-                                          ),
-                                        ),
-
-                                        SizedBox(height: 2.h),
-
-                                        AppText(
-                                          "${item.width} × ${item.height}",
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 9.sp,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
                                 );
                               },
                             ),
                           ),
-
                           SizedBox(height: 10.h),
 
                           _buildHeader(
-                            title: "Generate with AI",
+                            title: "AI HUB",
+                            subtitle: "",
                             iconAsset: "assets/images/special_days.png",
                             isDark: isDark,
                           ),
@@ -402,7 +296,70 @@ class _CustomCreateBody extends StatelessWidget {
       },
     );
   }
+  Widget _buildSizeCard({
+    required bool isDark,
+    required double imgW,
+    required double imgH,
+    required Widget image,
+    required String title,
+    String? subtitle,
+    required VoidCallback onTap,
+  }) {
+    final double pad = 8.w;
+    // text-ku kozhappam illama minimum content width
+    final double contentW = imgW < 70.w ? 70.w : imgW;
 
+    // ListView item-ku tight height varum, so Align use panni bottom-la vaikkurom
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: EdgeInsets.only(right: 12.w),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12.r),
+          child: Container(
+            padding: EdgeInsets.all(pad),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[900] : Colors.white,
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
+                color: isDark ? Colors.grey[700]! : Colors.grey[100]!,
+                width: 1.5,
+              ),
+            ),
+            child: SizedBox(
+              width: contentW,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(width: imgW, height: imgH, child: image),
+                  SizedBox(height: 8.h),
+                  AppText(
+                    title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    SizedBox(height: 2.h),
+                    AppText(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 9.sp, color: Colors.grey),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   double getImageHeight(int width, int height) {
     if (width == 1080 && height == 1080) {
       return 70;
@@ -452,6 +409,7 @@ class _CustomCreateBody extends StatelessWidget {
   // Section Header Helper
   Widget _buildHeader({
     required String title,
+    String? subtitle,
     required String iconAsset,
     required bool isDark,
   }) {
@@ -476,12 +434,31 @@ class _CustomCreateBody extends StatelessWidget {
           ),
         ),
         SizedBox(width: 8.w),
-        AppText(
-          title,
-          style: TextStyle(
-            color: isDark ? Colors.white : AppColors.darkBlack,
-            fontSize: AppFontSize.fontSize18,
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppText(
+                title,
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white
+                      : AppColors.darkBlack,
+                  fontSize: AppFontSize.fontSize18,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+              if (subtitle != null && subtitle.trim().isNotEmpty)
+                AppText(
+                  subtitle,
+                  style: TextStyle(
+                    color: isDark ? Colors.white60 : Colors.grey,
+                    fontSize: 11.sp,
+                  ),
+                ),
+            ],
           ),
         ),
       ],
@@ -506,7 +483,6 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // Keyboard open aagumpothu bottomsheet-ku proper padding/spacing kidaikka viewInsets use panrom
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,

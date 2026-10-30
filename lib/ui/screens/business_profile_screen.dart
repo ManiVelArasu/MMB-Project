@@ -44,10 +44,6 @@ class BusinessProfileView extends StatelessWidget {
       builder: (context, provider, child) {
         final businessProvider = context.watch<BusinessProvider>();
 
-        // Listen directly to CommonProvider because Edit Profile
-        // refreshes GetMe/Business through this provider.
-        // This guarantees the new profile image is rebuilt
-        // immediately when the API returns.
         final commonProvider = context.watch<CommonProvider>();
 
         final accountType =
@@ -55,11 +51,8 @@ class BusinessProfileView extends StatelessWidget {
             businessProvider.provider.me?.data.accountType;
         final String logoUrl =
             '${ApiEndpoints.cdnImageUrl}/${provider.commonProvider.business?.logoS3Key ?? ''}';
-
-        // PERSONAL: only the personal design is shown.
-        // BUSINESS: the existing business UI below is untouched.
         if (accountType == "personal") {
-          return _buildPersonalProfileScreen(context, isDark, commonProvider);
+          return _buildPersonalProfileScreen(context, isDark, commonProvider,provider);
         }
 
         return Scaffold(
@@ -344,12 +337,12 @@ class BusinessProfileView extends StatelessWidget {
                                                           ? Colors.white
                                                           : Colors.black)
                                                     : Colors.grey,
-                                                fontSize: 14.sp,
+                                                fontSize:AppFontSize.fontSize13,
                                                 fontWeight:
                                                     provider.selectedFrameTab ==
                                                         0
                                                     ? FontWeight.w900
-                                                    : FontWeight.w600,
+                                                    : FontWeight.w500,
                                               ),
                                             ),
                                             if (provider.selectedFrameTab == 0)
@@ -367,21 +360,34 @@ class BusinessProfileView extends StatelessWidget {
                                       SizedBox(width: 20.w),
                                       GestureDetector(
                                         onTap: () => provider.updateFrameTab(1),
-                                        child: AppText(
-                                          "Animated Frames",
-                                          style: TextStyle(
-                                            color:
-                                                provider.selectedFrameTab == 1
-                                                ? (isDark
-                                                      ? Colors.white
-                                                      : Colors.black)
-                                                : Colors.grey.shade400,
-                                            fontSize: 14.sp,
-                                            fontWeight:
-                                                provider.selectedFrameTab == 1
-                                                ? FontWeight.w900
-                                                : FontWeight.w600,
-                                          ),
+                                        child: Column(
+                                          children: [
+                                            AppText(
+                                              "Animated Frames",
+                                              style: TextStyle(
+                                                color:
+                                                    provider.selectedFrameTab == 1
+                                                    ? (isDark
+                                                          ? Colors.white
+                                                          : Colors.black)
+                                                    : Colors.grey.shade400,
+                                                fontSize: 14.sp,
+                                                fontWeight:
+                                                    provider.selectedFrameTab == 1
+                                                    ? FontWeight.w900
+                                                    : FontWeight.w600,
+                                              ),
+                                            ),
+                                            if (provider.selectedFrameTab == 1)
+                                              Container(
+                                                margin: EdgeInsets.only(
+                                                  top: 4.h,
+                                                ),
+                                                height: 3.h,
+                                                width: 85.w,
+                                                color: const Color(0xFFE53935),
+                                              ),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -678,6 +684,7 @@ class BusinessProfileView extends StatelessWidget {
     BuildContext context,
     bool isDark,
     CommonProvider provider,
+      BusinessProfileProvider businessProfileProvider
   ) {
     final theme = Theme.of(context);
     final String personalUrl =
@@ -901,41 +908,182 @@ class BusinessProfileView extends StatelessWidget {
 
                         SizedBox(height: 11.h),
 
-                        // Tabs exactly like the reference layout.
                         Row(
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                AppText(
-                                  "Static Frames",
-                                  style: TextStyle(
-                                    color: theme.colorScheme.onSurface,
-                                    fontSize: 13.sp,
-                                    fontWeight: FontWeight.w900,
+                            GestureDetector(
+                              onTap: () => businessProfileProvider.updateFrameTab(0),
+                              child: Column(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: [
+                                  AppText(
+                                    "Static Frames",
+                                    style: TextStyle(
+                                      color:
+                                      businessProfileProvider.selectedFrameTab ==
+                                          0
+                                          ? (isDark
+                                          ? Colors.white
+                                          : Colors.black)
+                                          : Colors.grey,
+                                      fontSize:AppFontSize.fontSize13,
+                                      fontWeight:
+                                      businessProfileProvider.selectedFrameTab ==
+                                          0
+                                          ? FontWeight.w900
+                                          : FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 4.h),
-                                Container(
-                                  height: 3.h,
-                                  width: 88.w,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE53935),
-                                    borderRadius: BorderRadius.circular(4.r),
-                                  ),
-                                ),
-                              ],
+                                  if (businessProfileProvider.selectedFrameTab == 0)
+                                    Container(
+                                      margin: EdgeInsets.only(
+                                        top: 4.h,
+                                      ),
+                                      height: 3.h,
+                                      width: 85.w,
+                                      color: const Color(0xFFE53935),
+                                    ),
+                                ],
+                              ),
                             ),
                             SizedBox(width: 20.w),
-                            AppText(
-                              "Animated Frames",
-                              style: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w600,
+                            GestureDetector(
+                              onTap: () => businessProfileProvider.updateFrameTab(1),
+                              child: Column(
+                                children: [
+                                  AppText(
+                                    "Animated Frames",
+                                    style: TextStyle(
+                                      color:
+                                      businessProfileProvider.selectedFrameTab == 1
+                                          ? (isDark
+                                          ? Colors.white
+                                          : Colors.black)
+                                          : Colors.grey.shade400,
+                                      fontSize: 14.sp,
+                                      fontWeight:
+                                      businessProfileProvider.selectedFrameTab == 1
+                                          ? FontWeight.w900
+                                          : FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (businessProfileProvider.selectedFrameTab == 1)
+                                    Container(
+                                      margin: EdgeInsets.only(
+                                        top: 4.h,
+                                      ),
+                                      height: 3.h,
+                                      width: 85.w,
+                                      color: const Color(0xFFE53935),
+                                    ),
+                                ],
                               ),
                             ),
                           ],
+                        ),
+
+                        SizedBox(height: 16.h),
+
+                        // Frames Horizontal ListView
+                        SizedBox(
+                          height: 145.h,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: businessProfileProvider.selectedFrames.length,
+                            itemBuilder: (context, index) {
+                              final frame =
+                              businessProfileProvider.selectedFrames[index];
+                              final image = frame.thumbnailS3Key;
+                              return Container(
+                                width: 110.w,
+                                margin: EdgeInsets.only(right: 12.w),
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? const Color(
+                                            0xFF1E1E1E,
+                                          )
+                                              : Colors.white,
+                                          borderRadius:
+                                          BorderRadius.circular(
+                                            12.r,
+                                          ),
+                                          border: Border.all(
+                                            color: isDark
+                                                ? Colors.grey.shade800
+                                                : Colors
+                                                .grey
+                                                .shade300,
+                                            width: 1.2,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                          BorderRadius.circular(
+                                            10.r,
+                                          ),
+                                          child: Stack(
+                                            children: [
+                                              Positioned.fill(
+                                                child: Container(
+                                                  color: isDark
+                                                      ? const Color(
+                                                    0xFF1E1E1E,
+                                                  )
+                                                      : Colors.white,
+                                                ),
+                                              ),
+                                              Positioned(
+                                                top: 8.h,
+                                                left: 0,
+                                                right: 0,
+                                                child: Center(
+                                                  child: CachedNetworkImage(
+                                                    imageUrl:
+                                                    "${ApiEndpoints.cdnImageUrl}/${image}",
+                                                    errorWidget:
+                                                        (
+                                                        _,
+                                                        __,
+                                                        ___,
+                                                        ) => const Center(
+                                                      child: Icon(
+                                                        Icons
+                                                            .image_not_supported_rounded,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 6.h),
+                                    AppText(
+                                      frame.price ?? 'Free',
+                                      style: TextStyle(
+                                        fontSize: 11.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark
+                                            ? Colors.white70
+                                            : Colors.black87,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                         ),
 
                         SizedBox(height: 11.h),
@@ -2197,8 +2345,8 @@ Widget _buildActionCard({
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: isDark ? Colors.white : Colors.black,
-                fontSize: 10.5.sp,
-                fontWeight: FontWeight.w900,
+                fontSize: AppFontSize.fontSize14,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
