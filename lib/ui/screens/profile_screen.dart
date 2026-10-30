@@ -688,11 +688,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           SizedBox(height: 20.h),
 
-                          // =====================================================
-                          // APP SETTINGS
-                          // =====================================================
-                          SizedBox(height: 20.h),
-
                           _buildSectionCard(
                             title: "App Settings",
                             isDark: isDark,
@@ -724,11 +719,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ],
                           ),
 
-                          SizedBox(height: 20.h),
-
-                          // =====================================================
-                          // ABOUT APP
-                          // =====================================================
                           SizedBox(height: 20.h),
 
                           _buildSectionCard(
