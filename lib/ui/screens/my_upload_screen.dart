@@ -10,6 +10,7 @@ import '../../core/api/api_endpoints.dart';
 import '../../network/provider/my_upload_provider.dart';
 import '../../network/provider/prpject_provider.dart';
 import '../../utils/theme/app.colors.dart';
+import '../../utils/theme/app.fonts.dart';
 import '../../widgets/button_widget.dart';
 
 class MyUploadsScreen extends StatelessWidget {
@@ -66,12 +67,12 @@ class _MyUploadsView extends StatelessWidget {
 
         titleSpacing: 8,
 
-        title: const AppText(
+        title:  AppText(
           "My Uploads",
           style: TextStyle(
             color: Color(0xFF111827),
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
+            fontSize: AppFontSize.fontSize22,
+            fontWeight: FontWeight.w500,
           ),
         ),
 

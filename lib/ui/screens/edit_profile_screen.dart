@@ -256,11 +256,13 @@ class _EditProfileViewState extends State<_EditProfileView> {
           height: 50.h,
           child: ButtonWidget(
             isLoading: provider.isSaving,
+
             buttonPress: provider.isSaving || provider.isUploadingImage
                 ? null
                 : _saveProfile,
             title: provider.isUploadingImage ? 'Uploading Logo...' : 'Update',
             buttonColor: AppColors.appRed,
+            textColor: AppColors.appWhite,
           ),
         ),
         SizedBox(height: 20.h),

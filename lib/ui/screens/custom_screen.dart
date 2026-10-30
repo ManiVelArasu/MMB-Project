@@ -114,7 +114,9 @@ class _CustomCreateBody extends StatelessWidget {
                             height: 210.h,
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
-                              itemCount: templateSizes.length + 1, // +1 for the custom card
+                              itemCount:
+                                  templateSizes.length +
+                                  1, // +1 for the custom card
                               itemBuilder: (context, index) {
                                 // ---------- Custom Size card ----------
                                 if (index == templateSizes.length) {
@@ -123,13 +125,17 @@ class _CustomCreateBody extends StatelessWidget {
                                     imgW: 70.w,
                                     imgH: 90.h,
                                     title: "Custom Size",
-                                    image: Image.asset("assets/images/custom.png", fit: BoxFit.contain),
+                                    image: Image.asset(
+                                      "assets/images/custom.png",
+                                      fit: BoxFit.contain,
+                                    ),
                                     onTap: () {
                                       showModalBottomSheet(
                                         context: context,
                                         isScrollControlled: true,
                                         backgroundColor: Colors.transparent,
-                                        builder: (context) => const _CustomSizeBottomSheet(),
+                                        builder: (context) =>
+                                            const _CustomSizeBottomSheet(),
                                       );
                                     },
                                   );
@@ -137,11 +143,18 @@ class _CustomCreateBody extends StatelessWidget {
 
                                 // ---------- Template size cards (API) ----------
                                 final item = templateSizes[index];
-                                final width = int.tryParse(item.width ?? "0") ?? 0;
-                                final height = int.tryParse(item.height ?? "0") ?? 0;
+                                final width =
+                                    int.tryParse(item.width ?? "0") ?? 0;
+                                final height =
+                                    int.tryParse(item.height ?? "0") ?? 0;
 
-                                final double imgH = getImageHeight(width, height);
-                                final double ratio = (width > 0 && height > 0) ? width / height : 1.0;
+                                final double imgH = getImageHeight(
+                                  width,
+                                  height,
+                                );
+                                final double ratio = (width > 0 && height > 0)
+                                    ? width / height
+                                    : 1.0;
                                 final double imgW = imgH * ratio;
 
                                 return _buildSizeCard(
@@ -159,8 +172,12 @@ class _CustomCreateBody extends StatelessWidget {
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) => TemplateEditScreen(
-                                          canvasWidth: width > 0 ? width.toDouble() : null,
-                                          canvasHeight: height > 0 ? height.toDouble() : null,
+                                          canvasWidth: width > 0
+                                              ? width.toDouble()
+                                              : null,
+                                          canvasHeight: height > 0
+                                              ? height.toDouble()
+                                              : null,
                                         ),
                                       ),
                                     );
@@ -296,6 +313,7 @@ class _CustomCreateBody extends StatelessWidget {
       },
     );
   }
+
   Widget _buildSizeCard({
     required bool isDark,
     required double imgW,
@@ -360,6 +378,7 @@ class _CustomCreateBody extends StatelessWidget {
       ),
     );
   }
+
   double getImageHeight(int width, int height) {
     if (width == 1080 && height == 1080) {
       return 70;
@@ -385,8 +404,7 @@ class _CustomCreateBody extends StatelessWidget {
       return "assets/images/post_1920.png";
     } else if (width == 1440 && height == 1080) {
       return "assets/images/post_1440.png";
-    }
-    else if (width == 1920 && height == 1080) {
+    } else if (width == 1920 && height == 1080) {
       return "assets/images/youtube_thumbnail.png";
     }
     return "assets/images/post_1440.png";
@@ -442,9 +460,7 @@ class _CustomCreateBody extends StatelessWidget {
               AppText(
                 title,
                 style: TextStyle(
-                  color: isDark
-                      ? Colors.white
-                      : AppColors.darkBlack,
+                  color: isDark ? Colors.white : AppColors.darkBlack,
                   fontSize: AppFontSize.fontSize18,
                   fontWeight: FontWeight.w500,
                 ),

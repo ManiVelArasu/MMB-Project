@@ -260,6 +260,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       TextButton(
                                         onPressed: () {
                                           // Credit usage
+                                          Navigator.pushNamed(
+                                            context,
+                                            "/PlanUsageScreen",
+                                          );
                                         },
                                         style: TextButton.styleFrom(
                                           padding: EdgeInsets.zero,
@@ -303,7 +307,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     'Set Up Your Business',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 21.sp,
+                                      fontSize: AppFontSize.fontSize21,
                                       height: 1.15,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -317,7 +321,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         : 'Add your business name, category, contact details, and other information once, it makes creating content for your business easier.',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 13.sp,
+                                      fontSize: AppFontSize.fontSize13,
                                       height: 1.4,
                                       fontWeight: FontWeight.w400,
                                     ),
@@ -1319,10 +1323,14 @@ void _showLanguagesBottomSheet(
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? const Color(0xFFFFD1D5)
-                                : (isDark ? const Color(0xFF252525) : Colors.white),
+                                : (isDark
+                                      ? const Color(0xFF252525)
+                                      : Colors.white),
                             borderRadius: BorderRadius.circular(22.r),
                             border: Border.all(
-                              color: isSelected ? Colors.red : Colors.grey.shade300,
+                              color: isSelected
+                                  ? Colors.red
+                                  : Colors.grey.shade300,
                               width: isSelected ? 1.5 : 1,
                             ),
                           ),
@@ -1336,8 +1344,9 @@ void _showLanguagesBottomSheet(
                                       ? Colors.red
                                       : (isDark ? Colors.white : Colors.black),
                                   fontSize: 14.sp,
-                                  fontWeight:
-                                  isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
                                 ),
                               ),
 

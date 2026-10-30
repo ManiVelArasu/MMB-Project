@@ -52,7 +52,12 @@ class BusinessProfileView extends StatelessWidget {
         final String logoUrl =
             '${ApiEndpoints.cdnImageUrl}/${provider.commonProvider.business?.logoS3Key ?? ''}';
         if (accountType == "personal") {
-          return _buildPersonalProfileScreen(context, isDark, commonProvider,provider);
+          return _buildPersonalProfileScreen(
+            context,
+            isDark,
+            commonProvider,
+            provider,
+          );
         }
 
         return Scaffold(
@@ -337,7 +342,8 @@ class BusinessProfileView extends StatelessWidget {
                                                           ? Colors.white
                                                           : Colors.black)
                                                     : Colors.grey,
-                                                fontSize:AppFontSize.fontSize13,
+                                                fontSize:
+                                                    AppFontSize.fontSize13,
                                                 fontWeight:
                                                     provider.selectedFrameTab ==
                                                         0
@@ -366,14 +372,16 @@ class BusinessProfileView extends StatelessWidget {
                                               "Animated Frames",
                                               style: TextStyle(
                                                 color:
-                                                    provider.selectedFrameTab == 1
+                                                    provider.selectedFrameTab ==
+                                                        1
                                                     ? (isDark
                                                           ? Colors.white
                                                           : Colors.black)
                                                     : Colors.grey.shade400,
                                                 fontSize: 14.sp,
                                                 fontWeight:
-                                                    provider.selectedFrameTab == 1
+                                                    provider.selectedFrameTab ==
+                                                        1
                                                     ? FontWeight.w900
                                                     : FontWeight.w600,
                                               ),
@@ -684,7 +692,7 @@ class BusinessProfileView extends StatelessWidget {
     BuildContext context,
     bool isDark,
     CommonProvider provider,
-      BusinessProfileProvider businessProfileProvider
+    BusinessProfileProvider businessProfileProvider,
   ) {
     final theme = Theme.of(context);
     final String personalUrl =
@@ -882,8 +890,8 @@ class BusinessProfileView extends StatelessWidget {
                                   "Your Frames",
                                   style: TextStyle(
                                     color: theme.colorScheme.onSurface,
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.w900,
+                                    fontSize: AppFontSize.fontSize18,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
@@ -911,34 +919,36 @@ class BusinessProfileView extends StatelessWidget {
                         Row(
                           children: [
                             GestureDetector(
-                              onTap: () => businessProfileProvider.updateFrameTab(0),
+                              onTap: () =>
+                                  businessProfileProvider.updateFrameTab(0),
                               child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   AppText(
                                     "Static Frames",
                                     style: TextStyle(
                                       color:
-                                      businessProfileProvider.selectedFrameTab ==
-                                          0
+                                          businessProfileProvider
+                                                  .selectedFrameTab ==
+                                              0
                                           ? (isDark
-                                          ? Colors.white
-                                          : Colors.black)
+                                                ? Colors.white
+                                                : Colors.black)
                                           : Colors.grey,
-                                      fontSize:AppFontSize.fontSize13,
+                                      fontSize: AppFontSize.fontSize13,
                                       fontWeight:
-                                      businessProfileProvider.selectedFrameTab ==
-                                          0
+                                          businessProfileProvider
+                                                  .selectedFrameTab ==
+                                              0
                                           ? FontWeight.w900
                                           : FontWeight.w500,
                                     ),
                                   ),
-                                  if (businessProfileProvider.selectedFrameTab == 0)
+                                  if (businessProfileProvider
+                                          .selectedFrameTab ==
+                                      0)
                                     Container(
-                                      margin: EdgeInsets.only(
-                                        top: 4.h,
-                                      ),
+                                      margin: EdgeInsets.only(top: 4.h),
                                       height: 3.h,
                                       width: 85.w,
                                       color: const Color(0xFFE53935),
@@ -948,30 +958,35 @@ class BusinessProfileView extends StatelessWidget {
                             ),
                             SizedBox(width: 20.w),
                             GestureDetector(
-                              onTap: () => businessProfileProvider.updateFrameTab(1),
+                              onTap: () =>
+                                  businessProfileProvider.updateFrameTab(1),
                               child: Column(
                                 children: [
                                   AppText(
                                     "Animated Frames",
                                     style: TextStyle(
                                       color:
-                                      businessProfileProvider.selectedFrameTab == 1
+                                          businessProfileProvider
+                                                  .selectedFrameTab ==
+                                              1
                                           ? (isDark
-                                          ? Colors.white
-                                          : Colors.black)
+                                                ? Colors.white
+                                                : Colors.black)
                                           : Colors.grey.shade400,
                                       fontSize: 14.sp,
                                       fontWeight:
-                                      businessProfileProvider.selectedFrameTab == 1
+                                          businessProfileProvider
+                                                  .selectedFrameTab ==
+                                              1
                                           ? FontWeight.w900
                                           : FontWeight.w600,
                                     ),
                                   ),
-                                  if (businessProfileProvider.selectedFrameTab == 1)
+                                  if (businessProfileProvider
+                                          .selectedFrameTab ==
+                                      1)
                                     Container(
-                                      margin: EdgeInsets.only(
-                                        top: 4.h,
-                                      ),
+                                      margin: EdgeInsets.only(top: 4.h),
                                       height: 3.h,
                                       width: 85.w,
                                       color: const Color(0xFFE53935),
@@ -990,42 +1005,36 @@ class BusinessProfileView extends StatelessWidget {
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
-                            itemCount: businessProfileProvider.selectedFrames.length,
+                            itemCount:
+                                businessProfileProvider.selectedFrames.length,
                             itemBuilder: (context, index) {
                               final frame =
-                              businessProfileProvider.selectedFrames[index];
+                                  businessProfileProvider.selectedFrames[index];
                               final image = frame.thumbnailS3Key;
                               return Container(
                                 width: 110.w,
                                 margin: EdgeInsets.only(right: 12.w),
                                 child: Column(
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Expanded(
                                       child: Container(
                                         decoration: BoxDecoration(
                                           color: isDark
-                                              ? const Color(
-                                            0xFF1E1E1E,
-                                          )
+                                              ? const Color(0xFF1E1E1E)
                                               : Colors.white,
-                                          borderRadius:
-                                          BorderRadius.circular(
+                                          borderRadius: BorderRadius.circular(
                                             12.r,
                                           ),
                                           border: Border.all(
                                             color: isDark
                                                 ? Colors.grey.shade800
-                                                : Colors
-                                                .grey
-                                                .shade300,
+                                                : Colors.grey.shade300,
                                             width: 1.2,
                                           ),
                                         ),
                                         child: ClipRRect(
-                                          borderRadius:
-                                          BorderRadius.circular(
+                                          borderRadius: BorderRadius.circular(
                                             10.r,
                                           ),
                                           child: Stack(
@@ -1033,9 +1042,7 @@ class BusinessProfileView extends StatelessWidget {
                                               Positioned.fill(
                                                 child: Container(
                                                   color: isDark
-                                                      ? const Color(
-                                                    0xFF1E1E1E,
-                                                  )
+                                                      ? const Color(0xFF1E1E1E)
                                                       : Colors.white,
                                                 ),
                                               ),
@@ -1046,18 +1053,14 @@ class BusinessProfileView extends StatelessWidget {
                                                 child: Center(
                                                   child: CachedNetworkImage(
                                                     imageUrl:
-                                                    "${ApiEndpoints.cdnImageUrl}/${image}",
-                                                    errorWidget:
-                                                        (
-                                                        _,
-                                                        __,
-                                                        ___,
-                                                        ) => const Center(
-                                                      child: Icon(
-                                                        Icons
-                                                            .image_not_supported_rounded,
-                                                      ),
-                                                    ),
+                                                        "${ApiEndpoints.cdnImageUrl}/${image}",
+                                                    errorWidget: (_, __, ___) =>
+                                                        const Center(
+                                                          child: Icon(
+                                                            Icons
+                                                                .image_not_supported_rounded,
+                                                          ),
+                                                        ),
                                                   ),
                                                 ),
                                               ),
@@ -1087,22 +1090,6 @@ class BusinessProfileView extends StatelessWidget {
                         ),
 
                         SizedBox(height: 11.h),
-
-                        SizedBox(
-                          height: 145.h,
-                          child: ListView(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            children: [
-                              _personalFrameCard(isDark: isDark, price: "Free"),
-                              _personalFrameCard(
-                                isDark: isDark,
-                                price: "Rs.0 (Rs.100 Unlocked)",
-                              ),
-                              _personalFrameCard(isDark: isDark, price: "Free"),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -1150,7 +1137,7 @@ class BusinessProfileView extends StatelessWidget {
               style: TextStyle(
                 color: AppColors.appBlack,
                 fontSize: AppFontSize.fontSize15,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
