@@ -91,20 +91,16 @@ class ProfileScreenProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result =
-      await GetMeRepository.instance.updateMe("business");
+      final result = await GetMeRepository.instance.updateMe("business");
 
       return await result.when(
         success: (data) async {
           final prefs = await SharedPreferences.getInstance();
 
-          await prefs.setString(
-            'selected_account_type',
-            'For my Business',
-          );
+          await prefs.setString('selected_account_type', 'For my Business');
 
           await prefs.setBool('is_personal_use', false);
-
+          context.read<BusinessProvider>().clearImage();
           // Update existing user data
           try {
             if (data is Map<String, dynamic>) {
@@ -118,7 +114,7 @@ class ProfileScreenProvider extends ChangeNotifier {
 
                 debugPrint(
                   "ACCOUNT TYPE UPDATED = "
-                      "${language.data.accountType}",
+                  "${language.data.accountType}",
                 );
               }
             }
@@ -131,10 +127,7 @@ class ProfileScreenProvider extends ChangeNotifier {
 
           // Navigate after API success
           if (context.mounted) {
-            Navigator.pushNamed(
-              context,
-              "/BusinessCategoryChooseScreen",
-            );
+            Navigator.pushNamed(context, "/BusinessCategoryChooseScreen");
           }
 
           return true;
