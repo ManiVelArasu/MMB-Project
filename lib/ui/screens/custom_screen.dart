@@ -493,9 +493,85 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
   final TextEditingController widthController = TextEditingController(
     text: "1080",
   );
+
   final TextEditingController heightController = TextEditingController(
     text: "1080",
   );
+
+  String? selectedPopularSize;
+
+  final List<Map<String, dynamic>> popularSizes = [
+    {
+      "title": "Youtube Cover",
+      "subtitle": "2560 × 1440 PX",
+      "width": 2560,
+      "height": 1440,
+    },
+    {
+      "title": "Facebook Cover",
+      "subtitle": "820 × 315 PX",
+      "width": 820,
+      "height": 315,
+    },
+    {
+      "title": "Pinterest",
+      "subtitle": "1000 × 1500 PX",
+      "width": 1000,
+      "height": 1500,
+    },
+    {
+      "title": "Linked In Banner",
+      "subtitle": "1584 × 396 PX",
+      "width": 1584,
+      "height": 396,
+    },
+  ];
+
+  @override
+  void dispose() {
+    widthController.dispose();
+    heightController.dispose();
+    super.dispose();
+  }
+
+  void _selectPopularSize(Map<String, dynamic> item) {
+    setState(() {
+      selectedPopularSize = item["title"];
+      widthController.text = item["width"].toString();
+      heightController.text = item["height"].toString();
+    });
+  }
+
+  void _createDesign() {
+    final double? width = double.tryParse(widthController.text.trim());
+
+    final double? height = double.tryParse(heightController.text.trim());
+
+    if (width == null ||
+        height == null ||
+        width <= 0 ||
+        height <= 0 ||
+        width > 4000 ||
+        height > 4000) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please enter valid width and height (Max 4000)."),
+        ),
+      );
+      return;
+    }
+
+    final navigator = Navigator.of(context);
+
+    navigator.pop();
+
+    navigator.push(
+      MaterialPageRoute(
+        builder: (_) =>
+            TemplateEditScreen(canvasWidth: width, canvasHeight: height),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -527,9 +603,10 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                     ),
                   ),
                 ),
+
                 SizedBox(height: 16.h),
 
-                // Title and Close Button
+                // Title
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -559,9 +636,9 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                     ),
                   ],
                 ),
+
                 SizedBox(height: 12.h),
 
-                // Subtitle
                 AppText(
                   "Enter exact dimensions for a billboard, packaging label, or any size we don't have ready-made.",
                   style: TextStyle(
@@ -571,57 +648,19 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                     height: 1.4,
                   ),
                 ),
+
                 SizedBox(height: 20.h),
 
-                // Width & Height Inputs with Cross Icon
+                // Width and Height
                 Row(
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppText(
-                            "Width (px)",
-                            style: TextStyle(
-                              fontSize: AppFontSize.fontSize16,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.appBlack,
-                            ),
-                          ),
-                          AppText(
-                            "Max 4000",
-                            style: TextStyle(
-                              fontSize: AppFontSize.fontSize14,
-                              fontWeight: FontWeight.w300,
-                              color: AppColors.appBlack,
-                            ),
-                          ),
-                          SizedBox(height: 6.h),
-                          TextField(
-                            controller: widthController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 14.w,
-                                vertical: 12.h,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12.r),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFFFD5D8),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12.r),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFFFD5D8),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      child: _buildSizeInput(
+                        title: "Width (px)",
+                        controller: widthController,
                       ),
                     ),
+
                     Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: 10.w,
@@ -633,106 +672,127 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                         size: 18,
                       ),
                     ),
+
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppText(
-                            "Height (px)",
-                            style: TextStyle(
-                              fontSize: AppFontSize.fontSize16,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.appBlack,
-                            ),
-                          ),
-                          AppText(
-                            "Max 4000",
-                            style: TextStyle(
-                              fontSize: AppFontSize.fontSize14,
-                              fontWeight: FontWeight.w300,
-                              color: AppColors.appBlack,
-                            ),
-                          ),
-                          SizedBox(height: 6.h),
-                          TextField(
-                            controller: heightController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 14.w,
-                                vertical: 12.h,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12.r),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFFFD5D8),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12.r),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFFFD5D8),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      child: _buildSizeInput(
+                        title: "Height (px)",
+                        controller: heightController,
                       ),
                     ),
                   ],
                 ),
+
                 SizedBox(height: 20.h),
 
-                // Popular Section Title
-                AppText(
-                  "POPULAR",
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontSize: AppFontSize.fontSize14,
-                    fontWeight: FontWeight.w700,
-                  ),
+                // Popular title
+                Row(
+                  children: [
+                    AppText(
+                      "POPULAR",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: AppFontSize.fontSize14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const Spacer(),
+                    AppText(
+                      "Select a size",
+                      style: TextStyle(fontSize: 11.sp, color: Colors.grey),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 10.h),
 
-                // Popular Horizontal Chips
+                SizedBox(height: 12.h),
+
+                // Popular selectable list
+                // Popular selectable chips - Horizontal Row
                 SizedBox(
-                  height: 38.h,
-                  child: ListView(
+                  height: 58.h,
+                  child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    children: [
-                      _buildPopularChip("Youtube Cover", "2560 × 1440 PX"),
-                      SizedBox(width: 8.w),
-                      _buildPopularChip("Facebook Cover", "820 × 315 PX"),
-                      SizedBox(width: 8.w),
-                      _buildPopularChip("Pinterest", "1000 × 1500 PX"),
-                      SizedBox(width: 8.w),
-                      _buildPopularChip("Linked In Banner", "1584 × 396 PX"),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 20.h),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: popularSizes.length,
+                    separatorBuilder: (_, __) => SizedBox(width: 8.w),
+                    itemBuilder: (context, index) {
+                      final item = popularSizes[index];
 
-                // Create Design Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 48.h,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final double? w = double.tryParse(widthController.text);
-                      final double? h = double.tryParse(heightController.text);
+                      final bool isSelected =
+                          selectedPopularSize == item["title"];
 
-                      Navigator.pop(context);
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => TemplateEditScreen(
-                            canvasWidth: w,
-                            canvasHeight: h,
+                      return GestureDetector(
+                        onTap: () {
+                          _selectPopularSize(item);
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 8.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFFFFECEE)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(
+                              color: isSelected
+                                  ? Colors.red
+                                  : Colors.grey.shade300,
+                              width: isSelected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AppText(
+                                    item["title"],
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: isSelected
+                                          ? Colors.red
+                                          : const Color(0xFF171A2B),
+                                    ),
+                                  ),
+                                  SizedBox(height: 3.h),
+                                  AppText(
+                                    item["subtitle"],
+                                    style: TextStyle(
+                                      fontSize: 10.sp,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (isSelected) ...[
+                                SizedBox(width: 6.w),
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Colors.red,
+                                  size: 16.sp,
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       );
                     },
+                  ),
+                ),
+
+                SizedBox(height: 24.h),
+
+                // Create Design
+                SizedBox(
+                  width: double.infinity,
+                  height: 48.h,
+                  child: ElevatedButton(
+                    onPressed: _createDesign,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       elevation: 0,
@@ -750,9 +810,10 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                     ),
                   ),
                 ),
+
                 SizedBox(height: 14.h),
 
-                // Footer Link
+                // Footer
                 Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -760,21 +821,20 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                       AppText(
                         "Want inspiration? ",
                         style: TextStyle(
-                          fontSize: AppFontSize.fontSize16,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.grey,
+                          fontSize: 12.sp,
+                          color: Colors.grey.shade700,
                         ),
                       ),
                       GestureDetector(
                         onTap: () {
-                          // Action for browse templates
+                          // Browse templates action
                         },
                         child: AppText(
                           "BROWSE TEMPLATES",
                           style: TextStyle(
-                            fontSize: AppFontSize.fontSize16,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.appRed,
+                            fontSize: 12.sp,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
@@ -789,35 +849,57 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
     );
   }
 
-  Widget _buildPopularChip(String title, String subtitle) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppText(
-            title,
-            style: TextStyle(
-              fontSize: AppFontSize.fontSize14,
-              fontWeight: FontWeight.w400,
-              color: Colors.black87,
+  // Width / Height input
+  Widget _buildSizeInput({
+    required String title,
+    required TextEditingController controller,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText(
+          title,
+          style: TextStyle(
+            fontSize: AppFontSize.fontSize16,
+            fontWeight: FontWeight.w500,
+            color: AppColors.appBlack,
+          ),
+        ),
+
+        AppText(
+          "Max 4000",
+          style: TextStyle(
+            fontSize: AppFontSize.fontSize14,
+            fontWeight: FontWeight.w300,
+            color: AppColors.appBlack,
+          ),
+        ),
+
+        SizedBox(height: 6.h),
+
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 14.w,
+              vertical: 12.h,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: const BorderSide(color: Color(0xFFFFD5D8)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: const BorderSide(color: Color(0xFFFFD5D8)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
             ),
           ),
-          SizedBox(width: 6.w),
-          AppText(
-            subtitle,
-            style: TextStyle(
-              fontSize: AppFontSize.fontSize14,
-              fontWeight: FontWeight.w400,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

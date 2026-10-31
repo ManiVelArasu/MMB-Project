@@ -310,6 +310,7 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       AppText(
                         widget.showApiName
@@ -319,25 +320,26 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
                           color: isDark ? Colors.white : AppColors.appBlack,
                           fontSize: AppFontSize.fontSize22,
                           fontWeight: FontWeight.w500,
+                          height: 1.0,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
 
                       if (!isPersonal && businessCategory.isNotEmpty)
-                        if (!isPersonal && businessCategory.isNotEmpty)
-                          AppText(
-                            businessCategory,
-                            style: TextStyle(
-                              color: isDark
-                                  ? Colors.grey.shade400
-                                  : Colors.grey.shade600,
-                              fontSize: AppFontSize.fontSize13,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        AppText(
+                          businessCategory,
+                          style: TextStyle(
+                            color: isDark
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600,
+                            fontSize: AppFontSize.fontSize13,
+                            fontWeight: FontWeight.w400,
+                            height: 1.0,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                     ],
                   ),
                 ),

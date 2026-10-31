@@ -600,27 +600,19 @@ class _HomeScreenView extends StatelessWidget {
                                   SizedBox(height: 12.h),
 
                                   SizedBox(
-                                    height: 105.h,
+                                    height: 125.h, // 105.h -> 125.h
                                     child: ListView.separated(
                                       scrollDirection: Axis.horizontal,
                                       physics: const BouncingScrollPhysics(),
                                       itemCount: category.children.length,
-
-                                      separatorBuilder: (_, __) =>
-                                          SizedBox(width: 7.w),
-
+                                      separatorBuilder: (_, __) => SizedBox(width: 7.w),
                                       itemBuilder: (context, childIndex) {
-                                        final child =
-                                            category.children[childIndex];
+                                        final child = category.children[childIndex];
 
-                                        final childName =
-                                            child.name?.trim() ?? '';
+                                        final childName = child.name?.trim() ?? '';
+                                        final childSlug = child.slug?.trim() ?? '';
 
-                                        final childSlug =
-                                            child.slug?.trim() ?? '';
-
-                                        final thumbnailKey =
-                                            child.iconS3Key?.trim() ?? '';
+                                        final thumbnailKey = child.iconS3Key?.trim() ?? '';
 
                                         final imageUrl = thumbnailKey.isEmpty
                                             ? ''
@@ -629,18 +621,8 @@ class _HomeScreenView extends StatelessWidget {
                                         return SizedBox(
                                           width: 90.w,
                                           child: InkWell(
-                                            borderRadius: BorderRadius.circular(
-                                              12.r,
-                                            ),
-
+                                            borderRadius: BorderRadius.circular(12.r),
                                             onTap: () {
-                                              debugPrint(
-                                                "📂 CHILD CATEGORY: $childName",
-                                              );
-                                              debugPrint(
-                                                "📂 CHILD SLUG: $childSlug",
-                                              );
-
                                               Navigator.pushNamed(
                                                 context,
                                                 "/TemplateDetailScreen",
@@ -651,97 +633,53 @@ class _HomeScreenView extends StatelessWidget {
                                                 },
                                               );
                                             },
-
                                             child: Column(
                                               children: [
-                                                // ====================================
-                                                // CHILD THUMBNAIL
-                                                // ====================================
                                                 ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        10.r,
-                                                      ),
+                                                  borderRadius: BorderRadius.circular(10.r),
                                                   child: Container(
                                                     width: 84.w,
-                                                    height: 84.w,
+                                                    height: 88.w,
                                                     color: isDark
-                                                        ? const Color(
-                                                            0xFF252525,
-                                                          )
+                                                        ? const Color(0xFF252525)
                                                         : Colors.grey.shade100,
-
                                                     child: imageUrl.isEmpty
                                                         ? Icon(
-                                                            Icons
-                                                                .image_outlined,
-                                                            size: 28.sp,
-                                                            color: Colors.grey,
-                                                          )
-                                                        : Image.network(
-                                                            imageUrl,
-                                                            width: 150.w,
-                                                            height: 150.w,
-                                                            fit: BoxFit.cover,
+                                                      Icons.image_outlined,
+                                                      size: 28.sp,
+                                                      color: Colors.grey,
+                                                    )
+                                                        : CachedNetworkImage(
+                                                      imageUrl:imageUrl,
+                                                      width: 84.w,
+                                                      height: 88.w,
+                                                      fit: BoxFit.cover,
 
-                                                            loadingBuilder:
-                                                                (
-                                                                  context,
-                                                                  child,
-                                                                  loadingProgress,
-                                                                ) {
-                                                                  if (loadingProgress ==
-                                                                      null) {
-                                                                    return child;
-                                                                  }
+                                                      placeholder: (context, url) {
+                                                        return _defaultLogo();
+                                                      },
 
-                                                                  return const Center(
-                                                                    child: CircularProgressIndicator(
-                                                                      strokeWidth:
-                                                                          1.5,
-                                                                      color: Color(
-                                                                        0xFFE53935,
-                                                                      ),
-                                                                    ),
-                                                                  );
-                                                                },
+                                                      errorWidget: (context, url, error) {
 
-                                                            errorBuilder:
-                                                                (
-                                                                  context,
-                                                                  error,
-                                                                  stackTrace,
-                                                                ) {
-                                                                  return Icon(
-                                                                    Icons
-                                                                        .broken_image_outlined,
-                                                                    size: 28.sp,
-                                                                    color: Colors
-                                                                        .grey,
-                                                                  );
-                                                                },
-                                                          ),
+                                                        return _defaultLogo();
+                                                      },
+                                                    ),
                                                   ),
                                                 ),
 
                                                 SizedBox(height: 6.h),
 
-                                                // ====================================
-                                                // CHILD NAME
-                                                // ====================================
-                                                AppText(
-                                                  childName,
-                                                  textAlign: TextAlign.center,
-                                                  maxLines: 2,
-                                                  style: TextStyle(
-                                                    fontSize: AppFontSize
-                                                        .fontSize12
-                                                        .sp,
-                                                    fontWeight: FontWeight.w400,
-                                                    height: 1.1,
-                                                    color: isDark
-                                                        ? Colors.white
-                                                        : Colors.black,
+                                                SizedBox(
+                                                  height: 30.h,
+                                                  child: AppText(
+                                                    childName,
+                                                    textAlign: TextAlign.center,
+                                                    maxLines: 2,
+                                                    style: TextStyle(
+                                                      fontSize: AppFontSize.fontSize12.sp,
+                                                      fontWeight: FontWeight.w400,
+                                                      color: isDark ? Colors.white : Colors.black,
+                                                    ),
                                                   ),
                                                 ),
                                               ],

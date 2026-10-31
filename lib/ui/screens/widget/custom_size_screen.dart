@@ -19,25 +19,93 @@ class _CustomSizeScreenState extends State<CustomSizeScreen> {
   final TextEditingController widthController = TextEditingController(
     text: "1080",
   );
+
   final TextEditingController heightController = TextEditingController(
     text: "1080",
   );
+
+  String? selectedPopularSize;
+
+  final List<Map<String, dynamic>> popularSizes = [
+    {
+      "title": "Youtube Cover",
+      "subtitle": "2560 × 1440 PX",
+      "width": 2560,
+      "height": 1440,
+    },
+    {
+      "title": "Facebook Cover",
+      "subtitle": "820 × 315 PX",
+      "width": 820,
+      "height": 315,
+    },
+    {
+      "title": "Pinterest",
+      "subtitle": "1000 × 1500 PX",
+      "width": 1000,
+      "height": 1500,
+    },
+    {
+      "title": "Linked In Banner",
+      "subtitle": "1584 × 396 PX",
+      "width": 1584,
+      "height": 396,
+    },
+  ];
+
+  @override
+  void dispose() {
+    widthController.dispose();
+    heightController.dispose();
+    super.dispose();
+  }
+
+  void _selectPopularSize(Map<String, dynamic> item) {
+    setState(() {
+      selectedPopularSize = item["title"];
+      widthController.text = item["width"].toString();
+      heightController.text = item["height"].toString();
+    });
+  }
+
+  void _createDesign() {
+    final double? width = double.tryParse(widthController.text.trim());
+    final double? height = double.tryParse(heightController.text.trim());
+
+    if (width == null ||
+        height == null ||
+        width <= 0 ||
+        height <= 0 ||
+        width > 4000 ||
+        height > 4000) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please enter valid width and height (Max 4000)."),
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            TemplateEditScreen(canvasWidth: width, canvasHeight: height),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: CustomAppBar(
-        title: "Custom Size",
-        showRightIcon: false,
-      ),
+      appBar: CustomAppBar(title: "Custom Size", showRightIcon: false),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 24.h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Subtitle
               AppText(
                 "Enter exact dimensions for a billboard, packaging label, or any size we don't have ready-made.",
                 style: TextStyle(
@@ -47,57 +115,19 @@ class _CustomSizeScreenState extends State<CustomSizeScreen> {
                   height: 1.4,
                 ),
               ),
+
               SizedBox(height: 24.h),
 
-              // Width & Height Inputs with Cross Icon
+              // Width and Height
               Row(
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText(
-                          "Width (px)",
-                          style: TextStyle(
-                            fontSize: AppFontSize.fontSize16,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.appBlack,
-                          ),
-                        ),
-                        AppText(
-                          "Max 4000",
-                          style: TextStyle(
-                            fontSize: AppFontSize.fontSize14,
-                            fontWeight: FontWeight.w300,
-                            color: AppColors.appBlack,
-                          ),
-                        ),
-                        SizedBox(height: 6.h),
-                        TextField(
-                          controller: widthController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 14.w,
-                              vertical: 12.h,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12.r),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFFFD5D8),
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12.r),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFFFD5D8),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: _buildSizeInput(
+                      title: "Width (px)",
+                      controller: widthController,
                     ),
                   ),
+
                   Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: 10.w,
@@ -105,57 +135,19 @@ class _CustomSizeScreenState extends State<CustomSizeScreen> {
                     ),
                     child: const Icon(Icons.close, color: Colors.red, size: 18),
                   ),
+
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText(
-                          "Height (px)",
-                          style: TextStyle(
-                            fontSize: AppFontSize.fontSize16,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.appBlack,
-                          ),
-                        ),
-                        AppText(
-                          "Max 4000",
-                          style: TextStyle(
-                            fontSize: AppFontSize.fontSize14,
-                            fontWeight: FontWeight.w300,
-                            color: AppColors.appBlack,
-                          ),
-                        ),
-                        SizedBox(height: 6.h),
-                        TextField(
-                          controller: heightController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 14.w,
-                              vertical: 12.h,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12.r),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFFFD5D8),
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12.r),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFFFD5D8),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: _buildSizeInput(
+                      title: "Height (px)",
+                      controller: heightController,
                     ),
                   ),
                 ],
               ),
+
               SizedBox(height: 24.h),
 
-              // Popular Section Title
+              // Popular section
               AppText(
                 "POPULAR",
                 style: TextStyle(
@@ -164,24 +156,85 @@ class _CustomSizeScreenState extends State<CustomSizeScreen> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+
               SizedBox(height: 10.h),
 
-              // Popular Horizontal Chips
+              // Popular size chips
               SizedBox(
-                height: 38.h,
-                child: ListView(
+                height: 40.h,
+                child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  children: [
-                    _buildPopularChip("Youtube Cover", "2560 × 1440 PX"),
-                    SizedBox(width: 8.w),
-                    _buildPopularChip("Facebook Cover", "820 × 315 PX"),
-                    SizedBox(width: 8.w),
-                    _buildPopularChip("Pinterest", "1000 × 1500 PX"),
-                    SizedBox(width: 8.w),
-                    _buildPopularChip("Linked In Banner", "1584 × 396 PX"),
-                  ],
+                  itemCount: popularSizes.length,
+                  separatorBuilder: (_, __) => SizedBox(width: 8.w),
+                  itemBuilder: (context, index) {
+                    final item = popularSizes[index];
+
+                    final bool isSelected =
+                        selectedPopularSize == item["title"];
+
+                    return GestureDetector(
+                      onTap: () {
+                        _selectPopularSize(item);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 14.w,
+                          vertical: 8.h,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20.r),
+                          color: isSelected
+                              ? Colors.red.withOpacity(0.08)
+                              : Colors.white,
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.red
+                                : Colors.grey.shade300,
+                            width: isSelected ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppText(
+                              item["title"],
+                              style: TextStyle(
+                                fontSize: AppFontSize.fontSize14,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w400,
+                                color: isSelected ? Colors.red : Colors.black87,
+                              ),
+                            ),
+
+                            SizedBox(width: 6.w),
+
+                            AppText(
+                              item["subtitle"],
+                              style: TextStyle(
+                                fontSize: AppFontSize.fontSize14,
+                                fontWeight: FontWeight.w400,
+                                color: isSelected ? Colors.red : Colors.grey,
+                              ),
+                            ),
+
+                            if (isSelected) ...[
+                              SizedBox(width: 5.w),
+                              Icon(
+                                Icons.check_circle,
+                                color: Colors.red,
+                                size: 15.sp,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
+
               SizedBox(height: 40.h),
 
               // Create Design Button
@@ -189,18 +242,7 @@ class _CustomSizeScreenState extends State<CustomSizeScreen> {
                 width: double.infinity,
                 height: 48.h,
                 child: ElevatedButton(
-                  onPressed: () {
-                    final double? w = double.tryParse(widthController.text);
-                    final double? h = double.tryParse(heightController.text);
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            TemplateEditScreen(canvasWidth: w, canvasHeight: h),
-                      ),
-                    );
-                  },
+                  onPressed: _createDesign,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     elevation: 0,
@@ -212,15 +254,16 @@ class _CustomSizeScreenState extends State<CustomSizeScreen> {
                     "CREATE DESIGN",
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 14.sp,
+                      fontSize: AppFontSize.fontSize14,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
               ),
+
               SizedBox(height: 14.h),
 
-              // Footer Link
+              // Footer
               Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -228,18 +271,19 @@ class _CustomSizeScreenState extends State<CustomSizeScreen> {
                     AppText(
                       "Want inspiration? ",
                       style: TextStyle(
-                        fontSize: 12.sp,
+                        fontSize: AppFontSize.fontSize12,
                         color: Colors.grey.shade700,
                       ),
                     ),
+
                     GestureDetector(
                       onTap: () {
-                        // Action for browse templates
+                        // Browse templates action
                       },
                       child: AppText(
                         "BROWSE TEMPLATES",
                         style: TextStyle(
-                          fontSize: 12.sp,
+                          fontSize: AppFontSize.fontSize12,
                           color: Colors.red,
                           fontWeight: FontWeight.w800,
                         ),
@@ -255,35 +299,57 @@ class _CustomSizeScreenState extends State<CustomSizeScreen> {
     );
   }
 
-  Widget _buildPopularChip(String title, String subtitle) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppText(
-            title,
-            style: TextStyle(
-              fontSize: AppFontSize.fontSize14,
-              fontWeight: FontWeight.w400,
-              color: Colors.black87,
+  // Width / Height input widget
+  Widget _buildSizeInput({
+    required String title,
+    required TextEditingController controller,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText(
+          title,
+          style: TextStyle(
+            fontSize: AppFontSize.fontSize16,
+            fontWeight: FontWeight.w500,
+            color: AppColors.appBlack,
+          ),
+        ),
+
+        AppText(
+          "Max 4000",
+          style: TextStyle(
+            fontSize: AppFontSize.fontSize14,
+            fontWeight: FontWeight.w300,
+            color: AppColors.appBlack,
+          ),
+        ),
+
+        SizedBox(height: 6.h),
+
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 14.w,
+              vertical: 12.h,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: const BorderSide(color: Color(0xFFFFD5D8)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: const BorderSide(color: Color(0xFFFFD5D8)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
             ),
           ),
-          SizedBox(width: 6.w),
-          AppText(
-            subtitle,
-            style: TextStyle(
-              fontSize: AppFontSize.fontSize14,
-              fontWeight: FontWeight.w400,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -1241,8 +1241,8 @@ void _showLanguagesBottomSheet(
                         child: AppText(
                           'Languages',
                           style: TextStyle(
-                            fontSize: 20.sp,
-                            fontWeight: FontWeight.bold,
+                            fontSize: AppFontSize.fontSize18,
+                            fontWeight: FontWeight.w500,
                             color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
@@ -1264,7 +1264,8 @@ void _showLanguagesBottomSheet(
                   AppText(
                     'Your post, their language – connect better, reach wider!',
                     style: TextStyle(
-                      fontSize: 13.sp,
+                      fontSize: AppFontSize.fontSize13,
+                      fontWeight: FontWeight.w500,
                       color: isDark ? Colors.white70 : Colors.black54,
                     ),
                   ),
@@ -1275,8 +1276,8 @@ void _showLanguagesBottomSheet(
                   AppText(
                     '${selectedCodes.length} languages selected',
                     style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
+                      fontSize: AppFontSize.fontSize14,
+                      fontWeight: FontWeight.w500,
                       color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
@@ -1312,17 +1313,13 @@ void _showLanguagesBottomSheet(
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? const Color(0xFFFFD1D5)
+                                ? const Color(0xFFFFD3D3)
                                 : (isDark
                                       ? const Color(0xFF252525)
                                       : Colors.white),
                             borderRadius: BorderRadius.circular(22.r),
-                            border: Border.all(
-                              color: isSelected
-                                  ? Colors.red
-                                  : Colors.grey.shade300,
-                              width: isSelected ? 1.5 : 1,
-                            ),
+                            border:!isSelected? Border.all(color:const Color(0xFFFFD3D3)):null
+
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -1331,24 +1328,24 @@ void _showLanguagesBottomSheet(
                                 language.name ?? '',
                                 style: TextStyle(
                                   color: isSelected
-                                      ? Colors.red
+                                      ? AppColors.appBlack
                                       : (isDark ? Colors.white : Colors.black),
-                                  fontSize: 14.sp,
+                                  fontSize: AppFontSize.fontSize14,
                                   fontWeight: isSelected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
+                                      ? FontWeight.w400
+                                      : FontWeight.w400,
                                 ),
                               ),
 
                               // Select pannina mattum tick varum
-                              if (isSelected) ...[
+                            /*  if (isSelected) ...[
                                 SizedBox(width: 6.w),
                                 Icon(
                                   Icons.check_circle,
                                   size: 16.sp,
                                   color: Colors.red,
                                 ),
-                              ],
+                              ],*/
                             ],
                           ),
                         ),
