@@ -8998,7 +8998,7 @@ class _RemoveBackgroundSlideSheetState
             Row(
               children: [
                 Expanded(
-                  child: Text(
+                  child: AppText(
                     'Remove Background',
                     style: TextStyle(
                       fontSize: AppFontSize.fontSize18,
@@ -9050,7 +9050,7 @@ class _RemoveBackgroundSlideSheetState
                       children: [
                         Align(
                           alignment: Alignment.center,
-                          child: Text(
+                          child: AppText(
                             _completed
                                 ? 'Removing Background...'
                                 : 'Slide to remove Background',
