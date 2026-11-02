@@ -59,7 +59,7 @@ class SpecialDaysProvider extends ChangeNotifier {
         );
       } else {
         response = await HomeRepository.instance.specialDaysApi(
-          range: range ?? 'year',
+          range: range ?? 'month',
           language: language,
         );
       }

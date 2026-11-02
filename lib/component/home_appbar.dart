@@ -207,14 +207,7 @@ class _HomeCustomAppBarState extends State<HomeCustomAppBar> {
         final accountType = commonProvider.accountType?.toLowerCase();
 
         final bool isPersonal = accountType == "personal";
-
-        // 🔥 This value will update immediately
-        // when CommonProvider.notifyListeners() is called.
         final String unreadCount = commonProvider.unreadCount;
-
-        // =========================================================
-        // NAME
-        // =========================================================
 
         final String displayName = isPersonal
             ? (personal?.data.name?.trim().isNotEmpty == true

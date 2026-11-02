@@ -37,7 +37,6 @@ class _SpecialDaysScreenView extends StatelessWidget {
       extendBodyBehindAppBar: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
-
       appBar: CustomAppBar(
         showTitle: true,
         title: "Special Days",
@@ -60,13 +59,9 @@ class _SpecialDaysScreenView extends StatelessWidget {
           SafeArea(
             child: Consumer<SpecialDaysProvider>(
               builder: (context, provider, _) {
-
-                // First screen load மட்டும் loader
                 if (provider.isLoading) {
                   return const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFFE53935),
-                    ),
+                    child: CircularProgressIndicator(color: Color(0xFFE53935)),
                   );
                 }
 
@@ -79,25 +74,18 @@ class _SpecialDaysScreenView extends StatelessWidget {
                     templates.add(
                       SpecialDayTemplateItem(
                         template: template,
-                        specialDayName: specialDay.name ?? '',
+                        specialDayName: template.name ?? '',
                       ),
                     );
                   }
                 }
 
                 if (templates.isEmpty) {
-                  return _EmptyState(
-                    isDark: isDark,
-                  );
+                  return _EmptyState(isDark: isDark);
                 }
 
                 return Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    12.w,
-                    12.h,
-                    12.w,
-                    30.h,
-                  ),
+                  padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 30.h),
                   child: Column(
                     children: [
                       AppText(
@@ -132,27 +120,34 @@ class _SpecialDaysScreenView extends StatelessWidget {
                           SizedBox(width: 10.w),
                           GestureDetector(
                             onTap: () async {
-                              final DateTime today = DateUtils.dateOnly(DateTime.now());
-
-                              final DateTimeRange? dateRange = await showDateRangePicker(
-                                context: context,
-                                firstDate: today,
-                                lastDate: DateTime(2035),
-                                initialDateRange: DateTimeRange(
-                                  start: today,
-                                  end: today,
-                                ),
-                                builder: (context, child) {
-                                  return Theme(
-                                    data: Theme.of(context).copyWith(
-                                      colorScheme: Theme.of(context).colorScheme.copyWith(
-                                        primary: const Color(0xFFE53935),
-                                      ),
-                                    ),
-                                    child: child!,
-                                  );
-                                },
+                              final DateTime today = DateUtils.dateOnly(
+                                DateTime.now(),
                               );
+
+                              final DateTimeRange? dateRange =
+                                  await showDateRangePicker(
+                                    context: context,
+                                    firstDate: today,
+                                    lastDate: DateTime(2035),
+                                    initialDateRange: DateTimeRange(
+                                      start: today,
+                                      end: today,
+                                    ),
+                                    builder: (context, child) {
+                                      return Theme(
+                                        data: Theme.of(context).copyWith(
+                                          colorScheme: Theme.of(context)
+                                              .colorScheme
+                                              .copyWith(
+                                                primary: const Color(
+                                                  0xFFE53935,
+                                                ),
+                                              ),
+                                        ),
+                                        child: child!,
+                                      );
+                                    },
+                                  );
 
                               if (dateRange != null && context.mounted) {
                                 final String fromDate =
@@ -165,10 +160,12 @@ class _SpecialDaysScreenView extends StatelessWidget {
                                     '${dateRange.end.month.toString().padLeft(2, '0')}-'
                                     '${dateRange.end.day.toString().padLeft(2, '0')}';
 
-                                await context.read<SpecialDaysProvider>().loadSpecialDays(
-                                  fromDate: fromDate,
-                                  toDate: toDate,
-                                );
+                                await context
+                                    .read<SpecialDaysProvider>()
+                                    .loadSpecialDays(
+                                      fromDate: fromDate,
+                                      toDate: toDate,
+                                    );
                               }
                             },
                             child: Image.asset(
@@ -177,7 +174,7 @@ class _SpecialDaysScreenView extends StatelessWidget {
                               height: 44.h,
                               fit: BoxFit.contain,
                             ),
-                          )
+                          ),
                         ],
                       ),
 
@@ -187,24 +184,20 @@ class _SpecialDaysScreenView extends StatelessWidget {
                         child: RefreshIndicator(
                           onRefresh: () {
                             // Refresh-ல் full screen loader வராது
-                            return provider.loadSpecialDays(
-                              showLoader: false,
-                            );
+                            return provider.loadSpecialDays(showLoader: false);
                           },
                           child: GridView.builder(
-                            padding: EdgeInsets.only(
-                              bottom: 40.h,
-                            ),
+                            padding: EdgeInsets.only(bottom: 40.h),
                             physics: const AlwaysScrollableScrollPhysics(
                               parent: BouncingScrollPhysics(),
                             ),
                             gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 10.w,
-                              mainAxisSpacing: 10.h,
-                              childAspectRatio: 0.78,
-                            ),
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 10.w,
+                                  mainAxisSpacing: 10.h,
+                                  childAspectRatio: 0.78,
+                                ),
                             itemCount: templates.length,
                             itemBuilder: (context, index) {
                               final item = templates[index];
@@ -222,7 +215,7 @@ class _SpecialDaysScreenView extends StatelessWidget {
                   ),
                 );
               },
-            )
+            ),
           ),
         ],
       ),
@@ -282,7 +275,7 @@ class _TemplateCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(.05),
+              color: Colors.black.withValues(alpha: .05),
               blurRadius: 7,
               offset: const Offset(0, 2),
             ),
@@ -342,7 +335,7 @@ class _TemplateCard extends StatelessWidget {
             Padding(
               padding: EdgeInsets.fromLTRB(6.w, 7.h, 6.w, 8.h),
               child: Center(
-                child: Text(
+                child: AppText(
                   specialDayName,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -393,7 +386,7 @@ class _EmptyState extends StatelessWidget {
 
             SizedBox(height: 10.h),
 
-            Text(
+            AppText(
               message,
 
               style: TextStyle(

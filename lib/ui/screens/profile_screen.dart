@@ -1318,8 +1318,9 @@ void _showLanguagesBottomSheet(
                                       ? const Color(0xFF252525)
                                       : Colors.white),
                             borderRadius: BorderRadius.circular(22.r),
-                            border:!isSelected? Border.all(color:const Color(0xFFFFD3D3)):null
-
+                            border: !isSelected
+                                ? Border.all(color: const Color(0xFFFFD3D3))
+                                : null,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -1338,7 +1339,7 @@ void _showLanguagesBottomSheet(
                               ),
 
                               // Select pannina mattum tick varum
-                            /*  if (isSelected) ...[
+                              /*  if (isSelected) ...[
                                 SizedBox(width: 6.w),
                                 Icon(
                                   Icons.check_circle,
