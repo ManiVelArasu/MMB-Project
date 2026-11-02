@@ -8045,239 +8045,158 @@ class _TransformSelectionOverlay extends StatefulWidget {
 
 class _TransformSelectionOverlayState
     extends State<_TransformSelectionOverlay> {
+  // Transparent padding around the box so the handles (esp. the rotation
+  // handle that sits OUTSIDE the box) stay inside the widget's hit-test bounds.
+  // Flutter ignores touches that land outside a parent's size.
+  static const double _pad = 56.0;
+
   final GlobalKey _overlayKey = GlobalKey();
-  double _startRotation = 0.0;
+
+  // Move gesture snapshot.
   Offset _startPosition = Offset.zero;
   Offset _startFocalPoint = Offset.zero;
+
+  // Rotate gesture snapshot.
+  double _startRotation = 0.0;
   Offset _rotationCenterGlobal = Offset.zero;
   double _rotationStartAngle = 0.0;
-  double _resizeStartScale = 1.0;
-  double _resizeStartWidth = 150.0;
-  double _resizeStartHeight = 150.0;
 
-  Offset _resizeStartPosition = Offset.zero;
-  Offset _resizeStartGlobal = Offset.zero;
+  // Resize gesture snapshot (taken once on pan start, never re-read from the
+  // live item, so the maths does not compound while dragging).
+  Offset _gStartGlobal = Offset.zero;
+  Offset _gStartPos = Offset.zero;
+  double _gStartScale = 1.0;
+  double _gStartVisW = 1.0; // un-scaled layout width
+  double _gStartVisH = 1.0; // un-scaled layout height
+  double _gStartRot = 0.0;
 
-  // Actual source-image aspect ratio. The editor renders normal images with
-  // BoxFit.contain, so the visible pixels can be smaller than item.width/height.
-  double _imageAspectRatio = 1.0;
-  bool _imageAspectReady = false;
   EditorProvider get _provider => context.read<EditorProvider>();
 
-  // Normal media items are rendered inside a Transform.scale(scaleX), so
-  // both axes use the canvas width scale. Background media is rendered by
-  // _InteractiveBackgroundLayer with independent X/Y canvas scales.
-  bool get _isText =>
-      widget.item.type == 'text' || widget.item.type == 'textbox';
+  bool get _isText => EditableItemWidget.isTextType(widget.item.type);
 
-  Size get _naturalTextSize {
-    final id = widget.item.id ?? '';
-    final textValueForBounds = widget.item.text ?? '';
-    final isMultilineForBounds =
-        textValueForBounds.contains('\n') || textValueForBounds.contains('\r');
+  bool get _isMultilineText =>
+      _isText && EditableItemWidget.isMultilineText(widget.item);
 
-    final painter =
-    TextPainter(
-      text: TextSpan(
-        text: textValueForBounds,
-        style: TextStyle(
-          fontSize: widget.item.fontSize,
-          color: widget.item.color ?? Colors.black,
-          fontWeight: _provider.textWeight(id),
-          fontStyle: _provider.textStyle(id),
-          decoration: _provider.textUnderline(id)
-              ? TextDecoration.underline
-              : TextDecoration.none,
-          letterSpacing: _provider.textLetterSpacing(id),
-          height: _provider.textLineSpacing(id),
-          fontFamily: (widget.item.fontFamily).trim().isEmpty
-              ? null
-              : widget.item.fontFamily.trim(),
-        ),
-      ),
-      maxLines: isMultilineForBounds ? null : 1,
-      textDirection: TextDirection.ltr,
-    )..layout(
-      maxWidth: isMultilineForBounds && widget.item.width > 12.0
-          ? widget.item.width
-          : double.infinity,
-    );
-    return Size(math.max(1.0, painter.width), math.max(1.0, painter.height));
-  }
+  // Text uses the very same measurement as the rendered text widget, so the
+  // box, the rotation pivot and the drawn glyphs can never disagree.
+  Size get _textBox =>
+      EditableItemWidget.measureTextBox(widget.item, _provider);
 
-  double get _baseVisualWidth {
-    if (!_isText) return widget.item.width;
-    final textValue = widget.item.text ?? "";
-    final isMultiline = textValue.contains("\n") || textValue.contains("\r");
-    if (!isMultiline) {
-      return _naturalTextSize.width;
-    }
-    return (widget.item.width > 0)
-        ? math.max(widget.item.width, _naturalTextSize.width)
-        : _naturalTextSize.width;
-  }
+  double get _baseVisualWidth => _isText ? _textBox.width : widget.item.width;
 
-  double get _baseVisualHeight {
-    if (!_isText) return widget.item.height;
-    final textValue = widget.item.text ?? "";
-    final isMultiline = textValue.contains("\n") || textValue.contains("\r");
-    if (!isMultiline) {
-      return _naturalTextSize.height;
-    }
+  double get _baseVisualHeight =>
+      _isText ? _textBox.height : widget.item.height;
 
-    // For text, the selection height should match what is actually rendered.
-    // If it's wrapped (squeezed width), the height will increase.
-    final w = _baseVisualWidth;
-    final id = widget.item.id ?? '';
-    final textValueForBounds = widget.item.text ?? '';
+  // Same clamp EditableItemWidget applies when drawing.
+  double get _itemScale =>
+      widget.item.scale.isFinite
+          ? widget.item.scale.clamp(0.01, 10.0).toDouble()
+          : 1.0;
 
-    final painter =
-    TextPainter(
-      text: TextSpan(
-        text: textValueForBounds,
-        style: TextStyle(
-          fontSize: widget.item.fontSize,
-          color: widget.item.color ?? Colors.black,
-          fontWeight: _provider.textWeight(id),
-          fontStyle: _provider.textStyle(id),
-          decoration: _provider.textUnderline(id)
-              ? TextDecoration.underline
-              : TextDecoration.none,
-          letterSpacing: _provider.textLetterSpacing(id),
-          height: _provider.textLineSpacing(id),
-          fontFamily: (widget.item.fontFamily).trim().isEmpty
-              ? null
-              : widget.item.fontFamily.trim(),
-        ),
-      ),
-      maxLines: null,
-      textDirection: TextDirection.ltr,
-    )..layout(
-      maxWidth: w,
-    ); // Layout WITH the constrained width to get true height
+  double get _rotation =>
+      widget.item.rotation.isFinite ? widget.item.rotation : 0.0;
 
-    return math.max(widget.item.height, painter.height);
-  }
-
-  double get _width => _baseVisualWidth * widget.item.scale * widget.scaleX;
-
-  double get _height =>
-      _baseVisualHeight *
-          widget.item.scale *
-          (widget.isBackground ? widget.scaleY : widget.scaleX);
+  double get _unitY => widget.isBackground ? widget.scaleY : widget.scaleX;
 
   double get _left => widget.item.position.dx * widget.scaleX;
 
   double get _top => widget.item.position.dy * widget.scaleY;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadImageAspectRatio();
+  // On-screen box size in logical pixels.
+  double get _boxWidth => _baseVisualWidth * _itemScale * widget.scaleX;
+
+  double get _boxHeight => _baseVisualHeight * _itemScale * _unitY;
+
+  Offset _rot(Offset v, double a) {
+    final c = math.cos(a), s = math.sin(a);
+    return Offset(v.dx * c - v.dy * s, v.dx * s + v.dy * c);
   }
 
-  Future<void> _loadImageAspectRatio() async {
-    if (widget.item.type != 'image') {
-      return;
-    }
-
-    final url = (widget.item.contentUrl ?? '').trim();
-    if (url.isEmpty) return;
-
-    try {
-      final ImageProvider provider;
-      if (url.startsWith('file://') || url.startsWith('/data/')) {
-        provider = FileImage(File(url.replaceFirst('file://', '')));
-      } else if (url.startsWith('http://') || url.startsWith('https://')) {
-        provider = NetworkImage(url);
-      } else {
-        provider = FileImage(File(url));
-      }
-
-      final stream = provider.resolve(const ImageConfiguration());
-      late final ImageStreamListener listener;
-      listener = ImageStreamListener(
-            (info, _) {
-          final w = info.image.width.toDouble();
-          final h = info.image.height.toDouble();
-          if (w > 0 && h > 0 && mounted) {
-            setState(() {
-              _imageAspectRatio = w / h;
-              _imageAspectReady = true;
-            });
-          }
-          stream.removeListener(listener);
-        },
-        onError: (_, __) {
-          stream.removeListener(listener);
-        },
-      );
-      stream.addListener(listener);
-    } catch (_) {
-      // Keep the editor box as the fallback for unsupported image sources.
-    }
+  /// Returns the new un-rotated top-left position that keeps the point [a0]
+  /// of the old box (local coords, canvas units) at the same place on the
+  /// canvas after the box becomes [s1] with that point now at [a1].
+  /// Items rotate about their CENTER, so a plain "move top-left by delta"
+  /// only works at 0 degrees; this works for every angle.
+  Offset _placeTopLeft({
+    required Offset p0,
+    required Size s0,
+    required Offset a0,
+    required Size s1,
+    required Offset a1,
+    required double rot,
+  }) {
+    final c0 = Offset(s0.width / 2, s0.height / 2);
+    final c1 = Offset(s1.width / 2, s1.height / 2);
+    final anchorWorld = p0 + c0 + _rot(a0 - c0, rot);
+    final newCenter = anchorWorld - _rot(a1 - c1, rot);
+    return newCenter - c1;
   }
 
-  double get _baseBoxWidth =>
-      _baseVisualWidth * widget.item.scale * widget.scaleX;
-
-  double get _baseBoxHeight =>
-      _baseVisualHeight *
-          widget.item.scale *
-          (widget.isBackground ? widget.scaleY : widget.scaleX);
-
-  // Since items (images/shapes) now use BoxFit.fill instead of BoxFit.contain,
-  // the visual rectangle is exactly the scaled layout box.
-  Rect get _visualRect {
-    return Rect.fromLTWH(0, 0, _baseBoxWidth, _baseBoxHeight);
-  }
-
-  // Match the rounded/pill shape used by template buttons.  The dotted
-  // outline follows the visible object's rounded corners instead of drawing
-  // a plain square rectangle.
   double _selectionBorderRadius(Size size) {
     if (size.width <= 0 || size.height <= 0) return 0;
-
-    // Short button-like objects become pill shaped, while larger objects keep
-    // a smaller rounded corner. This matches the rounded white category
-    // buttons in the template (LIVING ROOM / BEDROOM / DINING / OFFICE).
     final maxRadius = size.height / 2.0;
     final proportionalRadius = size.height * 0.28;
     return math.min(10.0, math.min(maxRadius, proportionalRadius));
   }
 
+  /// The rotation handle normally sits above the box. When that spot would be
+  /// off the canvas (item near the top edge, where ClipRect hides it) put it
+  /// below the box instead so it can always be grabbed.
+  bool _rotateHandleBelow(double w, double h) {
+    final center = Offset(_left + w / 2, _top + h / 2);
+    Offset at(double dir) =>
+        center + _rot(Offset(0, dir * (h / 2 + 24)), _rotation);
+    final maxX = widget.canvasWidth * widget.scaleX;
+    final maxY = widget.canvasHeight * widget.scaleY;
+    bool inside(Offset o) =>
+        o.dx >= 16 && o.dx <= maxX - 16 && o.dy >= 16 && o.dy <= maxY - 16;
+    return !inside(at(-1)) && inside(at(1));
+  }
+
+  MouseCursor _cursorFor(Alignment a) {
+    if (a.x == 0) return SystemMouseCursors.resizeUpDown;
+    if (a.y == 0) return SystemMouseCursors.resizeLeftRight;
+    return a.x == a.y
+        ? SystemMouseCursors.resizeUpLeftDownRight
+        : SystemMouseCursors.resizeUpRightDownLeft;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final width = _baseBoxWidth;
-    final height = _baseBoxHeight;
-    final visual = _visualRect;
+    final width = _boxWidth;
+    final height = _boxHeight;
 
     if (!width.isFinite || !height.isFinite || width <= 0 || height <= 0) {
       return const SizedBox.shrink();
     }
 
-    // Expand the bounding box by 24 pixels on all sides so that handles
-    // (which are 48x48) are fully enclosed in the touch area. This prevents
-    // Flutter from ignoring touch events on the outer half of the handles.
-    const double expandPadding = 24.0;
+    // Hit areas adapt to the box: big enough to grab, but never so big that
+    // they swallow the whole item and make it impossible to drag-move.
+    final cornerHit = (math.min(width, height) * 0.6)
+        .clamp(22.0, 36.0)
+        .toDouble();
+    const sideHit = 28.0;
+    final sideLenV = height - cornerHit; // left/right zones between corners
+    final sideLenH = width - cornerHit; // top/bottom zones between corners
+    final below = _rotateHandleBelow(width, height);
 
     return Positioned(
-      left: _left - expandPadding,
-      top: _top - expandPadding,
-      width: width + expandPadding * 2,
-      height: height + expandPadding * 2,
+      left: _left - _pad,
+      top: _top - _pad,
+      width: width + _pad * 2,
+      height: height + _pad * 2,
       child: Transform.rotate(
-        angle: widget.item.rotation.isFinite ? widget.item.rotation : 0.0,
-        // The rotation center remains the exact visual center because padding is symmetric
+        angle: _rotation,
+        // Padding is symmetric, so the pivot stays the box's exact center.
         alignment: Alignment.center,
         child: Stack(
           key: _overlayKey,
           clipBehavior: Clip.none,
           children: [
-            // Drag the selected image from anywhere inside the actual box.
+            // Drag-move from anywhere inside the box.
             Positioned(
-              left: expandPadding,
-              top: expandPadding,
+              left: _pad,
+              top: _pad,
               width: width,
               height: height,
               child: GestureDetector(
@@ -8293,13 +8212,12 @@ class _TransformSelectionOverlayState
                   final dy =
                       (details.globalPosition.dy - _startFocalPoint.dy) /
                           widget.scaleY;
-
-                  final nextX = _startPosition.dx + dx;
-                  final nextY = _startPosition.dy + dy;
-
                   _provider.updateItemTransform(
                     widget.item.id ?? '',
-                    position: Offset(nextX, nextY),
+                    position: Offset(
+                      _startPosition.dx + dx,
+                      _startPosition.dy + dy,
+                    ),
                     clampToFrame: false,
                   );
                 },
@@ -8308,98 +8226,82 @@ class _TransformSelectionOverlayState
               ),
             ),
 
-            // Selection UI follows the ACTUAL visible image rectangle.
-            // Normal images use BoxFit.contain, so a landscape image inside a
-            // square item must not get a square selection box around the empty
-            // top/bottom space.
+            // Selection outline.
             Positioned(
-              left: expandPadding + visual.left,
-              top: expandPadding + visual.top,
-              width: visual.width,
-              height: visual.height,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: _ImageSelectionPainter(
-                          style: _provider.outlineStyle(widget.item.id ?? ''),
-                          outlineWidth: widget.item.outlineWidth,
-                          outlineColor:
-                          widget.item.outlineColor ??
-                              const Color(0xFFD9D9D9),
-                          borderRadius: _selectionBorderRadius(visual.size),
-                        ),
-                      ),
-                    ),
+              left: _pad,
+              top: _pad,
+              width: width,
+              height: height,
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _ImageSelectionPainter(
+                    style: _provider.outlineStyle(widget.item.id ?? ''),
+                    outlineWidth: widget.item.outlineWidth,
+                    outlineColor:
+                    widget.item.outlineColor ?? const Color(0xFFD9D9D9),
+                    borderRadius: _selectionBorderRadius(Size(width, height)),
                   ),
-                  ...[
-                    // Thin side visuals have a generous transparent hit target.
-                    _buildHandle(
-                      alignment: Alignment.topCenter,
-                      cursor: SystemMouseCursors.resizeUp,
-                      width: visual.width,
-                      height: visual.height,
-                    ),
-                    _buildHandle(
-                      alignment: Alignment.centerLeft,
-                      cursor: SystemMouseCursors.resizeLeft,
-                      width: visual.width,
-                      height: visual.height,
-                    ),
-                    _buildHandle(
-                      alignment: Alignment.centerRight,
-                      cursor: SystemMouseCursors.resizeRight,
-                      width: visual.width,
-                      height: visual.height,
-                    ),
-                    _buildHandle(
-                      alignment: Alignment.bottomCenter,
-                      cursor: SystemMouseCursors.resizeDown,
-                      width: visual.width,
-                      height: visual.height,
-                    ),
-                    // Corners last: priority over overlapping side hit areas.
-                    _buildHandle(
-                      alignment: Alignment.topLeft,
-                      cursor: SystemMouseCursors.resizeUpLeft,
-                      width: visual.width,
-                      height: visual.height,
-                    ),
-                    _buildHandle(
-                      alignment: Alignment.topRight,
-                      cursor: SystemMouseCursors.resizeUpRight,
-                      width: visual.width,
-                      height: visual.height,
-                    ),
-                    _buildHandle(
-                      alignment: Alignment.bottomRight,
-                      cursor: SystemMouseCursors.resizeDownRight,
-                      width: visual.width,
-                      height: visual.height,
-                    ),
-                    _buildHandle(
-                      alignment: Alignment.bottomLeft,
-                      cursor: SystemMouseCursors.resizeDownLeft,
-                      width: visual.width,
-                      height: visual.height,
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
 
-            // Rotation handle follows the visible image rectangle.
+            // Side handles live BETWEEN the corner zones (no overlap).
+            if (sideLenV >= 16) ...[
+              _handle(
+                alignment: Alignment.centerLeft,
+                cx: 0,
+                cy: height / 2,
+                hitW: sideHit,
+                hitH: sideLenV,
+              ),
+              _handle(
+                alignment: Alignment.centerRight,
+                cx: width,
+                cy: height / 2,
+                hitW: sideHit,
+                hitH: sideLenV,
+              ),
+            ],
+            if (sideLenH >= 16) ...[
+              _handle(
+                alignment: Alignment.topCenter,
+                cx: width / 2,
+                cy: 0,
+                hitW: sideLenH,
+                hitH: sideHit,
+              ),
+              _handle(
+                alignment: Alignment.bottomCenter,
+                cx: width / 2,
+                cy: height,
+                hitW: sideLenH,
+                hitH: sideHit,
+              ),
+            ],
+            for (final a in const [
+              Alignment.topLeft,
+              Alignment.topRight,
+              Alignment.bottomLeft,
+              Alignment.bottomRight,
+            ])
+              _handle(
+                alignment: a,
+                cx: a.x == -1 ? 0 : width,
+                cy: a.y == -1 ? 0 : height,
+                hitW: cornerHit,
+                hitH: cornerHit,
+              ),
+
+            // Rotation handle (flips under the box when there is no room).
             Positioned(
-              left: expandPadding + visual.left + visual.width / 2 - 24,
-              top: expandPadding + visual.top - 48,
+              left: _pad + width / 2 - 24,
+              top: below ? _pad + height : _pad - 48,
               width: 48,
               height: 48,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onPanStart: (details) {
-                  _startRotation = widget.item.rotation;
+                  _startRotation = _rotation;
                   _rotationCenterGlobal = _globalCenter();
                   _rotationStartAngle = math.atan2(
                     details.globalPosition.dy - _rotationCenterGlobal.dy,
@@ -8414,7 +8316,6 @@ class _TransformSelectionOverlayState
                   final delta = _normalizeAngle(
                     currentAngle - _rotationStartAngle,
                   );
-
                   _provider.updateItemTransform(
                     widget.item.id ?? '',
                     rotation: _startRotation + delta,
@@ -8423,11 +8324,7 @@ class _TransformSelectionOverlayState
                 onPanEnd: (_) => _provider.commitTransform(),
                 onPanCancel: () => _provider.commitTransform(),
                 child: Center(
-                  child: _RotationHandleVisual(
-                    angle: widget.item.rotation.isFinite
-                        ? widget.item.rotation
-                        : 0.0,
-                  ),
+                  child: _RotationHandleVisual(angle: _rotation, below: below),
                 ),
               ),
             ),
@@ -8439,19 +8336,9 @@ class _TransformSelectionOverlayState
 
   Offset _globalCenter() {
     final box = _overlayKey.currentContext?.findRenderObject();
-    final visual = _visualRect;
     if (box is RenderBox) {
-      // _overlayKey belongs to the padded Stack inside the rotated widget.
-      // Convert the visible image center into that Stack's local coordinates
-      // by including the same padding used by Positioned/selection handles.
-      // Omitting this offset makes the rotation pivot 24px up/left, causing
-      // images to orbit/jump away from their original position while rotating.
-      const double expandPadding = 24.0;
       return box.localToGlobal(
-        Offset(
-          expandPadding + visual.left + visual.width / 2,
-          expandPadding + visual.top + visual.height / 2,
-        ),
+        Offset(_pad + _boxWidth / 2, _pad + _boxHeight / 2),
       );
     }
     return Offset.zero;
@@ -8467,132 +8354,149 @@ class _TransformSelectionOverlayState
     return angle;
   }
 
-  Widget _buildHandle({
+  Widget _handle({
     required Alignment alignment,
-    required MouseCursor cursor,
-    required double width,
-    required double height,
+    required double cx,
+    required double cy,
+    required double hitW,
+    required double hitH,
   }) {
-    // Visual lines are thin, but each has a generous transparent hit target.
-    const handleSize = 56.0;
-    final targetX = (alignment.x + 1) / 2 * width;
-    final targetY = (alignment.y + 1) / 2 * height;
-
     return Positioned(
-      left: targetX - handleSize / 2,
-      top: targetY - handleSize / 2,
-      width: handleSize,
-      height: handleSize,
+      left: _pad + cx - hitW / 2,
+      top: _pad + cy - hitH / 2,
+      width: hitW,
+      height: hitH,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onPanStart: (details) {
-          _resizeStartScale = widget.item.scale.isFinite
-              ? widget.item.scale
-              : 1.0;
-          _resizeStartWidth = widget.item.width;
-          _resizeStartHeight = widget.item.height;
-          _resizeStartPosition = widget.item.position;
-          _resizeStartGlobal = details.globalPosition;
-        },
-
-        onPanUpdate: (details) {
-          final baseWidth = math.max(1.0, _resizeStartWidth);
-          final baseHeight = math.max(1.0, _resizeStartHeight);
-          final globalDelta = details.globalPosition - _resizeStartGlobal;
-          final canvasDx = globalDelta.dx / widget.scaleX;
-          final canvasDy =
-              globalDelta.dy /
-                  (widget.isBackground ? widget.scaleY : widget.scaleX);
-
-          final angle = widget.item.rotation.isFinite
-              ? widget.item.rotation
-              : 0.0;
-          final cosA = math.cos(angle);
-          final sinA = math.sin(angle);
-
-          // Convert movement into the selected element's local coordinates.
-          final dx = canvasDx * cosA + canvasDy * sinA;
-          final dy = -canvasDx * sinA + canvasDy * cosA;
-
-          // Left/right resize width only, anchoring the opposite edge.
-          if (alignment.y == 0) {
-            final signedDx = alignment.x == 1 ? dx : -dx;
-            final nextWidth = (baseWidth + signedDx)
-                .clamp(12.0, 4000.0)
-                .toDouble();
-            final delta = nextWidth - baseWidth;
-            final localAnchorX = alignment.x == -1 ? -delta : 0.0;
-
-            _provider.updateItemTransform(
-              widget.item.id ?? '',
-              width: nextWidth,
-              position: Offset(
-                _resizeStartPosition.dx + localAnchorX * cosA,
-                _resizeStartPosition.dy + localAnchorX * sinA,
-              ),
-              clampToFrame: false,
-            );
-            return;
-          }
-
-          // Top/bottom resize height only, anchoring the opposite edge.
-          if (alignment.x == 0) {
-            final signedDy = alignment.y == 1 ? dy : -dy;
-            final nextHeight = (baseHeight + signedDy)
-                .clamp(12.0, 4000.0)
-                .toDouble();
-            final delta = nextHeight - baseHeight;
-            final localAnchorY = alignment.y == -1 ? -delta : 0.0;
-
-            _provider.updateItemTransform(
-              widget.item.id ?? '',
-              height: nextHeight,
-              position: Offset(
-                _resizeStartPosition.dx - localAnchorY * sinA,
-                _resizeStartPosition.dy + localAnchorY * cosA,
-              ),
-              clampToFrame: false,
-            );
-            return;
-          }
-
-          // Corner handles resize proportionally and keep the opposite corner.
-          final sx = alignment.x == 1 ? dx / baseWidth : -dx / baseWidth;
-          final sy = alignment.y == 1 ? dy / baseHeight : -dy / baseHeight;
-          final deltaScale = sx.abs() >= sy.abs() ? sx : sy;
-          final nextScale = (_resizeStartScale + deltaScale)
-              .clamp(0.02, 10.0)
-              .toDouble();
-          final scaleDelta = nextScale - _resizeStartScale;
-
-          final localAnchorX = alignment.x == -1
-              ? -baseWidth * scaleDelta
-              : 0.0;
-          final localAnchorY = alignment.y == -1
-              ? -baseHeight * scaleDelta
-              : 0.0;
-
-          _provider.updateItemTransform(
-            widget.item.id ?? '',
-            scale: nextScale,
-            position: Offset(
-              _resizeStartPosition.dx +
-                  localAnchorX * cosA -
-                  localAnchorY * sinA,
-              _resizeStartPosition.dy +
-                  localAnchorX * sinA +
-                  localAnchorY * cosA,
-            ),
-            clampToFrame: false,
-          );
-        },
+        onPanStart: _onResizeStart,
+        onPanUpdate: (d) => _onResizeUpdate(alignment, d),
         onPanEnd: (_) => _provider.commitTransform(),
         onPanCancel: () => _provider.commitTransform(),
         child: MouseRegion(
-          cursor: cursor,
+          cursor: _cursorFor(alignment),
           child: Center(child: _ResizeHandleVisual(alignment: alignment)),
         ),
       ),
+    );
+  }
+
+  void _onResizeStart(DragStartDetails d) {
+    _gStartGlobal = d.globalPosition;
+    _gStartPos = widget.item.position;
+    _gStartScale = _itemScale;
+    _gStartVisW = _baseVisualWidth;
+    _gStartVisH = _baseVisualHeight;
+    _gStartRot = _rotation;
+  }
+
+  void _onResizeUpdate(Alignment al, DragUpdateDetails d) {
+    final item = widget.item;
+    final id = item.id ?? '';
+
+    // Finger movement in canvas units, then in the item's own (rotated) axes.
+    final g = d.globalPosition - _gStartGlobal;
+    final canvasDelta = Offset(g.dx / widget.scaleX, g.dy / _unitY);
+    final local = _rot(canvasDelta, -_gStartRot);
+
+    // Box size at gesture start, in canvas units.
+    final w0 = _gStartVisW * _gStartScale;
+    final h0 = _gStartVisH * _gStartScale;
+    final s0 = Size(w0, h0);
+    final hx = al.x, hy = al.y;
+
+    // Side handles stretch (images/shapes; multi-line text wraps). Everything
+    // else - corners, and sides of single-line text - scales uniformly.
+    final stretchX = hy == 0 && (!_isText || _isMultilineText);
+    final stretchY = hx == 0 && !_isText;
+
+    if (stretchX) {
+      final newItemW = ((w0 + hx * local.dx) / _gStartScale)
+          .clamp(12.0, 4000.0)
+          .toDouble();
+      Size s1;
+      if (_isText) {
+        final box = EditableItemWidget.measureTextBox(
+          item,
+          _provider,
+          widthOverride: newItemW,
+        );
+        s1 = Size(box.width * _gStartScale, box.height * _gStartScale);
+      } else {
+        s1 = Size(newItemW * _gStartScale, h0);
+      }
+      // Opposite edge (top corner of it) stays pinned.
+      final a0 = Offset(hx == 1 ? 0.0 : w0, 0);
+      final a1 = Offset(hx == 1 ? 0.0 : s1.width, 0);
+      _provider.updateItemTransform(
+        id,
+        width: newItemW,
+        position: _placeTopLeft(
+          p0: _gStartPos,
+          s0: s0,
+          a0: a0,
+          s1: s1,
+          a1: a1,
+          rot: _gStartRot,
+        ),
+        clampToFrame: false,
+      );
+      return;
+    }
+
+    if (stretchY) {
+      final newItemH = ((h0 + hy * local.dy) / _gStartScale)
+          .clamp(12.0, 4000.0)
+          .toDouble();
+      final s1 = Size(w0, newItemH * _gStartScale);
+      final a0 = Offset(0, hy == 1 ? 0.0 : h0);
+      final a1 = Offset(0, hy == 1 ? 0.0 : s1.height);
+      _provider.updateItemTransform(
+        id,
+        height: newItemH,
+        position: _placeTopLeft(
+          p0: _gStartPos,
+          s0: s0,
+          a0: a0,
+          s1: s1,
+          a1: a1,
+          rot: _gStartRot,
+        ),
+        clampToFrame: false,
+      );
+      return;
+    }
+
+    // Uniform scale. Corners follow the finger's projection onto the diagonal
+    // (smooth, no axis flip-flopping); sides use their own axis.
+    double k;
+    if (hx != 0 && hy != 0) {
+      final dx = hx * w0, dy = hy * h0;
+      k = 1 + (local.dx * dx + local.dy * dy) / (dx * dx + dy * dy);
+    } else if (hx != 0) {
+      k = 1 + hx * local.dx / w0;
+    } else {
+      k = 1 + hy * local.dy / h0;
+    }
+    final newScale = (_gStartScale * k).clamp(0.02, 10.0).toDouble();
+    k = newScale / _gStartScale;
+
+    // Pin the opposite corner / edge-middle.
+    final a0 = Offset(
+      hx == 1 ? 0.0 : (hx == -1 ? w0 : w0 / 2),
+      hy == 1 ? 0.0 : (hy == -1 ? h0 : h0 / 2),
+    );
+    _provider.updateItemTransform(
+      id,
+      scale: newScale,
+      position: _placeTopLeft(
+        p0: _gStartPos,
+        s0: s0,
+        a0: a0,
+        s1: Size(w0 * k, h0 * k),
+        a1: a0 * k,
+        rot: _gStartRot,
+      ),
+      clampToFrame: false,
     );
   }
 }
@@ -8639,56 +8543,76 @@ class _ResizeHandleVisual extends StatelessWidget {
 
 class _RotationHandleVisual extends StatelessWidget {
   final double angle;
+  final bool below;
 
-  const _RotationHandleVisual({this.angle = 0.0});
+  const _RotationHandleVisual({this.angle = 0.0, this.below = false});
 
   @override
   Widget build(BuildContext context) {
     final degrees = (angle * 180 / math.pi).round() % 360;
     final displayDegrees = degrees < 0 ? degrees + 360 : degrees;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        if (displayDegrees != 0)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            margin: const EdgeInsets.only(bottom: 6),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: AppText(
-              '${displayDegrees}°',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        Container(width: 1.5, height: 18, color: const Color(0xFF3568F5)),
-        const SizedBox(height: 2),
-        Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
+    final line = Container(
+      width: 1.5,
+      height: 18,
+      color: const Color(0xFF3568F5),
+    );
+    final knob = Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFF3568F5), width: 1.5),
+        boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 3)],
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.rotate_right_rounded,
+          size: 14,
+          color: Color(0xFF3568F5),
+        ),
+      ),
+    );
+
+    // The degree label is positioned OUTSIDE the column's layout, so the knob
+    // never shifts under the finger while rotating, and it is counter-rotated
+    // so it stays readable at any angle.
+    final label = Transform.rotate(
+      angle: -angle,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: AppText(
+          '$displayDegrees°',
+          style: const TextStyle(
             color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFF3568F5), width: 1.5),
-            boxShadow: const [
-              BoxShadow(color: Color(0x33000000), blurRadius: 3),
-            ],
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.rotate_right_rounded,
-              size: 14,
-              color: Color(0xFF3568F5),
-            ),
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
           ),
         ),
+      ),
+    );
+
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: below
+              ? [knob, const SizedBox(height: 2), line]
+              : [line, const SizedBox(height: 2), knob],
+        ),
+        if (displayDegrees != 0)
+          Positioned(
+            top: below ? null : -22,
+            bottom: below ? -22 : null,
+            child: label,
+          ),
       ],
     );
   }

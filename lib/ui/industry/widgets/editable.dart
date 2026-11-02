@@ -38,7 +38,7 @@ class EditableItemWidget extends StatelessWidget {
     return Selector<EditorProvider, _ItemViewState>(
       selector: (_, provider) {
         final currentItem = provider.items.firstWhere(
-          (e) => e.id == item.id,
+              (e) => e.id == item.id,
           orElse: () => item,
         );
         return _ItemViewState(
@@ -63,12 +63,22 @@ class EditableItemWidget extends StatelessWidget {
             .toLowerCase();
         final isTextItem =
             normalizedItemType == 'text' ||
-            normalizedItemType == 'textbox' ||
-            normalizedItemType == 'i-text' ||
-            normalizedItemType == 'itext';
+                normalizedItemType == 'textbox' ||
+                normalizedItemType == 'i-text' ||
+                normalizedItemType == 'itext';
 
-        final bodyWidth = math.max(1.0, currentItem.width).toDouble();
-        final bodyHeight = math.max(1.0, currentItem.height).toDouble();
+        // Text is sized from its real measured layout (same helper the
+        // selection overlay uses) so the rotation pivot, the blue box and the
+        // handles always agree with what is drawn.
+        final Size textBox = isTextItem
+            ? measureTextBox(currentItem, provider)
+            : Size.zero;
+        final bodyWidth = isTextItem
+            ? textBox.width
+            : math.max(1.0, currentItem.width).toDouble();
+        final bodyHeight = isTextItem
+            ? textBox.height
+            : math.max(1.0, currentItem.height).toDouble();
 
         return KeyedSubtree(
           key: ValueKey(currentItem.id),
@@ -134,20 +144,73 @@ class EditableItemWidget extends StatelessWidget {
     );
   }
 
+  static bool isTextType(String? type) {
+    final t = (type ?? '').trim().toLowerCase();
+    return t == 'text' || t == 'textbox' || t == 'i-text' || t == 'itext';
+  }
+
+  static bool isMultilineText(EditorItem item) {
+    final v = item.text ?? '';
+    return v.contains('\n') || v.contains('\r');
+  }
+
+  /// Exact TextStyle used to render a text item (also used for measuring).
+  static TextStyle buildTextStyle(EditorItem item, EditorProvider provider) {
+    final id = item.id ?? '';
+    return _buildGoogleFontTextStyle(
+      fontFamily: item.fontFamily,
+      fontSize: item.fontSize,
+      color: item.color ?? Colors.black,
+      fontWeight: provider.textWeight(id),
+      fontStyle: provider.textStyle(id),
+      decoration: provider.textUnderline(id)
+          ? TextDecoration.underline
+          : TextDecoration.none,
+      letterSpacing: provider.textLetterSpacing(id),
+      height: provider.textLineSpacing(id),
+    );
+  }
+
+  /// Un-scaled layout size of a text item, in canvas units. Single source of
+  /// truth for both the rendered text box and the selection overlay.
+  /// [widthOverride] lets a resize gesture ask "how tall would it be at this
+  /// wrap width?" before committing it.
+  static Size measureTextBox(
+      EditorItem item,
+      EditorProvider provider, {
+        double? widthOverride,
+      }) {
+    final multiline = isMultilineText(item);
+    final boxWidth = widthOverride ?? item.width;
+    final wrapWidth = multiline && boxWidth > 12.0 ? boxWidth : double.infinity;
+    final painter = TextPainter(
+      text: TextSpan(
+        text: item.text ?? '',
+        style: buildTextStyle(item, provider),
+      ),
+      maxLines: multiline ? null : 1,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: wrapWidth);
+    final w = multiline && boxWidth > 12.0
+        ? math.max(boxWidth, painter.width)
+        : painter.width;
+    return Size(math.max(1.0, w), math.max(1.0, painter.height));
+  }
+
   static Widget buildStandaloneMediaContent(
-    BuildContext context,
-    EditorItem item,
-  ) {
+      BuildContext context,
+      EditorItem item,
+      ) {
     final widget = EditableItemWidget(item: item, onItemSelected: (_, __) {});
     return widget._buildItemContent(item, context, isBackground: true);
   }
 
   Future<void> _showTextEditorDialog(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-    String initialText,
-  ) async {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      String initialText,
+      ) async {
     final matchingItems = provider.items.where((e) => e.id == itemId);
 
     if (itemId.isEmpty || matchingItems.isEmpty) {
@@ -254,7 +317,7 @@ class EditableItemWidget extends StatelessWidget {
         (item.type == 'image' || item.type == 'video' || item.type == 'shape');
   }
 
-  TextStyle _buildGoogleFontTextStyle({
+  static TextStyle _buildGoogleFontTextStyle({
     required String? fontFamily,
     required double fontSize,
     required Color color,
@@ -318,7 +381,7 @@ class EditableItemWidget extends StatelessWidget {
   List<double> _mixMatrices(List<double> a, List<double> b, double amount) {
     return List<double>.generate(
       20,
-      (i) => a[i] + (b[i] - a[i]) * amount,
+          (i) => a[i] + (b[i] - a[i]) * amount,
       growable: false,
     );
   }
@@ -605,10 +668,10 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _buildItemContent(
-    EditorItem item,
-    BuildContext context, {
-    bool isBackground = false,
-  }) {
+      EditorItem item,
+      BuildContext context, {
+        bool isBackground = false,
+      }) {
     if (item.type == 'video') {
       return SizedBox(
         width: item.width,
@@ -640,29 +703,29 @@ class EditableItemWidget extends StatelessWidget {
 
       final image = isHttp
           ? Image.network(
-              source,
-              fit: isBackground ? BoxFit.cover : BoxFit.fill,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (_, error, stackTrace) {
-                debugPrint('Background image error: $error');
-                return const SizedBox.shrink();
-              },
-            )
+        source,
+        fit: isBackground ? BoxFit.cover : BoxFit.fill,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, error, stackTrace) {
+          debugPrint('Background image error: $error');
+          return const SizedBox.shrink();
+        },
+      )
           : Image.file(
-              File(
-                source.startsWith('file://')
-                    ? source.replaceFirst('file://', '')
-                    : source,
-              ),
-              fit: isBackground ? BoxFit.cover : BoxFit.fill,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (_, error, stackTrace) {
-                debugPrint('Local image error: $error');
-                return const SizedBox.shrink();
-              },
-            );
+        File(
+          source.startsWith('file://')
+              ? source.replaceFirst('file://', '')
+              : source,
+        ),
+        fit: isBackground ? BoxFit.cover : BoxFit.fill,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, error, stackTrace) {
+          debugPrint('Local image error: $error');
+          return const SizedBox.shrink();
+        },
+      );
 
       final provider = context.read<EditorProvider>();
       final id = item.id ?? '';
@@ -842,16 +905,16 @@ class _ItemViewState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is _ItemViewState &&
-          runtimeType == other.runtimeType &&
-          currentItem == other.currentItem &&
-          isSelected == other.isSelected &&
-          flipX == other.flipX &&
-          flipY == other.flipY &&
-          filterIntensity == other.filterIntensity &&
-          tint == other.tint &&
-          blur == other.blur &&
-          maskUrl == other.maskUrl;
+          other is _ItemViewState &&
+              runtimeType == other.runtimeType &&
+              currentItem == other.currentItem &&
+              isSelected == other.isSelected &&
+              flipX == other.flipX &&
+              flipY == other.flipY &&
+              filterIntensity == other.filterIntensity &&
+              tint == other.tint &&
+              blur == other.blur &&
+              maskUrl == other.maskUrl;
 
   @override
   int get hashCode => Object.hash(
@@ -939,8 +1002,8 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
       final trimmedText = utf8.decode(bytes, allowMalformed: true).trimLeft();
       final isSvg =
           trimmedText.startsWith('<svg') ||
-          (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
-          trimmedText.startsWith('<!DOCTYPE svg');
+              (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
+              trimmedText.startsWith('<!DOCTYPE svg');
 
       ui.Image decodedImage;
       if (isSvg) {
@@ -964,7 +1027,7 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
               .replaceAll(RegExp(r'\\s+'), ' ');
           throw FormatException(
             'Mask response is not SVG or a supported raster image. '
-            'Response begins with: $preview',
+                'Response begins with: $preview',
           );
         }
         final pngBytes = Uint8List.fromList(img.encodePng(decoded));

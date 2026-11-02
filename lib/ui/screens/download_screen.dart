@@ -11,6 +11,7 @@ import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/my_upload_provider.dart';
 import '../../network/provider/prpject_provider.dart';
+import '../../utils/theme/app.fonts.dart';
 import '../screens/template_edit.dart';
 
 class MyDownloadScreen extends StatelessWidget {
@@ -550,11 +551,11 @@ class _MyUploadsView extends StatelessWidget {
             ),
           ),
         ),
-        child: Text(
+        child: AppText(
           title,
           style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
+            fontSize: AppFontSize.fontSize14,
+            fontWeight: FontWeight.w500,
             color: selected ? Colors.black : const Color(0xFFC8C8C8),
           ),
         ),

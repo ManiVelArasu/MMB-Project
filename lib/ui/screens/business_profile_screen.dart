@@ -404,90 +404,80 @@ class BusinessProfileView extends StatelessWidget {
                                   SizedBox(height: 16.h),
 
                                   // Frames Horizontal ListView
+                                  // Frames Horizontal ListView
                                   SizedBox(
                                     height: 145.h,
-                                    child: ListView.builder(
+                                    child: provider.isFramesLoading
+                                        ? const Center(
+                                      child: CircularProgressIndicator(
+                                        color: Color(0xFFE53935),
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                        : provider.selectedFrames.isEmpty
+                                        ? Center(
+                                      child: Text(
+                                        "No frames available",
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white60 : Colors.grey,
+                                          fontSize: 12.sp,
+                                        ),
+                                      ),
+                                    )
+                                        : ListView.builder(
                                       scrollDirection: Axis.horizontal,
                                       physics: const BouncingScrollPhysics(),
                                       itemCount: provider.selectedFrames.length,
                                       itemBuilder: (context, index) {
-                                        final frame =
-                                            provider.selectedFrames[index];
+                                        final frame = provider.selectedFrames[index];
                                         final image = frame.thumbnailS3Key;
+
                                         return Container(
                                           width: 110.w,
                                           margin: EdgeInsets.only(right: 12.w),
                                           child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Expanded(
                                                 child: Container(
                                                   decoration: BoxDecoration(
                                                     color: isDark
-                                                        ? const Color(
-                                                            0xFF1E1E1E,
-                                                          )
+                                                        ? const Color(0xFF1E1E1E)
                                                         : Colors.white,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          12.r,
-                                                        ),
+                                                    borderRadius: BorderRadius.circular(12.r),
                                                     border: Border.all(
                                                       color: isDark
                                                           ? Colors.grey.shade800
-                                                          : Colors
-                                                                .grey
-                                                                .shade300,
+                                                          : Colors.grey.shade300,
                                                       width: 1.2,
                                                     ),
                                                   ),
                                                   child: ClipRRect(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          10.r,
+                                                    borderRadius: BorderRadius.circular(10.r),
+                                                    child: CachedNetworkImage(
+                                                      imageUrl:
+                                                      "${ApiEndpoints.cdnImageUrl}/$image",
+                                                      width: double.infinity,
+                                                      height: double.infinity,
+                                                      fit: BoxFit.contain,
+                                                      placeholder: (_, __) => const Center(
+                                                        child: CircularProgressIndicator(
+                                                          strokeWidth: 1.5,
+                                                          color: Color(0xFFE53935),
                                                         ),
-                                                    child: Stack(
-                                                      children: [
-                                                        Positioned.fill(
-                                                          child: Container(
-                                                            color: isDark
-                                                                ? const Color(
-                                                                    0xFF1E1E1E,
-                                                                  )
-                                                                : Colors.white,
-                                                          ),
+                                                      ),
+                                                      errorWidget: (_, __, ___) => const Center(
+                                                        child: Icon(
+                                                          Icons.image_not_supported_rounded,
                                                         ),
-                                                        Positioned(
-                                                          top: 8.h,
-                                                          left: 0,
-                                                          right: 0,
-                                                          child: Center(
-                                                            child: CachedNetworkImage(
-                                                              imageUrl:
-                                                                  "${ApiEndpoints.cdnImageUrl}/${image}",
-                                                              errorWidget:
-                                                                  (
-                                                                    _,
-                                                                    __,
-                                                                    ___,
-                                                                  ) => const Center(
-                                                                    child: Icon(
-                                                                      Icons
-                                                                          .image_not_supported_rounded,
-                                                                    ),
-                                                                  ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
                                               ),
                                               SizedBox(height: 6.h),
                                               AppText(
-                                                frame.price ?? 'Free',
+                                                'RS. ${frame.price}',
                                                 style: TextStyle(
                                                   fontSize: 11.sp,
                                                   fontWeight: FontWeight.w700,
@@ -1142,94 +1132,6 @@ class BusinessProfileView extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _personalFrameCard({required bool isDark, required String price}) {
-    return Container(
-      width: 100.w,
-      margin: EdgeInsets.only(right: 10.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(
-                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
-                  width: 1,
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(7.r),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Padding(
-                        padding: EdgeInsets.all(5.w),
-                        child: Column(
-                          children: [
-                            Align(
-                              alignment: Alignment.topCenter,
-                              child: Icon(
-                                Icons.auto_awesome,
-                                size: 16.sp,
-                                color: const Color(0xFF3478E5),
-                              ),
-                            ),
-                            const Spacer(),
-                            Container(
-                              height: 17.h,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: const Color(0xFF3478E5),
-                                  width: 0.8,
-                                ),
-                                borderRadius: BorderRadius.circular(3.r),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 4.h,
-                      left: 4.w,
-                      child: Container(
-                        width: 10.w,
-                        height: 10.w,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE53935),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 7.sp,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: 5.h),
-          AppText(
-            price,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: isDark ? Colors.white70 : Colors.black87,
-              fontSize: 8.5.sp,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }
