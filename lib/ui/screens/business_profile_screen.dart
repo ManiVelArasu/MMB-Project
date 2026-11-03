@@ -48,7 +48,7 @@ class BusinessProfileView extends StatelessWidget {
 
         final accountType =
             commonProvider.me?.data.accountType ??
-            businessProvider.provider.me?.data.accountType;
+                businessProvider.provider.me?.data.accountType;
         final String logoUrl =
             '${ApiEndpoints.cdnImageUrl}/${provider.commonProvider.business?.logoS3Key ?? ''}';
         if (accountType == "personal") {
@@ -93,7 +93,7 @@ class BusinessProfileView extends StatelessWidget {
               if (result == true) {
                 debugPrint(
                   "🔄 Edit Profile returned TRUE"
-                  " → refreshing profile API",
+                      " → refreshing profile API",
                 );
 
                 await context
@@ -104,568 +104,563 @@ class BusinessProfileView extends StatelessWidget {
           ),
           body: Stack(
             children: [
-              Positioned.fill(
-                child: Image.asset(
-                  "assets/images/plan_gradient.png",
-                  fit: BoxFit.cover,
-                ),
-              ),
+              Positioned.fill(child: _profileBackground(isDark)),
               SafeArea(
                 child: provider.isKeyWordsLoading
                     ? Center(child: CircularProgressIndicator())
                     : SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: size.width * 0.04,
+                          vertical: 12.h,
+                        ),
+
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              width: double.infinity,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: size.width * 0.04,
-                                vertical: 12.h,
+                              width: 70.w,
+                              height: 70.w,
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
                               ),
-
-                              child: Column(
-                                children: [
-                                  Container(
-                                    width: 70.w,
-                                    height: 70.w,
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: const BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.white,
-                                    ),
-                                    child: ClipOval(
-                                      child: Material(
-                                        color: Colors.transparent,
-                                        child: InkWell(
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) =>
-                                                    ImageViewerScreen(
-                                                      imagePath: logoUrl,
-                                                    ),
+                              child: ClipOval(
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              ImageViewerScreen(
+                                                imagePath: logoUrl,
                                               ),
-                                            );
-                                          },
-                                          child: Image.network(
-                                            logoUrl,
-                                            fit: BoxFit.cover,
-                                            width: 70.w,
-                                            height: 70.w,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                                  return Image.asset(
-                                                    'assets/images/BName.png',
-                                                    fit: BoxFit.cover,
-                                                    width: 70.w,
-                                                    height: 70.w,
-                                                  );
-                                                },
-                                          ),
                                         ),
-                                      ),
-                                    ),
-                                  ),
-
-                                  SizedBox(height: 10.h),
-
-                                  AppText(
-                                    provider.businessName.isEmpty
-                                        ? "${provider.commonProvider.business?.name}"
-                                        : provider.businessName,
-                                    style: TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
-                                      fontSize: AppFontSize.fontSize20,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4.h),
-                                  AppText(
-                                    "${provider.commonProvider.business?.businessCategory?.slug ?? provider.commonProvider.business?.businessCategory?.parent?.slug}",
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? Colors.grey.shade400
-                                          : Colors.grey.shade600,
-                                      fontSize: 13.sp,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-
-                                  SizedBox(height: 8.h),
-                                  BusinessCategoryCard(
-                                    category: provider.businessName.isEmpty
-                                        ? "${provider.commonProvider.business?.businessCategory?.parent?.slug}"
-                                        : provider.businessName,
-                                    subCategories:
-                                        "${provider.commonProvider.business?.businessCategory?.slug ?? provider.commonProvider.business?.businessCategory?.parent?.slug}",
-                                    onEditTap: () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        "/BusinessCategorySearchScreen",
                                       );
                                     },
-                                  ),
-                                  SizedBox(height: 8.h),
-                                  Row(
-                                    children: [
-                                      _buildActionCard(
-                                        onCallBack: () {},
-                                        title: "ABOUT BUSINESS",
-                                        iconAsset: "assets/images/about.png",
-                                        bgColor: isDark
-                                            ? const Color(0xFFEFF9FF)
-                                            : const Color(0xFFD3EEFD),
-                                        isDark: isDark,
-                                      ),
-                                      SizedBox(width: 10.w),
-
-                                      _buildActionCard(
-                                        onCallBack: () {
-                                          Navigator.pushNamed(
-                                            context,
-                                            "/ProductsScreen",
-                                          );
-                                        },
-                                        title: "MY PRODUCTS",
-                                        iconAsset: "assets/images/product.png",
-                                        bgColor: isDark
-                                            ? const Color(0xFFF6F4FF)
-                                            : const Color(0xFFEEEBFF),
-                                        isDark: isDark,
-                                      ),
-                                      SizedBox(width: 10.w),
-                                      _buildActionCard(
-                                        onCallBack: () {
-                                          Navigator.pushNamed(
-                                            context,
-                                            "/MyUploadsScreen",
-                                          );
-                                        },
-                                        title: "Media Library",
-                                        iconAsset: "assets/images/uploads.png",
-                                        bgColor: isDark
-                                            ? const Color(0xFFFFFAF2)
-                                            : const Color(0xFFFFE8C6),
-                                        isDark: isDark,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            Divider(
-                              height: 1,
-                              color: isDark
-                                  ? Colors.grey.shade800
-                                  : Colors.grey.shade200,
-                            ),
-                            SizedBox(height: 16.h),
-
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: size.width * 0.04,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Title + Plus Button
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Image.asset(
-                                            "assets/images/frames_icon.png",
-                                            height: 24.h,
-                                            width: 24.w,
-                                            errorBuilder: (_, __, ___) => Icon(
-                                              Icons.layers_rounded,
-                                              color: const Color(0xFFE53935),
-                                              size: 22.sp,
-                                            ),
-                                          ),
-                                          SizedBox(width: 8.w),
-                                          AppText(
-                                            "My Frames",
-                                            style: TextStyle(
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.onSurface,
-                                              fontSize: AppFontSize.fontSize18,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Container(
-                                        height: 32.h,
-                                        width: 32.w,
-                                        decoration: BoxDecoration(
-                                          color: isDark
-                                              ? const Color(0xFF2A1A1C)
-                                              : const Color(0xFFFFECEE),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.add_rounded,
-                                          color: const Color(0xFFE53935),
-                                          size: 22.sp,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  SizedBox(height: 12.h),
-
-                                  Row(
-                                    children: [
-                                      GestureDetector(
-                                        onTap: () => provider.updateFrameTab(0),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            AppText(
-                                              "Static Frames",
-                                              style: TextStyle(
-                                                color:
-                                                    provider.selectedFrameTab ==
-                                                        0
-                                                    ? (isDark
-                                                          ? Colors.white
-                                                          : Colors.black)
-                                                    : Colors.grey,
-                                                fontSize:
-                                                    AppFontSize.fontSize13,
-                                                fontWeight:
-                                                    provider.selectedFrameTab ==
-                                                        0
-                                                    ? FontWeight.w900
-                                                    : FontWeight.w500,
-                                              ),
-                                            ),
-                                            if (provider.selectedFrameTab == 0)
-                                              Container(
-                                                margin: EdgeInsets.only(
-                                                  top: 4.h,
-                                                ),
-                                                height: 3.h,
-                                                width: 85.w,
-                                                color: const Color(0xFFE53935),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(width: 20.w),
-                                      GestureDetector(
-                                        onTap: () => provider.updateFrameTab(1),
-                                        child: Column(
-                                          children: [
-                                            AppText(
-                                              "Animated Frames",
-                                              style: TextStyle(
-                                                color:
-                                                    provider.selectedFrameTab ==
-                                                        1
-                                                    ? (isDark
-                                                          ? Colors.white
-                                                          : Colors.black)
-                                                    : Colors.grey.shade400,
-                                                fontSize: 14.sp,
-                                                fontWeight:
-                                                    provider.selectedFrameTab ==
-                                                        1
-                                                    ? FontWeight.w900
-                                                    : FontWeight.w600,
-                                              ),
-                                            ),
-                                            if (provider.selectedFrameTab == 1)
-                                              Container(
-                                                margin: EdgeInsets.only(
-                                                  top: 4.h,
-                                                ),
-                                                height: 3.h,
-                                                width: 85.w,
-                                                color: const Color(0xFFE53935),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  SizedBox(height: 16.h),
-
-                                  // Frames Horizontal ListView
-                                  // Frames Horizontal ListView
-                                  SizedBox(
-                                    height: 145.h,
-                                    child: provider.isFramesLoading
-                                        ? const Center(
-                                      child: CircularProgressIndicator(
-                                        color: Color(0xFFE53935),
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                        : provider.selectedFrames.isEmpty
-                                        ? Center(
-                                      child: Text(
-                                        "No frames available",
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white60 : Colors.grey,
-                                          fontSize: 12.sp,
-                                        ),
-                                      ),
-                                    )
-                                        : ListView.builder(
-                                      scrollDirection: Axis.horizontal,
-                                      physics: const BouncingScrollPhysics(),
-                                      itemCount: provider.selectedFrames.length,
-                                      itemBuilder: (context, index) {
-                                        final frame = provider.selectedFrames[index];
-                                        final image = frame.thumbnailS3Key;
-
-                                        return Container(
-                                          width: 110.w,
-                                          margin: EdgeInsets.only(right: 12.w),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                child: Container(
-                                                  decoration: BoxDecoration(
-                                                    color: isDark
-                                                        ? const Color(0xFF1E1E1E)
-                                                        : Colors.white,
-                                                    borderRadius: BorderRadius.circular(12.r),
-                                                    border: Border.all(
-                                                      color: isDark
-                                                          ? Colors.grey.shade800
-                                                          : Colors.grey.shade300,
-                                                      width: 1.2,
-                                                    ),
-                                                  ),
-                                                  child: ClipRRect(
-                                                    borderRadius: BorderRadius.circular(10.r),
-                                                    child: CachedNetworkImage(
-                                                      imageUrl:
-                                                      "${ApiEndpoints.cdnImageUrl}/$image",
-                                                      width: double.infinity,
-                                                      height: double.infinity,
-                                                      fit: BoxFit.contain,
-                                                      placeholder: (_, __) => const Center(
-                                                        child: CircularProgressIndicator(
-                                                          strokeWidth: 1.5,
-                                                          color: Color(0xFFE53935),
-                                                        ),
-                                                      ),
-                                                      errorWidget: (_, __, ___) => const Center(
-                                                        child: Icon(
-                                                          Icons.image_not_supported_rounded,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              SizedBox(height: 6.h),
-                                              AppText(
-                                                'RS. ${frame.price}',
-                                                style: TextStyle(
-                                                  fontSize: 11.sp,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: isDark
-                                                      ? Colors.white70
-                                                      : Colors.black87,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
-                                          ),
+                                    child: Image.network(
+                                      logoUrl,
+                                      fit: BoxFit.cover,
+                                      width: 70.w,
+                                      height: 70.w,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Image.asset(
+                                          'assets/images/BName.png',
+                                          fit: BoxFit.cover,
+                                          width: 70.w,
+                                          height: 70.w,
                                         );
                                       },
                                     ),
                                   ),
-                                ],
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(height: 10.h),
+
+                            AppText(
+                              provider.businessName.isEmpty
+                                  ? "${provider.commonProvider.business?.name}"
+                                  : provider.businessName,
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface,
+                                fontSize: AppFontSize.fontSize20,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(height: 4.h),
+                            AppText(
+                              "${provider.commonProvider.business?.businessCategory?.slug ?? provider.commonProvider.business?.businessCategory?.parent?.slug}",
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade600,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+
+                            SizedBox(height: 8.h),
+                            BusinessCategoryCard(
+                              category: provider.businessName.isEmpty
+                                  ? "${provider.commonProvider.business?.businessCategory?.parent?.slug}"
+                                  : provider.businessName,
+                              subCategories:
+                              "${provider.commonProvider.business?.businessCategory?.slug ?? provider.commonProvider.business?.businessCategory?.parent?.slug}",
+                              onEditTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  "/BusinessCategorySearchScreen",
+                                );
+                              },
+                            ),
+                            SizedBox(height: 8.h),
+                            Row(
+                              children: [
+                                _buildActionCard(
+                                  onCallBack: () {},
+                                  title: "ABOUT BUSINESS",
+                                  iconAsset: "assets/images/about.png",
+                                  bgColor: isDark
+                                      ? const Color(0xFF1B2A38)
+                                      : const Color(0xFFD3EEFD),
+                                  isDark: isDark,
+                                ),
+                                SizedBox(width: 10.w),
+
+                                _buildActionCard(
+                                  onCallBack: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      "/ProductsScreen",
+                                    );
+                                  },
+                                  title: "MY PRODUCTS",
+                                  iconAsset: "assets/images/product.png",
+                                  bgColor: isDark
+                                      ? const Color(0xFF26223D)
+                                      : const Color(0xFFEEEBFF),
+                                  isDark: isDark,
+                                ),
+                                SizedBox(width: 10.w),
+                                _buildActionCard(
+                                  onCallBack: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      "/MyUploadsScreen",
+                                    );
+                                  },
+                                  title: "Media Library",
+                                  iconAsset: "assets/images/uploads.png",
+                                  bgColor: isDark
+                                      ? const Color(0xFF3A2F1A)
+                                      : const Color(0xFFFFE8C6),
+                                  isDark: isDark,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      Divider(
+                        height: 1,
+                        color: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade200,
+                      ),
+                      SizedBox(height: 16.h),
+
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: size.width * 0.04,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title + Plus Button
+                            Row(
+                              mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Image.asset(
+                                      "assets/images/frames_icon.png",
+                                      height: 24.h,
+                                      width: 24.w,
+                                      errorBuilder: (_, __, ___) => Icon(
+                                        Icons.layers_rounded,
+                                        color: const Color(0xFFE53935),
+                                        size: 22.sp,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    AppText(
+                                      "My Frames",
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                        fontSize: AppFontSize.fontSize18,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  height: 32.h,
+                                  width: 32.w,
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? const Color(0xFF2A1A1C)
+                                        : const Color(0xFFFFECEE),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.add_rounded,
+                                    color: const Color(0xFFE53935),
+                                    size: 22.sp,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: 12.h),
+
+                            Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: () => provider.updateFrameTab(0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                    children: [
+                                      AppText(
+                                        "Static Frames",
+                                        style: TextStyle(
+                                          color:
+                                          provider.selectedFrameTab ==
+                                              0
+                                              ? (isDark
+                                              ? Colors.white
+                                              : Colors.black)
+                                              : Colors.grey,
+                                          fontSize:
+                                          AppFontSize.fontSize13,
+                                          fontWeight:
+                                          provider.selectedFrameTab ==
+                                              0
+                                              ? FontWeight.w900
+                                              : FontWeight.w500,
+                                        ),
+                                      ),
+                                      if (provider.selectedFrameTab == 0)
+                                        Container(
+                                          margin: EdgeInsets.only(
+                                            top: 4.h,
+                                          ),
+                                          height: 3.h,
+                                          width: 85.w,
+                                          color: const Color(0xFFE53935),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(width: 20.w),
+                                GestureDetector(
+                                  onTap: () => provider.updateFrameTab(1),
+                                  child: Column(
+                                    children: [
+                                      AppText(
+                                        "Animated Frames",
+                                        style: TextStyle(
+                                          color:
+                                          provider.selectedFrameTab ==
+                                              1
+                                              ? (isDark
+                                              ? Colors.white
+                                              : Colors.black)
+                                              : Colors.grey.shade400,
+                                          fontSize: 14.sp,
+                                          fontWeight:
+                                          provider.selectedFrameTab ==
+                                              1
+                                              ? FontWeight.w900
+                                              : FontWeight.w600,
+                                        ),
+                                      ),
+                                      if (provider.selectedFrameTab == 1)
+                                        Container(
+                                          margin: EdgeInsets.only(
+                                            top: 4.h,
+                                          ),
+                                          height: 3.h,
+                                          width: 85.w,
+                                          color: const Color(0xFFE53935),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: 16.h),
+
+                            // Frames Horizontal ListView
+                            // Frames Horizontal ListView
+                            SizedBox(
+                              height: 145.h,
+                              child: provider.isFramesLoading
+                                  ? const Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFFE53935),
+                                  strokeWidth: 2,
+                                ),
+                              )
+                                  : provider.selectedFrames.isEmpty
+                                  ? Center(
+                                child: Text(
+                                  "No frames available",
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white60 : Colors.grey,
+                                    fontSize: 12.sp,
+                                  ),
+                                ),
+                              )
+                                  : ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: provider.selectedFrames.length,
+                                itemBuilder: (context, index) {
+                                  final frame = provider.selectedFrames[index];
+                                  final image = frame.thumbnailS3Key;
+
+                                  return Container(
+                                    width: 110.w,
+                                    margin: EdgeInsets.only(right: 12.w),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: isDark
+                                                  ? const Color(0xFF1E1E1E)
+                                                  : Colors.white,
+                                              borderRadius: BorderRadius.circular(12.r),
+                                              border: Border.all(
+                                                color: isDark
+                                                    ? Colors.grey.shade800
+                                                    : Colors.grey.shade300,
+                                                width: 1.2,
+                                              ),
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius: BorderRadius.circular(10.r),
+                                              child: CachedNetworkImage(
+                                                imageUrl:
+                                                "${ApiEndpoints.cdnImageUrl}/$image",
+                                                width: double.infinity,
+                                                height: double.infinity,
+                                                fit: BoxFit.contain,
+                                                placeholder: (_, __) => const Center(
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 1.5,
+                                                    color: Color(0xFFE53935),
+                                                  ),
+                                                ),
+                                                errorWidget: (_, __, ___) => const Center(
+                                                  child: Icon(
+                                                    Icons.image_not_supported_rounded,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(height: 6.h),
+                                        AppText(
+                                          'RS. ${frame.price}',
+                                          style: TextStyle(
+                                            fontSize: 11.sp,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black87,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(height: 12.h),
+                      Divider(
+                        height: 1,
+                        color: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade200,
+                      ),
+                      SizedBox(height: 16.h),
+
+                      const _BrandKitSection(),
+
+                      SizedBox(height: 16.h),
+                      Divider(
+                        height: 1,
+                        color: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade200,
+                      ),
+                      SizedBox(height: 16.h),
+
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: size.width * 0.04,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
+                              children: [
+                                AppText(
+                                  "My Keywords",
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                    fontSize: AppFontSize.fontSize18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                AppText(
+                                  "MANAGE",
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? Colors.grey.shade400
+                                        : Colors.grey.shade600,
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: 12.h),
+
+                            Wrap(
+                              spacing: 8.w,
+                              runSpacing: 8.h,
+                              children: (provider.keyWords).map<Widget>((
+                                  keywordItem,
+                                  ) {
+                                final keyword =
+                                    keywordItem.name?.trim() ?? '';
+
+                                if (keyword.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 14.w,
+                                    vertical: 6.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? const Color(0xFF1E1E1E)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(
+                                      20.r,
+                                    ),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? Colors.grey.shade800
+                                          : Colors.grey.shade300,
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: AppText(
+                                    keyword,
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black87,
+                                      fontSize: 11.5.sp,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 16.h),
+                      Divider(
+                        height: 1,
+                        color: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade200,
+                      ),
+                      SizedBox(height: 16.h),
+
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: size.width * 0.04,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AppText(
+                              "Online Presence",
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface,
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
 
                             SizedBox(height: 12.h),
-                            Divider(
-                              height: 1,
-                              color: isDark
-                                  ? Colors.grey.shade800
-                                  : Colors.grey.shade200,
-                            ),
-                            SizedBox(height: 16.h),
 
-                            const _BrandKitSection(),
-
-                            SizedBox(height: 16.h),
-                            Divider(
-                              height: 1,
-                              color: isDark
-                                  ? Colors.grey.shade800
-                                  : Colors.grey.shade200,
-                            ),
-                            SizedBox(height: 16.h),
-
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: size.width * 0.04,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      AppText(
-                                        "My Keywords",
-                                        style: TextStyle(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                          fontSize: AppFontSize.fontSize18,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      AppText(
-                                        "MANAGE",
-                                        style: TextStyle(
-                                          color: isDark
-                                              ? Colors.grey.shade400
-                                              : Colors.grey.shade600,
-                                          fontSize: 12.sp,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ],
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildPresenceTile(
+                                    title: "Business Profile",
+                                    iconAsset:
+                                    "assets/images/b_profile.png",
+                                    bgColor: isDark
+                                        ? const Color(0xFF2A1A1C)
+                                        : const Color(0xFFFFECEE),
+                                    isDark: isDark,
                                   ),
-
-                                  SizedBox(height: 12.h),
-
-                                  Wrap(
-                                    spacing: 8.w,
-                                    runSpacing: 8.h,
-                                    children: (provider.keyWords).map<Widget>((
-                                      keywordItem,
-                                    ) {
-                                      final keyword =
-                                          keywordItem.name?.trim() ?? '';
-
-                                      if (keyword.isEmpty) {
-                                        return const SizedBox.shrink();
-                                      }
-
-                                      return Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 14.w,
-                                          vertical: 6.h,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isDark
-                                              ? const Color(0xFF1E1E1E)
-                                              : Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            20.r,
-                                          ),
-                                          border: Border.all(
-                                            color: isDark
-                                                ? Colors.grey.shade800
-                                                : Colors.grey.shade300,
-                                            width: 1.2,
-                                          ),
-                                        ),
-                                        child: AppText(
-                                          keyword,
-                                          style: TextStyle(
-                                            color: isDark
-                                                ? Colors.white70
-                                                : Colors.black87,
-                                            fontSize: 11.5.sp,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
+                                ),
+                                SizedBox(width: 12.w),
+                                Expanded(
+                                  child: _buildPresenceTile(
+                                    title: "Business Card",
+                                    iconAsset: "assets/images/b_card.png",
+                                    bgColor: isDark
+                                        ? const Color(0xFF1B2A38)
+                                        : const Color(0xFFE3F2FD),
+                                    isDark: isDark,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                            SizedBox(height: 16.h),
-                            Divider(
-                              height: 1,
-                              color: isDark
-                                  ? Colors.grey.shade800
-                                  : Colors.grey.shade200,
-                            ),
-                            SizedBox(height: 16.h),
-
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: size.width * 0.04,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AppText(
-                                    "Online Presence",
-                                    style: TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
-                                      fontSize: 18.sp,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-
-                                  SizedBox(height: 12.h),
-
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: _buildPresenceTile(
-                                          title: "Business Profile",
-                                          iconAsset:
-                                              "assets/images/b_profile.png",
-                                          bgColor: isDark
-                                              ? const Color(0xFF2A1A1C)
-                                              : const Color(0xFFFFECEE),
-                                          isDark: isDark,
-                                        ),
-                                      ),
-                                      SizedBox(width: 12.w),
-                                      Expanded(
-                                        child: _buildPresenceTile(
-                                          title: "Business Card",
-                                          iconAsset: "assets/images/b_card.png",
-                                          bgColor: isDark
-                                              ? const Color(0xFF1B2A38)
-                                              : const Color(0xFFE3F2FD),
-                                          isDark: isDark,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            SizedBox(height: 30.h),
                           ],
                         ),
                       ),
+
+                      SizedBox(height: 30.h),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -679,11 +674,11 @@ class BusinessProfileView extends StatelessWidget {
   // ===========================================================================
 
   Widget _buildPersonalProfileScreen(
-    BuildContext context,
-    bool isDark,
-    CommonProvider provider,
-    BusinessProfileProvider businessProfileProvider,
-  ) {
+      BuildContext context,
+      bool isDark,
+      CommonProvider provider,
+      BusinessProfileProvider businessProfileProvider,
+      ) {
     final theme = Theme.of(context);
     final String personalUrl =
         '${ApiEndpoints.cdnImageUrl}/${provider.me?.data.profilePhotoS3Key ?? ''}';
@@ -696,43 +691,43 @@ class BusinessProfileView extends StatelessWidget {
         badgeCount: null,
         onRightIconTap: provider.accountType == "personal"
             ? () async {
-                final result = await Navigator.pushNamed(
-                  context,
-                  "/EditProfileScreen",
-                );
+          final result = await Navigator.pushNamed(
+            context,
+            "/EditProfileScreen",
+          );
 
-                if (!context.mounted) return;
+          if (!context.mounted) return;
 
-                if (result == true) {
-                  debugPrint(
-                    "🔄 Edit Profile returned TRUE"
-                    " → refreshing profile API",
-                  );
+          if (result == true) {
+            debugPrint(
+              "🔄 Edit Profile returned TRUE"
+                  " → refreshing profile API",
+            );
 
-                  await context
-                      .read<BusinessProfileProvider>()
-                      .refreshProfileAfterEdit();
-                }
-              }
+            await context
+                .read<BusinessProfileProvider>()
+                .refreshProfileAfterEdit();
+          }
+        }
             : () async {
-                final result = await Navigator.pushNamed(
-                  context,
-                  "/EditProfileScreen",
-                );
+          final result = await Navigator.pushNamed(
+            context,
+            "/EditProfileScreen",
+          );
 
-                if (!context.mounted) return;
+          if (!context.mounted) return;
 
-                if (result == true) {
-                  debugPrint(
-                    "🔄 Edit Profile returned TRUE"
-                    " → refreshing profile API",
-                  );
+          if (result == true) {
+            debugPrint(
+              "🔄 Edit Profile returned TRUE"
+                  " → refreshing profile API",
+            );
 
-                  await context
-                      .read<BusinessProfileProvider>()
-                      .refreshProfileAfterEdit();
-                }
-              },
+            await context
+                .read<BusinessProfileProvider>()
+                .refreshProfileAfterEdit();
+          }
+        },
       ),
       body: Stack(
         children: [
@@ -741,11 +736,7 @@ class BusinessProfileView extends StatelessWidget {
             left: 0,
             right: 0,
             height: 300.h,
-            child: Image.asset(
-              "assets/images/plan_gradient.png",
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-            ),
+            child: _profileBackground(isDark, alignTop: true),
           ),
           SafeArea(
             child: SingleChildScrollView(
@@ -824,6 +815,7 @@ class BusinessProfileView extends StatelessWidget {
                         Expanded(
                           child: _personalActionCard(
                             title: "My Downloads",
+                            isDark: isDark,
                             imagePath: "assets/images/document_download.png",
                             gradientColors: [
                               const Color(0xFFF6F4FF),
@@ -841,6 +833,7 @@ class BusinessProfileView extends StatelessWidget {
                         Expanded(
                           child: _personalActionCard(
                             title: "Media Library",
+                            isDark: isDark,
                             imagePath: "assets/images/media.png",
                             gradientColors: [
                               const Color(0xFFFFFAF2),
@@ -918,24 +911,24 @@ class BusinessProfileView extends StatelessWidget {
                                     "Static Frames",
                                     style: TextStyle(
                                       color:
-                                          businessProfileProvider
-                                                  .selectedFrameTab ==
-                                              0
+                                      businessProfileProvider
+                                          .selectedFrameTab ==
+                                          0
                                           ? (isDark
-                                                ? Colors.white
-                                                : Colors.black)
+                                          ? Colors.white
+                                          : Colors.black)
                                           : Colors.grey,
                                       fontSize: AppFontSize.fontSize13,
                                       fontWeight:
-                                          businessProfileProvider
-                                                  .selectedFrameTab ==
-                                              0
+                                      businessProfileProvider
+                                          .selectedFrameTab ==
+                                          0
                                           ? FontWeight.w900
                                           : FontWeight.w500,
                                     ),
                                   ),
                                   if (businessProfileProvider
-                                          .selectedFrameTab ==
+                                      .selectedFrameTab ==
                                       0)
                                     Container(
                                       margin: EdgeInsets.only(top: 4.h),
@@ -956,24 +949,24 @@ class BusinessProfileView extends StatelessWidget {
                                     "Animated Frames",
                                     style: TextStyle(
                                       color:
-                                          businessProfileProvider
-                                                  .selectedFrameTab ==
-                                              1
+                                      businessProfileProvider
+                                          .selectedFrameTab ==
+                                          1
                                           ? (isDark
-                                                ? Colors.white
-                                                : Colors.black)
+                                          ? Colors.white
+                                          : Colors.black)
                                           : Colors.grey.shade400,
                                       fontSize: 14.sp,
                                       fontWeight:
-                                          businessProfileProvider
-                                                  .selectedFrameTab ==
-                                              1
+                                      businessProfileProvider
+                                          .selectedFrameTab ==
+                                          1
                                           ? FontWeight.w900
                                           : FontWeight.w600,
                                     ),
                                   ),
                                   if (businessProfileProvider
-                                          .selectedFrameTab ==
+                                      .selectedFrameTab ==
                                       1)
                                     Container(
                                       margin: EdgeInsets.only(top: 4.h),
@@ -996,10 +989,10 @@ class BusinessProfileView extends StatelessWidget {
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
                             itemCount:
-                                businessProfileProvider.selectedFrames.length,
+                            businessProfileProvider.selectedFrames.length,
                             itemBuilder: (context, index) {
                               final frame =
-                                  businessProfileProvider.selectedFrames[index];
+                              businessProfileProvider.selectedFrames[index];
                               final image = frame.thumbnailS3Key;
                               return Container(
                                 width: 110.w,
@@ -1043,14 +1036,14 @@ class BusinessProfileView extends StatelessWidget {
                                                 child: Center(
                                                   child: CachedNetworkImage(
                                                     imageUrl:
-                                                        "${ApiEndpoints.cdnImageUrl}/${image}",
+                                                    "${ApiEndpoints.cdnImageUrl}/${image}",
                                                     errorWidget: (_, __, ___) =>
-                                                        const Center(
-                                                          child: Icon(
-                                                            Icons
-                                                                .image_not_supported_rounded,
-                                                          ),
-                                                        ),
+                                                    const Center(
+                                                      child: Icon(
+                                                        Icons
+                                                            .image_not_supported_rounded,
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -1099,6 +1092,7 @@ class BusinessProfileView extends StatelessWidget {
     required String imagePath,
     required List<Color> gradientColors,
     required VoidCallback onTap,
+    bool isDark = false,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -1106,7 +1100,11 @@ class BusinessProfileView extends StatelessWidget {
         height: 90.h,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: gradientColors,
+            colors: isDark
+                ? gradientColors
+                .map((c) => Color.lerp(c, const Color(0xFF1E1E1E), 0.85)!)
+                .toList()
+                : gradientColors,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -1125,7 +1123,7 @@ class BusinessProfileView extends StatelessWidget {
             AppText(
               title,
               style: TextStyle(
-                color: AppColors.appBlack,
+                color: isDark ? Colors.white : AppColors.appBlack,
                 fontSize: AppFontSize.fontSize15,
                 fontWeight: FontWeight.w500,
               ),
@@ -1345,7 +1343,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                   AppText(
                     "Brand Kit",
                     style: TextStyle(
-                      color: AppColors.appBlack,
+                      color: isDark ? Colors.white : AppColors.appBlack,
                       fontSize: AppFontSize.fontSize18,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1442,14 +1440,14 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
             child: logoKey.isEmpty
                 ? Icon(Icons.image_outlined, color: Colors.grey, size: 30.sp)
                 : Image.network(
-                    '${ApiEndpoints.cdnImageUrl}/$logoKey',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Icon(
-                      Icons.image_outlined,
-                      color: Colors.grey,
-                      size: 30.sp,
-                    ),
-                  ),
+              '${ApiEndpoints.cdnImageUrl}/$logoKey',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.image_outlined,
+                color: Colors.grey,
+                size: 30.sp,
+              ),
+            ),
           ),
           SizedBox(width: 12.w),
           Expanded(
@@ -1459,6 +1457,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                 AppText(
                   "Business Logo",
                   style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1523,7 +1522,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
           )
         else
           ...palettes.asMap().entries.map(
-            (entry) =>
+                (entry) =>
                 _buildSingleColorCard(context, entry.key, entry.value, isDark),
           ),
       ],
@@ -1531,11 +1530,11 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
   }
 
   Widget _buildSingleColorCard(
-    BuildContext context,
-    int index,
-    _BrandPalette palette,
-    bool isDark,
-  ) {
+      BuildContext context,
+      int index,
+      _BrandPalette palette,
+      bool isDark,
+      ) {
     final color = palette.colors.isEmpty ? Colors.grey : palette.colors.first;
 
     return Container(
@@ -1671,11 +1670,12 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
   }
 
   Future<void> _showFontEditDialog(
-    BuildContext context,
-    int index,
-    bool isDark,
-  ) async {
+      BuildContext context,
+      int index,
+      bool isDark,
+      ) async {
     final current = fonts[index];
+    final dc = _DialogColors(isDark);
     String selectedFont = current.family;
     double selectedSize = current.size.toDouble();
 
@@ -1685,12 +1685,15 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              backgroundColor: dc.background,
+              surfaceTintColor: Colors.transparent,
               title: Row(
                 children: [
                   Expanded(
                     child: AppText(
                       'Edit ${current.title} Font',
                       style: TextStyle(
+                        color: dc.text,
                         fontSize: 15.sp,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1698,7 +1701,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(dialogContext),
-                    icon: const Icon(Icons.close),
+                    icon: Icon(Icons.close, color: dc.text),
                   ),
                 ],
               ),
@@ -1711,6 +1714,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     AppText(
                       'Font Family',
                       style: TextStyle(
+                        color: dc.text,
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1719,11 +1723,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     Container(
                       constraints: BoxConstraints(maxHeight: 260.h),
                       decoration: BoxDecoration(
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade300,
-                        ),
+                        border: Border.all(color: dc.border),
                         borderRadius: BorderRadius.circular(10.r),
                       ),
                       child: ListView.separated(
@@ -1747,10 +1747,12 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
                                 color: selected
-                                    ? const Color(0xFFFFECEE)
+                                    ? (isDark
+                                    ? const Color(0xFF3A2022)
+                                    : const Color(0xFFFFECEE))
                                     : (isDark
-                                          ? const Color(0xFF252525)
-                                          : const Color(0xFFF5F5F5)),
+                                    ? const Color(0xFF252525)
+                                    : const Color(0xFFF5F5F5)),
                                 borderRadius: BorderRadius.circular(7.r),
                               ),
                               child: AppText(
@@ -1760,15 +1762,14 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                                   fontSize: 14.sp,
                                   color: selected
                                       ? const Color(0xFFE53935)
-                                      : (isDark
-                                            ? Colors.white
-                                            : Colors.black87),
+                                      : dc.text,
                                 ),
                               ),
                             ),
                             title: AppText(
                               fontName,
                               style: TextStyle(
+                                color: dc.text,
                                 fontFamily: fontName,
                                 fontSize: 13.sp,
                                 fontWeight: FontWeight.w600,
@@ -1776,9 +1777,9 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                             ),
                             trailing: selected
                                 ? const Icon(
-                                    Icons.check_circle,
-                                    color: Color(0xFFE53935),
-                                  )
+                              Icons.check_circle,
+                              color: Color(0xFFE53935),
+                            )
                                 : null,
                             onTap: () {
                               setDialogState(() => selectedFont = fontName);
@@ -1791,6 +1792,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     AppText(
                       'Preview',
                       style: TextStyle(
+                        color: dc.text,
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1799,6 +1801,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     AppText(
                       'Aa ${current.title}',
                       style: TextStyle(
+                        color: dc.text,
                         fontFamily: selectedFont,
                         fontSize: 22.sp,
                         fontWeight: FontWeight.w700,
@@ -1809,13 +1812,14 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                       children: [
                         AppText(
                           'Size ${selectedSize.toInt()}',
-                          style: TextStyle(fontSize: 11.sp),
+                          style: TextStyle(color: dc.text, fontSize: 11.sp),
                         ),
                         Expanded(
                           child: Slider(
                             min: 8,
                             max: 120,
                             value: selectedSize,
+                            activeColor: const Color(0xFFE53935),
                             onChanged: (value) {
                               setDialogState(() => selectedSize = value);
                             },
@@ -1829,9 +1833,13 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const AppText('CANCEL'),
+                  child: AppText('CANCEL', style: TextStyle(color: dc.text)),
                 ),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE53935),
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () {
                     setState(() {
                       fonts[index] = _BrandFont(
@@ -1842,7 +1850,10 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     });
                     Navigator.pop(dialogContext);
                   },
-                  child: const AppText('SAVE'),
+                  child: const AppText(
+                    'SAVE',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             );
@@ -1893,15 +1904,22 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
   Future<void> _showCustomColorDialog(BuildContext context) async {
     final controller = TextEditingController(text: "#E53935");
     Color selectedColor = const Color(0xFFE53935);
+    final isDark = context.read<CustomThemeProvider>().isDarkMode;
+    final dc = _DialogColors(isDark);
+
+    OutlineInputBorder fieldBorder(Color color) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(9.r),
+      borderSide: BorderSide(color: color),
+    );
 
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
-        final isDark = context.read<CustomThemeProvider>().isDarkMode;
-
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              backgroundColor: dc.background,
+              surfaceTintColor: Colors.transparent,
               titlePadding: EdgeInsets.fromLTRB(18.w, 16.h, 12.w, 4.h),
               contentPadding: EdgeInsets.fromLTRB(18.w, 4.h, 18.w, 16.h),
               title: Row(
@@ -1910,6 +1928,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     child: AppText(
                       "Choose Your Brand Colors",
                       style: TextStyle(
+                        color: dc.text,
                         fontSize: 15.sp,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1932,9 +1951,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     Container(
                       padding: EdgeInsets.all(10.r),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF202020)
-                            : const Color(0xFFF8F8F8),
+                        color: dc.panel,
                         borderRadius: BorderRadius.circular(10.r),
                       ),
                       child: Row(
@@ -1955,6 +1972,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                                 AppText(
                                   "Custom Colors",
                                   style: TextStyle(
+                                    color: dc.text,
                                     fontSize: 12.sp,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -1964,7 +1982,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                                   "Add your brand color using HEX codes or the color picker.",
                                   style: TextStyle(
                                     fontSize: 10.sp,
-                                    color: Colors.grey.shade600,
+                                    color: dc.subText,
                                   ),
                                 ),
                               ],
@@ -1977,6 +1995,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     AppText(
                       "HEX Color",
                       style: TextStyle(
+                        color: dc.text,
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1985,11 +2004,19 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     TextField(
                       controller: controller,
                       textCapitalization: TextCapitalization.characters,
+                      style: TextStyle(color: dc.text),
+                      cursorColor: const Color(0xFFE53935),
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.tag),
+                        filled: true,
+                        fillColor: dc.panel,
+                        prefixIcon: Icon(Icons.tag, color: dc.subText),
                         hintText: "#E53935",
+                        hintStyle: TextStyle(color: dc.subText),
                         suffixIcon: IconButton(
-                          icon: const Icon(Icons.check_circle_outline),
+                          icon: Icon(
+                            Icons.check_circle_outline,
+                            color: dc.subText,
+                          ),
                           onPressed: () {
                             final color = _colorFromHex(controller.text);
                             if (color != null) {
@@ -1997,9 +2024,9 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                             }
                           },
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(9.r),
-                        ),
+                        border: fieldBorder(dc.border),
+                        enabledBorder: fieldBorder(dc.border),
+                        focusedBorder: fieldBorder(const Color(0xFFE53935)),
                       ),
                       onSubmitted: (value) {
                         final color = _colorFromHex(value);
@@ -2012,13 +2039,14 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     AppText(
                       "Popular Brand Color Palettes",
                       style: TextStyle(
+                        color: dc.text,
                         fontSize: 12.sp,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     SizedBox(height: 8.h),
                     ...popularPalettes.map(
-                      (palette) => GestureDetector(
+                          (palette) => GestureDetector(
                         onTap: () {
                           setDialogState(() {
                             selectedColor = palette.colors.first;
@@ -2032,15 +2060,9 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                             vertical: 8.h,
                           ),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF181818)
-                                : Colors.white,
+                            color: dc.card,
                             borderRadius: BorderRadius.circular(8.r),
-                            border: Border.all(
-                              color: isDark
-                                  ? Colors.grey.shade800
-                                  : Colors.grey.shade300,
-                            ),
+                            border: Border.all(color: dc.border),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2048,6 +2070,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                               AppText(
                                 palette.name,
                                 style: TextStyle(
+                                  color: dc.text,
                                   fontSize: 10.sp,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -2057,42 +2080,42 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                                 children: palette.colors
                                     .map(
                                       (color) => Expanded(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            setDialogState(() {
-                                              selectedColor = color;
-                                              controller.text = _hex(color);
-                                            });
-                                          },
-                                          child: Container(
-                                            height: 24.h,
-                                            margin: EdgeInsets.only(right: 3.w),
-                                            decoration: BoxDecoration(
-                                              color: color,
-                                              borderRadius:
-                                                  BorderRadius.circular(3.r),
-                                              border: Border.all(
-                                                color:
-                                                    selectedColor.value ==
-                                                        color.value
-                                                    ? const Color(0xFFE53935)
-                                                    : Colors.transparent,
-                                                width: 2,
-                                              ),
-                                            ),
-                                            child:
-                                                selectedColor.value ==
-                                                    color.value
-                                                ? const Icon(
-                                                    Icons.check,
-                                                    color: Colors.white,
-                                                    size: 15,
-                                                  )
-                                                : null,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setDialogState(() {
+                                          selectedColor = color;
+                                          controller.text = _hex(color);
+                                        });
+                                      },
+                                      child: Container(
+                                        height: 24.h,
+                                        margin: EdgeInsets.only(right: 3.w),
+                                        decoration: BoxDecoration(
+                                          color: color,
+                                          borderRadius:
+                                          BorderRadius.circular(3.r),
+                                          border: Border.all(
+                                            color:
+                                            selectedColor.value ==
+                                                color.value
+                                                ? const Color(0xFFE53935)
+                                                : Colors.transparent,
+                                            width: 2,
                                           ),
                                         ),
+                                        child:
+                                        selectedColor.value ==
+                                            color.value
+                                            ? const Icon(
+                                          Icons.check,
+                                          color: Colors.white,
+                                          size: 15,
+                                        )
+                                            : null,
                                       ),
-                                    )
+                                    ),
+                                  ),
+                                )
                                     .toList(),
                               ),
                             ],
@@ -2106,9 +2129,16 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const AppText("Cancel"),
+                  child: AppText(
+                    "Cancel",
+                    style: TextStyle(color: dc.text),
+                  ),
                 ),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE53935),
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () {
                     final color =
                         _colorFromHex(controller.text) ?? selectedColor;
@@ -2127,7 +2157,10 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
 
                     Navigator.pop(dialogContext);
                   },
-                  child: const AppText("Add Color"),
+                  child: const AppText(
+                    "Add Color",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             );
@@ -2207,9 +2240,9 @@ Widget _buildActionCard({
             end: Alignment.bottomRight,
             colors: isDark
                 ? [
-                    bgColor.withValues(alpha: 0.9),
-                    bgColor.withValues(alpha: 0.5),
-                  ]
+              bgColor.withValues(alpha: 0.9),
+              bgColor.withValues(alpha: 0.5),
+            ]
                 : [bgColor, bgColor.withValues(alpha: 0.5)],
           ),
           borderRadius: BorderRadius.circular(16.r),
@@ -2281,5 +2314,40 @@ Widget _buildPresenceTile({
         ),
       ],
     ),
+  );
+}
+
+/// Colours for the Brand Kit dialogs so they follow the app's dark mode.
+class _DialogColors {
+  const _DialogColors(this.isDark);
+
+  final bool isDark;
+
+  Color get background => isDark ? const Color(0xFF1E1E1E) : Colors.white;
+  Color get text => isDark ? Colors.white : Colors.black87;
+  Color get subText => isDark ? Colors.white60 : Colors.grey.shade600;
+  Color get panel => isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8);
+  Color get card => isDark ? const Color(0xFF181818) : Colors.white;
+  Color get border => isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+}
+
+/// Header background of the profile screens. The light gradient image would
+/// cover the dark scaffold, so dark mode uses a dark gradient instead.
+Widget _profileBackground(bool isDark, {bool alignTop = false}) {
+  if (isDark) {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF2A1A1C), Color(0xFF121212)],
+        ),
+      ),
+    );
+  }
+  return Image.asset(
+    "assets/images/plan_gradient.png",
+    fit: BoxFit.cover,
+    alignment: alignTop ? Alignment.topCenter : Alignment.center,
   );
 }

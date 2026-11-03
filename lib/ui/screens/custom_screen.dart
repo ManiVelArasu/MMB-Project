@@ -69,10 +69,9 @@ class _CustomCreateBody extends StatelessWidget {
                 left: 0,
                 right: 0,
                 height: 300.h,
-                child: Image.asset(
-                  "assets/images/plan_gradient.png",
-                  fit: BoxFit.cover,
-                  alignment: Alignment.topCenter,
+                child: _createBackground(
+                  isDark,
+                  Theme.of(context).scaffoldBackgroundColor,
                 ),
               ),
               SafeArea(
@@ -115,7 +114,7 @@ class _CustomCreateBody extends StatelessWidget {
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
                               itemCount:
-                                  templateSizes.length +
+                              templateSizes.length +
                                   1, // +1 for the custom card
                               itemBuilder: (context, index) {
                                 // ---------- Custom Size card ----------
@@ -135,7 +134,7 @@ class _CustomCreateBody extends StatelessWidget {
                                         isScrollControlled: true,
                                         backgroundColor: Colors.transparent,
                                         builder: (context) =>
-                                            const _CustomSizeBottomSheet(),
+                                        const _CustomSizeBottomSheet(),
                                       );
                                     },
                                   );
@@ -202,12 +201,12 @@ class _CustomCreateBody extends StatelessWidget {
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: provider.aiToolsList.length,
                             gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 12.w,
-                                  mainAxisSpacing: 12.h,
-                                  childAspectRatio: 0.82,
-                                ),
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12.w,
+                              mainAxisSpacing: 12.h,
+                              childAspectRatio: 0.82,
+                            ),
                             itemBuilder: (context, index) {
                               final tool = provider.aiToolsList[index];
 
@@ -247,15 +246,15 @@ class _CustomCreateBody extends StatelessWidget {
                                         width: 52.w,
                                         child: tool.imagePath.trim().isNotEmpty
                                             ? Image.asset(
-                                                tool.imagePath,
-                                                fit: BoxFit.contain,
-                                                errorBuilder:
-                                                    (
-                                                      context,
-                                                      error,
-                                                      stackTrace,
-                                                    ) => _buildFallbackIcon(),
-                                              )
+                                          tool.imagePath,
+                                          fit: BoxFit.contain,
+                                          errorBuilder:
+                                              (
+                                              context,
+                                              error,
+                                              stackTrace,
+                                              ) => _buildFallbackIcon(),
+                                        )
                                             : _buildFallbackIcon(),
                                       ),
 
@@ -575,6 +574,8 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<CustomThemeProvider>().isDarkMode;
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -582,7 +583,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
       child: Container(
         padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
         ),
         child: SafeArea(
@@ -598,7 +599,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                     width: 45.w,
                     height: 4.h,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(10.r),
                     ),
                   ),
@@ -615,7 +616,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                       style: TextStyle(
                         fontSize: AppFontSize.fontSize16,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF171A2B),
+                        color: isDark ? Colors.white : const Color(0xFF171A2B),
                       ),
                     ),
                     GestureDetector(
@@ -623,8 +624,10 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                       child: Container(
                         width: 28.w,
                         height: 28.w,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFFE5E7),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF3A2022)
+                              : const Color(0xFFFFE5E7),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -644,7 +647,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                   style: TextStyle(
                     fontSize: AppFontSize.fontSize14,
                     fontWeight: FontWeight.w400,
-                    color: const Color(0xFF666666),
+                    color: isDark ? Colors.white60 : const Color(0xFF666666),
                     height: 1.4,
                   ),
                 ),
@@ -658,6 +661,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                       child: _buildSizeInput(
                         title: "Width (px)",
                         controller: widthController,
+                        isDark: isDark,
                       ),
                     ),
 
@@ -677,6 +681,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                       child: _buildSizeInput(
                         title: "Height (px)",
                         controller: heightController,
+                        isDark: isDark,
                       ),
                     ),
                   ],
@@ -732,13 +737,19 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? const Color(0xFFFFECEE)
-                                : Colors.white,
+                                ? (isDark
+                                ? const Color(0xFF3A2022)
+                                : const Color(0xFFFFECEE))
+                                : (isDark
+                                ? const Color(0xFF2A2A2A)
+                                : Colors.white),
                             borderRadius: BorderRadius.circular(12.r),
                             border: Border.all(
                               color: isSelected
                                   ? Colors.red
-                                  : Colors.grey.shade300,
+                                  : (isDark
+                                  ? Colors.grey.shade700
+                                  : Colors.grey.shade300),
                               width: isSelected ? 1.5 : 1,
                             ),
                           ),
@@ -756,7 +767,9 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                                       fontWeight: FontWeight.w600,
                                       color: isSelected
                                           ? Colors.red
-                                          : const Color(0xFF171A2B),
+                                          : (isDark
+                                          ? Colors.white
+                                          : const Color(0xFF171A2B)),
                                     ),
                                   ),
                                   SizedBox(height: 3.h),
@@ -764,7 +777,9 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                                     item["subtitle"],
                                     style: TextStyle(
                                       fontSize: 10.sp,
-                                      color: Colors.grey.shade600,
+                                      color: isDark
+                                          ? Colors.grey.shade400
+                                          : Colors.grey.shade600,
                                     ),
                                   ),
                                 ],
@@ -822,7 +837,9 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                         "Want inspiration? ",
                         style: TextStyle(
                           fontSize: 12.sp,
-                          color: Colors.grey.shade700,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade700,
                         ),
                       ),
                       GestureDetector(
@@ -853,6 +870,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
   Widget _buildSizeInput({
     required String title,
     required TextEditingController controller,
+    required bool isDark,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -862,7 +880,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
           style: TextStyle(
             fontSize: AppFontSize.fontSize16,
             fontWeight: FontWeight.w500,
-            color: AppColors.appBlack,
+            color: isDark ? Colors.white : AppColors.appBlack,
           ),
         ),
 
@@ -871,7 +889,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
           style: TextStyle(
             fontSize: AppFontSize.fontSize14,
             fontWeight: FontWeight.w300,
-            color: AppColors.appBlack,
+            color: isDark ? Colors.white70 : AppColors.appBlack,
           ),
         ),
 
@@ -880,6 +898,8 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
         TextField(
           controller: controller,
           keyboardType: TextInputType.number,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+          cursorColor: Colors.red,
           decoration: InputDecoration(
             contentPadding: EdgeInsets.symmetric(
               horizontal: 14.w,
@@ -902,4 +922,25 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
       ],
     );
   }
+}
+
+/// Header background. The light gradient image would cover the dark scaffold,
+/// so dark mode uses a dark gradient that fades into the scaffold colour.
+Widget _createBackground(bool isDark, Color scaffoldColor) {
+  if (isDark) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [const Color(0xFF2A1A1C), scaffoldColor],
+        ),
+      ),
+    );
+  }
+  return Image.asset(
+    "assets/images/plan_gradient.png",
+    fit: BoxFit.cover,
+    alignment: Alignment.topCenter,
+  );
 }

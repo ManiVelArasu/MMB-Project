@@ -49,29 +49,31 @@ class _HomeScreenView extends StatelessWidget {
 
     if (homeScreenProvider.isLoadingCategories ||
         homeScreenProvider.isKeyWordsLoading) {
-      return const Scaffold(
-        body: Center(
+      return Scaffold(
+        backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
+        body: const Center(
           child: CircularProgressIndicator(color: Color(0xFFE53935)),
         ),
       );
     }
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
       appBar: const HomeCustomAppBar(),
       body: Stack(
         children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 300.h,
-            child: Image.asset(
-              "assets/images/plan_gradient.png",
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
+          if (!isDark) // Only show the white/light plan gradient when in light mode
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 300.h,
+              child: Image.asset(
+                "assets/images/plan_gradient.png",
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+              ),
             ),
-          ),
           SafeArea(
             child: RefreshIndicator(
               color: const Color(0xFFE53935),

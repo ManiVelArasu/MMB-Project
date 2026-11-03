@@ -56,17 +56,18 @@ class _TemplateListScreenView extends StatelessWidget {
 
       body: Stack(
         children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 300.h,
-            child: Image.asset(
-              "assets/images/plan_gradient.png",
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
+          if (!isDark) // Only show the white/light plan gradient when in light mode
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 300.h,
+              child: Image.asset(
+                "assets/images/plan_gradient.png",
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+              ),
             ),
-          ),
           SafeArea(
             child: Consumer<TemplateListProvider>(
               builder: (context, provider, _) {

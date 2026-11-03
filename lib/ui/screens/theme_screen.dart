@@ -78,10 +78,9 @@ class _ThemesScreenState extends State<ThemesScreen> {
                 left: 0,
                 right: 0,
                 height: 300.h,
-                child: Image.asset(
-                  "assets/images/plan_gradient.png",
-                  fit: BoxFit.cover,
-                  alignment: Alignment.topCenter,
+                child: _themesBackground(
+                  isDark,
+                  Theme.of(context).scaffoldBackgroundColor,
                 ),
               ),
               SafeArea(
@@ -105,7 +104,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
-                              color: AppColors.appBlack,
+                              color: isDark ? Colors.white : AppColors.appBlack,
 
                               fontSize: AppFontSize.fontSize22,
                             ),
@@ -120,7 +119,9 @@ class _ThemesScreenState extends State<ThemesScreen> {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: AppFontSize.fontSize18,
-                              color: AppColors.lightTextGrey,
+                              color: isDark
+                                  ? Colors.white60
+                                  : AppColors.lightTextGrey,
                               fontWeight: FontWeight.w400,
                             ),
                           ),
@@ -134,10 +135,10 @@ class _ThemesScreenState extends State<ThemesScreen> {
                                 spacing: 4,
                                 runSpacing: 4,
                                 children: [
-                                  _brandBadge("2,500+ TEMPLATES"),
-                                  _brandBadge("50+ INDUSTRIES"),
-                                  _brandBadge("FULLY CUSTOMIZABLE"),
-                                  _brandBadge("INDUSTRY-SPECIFIC COLLECTIONS"),
+                                  _brandBadge("2,500+ TEMPLATES", isDark),
+                                  _brandBadge("50+ INDUSTRIES", isDark),
+                                  _brandBadge("FULLY CUSTOMIZABLE", isDark),
+                                  _brandBadge("INDUSTRY-SPECIFIC COLLECTIONS", isDark),
                                 ],
                               ),
                             ],
@@ -181,11 +182,11 @@ class _ThemesScreenState extends State<ThemesScreen> {
     );
   }
 
-  Widget _brandBadge(String text) {
+  Widget _brandBadge(String text, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF5F5),
+        color: isDark ? const Color(0xFF3A2022) : const Color(0xFFFFF5F5),
         borderRadius: BorderRadius.circular(15),
       ),
       child: Text(
@@ -339,4 +340,25 @@ class ThemeGroupSection extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Header background. The light gradient image would cover the dark scaffold,
+/// so dark mode uses a dark gradient that fades into the scaffold colour.
+Widget _themesBackground(bool isDark, Color scaffoldColor) {
+  if (isDark) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [const Color(0xFF2A1A1C), scaffoldColor],
+        ),
+      ),
+    );
+  }
+  return Image.asset(
+    "assets/images/plan_gradient.png",
+    fit: BoxFit.cover,
+    alignment: Alignment.topCenter,
+  );
 }

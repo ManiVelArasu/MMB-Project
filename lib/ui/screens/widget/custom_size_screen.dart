@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 import '../../../component/appbar_widget.dart';
 import '../../../component/custom_widget.dart';
+import '../../../network/provider/custom_theme_provider.dart';
 import '../../../utils/theme/app.colors.dart';
 import '../../../utils/theme/app.fonts.dart';
 import '../template_edit.dart';
@@ -97,8 +99,10 @@ class _CustomSizeScreenState extends State<CustomSizeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<CustomThemeProvider>();
+    final isDark = themeProvider.isDarkMode;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
       appBar: CustomAppBar(title: "Custom Size", showRightIcon: false),
       body: SafeArea(
         child: SingleChildScrollView(

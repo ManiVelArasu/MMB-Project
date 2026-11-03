@@ -1,13 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mmb_app/ui/screens/widget/product_card.dart';
 import 'package:mmb_app/ui/screens/widget/product_sheet.dart';
 import 'package:provider/provider.dart';
 import '../../component/custom_widget.dart';
 
+import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/my_upload_provider.dart';
 import '../../network/provider/product_provider.dart';
 import '../../Api Model/product_model.dart';
 import '../../utils/theme/app.fonts.dart';
+
+/// Light / dark colours for this screen. Light values are the original ones.
+class _Palette {
+  const _Palette(this.isDark);
+
+  final bool isDark;
+
+  Color get background =>
+      isDark ? const Color(0xFF121212) : const Color(0xFFF7F7F7);
+  Color get surface => isDark ? const Color(0xFF1E1E1E) : Colors.white;
+  Color get title => isDark ? Colors.white : const Color(0xFF111827);
+  Color get bodyText => isDark ? Colors.white70 : const Color(0xFF222222);
+  Color get backButtonBg =>
+      isDark ? const Color(0xFF3A2022) : const Color(0xFFFFE5E7);
+  Color get filterBar =>
+      isDark ? const Color(0xFF1A1416) : const Color(0xFFFFF4F4);
+  Color get chipBg => isDark ? const Color(0xFF1E1E1E) : Colors.white;
+  Color get countBg =>
+      isDark ? const Color(0xFF3A2022) : const Color(0xFFFFE5E5);
+  Color get emptyText => isDark ? Colors.white54 : Colors.grey;
+}
 
 class ProductsScreen extends StatelessWidget {
   const ProductsScreen({super.key});
@@ -25,10 +48,17 @@ class _ProductsView extends StatelessWidget {
   const _ProductsView();
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<CustomThemeProvider>().isDarkMode;
+    final p = _Palette(isDark);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
+      backgroundColor: p.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: p.surface,
+        surfaceTintColor: Colors.transparent,
+        systemOverlayStyle: isDark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
         elevation: 0,
         scrolledUnderElevation: 0,
         toolbarHeight: 64,
@@ -36,8 +66,8 @@ class _ProductsView extends StatelessWidget {
         leading: Padding(
           padding: const EdgeInsets.only(left: 10, top: 12, bottom: 12),
           child: Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFE5E7),
+            decoration: BoxDecoration(
+              color: p.backButtonBg,
               shape: BoxShape.circle,
             ),
             child: IconButton(
@@ -57,7 +87,7 @@ class _ProductsView extends StatelessWidget {
         title: AppText(
           "My Products",
           style: TextStyle(
-            color: Color(0xFF111827),
+            color: p.title,
             fontSize: AppFontSize.fontSize22,
             fontWeight: FontWeight.w500,
           ),
@@ -109,14 +139,14 @@ class _ProductsView extends StatelessWidget {
                 // Description
                 Container(
                   width: double.infinity,
-                  color: Colors.white,
+                  color: p.surface,
                   padding: const EdgeInsets.fromLTRB(10, 7, 10, 9),
                   child: AppText(
                     "Everything you offer, in one place, shown on your store page and Near Me listing.",
                     style: TextStyle(
                       fontSize: AppFontSize.fontSize14,
                       fontWeight: FontWeight.w400,
-                      color: Color(0xFF222222),
+                      color: p.bodyText,
                       height: 1.25,
                     ),
                   ),
@@ -125,21 +155,23 @@ class _ProductsView extends StatelessWidget {
                 // Filter section
                 Container(
                   width: double.infinity,
-                  color: const Color(0xFFFFF4F4),
+                  color: p.filterBar,
                   padding: const EdgeInsets.fromLTRB(10, 7, 10, 9),
                   child: Row(
                     children: [
-                      _filterChip('ALL', provider, count: provider.allCount),
+                      _filterChip('ALL', provider, p, count: provider.allCount),
                       const SizedBox(width: 7),
                       _filterChip(
                         'PRODUCTS',
                         provider,
+                        p,
                         count: provider.productsCount,
                       ),
                       const SizedBox(width: 7),
                       _filterChip(
                         'SERVICES',
                         provider,
+                        p,
                         count: provider.servicesCount,
                       ),
                     ],
@@ -151,127 +183,149 @@ class _ProductsView extends StatelessWidget {
                 Expanded(
                   child: provider.filteredProducts.isEmpty
                       ? Center(
-                          child: AppText(
-                            "No products found",
-                            style: TextStyle(color: Colors.grey, fontSize: 13),
-                          ),
-                        )
+                    child: AppText(
+                      "No products found",
+                      style: TextStyle(color: p.emptyText, fontSize: 13),
+                    ),
+                  )
                       : GridView.builder(
-                          padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
-                          physics: const BouncingScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount:
-                                2, // ஒரு வளைக்கு எத்தனை கார்டுகள் இருக்க வேண்டும்
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                            childAspectRatio:
-                                0.68, // இந்த மதிப்பை 0.7 அல்லது 0.65 என்று குறைத்தால் கார்டு இன்னும் அகலமாகவும் பெரிதாகவும் தோன்றும்
-                          ),
-                          itemCount: provider.filteredProducts.length,
-                          itemBuilder: (context, index) {
-                            final item = provider.filteredProducts[index];
+                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
+                    physics: const BouncingScrollPhysics(),
+                    gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                      // Cards per row.
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      // Lower value (0.65 / 0.7) makes cards bigger.
+                      childAspectRatio: 0.68,
+                    ),
+                    itemCount: provider.filteredProducts.length,
+                    itemBuilder: (context, index) {
+                      final item = provider.filteredProducts[index];
 
-                            return ProductCard(
-                              item: item,
-                              onToggleActive: (value) async {
-                                final id = item.uid?.toString() ?? '';
+                      return ProductCard(
+                        item: item,
+                        onToggleActive: (value) async {
+                          final id = item.uid?.toString() ?? '';
 
-                                if (id.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Product ID not found'),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                final success = await provider.setProductActive(
-                                  id: id,
-                                  isActive: value,
-                                );
-
-                                if (!context.mounted) return;
-
-                                if (!success) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        provider.errorMessage ??
-                                            'Unable to update status',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-
-                              // Edit
-                              onEdit: () {
-                                showAddProductServiceSheet(
-                                  context,
-                                  product: item,
-                                );
-                              },
-
-                              // Delete
-                              onDelete: () async {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (dialogContext) => AlertDialog(
-                                    title: const Text('Delete product?'),
-                                    content: Text(
-                                      'Are you sure you want to delete ${item.name ?? 'this item'}?',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(dialogContext, false),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(dialogContext, true),
-                                        child: const Text(
-                                          'Delete',
-                                          style: TextStyle(color: Colors.red),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-
-                                if (confirm != true || !context.mounted) return;
-
-                                final id = item.id?.toString() ?? '';
-
-                                if (id.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Product ID not found'),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                final success = await provider.deleteProduct(
-                                  id,
-                                );
-
-                                if (!context.mounted) return;
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      success
-                                          ? 'Product deleted successfully'
-                                          : provider.errorMessage ??
-                                                'Unable to delete product',
-                                    ),
-                                  ),
-                                );
-                              },
+                          if (id.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Product ID not found'),
+                              ),
                             );
-                          },
-                        ),
+                            return;
+                          }
+
+                          final success = await provider.setProductActive(
+                            id: id,
+                            isActive: value,
+                          );
+
+                          if (!context.mounted) return;
+
+                          if (!success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  provider.errorMessage ??
+                                      'Unable to update status',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+
+                        // Edit
+                        onEdit: () {
+                          showAddProductServiceSheet(
+                            context,
+                            product: item,
+                          );
+                        },
+
+                        // Delete
+                        onDelete: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (dialogContext) => AlertDialog(
+                              backgroundColor: p.surface,
+                              surfaceTintColor: Colors.transparent,
+                              title: Text(
+                                'Delete product?',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white
+                                      : Colors.black87,
+                                ),
+                              ),
+                              content: Text(
+                                'Are you sure you want to delete ${item.name ?? 'this item'}?',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black54,
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, false),
+                                  child: Text(
+                                    'Cancel',
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, true),
+                                  child: const Text(
+                                    'Delete',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirm != true || !context.mounted) return;
+
+                          final id = item.id?.toString() ?? '';
+
+                          if (id.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Product ID not found'),
+                              ),
+                            );
+                            return;
+                          }
+
+                          final success = await provider.deleteProduct(
+                            id,
+                          );
+
+                          if (!context.mounted) return;
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? 'Product deleted successfully'
+                                    : provider.errorMessage ??
+                                    'Unable to delete product',
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
               ],
             );
@@ -282,10 +336,11 @@ class _ProductsView extends StatelessWidget {
   }
 
   Widget _filterChip(
-    String text,
-    ProductsProvider provider, {
-    required int count,
-  }) {
+      String text,
+      ProductsProvider provider,
+      _Palette p, {
+        required int count,
+      }) {
     final selected = provider.selectedFilter == text;
 
     return GestureDetector(
@@ -294,7 +349,7 @@ class _ProductsView extends StatelessWidget {
         height: 29,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFED1C24) : Colors.white,
+          color: selected ? const Color(0xFFED1C24) : p.chipBg,
           borderRadius: BorderRadius.circular(9),
           border: Border.all(color: const Color(0xFFED1C24), width: 1),
         ),
@@ -313,7 +368,7 @@ class _ProductsView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
-                color: selected ? Colors.white : const Color(0xFFFFE5E5),
+                color: selected ? Colors.white : p.countBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: AppText(
@@ -332,9 +387,9 @@ class _ProductsView extends StatelessWidget {
   }
 
   Future<void> showAddProductServiceSheet(
-    BuildContext context, {
-    ProductListData? product,
-  }) async {
+      BuildContext context, {
+        ProductListData? product,
+      }) async {
     final productsProvider = context.read<ProductsProvider>();
 
     debugPrint('6. OPENING ADD SHEET');

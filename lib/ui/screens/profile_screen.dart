@@ -100,10 +100,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   left: 0,
                   right: 0,
                   height: 300.h,
-                  child: Image.asset(
-                    "assets/images/plan_gradient.png",
-                    fit: BoxFit.cover,
-                    alignment: Alignment.topCenter,
+                  child: _profileBackground(
+                    isDark,
+                    Theme.of(context).scaffoldBackgroundColor,
                   ),
                 ),
 
@@ -129,10 +128,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 10.h,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: isDark
+                                    ? const Color(0xFF1A1A1A)
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(28.r),
                                 border: Border.all(
-                                  color: const Color(0xFFFFDADA),
+                                  color: isDark
+                                      ? const Color(0xFF3A2022)
+                                      : const Color(0xFFFFDADA),
                                   width: 1,
                                 ),
                               ),
@@ -145,9 +148,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                                   Row(
                                     mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                    MainAxisAlignment.spaceBetween,
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.center,
+                                    CrossAxisAlignment.center,
                                     children: [
                                       AppText(
                                         'Great News!',
@@ -155,7 +158,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           fontSize: 24.sp,
                                           height: 1.1,
                                           fontWeight: FontWeight.w700,
-                                          color: Colors.black,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black,
                                         ),
                                       ),
 
@@ -174,7 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                                   Row(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.center,
+                                    CrossAxisAlignment.center,
                                     children: [
                                       AppText(
                                         '20',
@@ -195,7 +200,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             fontSize: 13.sp,
                                             height: 1.18,
                                             fontWeight: FontWeight.w600,
-                                            color: Colors.black,
+                                            color: isDark
+                                                ? Colors.white
+                                                : Colors.black,
                                           ),
                                         ),
                                       ),
@@ -213,7 +220,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       fontSize: AppFontSize.fontSize13,
                                       height: 1.25,
                                       fontWeight: FontWeight.w400,
-                                      color: const Color(0xFF555555),
+                                      color: isDark
+                                          ? Colors.white70
+                                          : const Color(0xFF555555),
                                     ),
                                   ),
 
@@ -241,7 +250,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             ),
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(10.r),
+                                              BorderRadius.circular(10.r),
                                             ),
                                           ),
                                           child: AppText(
@@ -269,7 +278,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           padding: EdgeInsets.zero,
                                           minimumSize: Size.zero,
                                           tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
+                                          MaterialTapTargetSize.shrinkWrap,
                                         ),
                                         child: AppText(
                                           'CREDIT USAGE',
@@ -381,7 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     title: 'My Profile',
                                     imagePath: "assets/images/personalcard.png",
                                     background: isDark
-                                        ? const Color(0xFFEFF9FF)
+                                        ? const Color(0xFF1B2A38)
                                         : const Color(0xFFD3EEFD),
                                     onTap: () {
                                       Navigator.pushNamed(
@@ -397,7 +406,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   child: _buildActionCard(
                                     title: 'My Downloads',
                                     imagePath:
-                                        "assets/images/document_download.png",
+                                    "assets/images/document_download.png",
                                     background: isDark
                                         ? const Color(0xFF241D32)
                                         : const Color(0xFFF0EAFE),
@@ -428,8 +437,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     final planProvider = PlanProvider();
 
                                     final bool hasActivePlan =
-                                        await planProvider
-                                            .fetchMySubscription();
+                                    await planProvider
+                                        .fetchMySubscription();
 
                                     if (!context.mounted) return;
 
@@ -495,10 +504,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         gradient: isDark
                                             ? null
                                             : LinearGradient(
-                                                colors: item.gradientColors,
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                              ),
+                                          colors: item.gradientColors,
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
                                         borderRadius: BorderRadius.circular(
                                           10.r,
                                         ),
@@ -506,13 +515,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           color: isDark
                                               ? Colors.white10
                                               : Colors.black.withValues(
-                                                  alpha: .05,
-                                                ),
+                                            alpha: .05,
+                                          ),
                                         ),
                                       ),
                                       child: Column(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                        MainAxisAlignment.center,
                                         children: [
                                           Image.asset(
                                             item.iconPath,
@@ -561,8 +570,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     final planProvider = PlanProvider();
 
                                     final bool hasActivePlan =
-                                        await planProvider
-                                            .fetchMySubscription();
+                                    await planProvider
+                                        .fetchMySubscription();
 
                                     if (!context.mounted) return;
 
@@ -627,7 +636,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   title: "Preferred Languages",
                                   subtitle: "English, தமிழ், हिंदी",
                                   iconAsset:
-                                      "assets/images/message_favorite.png",
+                                  "assets/images/message_favorite.png",
                                   isDark: isDark,
                                   onTap: () async {
                                     await provider.fetchLanguage();
@@ -767,24 +776,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 onTap: provider.isDeactivateLoading
                                     ? null
                                     : () {
-                                        provider.showDeactivateDialog(context);
-                                      },
+                                  provider.showDeactivateDialog(context);
+                                },
                                 trailingWidget: provider.isDeactivateLoading
                                     ? SizedBox(
-                                        width: 20.w,
-                                        height: 20.w,
-                                        child: const CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.red,
-                                        ),
-                                      )
+                                  width: 20.w,
+                                  height: 20.w,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.red,
+                                  ),
+                                )
                                     : Icon(
-                                        Icons.chevron_right_rounded,
-                                        color: isDark
-                                            ? Colors.white70
-                                            : Colors.black87,
-                                        size: 20.sp,
-                                      ),
+                                  Icons.chevron_right_rounded,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black87,
+                                  size: 20.sp,
+                                ),
                                 isLast: true,
                               ),
                             ],
@@ -854,16 +863,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 context: parentContext,
                                 builder: (dialogContext) {
                                   return AlertDialog(
-                                    title: const AppText("Logout"),
-                                    content: const AppText(
+                                    backgroundColor: isDark
+                                        ? const Color(0xFF1E1E1E)
+                                        : Colors.white,
+                                    surfaceTintColor: Colors.transparent,
+                                    title: AppText(
+                                      "Logout",
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black87,
+                                      ),
+                                    ),
+                                    content: AppText(
                                       "Are you sure you want to logout?",
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? Colors.white70
+                                            : Colors.black54,
+                                      ),
                                     ),
                                     actions: [
                                       TextButton(
                                         onPressed: () {
                                           Navigator.pop(dialogContext);
                                         },
-                                        child: const AppText("Cancel"),
+                                        child: AppText(
+                                          "Cancel",
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white
+                                                : Colors.black87,
+                                          ),
+                                        ),
                                       ),
                                       TextButton(
                                         onPressed: () async {
@@ -1000,22 +1032,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   alignment: Alignment.center,
                   child: iconAsset != null
                       ? Image.asset(
-                          iconAsset,
-                          width: 16.w,
-                          height: 16.w,
-                          errorBuilder: (_, __, ___) {
-                            return Icon(
-                              icon ?? Icons.tune_rounded,
-                              size: 16.sp,
-                              color: iconColor ?? const Color(0xFFE53935),
-                            );
-                          },
-                        )
+                    iconAsset,
+                    width: 16.w,
+                    height: 16.w,
+                    errorBuilder: (_, __, ___) {
+                      return Icon(
+                        icon ?? Icons.tune_rounded,
+                        size: 16.sp,
+                        color: iconColor ?? const Color(0xFFE53935),
+                      );
+                    },
+                  )
                       : Icon(
-                          icon ?? Icons.tune_rounded,
-                          size: 16.sp,
-                          color: iconColor ?? const Color(0xFFE53935),
-                        ),
+                    icon ?? Icons.tune_rounded,
+                    size: 16.sp,
+                    color: iconColor ?? const Color(0xFFE53935),
+                  ),
                 ),
 
                 SizedBox(width: 9.w),
@@ -1093,12 +1125,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         boxShadow: isDark
             ? null
             : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: .025),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .025),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1204,10 +1236,10 @@ Future<void> clearUserSession(BuildContext context) async {
 }
 
 void _showLanguagesBottomSheet(
-  BuildContext context,
-  ProfileScreenProvider provider,
-  bool isDark,
-) {
+    BuildContext context,
+    ProfileScreenProvider provider,
+    bool isDark,
+    ) {
   final languages = provider.plansData?.data ?? [];
 
   final List<String> selectedCodes = languages
@@ -1315,8 +1347,8 @@ void _showLanguagesBottomSheet(
                             color: isSelected
                                 ? const Color(0xFFFFD3D3)
                                 : (isDark
-                                      ? const Color(0xFF252525)
-                                      : Colors.white),
+                                ? const Color(0xFF252525)
+                                : Colors.white),
                             borderRadius: BorderRadius.circular(22.r),
                             border: !isSelected
                                 ? Border.all(color: const Color(0xFFFFD3D3))
@@ -1364,51 +1396,51 @@ void _showLanguagesBottomSheet(
                       onPressed: provider.isLanguageSaving
                           ? null
                           : () async {
-                              final List<String> selectedLanguageCodes =
-                                  List<String>.from(selectedCodes);
+                        final List<String> selectedLanguageCodes =
+                        List<String>.from(selectedCodes);
 
-                              debugPrint(
-                                'Selected language codes: '
-                                '$selectedLanguageCodes',
-                              );
+                        debugPrint(
+                          'Selected language codes: '
+                              '$selectedLanguageCodes',
+                        );
 
-                              final prefs =
-                                  await SharedPreferences.getInstance();
+                        final prefs =
+                        await SharedPreferences.getInstance();
 
-                              await prefs.setStringList(
-                                'selected_language_codes',
-                                selectedLanguageCodes,
-                              );
+                        await prefs.setStringList(
+                          'selected_language_codes',
+                          selectedLanguageCodes,
+                        );
 
-                              final success = await provider.saveLanguages(
-                                languages: selectedLanguageCodes,
-                                notifyPush: true,
-                                notifyEmail: false,
-                                notifyWhatsapp: true,
-                              );
+                        final success = await provider.saveLanguages(
+                          languages: selectedLanguageCodes,
+                          notifyPush: true,
+                          notifyEmail: false,
+                          notifyWhatsapp: true,
+                        );
 
-                              if (!sheetContext.mounted) return;
+                        if (!sheetContext.mounted) return;
 
-                              if (success) {
-                                Navigator.pop(sheetContext);
+                        if (success) {
+                          Navigator.pop(sheetContext);
 
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Language preferences updated successfully',
-                                    ),
-                                  ),
-                                );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Failed to update language preferences',
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Language preferences updated successfully',
+                              ),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Failed to update language preferences',
+                              ),
+                            ),
+                          );
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
@@ -1419,20 +1451,20 @@ void _showLanguagesBottomSheet(
                       ),
                       child: provider.isLanguageSaving
                           ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
                           : Text(
-                              'Save',
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                        'Save',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
 
@@ -1444,5 +1476,26 @@ void _showLanguagesBottomSheet(
         },
       );
     },
+  );
+}
+
+/// Header background. The light gradient image would cover the dark scaffold,
+/// so dark mode uses a dark gradient that fades into the scaffold colour.
+Widget _profileBackground(bool isDark, Color scaffoldColor) {
+  if (isDark) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [const Color(0xFF2A1A1C), scaffoldColor],
+        ),
+      ),
+    );
+  }
+  return Image.asset(
+    "assets/images/plan_gradient.png",
+    fit: BoxFit.cover,
+    alignment: Alignment.topCenter,
   );
 }
