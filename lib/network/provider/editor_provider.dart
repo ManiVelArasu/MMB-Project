@@ -425,44 +425,50 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   String? _selectedMusicPath;
   String? _selectedMusicTitle;
   bool _isEditorMusicPlaying = false;
-  Duration _musicPosition = Duration.zero;
-  Duration _musicDuration = Duration.zero;
+  // Position/duration tick ~5 times a second while playing. They live in
+  // ValueNotifiers (not notifyListeners) so the whole editor does not rebuild
+  // and re-encode the page JSON for autosave on every tick.
+  final ValueNotifier<Duration> musicPositionNotifier =
+  ValueNotifier<Duration>(Duration.zero);
+  final ValueNotifier<Duration> musicDurationNotifier =
+  ValueNotifier<Duration>(Duration.zero);
 
   String? get selectedMusicPath => _selectedMusicPath;
   String? get selectedMusicTitle => _selectedMusicTitle;
   bool get isEditorMusicPlaying => _isEditorMusicPlaying;
-  Duration get musicPosition => _musicPosition;
-  Duration get musicDuration => _musicDuration;
+  Duration get musicPosition => musicPositionNotifier.value;
+  Duration get musicDuration => musicDurationNotifier.value;
 
   void setSelectedMusic({required String path, required String title}) {
     _selectedMusicPath = path;
     _selectedMusicTitle = title;
-    _musicPosition = Duration.zero;
-    _musicDuration = Duration.zero;
+    musicPositionNotifier.value = Duration.zero;
+    musicDurationNotifier.value = Duration.zero;
     notifyListeners();
   }
 
   void setMusicPlaying(bool value) {
+    if (_isEditorMusicPlaying == value) return;
     _isEditorMusicPlaying = value;
     notifyListeners();
   }
 
   void setMusicPosition(Duration value) {
-    _musicPosition = value;
-    notifyListeners();
+    if (_isDisposed) return;
+    musicPositionNotifier.value = value;
   }
 
   void setMusicDuration(Duration value) {
-    _musicDuration = value;
-    notifyListeners();
+    if (_isDisposed) return;
+    musicDurationNotifier.value = value;
   }
 
   void clearMusic() {
     _selectedMusicPath = null;
     _selectedMusicTitle = null;
     _isEditorMusicPlaying = false;
-    _musicPosition = Duration.zero;
-    _musicDuration = Duration.zero;
+    musicPositionNotifier.value = Duration.zero;
+    musicDurationNotifier.value = Duration.zero;
     notifyListeners();
   }
 
@@ -2826,6 +2832,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    musicPositionNotifier.dispose();
+    musicDurationNotifier.dispose();
     super.dispose();
   }
 

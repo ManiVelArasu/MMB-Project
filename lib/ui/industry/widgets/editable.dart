@@ -38,7 +38,7 @@ class EditableItemWidget extends StatelessWidget {
     return Selector<EditorProvider, _ItemViewState>(
       selector: (_, provider) {
         final currentItem = provider.items.firstWhere(
-              (e) => e.id == item.id,
+          (e) => e.id == item.id,
           orElse: () => item,
         );
         return _ItemViewState(
@@ -63,9 +63,9 @@ class EditableItemWidget extends StatelessWidget {
             .toLowerCase();
         final isTextItem =
             normalizedItemType == 'text' ||
-                normalizedItemType == 'textbox' ||
-                normalizedItemType == 'i-text' ||
-                normalizedItemType == 'itext';
+            normalizedItemType == 'textbox' ||
+            normalizedItemType == 'i-text' ||
+            normalizedItemType == 'itext';
 
         // Text is sized from its real measured layout (same helper the
         // selection overlay uses) so the rotation pivot, the blue box and the
@@ -80,7 +80,20 @@ class EditableItemWidget extends StatelessWidget {
             ? textBox.height
             : math.max(1.0, currentItem.height).toDouble();
 
-        return KeyedSubtree(
+        // Fabric `clipPath` with absolutePositioned: the clip window is fixed
+        // on the canvas while the image can be dragged/resized behind it.
+        Map? absoluteClip;
+        if (currentItem.type == 'image' && !isBackground) {
+          final rawObject = provider.templateRawObject(currentItem.id ?? '');
+          final clip = rawObject?['clipPath'];
+          if (clip is Map &&
+              clip['absolutePositioned'] == true &&
+              clip['inverted'] != true) {
+            absoluteClip = clip;
+          }
+        }
+
+        final itemWidget = KeyedSubtree(
           key: ValueKey(currentItem.id),
           child: GestureDetector(
             behavior: isTextItem
@@ -140,6 +153,12 @@ class EditableItemWidget extends StatelessWidget {
             ),
           ),
         );
+
+        if (absoluteClip == null) return itemWidget;
+        return ClipPath(
+          clipper: _FabricAbsoluteClipper(absoluteClip, currentItem.position),
+          child: itemWidget,
+        );
       },
     );
   }
@@ -176,10 +195,10 @@ class EditableItemWidget extends StatelessWidget {
   /// [widthOverride] lets a resize gesture ask "how tall would it be at this
   /// wrap width?" before committing it.
   static Size measureTextBox(
-      EditorItem item,
-      EditorProvider provider, {
-        double? widthOverride,
-      }) {
+    EditorItem item,
+    EditorProvider provider, {
+    double? widthOverride,
+  }) {
     final multiline = isMultilineText(item);
     final boxWidth = widthOverride ?? item.width;
     final wrapWidth = multiline && boxWidth > 12.0 ? boxWidth : double.infinity;
@@ -198,19 +217,19 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   static Widget buildStandaloneMediaContent(
-      BuildContext context,
-      EditorItem item,
-      ) {
+    BuildContext context,
+    EditorItem item,
+  ) {
     final widget = EditableItemWidget(item: item, onItemSelected: (_, __) {});
     return widget._buildItemContent(item, context, isBackground: true);
   }
 
   Future<void> _showTextEditorDialog(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      String initialText,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+    String initialText,
+  ) async {
     final matchingItems = provider.items.where((e) => e.id == itemId);
 
     if (itemId.isEmpty || matchingItems.isEmpty) {
@@ -381,7 +400,7 @@ class EditableItemWidget extends StatelessWidget {
   List<double> _mixMatrices(List<double> a, List<double> b, double amount) {
     return List<double>.generate(
       20,
-          (i) => a[i] + (b[i] - a[i]) * amount,
+      (i) => a[i] + (b[i] - a[i]) * amount,
       growable: false,
     );
   }
@@ -668,10 +687,10 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _buildItemContent(
-      EditorItem item,
-      BuildContext context, {
-        bool isBackground = false,
-      }) {
+    EditorItem item,
+    BuildContext context, {
+    bool isBackground = false,
+  }) {
     if (item.type == 'video') {
       return SizedBox(
         width: item.width,
@@ -703,29 +722,29 @@ class EditableItemWidget extends StatelessWidget {
 
       final image = isHttp
           ? Image.network(
-        source,
-        fit: isBackground ? BoxFit.cover : BoxFit.fill,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, error, stackTrace) {
-          debugPrint('Background image error: $error');
-          return const SizedBox.shrink();
-        },
-      )
+              source,
+              fit: isBackground ? BoxFit.cover : BoxFit.fill,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, error, stackTrace) {
+                debugPrint('Background image error: $error');
+                return const SizedBox.shrink();
+              },
+            )
           : Image.file(
-        File(
-          source.startsWith('file://')
-              ? source.replaceFirst('file://', '')
-              : source,
-        ),
-        fit: isBackground ? BoxFit.cover : BoxFit.fill,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, error, stackTrace) {
-          debugPrint('Local image error: $error');
-          return const SizedBox.shrink();
-        },
-      );
+              File(
+                source.startsWith('file://')
+                    ? source.replaceFirst('file://', '')
+                    : source,
+              ),
+              fit: isBackground ? BoxFit.cover : BoxFit.fill,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, error, stackTrace) {
+                debugPrint('Local image error: $error');
+                return const SizedBox.shrink();
+              },
+            );
 
       final provider = context.read<EditorProvider>();
       final id = item.id ?? '';
@@ -764,7 +783,7 @@ class EditableItemWidget extends StatelessWidget {
             : Color.fromARGB(255, 35, 110, 255);
         rendered = ColorFiltered(
           colorFilter: ColorFilter.mode(
-            tintColor.withOpacity(tint.abs() / 100.0 * 0.45),
+            tintColor.withValues(alpha: tint.abs() / 100.0 * 0.45),
             BlendMode.color,
           ),
           child: rendered,
@@ -781,6 +800,23 @@ class EditableItemWidget extends StatelessWidget {
       final maskUrl = provider.imageMaskUrl(id);
       if (maskUrl != null && maskUrl.trim().isNotEmpty) {
         rendered = _NetworkAlphaMask(maskUrl: maskUrl, child: rendered);
+      }
+
+      // Fabric.js `clipPath` that moves WITH the image (not absolutePositioned).
+      // Canvas-fixed clips are applied in build() instead, so dragging the
+      // image slides it behind a fixed window like the web editor does.
+      if (!isBackground) {
+        final rawObject = provider.templateRawObject(id);
+        final clip = rawObject?['clipPath'];
+        if (rawObject != null &&
+            clip is Map &&
+            clip['inverted'] != true &&
+            clip['absolutePositioned'] != true) {
+          rendered = ClipPath(
+            clipper: _FabricClipPathClipper(rawObject, clip),
+            child: rendered,
+          );
+        }
       }
 
       return SizedBox.expand(child: rendered);
@@ -905,16 +941,16 @@ class _ItemViewState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is _ItemViewState &&
-              runtimeType == other.runtimeType &&
-              currentItem == other.currentItem &&
-              isSelected == other.isSelected &&
-              flipX == other.flipX &&
-              flipY == other.flipY &&
-              filterIntensity == other.filterIntensity &&
-              tint == other.tint &&
-              blur == other.blur &&
-              maskUrl == other.maskUrl;
+      other is _ItemViewState &&
+          runtimeType == other.runtimeType &&
+          currentItem == other.currentItem &&
+          isSelected == other.isSelected &&
+          flipX == other.flipX &&
+          flipY == other.flipY &&
+          filterIntensity == other.filterIntensity &&
+          tint == other.tint &&
+          blur == other.blur &&
+          maskUrl == other.maskUrl;
 
   @override
   int get hashCode => Object.hash(
@@ -1002,8 +1038,8 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
       final trimmedText = utf8.decode(bytes, allowMalformed: true).trimLeft();
       final isSvg =
           trimmedText.startsWith('<svg') ||
-              (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
-              trimmedText.startsWith('<!DOCTYPE svg');
+          (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
+          trimmedText.startsWith('<!DOCTYPE svg');
 
       ui.Image decodedImage;
       if (isSvg) {
@@ -1027,7 +1063,7 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
               .replaceAll(RegExp(r'\\s+'), ' ');
           throw FormatException(
             'Mask response is not SVG or a supported raster image. '
-                'Response begins with: $preview',
+            'Response begins with: $preview',
           );
         }
         final pngBytes = Uint8List.fromList(img.encodePng(decoded));
@@ -1231,4 +1267,224 @@ class _FabricShapePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _FabricShapePainter oldDelegate) =>
       !mapEquals(oldDelegate.raw, raw) || oldDelegate.fillColor != fillColor;
+}
+
+/// Applies a Fabric.js `clipPath` (rect / circle / ellipse / path) to an image
+/// so the app crops it exactly like the web editor does.
+///
+/// Fabric positions a clipPath in the object's own un-scaled, centre-origin
+/// coordinate space (or in canvas space when `absolutePositioned` is true).
+/// We build the clip shape there and map that space onto the widget box.
+class _FabricClipPathClipper extends CustomClipper<Path> {
+  _FabricClipPathClipper(this.object, this.clip);
+
+  final Map object;
+  final Map clip;
+
+  static double _n(dynamic v, [double fallback = 0]) =>
+      v is num ? v.toDouble() : double.tryParse('$v') ?? fallback;
+
+  /// 0 = left/top, 0.5 = centre, 1 = right/bottom.
+  static double _origin(dynamic v, double fallback) {
+    if (v is num) return v.toDouble();
+    switch ('$v') {
+      case 'center':
+        return 0.5;
+      case 'right':
+      case 'bottom':
+        return 1;
+      case 'left':
+      case 'top':
+        return 0;
+    }
+    return fallback;
+  }
+
+  /// Matrix placing a Fabric object (centre-origin local space) into its parent.
+  static Matrix4 _placement(Map o, double w, double h) {
+    final sx = _n(o['scaleX'], 1);
+    final sy = _n(o['scaleY'], 1);
+    final angle = _n(o['angle']) * math.pi / 180;
+    final ox = _origin(o['originX'], 0);
+    final oy = _origin(o['originY'], 0);
+    // Offset from the origin point to the object's centre, then rotated.
+    final dx = (0.5 - ox) * w * sx;
+    final dy = (0.5 - oy) * h * sy;
+    final cosA = math.cos(angle), sinA = math.sin(angle);
+    final cx = _n(o['left']) + dx * cosA - dy * sinA;
+    final cy = _n(o['top']) + dx * sinA + dy * cosA;
+    return Matrix4.translationValues(cx, cy, 0)
+      ..rotateZ(angle)
+      ..scale(sx, sy, 1);
+  }
+
+  static Path _buildPath(Map c, void Function(double w, double h) setSize) {
+    final type = (c['type'] ?? '').toString().toLowerCase();
+    if (type == 'circle') {
+      final r = _n(c['radius']);
+      setSize(r * 2, r * 2);
+      return Path()..addOval(
+        Rect.fromCenter(center: Offset.zero, width: r * 2, height: r * 2),
+      );
+    }
+    if (type == 'ellipse') {
+      final rx = _n(c['rx']), ry = _n(c['ry']);
+      setSize(rx * 2, ry * 2);
+      return Path()..addOval(
+        Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2),
+      );
+    }
+    if (type == 'path' && c['path'] is List) {
+      final p = Path();
+      double x = 0, y = 0, sx0 = 0, sy0 = 0;
+      for (final e in c['path'] as List) {
+        if (e is! List || e.isEmpty) continue;
+        final cmd = e.first.toString();
+        final rel = cmd == cmd.toLowerCase();
+        double v(int i) => i < e.length ? _n(e[i]) : 0;
+        switch (cmd.toUpperCase()) {
+          case 'M':
+            x = rel ? x + v(1) : v(1);
+            y = rel ? y + v(2) : v(2);
+            sx0 = x;
+            sy0 = y;
+            p.moveTo(x, y);
+            break;
+          case 'L':
+            x = rel ? x + v(1) : v(1);
+            y = rel ? y + v(2) : v(2);
+            p.lineTo(x, y);
+            break;
+          case 'H':
+            x = rel ? x + v(1) : v(1);
+            p.lineTo(x, y);
+            break;
+          case 'V':
+            y = rel ? y + v(1) : v(1);
+            p.lineTo(x, y);
+            break;
+          case 'C':
+            final ax = rel ? x : 0.0, ay = rel ? y : 0.0;
+            p.cubicTo(
+              ax + v(1),
+              ay + v(2),
+              ax + v(3),
+              ay + v(4),
+              ax + v(5),
+              ay + v(6),
+            );
+            x = ax + v(5);
+            y = ay + v(6);
+            break;
+          case 'Q':
+            final qx = rel ? x : 0.0, qy = rel ? y : 0.0;
+            p.quadraticBezierTo(qx + v(1), qy + v(2), qx + v(3), qy + v(4));
+            x = qx + v(3);
+            y = qy + v(4);
+            break;
+          case 'Z':
+            p.close();
+            x = sx0;
+            y = sy0;
+            break;
+        }
+      }
+      final bounds = p.getBounds();
+      final w = _n(c['width'], bounds.width);
+      final h = _n(c['height'], bounds.height);
+      setSize(w, h);
+      // Fabric draws a path shifted by -pathOffset (its bbox centre).
+      final po = c['pathOffset'];
+      final pox = po is Map ? _n(po['x'], bounds.center.dx) : bounds.center.dx;
+      final poy = po is Map ? _n(po['y'], bounds.center.dy) : bounds.center.dy;
+      return p.shift(Offset(-pox, -poy));
+    }
+    // rect (default)
+    final w = _n(c['width']), h = _n(c['height']);
+    setSize(w, h);
+    final rx = _n(c['rx']).clamp(0.0, w / 2);
+    final ry = _n(c['ry'], rx).clamp(0.0, h / 2);
+    return Path()..addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: Offset.zero, width: w, height: h),
+        Radius.elliptical(rx, ry),
+      ),
+    );
+  }
+
+  @override
+  Path getClip(Size size) {
+    final full = Path()..addRect(Offset.zero & size);
+    try {
+      final ow = _n(object['width'], size.width).abs();
+      final oh = _n(object['height'], size.height).abs();
+      if (ow <= 0 || oh <= 0 || size.isEmpty) return full;
+
+      double cw = 0, ch = 0;
+      final shape = _buildPath(clip, (w, h) {
+        cw = w;
+        ch = h;
+      });
+
+      // clip -> image-local space (clip moves with the image)
+      final m = _placement(clip, cw, ch);
+
+      // local (centre-origin, ow x oh) -> widget box
+      final toWidget = Matrix4.diagonal3Values(
+        size.width / ow,
+        size.height / oh,
+        1,
+      )..translate(ow / 2, oh / 2);
+
+      final result = shape.transform((toWidget * m).storage);
+      final b = result.getBounds();
+      // Fail open: a degenerate clip must never hide the whole image.
+      if (b.isEmpty || !b.overlaps(Offset.zero & size)) return full;
+      return result;
+    } catch (_) {
+      return full;
+    }
+  }
+
+  @override
+  bool shouldReclip(covariant _FabricClipPathClipper oldClipper) =>
+      !identical(oldClipper.clip, clip) ||
+      !identical(oldClipper.object, object);
+}
+
+/// Fabric `clipPath` with `absolutePositioned: true`: the clip window lives in
+/// canvas coordinates and stays put while the image is moved, scaled or rotated
+/// behind it (exactly like the web editor).
+///
+/// This clipper is applied around the item, whose local origin is the item's
+/// canvas position, so the canvas-space shape is simply shifted by -position.
+class _FabricAbsoluteClipper extends CustomClipper<Path> {
+  _FabricAbsoluteClipper(this.clip, this.origin);
+
+  final Map clip;
+  final Offset origin;
+
+  @override
+  Path getClip(Size size) {
+    // Fail open: an unreadable clip must never hide the image.
+    final full = Path()
+      ..addRect(Rect.fromLTWH(-100000, -100000, 200000, 200000));
+    try {
+      double cw = 0, ch = 0;
+      final shape = _FabricClipPathClipper._buildPath(clip, (w, h) {
+        cw = w;
+        ch = h;
+      });
+      final m = _FabricClipPathClipper._placement(clip, cw, ch);
+      final result = shape.transform(m.storage).shift(-origin);
+      if (result.getBounds().isEmpty) return full;
+      return result;
+    } catch (_) {
+      return full;
+    }
+  }
+
+  @override
+  bool shouldReclip(covariant _FabricAbsoluteClipper oldClipper) =>
+      !identical(oldClipper.clip, clip) || oldClipper.origin != origin;
 }

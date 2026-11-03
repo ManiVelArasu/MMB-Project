@@ -84,7 +84,7 @@ class TemplateEditScreen extends StatelessWidget {
 
       resolvedCanvasHeight =
           double.tryParse(heightValue?.toString() ?? '') ??
-              resolvedCanvasHeight;
+          resolvedCanvasHeight;
 
       final uid = args['templateUid'] ?? args['template_uid'] ?? args['uid'];
 
@@ -143,6 +143,7 @@ class _EditorViewState extends State<EditorView> {
   StreamSubscription<Duration>? _musicPositionSubscription;
   StreamSubscription<Duration>? _musicDurationSubscription;
   StreamSubscription<void>? _musicCompleteSubscription;
+  StreamSubscription<PlayerState>? _musicStateSubscription;
 
   Size _getCanvasSize() {
     if (widget.canvasWidth != null &&
@@ -187,7 +188,7 @@ class _EditorViewState extends State<EditorView> {
       if (response.statusCode != 200) return null;
       final bytes = await response.fold<List<int>>(
         <int>[],
-            (buffer, data) => buffer..addAll(data),
+        (buffer, data) => buffer..addAll(data),
       );
       client.close();
       final dir = await getTemporaryDirectory();
@@ -202,10 +203,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _cropSelectedImage(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+  ) async {
     final matchingItems = provider.items.where((e) => e.id == itemId);
 
     if (matchingItems.isEmpty) return;
@@ -289,11 +290,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<bool> _confirmReplaceBackground(
-      BuildContext context,
-      EditorProvider provider,
-      String imageUrl, {
-        String? selectedItemId,
-      }) async {
+    BuildContext context,
+    EditorProvider provider,
+    String imageUrl, {
+    String? selectedItemId,
+  }) async {
     final replace = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -536,7 +537,7 @@ class _EditorViewState extends State<EditorView> {
           ),
           content: const AppText(
             'You have reached your Business Posts Templates limit. '
-                'Please upgrade your plan or buy a top-up to continue.',
+            'Please upgrade your plan or buy a top-up to continue.',
           ),
           actions: [
             TextButton(
@@ -657,7 +658,7 @@ class _EditorViewState extends State<EditorView> {
       // loaded canvas and JSON-encode it exactly once.
       final selectedSize =
           resizeCanvas ??
-              Size(editorProvider.canvasWidth, editorProvider.canvasHeight);
+          Size(editorProvider.canvasWidth, editorProvider.canvasHeight);
       if (selectedSize.width > 0 && selectedSize.height > 0) {
         editorProvider.setCanvasSize(selectedSize.width, selectedSize.height);
       }
@@ -801,10 +802,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _addRemoteShape(
-      BuildContext context,
-      EditorProvider provider,
-      String url,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    String url,
+  ) async {
     try {
       final uri = Uri.tryParse(url);
       if (uri == null || !uri.hasScheme) {
@@ -825,7 +826,7 @@ class _EditorViewState extends State<EditorView> {
 
         final bytes = await response.fold<List<int>>(
           <int>[],
-              (buffer, data) => buffer..addAll(data),
+          (buffer, data) => buffer..addAll(data),
         );
 
         final contentType =
@@ -916,10 +917,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _addLocalShape(
-      BuildContext context,
-      EditorProvider provider,
-      String assetPath,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    String assetPath,
+  ) async {
     try {
       final pictureInfo = await vg.loadPicture(
         svg.SvgAssetLoader(assetPath),
@@ -992,10 +993,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showFramesBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     int selectedTab = 0;
 
     final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
@@ -1135,93 +1136,93 @@ class _EditorViewState extends State<EditorView> {
                     Expanded(
                       child: selectedTab == 0
                           ? ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.only(
-                          right: 20,
-                          bottom: 12,
-                        ),
-                        itemCount: frames.length,
-                        separatorBuilder: (_, __) =>
-                        const SizedBox(width: 16),
-                        itemBuilder: (context, index) {
-                          final frame = frames[index];
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.only(
+                                right: 20,
+                                bottom: 12,
+                              ),
+                              itemCount: frames.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 16),
+                              itemBuilder: (context, index) {
+                                final frame = frames[index];
 
-                          return SizedBox(
-                            width: 105,
-                            child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      provider.setSelectedFrame(
-                                        frame['asset']!,
-                                      );
-                                      Navigator.pop(modalContext);
-                                    },
-                                    child: Container(
-                                      width: double.infinity,
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? const Color(0xFF2C2C2C)
-                                            : Colors.white,
-                                        border: Border.all(
-                                          color: cardBorder,
-                                        ),
-                                        borderRadius:
-                                        BorderRadius.circular(12),
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius:
-                                        BorderRadius.circular(11),
-                                        child: Image.asset(
-                                          frame['asset']!,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (
-                                              context,
-                                              error,
-                                              stackTrace,
-                                              ) {
-                                            return const Center(
-                                              child: Icon(
-                                                Icons.image_outlined,
-                                                size: 42,
-                                                color: Colors.blue,
-                                              ),
+                                return SizedBox(
+                                  width: 105,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            provider.setSelectedFrame(
+                                              frame['asset']!,
                                             );
+                                            Navigator.pop(modalContext);
                                           },
+                                          child: Container(
+                                            width: double.infinity,
+                                            decoration: BoxDecoration(
+                                              color: isDark
+                                                  ? const Color(0xFF2C2C2C)
+                                                  : Colors.white,
+                                              border: Border.all(
+                                                color: cardBorder,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(11),
+                                              child: Image.asset(
+                                                frame['asset']!,
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) {
+                                                      return const Center(
+                                                        child: Icon(
+                                                          Icons.image_outlined,
+                                                          size: 42,
+                                                          color: Colors.blue,
+                                                        ),
+                                                      );
+                                                    },
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
+                                      const SizedBox(height: 7),
+                                      AppText(
+                                        frame['name']!,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: textColor,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(height: 7),
-                                AppText(
-                                  frame['name']!,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: textColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      )
+                                );
+                              },
+                            )
                           : Center(
-                        child: AppText(
-                          'No animated frames available',
-                          style: TextStyle(
-                            color: mutedColor,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
+                              child: AppText(
+                                'No animated frames available',
+                                style: TextStyle(
+                                  color: mutedColor,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
                     ),
                   ],
                 ),
@@ -1289,10 +1290,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTemplatesBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1439,7 +1440,7 @@ class _EditorViewState extends State<EditorView> {
                                       scrollDirection: Axis.horizontal,
                                       itemCount: 3,
                                       separatorBuilder: (_, __) =>
-                                      const SizedBox(width: 10),
+                                          const SizedBox(width: 10),
                                       itemBuilder: (_, __) => Container(
                                         width: 108,
                                         decoration: BoxDecoration(
@@ -1461,10 +1462,10 @@ class _EditorViewState extends State<EditorView> {
                                       physics: const BouncingScrollPhysics(),
                                       itemCount: templates.length,
                                       separatorBuilder: (_, __) =>
-                                      const SizedBox(width: 10),
+                                          const SizedBox(width: 10),
                                       itemBuilder: (_, templateIndex) {
                                         final template =
-                                        templates[templateIndex];
+                                            templates[templateIndex];
                                         final uid = _templateStringValue(
                                           template,
                                           const [
@@ -1496,14 +1497,14 @@ class _EditorViewState extends State<EditorView> {
                                           onTap: uid.isEmpty
                                               ? null
                                               : () async {
-                                            Navigator.pop(modalContext);
-                                            await provider
-                                                .loadTemplateByUid(uid);
+                                                  Navigator.pop(modalContext);
+                                                  await provider
+                                                      .loadTemplateByUid(uid);
 
-                                            if (mounted) {
-                                              setState(() {});
-                                            }
-                                          },
+                                                  if (mounted) {
+                                                    setState(() {});
+                                                  }
+                                                },
                                           child: Container(
                                             width: 108,
                                             decoration: BoxDecoration(
@@ -1511,7 +1512,7 @@ class _EditorViewState extends State<EditorView> {
                                                   ? const Color(0xFF25272D)
                                                   : Colors.grey.shade100,
                                               borderRadius:
-                                              BorderRadius.circular(14),
+                                                  BorderRadius.circular(14),
                                               border: Border.all(
                                                 color: isDark
                                                     ? Colors.grey.shade800
@@ -1520,34 +1521,34 @@ class _EditorViewState extends State<EditorView> {
                                             ),
                                             child: ClipRRect(
                                               borderRadius:
-                                              BorderRadius.circular(14),
+                                                  BorderRadius.circular(14),
                                               child: imageUrl.isEmpty
                                                   ? const Center(
-                                                child: Icon(
-                                                  Icons.image_outlined,
-                                                  color: Colors.grey,
-                                                  size: 30,
-                                                ),
-                                              )
+                                                      child: Icon(
+                                                        Icons.image_outlined,
+                                                        color: Colors.grey,
+                                                        size: 30,
+                                                      ),
+                                                    )
                                                   : Image.network(
-                                                imageUrl,
-                                                cacheWidth: 800,
-                                                fit: BoxFit.cover,
-                                                errorBuilder:
-                                                    (
-                                                    _,
-                                                    __,
-                                                    ___,
-                                                    ) => const Center(
-                                                  child: Icon(
-                                                    Icons
-                                                        .broken_image_outlined,
-                                                    color:
-                                                    Colors.grey,
-                                                    size: 30,
-                                                  ),
-                                                ),
-                                              ),
+                                                      imageUrl,
+                                                      cacheWidth: 800,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder:
+                                                          (
+                                                            _,
+                                                            __,
+                                                            ___,
+                                                          ) => const Center(
+                                                            child: Icon(
+                                                              Icons
+                                                                  .broken_image_outlined,
+                                                              color:
+                                                                  Colors.grey,
+                                                              size: 30,
+                                                            ),
+                                                          ),
+                                                    ),
                                             ),
                                           ),
                                         );
@@ -1569,7 +1570,6 @@ class _EditorViewState extends State<EditorView> {
       },
     );
   }
-
 
   String _templateStringValue(dynamic item, List<String> keys) {
     if (item is Map) {
@@ -1644,10 +1644,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTextStylesBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1821,11 +1821,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showMediaBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark, {
-        bool elementsOnly = false,
-      }) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark, {
+    bool elementsOnly = false,
+  }) {
     int selectedTab = elementsOnly ? 1 : 0; // 0 uploads, 1 elements, 2 images
     String? expandedCategory;
     bool sheetOpen = true;
@@ -1855,11 +1855,11 @@ class _EditorViewState extends State<EditorView> {
     ];
 
     void loadCategory(
-        String query,
-        void Function(void Function()) setState, {
-          int limit = 4,
-          bool force = false,
-        }) {
+      String query,
+      void Function(void Function()) setState, {
+      int limit = 4,
+      bool force = false,
+    }) {
       if (query == 'shapes') {
         if (!force && provider.elementCategoryAssets(query).isNotEmpty) return;
         if (provider.isElementCategoryLoading(query)) return;
@@ -1949,10 +1949,10 @@ class _EditorViewState extends State<EditorView> {
             }
 
             Widget elementCard(
-                String url, {
-                  bool locked = false,
-                  VoidCallback? onTap,
-                }) {
+              String url, {
+              bool locked = false,
+              VoidCallback? onTap,
+            }) {
               final isLocalShape = url.startsWith('assets/shapes/');
               final bool isSvg = url
                   .toLowerCase()
@@ -1962,71 +1962,71 @@ class _EditorViewState extends State<EditorView> {
 
               final Widget preview = url.isEmpty
                   ? const Icon(
-                Icons.image_not_supported_outlined,
-                color: Colors.grey,
-              )
+                      Icons.image_not_supported_outlined,
+                      color: Colors.grey,
+                    )
                   : isLocalShape
                   ? SvgPicture.asset(
-                url,
-                fit: BoxFit.contain,
-                width: 58,
-                height: 58,
-                placeholderBuilder: (_) => const Center(
-                  child: SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 1.5),
-                  ),
-                ),
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.broken_image_outlined,
-                  color: Colors.grey,
-                ),
-              )
+                      url,
+                      fit: BoxFit.contain,
+                      width: 58,
+                      height: 58,
+                      placeholderBuilder: (_) => const Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                        ),
+                      ),
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.grey,
+                      ),
+                    )
                   : isSvg
                   ? SvgPicture.network(
-                url,
-                fit: BoxFit.contain,
-                placeholderBuilder: (_) => const Center(
-                  child: SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 1.5),
-                  ),
-                ),
-                errorBuilder: (_, __, ___) =>
-                const Icon(Icons.image_outlined, color: Colors.grey),
-              )
+                      url,
+                      fit: BoxFit.contain,
+                      placeholderBuilder: (_) => const Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                        ),
+                      ),
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.image_outlined, color: Colors.grey),
+                    )
                   : Image.network(
-                url,
-                cacheWidth: 800,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) =>
-                const Icon(Icons.image_outlined, color: Colors.grey),
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return const Center(
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 1.5),
-                    ),
-                  );
-                },
-              );
+                      url,
+                      cacheWidth: 800,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.image_outlined, color: Colors.grey),
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return const Center(
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 1.5),
+                          ),
+                        );
+                      },
+                    );
 
               return GestureDetector(
                 onTap: locked
                     ? null
                     : onTap ??
-                        () {
-                      if (isLocalShape) {
-                        _addLocalShape(modalContext, provider, url);
-                      } else {
-                        provider.addFreePikElement(url);
-                        Navigator.pop(modalContext);
-                      }
-                    },
+                          () {
+                            if (isLocalShape) {
+                              _addLocalShape(modalContext, provider, url);
+                            } else {
+                              provider.addFreePikElement(url);
+                              Navigator.pop(modalContext);
+                            }
+                          },
                 child: Stack(
                   children: [
                     Container(
@@ -2040,11 +2040,11 @@ class _EditorViewState extends State<EditorView> {
                         border: Border.all(
                           color: locked
                               ? (isDark
-                              ? Colors.orange.withValues(alpha: .55)
-                              : Colors.orange.shade200)
+                                    ? Colors.orange.withValues(alpha: .55)
+                                    : Colors.orange.shade200)
                               : (isDark
-                              ? Colors.white12
-                              : const Color(0xFFE8E8E8)),
+                                    ? Colors.white12
+                                    : const Color(0xFFE8E8E8)),
                         ),
                       ),
                       clipBehavior: Clip.antiAlias,
@@ -2084,15 +2084,15 @@ class _EditorViewState extends State<EditorView> {
             }
 
             Widget assetCategoryCard(
-                AssetCategoryItem item, {
-                  bool isShape = false,
-                }) {
+              AssetCategoryItem item, {
+              bool isShape = false,
+            }) {
               final previewUrl = item.previewKey;
 
               final rawAssetKey = item.s3Key.trim();
               final assetUrl =
-              rawAssetKey.startsWith('http://') ||
-                  rawAssetKey.startsWith('https://')
+                  rawAssetKey.startsWith('http://') ||
+                      rawAssetKey.startsWith('https://')
                   ? rawAssetKey
                   : '${FreePikService.assetCdnBaseUrl}/${rawAssetKey.replaceFirst(RegExp(r'^/+'), '')}';
 
@@ -2102,21 +2102,21 @@ class _EditorViewState extends State<EditorView> {
                 onTap: item.isLocked
                     ? null
                     : () async {
-                  if (isShape) {
-                    // Canvas-ல் original SVG-ஐ PNG-ஆக மாற்றி சேர்க்கவும்.
-                    await _addRemoteShape(
-                      modalContext,
-                      provider,
-                      assetUrl,
-                    );
-                  } else {
-                    provider.addImage(previewUrl, isLocal: false);
+                        if (isShape) {
+                          // Canvas-ல் original SVG-ஐ PNG-ஆக மாற்றி சேர்க்கவும்.
+                          await _addRemoteShape(
+                            modalContext,
+                            provider,
+                            assetUrl,
+                          );
+                        } else {
+                          provider.addImage(previewUrl, isLocal: false);
 
-                    if (modalContext.mounted) {
-                      Navigator.pop(modalContext);
-                    }
-                  }
-                },
+                          if (modalContext.mounted) {
+                            Navigator.pop(modalContext);
+                          }
+                        }
+                      },
               );
             }
 
@@ -2193,50 +2193,50 @@ class _EditorViewState extends State<EditorView> {
                     height: 58,
                     child: isLoading
                         ? const Center(
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 1.8,
-                        ),
-                      ),
-                    )
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.8,
+                              ),
+                            ),
+                          )
                         : !hasItems
                         ? const Center(
-                      child: AppText(
-                        'No items found',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 11,
-                        ),
-                      ),
-                    )
+                            child: AppText(
+                              'No items found',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 11,
+                              ),
+                            ),
+                          )
                         : Row(
-                      children: stickerProxy
-                          ? previewStickers.map((url) {
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                              right: 8,
-                            ),
-                            child: elementCard(url),
+                            children: stickerProxy
+                                ? previewStickers.map((url) {
+                                    return Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 8,
+                                        ),
+                                        child: elementCard(url),
+                                      ),
+                                    );
+                                  }).toList()
+                                : previewAssets.map((item) {
+                                    return Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 8,
+                                        ),
+                                        child: assetCategoryCard(
+                                          item,
+                                          isShape: query == 'shapes',
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
                           ),
-                        );
-                      }).toList()
-                          : previewAssets.map((item) {
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                              right: 8,
-                            ),
-                            child: assetCategoryCard(
-                              item,
-                              isShape: query == 'shapes',
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
                   ),
 
                   const SizedBox(height: 18),
@@ -2248,7 +2248,7 @@ class _EditorViewState extends State<EditorView> {
               if (expandedCategory != null) {
                 final query = expandedCategory!;
                 final title = categories.firstWhere(
-                      (e) => e['query'] == query,
+                  (e) => e['query'] == query,
                 )['title']!;
                 final bool stickerProxy = isStickerProxyCategory(query);
                 final List<AssetCategoryItem> assetItems = stickerProxy
@@ -2279,45 +2279,45 @@ class _EditorViewState extends State<EditorView> {
                     ),
                     Expanded(
                       child:
-                      (isStickerProxyCategory(query)
-                          ? (provider
-                          .isFreePikStickerCategoryLoading[query] ??
-                          false)
-                          : provider.isElementCategoryLoading(query))
+                          (isStickerProxyCategory(query)
+                              ? (provider
+                                        .isFreePikStickerCategoryLoading[query] ??
+                                    false)
+                              : provider.isElementCategoryLoading(query))
                           ? const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : (isStickerProxyCategory(query)
-                          ? stickerItems.isEmpty
-                          : assetItems.isEmpty)
+                                ? stickerItems.isEmpty
+                                : assetItems.isEmpty)
                           ? const Center(
-                        child: AppText(
-                          'No items found. Please try again.',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 13,
-                          ),
-                        ),
-                      )
+                              child: AppText(
+                                'No items found. Please try again.',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            )
                           : GridView.builder(
-                        padding: const EdgeInsets.fromLTRB(4, 4, 4, 20),
-                        gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                        ),
-                        itemCount: isStickerProxyCategory(query)
-                            ? stickerItems.length
-                            : assetItems.length,
-                        itemBuilder: (_, index) =>
-                        isStickerProxyCategory(query)
-                            ? elementCard(stickerItems[index])
-                            : assetCategoryCard(
-                          assetItems[index],
-                          isShape: query == 'shapes',
-                        ),
-                      ),
+                              padding: const EdgeInsets.fromLTRB(4, 4, 4, 20),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 4,
+                                    crossAxisSpacing: 10,
+                                    mainAxisSpacing: 10,
+                                  ),
+                              itemCount: isStickerProxyCategory(query)
+                                  ? stickerItems.length
+                                  : assetItems.length,
+                              itemBuilder: (_, index) =>
+                                  isStickerProxyCategory(query)
+                                  ? elementCard(stickerItems[index])
+                                  : assetCategoryCard(
+                                      assetItems[index],
+                                      isShape: query == 'shapes',
+                                    ),
+                            ),
                     ),
                   ],
                 );
@@ -2423,163 +2423,163 @@ class _EditorViewState extends State<EditorView> {
                   const SizedBox(height: 10),
                   Expanded(
                     child:
-                    provider.isLoadingMyUploads &&
-                        provider.uploadedMediaImages.isEmpty
+                        provider.isLoadingMyUploads &&
+                            provider.uploadedMediaImages.isEmpty
                         ? const Center(child: CircularProgressIndicator())
                         : provider.myUploadsError != null &&
-                        provider.uploadedMediaImages.isEmpty
+                              provider.uploadedMediaImages.isEmpty
                         ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            provider.myUploadsError!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                          const SizedBox(height: 8),
-                          TextButton(
-                            onPressed: () => provider.loadMyUploads(
-                              forceRefresh: true,
-                            ),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    )
-                        : provider.uploadedMediaImages.isEmpty
-                        ? const Center(
-                      child: Text(
-                        'Uploaded images will appear here',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    )
-                        : GridView.builder(
-                      itemCount: provider.uploadedMediaImages.length,
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 0.9,
-                      ),
-                      itemBuilder: (_, index) {
-                        final image = provider.uploadedMediaImages[index];
-                        final url = image['url'] ?? '';
-                        final localPath = image['localPath'] ?? '';
-                        final isUploading = image['uploading'] == 'true';
-                        final hasLocalFile =
-                            localPath.isNotEmpty &&
-                                File(localPath).existsSync();
-                        return GestureDetector(
-                          onTap: isUploading
-                              ? null
-                              : () {
-                            final key = image['key'] ?? '';
-                            if (key.isNotEmpty) {
-                              provider.selectedMediaS3Key = key;
-                            }
-                            final source = url.isNotEmpty
-                                ? url
-                                : localPath;
-                            if (source.isEmpty) return;
-                            provider.addImage(
-                              source,
-                              isLocal: url.isEmpty,
-                            );
-                            Navigator.pop(modalContext);
-                          },
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Stack(
-                              fit: StackFit.expand,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (hasLocalFile)
-                                  Image.file(
-                                    File(localPath),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, error, stackTrace) {
-                                      debugPrint(
-                                        'Local media thumbnail error: $error',
-                                      );
-                                      return Container(
-                                        color: Colors.black12,
-                                        child: const Icon(
-                                          Icons.broken_image_outlined,
-                                        ),
-                                      );
-                                    },
-                                  )
-                                else if (url.isNotEmpty)
-                                  Image.network(
-                                    url,
-                                    fit: BoxFit.cover,
-                                    loadingBuilder:
-                                        (context, child, progress) {
-                                      if (progress == null)
-                                        return child;
-                                      return Container(
-                                        color: Colors.black12,
-                                        alignment: Alignment.center,
-                                        child:
-                                        const CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      );
-                                    },
-                                    errorBuilder: (_, error, stackTrace) {
-                                      debugPrint(
-                                        'Network media thumbnail error: $error',
-                                      );
-                                      return Container(
-                                        color: Colors.black12,
-                                        child: const Icon(
-                                          Icons.broken_image_outlined,
-                                        ),
-                                      );
-                                    },
-                                  )
-                                else
-                                  Container(
-                                    color: Colors.black12,
-                                    child: const Icon(
-                                      Icons.image_outlined,
-                                    ),
+                                Text(
+                                  provider.myUploadsError!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                                const SizedBox(height: 8),
+                                TextButton(
+                                  onPressed: () => provider.loadMyUploads(
+                                    forceRefresh: true,
                                   ),
-                                if (isUploading)
-                                  Container(
-                                    color: Colors.black45,
-                                    alignment: Alignment.center,
-                                    child: const Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        SizedBox(
-                                          width: 24,
-                                          height: 24,
-                                          child:
-                                          CircularProgressIndicator(
-                                            strokeWidth: 2.5,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        SizedBox(height: 6),
-                                        Text(
-                                          'Uploading...',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                  child: const Text('Retry'),
+                                ),
                               ],
                             ),
+                          )
+                        : provider.uploadedMediaImages.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Uploaded images will appear here',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : GridView.builder(
+                            itemCount: provider.uploadedMediaImages.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 10,
+                                  mainAxisSpacing: 10,
+                                  childAspectRatio: 0.9,
+                                ),
+                            itemBuilder: (_, index) {
+                              final image = provider.uploadedMediaImages[index];
+                              final url = image['url'] ?? '';
+                              final localPath = image['localPath'] ?? '';
+                              final isUploading = image['uploading'] == 'true';
+                              final hasLocalFile =
+                                  localPath.isNotEmpty &&
+                                  File(localPath).existsSync();
+                              return GestureDetector(
+                                onTap: isUploading
+                                    ? null
+                                    : () {
+                                        final key = image['key'] ?? '';
+                                        if (key.isNotEmpty) {
+                                          provider.selectedMediaS3Key = key;
+                                        }
+                                        final source = url.isNotEmpty
+                                            ? url
+                                            : localPath;
+                                        if (source.isEmpty) return;
+                                        provider.addImage(
+                                          source,
+                                          isLocal: url.isEmpty,
+                                        );
+                                        Navigator.pop(modalContext);
+                                      },
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      if (hasLocalFile)
+                                        Image.file(
+                                          File(localPath),
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, error, stackTrace) {
+                                            debugPrint(
+                                              'Local media thumbnail error: $error',
+                                            );
+                                            return Container(
+                                              color: Colors.black12,
+                                              child: const Icon(
+                                                Icons.broken_image_outlined,
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      else if (url.isNotEmpty)
+                                        Image.network(
+                                          url,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder:
+                                              (context, child, progress) {
+                                                if (progress == null)
+                                                  return child;
+                                                return Container(
+                                                  color: Colors.black12,
+                                                  alignment: Alignment.center,
+                                                  child:
+                                                      const CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
+                                                );
+                                              },
+                                          errorBuilder: (_, error, stackTrace) {
+                                            debugPrint(
+                                              'Network media thumbnail error: $error',
+                                            );
+                                            return Container(
+                                              color: Colors.black12,
+                                              child: const Icon(
+                                                Icons.broken_image_outlined,
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      else
+                                        Container(
+                                          color: Colors.black12,
+                                          child: const Icon(
+                                            Icons.image_outlined,
+                                          ),
+                                        ),
+                                      if (isUploading)
+                                        Container(
+                                          color: Colors.black45,
+                                          alignment: Alignment.center,
+                                          child: const Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              SizedBox(
+                                                width: 24,
+                                                height: 24,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2.5,
+                                                      color: Colors.white,
+                                                    ),
+                                              ),
+                                              SizedBox(height: 6),
+                                              Text(
+                                                'Uploading...',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
                 ],
               );
@@ -2617,8 +2617,8 @@ class _EditorViewState extends State<EditorView> {
                         color: selected
                             ? Colors.redAccent
                             : (isDark
-                            ? Colors.white24
-                            : const Color(0xFFE0E0E0)),
+                                  ? Colors.white24
+                                  : const Color(0xFFE0E0E0)),
                       ),
                     ),
                     child: AppText(
@@ -2701,70 +2701,70 @@ class _EditorViewState extends State<EditorView> {
                   Expanded(
                     child: provider.isMediaImagesLoading
                         ? const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : images.isEmpty
                         ? const Center(
-                      child: AppText(
-                        'No images found',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    )
-                        : GridView.builder(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 0.92,
-                      ),
-                      itemCount: images.length,
-                      itemBuilder: (_, index) {
-                        return GestureDetector(
-                          onTap: () {
-                            provider.addImage(
-                              images[index],
-                              isLocal: false,
-                            );
-                            Navigator.pop(modalContext);
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF24262B)
-                                  : const Color(0xFFF7F7F7),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isDark
-                                    ? Colors.white12
-                                    : const Color(0xFFE6E6E6),
-                              ),
+                            child: AppText(
+                              'No images found',
+                              style: TextStyle(color: Colors.grey),
                             ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Image.network(
-                              images[index],
-                              cacheWidth: 800,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                              const SizedBox.shrink(),
-                              loadingBuilder: (context, child, progress) {
-                                if (progress == null) return child;
-                                return const Center(
-                                  child: SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 1.6,
+                          )
+                        : GridView.builder(
+                            padding: const EdgeInsets.only(bottom: 20),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 10,
+                                  mainAxisSpacing: 10,
+                                  childAspectRatio: 0.92,
+                                ),
+                            itemCount: images.length,
+                            itemBuilder: (_, index) {
+                              return GestureDetector(
+                                onTap: () {
+                                  provider.addImage(
+                                    images[index],
+                                    isLocal: false,
+                                  );
+                                  Navigator.pop(modalContext);
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? const Color(0xFF24262B)
+                                        : const Color(0xFFF7F7F7),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? Colors.white12
+                                          : const Color(0xFFE6E6E6),
                                     ),
                                   ),
-                                );
-                              },
-                            ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: Image.network(
+                                    images[index],
+                                    cacheWidth: 800,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        const SizedBox.shrink(),
+                                    loadingBuilder: (context, child, progress) {
+                                      if (progress == null) return child;
+                                      return const Center(
+                                        child: SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 1.6,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
                 ],
               );
@@ -2844,8 +2844,8 @@ class _EditorViewState extends State<EditorView> {
                               onTap: () {
                                 setSheetState(() => selectedTab = 2);
                                 WidgetsBinding.instance.addPostFrameCallback((
-                                    _,
-                                    ) {
+                                  _,
+                                ) {
                                   if (!sheetOpen || !sheetContext.mounted)
                                     return;
                                   if (provider.mediaImageAssets.isEmpty &&
@@ -2912,10 +2912,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showBackgroundBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     int selectedTab = 0; // 0 images, 1 videos, 2 colors
     String searchQuery = 'background';
     String videoSearchQuery = 'background';
@@ -3056,8 +3056,8 @@ class _EditorViewState extends State<EditorView> {
                   decoration: BoxDecoration(
                     color: selected
                         ? (isDark
-                        ? const Color(0xFF4A2024)
-                        : const Color(0xFFFFE7E7))
+                              ? const Color(0xFF4A2024)
+                              : const Color(0xFFFFE7E7))
                         : (isDark ? const Color(0xFF24262B) : Colors.white),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
@@ -3097,8 +3097,8 @@ class _EditorViewState extends State<EditorView> {
                   decoration: BoxDecoration(
                     color: selected
                         ? (isDark
-                        ? const Color(0xFF4A2024)
-                        : const Color(0xFFFFE7E7))
+                              ? const Color(0xFF4A2024)
+                              : const Color(0xFFFFE7E7))
                         : (isDark ? const Color(0xFF24262B) : Colors.white),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
@@ -3172,10 +3172,10 @@ class _EditorViewState extends State<EditorView> {
 
               final items = provider.backgroundAssets
                   .where((u) {
-                final uri = Uri.tryParse(u);
-                return uri != null &&
-                    (uri.scheme == 'http' || uri.scheme == 'https');
-              })
+                    final uri = Uri.tryParse(u);
+                    return uri != null &&
+                        (uri.scheme == 'http' || uri.scheme == 'https');
+                  })
                   .take(24)
                   .toList();
               if (items.isEmpty) {
@@ -3212,9 +3212,9 @@ class _EditorViewState extends State<EditorView> {
                         Expanded(
                           child: rightIndex < items.length
                               ? imageCard(
-                            items[rightIndex],
-                            rowHeight * (rowIndex.isEven ? .78 : 1.18),
-                          )
+                                  items[rightIndex],
+                                  rowHeight * (rowIndex.isEven ? .78 : 1.18),
+                                )
                               : const SizedBox.shrink(),
                         ),
                       ],
@@ -3274,7 +3274,7 @@ class _EditorViewState extends State<EditorView> {
               if (!provider.isVideosLoading &&
                   provider.pexelsVideoAssets.isEmpty) {
                 Future.microtask(
-                      () => provider.fetchFreePikVideos(videoSearchQuery),
+                  () => provider.fetchFreePikVideos(videoSearchQuery),
                 );
               }
               if (provider.isVideosLoading || isInitialVideoLoading) {
@@ -3372,7 +3372,7 @@ class _EditorViewState extends State<EditorView> {
                               cacheWidth: 800,
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) =>
-                              const SizedBox.shrink(),
+                                  const SizedBox.shrink(),
                             ),
                           Container(color: Colors.black26),
                           const Center(
@@ -3561,15 +3561,15 @@ class _EditorViewState extends State<EditorView> {
     super.initState();
 
     _musicPositionSubscription = _musicPlayer.onPositionChanged.listen((
-        position,
-        ) {
+      position,
+    ) {
       if (!mounted) return;
       context.read<EditorProvider>().setMusicPosition(position);
     });
 
     _musicDurationSubscription = _musicPlayer.onDurationChanged.listen((
-        duration,
-        ) {
+      duration,
+    ) {
       if (!mounted) return;
       context.read<EditorProvider>().setMusicDuration(duration);
     });
@@ -3579,6 +3579,14 @@ class _EditorViewState extends State<EditorView> {
       final provider = context.read<EditorProvider>();
       provider.setMusicPlaying(false);
       provider.setMusicPosition(Duration.zero);
+    });
+
+    // Single source of truth for the play/pause icon: the real player state.
+    _musicStateSubscription = _musicPlayer.onPlayerStateChanged.listen((state) {
+      if (!mounted) return;
+      context.read<EditorProvider>().setMusicPlaying(
+        state == PlayerState.playing,
+      );
     });
   }
 
@@ -3616,6 +3624,7 @@ class _EditorViewState extends State<EditorView> {
     _musicPositionSubscription?.cancel();
     _musicDurationSubscription?.cancel();
     _musicCompleteSubscription?.cancel();
+    _musicStateSubscription?.cancel();
     _musicPlayer.dispose();
     super.dispose();
   }
@@ -3630,50 +3639,50 @@ class _EditorViewState extends State<EditorView> {
     final saveIndicator = _projectSaveStatus.isEmpty
         ? const SizedBox.shrink()
         : AnimatedSwitcher(
-      duration: const Duration(milliseconds: 180),
-      child: Container(
-        key: ValueKey(_projectSaveStatus),
-        margin: const EdgeInsets.only(right: 12, top: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF303030) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: const [
-            BoxShadow(blurRadius: 5, color: Color(0x22000000)),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_projectSaveStatus == 'Saving...')
-              const SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(strokeWidth: 1.8),
-              )
-            else
-              Icon(
-                _projectSaveStatus == 'Saved'
-                    ? Icons.check_circle_outline
-                    : Icons.error_outline,
-                size: 14,
-                color: _projectSaveStatus == 'Saved'
-                    ? Colors.green
-                    : Colors.red,
+            duration: const Duration(milliseconds: 180),
+            child: Container(
+              key: ValueKey(_projectSaveStatus),
+              margin: const EdgeInsets.only(right: 12, top: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF303030) : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: const [
+                  BoxShadow(blurRadius: 5, color: Color(0x22000000)),
+                ],
               ),
-            const SizedBox(width: 5),
-            AppText(
-              _projectSaveStatus,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white70 : Colors.black87,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_projectSaveStatus == 'Saving...')
+                    const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(strokeWidth: 1.8),
+                    )
+                  else
+                    Icon(
+                      _projectSaveStatus == 'Saved'
+                          ? Icons.check_circle_outline
+                          : Icons.error_outline,
+                      size: 14,
+                      color: _projectSaveStatus == 'Saved'
+                          ? Colors.green
+                          : Colors.red,
+                    ),
+                  const SizedBox(width: 5),
+                  AppText(
+                    _projectSaveStatus,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
+          );
     final hasTemplateUid = (widget.templateUid?.trim() ?? '').isNotEmpty;
 
     if (hasTemplateUid &&
@@ -3684,7 +3693,7 @@ class _EditorViewState extends State<EditorView> {
         imagePath: 'assets/images/no_templates.png',
         title: 'No Templates Available',
         message:
-        'We’re adding more templates for this category. '
+            'We’re adding more templates for this category. '
             'Explore other categories to find the right design for your business.',
         primaryButtonText: 'GO BACK',
         secondaryButtonText: 'EXPLORE TEMPLATES',
@@ -3724,9 +3733,9 @@ class _EditorViewState extends State<EditorView> {
     }
     final Size canvasSize = hasTemplateUid
         ? Size(
-      provider.canvasWidth > 0 ? provider.canvasWidth : 1080.0,
-      provider.canvasHeight > 0 ? provider.canvasHeight : 1080.0,
-    )
+            provider.canvasWidth > 0 ? provider.canvasWidth : 1080.0,
+            provider.canvasHeight > 0 ? provider.canvasHeight : 1080.0,
+          )
         : _getCanvasSize();
 
     final double aspectRatio = canvasSize.width / canvasSize.height;
@@ -3853,7 +3862,7 @@ class _EditorViewState extends State<EditorView> {
                                     decoration: BoxDecoration(
                                       color: provider.backgroundColor,
                                       gradient:
-                                      provider.importedBackgroundGradient,
+                                          provider.importedBackgroundGradient,
                                     ),
                                   ),
                                 ),
@@ -3890,7 +3899,7 @@ class _EditorViewState extends State<EditorView> {
                                   final orderedItems = provider.items
                                       .where(
                                         (item) => !_isCanvasBackground(item),
-                                  )
+                                      )
                                       .toList();
 
                                   return orderedItems.map((item) {
@@ -3921,8 +3930,8 @@ class _EditorViewState extends State<EditorView> {
                                       final selected = provider.items
                                           .where(
                                             (e) =>
-                                        e.id == provider.selectedItemId,
-                                      )
+                                                e.id == provider.selectedItemId,
+                                          )
                                           .toList();
 
                                       if (selected.isEmpty ||
@@ -3936,7 +3945,7 @@ class _EditorViewState extends State<EditorView> {
                                         top: item.position.dy * scaleY,
                                         width: item.width * item.scale * scaleX,
                                         height:
-                                        item.height * item.scale * scaleY,
+                                            item.height * item.scale * scaleY,
                                         child: IgnorePointer(
                                           child: Transform.rotate(
                                             angle: item.rotation.isFinite
@@ -3958,8 +3967,8 @@ class _EditorViewState extends State<EditorView> {
                                     final selectedItems = provider.items
                                         .where(
                                           (e) =>
-                                      e.id == provider.selectedItemId,
-                                    )
+                                              e.id == provider.selectedItemId,
+                                        )
                                         .toList();
 
                                     if (selectedItems.isEmpty) {
@@ -4011,10 +4020,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showEditorPreview(
-      BuildContext context,
-      EditorProvider provider,
-      double aspectRatio,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    double aspectRatio,
+  ) {
     final items = provider.templateDetail?.data.items ?? [];
 
     final thumbnailKey = items.isNotEmpty ? items.first.thumbnailS3Key : null;
@@ -4109,10 +4118,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildEditorBottomBar(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     final type = (provider.selectedItemType ?? '').toLowerCase();
     if (type == 'text' || type == 'textbox') {
       return _buildTextEditorToolbar(context, provider, isDark);
@@ -4153,12 +4162,12 @@ class _EditorViewState extends State<EditorView> {
             _bottomTool(
               Image.asset("assets/images/templates.png"),
               'TEMPLATES',
-                  () => _showTemplatesBottomSheet(context, provider, isDark),
+              () => _showTemplatesBottomSheet(context, provider, isDark),
             ),
             _bottomTool(
               Image.asset("assets/images/brush.png"),
               'FRAMES',
-                  () => _showFramesBottomSheet(context, provider, isDark),
+              () => _showFramesBottomSheet(context, provider, isDark),
             ),
             /*_bottomTool(
              Image.asset("assets/images/text.png"),
@@ -4168,22 +4177,22 @@ class _EditorViewState extends State<EditorView> {
             _bottomTool(
               Image.asset("assets/images/text.png"),
               'TEXT',
-                  () => _showTextStylesBottomSheet(context, provider, isDark),
+              () => _showTextStylesBottomSheet(context, provider, isDark),
             ),
             _bottomTool(
               Image.asset("assets/images/gallery.png"),
               'MEDIA',
-                  () => _showMediaBottomSheet(context, provider, isDark),
+              () => _showMediaBottomSheet(context, provider, isDark),
             ),
             _bottomTool(
               Image.asset("assets/images/gallery.png"),
               'BACKGROUND',
-                  () => _showBackgroundBottomSheet(context, provider, isDark),
+              () => _showBackgroundBottomSheet(context, provider, isDark),
             ),
             _bottomTool(
               Image.asset("assets/images/elements.png"),
               'ELEMENTS',
-                  () => _showMediaBottomSheet(
+              () => _showMediaBottomSheet(
                 context,
                 provider,
                 isDark,
@@ -4193,22 +4202,22 @@ class _EditorViewState extends State<EditorView> {
             _bottomTool(
               Image.asset("assets/images/magic_star.png"),
               'AI TOOLS',
-                  () => () {},
+              () => () {},
             ),
             _bottomTool(
               Image.asset("assets/images/music.png"),
               provider.isEditorMusicPlaying ? 'PLAYING' : 'MUSIC',
-                  () => _showMusicBottomSheet(context, provider, isDark),
+              () => _showMusicBottomSheet(context, provider, isDark),
             ),
             _bottomTool(
               Image.asset("assets/images/brand_kit.png"),
               'BRAND KIT',
-                  () => () {},
+              () => () {},
             ),
             _bottomTool(
               Image.asset("assets/images/heart.png"),
               'FAVORITES',
-                  () => () {},
+              () => () {},
             ),
           ],
         ),
@@ -4217,11 +4226,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _showTextColorPicker(
-      BuildContext context,
-      EditorProvider provider,
-      String id,
-      bool isDark,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) async {
     const presets = <Color>[
       Color(0xFFF44336),
       Color(0xFFFF9800),
@@ -4271,8 +4280,8 @@ class _EditorViewState extends State<EditorView> {
                       color: active
                           ? Colors.black
                           : (isDark
-                          ? const Color(0xFF393939)
-                          : const Color(0xFFE0E0E0)),
+                                ? const Color(0xFF393939)
+                                : const Color(0xFFE0E0E0)),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: AppText(
@@ -4374,8 +4383,8 @@ class _EditorViewState extends State<EditorView> {
                             borderRadius: BorderRadius.circular(7),
                             child: Container(
                               width:
-                              (MediaQuery.of(sheetContext).size.width -
-                                  76) /
+                                  (MediaQuery.of(sheetContext).size.width -
+                                      76) /
                                   7,
                               height: 53,
                               decoration: BoxDecoration(
@@ -4443,12 +4452,12 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _colorSlider(
-      String label,
-      double value,
-      double min,
-      double max,
-      ValueChanged<double> onChanged,
-      ) {
+    String label,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged,
+  ) {
     return Row(
       children: [
         SizedBox(
@@ -4468,10 +4477,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildTextEditorToolbar(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     final id = provider.selectedItemId;
     if (id == null) return const SizedBox.shrink();
 
@@ -4546,11 +4555,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTextFormatBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String id,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
     final item = provider.items.where((e) => e.id == id).firstOrNull;
     if (item == null) return;
     final alignments = <Map<String, dynamic>>[
@@ -4583,8 +4592,8 @@ class _EditorViewState extends State<EditorView> {
                     color: selected
                         ? const Color(0xFFFFE5E5)
                         : (isDark
-                        ? const Color(0xFF292B31)
-                        : const Color(0xFFF2F2F2)),
+                              ? const Color(0xFF292B31)
+                              : const Color(0xFFF2F2F2)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -4595,12 +4604,12 @@ class _EditorViewState extends State<EditorView> {
                 ),
               );
           Widget sliderRow(
-              String title,
-              double value,
-              double min,
-              double max,
-              ValueChanged<double> onChanged,
-              ) {
+            String title,
+            double value,
+            double min,
+            double max,
+            ValueChanged<double> onChanged,
+          ) {
             final safeValue = value.clamp(min, max).toDouble();
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -4719,23 +4728,23 @@ class _EditorViewState extends State<EditorView> {
                       iconButton(
                         Icons.format_bold_rounded,
                         provider.textWeight(id) == FontWeight.bold,
-                            () => provider.toggleTextBold(id),
+                        () => provider.toggleTextBold(id),
                       ),
                       iconButton(
                         Icons.text_fields_rounded,
                         false,
-                            () =>
+                        () =>
                             _showTextFontPicker(context, provider, id, isDark),
                       ),
                       iconButton(
                         Icons.format_italic_rounded,
                         provider.textStyle(id) == FontStyle.italic,
-                            () => provider.toggleTextItalic(id),
+                        () => provider.toggleTextItalic(id),
                       ),
                       iconButton(
                         Icons.format_underlined_rounded,
                         provider.textUnderline(id),
-                            () => provider.toggleTextUnderline(id),
+                        () => provider.toggleTextUnderline(id),
                       ),
                       iconButton(Icons.strikethrough_s_rounded, false, () {}),
                     ],
@@ -4746,18 +4755,18 @@ class _EditorViewState extends State<EditorView> {
                     children: alignments
                         .map(
                           (a) => Expanded(
-                        child: Center(
-                          child: iconButton(
-                            a['icon'] as IconData,
-                            provider.textAlignment(id) == a['value'],
+                            child: Center(
+                              child: iconButton(
+                                a['icon'] as IconData,
+                                provider.textAlignment(id) == a['value'],
                                 () => provider.updateTextAlignment(
-                              id,
-                              a['value'] as TextAlign,
+                                  id,
+                                  a['value'] as TextAlign,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    )
+                        )
                         .toList(),
                   ),
                   const SizedBox(height: 12),
@@ -4766,21 +4775,21 @@ class _EditorViewState extends State<EditorView> {
                     current.fontSize,
                     8,
                     300,
-                        (v) => provider.updateFontSize(id, v),
+                    (v) => provider.updateFontSize(id, v),
                   ),
                   sliderRow(
                     'Rotate',
                     current.rotation,
                     -180,
                     180,
-                        (v) => provider.updateRotation(id, v),
+                    (v) => provider.updateRotation(id, v),
                   ),
                   sliderRow(
                     'Transparency',
                     current.opacity * 100,
                     0,
                     100,
-                        (v) => provider.updateOpacity(id, v / 100),
+                    (v) => provider.updateOpacity(id, v / 100),
                   ),
                 ],
               ),
@@ -4792,11 +4801,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTextFontPicker(
-      BuildContext context,
-      EditorProvider provider,
-      String id,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
     final fonts = GoogleFonts.asMap().keys.toList()..sort();
     showModalBottomSheet<void>(
       context: context,
@@ -4829,11 +4838,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTextSpacingBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String id,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -5018,11 +5027,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTextAlignmentBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String id,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
     final alignments = <Map<String, dynamic>>[
       {
         'label': 'Left',
@@ -5053,14 +5062,14 @@ class _EditorViewState extends State<EditorView> {
           children: alignments
               .map(
                 (a) => ListTile(
-              leading: Icon(a['icon'] as IconData),
-              title: AppText(a['label'] as String),
-              onTap: () {
-                provider.updateTextAlignment(id, a['value'] as TextAlign);
-                Navigator.pop(sheetContext);
-              },
-            ),
-          )
+                  leading: Icon(a['icon'] as IconData),
+                  title: AppText(a['label'] as String),
+                  onTap: () {
+                    provider.updateTextAlignment(id, a['value'] as TextAlign);
+                    Navigator.pop(sheetContext);
+                  },
+                ),
+              )
               .toList(),
         ),
       ),
@@ -5068,11 +5077,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTextOrderBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String id,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       builder: (sheetContext) => SafeArea(
@@ -5117,7 +5126,7 @@ class _EditorViewState extends State<EditorView> {
           ),
         ),
         errorBuilder: (_, __, ___) =>
-        const Icon(Icons.broken_image_outlined, color: Colors.grey),
+            const Icon(Icons.broken_image_outlined, color: Colors.grey),
       );
     }
 
@@ -5126,7 +5135,7 @@ class _EditorViewState extends State<EditorView> {
       cacheWidth: 800,
       fit: BoxFit.contain,
       errorBuilder: (_, __, ___) =>
-      const Icon(Icons.broken_image_outlined, color: Colors.grey),
+          const Icon(Icons.broken_image_outlined, color: Colors.grey),
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
         return const Center(
@@ -5141,10 +5150,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showApiMaskSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+  ) {
     String query = '';
     bool requested = false;
     // Keep the sheet in a loading state until the first request completes.
@@ -5239,53 +5248,53 @@ class _EditorViewState extends State<EditorView> {
                   const SizedBox(height: 12),
                   Expanded(
                     child:
-                    (loading || !hasFinishedInitialLoad) && filtered.isEmpty
+                        (loading || !hasFinishedInitialLoad) && filtered.isEmpty
                         ? const Center(child: CircularProgressIndicator())
                         : filtered.isEmpty
                         ? const Center(child: AppText('No mask found'))
                         : GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 1,
-                      ),
-                      itemCount: filtered.length,
-                      itemBuilder: (_, index) {
-                        final mask = filtered[index];
-                        final url = provider.assetCdnUrl(mask.s3Key);
-                        return InkWell(
-                          borderRadius: BorderRadius.circular(14),
-                          onTap: url.isEmpty
-                              ? null
-                              : () {
-                            // Apply the selected mask only to the image
-                            // whose Image > MASK toolbar opened this sheet.
-                            provider.setImageMask(
-                              itemId,
-                              name: mask.name,
-                              url: url,
-                            );
-                            Navigator.pop(sheetContext);
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.black12),
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: url.isEmpty
-                                ? const Icon(
-                              Icons.image_not_supported_outlined,
-                            )
-                                : _buildMaskPreview(url),
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 10,
+                                  mainAxisSpacing: 10,
+                                  childAspectRatio: 1,
+                                ),
+                            itemCount: filtered.length,
+                            itemBuilder: (_, index) {
+                              final mask = filtered[index];
+                              final url = provider.assetCdnUrl(mask.s3Key);
+                              return InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: url.isEmpty
+                                    ? null
+                                    : () {
+                                        // Apply the selected mask only to the image
+                                        // whose Image > MASK toolbar opened this sheet.
+                                        provider.setImageMask(
+                                          itemId,
+                                          name: mask.name,
+                                          url: url,
+                                        );
+                                        Navigator.pop(sheetContext);
+                                      },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: Colors.black12),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: url.isEmpty
+                                      ? const Icon(
+                                          Icons.image_not_supported_outlined,
+                                        )
+                                      : _buildMaskPreview(url),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
                 ],
               ),
@@ -5297,15 +5306,15 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildShapeEditorToolbar(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     final id = provider.selectedItemId;
     if (id == null) return const SizedBox.shrink();
 
     final item = provider.items.firstWhere(
-          (e) => e.id == id,
+      (e) => e.id == id,
       orElse: () => provider.items.first,
     );
 
@@ -5333,7 +5342,7 @@ class _EditorViewState extends State<EditorView> {
                   _shapeColorTool(
                     'FILL',
                     fillColor,
-                        () => _showShapeColorPicker(
+                    () => _showShapeColorPicker(
                       context,
                       provider,
                       id,
@@ -5343,7 +5352,7 @@ class _EditorViewState extends State<EditorView> {
                   _shapeColorTool(
                     'OUTLINE',
                     outlineColor,
-                        () => _showShapeColorPicker(
+                    () => _showShapeColorPicker(
                       context,
                       provider,
                       id,
@@ -5353,22 +5362,22 @@ class _EditorViewState extends State<EditorView> {
                   _bottomTool(
                     Icons.flip_to_front_rounded,
                     'FRONT',
-                        () => provider.bringToFront(id),
+                    () => provider.bringToFront(id),
                   ),
                   _bottomTool(
                     Icons.flip_to_back_rounded,
                     'BACK',
-                        () => provider.sendToBack(id),
+                    () => provider.sendToBack(id),
                   ),
                   _bottomTool(
                     Icons.copy_rounded,
                     'DUPLICATE',
-                        () => provider.duplicateItem(id),
+                    () => provider.duplicateItem(id),
                   ),
                   _bottomTool(
                     Icons.delete_outline_rounded,
                     'DELETE',
-                        () => provider.removeItem(id),
+                    () => provider.removeItem(id),
                     danger: true,
                   ),
                   _bottomTool(
@@ -5387,32 +5396,32 @@ class _EditorViewState extends State<EditorView> {
               children: [
                 _shapeOutlineStyleTools(
                   outlineStyle,
-                      (style) => provider.updateOutlineStyle(id, style),
+                  (style) => provider.updateOutlineStyle(id, style),
                 ),
                 _bottomSliderTool(
                   'THICKNESS',
                   item.outlineWidth.clamp(0.0, 20.0),
                   0,
                   20,
-                      (v) => provider.updateOutline(id, v, outlineColor),
+                  (v) => provider.updateOutline(id, v, outlineColor),
                 ),
                 _shapeJoinTools(
                   outlineJoin,
-                      (join) => provider.updateOutlineJoin(id, join),
+                  (join) => provider.updateOutlineJoin(id, join),
                 ),
                 _bottomSliderTool(
                   'ROTATION',
                   item.rotation.clamp(0.0, math.pi * 2),
                   0,
                   math.pi * 2,
-                      (v) => provider.updateRotation(id, v),
+                  (v) => provider.updateRotation(id, v),
                 ),
                 _bottomSliderTool(
                   'OPACITY',
                   item.opacity.clamp(0.0, 1.0),
                   0,
                   1,
-                      (v) => provider.updateOpacity(id, v),
+                  (v) => provider.updateOpacity(id, v),
                 ),
               ],
             ),
@@ -5467,9 +5476,9 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _shapeOutlineStyleTools(
-      String selected,
-      ValueChanged<String> onChanged,
-      ) {
+    String selected,
+    ValueChanged<String> onChanged,
+  ) {
     const styles = <String>['none', 'solid', 'dashed', 'dotted', 'fine_dotted'];
     const labels = <String>['NONE', 'SOLID', 'DASHED', 'DOTTED', 'FINE'];
 
@@ -5531,17 +5540,17 @@ class _EditorViewState extends State<EditorView> {
             children: labels
                 .map(
                   (label) => Expanded(
-                child: AppText(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 7,
-                    fontWeight: FontWeight.w600,
+                    child: AppText(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 7,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            )
+                )
                 .toList(),
           ),
         ],
@@ -5615,13 +5624,13 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _showShapeColorPicker(
-      BuildContext context,
-      EditorProvider provider,
-      String id, {
-        required bool isOutline,
-      }) async {
+    BuildContext context,
+    EditorProvider provider,
+    String id, {
+    required bool isOutline,
+  }) async {
     final item = provider.items.firstWhere(
-          (e) => e.id == id,
+      (e) => e.id == id,
       orElse: () => provider.items.first,
     );
 
@@ -5658,19 +5667,19 @@ class _EditorViewState extends State<EditorView> {
                     'HUE',
                     hsv.hue,
                     360,
-                        (v) => setDialogState(() => hsv = hsv.withHue(v)),
+                    (v) => setDialogState(() => hsv = hsv.withHue(v)),
                   ),
                   _shapeColorSlider(
                     'SAT',
                     hsv.saturation,
                     1,
-                        (v) => setDialogState(() => hsv = hsv.withSaturation(v)),
+                    (v) => setDialogState(() => hsv = hsv.withSaturation(v)),
                   ),
                   _shapeColorSlider(
                     'VALUE',
                     hsv.value,
                     1,
-                        (v) => setDialogState(() => hsv = hsv.withValue(v)),
+                    (v) => setDialogState(() => hsv = hsv.withValue(v)),
                   ),
                   const SizedBox(height: 4),
                   AppText(
@@ -5708,11 +5717,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _shapeColorSlider(
-      String label,
-      double value,
-      double max,
-      ValueChanged<double> onChanged,
-      ) {
+    String label,
+    double value,
+    double max,
+    ValueChanged<double> onChanged,
+  ) {
     return Row(
       children: [
         SizedBox(
@@ -5735,10 +5744,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildImageEditorToolbar(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     final id = provider.selectedItemId;
     if (id == null || provider.items.isEmpty) {
       return const SizedBox.shrink();
@@ -5798,27 +5807,27 @@ class _EditorViewState extends State<EditorView> {
                 _bottomTool(
                   Icons.close,
                   'CLOSE',
-                      () => provider.clearSelection(),
+                  () => provider.clearSelection(),
                 ),
                 _bottomTool(
                   Image.asset("assets/images/edit_upload.png"),
                   'UPLOADS',
-                      () => _showMediaBottomSheet(context, provider, isDark),
+                  () => _showMediaBottomSheet(context, provider, isDark),
                 ),
                 _bottomTool(
                   Image.asset("assets/images/gallery.png"),
                   'IMAGES',
-                      () => _showMediaBottomSheet(context, provider, isDark),
+                  () => _showMediaBottomSheet(context, provider, isDark),
                 ),
                 _bottomTool(
                   Image.asset("assets/images/crop.png"),
                   'CROP',
-                      () => _cropSelectedImage(context, provider, id),
+                  () => _cropSelectedImage(context, provider, id),
                 ),
                 _bottomTool(
                   Image.asset("assets/images/set_us_bg.png"),
                   'SET US BG',
-                      () async {
+                  () async {
                     final url = item.contentUrl;
                     if (url != null && url.isNotEmpty) {
                       await _confirmReplaceBackground(
@@ -5833,12 +5842,12 @@ class _EditorViewState extends State<EditorView> {
                 _bottomTool(
                   Image.asset("assets/images/mask.png"),
                   'MASK',
-                      () => _showApiMaskSheet(context, provider, id),
+                  () => _showApiMaskSheet(context, provider, id),
                 ),
                 _bottomTool(
                   Image.asset("assets/images/magic_pen.png"),
                   'REMOVE BG',
-                      () => _showRemoveBackgroundSheet(
+                  () => _showRemoveBackgroundSheet(
                     context,
                     isDark,
                     onSlideComplete: () {
@@ -5857,17 +5866,17 @@ class _EditorViewState extends State<EditorView> {
                 _bottomTool(
                   Image.asset("assets/images/scan_barcode.png"),
                   'ADJUST',
-                      () => _showAdjustSheet(context, provider, id, isDark),
+                  () => _showAdjustSheet(context, provider, id, isDark),
                 ),
                 _bottomTool(
                   Image.asset("assets/images/gallery_edit.png"),
                   'EDIT',
-                      () => _showEditSheet(context, provider, id, isDark),
+                  () => _showEditSheet(context, provider, id, isDark),
                 ),
                 _bottomTool(
                   Image.asset("assets/images/layer.png"),
                   'LAYER',
-                      () => _showLayerSheet(context, provider, id, isDark),
+                  () => _showLayerSheet(context, provider, id, isDark),
                 ),
                 _bottomTool(Image.asset("assets/images/lock.png"), 'LOCK', () {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -5903,14 +5912,14 @@ class _EditorViewState extends State<EditorView> {
                         child: _flipOption(
                           Icons.flip_rounded,
                           'Flip Horizontal',
-                              () => provider.flipImageHorizontal(id),
+                          () => provider.flipImageHorizontal(id),
                         ),
                       ),
                       Expanded(
                         child: _flipOption(
                           Icons.flip_rounded,
                           'Flip Vertical',
-                              () => provider.flipImageVertical(id),
+                          () => provider.flipImageVertical(id),
                         ),
                       ),
                     ],
@@ -5972,11 +5981,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showAdjustSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String id,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -6001,7 +6010,7 @@ class _EditorViewState extends State<EditorView> {
                       item.rotation,
                       0,
                       math.pi * 2,
-                          (v) {
+                      (v) {
                         provider.updateRotation(id, v);
                         setSheetState(() {});
                       },
@@ -6045,12 +6054,12 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _compactAdjustSlider(
-      String label,
-      double value,
-      double min,
-      double max,
-      ValueChanged<double> onChanged,
-      ) {
+    String label,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged,
+  ) {
     final shown = value.clamp(min, max).toDouble();
     return Row(
       children: [
@@ -6347,11 +6356,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showEditSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String id,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
     const filters = [
       'normal',
       'festive',
@@ -6419,48 +6428,48 @@ class _EditorViewState extends State<EditorView> {
                                   clipBehavior: Clip.antiAlias,
                                   child: source.isEmpty
                                       ? Container(
-                                    color: Colors.grey.shade300,
-                                    child: const Icon(
-                                      Icons.image_outlined,
-                                      size: 32,
-                                    ),
-                                  )
+                                          color: Colors.grey.shade300,
+                                          child: const Icon(
+                                            Icons.image_outlined,
+                                            size: 32,
+                                          ),
+                                        )
                                       : ColorFiltered(
-                                    colorFilter: ColorFilter.matrix(
-                                      _filterPreviewMatrix(filter),
-                                    ),
-                                    child:
-                                    source.startsWith('http://') ||
-                                        source.startsWith('https://')
-                                        ? Image.network(
-                                      source,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                          Container(
-                                            color: Colors
-                                                .grey
-                                                .shade300,
-                                            child: const Icon(
-                                              Icons
-                                                  .broken_image_outlined,
-                                            ),
+                                          colorFilter: ColorFilter.matrix(
+                                            _filterPreviewMatrix(filter),
                                           ),
-                                    )
-                                        : Image.file(
-                                      File(source),
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                          Container(
-                                            color: Colors
-                                                .grey
-                                                .shade300,
-                                            child: const Icon(
-                                              Icons
-                                                  .broken_image_outlined,
-                                            ),
-                                          ),
-                                    ),
-                                  ),
+                                          child:
+                                              source.startsWith('http://') ||
+                                                  source.startsWith('https://')
+                                              ? Image.network(
+                                                  source,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      Container(
+                                                        color: Colors
+                                                            .grey
+                                                            .shade300,
+                                                        child: const Icon(
+                                                          Icons
+                                                              .broken_image_outlined,
+                                                        ),
+                                                      ),
+                                                )
+                                              : Image.file(
+                                                  File(source),
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      Container(
+                                                        color: Colors
+                                                            .grey
+                                                            .shade300,
+                                                        child: const Icon(
+                                                          Icons
+                                                              .broken_image_outlined,
+                                                        ),
+                                                      ),
+                                                ),
+                                        ),
                                 ),
                                 const SizedBox(height: 5),
                                 AppText(
@@ -6490,7 +6499,7 @@ class _EditorViewState extends State<EditorView> {
                           provider.imageFilterIntensity(id),
                           0,
                           1,
-                              (v) {
+                          (v) {
                             provider.updateImageFilterIntensity(id, v);
                             setSheetState(() {});
                           },
@@ -6500,7 +6509,7 @@ class _EditorViewState extends State<EditorView> {
                           item.brightness,
                           -1,
                           1,
-                              (v) {
+                          (v) {
                             provider.updateImageColorAdjustments(
                               id,
                               brightness: v,
@@ -6509,8 +6518,8 @@ class _EditorViewState extends State<EditorView> {
                           },
                         ),
                         _compactAdjustSlider('Contrast', item.contrast, .5, 2, (
-                            v,
-                            ) {
+                          v,
+                        ) {
                           provider.updateImageColorAdjustments(id, contrast: v);
                           setSheetState(() {});
                         }),
@@ -6519,7 +6528,7 @@ class _EditorViewState extends State<EditorView> {
                           item.saturation,
                           0,
                           2,
-                              (v) {
+                          (v) {
                             provider.updateImageColorAdjustments(
                               id,
                               saturation: v,
@@ -6532,7 +6541,7 @@ class _EditorViewState extends State<EditorView> {
                           provider.imageTint(id),
                           -100,
                           100,
-                              (v) {
+                          (v) {
                             provider.updateImageTint(id, v);
                             setSheetState(() {});
                           },
@@ -6542,7 +6551,7 @@ class _EditorViewState extends State<EditorView> {
                           provider.imageBlur(id),
                           0,
                           20,
-                              (v) {
+                          (v) {
                             provider.updateImageBlur(id, v);
                             setSheetState(() {});
                           },
@@ -6579,11 +6588,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showLayerSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String id,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    String id,
+    bool isDark,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -6659,10 +6668,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showRemoveBackgroundSheet(
-      BuildContext context,
-      bool isDark, {
-        required VoidCallback onSlideComplete,
-      }) {
+    BuildContext context,
+    bool isDark, {
+    required VoidCallback onSlideComplete,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -6703,12 +6712,12 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _bottomTool(
-      dynamic icon,
-      String label,
-      VoidCallback onTap, {
-        bool selected = false,
-        bool danger = false,
-      }) {
+    dynamic icon,
+    String label,
+    VoidCallback onTap, {
+    bool selected = false,
+    bool danger = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(right: 5),
       child: InkWell(
@@ -6748,12 +6757,12 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _bottomSliderTool(
-      String title,
-      double value,
-      double min,
-      double max,
-      ValueChanged<double> onChanged,
-      ) {
+    String title,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged,
+  ) {
     final safeValue = value.isFinite ? value.clamp(min, max).toDouble() : min;
     return Container(
       width: 175,
@@ -6802,19 +6811,52 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  Future<void> _toggleEditorMusic(EditorProvider provider) async {
-    try {
-      if (provider.selectedMusicPath == null) return;
+  Source _musicSource(String path) => path.startsWith('http')
+      ? UrlSource(path)
+      : path.startsWith('assets/')
+      ? AssetSource(path.replaceFirst('assets/', ''))
+      : DeviceFileSource(path);
 
-      if (provider.isEditorMusicPlaying) {
-        await _musicPlayer.pause();
-        provider.setMusicPlaying(false);
-      } else {
-        await _musicPlayer.resume();
-        provider.setMusicPlaying(true);
+  Future<void> _toggleEditorMusic(EditorProvider provider) async {
+    final path = provider.selectedMusicPath;
+    if (path == null) return;
+
+    try {
+      // Decide from the real player state, not the provider flag, so the two
+      // can never get out of sync.
+      switch (_musicPlayer.state) {
+        case PlayerState.playing:
+          await _musicPlayer.pause();
+          break;
+        case PlayerState.paused:
+          await _musicPlayer.resume();
+          break;
+        default:
+          // stopped / completed / disposed: the source is released, so
+          // resume() does nothing. Start again from the source.
+          await _musicPlayer.stop();
+          await _musicPlayer.play(_musicSource(path));
       }
     } catch (e) {
       debugPrint('Music toggle error: $e');
+      provider.setMusicPlaying(false);
+    }
+  }
+
+  /// Selects a track in the sheet: same track -> play/pause, new track -> play.
+  Future<void> _onMusicTrackTap(
+    EditorProvider provider,
+    Map<String, String> track,
+  ) async {
+    final path = track['path'];
+    if (path == null || path.isEmpty) {
+      Fluttertoast.showToast(msg: 'This track is not available yet');
+      return;
+    }
+    if (provider.selectedMusicPath == path) {
+      await _toggleEditorMusic(provider);
+    } else {
+      await _playMusicPath(provider, path, track['title'] ?? 'Music');
     }
   }
 
@@ -6835,8 +6877,7 @@ class _EditorViewState extends State<EditorView> {
       provider.setSelectedMusic(path: path, title: file.name);
 
       await _musicPlayer.stop();
-      await _musicPlayer.play(DeviceFileSource(path));
-      provider.setMusicPlaying(true);
+      await _musicPlayer.play(_musicSource(path));
     } catch (e, stackTrace) {
       debugPrint('Music upload error: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -6846,15 +6887,14 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _playMusicPath(
-      EditorProvider provider,
-      String path,
-      String title,
-      ) async {
+    EditorProvider provider,
+    String path,
+    String title,
+  ) async {
     try {
       provider.setSelectedMusic(path: path, title: title);
       await _musicPlayer.stop();
-      await _musicPlayer.play(DeviceFileSource(path));
-      provider.setMusicPlaying(true);
+      await _musicPlayer.play(_musicSource(path));
     } catch (e) {
       debugPrint('Music play error: $e');
       provider.setMusicPlaying(false);
@@ -6862,10 +6902,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showMusicBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     final searchController = TextEditingController();
     final tracks = <Map<String, String>>[
       {'title': 'Corporate 12', 'duration': '00.30'},
@@ -6959,95 +6999,102 @@ class _EditorViewState extends State<EditorView> {
                     ),
                     const SizedBox(height: 4),
                     Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-                        itemCount: filtered.length,
-                        itemBuilder: (_, index) {
-                          final track = filtered[index];
-                          final selected =
-                              provider.selectedMusicTitle == track['title'];
-                          return GestureDetector(
-                            onTap: () async {
-                              // Demo list entries are placeholders. Real API
-                              // tracks should pass their local/downloaded path.
-                              if (provider.selectedMusicPath != null &&
-                                  selected) {
-                                await _toggleEditorMusic(provider);
-                              }
-                            },
-                            child: Container(
-                              height: 64,
-                              margin: const EdgeInsets.only(bottom: 7),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF211A1B)
-                                    : const Color(0xFFFFF9F9),
-                                borderRadius: BorderRadius.circular(7),
-                                border: Border.all(
-                                  color: const Color(0xFFFFCACA),
+                      // Rebuild when the provider changes (play/pause/select),
+                      // otherwise the sheet keeps showing stale icons.
+                      child: AnimatedBuilder(
+                        animation: provider,
+                        builder: (_, __) => ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                          itemCount: filtered.length,
+                          itemBuilder: (_, index) {
+                            final track = filtered[index];
+                            // Compare by path (titles repeat in the demo list).
+                            final selected =
+                                provider.selectedMusicPath != null &&
+                                provider.selectedMusicPath == track['path'];
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _onMusicTrackTap(provider, track),
+                              child: Container(
+                                height: 64,
+                                margin: const EdgeInsets.only(bottom: 7),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF211A1B)
+                                      : const Color(0xFFFFF9F9),
+                                  borderRadius: BorderRadius.circular(7),
+                                  border: Border.all(
+                                    color: const Color(0xFFFFCACA),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 42,
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFE7E7),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Icon(
+                                        provider.isEditorMusicPlaying &&
+                                                selected
+                                            ? Icons.pause_rounded
+                                            : Icons.play_arrow_rounded,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          AppText(
+                                            track['title']!,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          AppText(
+                                            'Duration: ${track['duration']}',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      selected
+                                          ? Icons.check_box_rounded
+                                          : Icons
+                                                .check_box_outline_blank_rounded,
+                                      color: selected
+                                          ? const Color(0xFFFF8F8F)
+                                          : Colors.grey.shade300,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 42,
-                                    height: 42,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFFE7E7),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Icon(
-                                      provider.isEditorMusicPlaying && selected
-                                          ? Icons.pause_rounded
-                                          : Icons.play_arrow_rounded,
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                      MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                      children: [
-                                        AppText(
-                                          track['title']!,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        AppText(
-                                          'Duration: ${track['duration']}',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Icon(
-                                    selected
-                                        ? Icons.check_box_rounded
-                                        : Icons.check_box_outline_blank_rounded,
-                                    color: selected
-                                        ? const Color(0xFFFF8F8F)
-                                        : Colors.grey.shade300,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
                     ),
-                    if (provider.selectedMusicPath != null)
-                      _buildNowPlayingBar(context, provider),
+                    AnimatedBuilder(
+                      animation: provider,
+                      builder: (_, __) => provider.selectedMusicPath != null
+                          ? _buildNowPlayingBar(context, provider)
+                          : const SizedBox.shrink(),
+                    ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
                       child: Row(
@@ -7112,10 +7159,6 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Widget _buildNowPlayingBar(BuildContext context, EditorProvider provider) {
-    final duration = provider.musicDuration.inMilliseconds;
-    final position = provider.musicPosition.inMilliseconds;
-    final progress = duration > 0 ? (position / duration).clamp(0.0, 1.0) : 0.0;
-
     return Container(
       height: 58,
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -7148,11 +7191,22 @@ class _EditorViewState extends State<EditorView> {
                   ),
                 ),
                 const SizedBox(height: 5),
-                LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 2,
-                  backgroundColor: Colors.white54,
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                ValueListenableBuilder<Duration>(
+                  valueListenable: provider.musicPositionNotifier,
+                  builder: (_, position, __) {
+                    final duration = provider.musicDuration.inMilliseconds;
+                    final progress = duration > 0
+                        ? (position.inMilliseconds / duration).clamp(0.0, 1.0)
+                        : 0.0;
+                    return LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 2,
+                      backgroundColor: Colors.white54,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Colors.white,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -7160,8 +7214,8 @@ class _EditorViewState extends State<EditorView> {
           IconButton(
             visualDensity: VisualDensity.compact,
             onPressed: () async {
-              await _musicPlayer.stop();
               provider.clearMusic();
+              await _musicPlayer.stop();
             },
             icon: const Icon(Icons.close, color: Colors.white, size: 18),
           ),
@@ -7171,10 +7225,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showTextToAudioBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     final textController = TextEditingController();
     String selectedVoice = 'Female';
     bool isConverting = false;
@@ -7350,83 +7404,83 @@ class _EditorViewState extends State<EditorView> {
                               onPressed: isConverting
                                   ? null
                                   : () async {
-                                final text = textController.text.trim();
+                                      final text = textController.text.trim();
 
-                                if (text.isEmpty) {
-                                  ScaffoldMessenger.of(
-                                    context,
-                                  ).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Please enter text to convert',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
+                                      if (text.isEmpty) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Please enter text to convert',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
 
-                                setSheetState(() {
-                                  isConverting = true;
-                                });
+                                      setSheetState(() {
+                                        isConverting = true;
+                                      });
 
-                                try {
-                                  // Connect your TTS API here.
-                                  // It should return an audio file or URL.
-                                  /* await _generateTextAudio(
+                                      try {
+                                        // Connect your TTS API here.
+                                        // It should return an audio file or URL.
+                                        /* await _generateTextAudio(
                                     text: text,
                                     voice: selectedVoice,
                                     provider: provider,
                                   );*/
 
-                                  if (!sheetContext.mounted) return;
+                                        if (!sheetContext.mounted) return;
 
-                                  Navigator.pop(sheetContext);
+                                        Navigator.pop(sheetContext);
 
-                                  ScaffoldMessenger.of(
-                                    context,
-                                  ).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Audio generated successfully',
-                                      ),
-                                    ),
-                                  );
-                                } catch (e) {
-                                  debugPrint('TTS error: $e');
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Audio generated successfully',
+                                            ),
+                                          ),
+                                        );
+                                      } catch (e) {
+                                        debugPrint('TTS error: $e');
 
-                                  if (!sheetContext.mounted) return;
+                                        if (!sheetContext.mounted) return;
 
-                                  setSheetState(() {
-                                    isConverting = false;
-                                  });
+                                        setSheetState(() {
+                                          isConverting = false;
+                                        });
 
-                                  ScaffoldMessenger.of(
-                                    context,
-                                  ).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Audio generation failed. Please try again.',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Audio generation failed. Please try again.',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
                               child: isConverting
                                   ? const SizedBox(
-                                width: 15,
-                                height: 15,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
+                                      width: 15,
+                                      height: 15,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
                                   : const Text(
-                                'CONVERT',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
+                                      'CONVERT',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
                             ),
                           ),
                         ],
@@ -7552,7 +7606,7 @@ class _EditorViewState extends State<EditorView> {
         if (await musicFile.exists()) {
           final musicBytes = await musicFile.readAsBytes();
           final musicName =
-          provider.selectedMusicTitle?.trim().isNotEmpty == true
+              provider.selectedMusicTitle?.trim().isNotEmpty == true
               ? provider.selectedMusicTitle!.trim()
               : 'selected_music.mp3';
           archive.addFile(
@@ -7866,10 +7920,10 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _showPagesSheet(
-      BuildContext context,
-      EditorProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    EditorProvider provider,
+    bool isDark,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -7948,12 +8002,12 @@ class _EditorViewState extends State<EditorView> {
                   Expanded(
                     child: GridView.builder(
                       gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: .82,
-                      ),
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: .82,
+                          ),
                       itemCount: provider.pageCount,
                       itemBuilder: (_, index) {
                         final selected = index == provider.currentPageIndex;
@@ -8088,10 +8142,9 @@ class _TransformSelectionOverlayState
       _isText ? _textBox.height : widget.item.height;
 
   // Same clamp EditableItemWidget applies when drawing.
-  double get _itemScale =>
-      widget.item.scale.isFinite
-          ? widget.item.scale.clamp(0.01, 10.0).toDouble()
-          : 1.0;
+  double get _itemScale => widget.item.scale.isFinite
+      ? widget.item.scale.clamp(0.01, 10.0).toDouble()
+      : 1.0;
 
   double get _rotation =>
       widget.item.rotation.isFinite ? widget.item.rotation : 0.0;
@@ -8208,10 +8261,10 @@ class _TransformSelectionOverlayState
                 onPanUpdate: (details) {
                   final dx =
                       (details.globalPosition.dx - _startFocalPoint.dx) /
-                          widget.scaleX;
+                      widget.scaleX;
                   final dy =
                       (details.globalPosition.dy - _startFocalPoint.dy) /
-                          widget.scaleY;
+                      widget.scaleY;
                   _provider.updateItemTransform(
                     widget.item.id ?? '',
                     position: Offset(
@@ -8238,7 +8291,7 @@ class _TransformSelectionOverlayState
                     style: _provider.outlineStyle(widget.item.id ?? ''),
                     outlineWidth: widget.item.outlineWidth,
                     outlineColor:
-                    widget.item.outlineColor ?? const Color(0xFFD9D9D9),
+                        widget.item.outlineColor ?? const Color(0xFFD9D9D9),
                     borderRadius: _selectionBorderRadius(Size(width, height)),
                   ),
                 ),
@@ -8725,13 +8778,13 @@ class _ImageSelectionPainter extends CustomPainter {
   }
 
   void _drawDashedRRect(
-      Canvas canvas,
-      RRect rrect,
-      Paint paint, {
-        required double dash,
-        required double gap,
-        required bool dotted,
-      }) {
+    Canvas canvas,
+    RRect rrect,
+    Paint paint, {
+    required double dash,
+    required double gap,
+    required bool dotted,
+  }) {
     final path = Path()..addRRect(rrect);
     final metrics = path.computeMetrics();
 

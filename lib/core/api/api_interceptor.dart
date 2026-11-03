@@ -82,6 +82,31 @@ class TokenRefreshInterceptor extends Interceptor {
       return handler.next(err);
     }
 
+    // ==========================================================
+    // TOKEN ALREADY REFRESHED BY ANOTHER REQUEST
+    // ==========================================================
+    // If this request was sent with an older token than the one now stored,
+    // another request already refreshed it. Just retry with the latest token
+    // instead of burning a second refresh call.
+
+    final sentAuth = request.headers['Authorization']?.toString();
+    final storedAccess =
+        prefs.getString('access_token') ?? prefs.getString('auth_token');
+
+    if (!_isRefreshing &&
+        sentAuth != null &&
+        storedAccess != null &&
+        storedAccess.trim().isNotEmpty &&
+        sentAuth != 'Bearer $storedAccess') {
+      debugPrint('🔄 Token already refreshed → retrying with latest token');
+      try {
+        final Response response = await _retryRequest(request, storedAccess);
+        return handler.resolve(response);
+      } on DioException catch (e) {
+        return handler.next(e);
+      }
+    }
+
     try {
       RefreshResult refreshResult;
 
@@ -213,11 +238,6 @@ class TokenRefreshInterceptor extends Interceptor {
       // UPDATE ORIGINAL REQUEST
       // ========================================================
 
-      request.headers['Authorization'] =
-      'Bearer $newAccessToken';
-
-      request.extra['tokenRefreshRetried'] = true;
-
       debugPrint(
         '🔄 Retrying original request with new access token',
       );
@@ -227,13 +247,23 @@ class TokenRefreshInterceptor extends Interceptor {
       // ========================================================
 
       final Response response =
-      await dio.fetch(request);
+      await _retryRequest(request, newAccessToken);
 
       debugPrint(
         '✅ Original request succeeded after token refresh',
       );
 
       return handler.resolve(response);
+    } on DioException catch (e) {
+      // The refresh worked and the retry reached the server, but the retry
+      // itself failed (e.g. 402 quota/plan limit, 400, 500). Surface THAT
+      // error. Returning the original 401 here hid the real reason and made
+      // the app show "Invalid or expired token" even though the token was fine.
+      debugPrint(
+        '❌ Retry after refresh failed: ${e.response?.statusCode}',
+      );
+
+      return handler.next(e);
     } catch (e, stackTrace) {
       debugPrint(
         '❌ Token refresh/retry exception: $e',
@@ -249,6 +279,31 @@ class TokenRefreshInterceptor extends Interceptor {
 
       return handler.next(err);
     }
+  }
+
+  // ============================================================
+  // RETRY ORIGINAL REQUEST WITH A NEW ACCESS TOKEN
+  // ============================================================
+
+  Future<Response<dynamic>> _retryRequest(
+      RequestOptions request,
+      String accessToken,
+      ) {
+    final headers = Map<String, dynamic>.from(request.headers)
+      ..removeWhere((k, _) => k.toLowerCase() == 'authorization');
+    headers['Authorization'] = 'Bearer $accessToken';
+
+    // A FormData body is single-use; it must be cloned to be sent again.
+    Object? data = request.data;
+    if (data is FormData) data = data.clone();
+
+    return dio.fetch(
+      request.copyWith(
+        headers: headers,
+        data: data,
+        extra: {...request.extra, 'tokenRefreshRetried': true},
+      ),
+    );
   }
 
   // ============================================================
@@ -310,7 +365,7 @@ class TokenRefreshInterceptor extends Interceptor {
       );
 
       debugPrint(
-        '🔑 Refresh API response: ${response.data}',
+        '🔑 Refresh API response received (body hidden, contains tokens)',
       );
 
       // ========================================================
