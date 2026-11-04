@@ -113,6 +113,22 @@ class ProjectRepository {
     );
   }
 
+  Future<ApiResult<dynamic>> deleteProject({required String projectUid}) async {
+    final uid = projectUid.trim();
+
+    if (uid.isEmpty) {
+      throw ArgumentError('Project UID cannot be empty');
+    }
+
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: '${ApiEndpoints.project}/$uid',
+        method: ApiMethod.delete,
+      ),
+      fromJson: (json) => json,
+    );
+  }
+
   Future<ApiResult<ProjectList>> getProject() async {
     return ApiRepository.instance.request<ProjectList>(
       config: ApiRequestConfig(

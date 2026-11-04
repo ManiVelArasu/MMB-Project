@@ -151,7 +151,7 @@ class _PlanUsageView extends StatelessWidget {
 
                   const SizedBox(height: 12),
 
-                  _buildCalculationText(),
+                  _buildCalculationText(context, features),
 
                   const SizedBox(height: 28),
 
@@ -500,13 +500,10 @@ class _PlanUsageView extends StatelessWidget {
   // CALCULATION
   // ------------------------------------------------------------
 
-  Widget _buildCalculationText() {
+  Widget _buildCalculationText(BuildContext context, List<Feature> features) {
     return Center(
       child: GestureDetector(
-        onTap: () {
-          // TODO:
-          // Navigate to AI Credits Usage Calculation
-        },
+        onTap: () => _showAiCreditsBreakdown(context, features),
         child: AppText(
           "AI Credits Usage Calculation",
           style: TextStyle(
@@ -516,6 +513,179 @@ class _PlanUsageView extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  /// Rows for the AI credits breakdown: (label, credits).
+  List<MapEntry<String, String>> _aiBreakdownRows(List<Feature> features) {
+    final rows = <MapEntry<String, String>>[];
+
+    for (final feature in features) {
+      if (!_isAiCredits(feature)) continue;
+
+      for (final item in feature.breakdown ?? const <dynamic>[]) {
+        if (item is! Map) continue;
+
+        final String label =
+            item["label"]?.toString() ??
+            item["name"]?.toString() ??
+            item["title"]?.toString() ??
+            "";
+
+        final String credits =
+            item["credits"]?.toString() ??
+            item["amount"]?.toString() ??
+            item["limit"]?.toString() ??
+            item["value"]?.toString() ??
+            item["used"]?.toString() ??
+            "";
+
+        if (label.trim().isEmpty) continue;
+
+        rows.add(MapEntry(label.trim(), credits.trim()));
+      }
+    }
+
+    return rows;
+  }
+
+  void _showAiCreditsBreakdown(BuildContext context, List<Feature> features) {
+    final rows = _aiBreakdownRows(features);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // HANDLE
+                Center(
+                  child: Container(
+                    width: 70,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
+                // TITLE + CLOSE
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppText(
+                        "AI Credits",
+                        style: TextStyle(
+                          fontSize: AppFontSize.fontSize18,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF171A2B),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(sheetContext),
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFE5E7),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Color(0xFFE53935),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                if (rows.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 28),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE6E1DC)),
+                    ),
+                    child: Center(
+                      child: AppText(
+                        "No AI found",
+                        style: TextStyle(
+                          fontSize: AppFontSize.fontSize14,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF777777),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE6E1DC)),
+                    ),
+                    child: Column(
+                      children: [
+                        for (final row in rows)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: AppText(
+                                    row.key,
+                                    style: TextStyle(
+                                      fontSize: AppFontSize.fontSize13,
+                                      fontWeight: FontWeight.w400,
+                                      color: const Color(0xFF555555),
+                                    ),
+                                  ),
+                                ),
+                                AppText(
+                                  row.value.isEmpty
+                                      ? "Credits"
+                                      : "${row.value} Credits",
+                                  style: TextStyle(
+                                    fontSize: AppFontSize.fontSize13,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF171A2B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -747,8 +917,11 @@ class _PlanUsageView extends StatelessWidget {
                         });
                       },
                       title: "CONTINUE",
-                      textStyle: TextStyle( fontSize: AppFontSize.fontSize18,
-                        fontWeight: FontWeight.w700,color: AppColors.appWhite),
+                      textStyle: TextStyle(
+                        fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.appWhite,
+                      ),
                       textColor: AppColors.appWhite,
                       decoration: BoxDecoration(
                         color: AppColors.appRed,
@@ -1063,7 +1236,7 @@ class _PlanUsageView extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child:  AppText(
+                    child: AppText(
                       "BUY NOW",
                       style: TextStyle(
                         fontSize: AppFontSize.fontSize18,

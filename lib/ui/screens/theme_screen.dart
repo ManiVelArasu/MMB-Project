@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/ui/screens/search_screen.dart';
 import 'package:mmb_app/ui/screens/widget/theme_data_card.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
@@ -153,7 +154,17 @@ class _ThemesScreenState extends State<ThemesScreen> {
                             suffixAsset: "assets/images/mic.png",
                             borderColor: const Color(0xFFFFCDD2),
                             showSuffixIcon: false,
-                            onChanged: (value) {},
+                            onSubmitted: (query) {
+                              final q = query.trim();
+                              if (q.length < 2) return;
+
+                              FocusManager.instance.primaryFocus?.unfocus();
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => SearchScreen(initialQuery: q)),
+                              );
+                            },
                           ),
 
                           SizedBox(height: 20.h),

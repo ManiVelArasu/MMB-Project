@@ -51,6 +51,7 @@ import '../ui/subscription/confirm_plan.dart';
 import '../ui/subscription/free_plan.dart';
 import '../ui/subscription/manage_plan.dart';
 import '../ui/subscription/my_subscription.dart';
+
 import '../ui/subscription/plan_detail_screen.dart';
 
 import '../ui/subscription/plan_usage.dart';
@@ -375,10 +376,9 @@ class RouteGenerator {
       case '/BusinessSubCategoryChooseView':
         return MaterialPageRoute(
           builder: (_) => const BusinessSubCategoryChooseView(),
-        ); case '/TextToVoiceScreen':
-        return MaterialPageRoute(
-          builder: (_) => const TextToVoiceScreen(),
         );
+      case '/TextToVoiceScreen':
+        return MaterialPageRoute(builder: (_) => const TextToVoiceScreen());
       case "/TemplateListScreen":
         final arguments = settings.arguments;
 

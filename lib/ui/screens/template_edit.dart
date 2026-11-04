@@ -61,7 +61,6 @@ class TemplateEditScreen extends StatelessWidget {
     double? resolvedCanvasHeight = canvasHeight;
 
     String? resolvedTemplateUid = templateUid;
-
     if (args is String && args.trim().isNotEmpty) {
       resolvedResizeSize = args.trim();
     }

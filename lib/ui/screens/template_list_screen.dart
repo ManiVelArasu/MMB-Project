@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/ui/screens/search_screen.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:provider/provider.dart';
 
@@ -30,7 +31,7 @@ class TemplateListScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) =>
           TemplateListProvider()..loadSpecialDays(type: type, range: range),
-      child:  _TemplateListScreenView(type,range),
+      child: _TemplateListScreenView(type, range),
     );
   }
 }
@@ -38,7 +39,7 @@ class TemplateListScreen extends StatelessWidget {
 class _TemplateListScreenView extends StatelessWidget {
   final String? type;
   final String? range;
-  const _TemplateListScreenView( this.type, this.range);
+  const _TemplateListScreenView(this.type, this.range);
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +128,25 @@ class _TemplateListScreenView extends StatelessWidget {
                           Expanded(
                             child: CustomSearchBar(
                               hintText: 'Search your festival',
+                              prefixAsset: "assets/images/search.png",
+                              suffixAsset: "assets/images/mic.png",
+                              borderColor: const Color(0xFFFFCDD2),
                               showSuffixIcon: false,
+                              onChanged: (query) {},
+                              onSubmitted: (query) {
+                                final q = query.trim();
+                                if (q.length < 2) return;
+
+                                FocusManager.instance.primaryFocus?.unfocus();
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        SearchScreen(initialQuery: q),
+                                  ),
+                                );
+                              },
                             ),
                           ),
                           SizedBox(width: 10.w),
@@ -195,7 +214,10 @@ class _TemplateListScreenView extends StatelessWidget {
 
                       Expanded(
                         child: RefreshIndicator(
-                          onRefresh: () => provider.loadSpecialDays(type: type, range: range),
+                          onRefresh: () => provider.loadSpecialDays(
+                            type: type,
+                            range: range,
+                          ),
                           child: GridView.builder(
                             padding: EdgeInsets.only(bottom: 40.h),
                             physics: const AlwaysScrollableScrollPhysics(

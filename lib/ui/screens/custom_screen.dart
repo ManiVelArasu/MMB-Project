@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/ui/screens/search_screen.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:provider/provider.dart';
 import '../../component/custom_searchbar.dart';
@@ -94,9 +95,21 @@ class _CustomCreateBody extends StatelessWidget {
                             prefixAsset: "assets/images/search.png",
                             suffixAsset: "assets/images/mic.png",
                             borderColor: const Color(0xFFFFCDD2),
-                            onChanged: (query) {},
-                          ),
+                            showSuffixIcon: false,
+                            onSubmitted: (query) {
+                              final q = query.trim();
+                              if (q.length < 2) return;
 
+                              FocusManager.instance.primaryFocus?.unfocus();
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SearchScreen(initialQuery: q),
+                                ),
+                              );
+                            },
+                          ),
                           SizedBox(height: 24.h),
 
                           _buildHeader(
@@ -114,7 +127,7 @@ class _CustomCreateBody extends StatelessWidget {
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
                               itemCount:
-                              templateSizes.length +
+                                  templateSizes.length +
                                   1, // +1 for the custom card
                               itemBuilder: (context, index) {
                                 // ---------- Custom Size card ----------
@@ -134,7 +147,7 @@ class _CustomCreateBody extends StatelessWidget {
                                         isScrollControlled: true,
                                         backgroundColor: Colors.transparent,
                                         builder: (context) =>
-                                        const _CustomSizeBottomSheet(),
+                                            const _CustomSizeBottomSheet(),
                                       );
                                     },
                                   );
@@ -201,12 +214,12 @@ class _CustomCreateBody extends StatelessWidget {
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: provider.aiToolsList.length,
                             gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12.w,
-                              mainAxisSpacing: 12.h,
-                              childAspectRatio: 0.82,
-                            ),
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 12.w,
+                                  mainAxisSpacing: 12.h,
+                                  childAspectRatio: 0.82,
+                                ),
                             itemBuilder: (context, index) {
                               final tool = provider.aiToolsList[index];
 
@@ -246,15 +259,15 @@ class _CustomCreateBody extends StatelessWidget {
                                         width: 52.w,
                                         child: tool.imagePath.trim().isNotEmpty
                                             ? Image.asset(
-                                          tool.imagePath,
-                                          fit: BoxFit.contain,
-                                          errorBuilder:
-                                              (
-                                              context,
-                                              error,
-                                              stackTrace,
-                                              ) => _buildFallbackIcon(),
-                                        )
+                                                tool.imagePath,
+                                                fit: BoxFit.contain,
+                                                errorBuilder:
+                                                    (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) => _buildFallbackIcon(),
+                                              )
                                             : _buildFallbackIcon(),
                                       ),
 
@@ -599,7 +612,9 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                     width: 45.w,
                     height: 4.h,
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                      color: isDark
+                          ? Colors.grey.shade700
+                          : Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(10.r),
                     ),
                   ),
@@ -738,18 +753,18 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? (isDark
-                                ? const Color(0xFF3A2022)
-                                : const Color(0xFFFFECEE))
+                                      ? const Color(0xFF3A2022)
+                                      : const Color(0xFFFFECEE))
                                 : (isDark
-                                ? const Color(0xFF2A2A2A)
-                                : Colors.white),
+                                      ? const Color(0xFF2A2A2A)
+                                      : Colors.white),
                             borderRadius: BorderRadius.circular(12.r),
                             border: Border.all(
                               color: isSelected
                                   ? Colors.red
                                   : (isDark
-                                  ? Colors.grey.shade700
-                                  : Colors.grey.shade300),
+                                        ? Colors.grey.shade700
+                                        : Colors.grey.shade300),
                               width: isSelected ? 1.5 : 1,
                             ),
                           ),
@@ -768,8 +783,8 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                                       color: isSelected
                                           ? Colors.red
                                           : (isDark
-                                          ? Colors.white
-                                          : const Color(0xFF171A2B)),
+                                                ? Colors.white
+                                                : const Color(0xFF171A2B)),
                                     ),
                                   ),
                                   SizedBox(height: 3.h),

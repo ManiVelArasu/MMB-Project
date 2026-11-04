@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -7,20 +7,30 @@ import '../../../utils/theme/app.colors.dart';
 import '../../../utils/theme/app.fonts.dart';
 
 class TemplateActionPopup extends StatefulWidget {
-  final VoidCallback onCustomize;
-  final VoidCallback onFavorite;
+  final VoidCallback? onEdit;
+  final VoidCallback? onFavorite;
   final VoidCallback? onDownload;
+  final VoidCallback? onDelete;
+  final VoidCallback? onCustomize;
+  final bool isFavorite;
   final bool showDownload;
+  final bool showDelete;
 
   const TemplateActionPopup({
     super.key,
-    required this.onCustomize,
-    required this.onFavorite,
+    this.onEdit,
+    this.onFavorite,
     this.onDownload,
-    this.showDownload = false,
+    this.onDelete,
+    this.isFavorite = false,
+    this.showDownload = true,
+    this.showDelete = true,
+    this.onCustomize,
   });
+
   @override
-  State<TemplateActionPopup> createState() => _TemplateActionPopupState();
+  State<TemplateActionPopup> createState() =>
+      _TemplateActionPopupState();
 }
 
 class _TemplateActionPopupState extends State<TemplateActionPopup> {
@@ -40,6 +50,103 @@ class _TemplateActionPopupState extends State<TemplateActionPopup> {
 
     _overlayEntry = OverlayEntry(
       builder: (overlayContext) {
+        final dark =
+            Theme.of(overlayContext).brightness == Brightness.dark;
+
+        final backgroundColor =
+        dark ? const Color(0xFF242424) : Colors.white;
+
+        final textColor =
+        dark ? Colors.white : AppColors.appBlack;
+
+        final dividerColor =
+        dark ? Colors.grey.shade700 : Colors.grey.shade300;
+
+        // Build menu items based on isFavorite
+        final List<Widget> menuItems = [];
+
+        void addItem({
+          required String image,
+          required String title,
+          required Color color,
+          required VoidCallback onTap,
+        }) {
+          if (menuItems.isNotEmpty) {
+            menuItems.add(
+              Divider(
+                height: 1,
+                thickness: 0.5,
+                color: dividerColor,
+              ),
+            );
+          }
+
+          menuItems.add(
+            _menuItem(
+              image: image,
+              title: title,
+              textColor: color,
+              onTap: () {
+                _closePopup();
+                onTap();
+              },
+            ),
+          );
+        }
+
+        // Favorite true = Favorite option
+        // Favorite false = Edit option
+        // Favorite
+        // Favorite
+        if (widget.isFavorite && widget.onFavorite != null) {
+          addItem(
+            image: 'assets/images/heart_circle.png',
+            title: 'Favorite',
+            color: textColor,
+            onTap: widget.onFavorite!,
+          );
+        }
+
+// Edit
+        if (!widget.isFavorite && widget.onEdit != null) {
+          addItem(
+            image: 'assets/images/edits.png',
+            title: 'Edit',
+            color: textColor,
+            onTap: widget.onEdit!,
+          );
+        }
+
+// Customize
+        if (widget.onCustomize != null) {
+          addItem(
+            image: 'assets/images/customise.png',
+            title: 'Customize',
+            color: textColor,
+            onTap: widget.onCustomize!,
+          );
+        }
+
+// Download
+        if (widget.showDownload && widget.onDownload != null) {
+          addItem(
+            image: 'assets/images/edits.png',
+            title: 'Download',
+            color: textColor,
+            onTap: widget.onDownload!,
+          );
+        }
+
+// Delete
+        if (widget.showDelete && widget.onDelete != null) {
+          addItem(
+            image: 'assets/images/trash.png',
+            title: 'Delete',
+            color: textColor,
+            onTap: widget.onDelete!,
+          );
+        }
+
         return Stack(
           children: [
             Positioned.fill(
@@ -56,7 +163,7 @@ class _TemplateActionPopupState extends State<TemplateActionPopup> {
               followerAnchor: Alignment.topRight,
               offset: Offset(0, 4.h),
               child: Material(
-                color: Colors.white,
+                color: backgroundColor,
                 elevation: 8,
                 borderRadius: BorderRadius.circular(8.r),
                 clipBehavior: Clip.antiAlias,
@@ -64,44 +171,7 @@ class _TemplateActionPopupState extends State<TemplateActionPopup> {
                   width: 145.w,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _menuItem(
-                        icon: 'assets/images/customise.png',
-                        title: 'Customize',
-                        onTap: () {
-                          _closePopup();
-                          widget.onCustomize();
-                        },
-                      ),
-                      if (widget.showDownload && widget.onDownload != null) ...[
-                        Divider(
-                          height: 1,
-                          thickness: 0.5,
-                          color: Colors.grey.shade300,
-                        ),
-                        _menuItem(
-                          icon: 'assets/images/download.png',
-                          title: 'Download',
-                          onTap: () {
-                            _closePopup();
-                            widget.onDownload!();
-                          },
-                        ),
-                      ],
-                      Divider(
-                        height: 1,
-                        thickness: 0.5,
-                        color: Colors.grey.shade300,
-                      ),
-                      _menuItem(
-                        icon: 'assets/images/heart_circle.png',
-                        title: 'Favorite',
-                        onTap: () {
-                          _closePopup();
-                          widget.onFavorite();
-                        },
-                      ),
-                    ],
+                    children: menuItems,
                   ),
                 ),
               ),
@@ -138,41 +208,43 @@ class _TemplateActionPopupState extends State<TemplateActionPopup> {
             color: const Color(0xFF202020),
             borderRadius: BorderRadius.circular(7.r),
           ),
-          child: Icon(Icons.more_horiz, color: Colors.white, size: 21.sp),
+          child: Icon(
+            Icons.more_horiz,
+            color: Colors.white,
+            size: 21.sp,
+          ),
         ),
       ),
     );
   }
 
   Widget _menuItem({
-    required String icon,
+    required String image,
     required String title,
+    required Color textColor,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
+        padding: EdgeInsets.symmetric(
+          horizontal: 10.w,
+          vertical: 11.h,
+        ),
         child: Row(
           children: [
             Image.asset(
-              icon,
+              image,
               width: 18.w,
               height: 18.h,
-              errorBuilder: (_, __, ___) => Icon(
-                title == 'Favorite'
-                    ? Icons.favorite_border
-                    : Icons.edit_outlined,
-                size: 18.sp,
-                color: AppColors.appBlack,
-              ),
+              fit: BoxFit.contain,
             ),
-            SizedBox(width: 8.w),
+            SizedBox(width: 9.w),
             Expanded(
               child: AppText(
                 title.toUpperCase(),
                 style: TextStyle(
-                  color: AppColors.appBlack,
+                  color: textColor,
                   fontSize: AppFontSize.fontSize14,
                   fontWeight: FontWeight.w400,
                 ),

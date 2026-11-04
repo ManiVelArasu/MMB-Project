@@ -85,8 +85,8 @@ class ProjectProvider extends ChangeNotifier {
         for (final project in _plansData!.data) {
           debugPrint(
             'Project: uid=${project.uid}, '
-            'name=${project.name}, '
-            'thumbnail=${project.thumbnailS3Key}',
+                'name=${project.name}, '
+                'thumbnail=${project.thumbnailS3Key}',
           );
         }
       } else {
@@ -103,6 +103,38 @@ class ProjectProvider extends ChangeNotifier {
     } finally {
       _isLoadingPlans = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> deleteProject(String? projectUid) async {
+    final uid = projectUid?.trim() ?? '';
+
+    if (uid.isEmpty) {
+      _errorMessage = 'Project UID not available';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      debugPrint('🗑️ DELETE PROJECT: $uid');
+
+      final result = await repository.deleteProject(projectUid: uid);
+
+      if (result.isSuccess) {
+        _plansData?.data.removeWhere((p) => p.uid == uid);
+        notifyListeners();
+        return true;
+      }
+
+      _errorMessage = result.error?.message ?? 'Unable to delete project';
+      notifyListeners();
+      return false;
+    } catch (e, stackTrace) {
+      _errorMessage = e.toString();
+      debugPrint('❌ DELETE PROJECT EXCEPTION: $e');
+      debugPrint(stackTrace.toString());
+      notifyListeners();
+      return false;
     }
   }
 

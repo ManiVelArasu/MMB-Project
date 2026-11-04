@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mmb_app/ui/screens/search_screen.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/ui/screens/video_widget/video_widget.dart';
 import 'package:mmb_app/ui/screens/widget/download.dart';
@@ -96,6 +97,17 @@ class _HomeScreenView extends StatelessWidget {
                         suffixAsset: "assets/images/mic.png",
                         borderColor: AppColors.searchBorderColor,
                         onChanged: (query) {},
+                        onSubmitted: (query) {
+                          final q = query.trim();
+                          if (q.length < 2) return;
+
+                          FocusManager.instance.primaryFocus?.unfocus();
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => SearchScreen(initialQuery: q)),
+                          );
+                        },
                       ),
 
                       SizedBox(height: 20.h),
@@ -607,14 +619,19 @@ class _HomeScreenView extends StatelessWidget {
                                       scrollDirection: Axis.horizontal,
                                       physics: const BouncingScrollPhysics(),
                                       itemCount: category.children.length,
-                                      separatorBuilder: (_, __) => SizedBox(width: 7.w),
+                                      separatorBuilder: (_, __) =>
+                                          SizedBox(width: 7.w),
                                       itemBuilder: (context, childIndex) {
-                                        final child = category.children[childIndex];
+                                        final child =
+                                            category.children[childIndex];
 
-                                        final childName = child.name?.trim() ?? '';
-                                        final childSlug = child.slug?.trim() ?? '';
+                                        final childName =
+                                            child.name?.trim() ?? '';
+                                        final childSlug =
+                                            child.slug?.trim() ?? '';
 
-                                        final thumbnailKey = child.iconS3Key?.trim() ?? '';
+                                        final thumbnailKey =
+                                            child.iconS3Key?.trim() ?? '';
 
                                         final imageUrl = thumbnailKey.isEmpty
                                             ? ''
@@ -623,7 +640,9 @@ class _HomeScreenView extends StatelessWidget {
                                         return SizedBox(
                                           width: 90.w,
                                           child: InkWell(
-                                            borderRadius: BorderRadius.circular(12.r),
+                                            borderRadius: BorderRadius.circular(
+                                              12.r,
+                                            ),
                                             onTap: () {
                                               Navigator.pushNamed(
                                                 context,
@@ -638,34 +657,45 @@ class _HomeScreenView extends StatelessWidget {
                                             child: Column(
                                               children: [
                                                 ClipRRect(
-                                                  borderRadius: BorderRadius.circular(10.r),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        10.r,
+                                                      ),
                                                   child: Container(
                                                     width: 84.w,
                                                     height: 88.w,
                                                     color: isDark
-                                                        ? const Color(0xFF252525)
+                                                        ? const Color(
+                                                            0xFF252525,
+                                                          )
                                                         : Colors.grey.shade100,
                                                     child: imageUrl.isEmpty
                                                         ? Icon(
-                                                      Icons.image_outlined,
-                                                      size: 28.sp,
-                                                      color: Colors.grey,
-                                                    )
+                                                            Icons
+                                                                .image_outlined,
+                                                            size: 28.sp,
+                                                            color: Colors.grey,
+                                                          )
                                                         : CachedNetworkImage(
-                                                      imageUrl:imageUrl,
-                                                      width: 84.w,
-                                                      height: 88.w,
-                                                      fit: BoxFit.cover,
+                                                            imageUrl: imageUrl,
+                                                            width: 84.w,
+                                                            height: 88.w,
+                                                            fit: BoxFit.cover,
 
-                                                      placeholder: (context, url) {
-                                                        return _defaultLogo();
-                                                      },
+                                                            placeholder:
+                                                                (context, url) {
+                                                                  return _defaultLogo();
+                                                                },
 
-                                                      errorWidget: (context, url, error) {
-
-                                                        return _defaultLogo();
-                                                      },
-                                                    ),
+                                                            errorWidget:
+                                                                (
+                                                                  context,
+                                                                  url,
+                                                                  error,
+                                                                ) {
+                                                                  return _defaultLogo();
+                                                                },
+                                                          ),
                                                   ),
                                                 ),
 
@@ -678,9 +708,14 @@ class _HomeScreenView extends StatelessWidget {
                                                     textAlign: TextAlign.center,
                                                     maxLines: 2,
                                                     style: TextStyle(
-                                                      fontSize: AppFontSize.fontSize12.sp,
-                                                      fontWeight: FontWeight.w400,
-                                                      color: isDark ? Colors.white : Colors.black,
+                                                      fontSize: AppFontSize
+                                                          .fontSize12
+                                                          .sp,
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                      color: isDark
+                                                          ? Colors.white
+                                                          : Colors.black,
                                                     ),
                                                   ),
                                                 ),
@@ -1315,33 +1350,34 @@ class _HomeScreenView extends StatelessWidget {
               top: 5.h,
               right: 5.w,
               child: TemplateActionPopup(
-                onCustomize: () {
-                  final templateUid = template.uid?.trim() ?? '';
+                isFavorite: true,
+                showDownload: false,
+                showDelete: false,
+              onCustomize: (){
+                final templateUid = template.uid?.trim() ?? '';
 
-                  if (templateUid.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: AppText('Template UID not available'),
-                      ),
-                    );
-                    return;
-                  }
-
-                  if (template.isLocked) {
-                    _showPremiumTemplateDialog(context, template);
-                    return;
-                  }
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          TemplateEditScreen(templateUid: templateUid),
+                if (templateUid.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: AppText('Template UID not available'),
                     ),
                   );
-                },
-                showDownload: true,
+                  return;
+                }
 
+                if (template.isLocked) {
+                  _showPremiumTemplateDialog(context, template);
+                  return;
+                }
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        TemplateEditScreen(templateUid: templateUid),
+                  ),
+                );
+              },
                 onDownload: () async {
                   final thumbnailUrl = template.thumbnailS3Key?.trim() ?? '';
 
@@ -1689,12 +1725,37 @@ class _HomeScreenView extends StatelessWidget {
                 top: 5.h,
                 right: 5.w,
                 child: TemplateActionPopup(
-                  onCustomize: openCustomize,
+                  isFavorite: true,
+                  showDownload: false,
+                  showDelete: false,
+                  onCustomize: (){
+                    final templateUid = template.uid?.trim() ?? '';
+
+                    if (templateUid.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: AppText('Template UID not available'),
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            TemplateEditScreen(templateUid: templateUid),
+                      ),
+                    );
+                  },
                   onFavorite: () {
                     final familyUid = template.familyUid?.trim() ?? '';
                     if (familyUid.isNotEmpty) {
                       provider.favoriteTemplate(familyUid);
                     }
+                  },
+
+                  onDownload: () {
+                    // Download action
                   },
                 ),
               ),

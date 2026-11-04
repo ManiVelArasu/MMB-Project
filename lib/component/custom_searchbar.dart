@@ -5,6 +5,7 @@ class CustomSearchBar extends StatelessWidget {
   final TextEditingController? controller;
   final String hintText;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
   final VoidCallback? onMicTap;
   final VoidCallback? onSearchTap;
   final String prefixAsset;
@@ -17,6 +18,7 @@ class CustomSearchBar extends StatelessWidget {
     this.controller,
     this.hintText = "Find your Industry",
     this.onChanged,
+    this.onSubmitted,
     this.onMicTap,
     this.onSearchTap,
     this.prefixAsset = "assets/images/search.png",
@@ -43,6 +45,10 @@ class CustomSearchBar extends StatelessWidget {
       child: TextField(
         controller: controller,
         onChanged: onChanged,
+        onSubmitted: onSubmitted,
+        textInputAction: onSubmitted != null
+            ? TextInputAction.search
+            : TextInputAction.done,
         style: TextStyle(
           fontSize: 14.sp,
           color: Colors.black,

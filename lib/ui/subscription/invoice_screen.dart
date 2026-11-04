@@ -32,8 +32,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       appBar: AppBar(
         title: const Text("Invoice"),
       ),
-      body: WebViewWidget(
-        controller: controller,
+      body: SafeArea(
+        child: WebViewWidget(
+          controller: controller,
+        ),
       ),
     );
   }
