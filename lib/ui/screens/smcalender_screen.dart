@@ -8,6 +8,7 @@ import '../../component/custom_widget.dart';
 import '../../network/provider/smcalender_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../utils/theme/app.colors.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 class SmCalendarScreen extends StatelessWidget {
   const SmCalendarScreen({super.key});
@@ -31,9 +32,8 @@ class SmCalendarView extends StatelessWidget {
 
     return Consumer<SmCalendarProvider>(
       builder: (context, provider, child) {
-        return Scaffold(
-          extendBodyBehindAppBar: true,
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        return CommonScaffold(
+          isDarkMode: isDark,
           appBar: CustomAppBar(
             title: "My Monthly SM Calendars",
             showRightIcon: false,
@@ -45,33 +45,42 @@ class SmCalendarView extends StatelessWidget {
                 left: 0,
                 right: 0,
                 height: 150.h,
-                child: Stack(
-                  children: [
-                    // Background image
-                    Positioned.fill(
-                      child: Image.asset(
-                        "assets/images/sm_mask.png",
-                        fit: BoxFit.cover,
-                        alignment: Alignment.topCenter,
-                      ),
-                    ),
-
-                    // Text over the image
-                    Positioned(
-                      left: 16.w,
-                      right: 16.w,
-                      bottom: 12.h,
-                      child: AppText(
-                        "Plan your content with AI and get ready-to-use posts tailored to your business.",
-                        style: TextStyle(
-                          color: AppColors.appGrey,
-                          fontSize: AppFontSize.fontSize14,
-                          height: 1.4,
-                          fontWeight: FontWeight.w400,
+                child: Container(
+                  color: isDark
+                      ? const Color(0xFF1E1E1E)
+                      : Colors.white,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Image.asset(
+                          "assets/images/sm_mask.png",
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                          color: isDark
+                              ? Colors.black.withOpacity(0.35)
+                              : null,
+                          colorBlendMode:
+                          isDark ? BlendMode.darken : null,
                         ),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        left: 16.w,
+                        right: 16.w,
+                        bottom: 12.h,
+                        child: AppText(
+                          "Plan your content with AI and get ready-to-use posts tailored to your business.",
+                          style: TextStyle(
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.appGrey,
+                            fontSize: AppFontSize.fontSize14,
+                            height: 1.4,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               SafeArea(

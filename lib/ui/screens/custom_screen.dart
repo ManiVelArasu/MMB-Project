@@ -12,6 +12,7 @@ import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
 
 import '../../network/provider/custom_theme_provider.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 class CustomCreateScreen extends StatelessWidget {
   const CustomCreateScreen({super.key});
@@ -55,9 +56,8 @@ class _CustomCreateBody extends StatelessWidget {
         }
         final templateSizes = provider.plansData?.data ?? [];
 
-        return Scaffold(
-          extendBodyBehindAppBar: true,
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        return CommonScaffold(
+          isDarkMode: isDark,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(),

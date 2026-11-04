@@ -8,7 +8,9 @@ import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../Api Model/plans_type.dart';
 import '../../component/custom_widget.dart';
+import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/plan_provider.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 class FreePlanScreen extends StatelessWidget {
   final bool showSkip;
@@ -36,8 +38,11 @@ class _PlansAndPricingBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    final themeProvider = context.watch<CustomThemeProvider>();
+
+    final isDark = themeProvider.isDarkMode;
+    return CommonScaffold(
+      isDarkMode: isDark,
       appBar: CustomAppBar(title: "My Subscription", showRightIcon: false),
       body: SafeArea(
         child: Column(

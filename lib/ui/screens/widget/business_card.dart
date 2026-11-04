@@ -48,7 +48,7 @@ class BusinessCategoryCard extends StatelessWidget {
                 child: AppText(
                   'EDIT',
                   style: TextStyle(
-                    fontSize: AppFontSize.fontSize12,
+                    fontSize: AppFontSize.fontSize11,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFFFF252D),
                   ),

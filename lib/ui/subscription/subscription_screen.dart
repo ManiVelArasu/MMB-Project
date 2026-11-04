@@ -5,9 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Api Model/plans_type.dart';
 import '../../component/custom_widget.dart';
+import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/plan_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 class PlansAndPricingScreen extends StatelessWidget {
   final bool showSkip;
@@ -35,8 +37,11 @@ class _PlansAndPricingBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    final themeProvider = context.watch<CustomThemeProvider>();
+
+    final isDark = themeProvider.isDarkMode;
+    return CommonScaffold(
+      isDarkMode: isDark,
       body: Stack(
         children: [
           Positioned.fill(

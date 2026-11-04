@@ -10,6 +10,7 @@ import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import '../../component/appbar_widget.dart';
+import '../../component/common_heading_text.dart';
 import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/bottom_provider.dart';
@@ -18,6 +19,7 @@ import '../../network/provider/businessprofile_provider.dart';
 
 import '../../network/provider/custom_theme_provider.dart';
 import '../industry/widgets/image_viewer.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 class BusinessProfileScreen extends StatelessWidget {
   const BusinessProfileScreen({super.key});
@@ -39,12 +41,12 @@ class BusinessProfileView extends StatelessWidget {
     final Size size = MediaQuery.of(context).size;
     final themeProvider = context.watch<CustomThemeProvider>();
     final isDark = themeProvider.isDarkMode;
+    final businessProvider = context.watch<BusinessProvider>();
 
+    final commonProvider = context.watch<CommonProvider>();
     return Consumer<BusinessProfileProvider>(
       builder: (context, provider, child) {
-        final businessProvider = context.watch<BusinessProvider>();
 
-        final commonProvider = context.watch<CommonProvider>();
 
         final accountType =
             commonProvider.me?.data.accountType ??
@@ -60,9 +62,8 @@ class BusinessProfileView extends StatelessWidget {
           );
         }
 
-        return Scaffold(
-          extendBodyBehindAppBar: true,
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        return CommonScaffold(
+          isDarkMode: isDark,
           appBar: CustomAppBar(
             onBackPressed: () {
               debugPrint('Back pressed');
@@ -106,7 +107,7 @@ class BusinessProfileView extends StatelessWidget {
             children: [
               Positioned.fill(child: _profileBackground(isDark)),
               SafeArea(
-                child: provider.isKeyWordsLoading
+                child: provider.isInitialLoading
                     ? Center(child: CircularProgressIndicator())
                     : SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -128,7 +129,6 @@ class BusinessProfileView extends StatelessWidget {
                               padding: const EdgeInsets.all(2),
                               decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.white,
                               ),
                               child: ClipOval(
                                 child: Material(
@@ -180,24 +180,12 @@ class BusinessProfileView extends StatelessWidget {
                               ),
                             ),
                             SizedBox(height: 4.h),
-                            AppText(
-                              "${provider.commonProvider.business?.businessCategory?.slug ?? provider.commonProvider.business?.businessCategory?.parent?.slug}",
-                              style: TextStyle(
-                                color: isDark
-                                    ? Colors.grey.shade400
-                                    : Colors.grey.shade600,
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-
-                            SizedBox(height: 8.h),
                             BusinessCategoryCard(
                               category: provider.businessName.isEmpty
-                                  ? "${provider.commonProvider.business?.businessCategory?.parent?.slug}"
+                                  ? "${provider.commonProvider.business?.businessCategory?.parent?.name}"
                                   : provider.businessName,
                               subCategories:
-                              "${provider.commonProvider.business?.businessCategory?.slug ?? provider.commonProvider.business?.businessCategory?.parent?.slug}",
+                              "${provider.commonProvider.business?.businessCategory?.name ?? provider.commonProvider.business?.businessCategory?.parent?.name}",
                               onEditTap: () {
                                 Navigator.pushNamed(
                                   context,
@@ -241,7 +229,7 @@ class BusinessProfileView extends StatelessWidget {
                                       "/MyUploadsScreen",
                                     );
                                   },
-                                  title: "Media Library",
+                                  title: "Media Library".toUpperCase(),
                                   iconAsset: "assets/images/uploads.png",
                                   bgColor: isDark
                                       ? const Color(0xFF3A2F1A)
@@ -287,16 +275,7 @@ class BusinessProfileView extends StatelessWidget {
                                       ),
                                     ),
                                     SizedBox(width: 8.w),
-                                    AppText(
-                                      "My Frames",
-                                      style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
-                                        fontSize: AppFontSize.fontSize18,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
+                                    CommonHeadingText("Brand Frames")
                                   ],
                                 ),
                                 Container(
@@ -337,13 +316,8 @@ class BusinessProfileView extends StatelessWidget {
                                               ? Colors.white
                                               : Colors.black)
                                               : Colors.grey,
-                                          fontSize:
-                                          AppFontSize.fontSize13,
-                                          fontWeight:
-                                          provider.selectedFrameTab ==
-                                              0
-                                              ? FontWeight.w900
-                                              : FontWeight.w500,
+                                          fontSize: AppFontSize.fontSize15,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                       if (provider.selectedFrameTab == 0)
@@ -373,12 +347,8 @@ class BusinessProfileView extends StatelessWidget {
                                               ? Colors.white
                                               : Colors.black)
                                               : Colors.grey.shade400,
-                                          fontSize: 14.sp,
-                                          fontWeight:
-                                          provider.selectedFrameTab ==
-                                              1
-                                              ? FontWeight.w900
-                                              : FontWeight.w600,
+                                          fontSize: AppFontSize.fontSize15,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                       if (provider.selectedFrameTab == 1)
@@ -414,56 +384,92 @@ class BusinessProfileView extends StatelessWidget {
                                 child: Text(
                                   "No frames available",
                                   style: TextStyle(
-                                    color: isDark ? Colors.white60 : Colors.grey,
+                                    color: isDark
+                                        ? Colors.white60
+                                        : Colors.grey,
                                     fontSize: 12.sp,
                                   ),
                                 ),
                               )
                                   : ListView.builder(
                                 scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                itemCount: provider.selectedFrames.length,
+                                physics:
+                                const BouncingScrollPhysics(),
+                                itemCount:
+                                provider.selectedFrames.length,
                                 itemBuilder: (context, index) {
-                                  final frame = provider.selectedFrames[index];
-                                  final image = frame.thumbnailS3Key;
+                                  final frame = provider
+                                      .selectedFrames[index];
+                                  final image =
+                                      frame.thumbnailS3Key;
 
                                   return Container(
                                     width: 110.w,
-                                    margin: EdgeInsets.only(right: 12.w),
+                                    margin: EdgeInsets.only(
+                                      right: 12.w,
+                                    ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
                                           child: Container(
                                             decoration: BoxDecoration(
                                               color: isDark
-                                                  ? const Color(0xFF1E1E1E)
+                                                  ? const Color(
+                                                0xFF1E1E1E,
+                                              )
                                                   : Colors.white,
-                                              borderRadius: BorderRadius.circular(12.r),
+                                              borderRadius:
+                                              BorderRadius.circular(
+                                                12.r,
+                                              ),
                                               border: Border.all(
                                                 color: isDark
-                                                    ? Colors.grey.shade800
-                                                    : Colors.grey.shade300,
+                                                    ? Colors
+                                                    .grey
+                                                    .shade800
+                                                    : Colors
+                                                    .grey
+                                                    .shade300,
                                                 width: 1.2,
                                               ),
                                             ),
                                             child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(10.r),
+                                              borderRadius:
+                                              BorderRadius.circular(
+                                                10.r,
+                                              ),
                                               child: CachedNetworkImage(
                                                 imageUrl:
                                                 "${ApiEndpoints.cdnImageUrl}/$image",
-                                                width: double.infinity,
-                                                height: double.infinity,
+                                                width:
+                                                double.infinity,
+                                                height:
+                                                double.infinity,
                                                 fit: BoxFit.contain,
-                                                placeholder: (_, __) => const Center(
+                                                placeholder:
+                                                    (
+                                                    _,
+                                                    __,
+                                                    ) => const Center(
                                                   child: CircularProgressIndicator(
-                                                    strokeWidth: 1.5,
-                                                    color: Color(0xFFE53935),
+                                                    strokeWidth:
+                                                    1.5,
+                                                    color: Color(
+                                                      0xFFE53935,
+                                                    ),
                                                   ),
                                                 ),
-                                                errorWidget: (_, __, ___) => const Center(
+                                                errorWidget:
+                                                    (
+                                                    _,
+                                                    __,
+                                                    ___,
+                                                    ) => const Center(
                                                   child: Icon(
-                                                    Icons.image_not_supported_rounded,
+                                                    Icons
+                                                        .image_not_supported_rounded,
                                                   ),
                                                 ),
                                               ),
@@ -474,14 +480,17 @@ class BusinessProfileView extends StatelessWidget {
                                         AppText(
                                           'RS. ${frame.price}',
                                           style: TextStyle(
-                                            fontSize: 11.sp,
-                                            fontWeight: FontWeight.w700,
+                                            fontSize: AppFontSize
+                                                .fontSize14,
+                                            fontWeight:
+                                            FontWeight.w400,
                                             color: isDark
                                                 ? Colors.white70
                                                 : Colors.black87,
                                           ),
                                           maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                          overflow:
+                                          TextOverflow.ellipsis,
                                         ),
                                       ],
                                     ),
@@ -524,24 +533,16 @@ class BusinessProfileView extends StatelessWidget {
                               mainAxisAlignment:
                               MainAxisAlignment.spaceBetween,
                               children: [
-                                AppText(
-                                  "My Keywords",
-                                  style: TextStyle(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                    fontSize: AppFontSize.fontSize18,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
+                                CommonHeadingText("Business Keywords"),
+
                                 AppText(
                                   "MANAGE",
                                   style: TextStyle(
                                     color: isDark
                                         ? Colors.grey.shade400
                                         : Colors.grey.shade600,
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w800,
+                                    fontSize: AppFontSize.fontSize13,
+                                    fontWeight: FontWeight.w600,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -551,50 +552,39 @@ class BusinessProfileView extends StatelessWidget {
                             SizedBox(height: 12.h),
 
                             Wrap(
-                              spacing: 8.w,
-                              runSpacing: 8.h,
-                              children: (provider.keyWords).map<Widget>((
-                                  keywordItem,
-                                  ) {
-                                final keyword =
-                                    keywordItem.name?.trim() ?? '';
-
-                                if (keyword.isEmpty) {
-                                  return const SizedBox.shrink();
-                                }
-
+                              spacing: 10.w,
+                              runSpacing: 10.h,
+                              children: provider.keyWords
+                                  .where((e) => (e.name?.trim() ?? '').isNotEmpty)
+                                  .map<Widget>((e) {
                                 return Container(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 14.w,
-                                    vertical: 6.h,
+                                    vertical: 8.h,
                                   ),
                                   decoration: BoxDecoration(
                                     color: isDark
                                         ? const Color(0xFF1E1E1E)
                                         : Colors.white,
-                                    borderRadius: BorderRadius.circular(
-                                      20.r,
-                                    ),
+                                    borderRadius: BorderRadius.circular(25.r),
                                     border: Border.all(
                                       color: isDark
                                           ? Colors.grey.shade800
                                           : Colors.grey.shade300,
-                                      width: 1.2,
                                     ),
                                   ),
                                   child: AppText(
-                                    keyword,
+                                    e.name!.trim(),
                                     style: TextStyle(
-                                      color: isDark
-                                          ? Colors.white70
-                                          : Colors.black87,
-                                      fontSize: 11.5.sp,
-                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? Colors.white70 : Colors.black87,
+                                      fontSize: AppFontSize.fontSize14,
+                                      fontWeight: FontWeight.w400,
                                     ),
+                                    maxLines: 1,
                                   ),
                                 );
                               }).toList(),
-                            ),
+                            )
                           ],
                         ),
                       ),
@@ -614,16 +604,8 @@ class BusinessProfileView extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            AppText(
-                              "Online Presence",
-                              style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface,
-                                fontSize: 18.sp,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                            CommonHeadingText(  "Marketing Assets"),
+
 
                             SizedBox(height: 12.h),
 
@@ -631,9 +613,9 @@ class BusinessProfileView extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: _buildPresenceTile(
-                                    title: "Business Profile",
+                                    title: "My Business Page",
                                     iconAsset:
-                                    "assets/images/b_profile.png",
+                                    "assets/images/business_card.png",
                                     bgColor: isDark
                                         ? const Color(0xFF2A1A1C)
                                         : const Color(0xFFFFECEE),
@@ -813,35 +795,33 @@ class BusinessProfileView extends StatelessWidget {
                     child: Row(
                       children: [
                         Expanded(
-                          child: _personalActionCard(
-                            title: "My Downloads",
-                            isDark: isDark,
-                            imagePath: "assets/images/document_download.png",
-                            gradientColors: [
-                              const Color(0xFFF6F4FF),
-                              const Color(0xFFEEEBFF),
-                            ],
-                            onTap: () {
+                          child: _buildActionCard(
+                            onCallBack: () {
                               Navigator.pushNamed(
                                 context,
                                 '/MyDownloadsScreen',
                               );
                             },
+                            title: "My Downloads".toUpperCase(),
+                            iconAsset: "assets/images/document_download.png",
+                            bgColor: isDark
+                                ? const Color(0xFF1B2A38)
+                                : const Color(0xFFD3EEFD),
+                            isDark: isDark,
                           ),
                         ),
                         SizedBox(width: 10.w),
                         Expanded(
-                          child: _personalActionCard(
-                            title: "Media Library",
-                            isDark: isDark,
-                            imagePath: "assets/images/media.png",
-                            gradientColors: [
-                              const Color(0xFFFFFAF2),
-                              const Color(0xFFFFE8C6),
-                            ],
-                            onTap: () {
+                          child: _buildActionCard(
+                            onCallBack: () {
                               Navigator.pushNamed(context, '/MyUploadsScreen');
                             },
+                            title: "Media Library".toUpperCase(),
+                            iconAsset: "assets/images/media.png",
+                            bgColor: isDark
+                                ? const Color(0xFF1B2A38)
+                                : const Color(0xFFD3EEFD),
+                            isDark: isDark,
                           ),
                         ),
                       ],
@@ -869,14 +849,8 @@ class BusinessProfileView extends StatelessWidget {
                                   size: 21.sp,
                                 ),
                                 SizedBox(width: 7.w),
-                                AppText(
-                                  "Your Frames",
-                                  style: TextStyle(
-                                    color: theme.colorScheme.onSurface,
-                                    fontSize: AppFontSize.fontSize18,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
+                                CommonHeadingText( "Your Frames",)
+
                               ],
                             ),
                             Container(
@@ -918,13 +892,8 @@ class BusinessProfileView extends StatelessWidget {
                                           ? Colors.white
                                           : Colors.black)
                                           : Colors.grey,
-                                      fontSize: AppFontSize.fontSize13,
-                                      fontWeight:
-                                      businessProfileProvider
-                                          .selectedFrameTab ==
-                                          0
-                                          ? FontWeight.w900
-                                          : FontWeight.w500,
+                                      fontSize: AppFontSize.fontSize15,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                   if (businessProfileProvider
@@ -956,13 +925,8 @@ class BusinessProfileView extends StatelessWidget {
                                           ? Colors.white
                                           : Colors.black)
                                           : Colors.grey.shade400,
-                                      fontSize: 14.sp,
-                                      fontWeight:
-                                      businessProfileProvider
-                                          .selectedFrameTab ==
-                                          1
-                                          ? FontWeight.w900
-                                          : FontWeight.w600,
+                                      fontSize: AppFontSize.fontSize15,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                   if (businessProfileProvider
@@ -1087,52 +1051,7 @@ class BusinessProfileView extends StatelessWidget {
     );
   }
 
-  Widget _personalActionCard({
-    required String title,
-    required String imagePath,
-    required List<Color> gradientColors,
-    required VoidCallback onTap,
-    bool isDark = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 90.h,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark
-                ? gradientColors
-                .map((c) => Color.lerp(c, const Color(0xFF1E1E1E), 0.85)!)
-                .toList()
-                : gradientColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(10.r),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              imagePath,
-              width: 36.w,
-              height: 36.h,
-              fit: BoxFit.contain,
-            ),
-            SizedBox(height: 4.h),
-            AppText(
-              title,
-              style: TextStyle(
-                color: isDark ? Colors.white : AppColors.appBlack,
-                fontSize: AppFontSize.fontSize15,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 }
 
 class _BrandKitSection extends StatefulWidget {
@@ -1340,14 +1259,8 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                     size: 21.sp,
                   ),
                   SizedBox(width: 8.w),
-                  AppText(
-                    "Brand Kit",
-                    style: TextStyle(
-                      color: isDark ? Colors.white : AppColors.appBlack,
-                      fontSize: AppFontSize.fontSize18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  CommonHeadingText("Brand Kit")
+
                 ],
               ),
               _roundPlus(
@@ -1394,8 +1307,8 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
               color: selected
                   ? (isDark ? Colors.white : Colors.black)
                   : Colors.grey.shade500,
-              fontSize: 12.sp,
-              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+              fontSize: AppFontSize.fontSize15,
+              fontWeight: FontWeight.w500,
             ),
           ),
           SizedBox(height: 5.h),
@@ -1458,8 +1371,8 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                   "Business Logo",
                   style: TextStyle(
                     color: isDark ? Colors.white : Colors.black87,
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w800,
+                    fontSize: AppFontSize.fontSize12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 SizedBox(height: 4.h),
@@ -1490,8 +1403,8 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
               "Colors",
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w800,
+                fontSize: AppFontSize.fontSize14,
+                fontWeight: FontWeight.w500,
               ),
             ),
             _smallPlus(
@@ -1567,8 +1480,8 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                 AppText(
                   palette.name,
                   style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w700,
+                    fontSize: AppFontSize.fontSize12,
+                    fontWeight: FontWeight.w500,
                     color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
@@ -1633,8 +1546,8 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                       '${font.title}, ${font.family} - ${font.size}',
                       style: TextStyle(
                         fontFamily: font.family,
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w700,
+                        fontSize: AppFontSize.fontSize12,
+                        fontWeight: FontWeight.w500,
                         color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
@@ -1643,7 +1556,8 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                       font.family,
                       style: TextStyle(
                         fontFamily: font.family,
-                        fontSize: 10.sp,
+                        fontSize: AppFontSize.fontSize11,
+                        fontWeight: FontWeight.w500,
                         color: Colors.grey.shade600,
                       ),
                     ),
@@ -2129,10 +2043,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: AppText(
-                    "Cancel",
-                    style: TextStyle(color: dc.text),
-                  ),
+                  child: AppText("Cancel", style: TextStyle(color: dc.text)),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -2267,7 +2178,7 @@ Widget _buildActionCard({
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: isDark ? Colors.white : Colors.black,
-                fontSize: AppFontSize.fontSize14,
+                fontSize: AppFontSize.fontSize15,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -2285,13 +2196,13 @@ Widget _buildPresenceTile({
   required bool isDark,
 }) {
   return Container(
-    height: 80.h,
-    padding: EdgeInsets.all(12.r),
+    height: 90.h,
+    padding: EdgeInsets.all(4.r),
     decoration: BoxDecoration(
       color: bgColor,
       borderRadius: BorderRadius.circular(16.r),
     ),
-    child: Row(
+    child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Image.asset(
@@ -2307,8 +2218,8 @@ Widget _buildPresenceTile({
             title,
             style: TextStyle(
               color: isDark ? Colors.white : Colors.black,
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w800,
+              fontSize: AppFontSize.fontSize16,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),

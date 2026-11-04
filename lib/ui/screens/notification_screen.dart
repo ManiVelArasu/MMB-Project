@@ -11,6 +11,7 @@ import '../../network/provider/common_provider.dart';
 import '../../network/provider/notification_provider.dart';
 import '../../widgets/notification_section.dart';
 import '../../network/provider/custom_theme_provider.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -24,8 +25,8 @@ class NotificationScreen extends StatelessWidget {
         builder: (context, provider, themeProvider, child) {
           final isDark = themeProvider.isDarkMode;
 
-          return Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          return CommonScaffold(
+            isDarkMode: isDark,
 
             appBar: CustomAppBar(
               showTitle: true,

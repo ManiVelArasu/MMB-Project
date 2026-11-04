@@ -24,6 +24,7 @@ import '../../network/provider/common_provider.dart';
 import '../../network/provider/home_screen_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -56,9 +57,8 @@ class _HomeScreenView extends StatelessWidget {
         ),
       );
     }
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
+    return CommonScaffold(
+      isDarkMode: isDark,
       appBar: const HomeCustomAppBar(),
       body: Stack(
         children: [

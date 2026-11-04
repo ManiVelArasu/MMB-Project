@@ -20,32 +20,36 @@ class BusinessProfileProvider extends ChangeNotifier {
   // INITIALIZE
   // =========================================================
 
+  bool _isInitialLoading = true;
+  bool get isInitialLoading => _isInitialLoading;
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
   Future<void> _initialize() async {
-    await loadSavedBusinessName();
+    try {
+      final isBusiness = commonProvider.accountType?.toLowerCase() == 'business';
 
-    // Load default Static Frames
-    await loadFrames('static');
-
-    if (commonProvider.accountType?.toLowerCase() == 'personal') {
-      return;
-    }
-
-    if (commonProvider.accountType?.toLowerCase() == 'business') {
-      await loadKeyWords();
-    }
-
-    // Personal account என்றால் keywords API call வேண்டாம்
-    if (commonProvider.accountType?.toLowerCase() == 'personal') {
-      debugPrint("👤 PERSONAL ACCOUNT → Keywords API SKIPPED");
-
-      return;
-    }
-
-    // Business account மட்டும்
-    if (commonProvider.accountType?.toLowerCase() == 'business') {
-      debugPrint("🏢 BUSINESS ACCOUNT → Loading Keywords");
-
-      await loadKeyWords();
+      // Personal -> frames only. Business -> frames + keywords + saved name,
+      // all in parallel, each called exactly once.
+      await Future.wait([
+        loadFrames('static'),
+        if (isBusiness) loadKeyWords(),
+        if (isBusiness) loadSavedBusinessName(),
+      ]);
+    } finally {
+      _isInitialLoading = false;
+      notifyListeners();
     }
   }
 
@@ -102,6 +106,7 @@ class BusinessProfileProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void updateFrameTab(int index) {
     _selectedFrameTab = index;
     notifyListeners();
@@ -116,6 +121,7 @@ class BusinessProfileProvider extends ChangeNotifier {
       }
     }
   }
+
   Future<bool> refreshProfileAfterEdit() async {
     try {
       final accountType = commonProvider.me?.data.accountType
@@ -212,7 +218,7 @@ class BusinessProfileProvider extends ChangeNotifier {
       return false;
     }
 
-    if (_keyWords.isNotEmpty && !forceRefresh) {
+    if ((_keyWords.isNotEmpty || _isKeyWordsLoading) && !forceRefresh) {
       return true;
     }
 
@@ -258,13 +264,13 @@ class BusinessProfileProvider extends ChangeNotifier {
 
       debugPrint(
         "Total Keywords : "
-        "${_keyWords.length}",
+            "${_keyWords.length}",
       );
 
       for (final keyword in _keyWords) {
         debugPrint(
           "Keyword : ${keyword.name} | "
-          "Slug : ${keyword.slug}",
+              "Slug : ${keyword.slug}",
         );
       }
 
@@ -308,7 +314,6 @@ class BusinessProfileProvider extends ChangeNotifier {
 
   int get selectedFrameTab => _selectedFrameTab;
 
-
   // =========================================================
   // BUSINESS NAME
   // =========================================================
@@ -331,11 +336,11 @@ class BusinessProfileProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // =========================================================
-  // STATIC FRAMES
-  // =========================================================
+// =========================================================
+// STATIC FRAMES
+// =========================================================
 
-  // =========================================================
-  // STATIC KEYWORDS
-  // =========================================================
+// =========================================================
+// STATIC KEYWORDS
+// =========================================================
 }

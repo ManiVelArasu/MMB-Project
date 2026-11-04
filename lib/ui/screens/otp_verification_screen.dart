@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../network/provider/auth_provider.dart';
+import '../../network/provider/custom_theme_provider.dart';
+import '../industry/widgets/scaffold_widget.dart';
 import 'home_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
@@ -20,7 +22,9 @@ class OtpVerificationScreen extends StatefulWidget {
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final isDark = context.watch<CustomThemeProvider>().isDarkMode;
+    return CommonScaffold(
+      isDarkMode: isDark,
       appBar: AppBar(
         title: const Text("Verify OTP"),
         centerTitle: true,

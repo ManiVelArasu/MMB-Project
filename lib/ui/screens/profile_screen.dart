@@ -18,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../utils/theme/app.colors.dart';
 import '../../widgets/button_widget.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -83,9 +84,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 : Brightness.dark,
             statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
           ),
-          child: Scaffold(
-            extendBodyBehindAppBar: true,
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          child: CommonScaffold(
+            isDarkMode: isDark,
 
             appBar: PreferredSize(
               preferredSize: Size.fromHeight(70.h),

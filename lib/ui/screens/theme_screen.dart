@@ -13,6 +13,7 @@ import '../../component/network_image.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/theme_screen_provider.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 class ThemesScreen extends StatefulWidget {
   const ThemesScreen({super.key});
@@ -64,9 +65,8 @@ class _ThemesScreenState extends State<ThemesScreen> {
 
         final groups = provider.groups;
 
-        return Scaffold(
-          extendBodyBehindAppBar: true,
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        return CommonScaffold(
+          isDarkMode: isDark,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(),

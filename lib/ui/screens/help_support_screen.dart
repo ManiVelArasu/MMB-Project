@@ -6,6 +6,7 @@ import '../../network/provider/support_provider.dart';
 
 import '../../network/provider/custom_theme_provider.dart';
 import '../../widgets/support_ticket_card.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 
 class HelpSupportScreen extends StatelessWidget {
@@ -19,8 +20,8 @@ class HelpSupportScreen extends StatelessWidget {
         builder: (context, provider, themeProvider, child) {
           final isDark = themeProvider.isDarkMode;
 
-          return Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          return CommonScaffold(
+            isDarkMode: isDark,
             appBar: CustomAppBar(
               title: "Help & Support",
               showRightIcon: false,

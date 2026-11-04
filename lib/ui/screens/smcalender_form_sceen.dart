@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
+import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/smcalender_form_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 class SocialCalendarFormScreen extends StatelessWidget {
   const SocialCalendarFormScreen({super.key});
@@ -62,10 +64,9 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<SocialCalendarProvider>();
-
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    final isDark = context.watch<CustomThemeProvider>().isDarkMode;
+    return CommonScaffold(
+      isDarkMode: isDark,
       appBar: CustomAppBar(
         title: "AI Social Media Calendar",
         showRightIcon: false,

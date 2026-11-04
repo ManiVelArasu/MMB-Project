@@ -10,6 +10,7 @@ import '../../network/provider/my_upload_provider.dart';
 import '../../network/provider/product_provider.dart';
 import '../../Api Model/product_model.dart';
 import '../../utils/theme/app.fonts.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 /// Light / dark colours for this screen. Light values are the original ones.
 class _Palette {
@@ -51,8 +52,8 @@ class _ProductsView extends StatelessWidget {
     final isDark = context.watch<CustomThemeProvider>().isDarkMode;
     final p = _Palette(isDark);
 
-    return Scaffold(
-      backgroundColor: p.background,
+    return CommonScaffold(
+      isDarkMode: isDark,
       appBar: AppBar(
         backgroundColor: p.surface,
         surfaceTintColor: Colors.transparent,

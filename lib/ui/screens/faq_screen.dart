@@ -6,6 +6,7 @@ import '../../component/custom_widget.dart';
 import '../../network/provider/faq_provider.dart';
 
 import '../../network/provider/custom_theme_provider.dart';
+import '../industry/widgets/scaffold_widget.dart';
 
 class FaqScreen extends StatelessWidget {
   const FaqScreen({super.key});
@@ -18,8 +19,8 @@ class FaqScreen extends StatelessWidget {
         builder: (context, provider, themeProvider, child) {
           final isDark = themeProvider.isDarkMode;
 
-          return Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          return CommonScaffold(
+            isDarkMode: isDark,
             appBar: const CustomAppBar(title: "FAQs", showRightIcon: false),
             body: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
