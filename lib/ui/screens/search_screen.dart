@@ -1,15 +1,18 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mmb_app/component/appbar_widget.dart';
 import 'package:mmb_app/component/home_appbar.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/search_provider.dart';
+import '../../widgets/button_widget.dart';
 import '../industry/widgets/scaffold_widget.dart';
 
 class SearchScreen extends StatelessWidget {
@@ -87,6 +90,14 @@ class _SearchViewState extends State<_SearchView> {
     context.read<SearchProvider>().search(q);
   }
 
+  /// Clears the text and results. Does NOT call any API.
+  void _clearSearch() {
+    _controller.clear();
+    context.read<SearchProvider>().clear();
+    setState(() {});
+    _focus.requestFocus();
+  }
+
   void _pickSuggestion(SearchSuggestion s) {
     _controller.text = s.query;
     _controller.selection = TextSelection.collapsed(offset: s.query.length);
@@ -104,10 +115,16 @@ class _SearchViewState extends State<_SearchView> {
 
     return CommonScaffold(
       isDarkMode: isDark,
-      appBar: const HomeCustomAppBar(),
+      appBar: CustomAppBar(
+        // Shows the searched word once a search is done
+        title: provider.hasSearched && provider.activeQuery.isNotEmpty
+            ? provider.activeQuery
+            : '',
+        showRightIcon: false,
+      ),
       body: Stack(
         children: [
-          if (!isDark) // Only show the white/light plan gradient when in light mode
+          if (!isDark)
             Positioned(
               top: 0,
               left: 0,
@@ -168,7 +185,7 @@ class _SearchViewState extends State<_SearchView> {
                                     border: InputBorder.none,
                                     isDense: true,
                                     hintText:
-                                        'Search templates, Brand Series...',
+                                    'Search templates, Brand Series...',
                                     hintStyle: TextStyle(
                                       color: sub,
                                       fontSize: 14,
@@ -183,12 +200,7 @@ class _SearchViewState extends State<_SearchView> {
                               ),
                               if (_controller.text.isNotEmpty)
                                 GestureDetector(
-                                  onTap: () {
-                                    _controller.clear();
-                                    provider.onTextChanged('');
-                                    setState(() {});
-                                    _focus.requestFocus();
-                                  },
+                                  onTap: _clearSearch,
                                   child: Icon(
                                     Icons.close,
                                     size: 20,
@@ -252,10 +264,7 @@ class _SearchViewState extends State<_SearchView> {
     }
 
     if (p.results.isEmpty) {
-      return _message(
-        "No designs for '${p.activeQuery}'. Try another word.",
-        sub,
-      );
+      return _buildEmptyState();
     }
 
     return GridView.builder(
@@ -329,11 +338,11 @@ class _SearchViewState extends State<_SearchView> {
             imageUrl.isEmpty
                 ? _placeholder(isDark)
                 : CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => _placeholder(isDark),
-                    errorWidget: (_, __, ___) => _placeholder(isDark),
-                  ),
+              imageUrl: imageUrl,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => _placeholder(isDark),
+              errorWidget: (_, __, ___) => _placeholder(isDark),
+            ),
             if (locked)
               Container(
                 color: Colors.black.withValues(alpha: 0.4),
@@ -432,5 +441,77 @@ class _SearchViewState extends State<_SearchView> {
       default:
         return '';
     }
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 15),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              "assets/images/no_downloads.png",
+              width: 140,
+              height: 140,
+            ),
+            AppText(
+              'No Templates Found',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+
+            const SizedBox(height: 8),
+
+            AppText(
+              'We couldn’t find any templates matching your search. Try a different keyword or explore our categories.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13),
+            ),
+
+            const SizedBox(height: 20),
+
+            Row(
+              children: [
+                Flexible(
+                  child: ButtonWidget(
+                    buttonPress: () {
+                      Navigator.pushNamed(context, '/BrowseTemplatesScreen');
+                    },
+                    title: "Browse Categories",
+                    textStyle: TextStyle(
+                      fontSize: AppFontSize.fontSize14,
+                      color: AppColors.appRed,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textColor: AppColors.appRed,
+                    buttonColor: AppColors.appWhite,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.appRed),
+                      borderRadius: const BorderRadius.all(Radius.circular(15)),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                Flexible(
+                  child: ButtonWidget(
+                    buttonPress: _clearSearch,
+                    textStyle: TextStyle(
+                      fontSize: AppFontSize.fontSize14,
+                      color: AppColors.appWhite,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    title: "Clear Search",
+                    textColor: AppColors.appWhite,
+                    buttonColor: AppColors.appRed,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

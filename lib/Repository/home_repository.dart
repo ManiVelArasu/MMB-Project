@@ -53,6 +53,21 @@ class HomeRepository {
     );
 
     return result;
+  }  Future<ApiResult<TemplatesResponseModel>> templatesByCategories(
+    String categorySlug,
+  ) async {
+    final result = await ApiRepository.instance.request<TemplatesResponseModel>(
+      config: ApiRequestConfig(
+        endpoint: ApiEndpoints.templates,
+        method: ApiMethod.get,
+        queryParams: {'industry': categorySlug},
+      ),
+      fromJson: (json) {
+        return TemplatesResponseModel.fromJson(json as Map<String, dynamic>);
+      },
+    );
+
+    return result;
   }
 
   Future<ApiResult<TemplateCategoriesModel>> myBrandCategory({

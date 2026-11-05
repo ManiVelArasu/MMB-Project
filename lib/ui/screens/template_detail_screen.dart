@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/ui/screens/search_screen.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:provider/provider.dart';
 
+import '../../Api Model/Template_model.dart';
+import '../../Api Model/special_days.dart';
 import '../../Api Model/templates_view.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
@@ -23,7 +26,7 @@ class TemplateDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) =>
-      TemplateDetailProvider()..getTemplatesByCategory(categorySlug),
+          TemplateDetailProvider()..getTemplatesByCategory(categorySlug),
       child: const _TemplateDetailBody(),
     );
   }
@@ -81,7 +84,10 @@ class _TemplateDetailBody extends StatelessWidget {
               color: isDark ? Colors.white : Colors.black,
             ),
             onPressed: () {
-              _showSearchDialog(context, isDark);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SearchScreen()),
+              );
             },
           ),
 
@@ -98,62 +104,62 @@ class _TemplateDetailBody extends StatelessWidget {
         child: provider.isLoading
             ? Center(child: CircularProgressIndicator())
             : Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                child: Column(
-                  children: [
-                    SizedBox(height: 10.h),
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      child: Column(
+                        children: [
+                          SizedBox(height: 10.h),
 
-                    // =====================================================
-                    // TOP BUSINESS IMAGE / BANNER
-                    // =====================================================
-                    _buildTopBanner(
-                      context,
-                      provider.selectedResizeSize,
-                      isDark,
+                          // =====================================================
+                          // TOP BUSINESS IMAGE / BANNER
+                          // =====================================================
+                          _buildTopBanner(
+                            context,
+                            provider.selectedResizeSize,
+                            isDark,
+                          ),
+
+                          SizedBox(height: 12.h),
+
+                          // =====================================================
+                          // PAGE INDICATORS
+                          // =====================================================
+                          _buildPageIndicators(provider, isDark),
+
+                          SizedBox(height: 12.h),
+
+                          // =====================================================
+                          // RESIZE + EDIT
+                          // =====================================================
+                          _buildActionButtons(context, provider, isDark),
+
+                          SizedBox(height: 18.h),
+
+                          // =====================================================
+                          // CONTENT
+                          // =====================================================
+                          _buildDynamicBottomContent(
+                            context,
+                            provider,
+                            provider.selectedIndex,
+                            isDark,
+                          ),
+
+                          SizedBox(height: 24.h),
+                        ],
+                      ),
                     ),
+                  ),
 
-                    SizedBox(height: 12.h),
-
-                    // =====================================================
-                    // PAGE INDICATORS
-                    // =====================================================
-                    _buildPageIndicators(provider, isDark),
-
-                    SizedBox(height: 12.h),
-
-                    // =====================================================
-                    // RESIZE + EDIT
-                    // =====================================================
-                    _buildActionButtons(context, provider, isDark),
-
-                    SizedBox(height: 18.h),
-
-                    // =====================================================
-                    // CONTENT
-                    // =====================================================
-                    _buildDynamicBottomContent(
-                      context,
-                      provider,
-                      provider.selectedIndex,
-                      isDark,
-                    ),
-
-                    SizedBox(height: 24.h),
-                  ],
-                ),
+                  // =============================================================
+                  // BOTTOM NAVIGATION
+                  // =============================================================
+                  _buildBottomNavigation(context, provider, isDark),
+                ],
               ),
-            ),
-
-            // =============================================================
-            // BOTTOM NAVIGATION
-            // =============================================================
-            _buildBottomNavigation(context, provider, isDark),
-          ],
-        ),
       ),
     );
   }
@@ -207,10 +213,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildActionButtons(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
     return Row(
       children: [
         Expanded(
@@ -245,40 +251,40 @@ class _TemplateDetailBody extends StatelessWidget {
             onPressed: provider.imageTemplates.isEmpty
                 ? null
                 : () {
-              // Same template that is shown in the top banner
-              final template = provider.imageTemplates.first;
-              final templateUid = template.uid?.trim() ?? '';
+                    // Same template that is shown in the top banner
+                    final template = provider.imageTemplates.first;
+                    final templateUid = template.uid?.trim() ?? '';
 
-              if (templateUid.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: AppText('Template UID not available'),
-                  ),
-                );
-                return;
-              }
+                    if (templateUid.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: AppText('Template UID not available'),
+                        ),
+                      );
+                      return;
+                    }
 
-              // Size selected in the RESIZE sheet
-              final size = _canvasSizeFor(provider.selectedResizeSize);
+                    // Size selected in the RESIZE sheet
+                    final size = _canvasSizeFor(provider.selectedResizeSize);
 
-              debugPrint(
-                'EDIT → uid: $templateUid | '
-                    '${provider.selectedResizeSize} → '
-                    '${size.width} x ${size.height}',
-              );
+                    debugPrint(
+                      'EDIT → uid: $templateUid | '
+                      '${provider.selectedResizeSize} → '
+                      '${size.width} x ${size.height}',
+                    );
 
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TemplateEditScreen(
-                    templateUid: templateUid,
-                    resizeSize: provider.selectedResizeSize,
-                    canvasWidth: size.width,
-                    canvasHeight: size.height,
-                  ),
-                ),
-              );
-            },
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TemplateEditScreen(
+                          templateUid: templateUid,
+                          resizeSize: provider.selectedResizeSize,
+                          canvasWidth: size.width,
+                          canvasHeight: size.height,
+                        ),
+                      ),
+                    );
+                  },
             icon: const Icon(Icons.edit, color: Colors.red, size: 18),
             label: AppText(
               "EDIT",
@@ -312,11 +318,11 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildDynamicBottomContent(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      int selectedIndex,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    int selectedIndex,
+    bool isDark,
+  ) {
     if (selectedIndex == 0) {
       return _buildImageSection(context, provider, isDark);
     }
@@ -337,10 +343,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildImageSection(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
     final templates = provider.imageTemplates;
 
     return Column(
@@ -389,10 +395,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildVideoSection(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
     final templates = provider.videoTemplates;
 
     return Column(
@@ -441,10 +447,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildPostSizeSection(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
     final templates = provider.allTemplates;
 
     return Column(
@@ -504,139 +510,108 @@ class _TemplateDetailBody extends StatelessWidget {
         .replaceAll('-', ' ')
         .split(' ')
         .map((word) {
-      if (word.isEmpty) return '';
+          if (word.isEmpty) return '';
 
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    })
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
         .join(' ');
   }
 
   Widget _buildTemplateCard(
-      BuildContext context,
-      TemplatesListView template,
-      bool isDark, {
-        required bool isVideo,
-      }) {
-    return GestureDetector(
-      onTap: () {
-        final templateUid = template.uid?.trim() ?? '';
-        print(templateUid);
-        if (templateUid.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Template UID not available')),
-          );
+    BuildContext context,
+    TemplateModel template,
+    bool isDark, {
+    required bool isVideo,
+  }) {
+    final locked = template.isLocked ?? false;
+    final key = template.thumbnailS3Key?.trim() ?? '';
+    final imageUrl = key.isEmpty
+        ? ''
+        : key.startsWith('http')
+        ? key
+        : '${ApiEndpoints.cdnImageUrl}/$key';
 
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        final uid = template.uid?.trim() ?? '';
+        if (uid.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: AppText('Template UID not available')),
+          );
           return;
         }
-        debugPrint("Selected template UID: ${template.uid}");
+        if (locked) return;
 
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => TemplateEditScreen(templateUid: templateUid),
+            builder: (_) => TemplateEditScreen(
+              templateUid: uid,
+              canvasWidth: (template.templateSize?.width ?? 1080).toDouble(),
+              canvasHeight: (template.templateSize?.height ?? 1080).toDouble(),
+            ),
           ),
         );
       },
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF252525) : Colors.white,
-          borderRadius: BorderRadius.circular(14.r),
+          borderRadius: BorderRadius.circular(16.r),
           border: Border.all(
             color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.15 : 0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: _buildTemplatePreview(template, isDark),
-                  ),
-
-                  // =====================================================
-                  // VIDEO ICON
-                  // =====================================================
-                  if (isVideo)
-                    Positioned(
-                      top: 8.h,
-                      left: 8.w,
-                      child: Container(
-                        padding: EdgeInsets.all(6.r),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.65),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 16.sp,
+            Positioned.fill(
+              child: imageUrl.isEmpty
+                  ? _templateImagePlaceholder(isDark)
+                  : CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => const Center(
+                        child: SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       ),
+                      errorWidget: (_, __, ___) =>
+                          _templateImagePlaceholder(isDark),
                     ),
-
-                  // =====================================================
-                  // PREMIUM
-                  // =====================================================
-                  Positioned(
-                    top: 8.h,
-                    right: 8.w,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 7.w,
-                        vertical: 4.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.65),
-                        borderRadius: BorderRadius.circular(6.r),
-                      ),
-                      child: Icon(
-                        Icons.lock_outline,
-                        color: Colors.white,
-                        size: 13.sp,
-                      ),
+            ),
+            if (isVideo)
+              Positioned(
+                top: 8.h,
+                left: 8.w,
+                child: Container(
+                  padding: EdgeInsets.all(6.r),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.play_arrow,
+                    color: Colors.white,
+                    size: 16.sp,
+                  ),
+                ),
+              ),
+            if (locked)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withValues(alpha: .40),
+                  child: const Center(
+                    child: Icon(
+                      Icons.lock_rounded,
+                      color: Colors.white,
+                      size: 30,
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: EdgeInsets.fromLTRB(9.w, 8.h, 9.w, 3.h),
-              child: Text(
-                template.name ?? "Template",
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
-            ),
-
-            // ===========================================================
-            // TYPE
-            // ===========================================================
-            Padding(
-              padding: EdgeInsets.fromLTRB(9.w, 0, 9.w, 8.h),
-              child: Text(
-                isVideo ? "Video" : "Image",
-                style: TextStyle(
-                  fontSize: 10.sp,
-                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -646,32 +621,6 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
   // TEMPLATE PREVIEW
   // =====================================================================
-
-  Widget _buildTemplatePreview(TemplatesListView template, bool isDark) {
-    final key = template.thumbnailS3Key?.trim() ?? '';
-
-    final imageUrl = key.isEmpty ? '' : '${ApiEndpoints.cdnImageUrl}/$key';
-
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: isDark ? const Color(0xFF303030) : Colors.grey.shade100,
-      child: imageUrl.isNotEmpty
-          ? CachedNetworkImage(
-        imageUrl: imageUrl,
-        width: double.infinity,
-        height: double.infinity,
-        fit: BoxFit.cover,
-        placeholder: (context, url) {
-          return const Center(child: CircularProgressIndicator());
-        },
-        errorWidget: (context, url, error) {
-          return _templateImagePlaceholder(isDark);
-        },
-      )
-          : _templateImagePlaceholder(isDark),
-    );
-  }
 
   Widget _templateImagePlaceholder(bool isDark) {
     return Container(
@@ -688,10 +637,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildCategoryInfo(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -703,35 +652,35 @@ class _TemplateDetailBody extends StatelessWidget {
           spacing: 10.w,
           runSpacing: 10.h,
           children:
-          [
-            "Cakes",
-            "Cookies",
-            "Smoothie",
-            "Brownies",
-            "Cupcakes",
-            "Muffins",
-            "Birthday Special",
-            "Sweets",
-            "Today Special",
-            "Wedding Special",
-            "Deal of the Day",
-            "Offers",
-          ].map((category) {
-            return GestureDetector(
-              onTap: () {
-                final slug = _createSlug(category);
+              [
+                "Cakes",
+                "Cookies",
+                "Smoothie",
+                "Brownies",
+                "Cupcakes",
+                "Muffins",
+                "Birthday Special",
+                "Sweets",
+                "Today Special",
+                "Wedding Special",
+                "Deal of the Day",
+                "Offers",
+              ].map((category) {
+                return GestureDetector(
+                  onTap: () {
+                    final slug = _createSlug(category);
 
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        TemplateDetailScreen(categorySlug: slug),
-                  ),
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            TemplateDetailScreen(categorySlug: slug),
+                      ),
+                    );
+                  },
+                  child: _buildCategoryChip(category, isDark),
                 );
-              },
-              child: _buildCategoryChip(category, isDark),
-            );
-          }).toList(),
+              }).toList(),
         ),
       ],
     );
@@ -745,7 +694,7 @@ class _TemplateDetailBody extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(
+          child: AppText(
             title,
             style: TextStyle(
               fontSize: 15.sp,
@@ -761,7 +710,7 @@ class _TemplateDetailBody extends StatelessWidget {
               color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(20.r),
             ),
-            child: Text(
+            child: AppText(
               "$count",
               style: TextStyle(
                 fontSize: 11.sp,
@@ -790,7 +739,7 @@ class _TemplateDetailBody extends StatelessWidget {
               child: const CircularProgressIndicator(strokeWidth: 2.5),
             ),
             SizedBox(height: 12.h),
-            Text(
+            AppText(
               "Loading templates...",
               style: TextStyle(
                 fontSize: 13.sp,
@@ -819,7 +768,7 @@ class _TemplateDetailBody extends StatelessWidget {
               color: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
             ),
             SizedBox(height: 10.h),
-            Text(
+            AppText(
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -848,7 +797,7 @@ class _TemplateDetailBody extends StatelessWidget {
           width: 1.2,
         ),
       ),
-      child: Text(
+      child: AppText(
         title,
         style: TextStyle(
           fontSize: 13.sp,
@@ -864,10 +813,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildBottomNavigation(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
       decoration: BoxDecoration(
@@ -937,7 +886,7 @@ class _TemplateDetailBody extends StatelessWidget {
       children: [
         Icon(icon, color: isSelected ? Colors.white : Colors.grey, size: 24.sp),
         SizedBox(height: 4.h),
-        Text(
+        AppText(
           label,
           style: TextStyle(
             color: isSelected ? Colors.white : Colors.grey,
@@ -956,12 +905,17 @@ class _TemplateDetailBody extends StatelessWidget {
   Widget _buildTopBanner(BuildContext context, String resizeSize, bool isDark) {
     final provider = context.watch<TemplateDetailProvider>();
 
-    final TemplatesListView? firstTemplate = provider.imageTemplates.isNotEmpty
+    final TemplateModel? firstTemplate = provider.imageTemplates.isNotEmpty
         ? provider.imageTemplates.first
         : null;
 
-    final String? thumbnail =
-        "${ApiEndpoints.cdnImageUrl}/${firstTemplate?.thumbnailS3Key?.toString()}";
+    final key = firstTemplate?.thumbnailS3Key?.trim() ?? '';
+
+    final String? thumbnail = key.isEmpty
+        ? null
+        : (key.startsWith('http://') || key.startsWith('https://'))
+        ? key
+        : '${ApiEndpoints.cdnImageUrl}/$key';
 
     double aspectRatio = 1 / 1;
 
@@ -973,10 +927,6 @@ class _TemplateDetailBody extends StatelessWidget {
       aspectRatio = 16 / 9;
     }
 
-    // ============================================================
-    // API THUMBNAIL
-    // ============================================================
-
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       width: double.infinity,
@@ -987,26 +937,23 @@ class _TemplateDetailBody extends StatelessWidget {
       ),
       child: AspectRatio(
         aspectRatio: aspectRatio,
-        child: Image.network(
-          thumbnail ?? '',
-          width: double.infinity,
-          height: double.infinity,
-          fit: BoxFit.cover,
-
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) {
-              return child;
-            }
-
-            return const Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            );
-          },
-
-          errorBuilder: (context, error, stackTrace) {
-            return _buildBannerPlaceholder(resizeSize, isDark);
-          },
-        ),
+        child: thumbnail == null
+            ? _buildBannerPlaceholder(resizeSize, isDark)
+            : Image.network(
+                thumbnail,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return _buildBannerPlaceholder(resizeSize, isDark);
+                },
+              ),
       ),
     );
   }
@@ -1022,7 +969,7 @@ class _TemplateDetailBody extends StatelessWidget {
             color: isDark ? Colors.white30 : Colors.black26,
           ),
           SizedBox(height: 8.h),
-          Text(
+          AppText(
             resizeSize,
             style: TextStyle(
               color: isDark ? Colors.white54 : Colors.black54,
@@ -1034,60 +981,6 @@ class _TemplateDetailBody extends StatelessWidget {
       ),
     );
   }
-  // =====================================================================
-  // SEARCH
-  // =====================================================================
-
-  void _showSearchDialog(BuildContext context, bool isDark) {
-    final controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: isDark ? const Color(0xFF242424) : Colors.white,
-          title: Text(
-            "Search Templates",
-            style: TextStyle(color: isDark ? Colors.white : Colors.black),
-          ),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            style: TextStyle(color: isDark ? Colors.white : Colors.black),
-            decoration: InputDecoration(
-              hintText: "Search...",
-              hintStyle: TextStyle(
-                color: isDark ? Colors.white38 : Colors.black38,
-              ),
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
-              child: const Text("CLOSE"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final query = controller.text.trim();
-
-                debugPrint("Search template: $query");
-
-                Navigator.pop(dialogContext);
-              },
-              child: const Text("SEARCH"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   // =====================================================================
   // SLUG
   // =====================================================================
@@ -1153,7 +1046,7 @@ void showCategoriesBottomSheet(BuildContext context, bool isDark) {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  AppText(
                     "Categories",
                     style: TextStyle(
                       fontSize: 20.sp,
@@ -1237,7 +1130,7 @@ class _CategoryChip extends StatelessWidget {
           width: 1.2,
         ),
       ),
-      child: Text(
+      child: AppText(
         title,
         style: TextStyle(
           fontSize: 14.sp,
@@ -1292,7 +1185,7 @@ void showResizeBottomSheet(BuildContext context, bool isDark) {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    AppText(
                       "Resize Template",
                       style: TextStyle(
                         fontSize: 18.sp,
@@ -1386,10 +1279,10 @@ class _ResizeOptionItem extends StatelessWidget {
         height: 42.w,
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.red.withOpacity(0.1)
+              ? Colors.red.withValues(alpha: .1)
               : (isDark
-              ? Colors.white.withOpacity(0.05)
-              : Colors.grey.shade100),
+                    ? Colors.white.withValues(alpha: .05)
+                    : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(10.r),
         ),
         child: Icon(
@@ -1397,7 +1290,7 @@ class _ResizeOptionItem extends StatelessWidget {
           color: isSelected ? Colors.red : Colors.grey,
         ),
       ),
-      title: Text(
+      title: AppText(
         title,
         style: TextStyle(
           fontSize: 14.sp,
@@ -1407,7 +1300,7 @@ class _ResizeOptionItem extends StatelessWidget {
               : (isDark ? Colors.white70 : Colors.black87),
         ),
       ),
-      subtitle: Text(
+      subtitle: AppText(
         subtitle,
         style: TextStyle(fontSize: 12.sp, color: Colors.grey),
       ),

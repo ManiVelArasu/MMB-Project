@@ -17,6 +17,7 @@ import '../ui/onboarding/onboarding_screen.dart';
 import '../ui/screens/ai_bg_remove_screen.dart';
 import '../ui/screens/ai_hub_screen.dart';
 import '../ui/screens/ai_imag_screen.dart';
+import '../ui/screens/browse_template.dart';
 import '../ui/screens/business_profile_screen.dart';
 import '../ui/screens/content_generator.dart';
 import '../ui/screens/download_screen.dart';
@@ -379,6 +380,8 @@ class RouteGenerator {
         );
       case '/TextToVoiceScreen':
         return MaterialPageRoute(builder: (_) => const TextToVoiceScreen());
+        case '/BrowseTemplatesScreen':
+        return MaterialPageRoute(builder: (_) => const BrowseTemplatesScreen());
       case "/TemplateListScreen":
         final arguments = settings.arguments;
 

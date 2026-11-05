@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import '../../Repository/search_repository.dart';
 
@@ -81,11 +80,7 @@ class SearchProvider extends ChangeNotifier {
     _debounce?.cancel();
 
     if (q.isEmpty) {
-      _suggestions = [];
-      _hasSearched = false;
-      _results = [];
-      _error = null;
-      notifyListeners();
+      clear();
       return;
     }
 
@@ -128,6 +123,22 @@ class SearchProvider extends ChangeNotifier {
   void clearSuggestions() {
     _debounce?.cancel();
     _suggestions = [];
+    notifyListeners();
+  }
+
+  /// Clear Search: reset everything. No API call is made.
+  /// _activeQuery is reset too, so any in-flight response is ignored.
+  void clear() {
+    _debounce?.cancel();
+    _typed = '';
+    _activeQuery = '';
+    _suggestions = [];
+    _results = [];
+    _error = null;
+    _hasSearched = false;
+    _hasMore = false;
+    _isLoading = false;
+    _isLoadingMore = false;
     notifyListeners();
   }
 

@@ -1,3 +1,4 @@
+import '../Api Model/Template_model.dart';
 import '../Api Model/template_edit_model.dart';
 import '../Api Model/templates_view.dart';
 import '../core/api/api_endpoints.dart';
@@ -21,22 +22,21 @@ class TemplateRepository {
     );
   }
 
-  Future<ApiResult<TemplatesList>> templateApi({String? category}) async {
+  Future<ApiResult<TemplatesResponseModel>> templateApi({String? category}) async {
     final Map<String, dynamic> queryParams = {};
 
     if (category != null && category.trim().isNotEmpty) {
       queryParams["category"] = category.trim();
     }
 
-    return await ApiRepository.instance.request<TemplatesList>(
+    return await ApiRepository.instance.request<TemplatesResponseModel>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.templates,
         method: ApiMethod.get,
         queryParams: queryParams,
       ),
-      fromJson: (json) {
-        return TemplatesList.fromJson(json as Map<String, dynamic>);
-      },
+      fromJson: (json) =>
+          TemplatesResponseModel.fromJson(json as Map<String, dynamic>),
     );
   }
 }
