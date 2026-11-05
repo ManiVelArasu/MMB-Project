@@ -53,14 +53,24 @@ class HomeRepository {
     );
 
     return result;
-  }  Future<ApiResult<TemplatesResponseModel>> templatesByCategories(
-    String categorySlug,
-  ) async {
+  }
+
+  Future<ApiResult<TemplatesResponseModel>> templatesByCategories(
+    String categorySlug, {
+    String? tag,
+  }) async {
+    final queryParams = <String, dynamic>{'industry': categorySlug};
+
+    final selectedTag = tag?.trim() ?? '';
+    if (selectedTag.isNotEmpty) {
+      queryParams['tags'] = selectedTag;
+    }
+
     final result = await ApiRepository.instance.request<TemplatesResponseModel>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.templates,
         method: ApiMethod.get,
-        queryParams: {'industry': categorySlug},
+        queryParams: queryParams,
       ),
       fromJson: (json) {
         return TemplatesResponseModel.fromJson(json as Map<String, dynamic>);
@@ -70,7 +80,7 @@ class HomeRepository {
     return result;
   }
 
-  Future<ApiResult<TemplateCategoriesModel>> myBrandCategory({
+  Future<ApiResult<TemplatesResponseModel>> myBrandCategory({
     required String industrySlug,
     required String language,
     required String keyword,
@@ -97,14 +107,14 @@ class HomeRepository {
     debugPrint("Industry: [$industry]");
     debugPrint("Query params: $queryParams");
 
-    return ApiRepository.instance.request<TemplateCategoriesModel>(
+    return ApiRepository.instance.request<TemplatesResponseModel>(
       config: ApiRequestConfig(
         endpoint: ApiEndpoints.templates,
         method: ApiMethod.get,
         queryParams: queryParams,
       ),
       fromJson: (json) =>
-          TemplateCategoriesModel.fromJson(json as Map<String, dynamic>),
+          TemplatesResponseModel.fromJson(json as Map<String, dynamic>),
     );
   }
 

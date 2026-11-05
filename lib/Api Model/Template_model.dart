@@ -123,7 +123,7 @@ class TemplateModel {
           .whereType<Map<String, dynamic>>()
           .map(TemplateSizeModel.fromJson)
           .toList(),
-      isLocked: json['is_locked'] == true,
+      isLocked: json['is_locked'] ??false,
     );
   }
 
@@ -158,7 +158,7 @@ class TemplateModel {
 }
 
 class LanguageModel {
-  final int? id;
+  final String? id;
   final String? code;
   final String? name;
   final String? nativeName;
@@ -172,7 +172,7 @@ class LanguageModel {
 
   factory LanguageModel.fromJson(Map<String, dynamic> json) {
     return LanguageModel(
-      id: _toInt(json['id']),
+      id: json['id']?.toString(),
       code: json['code']?.toString(),
       name: json['name']?.toString(),
       nativeName: json['native_name']?.toString(),

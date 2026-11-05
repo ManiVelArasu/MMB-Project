@@ -2,7 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Api Model/Template_model.dart';
+import '../../Api Model/key_words_model.dart';
+import '../../Repository/business_profile_repository.dart';
 import '../../Repository/home_repository.dart';
+import 'common_provider.dart';
 
 class BrowseCategory {
   BrowseCategory({
@@ -19,18 +22,26 @@ class BrowseCategory {
 /// Provider for the "Browse Categories" screen.
 /// Uses HomeRepository.templatesByCategory(slug).
 class BrowseTemplatesProvider extends ChangeNotifier {
-  BrowseTemplatesProvider({String? initialSlug}) {
+  BrowseTemplatesProvider({String? initialSlug, String? initialTag}) {
+    final tag = initialTag?.trim() ?? '';
+    _tag = tag.isEmpty ? null : tag;
     _init(initialSlug);
   }
 
   final HomeRepository _repository = HomeRepository.instance;
+  final CommonProvider commonProvider = CommonProvider.instance;
+
+  final BusinessProfileRepository businessProfileRepository =
+      BusinessProfileRepository.instance;
   bool _disposed = false;
 
   // ---------------- categories ----------------
   List<BrowseCategory> _categories = [];
   List<BrowseCategory> get categories => _categories;
 
-  bool _isCategoriesLoading = true;
+  // Categories are not loaded now (the loader was removed), so this must
+  // start as false. When it stayed true the screen showed the spinner forever.
+  bool _isCategoriesLoading = false;
   bool get isCategoriesLoading => _isCategoriesLoading;
 
   String? _selectedSlug;
@@ -40,7 +51,27 @@ class BrowseTemplatesProvider extends ChangeNotifier {
     for (final c in _categories) {
       if (c.slug == _selectedSlug) return c.name;
     }
-    return 'Templates';
+
+    // Categories list is empty → make a title from the slug
+    final slug = _selectedSlug?.trim() ?? '';
+    if (slug.isEmpty) return 'Templates';
+
+    return slug
+        .replaceAll('-', ' ')
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .map((w) => w[0].toUpperCase() + w.substring(1))
+        .join(' ');
+  }
+
+  String? _tag;
+  String? get tag => _tag;
+
+  Future<void> clearTag() async {
+    if (_tag == null) return;
+    _tag = null;
+    final slug = _selectedSlug;
+    if (slug != null) await selectCategory(slug);
   }
 
   // ---------------- templates ----------------
@@ -52,7 +83,6 @@ class BrowseTemplatesProvider extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  // 0 = images, 1 = videos, 2 = post size (all)
   int _tab = 0;
   int get tab => _tab;
 
@@ -109,9 +139,6 @@ class BrowseTemplatesProvider extends ChangeNotifier {
 
   // ---------------- actions ----------------
   Future<void> _init(String? initialSlug) async {
-    await _loadCategories();
-
-    // 1) slug passed to the screen, 2) saved category slug, 3) first category
     var slug = initialSlug?.trim() ?? '';
 
     if (slug.isEmpty) {
@@ -128,47 +155,93 @@ class BrowseTemplatesProvider extends ChangeNotifier {
     await selectCategory(slug);
   }
 
-  Future<void> _loadCategories() async {
-    _isCategoriesLoading = true;
+  List<KeyWordsData> _keyWords = [];
+
+  List<KeyWordsData> get keyWords => _keyWords;
+
+  bool _isKeyWordsLoading = false;
+
+  bool get isKeyWordsLoading => _isKeyWordsLoading;
+
+  String? _keyWordsError;
+
+  String? get keyWordsError => _keyWordsError;
+
+  Future<bool> loadKeyWords({bool forceRefresh = false}) async {
+    // =======================================================
+    // PERSONAL → DO NOT CALL API
+    // =======================================================
+
+    if ((_keyWords.isNotEmpty || _isKeyWordsLoading) && !forceRefresh) {
+      return true;
+    }
+
+    _isKeyWordsLoading = true;
+    _keyWordsError = null;
+
     notifyListeners();
 
     try {
-      final result = await _repository.templateCategoryTree();
+      final categorySlug =
+          commonProvider.business?.businessCategory?.parent?.slug ?? '';
 
-      if (result.isSuccess && result.data != null) {
-        final raw = (result.data as dynamic).data;
-        final list = <BrowseCategory>[];
+      // Category slug இல்லையென்றால் API call வேண்டாம்
+      if (categorySlug.isEmpty) {
+        _keyWordsError = "Business category slug not found";
 
-        if (raw is List) {
-          for (final item in raw) {
-            final name = ((item as dynamic).name?.toString() ?? '').trim();
-            final slug = ((item as dynamic).slug?.toString() ?? '').trim();
-            if (name.isNotEmpty && slug.isNotEmpty) {
-              list.add(BrowseCategory(name: name, slug: slug));
-            }
+        debugPrint("⚠️ Category slug empty → Keywords API SKIPPED");
 
-            final children = (item as dynamic).children;
-            if (children is List) {
-              for (final child in children) {
-                final cName = ((child as dynamic).name?.toString() ?? '')
-                    .trim();
-                final cSlug = ((child as dynamic).slug?.toString() ?? '')
-                    .trim();
-                if (cName.isNotEmpty && cSlug.isNotEmpty) {
-                  list.add(
-                    BrowseCategory(name: cName, slug: cSlug, isChild: true),
-                  );
-                }
-              }
-            }
-          }
-        }
-        _categories = list;
+        return false;
       }
-    } catch (e) {
-      debugPrint('❌ Browse categories error: $e');
+
+      debugPrint("🏢 BUSINESS → Calling Keywords API");
+
+      debugPrint("Category Slug: $categorySlug");
+
+      final result = await businessProfileRepository.industryKeyWords(
+        categorySlug,
+      );
+
+      final KeyWordsModel? data = result.data;
+
+      if (data == null) {
+        _keyWordsError = "Keywords data not found";
+
+        return false;
+      }
+
+      _keyWords = data.data;
+
+      debugPrint("================================");
+
+      debugPrint("✅ KEYWORDS API SUCCESS");
+
+      debugPrint(
+        "Total Keywords : "
+        "${_keyWords.length}",
+      );
+
+      for (final keyword in _keyWords) {
+        debugPrint(
+          "Keyword : ${keyword.name} | "
+          "Slug : ${keyword.slug}",
+        );
+      }
+
+      debugPrint("================================");
+
+      return true;
+    } catch (e, stackTrace) {
+      _keyWordsError = e.toString();
+
+      debugPrint("❌ Keywords API failed: $e");
+
+      debugPrint("$stackTrace");
+
+      return false;
     } finally {
-      _isCategoriesLoading = false;
+      _isKeyWordsLoading = false;
+
       notifyListeners();
     }
   }
@@ -181,7 +254,7 @@ class BrowseTemplatesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.templatesByCategories(slug);
+      final result = await _repository.templatesByCategories(slug, tag: _tag);
       if (slug != _selectedSlug) return; // user picked another meanwhile
 
       if (result.isSuccess && result.data != null) {

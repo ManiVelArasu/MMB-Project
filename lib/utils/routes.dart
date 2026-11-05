@@ -380,8 +380,21 @@ class RouteGenerator {
         );
       case '/TextToVoiceScreen':
         return MaterialPageRoute(builder: (_) => const TextToVoiceScreen());
-        case '/BrowseTemplatesScreen':
-        return MaterialPageRoute(builder: (_) => const BrowseTemplatesScreen());
+      case '/BrowseTemplatesScreen':
+        final args = settings.arguments;
+        String? tag;
+        String? slug;
+
+        if (args is Map) {
+          tag = args['tag']?.toString();
+          slug = args['slug']?.toString();
+        }
+
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) =>
+              BrowseTemplatesScreen(initialTag: tag, initialSlug: slug),
+        );
       case "/TemplateListScreen":
         final arguments = settings.arguments;
 

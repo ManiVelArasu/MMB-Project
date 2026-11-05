@@ -263,9 +263,9 @@ class HomeScreenProvider extends ChangeNotifier {
   Range? _specialDaysRange;
 
   Range? get specialDaysRange => _specialDaysRange;
-  List<TemplateCategories> _popularTemplates = [];
+  List<TemplateModel> _popularTemplates = [];
 
-  List<TemplateCategories> get popularTemplates => _popularTemplates;
+  List<TemplateModel> get popularTemplates => _popularTemplates;
 
   bool _isLoadingPopularTemplates = false;
 
@@ -608,13 +608,10 @@ class HomeScreenProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final industrySlug =
-          provider.business?.businessCategory?.slug?.trim() ?? '';
-
       final prefs = await SharedPreferences.getInstance();
       final savedLanguages =
           prefs.getStringList('selected_language_codes') ?? ['en'];
-
+      final industrySlug = prefs.getString('saved_category_slug') ?? '';
       final language = savedLanguages.isNotEmpty ? savedLanguages.first : 'en';
 
       debugPrint('🏷️ Keyword: $keyword');

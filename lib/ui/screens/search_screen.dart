@@ -444,72 +444,84 @@ class _SearchViewState extends State<_SearchView> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              "assets/images/no_downloads.png",
-              width: 140,
-              height: 140,
-            ),
-            AppText(
-              'No Templates Found',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-
-            const SizedBox(height: 8),
-
-            AppText(
-              'We couldn’t find any templates matching your search. Try a different keyword or explore our categories.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13),
-            ),
-
-            const SizedBox(height: 20),
-
-            Row(
-              children: [
-                Flexible(
-                  child: ButtonWidget(
-                    buttonPress: () {
-                      Navigator.pushNamed(context, '/BrowseTemplatesScreen');
-                    },
-                    title: "Browse Categories",
-                    textStyle: TextStyle(
-                      fontSize: AppFontSize.fontSize14,
-                      color: AppColors.appRed,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textColor: AppColors.appRed,
-                    buttonColor: AppColors.appWhite,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.appRed),
-                      borderRadius: const BorderRadius.all(Radius.circular(15)),
-                    ),
+    // Scrollable + centered: no overflow when the keyboard is open or the
+    // screen is short.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        physics: const ClampingScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    "assets/images/no_downloads.png",
+                    width: 140,
+                    height: 140,
                   ),
-                ),
-
-                const SizedBox(width: 8),
-
-                Flexible(
-                  child: ButtonWidget(
-                    buttonPress: _clearSearch,
-                    textStyle: TextStyle(
-                      fontSize: AppFontSize.fontSize14,
-                      color: AppColors.appWhite,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    title: "Clear Search",
-                    textColor: AppColors.appWhite,
-                    buttonColor: AppColors.appRed,
+                  AppText(
+                    'No Templates Found',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 8),
+
+                  AppText(
+                    'We couldn’t find any templates matching your search. Try a different keyword or explore our categories.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Row(
+                    children: [
+                      Flexible(
+                        child: ButtonWidget(
+                          buttonPress: () {
+                            Navigator.pushNamed(context, '/BrowseTemplatesScreen');
+                          },
+                          title: "Browse Categories",
+                          textStyle: TextStyle(
+                            fontSize: AppFontSize.fontSize14,
+                            color: AppColors.appRed,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textColor: AppColors.appRed,
+                          buttonColor: AppColors.appWhite,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.appRed),
+                            borderRadius: const BorderRadius.all(Radius.circular(15)),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      Flexible(
+                        child: ButtonWidget(
+                          buttonPress: _clearSearch,
+                          textStyle: TextStyle(
+                            fontSize: AppFontSize.fontSize14,
+                            color: AppColors.appWhite,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          title: "Clear Search",
+                          textColor: AppColors.appWhite,
+                          buttonColor: AppColors.appRed,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );

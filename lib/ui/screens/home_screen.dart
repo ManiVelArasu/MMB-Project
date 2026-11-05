@@ -12,6 +12,7 @@ import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:provider/provider.dart';
 import '../../Api Model/Template_model.dart';
 import '../../Api Model/special_days.dart';
+import '../../Repository/home_repository.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/custom_widget.dart';
 import '../../component/home_appbar.dart';
@@ -105,7 +106,9 @@ class _HomeScreenView extends StatelessWidget {
 
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => SearchScreen(initialQuery: q)),
+                            MaterialPageRoute(
+                              builder: (_) => SearchScreen(initialQuery: q),
+                            ),
                           );
                         },
                       ),
@@ -266,6 +269,17 @@ class _HomeScreenView extends StatelessWidget {
                           iconAsset: "assets/images/my_brand_posts.png",
                           hasViewAll: true,
                           isDark: isDark,
+                          onViewAll: () {
+                            final tag =
+                                homeScreenProvider.selectedKeyword?.trim() ??
+                                '';
+
+                            Navigator.pushNamed(
+                              context,
+                              '/BrowseTemplatesScreen',
+                              arguments: {if (tag.isNotEmpty) 'tag': tag},
+                            );
+                          },
                         ),
                         SizedBox(height: 12.h),
 
@@ -387,12 +401,39 @@ class _HomeScreenView extends StatelessWidget {
                                       padding: EdgeInsets.only(right: 12.w),
                                       child: InkWell(
                                         onTap: () {
-                                          Navigator.pushNamed(
+                                          final templateUid =
+                                              item.uid?.trim() ?? '';
+
+                                          if (templateUid.isEmpty) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: AppText(
+                                                  'Template UID not available',
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
+
+                                          Navigator.push(
                                             context,
-                                            "/TemplateDetailScreen",
-                                            arguments: {
-                                              "templateUid": item.uid,
-                                            },
+                                            MaterialPageRoute(
+                                              builder: (_) => TemplateEditScreen(
+                                                templateUid: templateUid,
+                                                canvasHeight:
+                                                    (item
+                                                                .templateSize
+                                                                ?.height ??
+                                                            0)
+                                                        .toDouble(),
+                                                canvasWidth:
+                                                    (item.templateSize?.width ??
+                                                            0)
+                                                        .toDouble(),
+                                              ),
+                                            ),
                                           );
                                         },
                                         borderRadius: BorderRadius.circular(
@@ -1348,104 +1389,105 @@ class _HomeScreenView extends StatelessWidget {
             ),
             Positioned(
               top: 5.h,
+              left: 5.w,
               right: 5.w,
-              child: TemplateActionPopup(
-                isFavorite: true,
-                showDownload: false,
-                showDelete: false,
-              onCustomize: (){
-                final templateUid = template.uid?.trim() ?? '';
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (template.isLocked)
+                    Padding(
+                      padding: EdgeInsets.only(left: 4.w),
+                      child: Image.asset(
+                        "assets/images/crown.png",
+                        width: 20.w,
+                        height: 20.w,
+                      ),
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  TemplateActionPopup(
+                    isFavorite: true,
+                    showDownload: false,
+                    showDelete: false,
+                    onCustomize: () {
+                      final templateUid = template.uid?.trim() ?? '';
 
-                if (templateUid.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: AppText('Template UID not available'),
-                    ),
-                  );
-                  return;
-                }
+                      if (templateUid.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: AppText('Template UID not available'),
+                          ),
+                        );
+                        return;
+                      }
 
-                if (template.isLocked) {
-                  _showPremiumTemplateDialog(context, template);
-                  return;
-                }
+                      if (template.isLocked) {
+                        _showPremiumTemplateDialog(context, template);
+                        return;
+                      }
 
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        TemplateEditScreen(templateUid: templateUid),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              TemplateEditScreen(templateUid: templateUid),
+                        ),
+                      );
+                    },
+                    onDownload: () async {
+                      final thumbnailUrl =
+                          template.thumbnailS3Key?.trim() ?? '';
+
+                      if (thumbnailUrl.isEmpty) return;
+
+                      final imageUrl = thumbnailUrl.startsWith('http')
+                          ? thumbnailUrl
+                          : '${ApiEndpoints.cdnImageUrl}/$thumbnailUrl';
+
+                      await downloadThumbnail(imageUrl);
+                    },
+                    onFavorite: () async {
+                      final uid = template.familyUid?.trim() ?? '';
+                      if (uid.isEmpty) return;
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        barrierColor: Colors.black45,
+                        useRootNavigator: true,
+                        builder: (_) => const PopScope(
+                          canPop: false,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFE53935),
+                            ),
+                          ),
+                        ),
+                      );
+
+                      bool success = false;
+                      String? errorMessage;
+
+                      try {
+                        final result = await HomeRepository.instance.favorite(
+                          uid,
+                        );
+                        success = result.isSuccess;
+                        errorMessage = result.error?.message;
+                      } catch (e) {
+                        debugPrint('Favorite Template Error: $e');
+                      } finally {
+                        // close loader
+                        if (context.mounted) {
+                          Navigator.of(context, rootNavigator: true).pop();
+                        }
+                      }
+
+                      if (!context.mounted) return;
+                    },
                   ),
-                );
-              },
-                onDownload: () async {
-                  final thumbnailUrl = template.thumbnailS3Key?.trim() ?? '';
-
-                  if (thumbnailUrl.isEmpty) return;
-
-                  final imageUrl = thumbnailUrl.startsWith('http')
-                      ? thumbnailUrl
-                      : '${ApiEndpoints.cdnImageUrl}/$thumbnailUrl';
-
-                  await downloadThumbnail(imageUrl);
-                },
-                onFavorite: () {
-                  final templateUid = template.familyUid?.trim() ?? '';
-                  provider.favoriteTemplate(templateUid);
-                },
+                ],
               ),
             ),
-            if (template.isLocked)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black.withValues(alpha: .40),
-
-                  child: const Center(
-                    child: Icon(
-                      Icons.lock_rounded,
-                      color: Colors.white,
-                      size: 30,
-                    ),
-                  ),
-                ),
-              ),
-
-            /*    Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
-
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.75),
-                    ],
-                  ),
-                ),
-
-                child: AppText(
-                  template.name ?? 'Template',
-
-                  maxLines: 1,
-
-                  overflow: TextOverflow.ellipsis,
-
-                  style: TextStyle(
-                    color: Colors.white,
-
-                    fontSize: 11.sp,
-
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),*/
           ],
         ),
       ),
@@ -1723,40 +1765,102 @@ class _HomeScreenView extends StatelessWidget {
 
               Positioned(
                 top: 5.h,
+                left: 5.w,
                 right: 5.w,
-                child: TemplateActionPopup(
-                  isFavorite: true,
-                  showDownload: false,
-                  showDelete: false,
-                  onCustomize: (){
-                    final templateUid = template.uid?.trim() ?? '';
-
-                    if (templateUid.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: AppText('Template UID not available'),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (template.isLocked ?? false)
+                      Padding(
+                        padding: EdgeInsets.only(left: 4.w),
+                        child: Image.asset(
+                          "assets/images/crown.png",
+                          width: 20.w,
+                          height: 20.w,
                         ),
-                      );
-                      return;
-                    }
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            TemplateEditScreen(templateUid: templateUid),
-                      ),
-                    );
-                  },
-                  onFavorite: () {
-                    final familyUid = template.familyUid?.trim() ?? '';
-                    if (familyUid.isNotEmpty) {
-                      provider.favoriteTemplate(familyUid);
-                    }
-                  },
+                      )
+                    else
+                      const SizedBox.shrink(),
+                    TemplateActionPopup(
+                      isFavorite: true,
+                      showDownload: false,
+                      showDelete: false,
+                      onCustomize: () {
+                        final templateUid = template.uid?.trim() ?? '';
 
-                  onDownload: () {
-                    // Download action
-                  },
+                        if (templateUid.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: AppText('Template UID not available'),
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (template.isLocked ?? false) {
+                          _showPremiumTemplateDialog(context, template);
+                          return;
+                        }
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                TemplateEditScreen(templateUid: templateUid),
+                          ),
+                        );
+                      },
+                      onDownload: () async {
+                        final thumbnailUrl =
+                            template.thumbnailS3Key?.trim() ?? '';
+
+                        if (thumbnailUrl.isEmpty) return;
+
+                        final imageUrl = thumbnailUrl.startsWith('http')
+                            ? thumbnailUrl
+                            : '${ApiEndpoints.cdnImageUrl}/$thumbnailUrl';
+
+                        await downloadThumbnail(imageUrl);
+                      },
+                      onFavorite: () async {
+                        final uid = template.familyUid?.trim() ?? '';
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          barrierColor: Colors.black45,
+                          useRootNavigator: true,
+                          builder: (_) => const PopScope(
+                            canPop: false,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFFE53935),
+                              ),
+                            ),
+                          ),
+                        );
+
+                        bool success = false;
+                        String? errorMessage;
+
+                        try {
+                          final result = await HomeRepository.instance.favorite(
+                            uid,
+                          );
+                          success = result.isSuccess;
+                          errorMessage = result.error?.message;
+                        } catch (e) {
+                          debugPrint('Favorite Template Error: $e');
+                        } finally {
+                          // close loader
+                          if (context.mounted) {
+                            Navigator.of(context, rootNavigator: true).pop();
+                          }
+                        }
+
+                        if (!context.mounted) return;
+                      },
+                    ),
+                  ],
                 ),
               ),
             ],

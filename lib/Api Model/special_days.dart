@@ -119,22 +119,22 @@ class SpecialDaysList {
 }
 
 class Template {
-  final int? id;
+  final String? id;
   final String? uid;
-  final int? familyId;
+  final String? familyId;
   final String? familyUid;
   final String? name;
-  final int? categoryId;
-  final int? languageId;
-  final int? sizeId;
+  final String? categoryId;
+  final String? languageId;
+  final String? sizeId;
   final String? thumbnailS3Key;
   final String? templateType;
-  final int? isPremium;
-  final int? isPopular;
-  final int? trendingScore;
-  final int? viewsCount;
-  final int? downloadsCount;
-  final int? likesCount;
+  final String? isPremium;
+  final String? isPopular;
+  final String? trendingScore;
+  final String? viewsCount;
+  final String? downloadsCount;
+  final String? likesCount;
   final String? status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -182,23 +182,23 @@ class Template {
     final sizesJson = json['available_sizes'];
 
     return Template(
-      id: _toInt(json['id']),
+      id: json['id']?.toString(),
       uid: json['uid']?.toString(),
-      familyId: _toInt(json['family_id'] ?? json['familyId']),
+      familyId: json['family_id']?.toString(),
       familyUid:
-      (json['family_uid'] ?? json['familyUid'])?.toString(),
+      json['familyUid']?.toString(),
       name: json['name']?.toString(),
-      categoryId: _toInt(json['category_id']),
-      languageId: _toInt(json['language_id']),
-      sizeId: _toInt(json['size_id']),
+      categoryId: json['category_id']?.toString(),
+      languageId: json['language_id']?.toString(),
+      sizeId: json['size_id']?.toString(),
       thumbnailS3Key: json['thumbnail_s3_key']?.toString(),
       templateType: json['template_type']?.toString(),
-      isPremium: _toInt(json['is_premium']),
-      isPopular: _toInt(json['is_popular']),
-      trendingScore: _toInt(json['trending_score']),
-      viewsCount: _toInt(json['views_count']),
-      downloadsCount: _toInt(json['downloads_count']),
-      likesCount: _toInt(json['likes_count']),
+      isPremium: json['is_premium']?.toString(),
+      isPopular: json['is_popular']?.toString(),
+      trendingScore: json['trending_score']?.toString(),
+      viewsCount: json['views_count']?.toString(),
+      downloadsCount: json['downloads_count']?.toString(),
+      likesCount:json['likes_count']?.toString(),
       status: json['status']?.toString(),
       createdAt: _toDateTime(json['created_at']),
       updatedAt: _toDateTime(json['updated_at']),

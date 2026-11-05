@@ -10,8 +10,7 @@ import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/Template_model.dart';
-import '../../Api Model/special_days.dart';
-import '../../Api Model/templates_view.dart';
+
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/template_detail_provider.dart';
@@ -136,6 +135,13 @@ class _TemplateDetailBody extends StatelessWidget {
                           // =====================================================
                           _buildActionButtons(context, provider, isDark),
 
+                          SizedBox(height: 16.h),
+
+                          // =====================================================
+                          // NAME + DETAILS + SIZES + LANGUAGE
+                          // =====================================================
+                          _buildTemplateInfo(context, provider, isDark),
+
                           SizedBox(height: 18.h),
 
                           // =====================================================
@@ -160,6 +166,183 @@ class _TemplateDetailBody extends StatelessWidget {
                   _buildBottomNavigation(context, provider, isDark),
                 ],
               ),
+      ),
+    );
+  }
+
+  // =====================================================================
+  // TEMPLATE INFO  (name · details · available sizes · languages)
+  // =====================================================================
+
+  List<String> _languagesOf(TemplateModel t) {
+    final names = <String>[];
+
+    for (final l in t.availableLanguages) {
+      final n = (l.name ?? l.nativeName ?? '').trim();
+      if (n.isNotEmpty && !names.contains(n)) names.add(n);
+    }
+
+    // available_languages empty-na current language
+    if (names.isEmpty) {
+      final n = (t.language?.name ?? '').trim();
+      if (n.isNotEmpty) names.add(n);
+    }
+
+    return names;
+  }
+
+  /// API size (width x height) → RESIZE option title
+  String _resizeTitleFor(int? w, int? h) {
+    if (w == null || h == null || w <= 0 || h <= 0) {
+      return 'Post Square (1:1)';
+    }
+    if (w == h) return 'Post Square (1:1)';
+    if (w > h) return 'Post Horizontal';
+    final ratio = w / h;
+    return ratio < 0.6 ? 'Story / Reel (9:16)' : 'Post Portrait (4:5)';
+  }
+
+  Widget _infoChip(
+    String label,
+    bool isDark, {
+    bool selected = false,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFFFFECEE)
+              : (isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade100),
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(
+            color: selected
+                ? Colors.red
+                : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
+          ),
+        ),
+        child: AppText(
+          label,
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w500,
+            color: selected
+                ? Colors.red
+                : (isDark ? Colors.white70 : Colors.black87),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTemplateInfo(
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
+    final template = provider.selectedTemplate;
+    if (template == null) return const SizedBox.shrink();
+
+    final name = (template.name ?? '').toString().trim();
+
+    final w = (template.templateSize?.width ?? 0).toDouble();
+    final h = (template.templateSize?.height ?? 0).toDouble();
+
+    String details = '';
+    if (w > 0 && h > 0) {
+      final orientation = w == h
+          ? 'Square'
+          : (h > w ? 'Portrait' : 'Landscape');
+      details = '$orientation · ${w.toInt()} × ${h.toInt()}';
+    }
+
+    final languages = _languagesOf(template);
+
+    // API available_sizes; empty-na default options
+    final List<({String label, String resize})> sizes = [
+      for (final z in template.availableSizes)
+        if ((z.name ?? '').trim().isNotEmpty)
+          (label: z.name!.trim(), resize: _resizeTitleFor(z.width, z.height)),
+    ];
+
+    if (sizes.isEmpty) {
+      sizes.addAll(const [
+        (label: 'Square (1:1)', resize: 'Post Square (1:1)'),
+        (label: 'Portrait (4:5)', resize: 'Post Portrait (4:5)'),
+        (label: 'Story (9:16)', resize: 'Story / Reel (9:16)'),
+      ]);
+    }
+
+    final titleColor = isDark ? Colors.white : Colors.black87;
+    final subColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (name.isNotEmpty)
+            AppText(
+              name,
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w700,
+                color: titleColor,
+              ),
+            ),
+
+          if (details.isNotEmpty) ...[
+            SizedBox(height: 2.h),
+            AppText(
+              details,
+              style: TextStyle(fontSize: 12.sp, color: subColor),
+            ),
+          ],
+
+          SizedBox(height: 14.h),
+
+          AppText(
+            'Available Sizes',
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+              color: titleColor,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: sizes.map((e) {
+              return _infoChip(
+                e.label,
+                isDark,
+                selected: provider.selectedResizeSize == e.resize,
+                onTap: () => provider.setResizeSize(e.resize),
+              );
+            }).toList(),
+          ),
+
+          if (languages.isNotEmpty) ...[
+            SizedBox(height: 14.h),
+            AppText(
+              'Available Language',
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                color: titleColor,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: languages.map((l) => _infoChip(l, isDark)).toList(),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -248,11 +431,11 @@ class _TemplateDetailBody extends StatelessWidget {
         SizedBox(width: 12.w),
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: provider.imageTemplates.isEmpty
+            onPressed: provider.selectedTemplate == null
                 ? null
                 : () {
                     // Same template that is shown in the top banner
-                    final template = provider.imageTemplates.first;
+                    final template = provider.selectedTemplate!;
                     final templateUid = template.uid?.trim() ?? '';
 
                     if (templateUid.isEmpty) {
@@ -334,8 +517,7 @@ class _TemplateDetailBody extends StatelessWidget {
     if (selectedIndex == 2) {
       return _buildPostSizeSection(context, provider, isDark);
     }
-
-    return _buildCategoryInfo(context, provider, isDark);
+    return _buildImageSection(context, provider, isDark);
   }
 
   // =====================================================================
@@ -347,7 +529,7 @@ class _TemplateDetailBody extends StatelessWidget {
     TemplateDetailProvider provider,
     bool isDark,
   ) {
-    final templates = provider.imageTemplates;
+    final templates = provider.gridImageTemplates;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,7 +581,7 @@ class _TemplateDetailBody extends StatelessWidget {
     TemplateDetailProvider provider,
     bool isDark,
   ) {
-    final templates = provider.videoTemplates;
+    final templates = provider.gridVideoTemplates;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,7 +633,7 @@ class _TemplateDetailBody extends StatelessWidget {
     TemplateDetailProvider provider,
     bool isDark,
   ) {
-    final templates = provider.allTemplates;
+    final templates = provider.gridAllTemplates;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,6 +705,7 @@ class _TemplateDetailBody extends StatelessWidget {
     bool isDark, {
     required bool isVideo,
   }) {
+    print(template.isLocked);
     final locked = template.isLocked ?? false;
     final key = template.thumbnailS3Key?.trim() ?? '';
     final imageUrl = key.isEmpty
@@ -541,18 +724,24 @@ class _TemplateDetailBody extends StatelessWidget {
           );
           return;
         }
-        if (locked) return;
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => TemplateEditScreen(
-              templateUid: uid,
-              canvasWidth: (template.templateSize?.width ?? 1080).toDouble(),
-              canvasHeight: (template.templateSize?.height ?? 1080).toDouble(),
-            ),
+        // Top banner image replace aagum (grid-la irundhu maarum)
+        final provider = context.read<TemplateDetailProvider>();
+        provider.selectTemplate(uid);
+        provider.setResizeSize(
+          _resizeTitleFor(
+            template.templateSize?.width,
+            template.templateSize?.height,
           ),
         );
+        final controller = PrimaryScrollController.maybeOf(context);
+        if (controller != null && controller.hasClients) {
+          controller.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
       },
       child: Container(
         decoration: BoxDecoration(
@@ -600,16 +789,13 @@ class _TemplateDetailBody extends StatelessWidget {
                 ),
               ),
             if (locked)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black.withValues(alpha: .40),
-                  child: const Center(
-                    child: Icon(
-                      Icons.lock_rounded,
-                      color: Colors.white,
-                      size: 30,
-                    ),
-                  ),
+              Positioned(
+                left: 8.h,
+                child: Image.asset(
+                  "assets/images/crown.png",
+                  width: 28.w,
+                  height: 28.h,
+                  fit: BoxFit.contain,
                 ),
               ),
           ],
@@ -635,56 +821,6 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
   // CATEGORY INFO
   // =====================================================================
-
-  Widget _buildCategoryInfo(
-    BuildContext context,
-    TemplateDetailProvider provider,
-    bool isDark,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle("Categories", null, isDark),
-
-        SizedBox(height: 12.h),
-
-        Wrap(
-          spacing: 10.w,
-          runSpacing: 10.h,
-          children:
-              [
-                "Cakes",
-                "Cookies",
-                "Smoothie",
-                "Brownies",
-                "Cupcakes",
-                "Muffins",
-                "Birthday Special",
-                "Sweets",
-                "Today Special",
-                "Wedding Special",
-                "Deal of the Day",
-                "Offers",
-              ].map((category) {
-                return GestureDetector(
-                  onTap: () {
-                    final slug = _createSlug(category);
-
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            TemplateDetailScreen(categorySlug: slug),
-                      ),
-                    );
-                  },
-                  child: _buildCategoryChip(category, isDark),
-                );
-              }).toList(),
-        ),
-      ],
-    );
-  }
 
   // =====================================================================
   // SECTION TITLE
@@ -862,8 +998,9 @@ class _TemplateDetailBody extends StatelessWidget {
           InkWell(
             onTap: () {
               provider.setSelectedIndex(3);
-
-              showCategoriesBottomSheet(context, isDark);
+              provider.loadKeyWords(); // loads once, sheet updates itself
+              _showCategorySheet(context, provider, isDark);
+              //   showCategoriesBottomSheet(context, isDark);
             },
             child: _buildBottomNavItem(
               Icons.category,
@@ -905,9 +1042,7 @@ class _TemplateDetailBody extends StatelessWidget {
   Widget _buildTopBanner(BuildContext context, String resizeSize, bool isDark) {
     final provider = context.watch<TemplateDetailProvider>();
 
-    final TemplateModel? firstTemplate = provider.imageTemplates.isNotEmpty
-        ? provider.imageTemplates.first
-        : null;
+    final TemplateModel? firstTemplate = provider.selectedTemplate;
 
     final key = firstTemplate?.thumbnailS3Key?.trim() ?? '';
 
@@ -984,127 +1119,135 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
   // SLUG
   // =====================================================================
-
-  String _createSlug(String value) {
-    return value
-        .toLowerCase()
-        .trim()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
-        .replaceAll(RegExp(r'^-|-$'), '');
-  }
 }
 
 // ========================================================================
 // CATEGORIES BOTTOM SHEET
 // ========================================================================
 
-void showCategoriesBottomSheet(BuildContext context, bool isDark) {
-  final categories = [
-    {"name": "Cakes", "slug": "cakes"},
-    {"name": "Cookies", "slug": "cookies"},
-    {"name": "Smoothie", "slug": "smoothie"},
-    {"name": "Brownies", "slug": "brownies"},
-    {"name": "Cupcakes", "slug": "cupcakes"},
-    {"name": "Muffins", "slug": "muffins"},
-    {"name": "Birthday Special", "slug": "birthday-special"},
-    {"name": "Sweets", "slug": "sweets"},
-    {"name": "Today Special", "slug": "today-special"},
-    {"name": "Wedding Special", "slug": "wedding-special"},
-    {"name": "Deal of the Day", "slug": "deal-of-the-day"},
-    {"name": "Offers", "slug": "offers"},
-  ];
-
+void _showCategorySheet(
+  BuildContext context,
+  TemplateDetailProvider p,
+  bool isDark,
+) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (sheetContext) {
-      return Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  height: 4.h,
-                  width: 50.w,
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(10),
+      return ListenableBuilder(
+        listenable: p,
+        builder: (_, __) => Container(
+          width: double.infinity,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // handle
+                Center(
+                  child: Container(
+                    height: 4,
+                    width: 50,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.grey.shade700
+                          : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
-              ),
 
-              SizedBox(height: 16.h),
+                const SizedBox(height: 16),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  AppText(
-                    "Categories",
-                    style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(6.r),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF2A1A1C)
-                            : Colors.red.shade50,
-                        shape: BoxShape.circle,
+                // title + close
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Categories",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
-                      child: Icon(Icons.close, color: Colors.red, size: 20.sp),
                     ),
-                  ),
-                ],
-              ),
+                    InkWell(
+                      onTap: () => Navigator.pop(sheetContext),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF2A1A1C)
+                              : Colors.red.shade50,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.red,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
 
-              SizedBox(height: 20.h),
+                const SizedBox(height: 20),
 
-              Flexible(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Wrap(
-                    spacing: 10.w,
-                    runSpacing: 12.h,
-                    children: categories.map((category) {
-                      final name = category["name"]!;
-                      final slug = category["slug"]!;
+                if (p.isKeyWordsLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 30),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFE53935),
+                      ),
+                    ),
+                  )
+                else if (p.keyWords.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 30),
+                    child: Center(child: Text('No categories found')),
+                  )
+                else
+                  Flexible(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Wrap(
+                        spacing: 10,
+                        runSpacing: 12,
+                        children: p.keyWords.map((k) {
+                          final name = k.name?.trim() ?? '';
+                          if (name.isEmpty) return const SizedBox.shrink();
 
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.pop(sheetContext);
+                          final selected = p.tag == name;
 
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  TemplateDetailScreen(categorySlug: slug),
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.pop(sheetContext);
+                              //  p.selectTag(name); // sent as `tags`
+                            },
+                            child: _CategoryChip(
+                              title: name,
+                              isDark: isDark,
+                              selected: selected,
                             ),
                           );
-                        },
-                        child: _CategoryChip(title: name, isDark: isDark),
-                      );
-                    }).toList(),
+                        }).toList(),
+                      ),
+                    ),
                   ),
-                ),
-              ),
 
-              SizedBox(height: 20.h),
-            ],
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       );
@@ -1115,25 +1258,34 @@ void showCategoriesBottomSheet(BuildContext context, bool isDark) {
 class _CategoryChip extends StatelessWidget {
   final String title;
   final bool isDark;
+  final bool selected;
 
-  const _CategoryChip({required this.title, required this.isDark});
+  const _CategoryChip({
+    required this.title,
+    required this.isDark,
+    this.selected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 10.h),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-        borderRadius: BorderRadius.circular(30.r),
+        color: selected
+            ? const Color(0xFFFFECEE)
+            : (isDark ? const Color(0xFF2C2C2C) : Colors.white),
+        borderRadius: BorderRadius.circular(30),
         border: Border.all(
-          color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+          color: selected
+              ? Colors.red
+              : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
           width: 1.2,
         ),
       ),
-      child: AppText(
+      child: Text(
         title,
         style: TextStyle(
-          fontSize: 14.sp,
+          fontSize: 14,
           fontWeight: FontWeight.w600,
           color: isDark ? Colors.white : Colors.black87,
         ),
