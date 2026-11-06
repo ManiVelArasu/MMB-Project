@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../Api Model/Template_model.dart';
 import '../../Api Model/key_words_model.dart';
 import '../../Repository/business_profile_repository.dart';
+import '../../Repository/template_detail_repository.dart';
 import '../../Repository/template_edit_repository.dart';
 import 'common_provider.dart';
 
@@ -164,6 +165,92 @@ class TemplateDetailProvider extends ChangeNotifier {
 
   String? _categorySlug;
   String? get categorySlug => _categorySlug;
+
+  // ---------------------------------------------------------------
+  // OPEN FROM A TEMPLATE (home screen → tap)
+  //   1. GET templates/{uid}                          → banner template
+  //   2. GET templates?category={id}&limit=9&offset=0 → grid templates
+  // ---------------------------------------------------------------
+  Future<void> loadByTemplate({required String uid, int? categoryId}) async {
+    final templateUid = uid.trim();
+    if (templateUid.isEmpty) return;
+
+    final detailRepo = TemplateDetailRepository.instance;
+
+    _isLoading = true;
+    _categorySlug = null;
+    _selectedUid = templateUid;
+    _templates = [];
+    notifyListeners();
+
+    try {
+      // categoryId theriyum-na rendu API-um parallel-ah pogum
+      final singleFuture = detailRepo.templateByUid(templateUid);
+      final listFuture = categoryId != null
+          ? detailRepo.templatesByCategoryId(categoryId)
+          : null;
+
+      final singleResult = await singleFuture;
+      final TemplateModel? single = singleResult.isSuccess
+          ? singleResult.data
+          : null;
+
+      if (!singleResult.isSuccess) {
+        debugPrint('❌ Template by uid error: ${singleResult.error?.message}');
+      }
+
+      var list = <TemplateModel>[];
+
+      final effectiveCategoryId = categoryId ?? single?.categoryId;
+
+      if (effectiveCategoryId != null) {
+        final listResult = listFuture != null
+            ? await listFuture
+            : await detailRepo.templatesByCategoryId(effectiveCategoryId);
+
+        if (listResult.isSuccess && listResult.data != null) {
+          list = List<TemplateModel>.from(listResult.data!.data);
+        } else {
+          debugPrint('❌ Category templates error: ${listResult.error?.message}');
+        }
+      }
+
+      // Banner template ellaa list-layum irukkanum
+      if (single != null) {
+        list.removeWhere((t) => t.uid == single.uid);
+        list.insert(0, single);
+      }
+
+      _templates = list;
+
+      // Banner ratio / EDIT size → template-oda size
+      final sel = selectedTemplate;
+      if (sel != null) {
+        _selectedResizeSize = resizeTitleFor(
+          sel.templateSize?.width,
+          sel.templateSize?.height,
+        );
+      }
+
+      debugPrint('✅ Templates loaded: ${_templates.length}');
+    } catch (e, st) {
+      _templates = [];
+      debugPrint('❌ loadByTemplate exception: $e\n$st');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// API size (width x height) → RESIZE option title
+  String resizeTitleFor(int? w, int? h) {
+    if (w == null || h == null || w <= 0 || h <= 0) {
+      return 'Post Square (1:1)';
+    }
+    if (w == h) return 'Post Square (1:1)';
+    if (w > h) return 'Post Horizontal';
+    return (w / h) < 0.6 ? 'Story / Reel (9:16)' : 'Post Portrait (4:5)';
+  }
 
   Future<void> getTemplatesByCategory(String slug) async {
     final category = slug.trim();
