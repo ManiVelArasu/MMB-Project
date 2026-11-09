@@ -706,7 +706,6 @@ class _ManagePlanViewState extends State<_ManagePlanView> {
                                         ),
                                       );
                                     },
-
                                   );
                                 },
                               ),
@@ -808,93 +807,98 @@ class _ManagePlanViewState extends State<_ManagePlanView> {
     required String date,
     required String amount,
 
-
     VoidCallback? onClickTap,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(13, 12, 13, 11),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E2E2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusBackground,
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: AppText(
-                  status,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: AppFontSize.fontSize12,
-                    fontWeight: FontWeight.w700,
+    return InkWell(
+      onTap: onClickTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(13, 12, 13, 11),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE2E2E2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusBackground,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: AppText(
+                    status,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: AppFontSize.fontSize12,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
-              Container(
-                width: 17,
-                height: 17,
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: InkWell(
-                  onTap: onClickTap,
-                  child: const Icon(
-                    Icons.north_east,
-                    color: Colors.white,
-                    size: 11,
+                Container(
+                  width: 17,
+                  height: 17,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: InkWell(
+                    onTap: onClickTap,
+                    child: const Icon(
+                      Icons.north_east,
+                      color: Colors.white,
+                      size: 11,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: AppText(
-                  title,
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: AppText(
+                    title,
+                    style: TextStyle(
+                      color: const Color(0xFF171A2B),
+                      fontSize: AppFontSize.fontSize14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                AppText(
+                  amount,
                   style: TextStyle(
                     color: const Color(0xFF171A2B),
-                    fontSize: AppFontSize.fontSize14,
+                    fontSize: AppFontSize.fontSize18,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              AppText(
-                amount,
-                style: TextStyle(
-                  color: const Color(0xFF171A2B),
-                  fontSize: AppFontSize.fontSize18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 3),
-          AppText(
-            date,
-            style: TextStyle(
-              color: const Color(0xFF666666),
-              fontSize: AppFontSize.fontSize12,
-              fontWeight: FontWeight.w400,
+              ],
             ),
-          ),
-          const SizedBox(height: 3),
-          const SizedBox(height: 10),
-        ],
+            const SizedBox(height: 3),
+            AppText(
+              date,
+              style: TextStyle(
+                color: const Color(0xFF666666),
+                fontSize: AppFontSize.fontSize12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            const SizedBox(height: 3),
+            const SizedBox(height: 10),
+          ],
+        ),
       ),
     );
   }

@@ -160,9 +160,7 @@ class ProjectRepository {
           return MyUploads.fromJson(json);
         }
 
-        throw Exception(
-          'Invalid uploads response: ${json.runtimeType}',
-        );
+        throw Exception('Invalid uploads response: ${json.runtimeType}');
       },
     );
   }

@@ -198,7 +198,7 @@ class BusinessProfileView extends StatelessWidget {
                               children: [
                                 _buildActionCard(
                                   onCallBack: () {},
-                                  title: "ABOUT BUSINESS",
+                                  title: "About Business",
                                   iconAsset: "assets/images/about.png",
                                   bgColor: isDark
                                       ? const Color(0xFF1B2A38)
@@ -214,7 +214,7 @@ class BusinessProfileView extends StatelessWidget {
                                       "/ProductsScreen",
                                     );
                                   },
-                                  title: "MY PRODUCTS",
+                                  title: "My Products",
                                   iconAsset: "assets/images/product.png",
                                   bgColor: isDark
                                       ? const Color(0xFF26223D)
@@ -229,7 +229,7 @@ class BusinessProfileView extends StatelessWidget {
                                       "/MyUploadsScreen",
                                     );
                                   },
-                                  title: "Media Library".toUpperCase(),
+                                  title: "Media Library",
                                   iconAsset: "assets/images/uploads.png",
                                   bgColor: isDark
                                       ? const Color(0xFF3A2F1A)

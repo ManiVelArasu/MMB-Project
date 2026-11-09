@@ -126,7 +126,7 @@ class _HomeScreenView extends StatelessWidget {
                       _buildMySpaceList(homeScreenProvider, isDark, (item) {
                         switch (item.title) {
                           case "CREATE NEW":
-                            Navigator.pushNamed(context, "/CustomSizeScreen");
+                            context.read<BottomNavProvider>().updateIndex(0);
                             break;
                           case "FOR YOU":
                             homeScreenProvider.setSelectedMySpace("FOR YOU");
@@ -273,7 +273,7 @@ class _HomeScreenView extends StatelessWidget {
                           onViewAll: () {
                             final tag =
                                 homeScreenProvider.selectedKeyword?.trim() ??
-                                    '';
+                                '';
 
                             Navigator.pushNamed(
                               context,
@@ -293,7 +293,7 @@ class _HomeScreenView extends StatelessWidget {
                             itemCount: homeScreenProvider.keyWords.length,
                             itemBuilder: (context, index) {
                               final keywordItem =
-                              homeScreenProvider.keyWords[index];
+                                  homeScreenProvider.keyWords[index];
 
                               final keyword = keywordItem.name?.trim() ?? '';
 
@@ -308,8 +308,8 @@ class _HomeScreenView extends StatelessWidget {
                                   onTap: () async {
                                     await homeScreenProvider
                                         .fetchTemplatesByPopular(
-                                      keyword: keyword,
-                                    );
+                                          keyword: keyword,
+                                        );
                                   },
                                   child: Container(
                                     padding: EdgeInsets.symmetric(
@@ -319,8 +319,8 @@ class _HomeScreenView extends StatelessWidget {
                                     alignment: Alignment.center,
                                     decoration: BoxDecoration(
                                       color:
-                                      homeScreenProvider.selectedKeyword ==
-                                          keyword
+                                          homeScreenProvider.selectedKeyword ==
+                                              keyword
                                           ? const Color(0xFFFFECEE)
                                           : isDark
                                           ? const Color(0xFF1E1E1E)
@@ -328,9 +328,9 @@ class _HomeScreenView extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(20.r),
                                       border: Border.all(
                                         color:
-                                        homeScreenProvider
-                                            .selectedKeyword ==
-                                            keyword
+                                            homeScreenProvider
+                                                    .selectedKeyword ==
+                                                keyword
                                             ? Colors.red
                                             : isDark
                                             ? Colors.grey.shade800
@@ -344,8 +344,8 @@ class _HomeScreenView extends StatelessWidget {
                                         color: isDark
                                             ? Colors.white70
                                             : Colors.black87,
-                                        fontSize: AppFontSize.fontSize11,
-                                        fontWeight: FontWeight.w700,
+                                        fontSize: AppFontSize.fontSize14,
+                                        fontWeight: FontWeight.w400,
                                       ),
                                     ),
                                   ),
@@ -361,84 +361,84 @@ class _HomeScreenView extends StatelessWidget {
                           height: 190.h,
                           child: homeScreenProvider.isLoadingPopularTemplates
                               ? const Center(
-                            child: CircularProgressIndicator(
-                              color: Color(0xFFE53935),
-                              strokeWidth: 2,
-                            ),
-                          )
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFFE53935),
+                                    strokeWidth: 2,
+                                  ),
+                                )
                               : homeScreenProvider.popularTemplates.isEmpty
                               ? Center(
-                            child: AppText(
-                              'No templates available',
-                              style: TextStyle(
-                                color: isDark
-                                    ? Colors.white54
-                                    : Colors.black45,
-                                fontSize: 13.sp,
-                              ),
-                            ),
-                          )
-                              : ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 4.w,
-                            ),
-                            itemCount: homeScreenProvider
-                                .popularTemplates
-                                .length,
-                            itemBuilder: (context, index) {
-                              final item = homeScreenProvider
-                                  .popularTemplates[index];
-
-                              final thumbnailKey =
-                                  item.thumbnailS3Key ?? '';
-
-                              final imageUrl = thumbnailKey.isEmpty
-                                  ? ''
-                                  : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
-
-                              return Padding(
-                                padding: EdgeInsets.only(right: 12.w),
-                                child: InkWell(
-                                  onTap: () =>
-                                      _openTemplateDetail(context, item),
-                                  borderRadius: BorderRadius.circular(
-                                    20.r,
-                                  ),
-                                  child: Container(
-                                    width: 145.w,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                        20.r,
-                                      ),
+                                  child: AppText(
+                                    'No templates available',
+                                    style: TextStyle(
                                       color: isDark
-                                          ? const Color(0xFF1E1E1E)
-                                          : Colors.grey.shade100,
-                                      border: Border.all(
-                                        color: isDark
-                                            ? Colors.grey.shade800
-                                            : Colors.grey.shade300,
-                                      ),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(
-                                        20.r,
-                                      ),
-                                      child: imageUrl.isEmpty
-                                          ? const Center(
-                                        child: Icon(
-                                          Icons.image_outlined,
-                                          color: Colors.grey,
-                                        ),
-                                      )
-                                          : buildProfileImage(imageUrl),
+                                          ? Colors.white54
+                                          : Colors.black45,
+                                      fontSize: 13.sp,
                                     ),
                                   ),
+                                )
+                              : ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 4.w,
+                                  ),
+                                  itemCount: homeScreenProvider
+                                      .popularTemplates
+                                      .length,
+                                  itemBuilder: (context, index) {
+                                    final item = homeScreenProvider
+                                        .popularTemplates[index];
+
+                                    final thumbnailKey =
+                                        item.thumbnailS3Key ?? '';
+
+                                    final imageUrl = thumbnailKey.isEmpty
+                                        ? ''
+                                        : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+
+                                    return Padding(
+                                      padding: EdgeInsets.only(right: 12.w),
+                                      child: InkWell(
+                                        onTap: () =>
+                                            _openTemplateDetail(context, item),
+                                        borderRadius: BorderRadius.circular(
+                                          20.r,
+                                        ),
+                                        child: Container(
+                                          width: 145.w,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              20.r,
+                                            ),
+                                            color: isDark
+                                                ? const Color(0xFF1E1E1E)
+                                                : Colors.grey.shade100,
+                                            border: Border.all(
+                                              color: isDark
+                                                  ? Colors.grey.shade800
+                                                  : Colors.grey.shade300,
+                                            ),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              20.r,
+                                            ),
+                                            child: imageUrl.isEmpty
+                                                ? const Center(
+                                                    child: Icon(
+                                                      Icons.image_outlined,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  )
+                                                : buildProfileImage(imageUrl),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                          ),
                         ),
                         SizedBox(height: 12.h),
                       ],
@@ -462,7 +462,7 @@ class _HomeScreenView extends StatelessWidget {
                             itemCount: homeScreenProvider.keyWords.length,
                             itemBuilder: (context, index) {
                               final keywordItem =
-                              homeScreenProvider.keyWords[index];
+                                  homeScreenProvider.keyWords[index];
 
                               final keyword = keywordItem.name?.trim() ?? '';
 
@@ -477,8 +477,8 @@ class _HomeScreenView extends StatelessWidget {
                                   onTap: () async {
                                     await homeScreenProvider
                                         .fetchTemplatesByPopular(
-                                      keyword: keyword,
-                                    );
+                                          keyword: keyword,
+                                        );
                                   },
                                   child: Container(
                                     padding: EdgeInsets.symmetric(
@@ -488,8 +488,8 @@ class _HomeScreenView extends StatelessWidget {
                                     alignment: Alignment.center,
                                     decoration: BoxDecoration(
                                       color:
-                                      homeScreenProvider.selectedKeyword ==
-                                          keyword
+                                          homeScreenProvider.selectedKeyword ==
+                                              keyword
                                           ? const Color(0xFFFFECEE)
                                           : isDark
                                           ? const Color(0xFF1E1E1E)
@@ -497,9 +497,9 @@ class _HomeScreenView extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(20.r),
                                       border: Border.all(
                                         color:
-                                        homeScreenProvider
-                                            .selectedKeyword ==
-                                            keyword
+                                            homeScreenProvider
+                                                    .selectedKeyword ==
+                                                keyword
                                             ? Colors.red
                                             : isDark
                                             ? Colors.grey.shade800
@@ -513,8 +513,8 @@ class _HomeScreenView extends StatelessWidget {
                                         color: isDark
                                             ? Colors.white70
                                             : Colors.black87,
-                                        fontSize: AppFontSize.fontSize11,
-                                        fontWeight: FontWeight.w700,
+                                        fontSize: AppFontSize.fontSize14,
+                                        fontWeight: FontWeight.w400,
                                       ),
                                     ),
                                   ),
@@ -529,17 +529,17 @@ class _HomeScreenView extends StatelessWidget {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount:
-                          homeScreenProvider.brandVideoPostsList.length,
+                              homeScreenProvider.brandVideoPostsList.length,
                           gridDelegate:
-                          SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12.w,
-                            mainAxisSpacing: 12.h,
-                            childAspectRatio: 1.0,
-                          ),
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12.w,
+                                mainAxisSpacing: 12.h,
+                                childAspectRatio: 1.0,
+                              ),
                           itemBuilder: (context, index) {
                             final videoData =
-                            homeScreenProvider.brandVideoPostsList[index];
+                                homeScreenProvider.brandVideoPostsList[index];
                             return BrandVideoCard(
                               thumbnailUrl: videoData["thumbnail"] ?? '',
                               videoUrl: videoData["videoUrl"] ?? '',
@@ -557,7 +557,7 @@ class _HomeScreenView extends StatelessWidget {
 
                         itemBuilder: (context, index) {
                           final category =
-                          homeScreenProvider.templateCategories[index];
+                              homeScreenProvider.templateCategories[index];
 
                           final categoryName = category.name?.trim() ?? '';
 
@@ -571,8 +571,8 @@ class _HomeScreenView extends StatelessWidget {
 
                           final bool isSpecialCategory =
                               categoryLower == 'celebrate moments' ||
-                                  categoryLower == 'devotional/daily posts' ||
-                                  categoryLower == 'devotional / daily posts';
+                              categoryLower == 'devotional/daily posts' ||
+                              categoryLower == 'devotional / daily posts';
 
                           if (isSpecialCategory) {
                             if (category.children.isEmpty) {
@@ -580,7 +580,7 @@ class _HomeScreenView extends StatelessWidget {
                             }
 
                             final categoryIcon =
-                            categoryLower == 'celebrate moments'
+                                categoryLower == 'celebrate moments'
                                 ? 'assets/images/flash.png'
                                 : 'assets/images/devotional.png';
 
@@ -631,7 +631,7 @@ class _HomeScreenView extends StatelessWidget {
                                           SizedBox(width: 7.w),
                                       itemBuilder: (context, childIndex) {
                                         final child =
-                                        category.children[childIndex];
+                                            category.children[childIndex];
 
                                         final childName =
                                             child.name?.trim() ?? '';
@@ -666,44 +666,44 @@ class _HomeScreenView extends StatelessWidget {
                                               children: [
                                                 ClipRRect(
                                                   borderRadius:
-                                                  BorderRadius.circular(
-                                                    10.r,
-                                                  ),
+                                                      BorderRadius.circular(
+                                                        10.r,
+                                                      ),
                                                   child: Container(
                                                     width: 84.w,
                                                     height: 88.w,
                                                     color: isDark
                                                         ? const Color(
-                                                      0xFF252525,
-                                                    )
+                                                            0xFF252525,
+                                                          )
                                                         : Colors.grey.shade100,
                                                     child: imageUrl.isEmpty
                                                         ? Icon(
-                                                      Icons
-                                                          .image_outlined,
-                                                      size: 28.sp,
-                                                      color: Colors.grey,
-                                                    )
+                                                            Icons
+                                                                .image_outlined,
+                                                            size: 28.sp,
+                                                            color: Colors.grey,
+                                                          )
                                                         : CachedNetworkImage(
-                                                      imageUrl: imageUrl,
-                                                      width: 84.w,
-                                                      height: 88.w,
-                                                      fit: BoxFit.cover,
+                                                            imageUrl: imageUrl,
+                                                            width: 84.w,
+                                                            height: 88.w,
+                                                            fit: BoxFit.cover,
 
-                                                      placeholder:
-                                                          (context, url) {
-                                                        return _defaultLogo();
-                                                      },
+                                                            placeholder:
+                                                                (context, url) {
+                                                                  return _defaultLogo();
+                                                                },
 
-                                                      errorWidget:
-                                                          (
-                                                          context,
-                                                          url,
-                                                          error,
-                                                          ) {
-                                                        return _defaultLogo();
-                                                      },
-                                                    ),
+                                                            errorWidget:
+                                                                (
+                                                                  context,
+                                                                  url,
+                                                                  error,
+                                                                ) {
+                                                                  return _defaultLogo();
+                                                                },
+                                                          ),
                                                   ),
                                                 ),
 
@@ -720,7 +720,7 @@ class _HomeScreenView extends StatelessWidget {
                                                           .fontSize12
                                                           .sp,
                                                       fontWeight:
-                                                      FontWeight.w400,
+                                                          FontWeight.w400,
                                                       color: isDark
                                                           ? Colors.white
                                                           : Colors.black,
@@ -748,7 +748,7 @@ class _HomeScreenView extends StatelessWidget {
                           }
 
                           final categoryIcon =
-                          (category.iconS3Key?.trim().isNotEmpty ?? false)
+                              (category.iconS3Key?.trim().isNotEmpty ?? false)
                               ? '${ApiEndpoints.cdnImageUrl}/${category.iconS3Key}'
                               : '';
 
@@ -764,7 +764,7 @@ class _HomeScreenView extends StatelessWidget {
 
                           final bool isYoutubeThumbnail =
                               slug.toLowerCase() == 'youtube-thumbnails' ||
-                                  categoryLower == 'youtube thumbnails';
+                              categoryLower == 'youtube thumbnails';
 
                           return Padding(
                             padding: EdgeInsets.only(top: 24.h),
@@ -834,166 +834,166 @@ class _HomeScreenView extends StatelessWidget {
                                 // 2 x 2 GRID + HORIZONTAL PAGE
                                 // ======================================================
                                 else if (isYoutubeThumbnail)
-                                    SizedBox(
-                                      height: 175.h,
-                                      width: double.infinity,
-                                      child: LayoutBuilder(
-                                        builder: (context, constraints) {
-                                          final double screenWidth =
-                                              constraints.maxWidth;
-                                          final double totalHeight = 175.h;
+                                  SizedBox(
+                                    height: 175.h,
+                                    width: double.infinity,
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        final double screenWidth =
+                                            constraints.maxWidth;
+                                        final double totalHeight = 175.h;
 
-                                          final double horizontalGap = 3.w;
-                                          final double verticalGap = 13.w;
+                                        final double horizontalGap = 3.w;
+                                        final double verticalGap = 13.w;
 
-                                          // Each page occupies 92% of available width
-                                          final double pageWidth =
-                                              screenWidth * 0.92;
+                                        // Each page occupies 92% of available width
+                                        final double pageWidth =
+                                            screenWidth * 0.92;
 
-                                          // Total height la irunthu outer padding-oda vertical spacing (verticalGap * 2) and middle vertical gap pogha baaki irukkira height-ah 2 rows-ku divide panrom
-                                          final double cardHeight =
-                                              (totalHeight - (verticalGap * 3)) /
-                                                  2;
+                                        // Total height la irunthu outer padding-oda vertical spacing (verticalGap * 2) and middle vertical gap pogha baaki irukkira height-ah 2 rows-ku divide panrom
+                                        final double cardHeight =
+                                            (totalHeight - (verticalGap * 3)) /
+                                            2;
 
-                                          // Four templates per page
-                                          final int pageCount =
-                                          (templates.length / 4).ceil();
+                                        // Four templates per page
+                                        final int pageCount =
+                                            (templates.length / 4).ceil();
 
-                                          return ListView.builder(
-                                            scrollDirection: Axis.horizontal,
-                                            physics:
-                                            const BouncingScrollPhysics(),
-                                            padding: EdgeInsets.zero,
-                                            itemCount: pageCount,
-                                            itemBuilder: (context, pageIndex) {
-                                              final int startIndex =
-                                                  pageIndex * 4;
+                                        return ListView.builder(
+                                          scrollDirection: Axis.horizontal,
+                                          physics:
+                                              const BouncingScrollPhysics(),
+                                          padding: EdgeInsets.zero,
+                                          itemCount: pageCount,
+                                          itemBuilder: (context, pageIndex) {
+                                            final int startIndex =
+                                                pageIndex * 4;
 
-                                              return SizedBox(
-                                                width: pageWidth,
-                                                child: Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: horizontalGap,
-                                                    vertical: verticalGap,
-                                                  ),
-                                                  child: Column(
-                                                    children: [
-                                                      SizedBox(
-                                                        height: cardHeight,
-                                                        child: Row(
-                                                          children: [
-                                                            Expanded(
-                                                              child: _buildApiTemplateCard(
-                                                                context,
-                                                                templates[startIndex],
-                                                                isDark,
-                                                                homeScreenProvider,
-                                                              ),
-                                                            ),
-                                                            SizedBox(
-                                                              width:
-                                                              horizontalGap,
-                                                            ),
-                                                            Expanded(
-                                                              child:
-                                                              startIndex + 1 <
-                                                                  templates
-                                                                      .length
-                                                                  ? _buildApiTemplateCard(
-                                                                context,
-                                                                templates[startIndex +
-                                                                    1],
-                                                                isDark,
-                                                                homeScreenProvider,
-                                                              )
-                                                                  : const SizedBox(),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      SizedBox(
-                                                        height: verticalGap,
-                                                      ), // Mela irukkira card-kum keela irukkira card-kum ulla gap
-                                                      SizedBox(
-                                                        height: cardHeight,
-                                                        child: Row(
-                                                          children: [
-                                                            Expanded(
-                                                              child:
-                                                              startIndex + 2 <
-                                                                  templates
-                                                                      .length
-                                                                  ? _buildApiTemplateCard(
-                                                                context,
-                                                                templates[startIndex +
-                                                                    2],
-                                                                isDark,
-                                                                homeScreenProvider,
-                                                              )
-                                                                  : const SizedBox(),
-                                                            ),
-                                                            SizedBox(
-                                                              width:
-                                                              horizontalGap,
-                                                            ),
-                                                            Expanded(
-                                                              child:
-                                                              startIndex + 3 <
-                                                                  templates
-                                                                      .length
-                                                                  ? _buildApiTemplateCard(
-                                                                context,
-                                                                templates[startIndex +
-                                                                    3],
-                                                                isDark,
-                                                                homeScreenProvider,
-                                                              )
-                                                                  : const SizedBox(),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
+                                            return SizedBox(
+                                              width: pageWidth,
+                                              child: Padding(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: horizontalGap,
+                                                  vertical: verticalGap,
                                                 ),
-                                              );
-                                            },
-                                          );
-                                        },
-                                      ),
-                                    )
-                                  // ======================================================
-                                  // NORMAL CATEGORY
-                                  // HORIZONTAL TEMPLATE SCROLL
-                                  // ======================================================
-                                  else
-                                    SizedBox(
-                                      height: 165.h,
-
-                                      child: ListView.separated(
-                                        scrollDirection: Axis.horizontal,
-
-                                        physics: const BouncingScrollPhysics(),
-
-                                        itemCount: templates.length,
-
-                                        separatorBuilder: (_, __) =>
-                                            SizedBox(width: 0.5.w),
-
-                                        itemBuilder: (context, templateIndex) {
-                                          return SizedBox(
-                                            width: 145.w,
-
-                                            child: _buildApiTemplateCard(
-                                              context,
-                                              templates[templateIndex],
-                                              isDark,
-                                              homeScreenProvider,
-                                            ),
-                                          );
-                                        },
-                                      ),
+                                                child: Column(
+                                                  children: [
+                                                    SizedBox(
+                                                      height: cardHeight,
+                                                      child: Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child: _buildApiTemplateCard(
+                                                              context,
+                                                              templates[startIndex],
+                                                              isDark,
+                                                              homeScreenProvider,
+                                                            ),
+                                                          ),
+                                                          SizedBox(
+                                                            width:
+                                                                horizontalGap,
+                                                          ),
+                                                          Expanded(
+                                                            child:
+                                                                startIndex + 1 <
+                                                                    templates
+                                                                        .length
+                                                                ? _buildApiTemplateCard(
+                                                                    context,
+                                                                    templates[startIndex +
+                                                                        1],
+                                                                    isDark,
+                                                                    homeScreenProvider,
+                                                                  )
+                                                                : const SizedBox(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    SizedBox(
+                                                      height: verticalGap,
+                                                    ), // Mela irukkira card-kum keela irukkira card-kum ulla gap
+                                                    SizedBox(
+                                                      height: cardHeight,
+                                                      child: Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child:
+                                                                startIndex + 2 <
+                                                                    templates
+                                                                        .length
+                                                                ? _buildApiTemplateCard(
+                                                                    context,
+                                                                    templates[startIndex +
+                                                                        2],
+                                                                    isDark,
+                                                                    homeScreenProvider,
+                                                                  )
+                                                                : const SizedBox(),
+                                                          ),
+                                                          SizedBox(
+                                                            width:
+                                                                horizontalGap,
+                                                          ),
+                                                          Expanded(
+                                                            child:
+                                                                startIndex + 3 <
+                                                                    templates
+                                                                        .length
+                                                                ? _buildApiTemplateCard(
+                                                                    context,
+                                                                    templates[startIndex +
+                                                                        3],
+                                                                    isDark,
+                                                                    homeScreenProvider,
+                                                                  )
+                                                                : const SizedBox(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
                                     ),
+                                  )
+                                // ======================================================
+                                // NORMAL CATEGORY
+                                // HORIZONTAL TEMPLATE SCROLL
+                                // ======================================================
+                                else
+                                  SizedBox(
+                                    height: 165.h,
+
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+
+                                      physics: const BouncingScrollPhysics(),
+
+                                      itemCount: templates.length,
+
+                                      separatorBuilder: (_, __) =>
+                                          SizedBox(width: 0.5.w),
+
+                                      itemBuilder: (context, templateIndex) {
+                                        return SizedBox(
+                                          width: 145.w,
+
+                                          child: _buildApiTemplateCard(
+                                            context,
+                                            templates[templateIndex],
+                                            isDark,
+                                            homeScreenProvider,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
                               ],
                             ),
                           );
@@ -1027,7 +1027,7 @@ class _HomeScreenView extends StatelessWidget {
       final dynamic raw = template.categoryId;
       categoryId = raw is int ? raw : int.tryParse('$raw');
     } catch (_) {
-      categoryId = null; // model-la categoryId illana → API-la irundhu edukkum
+      categoryId = null;
     }
 
     Navigator.push(
@@ -1040,10 +1040,10 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildDateContainer(
-      HomeScreenProvider provider,
-      List<DateTime> dates,
-      int month,
-      ) {
+    HomeScreenProvider provider,
+    List<DateTime> dates,
+    int month,
+  ) {
     final now = DateTime.now();
     final selected = provider.selectedDates;
 
@@ -1058,8 +1058,8 @@ class _HomeScreenView extends StatelessWidget {
 
     if (selectedIndex < 0) {
       selectedIndex = dates.indexWhere(
-            (date) =>
-        date.year == now.year &&
+        (date) =>
+            date.year == now.year &&
             date.month == now.month &&
             date.day == now.day,
       );
@@ -1282,10 +1282,10 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildSpecialDayTemplateCard(
-      BuildContext context,
-      Template template,
-      HomeScreenProvider provider,
-      ) {
+    BuildContext context,
+    Template template,
+    HomeScreenProvider provider,
+  ) {
     final key = template.thumbnailS3Key?.trim() ?? '';
 
     final imageUrl = key.isEmpty
@@ -1342,38 +1342,38 @@ class _HomeScreenView extends StatelessWidget {
               child: imageUrl.isEmpty
                   ? _specialDayPlaceholder()
                   : CachedNetworkImage(
-                imageUrl: imageUrl,
+                      imageUrl: imageUrl,
 
-                width: double.infinity,
+                      width: double.infinity,
 
-                height: double.infinity,
+                      height: double.infinity,
 
-                fit: BoxFit.cover,
+                      fit: BoxFit.cover,
 
-                placeholder: (context, url) {
-                  return Container(
-                    color: Colors.grey.shade100,
+                      placeholder: (context, url) {
+                        return Container(
+                          color: Colors.grey.shade100,
 
-                    child: const Center(
-                      child: SizedBox(
-                        height: 22,
-                        width: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
+                          child: const Center(
+                            child: SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        );
+                      },
+
+                      errorWidget: (context, url, error) {
+                        debugPrint("❌ Template image failed");
+
+                        debugPrint("URL : $url");
+
+                        debugPrint("ERROR : $error");
+
+                        return _specialDayPlaceholder();
+                      },
                     ),
-                  );
-                },
-
-                errorWidget: (context, url, error) {
-                  debugPrint("❌ Template image failed");
-
-                  debugPrint("URL : $url");
-
-                  debugPrint("ERROR : $error");
-
-                  return _specialDayPlaceholder();
-                },
-              ),
             ),
             Positioned(
               top: 5.h,
@@ -1533,7 +1533,7 @@ class _HomeScreenView extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: AppText(
                       '"$templateName" is part of the premium\n'
-                          'collection. Upgrade your plan to use it in your designs.',
+                      'collection. Upgrade your plan to use it in your designs.',
                       style: const TextStyle(
                         fontSize: 14,
                         height: 1.45,
@@ -1686,11 +1686,11 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildApiTemplateCard(
-      BuildContext context,
-      TemplateModel template,
-      bool isDark,
-      HomeScreenProvider provider,
-      ) {
+    BuildContext context,
+    TemplateModel template,
+    bool isDark,
+    HomeScreenProvider provider,
+  ) {
     final key = template.thumbnailS3Key?.trim() ?? '';
     final imageUrl = key.isEmpty ? '' : '${ApiEndpoints.cdnImageUrl}/$key';
 
@@ -1728,13 +1728,13 @@ class _HomeScreenView extends StatelessWidget {
               imageUrl.isEmpty
                   ? _templateImagePlaceholder(isDark)
                   : CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) =>
-                const Center(child: CircularProgressIndicator()),
-                errorWidget: (context, url, error) =>
-                    _templateImagePlaceholder(isDark),
-              ),
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) =>
+                          const Center(child: CircularProgressIndicator()),
+                      errorWidget: (context, url, error) =>
+                          _templateImagePlaceholder(isDark),
+                    ),
 
               Positioned(
                 top: 5.h,
@@ -1871,39 +1871,39 @@ class _HomeScreenView extends StatelessWidget {
                 ? _buildDefaultCategoryIcon(isDark)
                 : isNetwork
                 ? (isSvg
-                ? SvgPicture.network(
-              icon,
-              width: 32.w,
-              height: 32.w,
-              fit: BoxFit.cover,
-              placeholderBuilder: (_) =>
-                  _buildDefaultCategoryIcon(isDark),
-            )
-                : CachedNetworkImage(
-              imageUrl: icon,
-              width: 32.w,
-              height: 32.w,
-              fit: BoxFit.cover,
-              placeholder: (_, __) =>
-                  _buildDefaultCategoryIcon(isDark),
-              errorWidget: (_, __, ___) =>
-                  _buildDefaultCategoryIcon(isDark),
-            ))
+                      ? SvgPicture.network(
+                          icon,
+                          width: 32.w,
+                          height: 32.w,
+                          fit: BoxFit.cover,
+                          placeholderBuilder: (_) =>
+                              _buildDefaultCategoryIcon(isDark),
+                        )
+                      : CachedNetworkImage(
+                          imageUrl: icon,
+                          width: 32.w,
+                          height: 32.w,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) =>
+                              _buildDefaultCategoryIcon(isDark),
+                          errorWidget: (_, __, ___) =>
+                              _buildDefaultCategoryIcon(isDark),
+                        ))
                 : (isSvg
-                ? SvgPicture.asset(
-              icon,
-              width: 32.w,
-              height: 32.w,
-              fit: BoxFit.cover,
-            )
-                : Image.asset(
-              icon,
-              width: 32.w,
-              height: 32.w,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  _buildDefaultCategoryIcon(isDark),
-            )),
+                      ? SvgPicture.asset(
+                          icon,
+                          width: 32.w,
+                          height: 32.w,
+                          fit: BoxFit.cover,
+                        )
+                      : Image.asset(
+                          icon,
+                          width: 32.w,
+                          height: 32.w,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _buildDefaultCategoryIcon(isDark),
+                        )),
           ),
         ),
 
@@ -1955,10 +1955,10 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildMySpaceList(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark,
-      void Function(MySpaceModel item) onTap,
-      ) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+    void Function(MySpaceModel item) onTap,
+  ) {
     return SizedBox(
       height: 100.h,
       child: ListView.builder(
@@ -2037,9 +2037,9 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildMyZoneSlider(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark,
-      ) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+  ) {
     final popularTemplates = homeScreenProvider.popularTemplates
         .take(4)
         .toList();
@@ -2048,130 +2048,130 @@ class _HomeScreenView extends StatelessWidget {
       height: 360.h,
       child: popularTemplates.isEmpty
           ? Container(
-        margin: EdgeInsets.symmetric(horizontal: 25.w),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16.r),
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16.r),
-          child: Image.asset(
-            "assets/images/BName.png",
-            fit: BoxFit.cover,
-          ),
-        ),
-      )
+              margin: EdgeInsets.symmetric(horizontal: 25.w),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.r),
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16.r),
+                child: Image.asset(
+                  "assets/images/BName.png",
+                  fit: BoxFit.cover,
+                ),
+              ),
+            )
           : PageView.builder(
-        controller: homeScreenProvider.zonePageController,
-        itemCount: popularTemplates.length,
-        itemBuilder: (context, index) {
-          final item = popularTemplates[index];
+              controller: homeScreenProvider.zonePageController,
+              itemCount: popularTemplates.length,
+              itemBuilder: (context, index) {
+                final item = popularTemplates[index];
 
-          final thumbnailKey = item.thumbnailS3Key ?? '';
+                final thumbnailKey = item.thumbnailS3Key ?? '';
 
-          final imageUrl = thumbnailKey.isEmpty
-              ? ''
-              : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+                final imageUrl = thumbnailKey.isEmpty
+                    ? ''
+                    : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
 
-          final phone =
-              homeScreenProvider.provider.me?.data.phone?.toString() ??
-                  '';
+                final phone =
+                    homeScreenProvider.provider.me?.data.phone?.toString() ??
+                    '';
 
-          final email =
-              homeScreenProvider.provider.me?.data.email?.toString() ??
-                  '';
+                final email =
+                    homeScreenProvider.provider.me?.data.email?.toString() ??
+                    '';
 
-          return Container(
-            margin: EdgeInsets.symmetric(horizontal: 25.w),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16.r),
-              color: isDark
-                  ? const Color(0xFF1E1E1E)
-                  : Colors.grey.shade100,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16.r),
-              child: Stack(
-                clipBehavior: Clip.hardEdge,
-                children: [
-                  // =========================
-                  // TEMPLATE IMAGE
-                  // =========================
-                  Positioned.fill(child: buildProfileImage(imageUrl)),
+                return Container(
+                  margin: EdgeInsets.symmetric(horizontal: 25.w),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16.r),
+                    color: isDark
+                        ? const Color(0xFF1E1E1E)
+                        : Colors.grey.shade100,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16.r),
+                    child: Stack(
+                      clipBehavior: Clip.hardEdge,
+                      children: [
+                        // =========================
+                        // TEMPLATE IMAGE
+                        // =========================
+                        Positioned.fill(child: buildProfileImage(imageUrl)),
 
-                  // =========================
-                  // BOTTOM BLUE INFO WITH WAVE
-                  // =========================
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    height: 55.h,
-                    child: ClipPath(
-                      clipper: BottomWaveClipper(),
-                      child: Container(
-                        padding: EdgeInsets.only(
-                          left: 20.w,
-                          right: 20.w,
-                          top: 12
-                              .h, // Padding to push content below the curve
-                        ),
-                        color: const Color(0xFF246BFE),
-                        child: Row(
-                          children: [
-                            // PHONE ICON
-                            SizedBox(width: 8.w),
-                            Icon(
-                              Icons.phone,
-                              color: Colors.white,
-                              size: 14.sp,
-                            ),
+                        // =========================
+                        // BOTTOM BLUE INFO WITH WAVE
+                        // =========================
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          height: 55.h,
+                          child: ClipPath(
+                            clipper: BottomWaveClipper(),
+                            child: Container(
+                              padding: EdgeInsets.only(
+                                left: 20.w,
+                                right: 20.w,
+                                top: 12
+                                    .h, // Padding to push content below the curve
+                              ),
+                              color: const Color(0xFF246BFE),
+                              child: Row(
+                                children: [
+                                  // PHONE ICON
+                                  SizedBox(width: 8.w),
+                                  Icon(
+                                    Icons.phone,
+                                    color: Colors.white,
+                                    size: 14.sp,
+                                  ),
 
-                            SizedBox(width: 8.w),
+                                  SizedBox(width: 8.w),
 
-                            // PHONE
-                            Expanded(
-                              flex: 5,
-                              child: Text(
-                                phone,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9.sp,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                  // PHONE
+                                  Expanded(
+                                    flex: 5,
+                                    child: Text(
+                                      phone,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9.sp,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+
+                                  SizedBox(width: 5.w),
+
+                                  // NAME
+                                  Expanded(
+                                    flex: 6,
+                                    child: Text(
+                                      email,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.right,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9.sp,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-
-                            SizedBox(width: 5.w),
-
-                            // NAME
-                            Expanded(
-                              flex: 6,
-                              child: Text(
-                                email,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9.sp,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 
@@ -2276,18 +2276,18 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildLeadBannerSlider(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark,
-      dynamic me,
-      BuildContext context,
-      ) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+    dynamic me,
+    BuildContext context,
+  ) {
     final controller = homeScreenProvider.leadPageController;
 
     final banners = [
       {
         "title": "Grow Your Business",
         "description":
-        "List your business on MMB and get discovered by potential customers.",
+            "List your business on MMB and get discovered by potential customers.",
         "button": "GO PREMIUM",
         "onTap": () {
           Navigator.pushNamed(context, "/PlansAndPricingScreen");
@@ -2310,7 +2310,7 @@ class _HomeScreenView extends StatelessWidget {
       {
         "title": "Powerful AI Tools",
         "description":
-        "Generate logos, remove backgrounds, create images, and write caption instantly",
+            "Generate logos, remove backgrounds, create images, and write caption instantly",
         "button": "EXPLORE AI",
         "onTap": () {
           Navigator.pushNamed(context, "/ExploreAiToolScreen");

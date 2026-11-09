@@ -5,6 +5,7 @@ import 'package:mmb_app/component/appbar_widget.dart';
 import 'package:mmb_app/component/custom_searchbar.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/ui/screens/search_screen.dart';
+import 'package:mmb_app/ui/screens/template_detail_screen.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
@@ -273,28 +274,28 @@ class _TemplateCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        final templateUid = template.uid?.trim() ?? '';
+        final uid = (template.uid?.toString().trim()) ?? '';
 
-        if (templateUid.isEmpty) {
+        if (uid.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Template UID not available')),
+            const SnackBar(content: AppText('Template UID not available')),
           );
           return;
         }
 
-        if (template.isLocked) {
-          _showPremiumTemplateDialog(context, template);
-          return;
+        int? categoryId;
+        try {
+          final dynamic raw = template.categoryId;
+          categoryId = raw is int ? raw : int.tryParse('$raw');
+        } catch (_) {
+          categoryId = null;
         }
 
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => TemplateEditScreen(
-              templateUid: templateUid,
-              canvasHeight: (template.templateSize?.height ?? 0).toDouble(),
-              canvasWidth: (template.templateSize?.width ?? 0).toDouble(),
-            ),
+            builder: (_) =>
+                TemplateDetailScreen(templateUid: uid, categoryId: categoryId),
           ),
         );
       },
@@ -385,34 +386,28 @@ class _TemplateCard extends StatelessWidget {
                           showDownload: false,
                           showDelete: false,
                           onCustomize: () {
-                            final templateUid = template.uid?.trim() ?? '';
+                            final uid = (template.uid?.toString().trim()) ?? '';
 
-                            if (templateUid.isEmpty) {
+                            if (uid.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Template UID not available'),
-                                ),
+                                const SnackBar(content: AppText('Template UID not available')),
                               );
                               return;
                             }
 
-                            if (template.isLocked) {
-                              _showPremiumTemplateDialog(context, template);
-                              return;
+                            int? categoryId;
+                            try {
+                              final dynamic raw = template.categoryId;
+                              categoryId = raw is int ? raw : int.tryParse('$raw');
+                            } catch (_) {
+                              categoryId = null;
                             }
 
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => TemplateEditScreen(
-                                  templateUid: templateUid,
-                                  canvasHeight:
-                                      (template.templateSize?.height ?? 0)
-                                          .toDouble(),
-                                  canvasWidth:
-                                      (template.templateSize?.width ?? 0)
-                                          .toDouble(),
-                                ),
+                                builder: (_) =>
+                                    TemplateDetailScreen(templateUid: uid, categoryId: categoryId),
                               ),
                             );
                           },

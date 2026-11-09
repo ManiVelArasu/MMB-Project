@@ -56,6 +56,9 @@ dependencies:
   razorpay_flutter: ^1.4.7
   image: ^4.5.4
   flutter_tts: ^4.2.3
+  pdf:
+  printing:
+  flutter_inappwebview:
 
 
 dev_dependencies:

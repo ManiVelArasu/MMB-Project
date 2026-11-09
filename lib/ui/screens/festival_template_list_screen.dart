@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/ui/screens/template_detail_screen.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:provider/provider.dart';
@@ -55,19 +56,32 @@ class SpecialDayTemplatesScreen extends StatelessWidget {
 
           return GestureDetector(
             onTap: () {
-              final uid = template.uid?.trim() ?? '';
+              final uid = (template.uid?.toString().trim()) ?? '';
 
               if (uid.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Template UID not available')),
+                  const SnackBar(
+                    content: AppText('Template UID not available'),
+                  ),
                 );
                 return;
+              }
+
+              int? categoryId;
+              try {
+                final dynamic raw = template.categoryId;
+                categoryId = raw is int ? raw : int.tryParse('$raw');
+              } catch (_) {
+                categoryId = null;
               }
 
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => TemplateEditScreen(templateUid: uid),
+                  builder: (_) => TemplateDetailScreen(
+                    templateUid: uid,
+                    categoryId: categoryId,
+                  ),
                 ),
               );
             },

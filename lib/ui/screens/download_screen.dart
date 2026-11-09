@@ -18,10 +18,6 @@ import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/my_upload_provider.dart';
 import '../../network/provider/prpject_provider.dart';
 import '../../utils/theme/app.fonts.dart';
-import '../screens/template_edit.dart';
-
-/// Light / dark colours used by this screen. Light values are the original
-/// ones, so the light theme looks exactly as before.
 class _Palette {
   const _Palette(this.isDark);
 

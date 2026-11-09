@@ -157,8 +157,14 @@ class TemplateDetailProvider extends ChangeNotifier {
   }
 
   // ---------------- TEMPLATES ----------------
-  bool _isLoading = false;
+  // Starts TRUE: before the first API call finishes the screen must show the
+  // loader, never the "No templates found" empty state.
+  bool _isLoading = true;
   bool get isLoading => _isLoading;
+
+  // Becomes true after the first load attempt has finished (success or not).
+  bool _hasLoaded = false;
+  bool get hasLoaded => _hasLoaded;
 
   List<TemplateModel> _templates = [];
   List<TemplateModel> get templates => _templates;
@@ -173,71 +179,81 @@ class TemplateDetailProvider extends ChangeNotifier {
   // ---------------------------------------------------------------
   Future<void> loadByTemplate({required String uid, int? categoryId}) async {
     final templateUid = uid.trim();
-    if (templateUid.isEmpty) return;
 
-    final detailRepo = TemplateDetailRepository.instance;
-
+    // Reset all previous data before requesting a new template.
     _isLoading = true;
+    _hasLoaded = false;
     _categorySlug = null;
-    _selectedUid = templateUid;
+    _selectedUid = templateUid.isEmpty ? null : templateUid;
     _templates = [];
     notifyListeners();
 
+    if (templateUid.isEmpty) {
+      _isLoading = false;
+      _hasLoaded = true;
+      notifyListeners();
+      return;
+    }
+
+    final detailRepo = TemplateDetailRepository.instance;
+
     try {
-      // categoryId theriyum-na rendu API-um parallel-ah pogum
-      final singleFuture = detailRepo.templateByUid(templateUid);
-      final listFuture = categoryId != null
-          ? detailRepo.templatesByCategoryId(categoryId)
-          : null;
+      // 1) Always validate the tapped template first.
+      // If this API returns 404 / failure / null, stop here.
+      // Do NOT call the category templates API in that case.
+      final singleResult = await detailRepo.templateByUid(templateUid);
 
-      final singleResult = await singleFuture;
-      final TemplateModel? single = singleResult.isSuccess
-          ? singleResult.data
-          : null;
+      if (!singleResult.isSuccess || singleResult.data == null) {
+        debugPrint(
+          '❌ Template detail not found: '
+              '${singleResult.error?.message ?? "No data found"}',
+        );
 
-      if (!singleResult.isSuccess) {
-        debugPrint('❌ Template by uid error: ${singleResult.error?.message}');
+        _templates = [];
+        _selectedUid = null;
+        return;
       }
 
+      final TemplateModel single = singleResult.data!;
+
+      // 2) Detail API succeeded. Now load the related category templates.
+      final effectiveCategoryId = categoryId ?? single.categoryId;
       var list = <TemplateModel>[];
 
-      final effectiveCategoryId = categoryId ?? single?.categoryId;
-
       if (effectiveCategoryId != null) {
-        final listResult = listFuture != null
-            ? await listFuture
-            : await detailRepo.templatesByCategoryId(effectiveCategoryId);
+        final listResult =
+        await detailRepo.templatesByCategoryId(effectiveCategoryId);
 
         if (listResult.isSuccess && listResult.data != null) {
           list = List<TemplateModel>.from(listResult.data!.data);
         } else {
-          debugPrint('❌ Category templates error: ${listResult.error?.message}');
+          debugPrint(
+            '❌ Category templates error: '
+                '${listResult.error?.message}',
+          );
         }
       }
 
-      // Banner template ellaa list-layum irukkanum
-      if (single != null) {
-        list.removeWhere((t) => t.uid == single.uid);
-        list.insert(0, single);
-      }
+      // Keep the validated detail template as the banner item.
+      // If the category API returns no items, the valid detail still appears.
+      list.removeWhere((template) => template.uid == single.uid);
+      list.insert(0, single);
 
       _templates = list;
 
-      // Banner ratio / EDIT size → template-oda size
-      final sel = selectedTemplate;
-      if (sel != null) {
-        _selectedResizeSize = resizeTitleFor(
-          sel.templateSize?.width,
-          sel.templateSize?.height,
-        );
-      }
+      _selectedResizeSize = resizeTitleFor(
+        single.templateSize?.width,
+        single.templateSize?.height,
+      );
 
       debugPrint('✅ Templates loaded: ${_templates.length}');
     } catch (e, st) {
       _templates = [];
+      _selectedUid = null;
       debugPrint('❌ loadByTemplate exception: $e\n$st');
     } finally {
       _isLoading = false;
+      _hasLoaded = true;
       notifyListeners();
     }
   }
@@ -256,6 +272,9 @@ class TemplateDetailProvider extends ChangeNotifier {
     final category = slug.trim();
     if (category.isEmpty) {
       debugPrint("❌ Category slug empty");
+      _isLoading = false;
+      _hasLoaded = true;
+      notifyListeners();
       return;
     }
 
@@ -283,6 +302,7 @@ class TemplateDetailProvider extends ChangeNotifier {
       debugPrint("❌ Template exception: $e\n$st");
     } finally {
       _isLoading = false;
+      _hasLoaded = true;
       notifyListeners();
     }
   }

@@ -120,7 +120,7 @@ class _CustomCreateBody extends StatelessWidget {
                             isDark: isDark,
                           ),
 
-                          SizedBox(height: 16.h),
+                          SizedBox(height: 4.h),
 
                           SizedBox(
                             height: 210.h,

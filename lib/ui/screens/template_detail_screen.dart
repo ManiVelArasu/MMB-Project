@@ -123,8 +123,16 @@ class _TemplateDetailBody extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: provider.isLoading
-            ? Center(child: CircularProgressIndicator())
+        // Loader until the first load has FINISHED, so "No templates found"
+        // can never flash before the data arrives.
+        child: (provider.isLoading || !provider.hasLoaded)
+            ? const Center(child: CircularProgressIndicator())
+            : provider.selectedTemplate == null
+            ? _buildEmptyWidget(
+          'No data found',
+          Icons.search_off_outlined,
+          isDark,
+        )
             : Column(
           children: [
             Expanded(
@@ -1075,18 +1083,14 @@ class _TemplateDetailBody extends StatelessWidget {
         ? key
         : '${ApiEndpoints.cdnImageUrl}/$key';
 
-    double aspectRatio = 1 / 1;
+    // Selected RESIZE option -> target canvas ratio (same sizes the editor uses).
+    final target = _canvasSizeFor(resizeSize);
+    final double aspectRatio = target.width / target.height;
 
-    if (resizeSize.contains("4:5")) {
-      aspectRatio = 4 / 5;
-    } else if (resizeSize.contains("9:16")) {
-      aspectRatio = 9 / 16;
-    } else if (resizeSize.contains("Horizontal")) {
-      aspectRatio = 16 / 9;
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+    // COMMON CONTAINER: fixed size that never changes when the user picks a
+    // different size. The design is fitted INSIDE it (letter-boxed), and only
+    // the design frame animates to the new ratio.
+    return Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -1094,23 +1098,53 @@ class _TemplateDetailBody extends StatelessWidget {
         color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade200,
       ),
       child: AspectRatio(
-        aspectRatio: aspectRatio,
-        child: thumbnail == null
-            ? _buildBannerPlaceholder(resizeSize, isDark)
-            : Image.network(
-          thumbnail,
-          width: double.infinity,
-          height: double.infinity,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return const Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return _buildBannerPlaceholder(resizeSize, isDark);
-          },
+        aspectRatio: 4 / 5, // fixed container shape
+        child: Padding(
+          padding: EdgeInsets.all(12.r),
+          child: LayoutBuilder(
+            builder: (context, c) {
+              // Largest frame of the chosen ratio that fits the container.
+              final double frameW = c.maxWidth < c.maxHeight * aspectRatio
+                  ? c.maxWidth
+                  : c.maxHeight * aspectRatio;
+              final double frameH = frameW / aspectRatio;
+
+              return Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                  width: frameW,
+                  height: frameH,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8.r),
+                    color: isDark ? Colors.black26 : Colors.white,
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x33000000), blurRadius: 8),
+                    ],
+                  ),
+                  child: thumbnail == null
+                      ? _buildBannerPlaceholder(resizeSize, isDark)
+                      : Image.network(
+                    thumbnail,
+                    width: double.infinity,
+                    height: double.infinity,
+                    // Image is resized to fill the chosen frame.
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildBannerPlaceholder(resizeSize, isDark);
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

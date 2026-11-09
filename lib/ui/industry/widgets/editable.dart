@@ -38,7 +38,7 @@ class EditableItemWidget extends StatelessWidget {
     return Selector<EditorProvider, _ItemViewState>(
       selector: (_, provider) {
         final currentItem = provider.items.firstWhere(
-          (e) => e.id == item.id,
+              (e) => e.id == item.id,
           orElse: () => item,
         );
         return _ItemViewState(
@@ -63,9 +63,9 @@ class EditableItemWidget extends StatelessWidget {
             .toLowerCase();
         final isTextItem =
             normalizedItemType == 'text' ||
-            normalizedItemType == 'textbox' ||
-            normalizedItemType == 'i-text' ||
-            normalizedItemType == 'itext';
+                normalizedItemType == 'textbox' ||
+                normalizedItemType == 'i-text' ||
+                normalizedItemType == 'itext';
 
         // Text is sized from its real measured layout (same helper the
         // selection overlay uses) so the rotation pivot, the blue box and the
@@ -109,7 +109,7 @@ class EditableItemWidget extends StatelessWidget {
             },
             onDoubleTap: () {
               if (isTextItem && !isBackground) {
-                _showTextEditorDialog(
+                showTextEditor(
                   context,
                   provider,
                   currentItem.id!,
@@ -195,10 +195,10 @@ class EditableItemWidget extends StatelessWidget {
   /// [widthOverride] lets a resize gesture ask "how tall would it be at this
   /// wrap width?" before committing it.
   static Size measureTextBox(
-    EditorItem item,
-    EditorProvider provider, {
-    double? widthOverride,
-  }) {
+      EditorItem item,
+      EditorProvider provider, {
+        double? widthOverride,
+      }) {
     final multiline = isMultilineText(item);
     final boxWidth = widthOverride ?? item.width;
     final wrapWidth = multiline && boxWidth > 12.0 ? boxWidth : double.infinity;
@@ -217,19 +217,19 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   static Widget buildStandaloneMediaContent(
-    BuildContext context,
-    EditorItem item,
-  ) {
+      BuildContext context,
+      EditorItem item,
+      ) {
     final widget = EditableItemWidget(item: item, onItemSelected: (_, __) {});
     return widget._buildItemContent(item, context, isBackground: true);
   }
 
-  Future<void> _showTextEditorDialog(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-    String initialText,
-  ) async {
+  static Future<void> showTextEditor(
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      String initialText,
+      ) async {
     final matchingItems = provider.items.where((e) => e.id == itemId);
 
     if (itemId.isEmpty || matchingItems.isEmpty) {
@@ -400,7 +400,7 @@ class EditableItemWidget extends StatelessWidget {
   List<double> _mixMatrices(List<double> a, List<double> b, double amount) {
     return List<double>.generate(
       20,
-      (i) => a[i] + (b[i] - a[i]) * amount,
+          (i) => a[i] + (b[i] - a[i]) * amount,
       growable: false,
     );
   }
@@ -687,10 +687,10 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _buildItemContent(
-    EditorItem item,
-    BuildContext context, {
-    bool isBackground = false,
-  }) {
+      EditorItem item,
+      BuildContext context, {
+        bool isBackground = false,
+      }) {
     if (item.type == 'video') {
       return SizedBox(
         width: item.width,
@@ -722,29 +722,29 @@ class EditableItemWidget extends StatelessWidget {
 
       final image = isHttp
           ? Image.network(
-              source,
-              fit: isBackground ? BoxFit.cover : BoxFit.fill,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (_, error, stackTrace) {
-                debugPrint('Background image error: $error');
-                return const SizedBox.shrink();
-              },
-            )
+        source,
+        fit: isBackground ? BoxFit.cover : BoxFit.fill,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, error, stackTrace) {
+          debugPrint('Background image error: $error');
+          return const SizedBox.shrink();
+        },
+      )
           : Image.file(
-              File(
-                source.startsWith('file://')
-                    ? source.replaceFirst('file://', '')
-                    : source,
-              ),
-              fit: isBackground ? BoxFit.cover : BoxFit.fill,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (_, error, stackTrace) {
-                debugPrint('Local image error: $error');
-                return const SizedBox.shrink();
-              },
-            );
+        File(
+          source.startsWith('file://')
+              ? source.replaceFirst('file://', '')
+              : source,
+        ),
+        fit: isBackground ? BoxFit.cover : BoxFit.fill,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, error, stackTrace) {
+          debugPrint('Local image error: $error');
+          return const SizedBox.shrink();
+        },
+      );
 
       final provider = context.read<EditorProvider>();
       final id = item.id ?? '';
@@ -941,16 +941,16 @@ class _ItemViewState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is _ItemViewState &&
-          runtimeType == other.runtimeType &&
-          currentItem == other.currentItem &&
-          isSelected == other.isSelected &&
-          flipX == other.flipX &&
-          flipY == other.flipY &&
-          filterIntensity == other.filterIntensity &&
-          tint == other.tint &&
-          blur == other.blur &&
-          maskUrl == other.maskUrl;
+          other is _ItemViewState &&
+              runtimeType == other.runtimeType &&
+              currentItem == other.currentItem &&
+              isSelected == other.isSelected &&
+              flipX == other.flipX &&
+              flipY == other.flipY &&
+              filterIntensity == other.filterIntensity &&
+              tint == other.tint &&
+              blur == other.blur &&
+              maskUrl == other.maskUrl;
 
   @override
   int get hashCode => Object.hash(
@@ -1038,8 +1038,8 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
       final trimmedText = utf8.decode(bytes, allowMalformed: true).trimLeft();
       final isSvg =
           trimmedText.startsWith('<svg') ||
-          (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
-          trimmedText.startsWith('<!DOCTYPE svg');
+              (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
+              trimmedText.startsWith('<!DOCTYPE svg');
 
       ui.Image decodedImage;
       if (isSvg) {
@@ -1063,7 +1063,7 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
               .replaceAll(RegExp(r'\\s+'), ' ');
           throw FormatException(
             'Mask response is not SVG or a supported raster image. '
-            'Response begins with: $preview',
+                'Response begins with: $preview',
           );
         }
         final pngBytes = Uint8List.fromList(img.encodePng(decoded));
@@ -1449,7 +1449,7 @@ class _FabricClipPathClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(covariant _FabricClipPathClipper oldClipper) =>
       !identical(oldClipper.clip, clip) ||
-      !identical(oldClipper.object, object);
+          !identical(oldClipper.object, object);
 }
 
 /// Fabric `clipPath` with `absolutePositioned: true`: the clip window lives in
