@@ -20,6 +20,7 @@ class FaqScreen extends StatelessWidget {
           final isDark = themeProvider.isDarkMode;
 
           return CommonScaffold(
+            extendBodyBehindAppBar: false,
             isDarkMode: isDark,
             appBar: const CustomAppBar(title: "FAQs", showRightIcon: false),
             body: SingleChildScrollView(

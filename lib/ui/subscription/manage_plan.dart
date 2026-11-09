@@ -504,9 +504,9 @@ class _ManagePlanViewState extends State<_ManagePlanView> {
                             "${billingCycle[0].toUpperCase()}${billingCycle.substring(1)} "
                             "Plan - Renewal on ${_formatDate(renewalDate)}",
                             style: TextStyle(
-                              fontSize: AppFontSize.fontSize11,
-                              color: Colors.red,
+                              fontSize: AppFontSize.fontSize13,
                               fontWeight: FontWeight.w400,
+                              color: AppColors.appRed
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -515,8 +515,7 @@ class _ManagePlanViewState extends State<_ManagePlanView> {
                                 ? "No feature details available"
                                 : featuresText,
                             style: TextStyle(
-                              fontSize: AppFontSize.fontSize11,
-                              color: Colors.grey,
+                              fontSize: AppFontSize.fontSize12,
                               fontWeight: FontWeight.w400,
                             ),
                           ),

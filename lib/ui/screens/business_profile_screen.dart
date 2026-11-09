@@ -64,6 +64,7 @@ class BusinessProfileView extends StatelessWidget {
 
         return CommonScaffold(
           isDarkMode: isDark,
+          extendBodyBehindAppBar: true,
           appBar: CustomAppBar(
             onBackPressed: () {
               debugPrint('Back pressed');

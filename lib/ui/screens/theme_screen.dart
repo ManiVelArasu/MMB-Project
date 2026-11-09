@@ -68,6 +68,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
 
         return CommonScaffold(
           isDarkMode: isDark,
+          extendBodyBehindAppBar: true,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(),

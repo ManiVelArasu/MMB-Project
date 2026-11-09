@@ -86,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           child: CommonScaffold(
             isDarkMode: isDark,
-
+            extendBodyBehindAppBar: true,
             appBar: PreferredSize(
               preferredSize: Size.fromHeight(70.h),
               child: HomeCustomAppBar(),

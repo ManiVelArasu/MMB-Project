@@ -28,6 +28,7 @@ class NotificationScreen extends StatelessWidget {
           return CommonScaffold(
             isDarkMode: isDark,
 
+extendBodyBehindAppBar: false,
             appBar: CustomAppBar(
               showTitle: true,
               title: "Notification",
@@ -48,10 +49,7 @@ class NotificationScreen extends StatelessWidget {
               },
             ),
 
-            body: SafeArea(
-              top: false,
-              child: _buildNotificationBody(context, provider, isDark),
-            ),
+            body: _buildNotificationBody(context, provider, isDark),
           );
         },
       ),

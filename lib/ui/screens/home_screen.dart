@@ -62,6 +62,7 @@ class _HomeScreenView extends StatelessWidget {
     }
     return CommonScaffold(
       isDarkMode: isDark,
+      extendBodyBehindAppBar: true,
       appBar: const HomeCustomAppBar(),
       body: Stack(
         children: [
@@ -622,7 +623,7 @@ class _HomeScreenView extends StatelessWidget {
                                   SizedBox(height: 12.h),
 
                                   SizedBox(
-                                    height: 125.h, // 105.h -> 125.h
+                                    height: 112.h,  // 105.h -> 125.h
                                     child: ListView.separated(
                                       scrollDirection: Axis.horizontal,
                                       physics: const BouncingScrollPhysics(),
@@ -707,7 +708,6 @@ class _HomeScreenView extends StatelessWidget {
                                                   ),
                                                 ),
 
-                                                SizedBox(height: 6.h),
 
                                                 SizedBox(
                                                   height: 30.h,

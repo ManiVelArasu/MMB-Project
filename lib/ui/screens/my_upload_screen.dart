@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/project_list.dart';
@@ -182,6 +183,9 @@ class _MyUploadsView extends StatelessWidget {
                         ),
                       );
                     }
+
+                    final downloadedProjects =
+                        projectProvider.plansData?.data ?? [];
                     final uploadedImages = provider.uploads
                         .where((item) => !item.isVideo)
                         .toList();
@@ -189,9 +193,6 @@ class _MyUploadsView extends StatelessWidget {
                     final uploadedVideos = provider.uploads
                         .where((item) => item.isVideo)
                         .toList();
-
-                    final downloadedProjects =
-                        projectProvider.plansData?.data ?? [];
 
                     // IMAGES TAB
                     if (provider.selectedTab == "Images") {
@@ -208,7 +209,7 @@ class _MyUploadsView extends StatelessWidget {
                           children: [
                             // Uploaded images
                             if (uploadedImages.isNotEmpty) ...[
-                              AppText(
+                              Text(
                                 "My Uploads",
                                 style: TextStyle(
                                   fontSize: 16,
@@ -242,8 +243,10 @@ class _MyUploadsView extends StatelessWidget {
                                   final project = downloadedProjects[index];
 
                                   return _buildDownloadedProjectCard(
+                                    context,
                                     project,
                                     p,
+                                    provider,
                                   );
                                 },
                               ),
@@ -346,7 +349,12 @@ class _MyUploadsView extends StatelessWidget {
     );
   }
 
-  Widget _buildDownloadedProjectCard(ProjectListModel project, _Palette p) {
+  Widget _buildDownloadedProjectCard(
+    BuildContext context,
+    ProjectListModel project,
+    _Palette p,
+    UploadProvider provider,
+  ) {
     final key = project.thumbnailS3Key?.trim() ?? '';
 
     final imageUrl = key.isEmpty
@@ -369,42 +377,59 @@ class _MyUploadsView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: SizedBox(
-              width: double.infinity,
-              child: imageUrl.isEmpty
-                  ? Container(
-                      color: p.placeholder,
-                      child: Icon(
-                        Icons.image_outlined,
-                        size: 40,
-                        color: p.mutedIcon,
-                      ),
-                    )
-                  : CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: p.placeholder,
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: p.placeholder,
-                        child: Center(
+            child: Stack(
+              children: [
+                // Project Image
+                Positioned.fill(
+                  child: imageUrl.isEmpty
+                      ? Container(
+                          color: p.placeholder,
                           child: Icon(
-                            Icons.broken_image_outlined,
-                            size: 35,
+                            Icons.image_outlined,
+                            size: 40,
                             color: p.mutedIcon,
                           ),
+                        )
+                      : CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: p.placeholder,
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: p.placeholder,
+                            child: Center(
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                size: 35,
+                                color: p.mutedIcon,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+                ),
+
+                /*  // Three Dot Menu - Top Right
+                Positioned(
+                  top: 7.h,
+                  right: 7.w,
+                  child: TemplateActionPopup(
+                    isFavorite: false,
+                    onEdit: () {},
+                    onDownload: () => _downloadProject(context, project, imageUrl),
+                    onDelete: () => _confirmDeleteProject(context, project),
+                  ),
+                ),*/
+              ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             child: AppText(
               project.name?.trim().isNotEmpty == true
                   ? project.name!
@@ -412,12 +437,25 @@ class _MyUploadsView extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontSize: AppFontSize.fontSize14,
+                fontWeight: FontWeight.w400,
                 color: p.body,
               ),
             ),
           ),
+          /* Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: AppText(
+              _getEditedTime(project.updatedAt?.toIso8601String()),
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: AppFontSize.fontSize13,
+                fontWeight: FontWeight.w400,
+
+                color: AppColors.appGrey,
+              ),
+            ),
+          ),*/
         ],
       ),
     );
@@ -605,8 +643,8 @@ class _MyUploadsView extends StatelessWidget {
         child: AppText(
           title,
           style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
+            fontSize: AppFontSize.fontSize14,
+            fontWeight: FontWeight.w500,
             color: selected ? p.tabActive : p.tabInactive,
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+
 class CommonScaffold extends StatelessWidget {
   final Widget body;
   final PreferredSizeWidget? appBar;
@@ -8,6 +9,7 @@ class CommonScaffold extends StatelessWidget {
   final Widget? bottomNavigationBar;
   final Color? backgroundColor;
   final bool isDarkMode;
+  final bool extendBodyBehindAppBar;
 
   const CommonScaffold({
     super.key,
@@ -17,15 +19,17 @@ class CommonScaffold extends StatelessWidget {
     this.bottomNavigationBar,
     this.backgroundColor,
     this.isDarkMode = false,
+    this.extendBodyBehindAppBar = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor:
-          backgroundColor ??
-          (isDarkMode ? const Color(0xFF121212) : Colors.white),
+      extendBodyBehindAppBar: extendBodyBehindAppBar,
+      backgroundColor: backgroundColor ??
+          (isDarkMode
+              ? const Color(0xFF121212)
+              : Colors.white),
       appBar: appBar,
       body: body,
       floatingActionButton: floatingActionButton,
@@ -33,3 +37,4 @@ class CommonScaffold extends StatelessWidget {
     );
   }
 }
+

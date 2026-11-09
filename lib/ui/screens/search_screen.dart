@@ -115,6 +115,7 @@ class _SearchViewState extends State<_SearchView> {
 
     return CommonScaffold(
       isDarkMode: isDark,
+      extendBodyBehindAppBar: true,
       appBar: CustomAppBar(
         // Shows the searched word once a search is done
         title: provider.hasSearched && provider.activeQuery.isNotEmpty
@@ -185,7 +186,7 @@ class _SearchViewState extends State<_SearchView> {
                                     border: InputBorder.none,
                                     isDense: true,
                                     hintText:
-                                    'Search templates, Brand Series...',
+                                        'Search templates, Brand Series...',
                                     hintStyle: TextStyle(
                                       color: sub,
                                       fontSize: 14,
@@ -338,11 +339,11 @@ class _SearchViewState extends State<_SearchView> {
             imageUrl.isEmpty
                 ? _placeholder(isDark)
                 : CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => _placeholder(isDark),
-              errorWidget: (_, __, ___) => _placeholder(isDark),
-            ),
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => _placeholder(isDark),
+                    errorWidget: (_, __, ___) => _placeholder(isDark),
+                  ),
             if (locked)
               Container(
                 color: Colors.black.withValues(alpha: 0.4),
@@ -484,7 +485,10 @@ class _SearchViewState extends State<_SearchView> {
                       Flexible(
                         child: ButtonWidget(
                           buttonPress: () {
-                            Navigator.pushNamed(context, '/BrowseTemplatesScreen');
+                            Navigator.pushNamed(
+                              context,
+                              '/BrowseTemplatesScreen',
+                            );
                           },
                           title: "Browse Categories",
                           textStyle: TextStyle(
@@ -496,7 +500,9 @@ class _SearchViewState extends State<_SearchView> {
                           buttonColor: AppColors.appWhite,
                           decoration: BoxDecoration(
                             border: Border.all(color: AppColors.appRed),
-                            borderRadius: const BorderRadius.all(Radius.circular(15)),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(15),
+                            ),
                           ),
                         ),
                       ),

@@ -22,6 +22,7 @@ class HelpSupportScreen extends StatelessWidget {
 
           return CommonScaffold(
             isDarkMode: isDark,
+            extendBodyBehindAppBar: false,
             appBar: CustomAppBar(
               title: "Help & Support",
               showRightIcon: false,

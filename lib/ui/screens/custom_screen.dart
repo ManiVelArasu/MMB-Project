@@ -59,6 +59,7 @@ class _CustomCreateBody extends StatelessWidget {
 
         return CommonScaffold(
           isDarkMode: isDark,
+          extendBodyBehindAppBar: true,
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(70.h),
             child: const HomeCustomAppBar(),

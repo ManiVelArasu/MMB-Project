@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/ui/screens/search_screen.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
+import 'package:mmb_app/ui/screens/widget/empty_state.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/Template_model.dart';
@@ -15,6 +16,7 @@ import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/template_detail_provider.dart';
 import '../../utils/theme/app.colors.dart';
+import '../../utils/theme/app.fonts.dart';
 
 class TemplateDetailScreen extends StatelessWidget {
   /// Category slug  → GET templates?category=<slug>      (View all)
@@ -69,12 +71,23 @@ class _TemplateDetailBody extends StatelessWidget {
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         elevation: 0,
 
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: isDark ? Colors.white : Colors.black,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            height: 42.h,
+            width: 42.w,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
+              shape: BoxShape.circle,
+            ),
+            child:  Center(
+              child: InkWell(
+                onTap: (){
+                  Navigator.pop(context);
+                },
+                  child: Icon(Icons.arrow_back, color: Color(0xFFE53935), size: 20)),
+            ),
           ),
-          onPressed: () => Navigator.pop(context),
         ),
 
         title: AppText(
@@ -82,9 +95,9 @@ class _TemplateDetailBody extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: isDark ? Colors.white : Colors.black,
-            fontSize: 14.sp,
-            fontWeight: FontWeight.bold,
+            fontSize: AppFontSize.fontSize22,
+            fontWeight: FontWeight.w500,
+            color: isDark ? Colors.white : AppColors.appBlack,
           ),
         ),
 
@@ -128,75 +141,86 @@ class _TemplateDetailBody extends StatelessWidget {
         child: (provider.isLoading || !provider.hasLoaded)
             ? const Center(child: CircularProgressIndicator())
             : provider.selectedTemplate == null
-            ? _buildEmptyWidget(
-          'No data found',
-          Icons.search_off_outlined,
-          isDark,
-        )
+            ? EmptyStateWidget(
+                isDark: isDark,
+                imagePath: 'assets/images/no_templates.png',
+                title: 'No Templates Available',
+                message:
+                    'We’re adding more templates for this category. '
+                    'Explore other categories to find the right design for your business.',
+                primaryButtonText: 'GO BACK',
+                secondaryButtonText: 'EXPLORE TEMPLATES',
+                onPrimaryPressed: () {
+                  Navigator.pop(context);
+                },
+                onSecondaryPressed: () {
+                  Navigator.pop(context);
+                },
+              )
             : Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                child: Column(
-                  children: [
-                    SizedBox(height: 10.h),
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      child: Column(
+                        children: [
+                          SizedBox(height: 10.h),
 
-                    // =====================================================
-                    // TOP BUSINESS IMAGE / BANNER
-                    // =====================================================
-                    _buildTopBanner(
-                      context,
-                      provider.selectedResizeSize,
-                      isDark,
+                          // =====================================================
+                          // TOP BUSINESS IMAGE / BANNER
+                          // =====================================================
+                          _buildTopBanner(
+                            context,
+                            provider.selectedResizeSize,
+                            isDark,
+                          ),
+
+                          SizedBox(height: 12.h),
+
+                          // =====================================================
+                          // PAGE INDICATORS
+                          // =====================================================
+                          _buildPageIndicators(provider, isDark),
+
+                          SizedBox(height: 12.h),
+
+                          // =====================================================
+                          // RESIZE + EDIT
+                          // =====================================================
+                          _buildActionButtons(context, provider, isDark),
+
+                          SizedBox(height: 16.h),
+
+                          // =====================================================
+                          // NAME + DETAILS + SIZES + LANGUAGE
+                          // =====================================================
+                          _buildTemplateInfo(context, provider, isDark),
+
+                          SizedBox(height: 18.h),
+
+                          // =====================================================
+                          // CONTENT
+                          // =====================================================
+                          _buildDynamicBottomContent(
+                            context,
+                            provider,
+                            provider.selectedIndex,
+                            isDark,
+                          ),
+
+                          SizedBox(height: 24.h),
+                        ],
+                      ),
                     ),
+                  ),
 
-                    SizedBox(height: 12.h),
-
-                    // =====================================================
-                    // PAGE INDICATORS
-                    // =====================================================
-                    _buildPageIndicators(provider, isDark),
-
-                    SizedBox(height: 12.h),
-
-                    // =====================================================
-                    // RESIZE + EDIT
-                    // =====================================================
-                    _buildActionButtons(context, provider, isDark),
-
-                    SizedBox(height: 16.h),
-
-                    // =====================================================
-                    // NAME + DETAILS + SIZES + LANGUAGE
-                    // =====================================================
-                    _buildTemplateInfo(context, provider, isDark),
-
-                    SizedBox(height: 18.h),
-
-                    // =====================================================
-                    // CONTENT
-                    // =====================================================
-                    _buildDynamicBottomContent(
-                      context,
-                      provider,
-                      provider.selectedIndex,
-                      isDark,
-                    ),
-
-                    SizedBox(height: 24.h),
-                  ],
-                ),
+                  // =============================================================
+                  // BOTTOM NAVIGATION
+                  // =============================================================
+                  _buildBottomNavigation(context, provider, isDark),
+                ],
               ),
-            ),
-
-            // =============================================================
-            // BOTTOM NAVIGATION
-            // =============================================================
-            _buildBottomNavigation(context, provider, isDark),
-          ],
-        ),
       ),
     );
   }
@@ -234,11 +258,11 @@ class _TemplateDetailBody extends StatelessWidget {
   }
 
   Widget _infoChip(
-      String label,
-      bool isDark, {
-        bool selected = false,
-        VoidCallback? onTap,
-      }) {
+    String label,
+    bool isDark, {
+    bool selected = false,
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -269,10 +293,10 @@ class _TemplateDetailBody extends StatelessWidget {
   }
 
   Widget _buildTemplateInfo(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
     final template = provider.selectedTemplate;
     if (template == null) return const SizedBox.shrink();
 
@@ -427,10 +451,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildActionButtons(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
     return Row(
       children: [
         Expanded(
@@ -465,40 +489,40 @@ class _TemplateDetailBody extends StatelessWidget {
             onPressed: provider.selectedTemplate == null
                 ? null
                 : () {
-              // Same template that is shown in the top banner
-              final template = provider.selectedTemplate!;
-              final templateUid = template.uid?.trim() ?? '';
+                    // Same template that is shown in the top banner
+                    final template = provider.selectedTemplate!;
+                    final templateUid = template.uid?.trim() ?? '';
 
-              if (templateUid.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: AppText('Template UID not available'),
-                  ),
-                );
-                return;
-              }
+                    if (templateUid.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: AppText('Template UID not available'),
+                        ),
+                      );
+                      return;
+                    }
 
-              // Size selected in the RESIZE sheet
-              final size = _canvasSizeFor(provider.selectedResizeSize);
+                    // Size selected in the RESIZE sheet
+                    final size = _canvasSizeFor(provider.selectedResizeSize);
 
-              debugPrint(
-                'EDIT → uid: $templateUid | '
-                    '${provider.selectedResizeSize} → '
-                    '${size.width} x ${size.height}',
-              );
+                    debugPrint(
+                      'EDIT → uid: $templateUid | '
+                      '${provider.selectedResizeSize} → '
+                      '${size.width} x ${size.height}',
+                    );
 
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TemplateEditScreen(
-                    templateUid: templateUid,
-                    resizeSize: provider.selectedResizeSize,
-                    canvasWidth: size.width,
-                    canvasHeight: size.height,
-                  ),
-                ),
-              );
-            },
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TemplateEditScreen(
+                          templateUid: templateUid,
+                          resizeSize: provider.selectedResizeSize,
+                          canvasWidth: size.width,
+                          canvasHeight: size.height,
+                        ),
+                      ),
+                    );
+                  },
             icon: const Icon(Icons.edit, color: Colors.red, size: 18),
             label: AppText(
               "EDIT",
@@ -532,11 +556,11 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildDynamicBottomContent(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      int selectedIndex,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    int selectedIndex,
+    bool isDark,
+  ) {
     if (selectedIndex == 0) {
       return _buildImageSection(context, provider, isDark);
     }
@@ -556,10 +580,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildImageSection(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
     final templates = provider.gridImageTemplates;
 
     return Column(
@@ -608,10 +632,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildVideoSection(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
     final templates = provider.gridVideoTemplates;
 
     return Column(
@@ -660,10 +684,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildPostSizeSection(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
     final templates = provider.gridAllTemplates;
 
     return Column(
@@ -723,19 +747,19 @@ class _TemplateDetailBody extends StatelessWidget {
         .replaceAll('-', ' ')
         .split(' ')
         .map((word) {
-      if (word.isEmpty) return '';
+          if (word.isEmpty) return '';
 
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    })
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
         .join(' ');
   }
 
   Widget _buildTemplateCard(
-      BuildContext context,
-      TemplateModel template,
-      bool isDark, {
-        required bool isVideo,
-      }) {
+    BuildContext context,
+    TemplateModel template,
+    bool isDark, {
+    required bool isVideo,
+  }) {
     print(template.isLocked);
     final locked = template.isLocked ?? false;
     final key = template.thumbnailS3Key?.trim() ?? '';
@@ -789,18 +813,18 @@ class _TemplateDetailBody extends StatelessWidget {
               child: imageUrl.isEmpty
                   ? _templateImagePlaceholder(isDark)
                   : CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => const Center(
-                  child: SizedBox(
-                    height: 22,
-                    width: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                errorWidget: (_, __, ___) =>
-                    _templateImagePlaceholder(isDark),
-              ),
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => const Center(
+                        child: SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      errorWidget: (_, __, ___) =>
+                          _templateImagePlaceholder(isDark),
+                    ),
             ),
             if (isVideo)
               Positioned(
@@ -980,10 +1004,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildBottomNavigation(
-      BuildContext context,
-      TemplateDetailProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    TemplateDetailProvider provider,
+    bool isDark,
+  ) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
       decoration: BoxDecoration(
@@ -1126,21 +1150,21 @@ class _TemplateDetailBody extends StatelessWidget {
                   child: thumbnail == null
                       ? _buildBannerPlaceholder(resizeSize, isDark)
                       : Image.network(
-                    thumbnail,
-                    width: double.infinity,
-                    height: double.infinity,
-                    // Image is resized to fill the chosen frame.
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildBannerPlaceholder(resizeSize, isDark);
-                    },
-                  ),
+                          thumbnail,
+                          width: double.infinity,
+                          height: double.infinity,
+                          // Image is resized to fill the chosen frame.
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildBannerPlaceholder(resizeSize, isDark);
+                          },
+                        ),
                 ),
               );
             },
@@ -1173,9 +1197,9 @@ class _TemplateDetailBody extends StatelessWidget {
       ),
     );
   }
-// =====================================================================
-// SLUG
-// =====================================================================
+  // =====================================================================
+  // SLUG
+  // =====================================================================
 }
 
 // ========================================================================
@@ -1183,10 +1207,10 @@ class _TemplateDetailBody extends StatelessWidget {
 // ========================================================================
 
 void _showCategorySheet(
-    BuildContext context,
-    TemplateDetailProvider p,
-    bool isDark,
-    ) {
+  BuildContext context,
+  TemplateDetailProvider p,
+  bool isDark,
+) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -1490,8 +1514,8 @@ class _ResizeOptionItem extends StatelessWidget {
           color: isSelected
               ? Colors.red.withValues(alpha: .1)
               : (isDark
-              ? Colors.white.withValues(alpha: .05)
-              : Colors.grey.shade100),
+                    ? Colors.white.withValues(alpha: .05)
+                    : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(10.r),
         ),
         child: Icon(

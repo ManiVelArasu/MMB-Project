@@ -344,10 +344,7 @@ class _MySubscriptionView extends StatelessWidget {
       height: 72,
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFEAEAEA), width: 1)),
-      ),
+      decoration: const BoxDecoration(color: Colors.white),
       child: Row(
         children: [
           if (!hideBackButton) ...[
@@ -748,7 +745,6 @@ class _MySubscriptionView extends StatelessWidget {
                     color: Color(0xFF59545D),
                     fontSize: AppFontSize.fontSize14,
                     fontWeight: FontWeight.w400,
-                    height: 1.4,
                   ),
                 ),
 
