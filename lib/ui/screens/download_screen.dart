@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/widgets/button_widget.dart';
@@ -476,6 +478,41 @@ class _MyUploadsView extends StatelessWidget {
     );
   }
 
+  /// Edit -> opens the saved project in the editor. The editor loads the
+  /// project and calls the UPDATE project API as soon as it opens.
+  void _openProjectInEditor(BuildContext context, ProjectListModel project) {
+    final uid = project.uid?.trim() ?? '';
+    if (uid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Project UID not available')),
+      );
+      return;
+    }
+
+    String? content;
+    int? templateId;
+    try {
+      final dynamic raw = (project as dynamic).content;
+      if (raw != null) content = raw is String ? raw : jsonEncode(raw);
+    } catch (_) {}
+    try {
+      final dynamic t = (project as dynamic).templateId;
+      templateId = t is int ? t : int.tryParse('$t');
+    } catch (_) {}
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TemplateEditScreen(
+          projectUid: uid,
+          projectName: project.name,
+          projectContent: content,
+          projectTemplateId: templateId,
+        ),
+      ),
+    );
+  }
+
   Widget _buildDownloadedProjectCard(
       BuildContext context,
       ProjectListModel project,
@@ -547,7 +584,7 @@ class _MyUploadsView extends StatelessWidget {
                   right: 7.w,
                   child: TemplateActionPopup(
                     isFavorite: false,
-                    onEdit: () {},
+                    onEdit: () => _openProjectInEditor(context, project),
                     onDownload: () => _downloadProject(context, project, imageUrl),
                     onDelete: () => _confirmDeleteProject(context, project),
                   ),

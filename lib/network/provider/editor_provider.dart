@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../Api Model/editor_model.dart';
+import '../../ui/industry/widgets/animation.dart';
+import '../../ui/industry/widgets/text_effect.dart';
 import '../../Repository/freePic.dart';
 import '../../Repository/template_edit_repository.dart';
 import '../../core/api/api_endpoints.dart';
@@ -46,8 +48,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
 
     try {
-      final result = await ApiRepository.instance
-          .request<Map<String, dynamic>>(
+      final result = await ApiRepository.instance.request<Map<String, dynamic>>(
         config: ApiRequestConfig(
           endpoint: ApiEndpoints.upload,
           method: ApiMethod.get,
@@ -59,7 +60,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         success: (response) {
           final rawData = response['data'];
           if (rawData is! List) {
-            throw const FormatException('Invalid MyUploads response: data is not a list');
+            throw const FormatException(
+              'Invalid MyUploads response: data is not a list',
+            );
           }
 
           final apiImages = <Map<String, String>>[];
@@ -71,7 +74,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             apiImages.add({
               'key': key,
               'url': assetCdnUrl(key),
-              'filename': (item['original_filename'] ?? item['filename'] ?? '').toString(),
+              'filename': (item['original_filename'] ?? item['filename'] ?? '')
+                  .toString(),
               'localPath': '',
               'uploading': 'false',
             });
@@ -80,10 +84,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           // Keep local/in-progress previews; replace server-backed items with
           // the latest API result to avoid duplicates after each refresh.
           final localPreviews = uploadedMediaImages
-              .where((item) =>
-          (item['uploading'] == 'true') ||
-              ((item['key'] ?? '').isEmpty &&
-                  (item['localPath'] ?? '').isNotEmpty))
+              .where(
+                (item) =>
+            (item['uploading'] == 'true') ||
+                ((item['key'] ?? '').isEmpty &&
+                    (item['localPath'] ?? '').isNotEmpty),
+          )
               .toList();
           uploadedMediaImages
             ..clear()
@@ -298,8 +304,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       // replaced it with the confirmed media item above.
       final stillTemporary = uploadedMediaImages.any(
             (item) =>
-        item['localPath'] == imageFile.path &&
-            item['uploading'] == 'true',
+        item['localPath'] == imageFile.path && item['uploading'] == 'true',
       );
       if (stillTemporary) {
         uploadedMediaImages.removeWhere(
@@ -317,6 +322,119 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   final Map<String, String> _imageMaskNames = {};
   final Map<String, String> _outlineStyles = {};
   final Map<String, String> _outlineJoins = {};
+
+  // ---------------------------------------------------------------------
+  // Item animations + lock. Kept in side maps (like the outline styles) so
+  // the existing EditorItem model stays untouched.
+  // ---------------------------------------------------------------------
+  final Map<String, ItemAnimation> _itemAnimations = {};
+  final Map<String, int> _animationPreviewTicks = {};
+  final Set<String> _lockedItems = <String>{};
+
+  ItemAnimation itemAnimation(String id) =>
+      _itemAnimations[id] ?? ItemAnimation.empty;
+
+  /// Changes every time a preview is requested; the canvas item listens to it.
+  int animationPreviewTick(String id) => _animationPreviewTicks[id] ?? 0;
+
+  bool isItemLocked(String id) => _lockedItems.contains(id);
+
+  // ---- Text effects (outline / text box / shadow / curve / ...) ----
+  final Map<String, TextEffect> _textEffects = {};
+
+  TextEffect textEffect(String id) => _textEffects[id] ?? TextEffect.empty;
+
+  /// Switching effect resets the settings to that effect's defaults.
+  void setTextEffectType(String id, TextEffectType type) {
+    if (!_items.any((e) => e.id == id)) return;
+    if (type == TextEffectType.none) {
+      _textEffects.remove(id);
+    } else {
+      _textEffects[id] = TextEffect.defaults(type);
+    }
+    notifyListeners();
+  }
+
+  void updateTextEffect(String id, TextEffect Function(TextEffect) update) {
+    if (!_items.any((e) => e.id == id)) return;
+    final next = update(textEffect(id));
+    if (next.isNone) {
+      _textEffects.remove(id);
+    } else {
+      _textEffects[id] = next;
+    }
+    notifyListeners();
+  }
+
+  void setItemAnimationType(
+      String id,
+      ItemAnimationType type, {
+        bool preview = true,
+      }) {
+    if (!_items.any((e) => e.id == id)) return;
+    _itemAnimations[id] = itemAnimation(id).copyWith(type: type);
+    if (preview && type != ItemAnimationType.none) {
+      _animationPreviewTicks[id] = animationPreviewTick(id) + 1;
+    }
+    notifyListeners();
+  }
+
+  void setItemAnimationMode(
+      String id,
+      ItemAnimationMode mode, {
+        bool preview = true,
+      }) {
+    if (!_items.any((e) => e.id == id)) return;
+    final current = itemAnimation(id);
+    _itemAnimations[id] = current.copyWith(mode: mode);
+    if (preview && !current.isNone) {
+      _animationPreviewTicks[id] = animationPreviewTick(id) + 1;
+    }
+    notifyListeners();
+  }
+
+  void setItemAnimationDirection(String id, ItemAnimDirection direction) {
+    if (!_items.any((e) => e.id == id)) return;
+    final current = itemAnimation(id);
+    _itemAnimations[id] = current.copyWith(direction: direction);
+    if (!current.isNone) {
+      _animationPreviewTicks[id] = animationPreviewTick(id) + 1;
+    }
+    notifyListeners();
+  }
+
+  void setItemAnimationAxis(String id, ItemAnimAxis axis) {
+    if (!_items.any((e) => e.id == id)) return;
+    final current = itemAnimation(id);
+    _itemAnimations[id] = current.copyWith(axis: axis);
+    if (!current.isNone) {
+      _animationPreviewTicks[id] = animationPreviewTick(id) + 1;
+    }
+    notifyListeners();
+  }
+
+  /// Delay in seconds (0 - 2.9). Call [previewItemAnimation] when the slider
+  /// is released.
+  void setItemAnimationDelay(String id, double seconds) {
+    if (!_items.any((e) => e.id == id)) return;
+    _itemAnimations[id] = itemAnimation(id).copyWith(
+      delay: seconds.clamp(0.0, 2.9).toDouble(),
+    );
+    notifyListeners();
+  }
+
+  void previewItemAnimation(String id) {
+    if (!_items.any((e) => e.id == id)) return;
+    if (itemAnimation(id).isNone) return;
+    _animationPreviewTicks[id] = animationPreviewTick(id) + 1;
+    notifyListeners();
+  }
+
+  void toggleItemLock(String id) {
+    if (!_items.any((e) => e.id == id)) return;
+    if (!_lockedItems.add(id)) _lockedItems.remove(id);
+    notifyListeners();
+  }
   final Map<String, Map<String, dynamic>> _templateRawObjects = {};
   final Set<String> _templateBackgroundIds = <String>{};
 
@@ -428,10 +546,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   // Position/duration tick ~5 times a second while playing. They live in
   // ValueNotifiers (not notifyListeners) so the whole editor does not rebuild
   // and re-encode the page JSON for autosave on every tick.
-  final ValueNotifier<Duration> musicPositionNotifier =
-  ValueNotifier<Duration>(Duration.zero);
-  final ValueNotifier<Duration> musicDurationNotifier =
-  ValueNotifier<Duration>(Duration.zero);
+  final ValueNotifier<Duration> musicPositionNotifier = ValueNotifier<Duration>(
+    Duration.zero,
+  );
+  final ValueNotifier<Duration> musicDurationNotifier = ValueNotifier<Duration>(
+    Duration.zero,
+  );
 
   String? get selectedMusicPath => _selectedMusicPath;
   String? get selectedMusicTitle => _selectedMusicTitle;
@@ -1520,6 +1640,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         _templateFlipY.clear();
         _outlineStyles.clear();
         _outlineJoins.clear();
+        _itemAnimations.clear();
+        _animationPreviewTicks.clear();
+        _lockedItems.clear();
+        _textEffects.clear();
         _textLetterSpacing.clear();
         _textLineSpacing.clear();
         _textAlignment.clear();
@@ -1532,11 +1656,14 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       for (final json in jsonList) {
         final rawType = (json['type']?.toString() ?? '').trim();
         final type = rawType.toLowerCase();
-        final objectName = (json['name']?.toString() ?? '').trim().toLowerCase();
+        final objectName = (json['name']?.toString() ?? '')
+            .trim()
+            .toLowerCase();
 
         if (objectName == 'clip') {
           final fill = _parseColor(json['fill']);
-          if ((_backgroundColor == Colors.white || _backgroundColor.alpha == 0) &&
+          if ((_backgroundColor == Colors.white ||
+              _backgroundColor.alpha == 0) &&
               fill != null &&
               fill.alpha > 0) {
             _backgroundColor = fill;
@@ -1566,7 +1693,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         final angleDegrees = _toDouble(json['angle']) ?? 0.0;
         final rotation = angleDegrees * math.pi / 180.0;
         final opacity = (_toDouble(json['opacity']) ?? 1.0).clamp(0.0, 1.0);
-        final id = 'template_${DateTime.now().microsecondsSinceEpoch}_${idIndex++}';
+        final id =
+            'template_${DateTime.now().microsecondsSinceEpoch}_${idIndex++}';
 
         final hasTextValue = json['text'] != null;
         final isTextObject =
@@ -1668,7 +1796,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             color: _parseColor(json['fill']),
             outlineColor: rawStroke ?? const Color(0xFFD9D9D9),
             outlineWidth: rawStrokeWidth,
-            borderRadius: _toDouble(json['rx']) ?? _toDouble(json['ry']) ?? 16.0,
+            borderRadius:
+            _toDouble(json['rx']) ?? _toDouble(json['ry']) ?? 16.0,
           );
           _items.add(shapeItem);
           _templateRawObjects[id] = Map<String, dynamic>.from(json);
@@ -1831,7 +1960,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       Offset rotate(double x, double y) =>
           Offset(x * cosA - y * sinA, x * sinA + y * cosA);
 
-      // Group centre in canvas space (children are stored relative to it).
       final originXName = (json['originX']?.toString() ?? 'left').toLowerCase();
       final originYName = (json['originY']?.toString() ?? 'top').toLowerCase();
       final ox = originXName == 'center'
@@ -1869,8 +1997,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             .clamp(0.0, 1.0);
         flatChildren.add(child);
       }
-
-      // Nested groups are expanded by the recursive call.
       out.addAll(_flattenFabricObjects(flatChildren));
     }
     return out;
@@ -1918,18 +2044,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       return first <= strokeWidth ? 'fine_dotted' : 'dotted';
     }
     return 'dashed';
-  }
-
-  String _outlineJoinFromFabric(String? join) {
-    switch (join) {
-      case 'miter':
-        return 'miter';
-      case 'bevel':
-        return 'bevel';
-      case 'round':
-      default:
-        return 'round';
-    }
   }
 
   Gradient? _parseGradient(dynamic fill) {
@@ -2100,10 +2214,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final uri = Uri.tryParse(thumbnailUrl);
     final path = uri?.path.toLowerCase() ?? '';
 
-    final isRasterImage = path.endsWith('.png') ||
-        path.endsWith('.jpg') ||
-        path.endsWith('.jpeg') ||
-        path.endsWith('.webp');
+    final isRasterImage =
+        path.endsWith('.png') ||
+            path.endsWith('.jpg') ||
+            path.endsWith('.jpeg') ||
+            path.endsWith('.webp');
 
     final svg = isRasterImage
         ? null
@@ -2122,9 +2237,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         type: isRasterImage ? 'image' : 'svg_group',
         contentUrl: isRasterImage
             ? thumbnailUrl
-            : (svg != null && svg.trim().isNotEmpty
-            ? svg
-            : thumbnailUrl),
+            : (svg != null && svg.trim().isNotEmpty ? svg : thumbnailUrl),
         position: const Offset(100, 150),
         width: 220,
         height: 220,
@@ -2480,6 +2593,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _saveState();
     notifyListeners();
   }
+
   void addVideo(
       String videoUrl, {
         bool isLocal = false,
@@ -2509,6 +2623,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void updatePosition(String id, Offset newPos) {
+    if (_lockedItems.contains(id)) return;
     final index = _items.indexWhere((e) => e.id == id);
     if (index == -1) return;
 
@@ -2527,6 +2642,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void updateRotation(String id, double rot) {
+    if (_lockedItems.contains(id)) return;
     final index = _items.indexWhere((e) => e.id == id);
     if (index == -1 || !rot.isFinite) return;
 
@@ -2546,6 +2662,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void updateScale(String id, double scl) {
+    if (_lockedItems.contains(id)) return;
     final index = _items.indexWhere((e) => e.id == id);
     if (index == -1) return;
 
@@ -2732,6 +2849,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       if (outline != null) _outlineStyles[newId] = outline;
       final join = _outlineJoins[sourceId];
       if (join != null) _outlineJoins[newId] = join;
+      final anim = _itemAnimations[sourceId];
+      if (anim != null) _itemAnimations[newId] = anim;
+      final fx = _textEffects[sourceId];
+      if (fx != null) _textEffects[newId] = fx;
       notifyListeners();
     }
   }
@@ -2763,6 +2884,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       'version': 1,
       'page': currentPageIndex + 1,
       'backgroundColor': colorToHex(_backgroundColor),
+      'canvasWidth': canvasWidth,
+      'canvasHeight': canvasHeight,
       'music': _selectedMusicPath == null
           ? null
           : {'title': _selectedMusicTitle, 'localPath': _selectedMusicPath},
@@ -2793,6 +2916,14 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           'outlineColor': colorToHex(item.outlineColor),
           'outlineStyle': outlineStyle(id),
           'outlineJoin': outlineJoin(id),
+          'animation': itemAnimation(id).toJson(),
+          'textEffect': textEffect(id).toJson(),
+          'locked': isItemLocked(id),
+          // Needed to re-open the project later (shapes / clip paths / flips).
+          if (_templateRawObjects[id] != null) 'raw': _templateRawObjects[id],
+          'flipX': templateFlipX(id),
+          'flipY': templateFlipY(id),
+          'isBackground': _templateBackgroundIds.contains(id),
           'textFormatting': {
             'letterSpacing': textLetterSpacing(id),
             'lineSpacing': textLineSpacing(id),
@@ -2804,6 +2935,218 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         };
       }).toList(),
     };
+  }
+
+  /// Re-opens a saved project (the JSON that [exportCurrentPageJson] produced,
+  /// or the `pages / fabric` JSON of a blank project) in the editor.
+  bool loadProjectContent(
+      String content, {
+        double? canvasWidth,
+        double? canvasHeight,
+      }) {
+    try {
+      final decoded = jsonDecode(content);
+      if (decoded is! Map) return false;
+      final root = Map<String, dynamic>.from(decoded);
+
+      Color? hexArgb(dynamic v) {
+        var h = (v?.toString() ?? '').trim().replaceFirst('#', '');
+        if (h.length == 6) h = 'FF$h';
+        if (h.length != 8) return null;
+        final n = int.tryParse(h, radix: 16);
+        return n == null ? null : Color(n);
+      }
+
+      // ---- blank project / fabric pages format -> existing importer ----
+      if (root['items'] is! List) {
+        List<dynamic> objects = const [];
+        dynamic bg = root['backgroundColor'] ?? root['background'];
+        final pages = root['pages'];
+        if (pages is List && pages.isNotEmpty && pages.first is Map) {
+          final first = Map<String, dynamic>.from(pages.first as Map);
+          final fabric = first['fabric'];
+          if (fabric is Map && fabric['objects'] is List) {
+            objects = List<dynamic>.from(fabric['objects'] as List);
+            bg = fabric['background'] ?? bg;
+          } else if (first['objects'] is List) {
+            objects = List<dynamic>.from(first['objects'] as List);
+          }
+          final pw = _toDouble(first['width']);
+          final ph = _toDouble(first['height']);
+          if (pw != null && ph != null && pw > 0 && ph > 0) {
+            setCanvasSize(pw, ph);
+          }
+        } else if (root['objects'] is List) {
+          objects = List<dynamic>.from(root['objects'] as List);
+        }
+        _backgroundColor = _parseColor(bg) ?? Colors.white;
+        _hasImportedRootBackground = false;
+        loadItemsFromJson(
+          objects
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .where((o) => o['type'] != null || o['objectType'] != null)
+              .toList(),
+        );
+        isTemplateLoaded = true;
+        _history.clear();
+        _saveState();
+        notifyListeners();
+        return true;
+      }
+
+      // ---- editor JSON (exportCurrentPageJson) ----
+      _items.clear();
+      _templateRawObjects.clear();
+      _templateBackgroundIds.clear();
+      _templateFlipX.clear();
+      _templateFlipY.clear();
+      _outlineStyles.clear();
+      _outlineJoins.clear();
+      _itemAnimations.clear();
+      _animationPreviewTicks.clear();
+      _lockedItems.clear();
+      _textEffects.clear();
+      _textLetterSpacing.clear();
+      _textLineSpacing.clear();
+      _textAlignment.clear();
+      _textWeight.clear();
+      _textStyle.clear();
+      _textUnderline.clear();
+
+      _backgroundColor = hexArgb(root['backgroundColor']) ?? Colors.white;
+      _importedBackgroundGradient = null;
+      _hasImportedRootBackground = true;
+
+      final savedW = _toDouble(root['canvasWidth']);
+      final savedH = _toDouble(root['canvasHeight']);
+      if (savedW != null && savedH != null && savedW > 0 && savedH > 0) {
+        setCanvasSize(savedW, savedH);
+      } else if (canvasWidth != null && canvasHeight != null) {
+        setCanvasSize(canvasWidth, canvasHeight);
+      }
+
+      var index = 0;
+      for (final raw in (root['items'] as List)) {
+        index++;
+        if (raw is! Map) continue;
+        final m = Map<String, dynamic>.from(raw);
+        final id = (m['id']?.toString().trim().isNotEmpty ?? false)
+            ? m['id'].toString()
+            : 'project_item_$index';
+
+        var item = EditorItem(
+          id: id,
+          type: m['type']?.toString() ?? 'image',
+          text: m['text']?.toString(),
+          contentUrl: m['contentUrl']?.toString(),
+          isLocal: m['isLocal'] == true,
+          position: Offset(
+            _toDouble(m['left']) ?? 0.0,
+            _toDouble(m['top']) ?? 0.0,
+          ),
+          width: math.max(1.0, _toDouble(m['width']) ?? 100.0),
+          height: math.max(1.0, _toDouble(m['height']) ?? 100.0),
+          scale: _toDouble(m['scale']) ?? 1.0,
+          rotation: _toDouble(m['rotation']) ?? 0.0,
+          opacity: _toDouble(m['opacity']) ?? 1.0,
+          fontSize: _toDouble(m['fontSize']) ?? 36.0,
+          fontFamily: _cleanFontFamily(m['fontFamily']),
+          color: hexArgb(m['color']),
+          outlineColor: hexArgb(m['outlineColor']) ?? const Color(0xFFD9D9D9),
+          outlineWidth: _toDouble(m['outlineWidth']) ?? 0.0,
+          borderRadius: _toDouble(m['borderRadius']) ?? 0.0,
+        );
+        item = item.copyWith(
+          filterType: m['filterType']?.toString() ?? 'normal',
+          brightness: _toDouble(m['brightness']) ?? item.brightness,
+          contrast: _toDouble(m['contrast']) ?? item.contrast,
+          saturation: _toDouble(m['saturation']) ?? item.saturation,
+        );
+        _items.add(item);
+
+        _outlineStyles[id] = m['outlineStyle']?.toString() ?? 'none';
+        _outlineJoins[id] = m['outlineJoin']?.toString() ?? 'round';
+        if (m['animation'] != null) {
+          final loadedAnim = ItemAnimation.fromJson(m['animation']);
+          if (!loadedAnim.isNone) _itemAnimations[id] = loadedAnim;
+        }
+        if (m['locked'] == true) _lockedItems.add(id);
+        if (m['textEffect'] != null) {
+          final fx = TextEffect.fromJson(m['textEffect']);
+          if (!fx.isNone) _textEffects[id] = fx;
+        }
+
+        final tf = m['textFormatting'];
+        if (tf is Map) {
+          _textLetterSpacing[id] = _toDouble(tf['letterSpacing']) ?? 0.0;
+          _textLineSpacing[id] = _toDouble(tf['lineSpacing']) ?? 1.0;
+          final alignName = tf['alignment']?.toString();
+          _textAlignment[id] = TextAlign.values.firstWhere(
+                (a) => a.name == alignName,
+            orElse: () => TextAlign.left,
+          );
+          final weight = (_toDouble(tf['fontWeight']) ?? 400).round();
+          _textWeight[id] = FontWeight.values.firstWhere(
+                (w) => w.value == weight,
+            orElse: () => FontWeight.normal,
+          );
+          _textStyle[id] = tf['fontStyle']?.toString() == 'italic'
+              ? FontStyle.italic
+              : FontStyle.normal;
+          _textUnderline[id] = tf['underline'] == true;
+        }
+
+        if (m['raw'] is Map) {
+          _templateRawObjects[id] = Map<String, dynamic>.from(m['raw'] as Map);
+        } else if (item.type == 'shape') {
+          // Projects saved before `raw` was exported: rebuild the shape from
+          // the saved fields so rect / circle shapes are not blank.
+          final shapeType = (item.text ?? 'rect').toLowerCase();
+          if (shapeType == 'rect' ||
+              shapeType == 'rectangle' ||
+              shapeType == 'circle' ||
+              shapeType == 'ellipse') {
+            String hex(Color? c) => c == null
+                ? 'transparent'
+                : '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
+            _templateRawObjects[id] = {
+              'type': shapeType,
+              'width': item.width,
+              'height': item.height,
+              'fill': hex(item.color),
+              'stroke': item.outlineWidth > 0 ? hex(item.outlineColor) : null,
+              'strokeWidth': item.outlineWidth,
+              'rx': item.borderRadius,
+              'ry': item.borderRadius,
+            };
+          } else {
+            debugPrint('⚠️ Shape "$shapeType" ($id) has no saved geometry');
+          }
+        }
+        _templateFlipX[id] = m['flipX'] == true;
+        _templateFlipY[id] = m['flipY'] == true;
+        if (m['isBackground'] == true) _templateBackgroundIds.add(id);
+      }
+
+      debugPrint(
+        '📂 Project loaded: ${_items.length} items '
+            '${_items.map((e) => e.type).toList()} | '
+            'raw: ${_templateRawObjects.length}',
+      );
+      isTemplateLoaded = true;
+      _pages
+        ..clear()
+        ..add(_items.map((e) => e.copyWith()).toList());
+      _currentPageIndex = 0;
+      _history.clear();
+      _saveState();
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      debugPrint('❌ loadProjectContent failed: $e\n$st');
+      return false;
+    }
   }
 
   void undo() {
@@ -3007,6 +3350,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void updateSize(String id, double width, double height) {
+    if (_lockedItems.contains(id)) return;
     final index = items.indexWhere((e) => e.id == id);
     if (index == -1) return;
 
@@ -3033,6 +3377,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         required double height,
         Offset? position,
       }) {
+    if (_lockedItems.contains(id)) return;
     final index = _items.indexWhere((e) => e.id == id);
     if (index == -1) return;
 
@@ -3628,6 +3973,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         double? height,
         bool clampToFrame = true,
       }) {
+    if (_lockedItems.contains(id)) return;
     final index = _items.indexWhere((item) => item.id == id);
     if (index == -1) return;
 
@@ -3653,11 +3999,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     // Rotation-only gestures must never trigger frame-fit scaling or
     // position clamping. Those corrections made images shrink and jump
     // toward a different canvas location while the rotation handle moved.
-    final rotationOnly = rotation != null &&
-        position == null &&
-        scale == null &&
-        width == null &&
-        height == null;
+    final rotationOnly =
+        rotation != null &&
+            position == null &&
+            scale == null &&
+            width == null &&
+            height == null;
 
     if (rotationOnly) {
       _items[index] = current.copyWith(rotation: nextRotation);

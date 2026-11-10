@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -80,12 +78,17 @@ class _TemplateDetailBody extends StatelessWidget {
               color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
               shape: BoxShape.circle,
             ),
-            child:  Center(
+            child: Center(
               child: InkWell(
-                onTap: (){
+                onTap: () {
                   Navigator.pop(context);
                 },
-                  child: Icon(Icons.arrow_back, color: Color(0xFFE53935), size: 20)),
+                child: Icon(
+                  Icons.arrow_back,
+                  color: Color(0xFFE53935),
+                  size: 20,
+                ),
+              ),
             ),
           ),
         ),
@@ -175,14 +178,6 @@ class _TemplateDetailBody extends StatelessWidget {
                             provider.selectedResizeSize,
                             isDark,
                           ),
-
-                          SizedBox(height: 12.h),
-
-                          // =====================================================
-                          // PAGE INDICATORS
-                          // =====================================================
-                          _buildPageIndicators(provider, isDark),
-
                           SizedBox(height: 12.h),
 
                           // =====================================================
@@ -501,15 +496,7 @@ class _TemplateDetailBody extends StatelessWidget {
                       );
                       return;
                     }
-
-                    // Size selected in the RESIZE sheet
                     final size = _canvasSizeFor(provider.selectedResizeSize);
-
-                    debugPrint(
-                      'EDIT → uid: $templateUid | '
-                      '${provider.selectedResizeSize} → '
-                      '${size.width} x ${size.height}',
-                    );
 
                     Navigator.push(
                       context,
@@ -976,28 +963,6 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
   // CATEGORY CHIP
   // =====================================================================
-
-  Widget _buildCategoryChip(String title, bool isDark) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-        borderRadius: BorderRadius.circular(30.r),
-        border: Border.all(
-          color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
-          width: 1.2,
-        ),
-      ),
-      child: AppText(
-        title,
-        style: TextStyle(
-          fontSize: 13.sp,
-          fontWeight: FontWeight.w600,
-          color: isDark ? Colors.white : Colors.black87,
-        ),
-      ),
-    );
-  }
 
   // =====================================================================
   // BOTTOM NAVIGATION

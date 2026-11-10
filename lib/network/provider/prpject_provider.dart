@@ -56,6 +56,14 @@ class ProjectProvider extends ChangeNotifier {
   String? _thumbnailS3Key;
   String? get thumbnailS3Key => _thumbnailS3Key;
 
+  /// Opens an already-saved project (Download screen -> Edit).
+  void setExistingProject({required String uid, String? name, int? templateId}) {
+    _projectUid = uid;
+    if (name != null && name.trim().isNotEmpty) _projectName = name.trim();
+    if (templateId != null) _templateId = templateId;
+    notifyListeners();
+  }
+
   void setTemplateId(int? value) {
     _templateId = value;
     notifyListeners();

@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart'
     show consolidateHttpClientResponseBytes, mapEquals;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mmb_app/ui/industry/widgets/text_effect.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart' as svg;
 
@@ -20,6 +21,7 @@ import 'package:image/image.dart' as img;
 
 import '../../screens/video_widget/editor_video.dart';
 import '../../screens/video_widget/video_widget.dart';
+import 'animation.dart';
 
 class EditableItemWidget extends StatelessWidget {
   final EditorItem item;
@@ -50,6 +52,9 @@ class EditableItemWidget extends StatelessWidget {
           tint: provider.imageTint(currentItem.id ?? ''),
           blur: provider.imageBlur(currentItem.id ?? ''),
           maskUrl: provider.imageMaskUrl(currentItem.id ?? ''),
+          animation: provider.itemAnimation(currentItem.id ?? ''),
+          animationTick: provider.animationPreviewTick(currentItem.id ?? ''),
+          textEffect: provider.textEffect(currentItem.id ?? ''),
         );
       },
       builder: (context, state, child) {
@@ -154,10 +159,24 @@ class EditableItemWidget extends StatelessWidget {
           ),
         );
 
-        if (absoluteClip == null) return itemWidget;
-        return ClipPath(
-          clipper: _FabricAbsoluteClipper(absoluteClip, currentItem.position),
-          child: itemWidget,
+        // Entrance / exit animation preview. Pivot = visual centre of item.
+        final itemScale = currentItem.scale.clamp(0.01, 10.0).toDouble();
+        Widget animated(Widget child) => AnimatedItemShell(
+          animation: state.animation,
+          previewTick: state.animationTick,
+          pivot: Offset(
+            bodyWidth * itemScale / 2,
+            bodyHeight * itemScale / 2,
+          ),
+          child: child,
+        );
+
+        if (absoluteClip == null) return animated(itemWidget);
+        return animated(
+          ClipPath(
+            clipper: _FabricAbsoluteClipper(absoluteClip, currentItem.position),
+            child: itemWidget,
+          ),
         );
       },
     );
@@ -887,13 +906,14 @@ class EditableItemWidget extends StatelessWidget {
       height: editorProvider.textLineSpacing(id),
     );
 
-    final textWidget = Text(
-      textValue,
-      maxLines: isMultiline ? null : 1,
-      softWrap: isMultiline,
-      textAlign: editorProvider.textAlignment(id),
-      overflow: TextOverflow.visible,
+    // Text effects (outline / text box / shadow / curve / reflection /
+    // echo / glitch). With no effect this is the plain Text widget.
+    final textWidget = buildTextWithEffect(
+      effect: editorProvider.textEffect(id),
+      text: textValue,
       style: textStyle,
+      multiline: isMultiline,
+      textAlign: editorProvider.textAlignment(id),
     );
 
     // For single-line text, do not force a narrow width that causes wrapping.
@@ -926,6 +946,9 @@ class _ItemViewState {
   final double tint;
   final double blur;
   final String? maskUrl;
+  final ItemAnimation animation;
+  final int animationTick;
+  final TextEffect textEffect;
 
   _ItemViewState({
     required this.currentItem,
@@ -936,6 +959,9 @@ class _ItemViewState {
     required this.tint,
     required this.blur,
     required this.maskUrl,
+    required this.animation,
+    required this.animationTick,
+    required this.textEffect,
   });
 
   @override
@@ -950,7 +976,10 @@ class _ItemViewState {
               filterIntensity == other.filterIntensity &&
               tint == other.tint &&
               blur == other.blur &&
-              maskUrl == other.maskUrl;
+              maskUrl == other.maskUrl &&
+              animation == other.animation &&
+              animationTick == other.animationTick &&
+              textEffect == other.textEffect;
 
   @override
   int get hashCode => Object.hash(
@@ -962,6 +991,9 @@ class _ItemViewState {
     tint,
     blur,
     maskUrl,
+    animation,
+    animationTick,
+    textEffect,
   );
 }
 
