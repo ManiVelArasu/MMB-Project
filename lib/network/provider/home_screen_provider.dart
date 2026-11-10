@@ -611,7 +611,7 @@ class HomeScreenProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final savedLanguages =
           prefs.getStringList('selected_language_codes') ?? ['en'];
-      final industrySlug = prefs.getString('saved_category_slug') ?? '';
+      final industrySlug = provider.business?.businessCategory?.parent?.slug;
       final language = savedLanguages.isNotEmpty ? savedLanguages.first : 'en';
 
       debugPrint('🏷️ Keyword: $keyword');
@@ -619,7 +619,7 @@ class HomeScreenProvider extends ChangeNotifier {
       debugPrint('🌐 Language: $language');
 
       final result = await HomeRepository.instance.myBrandCategory(
-        industrySlug: industrySlug,
+        industrySlug: industrySlug??'',
         language: language,
         keyword: keyword ?? '',
       );
