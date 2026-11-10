@@ -2,6 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+/// Length of the exported MP4 / GIF.
+const int kExportDurationMs = 6000;
+
+/// When non-null the export renderer is driving time: every animated item
+/// renders the frame for this timestamp (ms) instead of its own preview clock.
+final ValueNotifier<double?> kExportClockMs = ValueNotifier<double?>(null);
+
 /// Animation effects an editor item (text / image / shape) can have.
 enum ItemAnimationType {
   none,
@@ -220,6 +227,33 @@ class ItemAnimationTimeline {
   static int totalMs(ItemAnimationMode mode, [double delaySeconds = 0]) =>
       baseMs(mode) + (delaySeconds * 1000).round();
 
+  /// Video / GIF timeline: entrance starts after the delay, the item rests,
+  /// and the exit (if any) finishes exactly at the end of the clip.
+  static ({double progress, bool entering}) atExport(
+      ItemAnimationMode mode,
+      double tMs,
+      double delayMs, {
+        int totalMs = kExportDurationMs,
+      }) {
+    double entrance(double ms) =>
+        Curves.easeOutCubic.transform((ms / _effectMs).clamp(0.0, 1.0));
+    double exit(double ms) =>
+        1 - Curves.easeInCubic.transform((ms / _effectMs).clamp(0.0, 1.0));
+
+    final hasEntrance = mode != ItemAnimationMode.exit;
+    final hasExit = mode != ItemAnimationMode.entrance;
+    final exitStart = (totalMs - _effectMs).toDouble();
+    final entranceEnd = delayMs + (hasEntrance ? _effectMs : 0);
+
+    if (hasExit && tMs >= exitStart && tMs >= entranceEnd) {
+      return (progress: exit(tMs - exitStart), entering: false);
+    }
+    if (hasEntrance) {
+      return (progress: entrance(tMs - delayMs), entering: true);
+    }
+    return (progress: 1.0, entering: false);
+  }
+
   /// Returns the progress (0..1, may be eased) and whether we are entering.
   static ({double progress, bool entering}) at(
       ItemAnimationMode mode,
@@ -387,13 +421,26 @@ class _AnimatedItemShellState extends State<AnimatedItemShell>
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _controller,
+      animation: Listenable.merge([_controller, kExportClockMs]),
       child: widget.child,
       builder: (context, child) {
         var p = 1.0;
         var entering = true;
         var type = ItemAnimationType.none;
-        if (_playing) {
+        final exportMs = kExportClockMs.value;
+        final anim = exportMs != null ? widget.animation : _playingAnimation;
+        if (exportMs != null) {
+          if (!widget.animation.isNone) {
+            final f = ItemAnimationTimeline.atExport(
+              widget.animation.mode,
+              exportMs,
+              widget.animation.delay * 1000,
+            );
+            p = f.progress;
+            entering = f.entering;
+            type = widget.animation.type;
+          }
+        } else if (_playing) {
           final total = ItemAnimationTimeline.totalMs(
             _playingAnimation.mode,
             _playingAnimation.delay,
@@ -412,8 +459,8 @@ class _AnimatedItemShellState extends State<AnimatedItemShell>
           type,
           p,
           entering,
-          direction: _playingAnimation.direction,
-          axis: _playingAnimation.axis,
+          direction: anim.direction,
+          axis: anim.axis,
         );
         return Opacity(
           opacity: frame.opacity,
