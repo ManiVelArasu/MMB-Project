@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart' show consolidateHttpClientResponseBytes;
+import 'package:flutter/foundation.dart'
+    show consolidateHttpClientResponseBytes;
 import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
@@ -20,6 +21,7 @@ import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/my_upload_provider.dart';
 import '../../network/provider/prpject_provider.dart';
 import '../../utils/theme/app.fonts.dart';
+
 class _Palette {
   const _Palette(this.isDark);
 
@@ -150,12 +152,12 @@ class _MyUploadsView extends StatelessWidget {
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: downloadedProjects.length,
                                 gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 14,
-                                  childAspectRatio: 0.78,
-                                ),
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2,
+                                      crossAxisSpacing: 12,
+                                      mainAxisSpacing: 14,
+                                      childAspectRatio: 0.78,
+                                    ),
                                 itemBuilder: (context, index) {
                                   final project = downloadedProjects[index];
 
@@ -220,7 +222,7 @@ class _MyUploadsView extends StatelessWidget {
 
             AppText(
               'Your downloaded designs will appear here. '
-                  'Create your first design and download it when it’s ready.',
+              'Create your first design and download it when it’s ready.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: p.subText),
             ),
@@ -292,10 +294,10 @@ class _MyUploadsView extends StatelessWidget {
 
   /// Downloads the project image from the CDN and saves it to the gallery.
   Future<void> _downloadProject(
-      BuildContext context,
-      ProjectListModel project,
-      String imageUrl,
-      ) async {
+    BuildContext context,
+    ProjectListModel project,
+    String imageUrl,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
 
     if (imageUrl.isEmpty) {
@@ -362,9 +364,9 @@ class _MyUploadsView extends StatelessWidget {
   }
 
   Future<void> _confirmDeleteProject(
-      BuildContext context,
-      ProjectListModel project,
-      ) async {
+    BuildContext context,
+    ProjectListModel project,
+  ) async {
     final projectProvider = context.read<ProjectProvider>();
     final messenger = ScaffoldMessenger.of(context);
 
@@ -397,7 +399,7 @@ class _MyUploadsView extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 '\u201C$projectName\u201D will be removed from your downloads. '
-                    'Files you already downloaded stay on your device.',
+                'Files you already downloaded stay on your device.',
                 style: TextStyle(
                   fontSize: 15,
                   height: 1.45,
@@ -514,11 +516,11 @@ class _MyUploadsView extends StatelessWidget {
   }
 
   Widget _buildDownloadedProjectCard(
-      BuildContext context,
-      ProjectListModel project,
-      _Palette p,
-      UploadProvider provider,
-      ) {
+    BuildContext context,
+    ProjectListModel project,
+    _Palette p,
+    UploadProvider provider,
+  ) {
     final key = project.thumbnailS3Key?.trim() ?? '';
 
     final imageUrl = key.isEmpty
@@ -547,35 +549,35 @@ class _MyUploadsView extends StatelessWidget {
                 Positioned.fill(
                   child: imageUrl.isEmpty
                       ? Container(
-                    color: p.placeholder,
-                    child: Icon(
-                      Icons.image_outlined,
-                      size: 40,
-                      color: p.mutedIcon,
-                    ),
-                  )
+                          color: p.placeholder,
+                          child: Icon(
+                            Icons.image_outlined,
+                            size: 40,
+                            color: p.mutedIcon,
+                          ),
+                        )
                       : CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: p.placeholder,
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: p.placeholder,
-                      child: Center(
-                        child: Icon(
-                          Icons.broken_image_outlined,
-                          size: 35,
-                          color: p.mutedIcon,
+                          imageUrl: imageUrl,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: p.placeholder,
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: p.placeholder,
+                            child: Center(
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                size: 35,
+                                color: p.mutedIcon,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
                 ),
 
                 // Three Dot Menu - Top Right
@@ -585,7 +587,8 @@ class _MyUploadsView extends StatelessWidget {
                   child: TemplateActionPopup(
                     isFavorite: false,
                     onEdit: () => _openProjectInEditor(context, project),
-                    onDownload: () => _downloadProject(context, project, imageUrl),
+                    onDownload: () =>
+                        _downloadProject(context, project, imageUrl),
                     onDelete: () => _confirmDeleteProject(context, project),
                   ),
                 ),
@@ -652,11 +655,11 @@ class _MyUploadsView extends StatelessWidget {
   }
 
   Widget _buildMasonryGrid(
-      BuildContext context,
-      List<UploadItem> items,
-      UploadProvider provider,
-      _Palette p,
-      ) {
+    BuildContext context,
+    List<UploadItem> items,
+    UploadProvider provider,
+    _Palette p,
+  ) {
     final leftItems = <UploadItem>[];
     final rightItems = <UploadItem>[];
 
@@ -697,11 +700,11 @@ class _MyUploadsView extends StatelessWidget {
   }
 
   Widget _buildUploadItem(
-      BuildContext context,
-      UploadItem item,
-      UploadProvider provider,
-      _Palette p,
-      ) {
+    BuildContext context,
+    UploadItem item,
+    UploadProvider provider,
+    _Palette p,
+  ) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
@@ -843,10 +846,10 @@ class _MyUploadsView extends StatelessWidget {
   }
 
   void _showUploadMenu(
-      BuildContext context,
-      UploadItem item,
-      UploadProvider provider,
-      ) {
+    BuildContext context,
+    UploadItem item,
+    UploadProvider provider,
+  ) {
     final p = _Palette(context.read<CustomThemeProvider>().isDarkMode);
 
     showModalBottomSheet(
