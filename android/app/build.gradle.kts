@@ -1,7 +1,26 @@
+
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
+}
+
+val hasReleaseKey = listOf(
+    "keyAlias",
+    "keyPassword",
+    "storeFile",
+    "storePassword"
+).all {
+    !keystoreProperties.getProperty(it).isNullOrBlank()
 }
 
 android {
@@ -9,7 +28,6 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
-    // Add this lint block
     lint {
         checkReleaseBuilds = false
         abortOnError = false
@@ -28,17 +46,33 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            if (hasReleaseKey) {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storePassword = keystoreProperties.getProperty("storePassword")
+                storeFile = file(
+                    keystoreProperties.getProperty("storeFile")
+                )
+            }
+        }
+    }
+
     buildTypes {
-        release {
+        debug {
             signingConfig = signingConfigs.getByName("debug")
+        }
 
-            isMinifyEnabled = true
-            isShrinkResources = true
+        release {
+            signingConfig = if (hasReleaseKey) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
 
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 
@@ -56,12 +90,9 @@ flutter {
 }
 
 dependencies {
-    // Google ML Kit
     implementation("com.google.mlkit:segmentation-selfie:16.0.0-beta6")
 
-    // Kotlin Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    // Required by smart_auth
     implementation("com.google.android.gms:play-services-auth:20.5.0")
 }

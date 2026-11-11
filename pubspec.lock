@@ -154,7 +154,7 @@ packages:
     source: hosted
     version: "4.1.6"
   build_runner:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: build_runner
       sha256: "6feadd32d90a68253c1f7b4fcff76adb4b41ad32a53f8bad835dc65f01ac9dc5"
@@ -607,7 +607,7 @@ packages:
     source: hosted
     version: "0.6.0"
   flutter_launcher_icons:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: flutter_launcher_icons
       sha256: "526faf84284b86a4cb36d20a5e45147747b7563d921373d4ee0559c54fcdbcea"
@@ -1305,7 +1305,7 @@ packages:
     source: hosted
     version: "4.10.0"
   retrofit_generator:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: retrofit_generator
       sha256: "4524b2074e42304f8183a81ad4169783d1d0363d18a2029aa9250b4ac596c664"

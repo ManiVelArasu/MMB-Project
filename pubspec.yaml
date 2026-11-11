@@ -1,5 +1,5 @@
 name: mmb_app
-description: "A new Flutter project."
+description: "MMB App"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -10,12 +10,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   provider: ^6.1.5+1
   retrofit: ^4.9.0
   http: ^1.5.0
-  retrofit_generator: ^10.1.2
   json_annotation: ^4.9.0
-  build_runner: ^2.10.1
   shared_preferences: ^2.5.3
   flutter_screenutil: ^5.9.3
   flutter_svg: ^2.2.1
@@ -39,13 +38,12 @@ dependencies:
   emoji_picker_flutter: ^3.0.0
   flutter_colorpicker: ^1.1.0
   dotted_border: ^2.1.0
-  pinput: ^6.0.2
+  pinput: ^6.0.0
   image_cropper: ^12.2.1
   gal: ^2.3.2
   device_info_plus: ^12.2.0
   share_plus: ^12.0.2
   archive: ^4.0.9
-  flutter_launcher_icons: ^0.13.1
   cupertino_icons: ^1.0.8
   google_fonts: ^8.2.1
   audioplayers: ^6.8.1
@@ -56,16 +54,19 @@ dependencies:
   razorpay_flutter: ^1.4.7
   image: ^4.5.4
   flutter_tts: ^4.2.3
-  pdf:
-  printing:
-  flutter_inappwebview:
+  pdf: any
+  printing: any
+  flutter_inappwebview: any
   ffmpeg_kit_flutter_new: ^3.1.0
-
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
   flutter_lints: ^6.0.0
+  retrofit_generator: ^10.1.2
+  build_runner: ^2.10.1
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
@@ -86,15 +87,17 @@ flutter:
         - asset: assets/fonts/outfit/Outfit-Light.ttf
           weight: 300
         - asset: assets/fonts/outfit/Outfit-Medium.ttf
+          weight: 500
         - asset: assets/fonts/outfit/Outfit-Regular.ttf
           weight: 400
         - asset: assets/fonts/outfit/Outfit-Bold.ttf
-          weight: 500
+          weight: 700
         - asset: assets/fonts/outfit/Outfit-ExtraBold.ttf
-          weight: 600
+          weight: 800
 
-# 🚀 இது 'flutter:' செக்ஷனுக்கு வெளியே சரியாக அமைக்கப்பட்டுள்ளது
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/splash.png"
+  image_path: "assets/images/app_icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
