@@ -13,6 +13,7 @@ import '../../core/api/api_endpoints.dart';
 import '../../network/provider/browse_template_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../industry/widgets/scaffold_widget.dart';
+import '../shimmer/app_loading.dart';
 
 /// "Browse Categories" screen: category dropdown + IMAGES / VIDEOS /
 /// POST SIZE tabs + templates grid (HomeRepository.templatesByCategory).
@@ -20,13 +21,10 @@ class BrowseTemplatesScreen extends StatelessWidget {
   const BrowseTemplatesScreen({super.key, this.initialSlug, this.initialTag});
 
   final String? initialSlug;
-
-  /// Selected tag. Sent to the API only when it is not empty.
   final String? initialTag;
 
   @override
   Widget build(BuildContext context) {
-    // Also supports Navigator.pushNamed(..., arguments: {'tag': .., 'slug': ..})
     final args = ModalRoute.of(context)?.settings.arguments;
 
     String? slug = initialSlug;
@@ -148,15 +146,12 @@ class _BrowseView extends StatelessWidget {
     );
   }
 
-  // ---------------- search ----------------
-
-
   // ---------------- categories dropdown ----------------
   Widget _categoryDropdown(
-      BuildContext context,
-      BrowseTemplatesProvider p,
-      bool isDark,
-      ) {
+    BuildContext context,
+    BrowseTemplatesProvider p,
+    bool isDark,
+  ) {
     return GestureDetector(
       onTap: p.categories.isEmpty
           ? null
@@ -192,11 +187,29 @@ class _BrowseView extends StatelessWidget {
     );
   }
 
+  Widget _categoryChipsShimmer(bool isDark) {
+    const widths = <double>[90, 120, 80, 110, 100, 130, 85, 115, 95, 105];
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: AppShimmer(
+        isDark: isDark,
+        child: Wrap(
+          spacing: 10,
+          runSpacing: 12,
+          children: [
+            for (final w in widths)
+              ShimmerBox(width: w, height: 40, radius: 30),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showCategorySheet(
-      BuildContext context,
-      BrowseTemplatesProvider p,
-      bool isDark,
-      ) {
+    BuildContext context,
+    BrowseTemplatesProvider p,
+    bool isDark,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -272,14 +285,7 @@ class _BrowseView extends StatelessWidget {
                   const SizedBox(height: 20),
 
                   if (p.isKeyWordsLoading)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 30),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFE53935),
-                        ),
-                      ),
-                    )
+                    _categoryChipsShimmer(isDark)
                   else if (p.keyWords.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 30),
@@ -301,7 +307,7 @@ class _BrowseView extends StatelessWidget {
                             return GestureDetector(
                               onTap: () {
                                 Navigator.pop(sheetContext);
-                              //  p.selectTag(name); // sent as `tags`
+                                //  p.selectTag(name); // sent as `tags`
                               },
                               child: _CategoryChip(
                                 title: name,
@@ -326,10 +332,10 @@ class _BrowseView extends StatelessWidget {
 
   // ---------------- bottom navigation ----------------
   Widget _buildBottomNavigation(
-      BuildContext context,
-      BrowseTemplatesProvider provider,
-      bool isDark,
-      ) {
+    BuildContext context,
+    BrowseTemplatesProvider provider,
+    bool isDark,
+  ) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Container(
@@ -393,14 +399,21 @@ class _BrowseView extends StatelessWidget {
 
   // ---------------- body ----------------
   Widget _body(
-      BuildContext context,
-      BrowseTemplatesProvider p,
-      bool isDark,
-      Color sub,
-      ) {
+    BuildContext context,
+    BrowseTemplatesProvider p,
+    bool isDark,
+    Color sub,
+  ) {
+    // Shimmer (same layout as the real grid) instead of a spinner.
     if (p.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFE53935)),
+      return AppShimmerGrid(
+        isDark: isDark,
+        itemCount: 8,
+        crossAxisCount: 2,
+        childAspectRatio: 1,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
       );
     }
 
@@ -493,11 +506,11 @@ class _BrowseView extends StatelessWidget {
               imageUrl.isEmpty
                   ? _placeholder(isDark)
                   : CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => _placeholder(isDark),
-                errorWidget: (_, __, ___) => _placeholder(isDark),
-              ),
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => _placeholder(isDark),
+                      errorWidget: (_, __, ___) => _placeholder(isDark),
+                    ),
               if (locked)
                 Container(
                   color: Colors.black.withValues(alpha: 0.4),

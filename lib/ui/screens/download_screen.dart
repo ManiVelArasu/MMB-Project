@@ -22,6 +22,8 @@ import '../../network/provider/my_upload_provider.dart';
 import '../../network/provider/prpject_provider.dart';
 import '../../utils/theme/app.fonts.dart';
 
+import '../shimmer/app_loading.dart';
+
 class _Palette {
   const _Palette(this.isDark);
 
@@ -95,96 +97,111 @@ class _MyUploadsView extends StatelessWidget {
               Expanded(
                 child: Consumer<ProjectProvider>(
                   builder: (context, projectProvider, child) {
-                    if (projectProvider.isLoadingPlans) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFED1C24),
-                        ),
-                      );
-                    }
+                    // First open (no data yet): shimmer. Refresh / upload:
+                    // the screen stays and a normal loader shows on top.
+                    return AppLoadingView(
+                      isInitialLoading:
+                          projectProvider.isLoadingPlans &&
+                          projectProvider.plansData == null,
+                      isRefreshing: provider.isUploading,
+                      isDark: isDark,
+                      skeleton: AppShimmerGrid(isDark: isDark),
+                      child: Builder(
+                        builder: (context) {
+                          final downloadedProjects =
+                              projectProvider.plansData?.data ?? [];
+                          final uploadedImages = provider.uploads
+                              .where((item) => !item.isVideo)
+                              .toList();
 
-                    final downloadedProjects =
-                        projectProvider.plansData?.data ?? [];
-                    final uploadedImages = provider.uploads
-                        .where((item) => !item.isVideo)
-                        .toList();
+                          final uploadedVideos = provider.uploads
+                              .where((item) => item.isVideo)
+                              .toList();
 
-                    final uploadedVideos = provider.uploads
-                        .where((item) => item.isVideo)
-                        .toList();
+                          // IMAGES TAB
+                          if (provider.selectedTab == "Images") {
+                            if (uploadedImages.isEmpty &&
+                                downloadedProjects.isEmpty) {
+                              return _buildEmptyState(p);
+                            }
 
-                    // IMAGES TAB
-                    if (provider.selectedTab == "Images") {
-                      if (uploadedImages.isEmpty &&
-                          downloadedProjects.isEmpty) {
-                        return _buildEmptyState(p);
-                      }
+                            return RefreshIndicator(
+                              onRefresh: () async {
+                                await projectProvider.fetchProject();
+                              },
+                              child: SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(
+                                  parent: BouncingScrollPhysics(),
+                                ),
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Uploaded images
+                                    if (uploadedImages.isNotEmpty) ...[
+                                      Text(
+                                        "My Uploads",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: p.heading,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      _buildMasonryGrid(
+                                        context,
+                                        uploadedImages,
+                                        provider,
+                                        p,
+                                      ),
+                                    ],
 
-                      return SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Uploaded images
-                            if (uploadedImages.isNotEmpty) ...[
-                              Text(
-                                "My Uploads",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: p.heading,
+                                    // Downloaded projects
+                                    if (downloadedProjects.isNotEmpty) ...[
+                                      GridView.builder(
+                                        shrinkWrap: true,
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        itemCount: downloadedProjects.length,
+                                        gridDelegate:
+                                            const SliverGridDelegateWithFixedCrossAxisCount(
+                                              crossAxisCount: 2,
+                                              crossAxisSpacing: 12,
+                                              mainAxisSpacing: 14,
+                                              childAspectRatio: 0.78,
+                                            ),
+                                        itemBuilder: (context, index) {
+                                          final project =
+                                              downloadedProjects[index];
+
+                                          return _buildDownloadedProjectCard(
+                                            context,
+                                            project,
+                                            p,
+                                            provider,
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 10),
-                              _buildMasonryGrid(
-                                context,
-                                uploadedImages,
-                                provider,
-                                p,
-                              ),
-                            ],
+                            );
+                          }
 
-                            // Downloaded projects
-                            if (downloadedProjects.isNotEmpty) ...[
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: downloadedProjects.length,
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 14,
-                                      childAspectRatio: 0.78,
-                                    ),
-                                itemBuilder: (context, index) {
-                                  final project = downloadedProjects[index];
+                          // VIDEOS TAB
+                          if (uploadedVideos.isEmpty) {
+                            return _buildEmptyState(p);
+                          }
 
-                                  return _buildDownloadedProjectCard(
-                                    context,
-                                    project,
-                                    p,
-                                    provider,
-                                  );
-                                },
-                              ),
-                            ],
-                          ],
-                        ),
-                      );
-                    }
-
-                    // VIDEOS TAB
-                    if (uploadedVideos.isEmpty) {
-                      return _buildEmptyState(p);
-                    }
-
-                    return _buildMasonryGrid(
-                      context,
-                      uploadedVideos,
-                      provider,
-                      p,
+                          return _buildMasonryGrid(
+                            context,
+                            uploadedVideos,
+                            provider,
+                            p,
+                          );
+                        },
+                      ),
                     );
                   },
                 ),

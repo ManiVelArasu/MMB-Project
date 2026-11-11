@@ -14,6 +14,7 @@ import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/search_provider.dart';
 import '../../widgets/button_widget.dart';
 import '../industry/widgets/scaffold_widget.dart';
+import '../shimmer/app_loading.dart';
 
 class SearchScreen extends StatelessWidget {
   const SearchScreen({super.key, this.initialQuery = ''});
@@ -45,6 +46,11 @@ class _SearchViewState extends State<_SearchView> {
   );
   final FocusNode _focus = FocusNode();
   final ScrollController _scroll = ScrollController();
+
+  /// True from the first frame when the user came from the home search bar
+  /// with a valid query. Keeps shimmer on screen until the first search
+  /// starts/finishes (no "Search for templates..." flash).
+  late bool _firstLoad = widget.initialQuery.trim().length >= 2;
 
   @override
   void initState() {
@@ -94,7 +100,7 @@ class _SearchViewState extends State<_SearchView> {
   void _clearSearch() {
     _controller.clear();
     context.read<SearchProvider>().clear();
-    setState(() {});
+    setState(() => _firstLoad = false);
     _focus.requestFocus();
   }
 
@@ -109,7 +115,6 @@ class _SearchViewState extends State<_SearchView> {
     final isDark = context.watch<CustomThemeProvider>().isDarkMode;
     final provider = context.watch<SearchProvider>();
     final Size size = MediaQuery.of(context).size;
-    final bg = isDark ? const Color(0xFF121212) : Colors.white;
     final fg = isDark ? Colors.white : Colors.black;
     final sub = isDark ? Colors.white54 : Colors.black45;
 
@@ -181,19 +186,18 @@ class _SearchViewState extends State<_SearchView> {
                                     ),
                                   ],
                                   style: TextStyle(color: fg, fontSize: 15),
-
                                   decoration: InputDecoration(
                                     border: InputBorder.none,
                                     isDense: true,
                                     hintText:
-                                        'Search templates, Brand Series...',
+                                    'Search templates, Brand Series...',
                                     hintStyle: TextStyle(
                                       color: sub,
                                       fontSize: 14,
                                     ),
                                   ),
                                   onChanged: (v) {
-                                    setState(() {});
+                                    setState(() => _firstLoad = false);
                                     provider.onTextChanged(v);
                                   },
                                   onSubmitted: _submit,
@@ -226,7 +230,24 @@ class _SearchViewState extends State<_SearchView> {
     );
   }
 
+  /// Shimmer that matches the results grid exactly (no layout jump).
+  Widget _searchShimmer(bool isDark) => AppShimmerGrid(
+    isDark: isDark,
+    itemCount: 6,
+    crossAxisCount: 2,
+    childAspectRatio: 0.8,
+    crossAxisSpacing: 12,
+    mainAxisSpacing: 12,
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+  );
+
   Widget _buildBody(SearchProvider p, bool isDark, Color fg, Color sub) {
+    // Came from home with a query: show shimmer from the very first frame.
+    final waitingFirstResult = _firstLoad && !p.hasSearched && p.error == null;
+    if (waitingFirstResult) {
+      return _searchShimmer(isDark);
+    }
+
     if (p.suggestions.isNotEmpty) {
       return ListView.separated(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -251,9 +272,7 @@ class _SearchViewState extends State<_SearchView> {
     }
 
     if (p.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFE53935)),
-      );
+      return _searchShimmer(isDark);
     }
 
     if (p.error != null) {
@@ -339,11 +358,11 @@ class _SearchViewState extends State<_SearchView> {
             imageUrl.isEmpty
                 ? _placeholder(isDark)
                 : CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => _placeholder(isDark),
-                    errorWidget: (_, __, ___) => _placeholder(isDark),
-                  ),
+              imageUrl: imageUrl,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => _placeholder(isDark),
+              errorWidget: (_, __, ___) => _placeholder(isDark),
+            ),
             if (locked)
               Container(
                 color: Colors.black.withValues(alpha: 0.4),

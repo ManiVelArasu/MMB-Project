@@ -15,6 +15,8 @@ import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/template_detail_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
+import '../shimmer/app_loading.dart';
+import '../shimmer/template_detail_shimmer.dart';
 
 class TemplateDetailScreen extends StatelessWidget {
   /// Category slug  → GET templates?category=<slug>      (View all)
@@ -62,6 +64,15 @@ class _TemplateDetailBody extends StatelessWidget {
     final provider = context.watch<TemplateDetailProvider>();
     final themeProvider = context.watch<CustomThemeProvider>();
     final isDark = themeProvider.isDarkMode;
+
+    // First load (or no template to show yet): shimmer.
+    // Later loads with a template already on screen: it stays, and a normal
+    // loader shows on top.
+    final bool showShimmer =
+        !provider.hasLoaded ||
+            (provider.isLoading && provider.selectedTemplate == null);
+    final bool showOverlayLoader =
+        provider.isLoading && provider.hasLoaded && !showShimmer;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -141,81 +152,85 @@ class _TemplateDetailBody extends StatelessWidget {
       body: SafeArea(
         // Loader until the first load has FINISHED, so "No templates found"
         // can never flash before the data arrives.
-        child: (provider.isLoading || !provider.hasLoaded)
-            ? const Center(child: CircularProgressIndicator())
-            : provider.selectedTemplate == null
-            ? EmptyStateWidget(
-                isDark: isDark,
-                imagePath: 'assets/images/no_templates.png',
-                title: 'No Templates Available',
-                message:
-                    'We’re adding more templates for this category. '
-                    'Explore other categories to find the right design for your business.',
-                primaryButtonText: 'GO BACK',
-                secondaryButtonText: 'EXPLORE TEMPLATES',
-                onPrimaryPressed: () {
-                  Navigator.pop(context);
-                },
-                onSecondaryPressed: () {
-                  Navigator.pop(context);
-                },
-              )
-            : Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      child: Column(
-                        children: [
-                          SizedBox(height: 10.h),
+        child: AppLoadingView(
+          isInitialLoading: showShimmer,
+          isRefreshing: showOverlayLoader,
+          isDark: isDark,
+          skeleton: TemplateDetailShimmer(isDark: isDark),
+          child: provider.selectedTemplate == null
+              ? EmptyStateWidget(
+            isDark: isDark,
+            imagePath: 'assets/images/no_templates.png',
+            title: 'No Templates Available',
+            message:
+            'We’re adding more templates for this category. '
+                'Explore other categories to find the right design for your business.',
+            primaryButtonText: 'GO BACK',
+            secondaryButtonText: 'EXPLORE TEMPLATES',
+            onPrimaryPressed: () {
+              Navigator.pop(context);
+            },
+            onSecondaryPressed: () {
+              Navigator.pop(context);
+            },
+          )
+              : Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w),
+                  child: Column(
+                    children: [
+                      SizedBox(height: 10.h),
 
-                          // =====================================================
-                          // TOP BUSINESS IMAGE / BANNER
-                          // =====================================================
-                          _buildTopBanner(
-                            context,
-                            provider.selectedResizeSize,
-                            isDark,
-                          ),
-                          SizedBox(height: 12.h),
-
-                          // =====================================================
-                          // RESIZE + EDIT
-                          // =====================================================
-                          _buildActionButtons(context, provider, isDark),
-
-                          SizedBox(height: 16.h),
-
-                          // =====================================================
-                          // NAME + DETAILS + SIZES + LANGUAGE
-                          // =====================================================
-                          _buildTemplateInfo(context, provider, isDark),
-
-                          SizedBox(height: 18.h),
-
-                          // =====================================================
-                          // CONTENT
-                          // =====================================================
-                          _buildDynamicBottomContent(
-                            context,
-                            provider,
-                            provider.selectedIndex,
-                            isDark,
-                          ),
-
-                          SizedBox(height: 24.h),
-                        ],
+                      // =====================================================
+                      // TOP BUSINESS IMAGE / BANNER
+                      // =====================================================
+                      _buildTopBanner(
+                        context,
+                        provider.selectedResizeSize,
+                        isDark,
                       ),
-                    ),
-                  ),
+                      SizedBox(height: 12.h),
 
-                  // =============================================================
-                  // BOTTOM NAVIGATION
-                  // =============================================================
-                  _buildBottomNavigation(context, provider, isDark),
-                ],
+                      // =====================================================
+                      // RESIZE + EDIT
+                      // =====================================================
+                      _buildActionButtons(context, provider, isDark),
+
+                      SizedBox(height: 16.h),
+
+                      // =====================================================
+                      // NAME + DETAILS + SIZES + LANGUAGE
+                      // =====================================================
+                      _buildTemplateInfo(context, provider, isDark),
+
+                      SizedBox(height: 18.h),
+
+                      // =====================================================
+                      // CONTENT
+                      // =====================================================
+                      _buildDynamicBottomContent(
+                        context,
+                        provider,
+                        provider.selectedIndex,
+                        isDark,
+                      ),
+
+                      SizedBox(height: 24.h),
+                    ],
+                  ),
+                ),
               ),
+
+              // =============================================================
+              // BOTTOM NAVIGATION
+              // =============================================================
+              _buildBottomNavigation(context, provider, isDark),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -253,11 +268,11 @@ class _TemplateDetailBody extends StatelessWidget {
   }
 
   Widget _infoChip(
-    String label,
-    bool isDark, {
-    bool selected = false,
-    VoidCallback? onTap,
-  }) {
+      String label,
+      bool isDark, {
+        bool selected = false,
+        VoidCallback? onTap,
+      }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -288,10 +303,10 @@ class _TemplateDetailBody extends StatelessWidget {
   }
 
   Widget _buildTemplateInfo(
-    BuildContext context,
-    TemplateDetailProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      TemplateDetailProvider provider,
+      bool isDark,
+      ) {
     final template = provider.selectedTemplate;
     if (template == null) return const SizedBox.shrink();
 
@@ -446,10 +461,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildActionButtons(
-    BuildContext context,
-    TemplateDetailProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      TemplateDetailProvider provider,
+      bool isDark,
+      ) {
     return Row(
       children: [
         Expanded(
@@ -484,32 +499,32 @@ class _TemplateDetailBody extends StatelessWidget {
             onPressed: provider.selectedTemplate == null
                 ? null
                 : () {
-                    // Same template that is shown in the top banner
-                    final template = provider.selectedTemplate!;
-                    final templateUid = template.uid?.trim() ?? '';
+              // Same template that is shown in the top banner
+              final template = provider.selectedTemplate!;
+              final templateUid = template.uid?.trim() ?? '';
 
-                    if (templateUid.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: AppText('Template UID not available'),
-                        ),
-                      );
-                      return;
-                    }
-                    final size = _canvasSizeFor(provider.selectedResizeSize);
+              if (templateUid.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: AppText('Template UID not available'),
+                  ),
+                );
+                return;
+              }
+              final size = _canvasSizeFor(provider.selectedResizeSize);
 
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TemplateEditScreen(
-                          templateUid: templateUid,
-                          resizeSize: provider.selectedResizeSize,
-                          canvasWidth: size.width,
-                          canvasHeight: size.height,
-                        ),
-                      ),
-                    );
-                  },
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TemplateEditScreen(
+                    templateUid: templateUid,
+                    resizeSize: provider.selectedResizeSize,
+                    canvasWidth: size.width,
+                    canvasHeight: size.height,
+                  ),
+                ),
+              );
+            },
             icon: const Icon(Icons.edit, color: Colors.red, size: 18),
             label: AppText(
               "EDIT",
@@ -543,11 +558,11 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildDynamicBottomContent(
-    BuildContext context,
-    TemplateDetailProvider provider,
-    int selectedIndex,
-    bool isDark,
-  ) {
+      BuildContext context,
+      TemplateDetailProvider provider,
+      int selectedIndex,
+      bool isDark,
+      ) {
     if (selectedIndex == 0) {
       return _buildImageSection(context, provider, isDark);
     }
@@ -567,10 +582,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildImageSection(
-    BuildContext context,
-    TemplateDetailProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      TemplateDetailProvider provider,
+      bool isDark,
+      ) {
     final templates = provider.gridImageTemplates;
 
     return Column(
@@ -619,10 +634,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildVideoSection(
-    BuildContext context,
-    TemplateDetailProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      TemplateDetailProvider provider,
+      bool isDark,
+      ) {
     final templates = provider.gridVideoTemplates;
 
     return Column(
@@ -671,10 +686,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildPostSizeSection(
-    BuildContext context,
-    TemplateDetailProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      TemplateDetailProvider provider,
+      bool isDark,
+      ) {
     final templates = provider.gridAllTemplates;
 
     return Column(
@@ -734,19 +749,19 @@ class _TemplateDetailBody extends StatelessWidget {
         .replaceAll('-', ' ')
         .split(' ')
         .map((word) {
-          if (word.isEmpty) return '';
+      if (word.isEmpty) return '';
 
-          return word[0].toUpperCase() + word.substring(1).toLowerCase();
-        })
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    })
         .join(' ');
   }
 
   Widget _buildTemplateCard(
-    BuildContext context,
-    TemplateModel template,
-    bool isDark, {
-    required bool isVideo,
-  }) {
+      BuildContext context,
+      TemplateModel template,
+      bool isDark, {
+        required bool isVideo,
+      }) {
     print(template.isLocked);
     final locked = template.isLocked ?? false;
     final key = template.thumbnailS3Key?.trim() ?? '';
@@ -800,18 +815,18 @@ class _TemplateDetailBody extends StatelessWidget {
               child: imageUrl.isEmpty
                   ? _templateImagePlaceholder(isDark)
                   : CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => const Center(
-                        child: SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                      errorWidget: (_, __, ___) =>
-                          _templateImagePlaceholder(isDark),
-                    ),
+                imageUrl: imageUrl,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => const Center(
+                  child: SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                errorWidget: (_, __, ___) =>
+                    _templateImagePlaceholder(isDark),
+              ),
             ),
             if (isVideo)
               Positioned(
@@ -969,10 +984,10 @@ class _TemplateDetailBody extends StatelessWidget {
   // =====================================================================
 
   Widget _buildBottomNavigation(
-    BuildContext context,
-    TemplateDetailProvider provider,
-    bool isDark,
-  ) {
+      BuildContext context,
+      TemplateDetailProvider provider,
+      bool isDark,
+      ) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
       decoration: BoxDecoration(
@@ -1115,21 +1130,21 @@ class _TemplateDetailBody extends StatelessWidget {
                   child: thumbnail == null
                       ? _buildBannerPlaceholder(resizeSize, isDark)
                       : Image.network(
-                          thumbnail,
-                          width: double.infinity,
-                          height: double.infinity,
-                          // Image is resized to fill the chosen frame.
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildBannerPlaceholder(resizeSize, isDark);
-                          },
-                        ),
+                    thumbnail,
+                    width: double.infinity,
+                    height: double.infinity,
+                    // Image is resized to fill the chosen frame.
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildBannerPlaceholder(resizeSize, isDark);
+                    },
+                  ),
                 ),
               );
             },
@@ -1162,9 +1177,9 @@ class _TemplateDetailBody extends StatelessWidget {
       ),
     );
   }
-  // =====================================================================
-  // SLUG
-  // =====================================================================
+// =====================================================================
+// SLUG
+// =====================================================================
 }
 
 // ========================================================================
@@ -1172,10 +1187,10 @@ class _TemplateDetailBody extends StatelessWidget {
 // ========================================================================
 
 void _showCategorySheet(
-  BuildContext context,
-  TemplateDetailProvider p,
-  bool isDark,
-) {
+    BuildContext context,
+    TemplateDetailProvider p,
+    bool isDark,
+    ) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -1479,8 +1494,8 @@ class _ResizeOptionItem extends StatelessWidget {
           color: isSelected
               ? Colors.red.withValues(alpha: .1)
               : (isDark
-                    ? Colors.white.withValues(alpha: .05)
-                    : Colors.grey.shade100),
+              ? Colors.white.withValues(alpha: .05)
+              : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(10.r),
         ),
         child: Icon(

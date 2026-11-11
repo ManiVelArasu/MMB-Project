@@ -1,4 +1,8 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:gal/gal.dart';
 import 'package:mmb_app/Repository/get_me_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -819,7 +823,65 @@ class HomeScreenProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  final Map<int, GlobalKey> _zoneKeys = {};
 
+  GlobalKey zoneKey(int index) =>
+      _zoneKeys.putIfAbsent(index, () => GlobalKey());
+
+  bool _isDownloadingZone = false;
+  bool get isDownloadingZone => _isDownloadingZone;
+
+  /// Saves the currently visible My Zone card (template image + blue
+  /// phone/email wave) to the gallery.
+  /// Returns a message for the UI to show in a SnackBar.
+  Future<String> downloadMyZone() async {
+    if (_isDownloadingZone) return 'Download in progress';
+    if (_popularTemplates.isEmpty) return 'Nothing to download';
+
+    _isDownloadingZone = true;
+    notifyListeners();
+
+    try {
+      final index = zonePageController.hasClients
+          ? (zonePageController.page ?? 0).round()
+          : 0;
+
+      final boundary =
+      _zoneKeys[index]?.currentContext?.findRenderObject()
+      as RenderRepaintBoundary?;
+
+      if (boundary == null) return 'Nothing to download';
+
+      if (!await Gal.hasAccess() && !await Gal.requestAccess()) {
+        return 'Storage permission denied';
+      }
+
+      // Debug mode: wait a moment if the card has not been painted yet.
+      if (boundary.debugNeedsPaint) {
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+
+      if (data == null) return 'Download failed';
+
+      await Gal.putImageBytes(
+        data.buffer.asUint8List(),
+        name: 'myzone_${DateTime.now().millisecondsSinceEpoch}',
+      );
+
+      return 'Saved to gallery';
+    } catch (e, stackTrace) {
+      debugPrint('❌ My Zone download error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      return 'Download failed';
+    } finally {
+      _isDownloadingZone = false;
+      notifyListeners();
+    }
+  }
   void clearUserData() {
     // User-specific data
     _businessName = "";

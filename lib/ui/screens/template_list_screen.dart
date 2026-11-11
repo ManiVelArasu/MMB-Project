@@ -2,19 +2,17 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/ui/screens/search_screen.dart';
-import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:provider/provider.dart';
-
 import '../../Api Model/special_days.dart';
 import '../../component/appbar_widget.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
-import '../../network/provider/special_days_provider.dart';
 import '../../network/provider/template_list_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
+import '../shimmer/app_loading.dart';
 import 'festival_template_list_screen.dart';
 
 class TemplateListScreen extends StatelessWidget {
@@ -30,7 +28,7 @@ class TemplateListScreen extends StatelessWidget {
 
     return ChangeNotifierProvider(
       create: (_) =>
-          TemplateListProvider()..loadSpecialDays(type: type, range: range),
+      TemplateListProvider()..loadSpecialDays(type: type, range: range),
       child: _TemplateListScreenView(type, range),
     );
   }
@@ -72,13 +70,6 @@ class _TemplateListScreenView extends StatelessWidget {
           SafeArea(
             child: Consumer<TemplateListProvider>(
               builder: (context, provider, _) {
-                // First screen load மட்டும் loader
-                if (provider.isLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFE53935)),
-                  );
-                }
-
                 final specialDays = provider.specialDays?.data ?? [];
 
                 final List<SpecialDayTemplateItem> templates = [];
@@ -94,11 +85,9 @@ class _TemplateListScreenView extends StatelessWidget {
                   }
                 }
 
-                if (templates.isEmpty) {
-                  return _EmptyState(isDark: isDark);
-                }
-
-                return Padding(
+                final Widget content = templates.isEmpty
+                    ? _EmptyState(isDark: isDark)
+                    : Padding(
                   padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 30.h),
                   child: Column(
                     children: [
@@ -164,29 +153,29 @@ class _TemplateListScreenView extends StatelessWidget {
                               );
 
                               final DateTimeRange? dateRange =
-                                  await showDateRangePicker(
-                                    context: context,
-                                    firstDate: today,
-                                    lastDate: lastDayOfMonth,
-                                    initialDateRange: DateTimeRange(
-                                      start: today,
-                                      end: today,
-                                    ),
-                                    builder: (context, child) {
-                                      return Theme(
-                                        data: Theme.of(context).copyWith(
-                                          colorScheme: Theme.of(context)
-                                              .colorScheme
-                                              .copyWith(
-                                                primary: const Color(
-                                                  0xFFE53935,
-                                                ),
-                                              ),
+                              await showDateRangePicker(
+                                context: context,
+                                firstDate: today,
+                                lastDate: lastDayOfMonth,
+                                initialDateRange: DateTimeRange(
+                                  start: today,
+                                  end: today,
+                                ),
+                                builder: (context, child) {
+                                  return Theme(
+                                    data: Theme.of(context).copyWith(
+                                      colorScheme: Theme.of(context)
+                                          .colorScheme
+                                          .copyWith(
+                                        primary: const Color(
+                                          0xFFE53935,
                                         ),
-                                        child: child!,
-                                      );
-                                    },
+                                      ),
+                                    ),
+                                    child: child!,
                                   );
+                                },
+                              );
 
                               if (dateRange != null && context.mounted) {
                                 final String fromDate =
@@ -202,9 +191,9 @@ class _TemplateListScreenView extends StatelessWidget {
                                 await context
                                     .read<TemplateListProvider>()
                                     .loadSpecialDays(
-                                      fromDate: fromDate,
-                                      toDate: toDate,
-                                    );
+                                  fromDate: fromDate,
+                                  toDate: toDate,
+                                );
                               }
                             },
                             child: Image.asset(
@@ -221,9 +210,11 @@ class _TemplateListScreenView extends StatelessWidget {
 
                       Expanded(
                         child: RefreshIndicator(
+                          // RefreshIndicator shows its own spinner.
                           onRefresh: () => provider.loadSpecialDays(
                             type: type,
                             range: range,
+                            showOverlayLoader: false,
                           ),
                           child: GridView.builder(
                             padding: EdgeInsets.only(bottom: 40.h),
@@ -231,12 +222,12 @@ class _TemplateListScreenView extends StatelessWidget {
                               parent: BouncingScrollPhysics(),
                             ),
                             gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 10.w,
-                                  mainAxisSpacing: 10.h,
-                                  childAspectRatio: 0.78,
-                                ),
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 10.w,
+                              mainAxisSpacing: 10.h,
+                              childAspectRatio: 0.78,
+                            ),
                             itemCount: specialDays.length,
                             itemBuilder: (context, index) {
                               final item = specialDays[index];
@@ -257,6 +248,21 @@ class _TemplateListScreenView extends StatelessWidget {
                       ),
                     ],
                   ),
+                );
+
+                // First open: shimmer. Date filter: screen stays and a normal
+                // loader shows on top. Pull-to-refresh uses its own spinner.
+                return AppLoadingView(
+                  isInitialLoading: provider.isInitialLoading,
+                  isRefreshing: provider.isRefreshing,
+                  isDark: isDark,
+                  skeleton: AppShimmerGrid(
+                    isDark: isDark,
+                    padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 30.h),
+                    crossAxisSpacing: 10.w,
+                    mainAxisSpacing: 10.h,
+                  ),
+                  child: content,
                 );
               },
             ),
@@ -324,14 +330,14 @@ class _TemplateCard extends StatelessWidget {
                   child: imageUrl.isEmpty
                       ? const Center(child: Icon(Icons.image_outlined))
                       : CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                          errorWidget: (_, __, ___) => const Center(
-                            child: Icon(Icons.image_not_supported_rounded),
-                          ),
-                        ),
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorWidget: (_, __, ___) => const Center(
+                      child: Icon(Icons.image_not_supported_rounded),
+                    ),
+                  ),
                 ),
                 Positioned(
                   top: 8.h,

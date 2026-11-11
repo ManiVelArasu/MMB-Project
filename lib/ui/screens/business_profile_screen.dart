@@ -10,6 +10,8 @@ import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import '../../component/appbar_widget.dart';
+import '../shimmer/app_loading.dart';
+import '../shimmer/business_profile_shimmer.dart';
 import '../../component/common_heading_text.dart';
 import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
@@ -109,7 +111,7 @@ class BusinessProfileView extends StatelessWidget {
               Positioned.fill(child: _profileBackground(isDark)),
               SafeArea(
                 child: provider.isInitialLoading
-                    ? Center(child: CircularProgressIndicator())
+                    ? BusinessProfileShimmer(isDark: isDark)
                     : SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   child: Column(
@@ -374,10 +376,20 @@ class BusinessProfileView extends StatelessWidget {
                             SizedBox(
                               height: 145.h,
                               child: provider.isFramesLoading
-                                  ? const Center(
-                                child: CircularProgressIndicator(
-                                  color: Color(0xFFE53935),
-                                  strokeWidth: 2,
+                                  ? AppShimmer(
+                                isDark: isDark,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  physics:
+                                  const NeverScrollableScrollPhysics(),
+                                  itemCount: 3,
+                                  separatorBuilder: (_, __) =>
+                                      SizedBox(width: 12.w),
+                                  itemBuilder: (_, __) => ShimmerBox(
+                                    width: 110.w,
+                                    height: 145.h,
+                                    radius: 10.r,
+                                  ),
                                 ),
                               )
                                   : provider.selectedFrames.isEmpty

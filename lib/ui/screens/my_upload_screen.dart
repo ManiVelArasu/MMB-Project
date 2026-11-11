@@ -16,6 +16,7 @@ import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
 import '../../widgets/button_widget.dart';
 import '../industry/widgets/scaffold_widget.dart';
+import '../shimmer/app_loading.dart';
 
 /// Light / dark colours for this screen. Light values are the original ones.
 class _Palette {
@@ -69,18 +70,18 @@ class _MyUploadsView extends StatelessWidget {
 
     return CommonScaffold(
       isDarkMode: isDark,
-
       appBar: AppBar(
         backgroundColor: p.surface,
         surfaceTintColor: Colors.transparent,
         systemOverlayStyle: isDark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
+        elevation: 0,
         scrolledUnderElevation: 0,
-        toolbarHeight: 60,
+        toolbarHeight: 64,
 
         leading: Padding(
-          padding: const EdgeInsets.only(left: 10, top: 10, bottom: 10),
+          padding: const EdgeInsets.only(left: 10, top: 12, bottom: 12),
           child: Container(
             decoration: BoxDecoration(
               color: p.backButtonBg,
@@ -91,16 +92,14 @@ class _MyUploadsView extends StatelessWidget {
               icon: const Icon(
                 Icons.arrow_back,
                 color: Color(0xFFED1C24),
-                size: 20,
+                size: 18,
               ),
-              onPressed: () {
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
             ),
           ),
         ),
 
-        titleSpacing: 8,
+        titleSpacing: 6,
 
         title: AppText(
           "My Uploads",
@@ -176,96 +175,102 @@ class _MyUploadsView extends StatelessWidget {
               Expanded(
                 child: Consumer<ProjectProvider>(
                   builder: (context, projectProvider, child) {
-                    if (projectProvider.isLoadingPlans) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFED1C24),
-                        ),
-                      );
-                    }
+                    return AppLoadingView(
+                      isInitialLoading:
+                          projectProvider.isLoadingPlans &&
+                          projectProvider.plansData == null,
+                      isRefreshing: provider.isUploading,
+                      isDark: isDark,
+                      skeleton: AppShimmerGrid(isDark: isDark),
+                      child: Builder(
+                        builder: (context) {
+                          final downloadedProjects =
+                              projectProvider.plansData?.data ?? [];
+                          final uploadedImages = provider.uploads
+                              .where((item) => !item.isVideo)
+                              .toList();
 
-                    final downloadedProjects =
-                        projectProvider.plansData?.data ?? [];
-                    final uploadedImages = provider.uploads
-                        .where((item) => !item.isVideo)
-                        .toList();
+                          final uploadedVideos = provider.uploads
+                              .where((item) => item.isVideo)
+                              .toList();
 
-                    final uploadedVideos = provider.uploads
-                        .where((item) => item.isVideo)
-                        .toList();
+                          // IMAGES TAB
+                          if (provider.selectedTab == "Images") {
+                            if (uploadedImages.isEmpty &&
+                                downloadedProjects.isEmpty) {
+                              return _buildEmptyState(p);
+                            }
 
-                    // IMAGES TAB
-                    if (provider.selectedTab == "Images") {
-                      if (uploadedImages.isEmpty &&
-                          downloadedProjects.isEmpty) {
-                        return _buildEmptyState(p);
-                      }
-
-                      return SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Uploaded images
-                            if (uploadedImages.isNotEmpty) ...[
-                              Text(
-                                "My Uploads",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: p.heading,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              _buildMasonryGrid(
-                                context,
-                                uploadedImages,
-                                provider,
-                                p,
-                              ),
-                            ],
-
-                            // Downloaded projects
-                            if (downloadedProjects.isNotEmpty) ...[
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: downloadedProjects.length,
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 14,
-                                      childAspectRatio: 0.78,
+                            return SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Uploaded images
+                                  if (uploadedImages.isNotEmpty) ...[
+                                    Text(
+                                      "My Uploads",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: p.heading,
+                                      ),
                                     ),
-                                itemBuilder: (context, index) {
-                                  final project = downloadedProjects[index];
+                                    const SizedBox(height: 10),
+                                    _buildMasonryGrid(
+                                      context,
+                                      uploadedImages,
+                                      provider,
+                                      p,
+                                    ),
+                                  ],
 
-                                  return _buildDownloadedProjectCard(
-                                    context,
-                                    project,
-                                    p,
-                                    provider,
-                                  );
-                                },
+                                  // Downloaded projects
+                                  if (downloadedProjects.isNotEmpty) ...[
+                                    GridView.builder(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      itemCount: downloadedProjects.length,
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: 2,
+                                            crossAxisSpacing: 12,
+                                            mainAxisSpacing: 14,
+                                            childAspectRatio: 0.78,
+                                          ),
+                                      itemBuilder: (context, index) {
+                                        final project =
+                                            downloadedProjects[index];
+
+                                        return _buildDownloadedProjectCard(
+                                          context,
+                                          project,
+                                          p,
+                                          provider,
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ],
                               ),
-                            ],
-                          ],
-                        ),
-                      );
-                    }
+                            );
+                          }
 
-                    // VIDEOS TAB
-                    if (uploadedVideos.isEmpty) {
-                      return _buildEmptyState(p);
-                    }
+                          // VIDEOS TAB
+                          if (uploadedVideos.isEmpty) {
+                            return _buildEmptyState(p);
+                          }
 
-                    return _buildMasonryGrid(
-                      context,
-                      uploadedVideos,
-                      provider,
-                      p,
+                          return _buildMasonryGrid(
+                            context,
+                            uploadedVideos,
+                            provider,
+                            p,
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
