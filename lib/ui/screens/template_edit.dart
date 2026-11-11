@@ -5490,27 +5490,48 @@ class _EditorViewState extends State<EditorView> {
       final w = box.width * s;
       final h = box.height * s;
 
+      // Rotation happens around the item's centre, so align using the
+      // rotated bounding box instead of the raw (unrotated) box.
+      final rot = cur.rotation.isFinite ? cur.rotation : 0.0;
+      final cosA = math.cos(rot).abs();
+      final sinA = math.sin(rot).abs();
+      final bboxW = w * cosA + h * sinA;
+      final bboxH = w * sinA + h * cosA;
+      final padX = (bboxW - w) / 2; // how far the bbox sticks out of the box
+      final padY = (bboxH - h) / 2;
+
       var x = cur.position.dx;
       var y = cur.position.dy;
       switch (where) {
         case 'left':
-          x = 0;
+          x = padX;
           break;
         case 'center':
           x = (canvas.width - w) / 2;
           break;
         case 'right':
-          x = canvas.width - w;
+          x = canvas.width - w - padX;
           break;
         case 'top':
-          y = 0;
+          y = padY;
           break;
         case 'middle':
           y = (canvas.height - h) / 2;
           break;
         case 'bottom':
-          y = canvas.height - h;
+          y = canvas.height - h - padY;
           break;
+      }
+      // For text, left/center/right also set the inner text alignment so the
+      // lines of multi-line text follow the same direction.
+      if (EditableItemWidget.isTextType(cur.type)) {
+        if (where == 'left') {
+          provider.updateTextAlignment(id, TextAlign.left);
+        } else if (where == 'center') {
+          provider.updateTextAlignment(id, TextAlign.center);
+        } else if (where == 'right') {
+          provider.updateTextAlignment(id, TextAlign.right);
+        }
       }
       provider.updatePosition(id, Offset(x, y));
     }
@@ -5577,10 +5598,6 @@ class _EditorViewState extends State<EditorView> {
                 Container(
                   width: 28,
                   height: 28,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF626262),
-                    borderRadius: BorderRadius.circular(7),
-                  ),
                   child: Icon(icon, color: Colors.white, size: 19),
                 ),
                 const SizedBox(height: 7),
@@ -5627,7 +5644,8 @@ class _EditorViewState extends State<EditorView> {
               _showTextColorPicker(context, provider, id, isDark);
             }),
             tool(Icons.format_align_center_rounded, 'ALIGN', () {
-              _showTextAlignmentBottomSheet(context, provider, id, isDark);
+              // Same "Align to page" sheet as the effects/animate panel.
+              _showAlignSheet(context, provider, id, isDark);
             }),
             tool(Icons.layers_rounded, 'ORDER', () {
               _showTextOrderBottomSheet(context, provider, id, isDark);
@@ -6144,24 +6162,50 @@ class _EditorViewState extends State<EditorView> {
         'value': TextAlign.justify,
       },
     ];
+    const accent = Color(0xFFFF202A);
     showModalBottomSheet<void>(
       context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: alignments
-              .map(
-                (a) => ListTile(
-                  leading: Icon(a['icon'] as IconData),
-                  title: AppText(a['label'] as String),
+      backgroundColor: isDark ? const Color(0xFF17191E) : Colors.white,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) {
+          final fg = isDark ? Colors.white : const Color(0xFF222222);
+          final currentAlign = provider.textAlignment(id);
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: alignments.map((a) {
+                final selected = currentAlign == a['value'];
+                return ListTile(
+                  leading: Icon(
+                    a['icon'] as IconData,
+                    color: selected ? accent : fg,
+                  ),
+                  title: AppText(
+                    a['label'] as String,
+                    style: TextStyle(
+                      color: selected ? accent : fg,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                  trailing: selected
+                      ? const Icon(Icons.check_rounded, color: accent)
+                      : null,
                   onTap: () {
+                    if (provider.isItemLocked(id)) {
+                      Fluttertoast.showToast(
+                        msg: 'Item is locked. Unlock it first.',
+                      );
+                      return;
+                    }
                     provider.updateTextAlignment(id, a['value'] as TextAlign);
+                    setSheetState(() {});
                     Navigator.pop(sheetContext);
                   },
-                ),
-              )
-              .toList(),
-        ),
+                );
+              }).toList(),
+            ),
+          );
+        },
       ),
     );
   }
@@ -8633,7 +8677,16 @@ class _EditorViewState extends State<EditorView> {
     final boundary = _canvasKey.currentContext?.findRenderObject();
     if (boundary is! RenderRepaintBoundary) return null;
 
-    final image = await boundary.toImage(pixelRatio: 3.0);
+    // Hide the selection box / handles so they are not in the exported PNG.
+    if (mounted) setState(() => _isCapturingThumbnail = true);
+    await WidgetsBinding.instance.endOfFrame;
+
+    final ui.Image image;
+    try {
+      image = await boundary.toImage(pixelRatio: 3.0);
+    } finally {
+      if (mounted) setState(() => _isCapturingThumbnail = false);
+    }
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     if (byteData == null) return null;
 
@@ -9114,9 +9167,18 @@ class _EditorViewState extends State<EditorView> {
 
       debugPrint('📸 Capturing canvas...');
 
-      final image = await boundary.toImage(
-        pixelRatio: _exportPixelRatio(boundary, scale),
-      );
+      // Hide the selection box / handles so they are not in the saved image.
+      if (mounted) setState(() => _isCapturingThumbnail = true);
+      await WidgetsBinding.instance.endOfFrame;
+
+      final ui.Image image;
+      try {
+        image = await boundary.toImage(
+          pixelRatio: _exportPixelRatio(boundary, scale),
+        );
+      } finally {
+        if (mounted) setState(() => _isCapturingThumbnail = false);
+      }
 
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 

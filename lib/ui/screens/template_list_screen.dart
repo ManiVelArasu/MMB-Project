@@ -156,11 +156,18 @@ class _TemplateListScreenView extends StatelessWidget {
                                 DateTime.now(),
                               );
 
+                              // Current month-oda last day (month + 1, day 0 = previous month end)
+                              final DateTime lastDayOfMonth = DateTime(
+                                today.year,
+                                today.month + 1,
+                                0,
+                              );
+
                               final DateTimeRange? dateRange =
                                   await showDateRangePicker(
                                     context: context,
                                     firstDate: today,
-                                    lastDate: DateTime(2035),
+                                    lastDate: lastDayOfMonth,
                                     initialDateRange: DateTimeRange(
                                       start: today,
                                       end: today,

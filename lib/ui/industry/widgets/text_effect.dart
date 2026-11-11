@@ -38,8 +38,8 @@ extension TextEffectTypeX on TextEffectType {
 
   bool get hasColor =>
       this == TextEffectType.outline ||
-          this == TextEffectType.textBox ||
-          this == TextEffectType.shadow;
+      this == TextEffectType.textBox ||
+      this == TextEffectType.shadow;
 
   bool get hasGlitchPresets => this == TextEffectType.glitch;
 
@@ -86,12 +86,12 @@ class TextEffectSliderSpec {
   final String unit;
 
   const TextEffectSliderSpec(
-      this.key,
-      this.label,
-      this.min,
-      this.max, {
-        this.unit = '',
-      });
+    this.key,
+    this.label,
+    this.min,
+    this.max, {
+    this.unit = '',
+  });
 }
 
 /// Glitch colour presets: [first, second].
@@ -269,7 +269,7 @@ class TextEffect {
         (json[k] as num?)?.toDouble() ?? fallback;
     final typeName = json['type']?.toString();
     final type = TextEffectType.values.firstWhere(
-          (e) => e.name == typeName,
+      (e) => e.name == typeName,
       orElse: () => TextEffectType.none,
     );
     final base = TextEffect.defaults(type);
@@ -286,26 +286,28 @@ class TextEffect {
       color: json['color'] is num
           ? Color((json['color'] as num).toInt())
           : base.color,
-      glitchPreset: ((json['glitchPreset'] as num?)?.toInt() ?? 0)
-          .clamp(0, kGlitchPresets.length - 1),
+      glitchPreset: ((json['glitchPreset'] as num?)?.toInt() ?? 0).clamp(
+        0,
+        kGlitchPresets.length - 1,
+      ),
     );
   }
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is TextEffect &&
-              other.type == type &&
-              other.offset == offset &&
-              other.angle == angle &&
-              other.blur == blur &&
-              other.opacity == opacity &&
-              other.thickness == thickness &&
-              other.roundness == roundness &&
-              other.spread == spread &&
-              other.curve == curve &&
-              other.color == color &&
-              other.glitchPreset == glitchPreset;
+      other is TextEffect &&
+          other.type == type &&
+          other.offset == offset &&
+          other.angle == angle &&
+          other.blur == blur &&
+          other.opacity == opacity &&
+          other.thickness == thickness &&
+          other.roundness == roundness &&
+          other.spread == spread &&
+          other.curve == curve &&
+          other.color == color &&
+          other.glitchPreset == glitchPreset;
 
   @override
   int get hashCode => Object.hash(
@@ -348,7 +350,6 @@ Widget buildTextWithEffect({
   final fontSize = style.fontSize ?? 14.0;
   final unit = fontSize * 0.4 / 100.0;
   final rad = effect.angle * math.pi / 180.0;
-  // Positive angle = counter-clockwise (up), so -45 is "down-right".
   final dir = Offset(math.cos(rad), -math.sin(rad));
   final baseColor = style.color ?? Colors.black;
 
@@ -364,7 +365,10 @@ Widget buildTextWithEffect({
         ..color = effect.color;
       return Stack(
         clipBehavior: Clip.none,
-        children: [t(style.copyWith(foreground: stroke)), t(style)],
+        children: [
+          t(style.copyWith(foreground: stroke)),
+          t(style),
+        ],
       );
 
     case TextEffectType.textBox:
@@ -455,10 +459,11 @@ Widget buildTextWithEffect({
 
     case TextEffectType.glitch:
       final d = effect.offset * unit;
-      final colors = kGlitchPresets[effect.glitchPreset.clamp(
-        0,
-        kGlitchPresets.length - 1,
-      )];
+      final colors =
+          kGlitchPresets[effect.glitchPreset.clamp(
+            0,
+            kGlitchPresets.length - 1,
+          )];
       return Stack(
         clipBehavior: Clip.none,
         children: [
@@ -476,6 +481,110 @@ Widget buildTextWithEffect({
   }
 }
 
+/// Layout of a single line of text laid along a circular arc. Shared by the
+/// painter and by [curvedTextSize], so the drawn text and the selection box
+/// always agree.
+class _CurvedLayout {
+  final List<TextPainter> painters;
+  final double total; // sum of all glyph widths
+  final double height; // line height
+  final double a; // amount / 100
+  final Rect bounds; // bounds of every glyph, in the un-curved text's space
+
+  _CurvedLayout(this.painters, this.total, this.height, this.a, this.bounds);
+}
+
+_CurvedLayout _layoutCurved(String text, TextStyle style, double amount) {
+  final painters = <TextPainter>[];
+  var total = 0.0;
+  var height = 0.0;
+  for (final ch in text.characters) {
+    final p = TextPainter(
+      text: TextSpan(text: ch, style: style),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    painters.add(p);
+    total += p.width;
+    height = math.max(height, p.height);
+  }
+  final a = amount / 100.0;
+  if (painters.isEmpty || total <= 0) {
+    return _CurvedLayout(
+      painters,
+      total,
+      height,
+      a,
+      const Rect.fromLTWH(0, 0, 1, 1),
+    );
+  }
+  if (a.abs() < 0.01) {
+    return _CurvedLayout(
+      painters,
+      total,
+      height,
+      a,
+      Rect.fromLTWH(0, 0, total, height),
+    );
+  }
+
+  final theta = a.abs() * math.pi;
+  final r = total / theta;
+  final cx = total / 2;
+  var minX = double.infinity, minY = double.infinity;
+  var maxX = -double.infinity, maxY = -double.infinity;
+  var travelled = 0.0;
+  for (final p in painters) {
+    final mid = travelled + p.width / 2;
+    travelled += p.width;
+    final phi = mid / r - theta / 2;
+
+    final double angle;
+    final double ox, oy, top, bottom;
+    if (a > 0) {
+      ox = cx + r * math.sin(phi);
+      oy = r * (1 - math.cos(phi));
+      angle = phi;
+      top = 0;
+      bottom = p.height;
+    } else {
+      ox = cx + r * math.sin(phi);
+      oy = height - r * (1 - math.cos(phi));
+      angle = -phi;
+      top = -height;
+      bottom = 0;
+    }
+    final c = math.cos(angle), sn = math.sin(angle);
+    final hw = p.width / 2;
+    for (final corner in [
+      Offset(-hw, top),
+      Offset(hw, top),
+      Offset(hw, bottom),
+      Offset(-hw, bottom),
+    ]) {
+      final x = ox + corner.dx * c - corner.dy * sn;
+      final y = oy + corner.dx * sn + corner.dy * c;
+      minX = math.min(minX, x);
+      maxX = math.max(maxX, x);
+      minY = math.min(minY, y);
+      maxY = math.max(maxY, y);
+    }
+  }
+  return _CurvedLayout(
+    painters,
+    total,
+    height,
+    a,
+    Rect.fromLTRB(minX, minY, maxX, maxY),
+  );
+}
+
+/// Real size of curved text (the whole arc), used for the selection box.
+Size curvedTextSize(String text, TextStyle style, double amount) {
+  final plain = text.replaceAll(RegExp(r'[\r\n]+'), ' ');
+  final b = _layoutCurved(plain, style, amount).bounds;
+  return Size(math.max(1.0, b.width), math.max(1.0, b.height));
+}
+
 /// Lays the characters of a single line of text along a circular arc.
 class _CurvedText extends StatelessWidget {
   final String text;
@@ -491,12 +600,12 @@ class _CurvedText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final plain = text.replaceAll(RegExp(r'[\r\n]+'), ' ');
-    final tp = TextPainter(
-      text: TextSpan(text: plain, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout();
+    final layout = _layoutCurved(plain, style, amount);
     return CustomPaint(
-      size: Size(tp.width, tp.height),
+      size: Size(
+        math.max(1.0, layout.bounds.width),
+        math.max(1.0, layout.bounds.height),
+      ),
       painter: _CurvedTextPainter(plain, style, amount),
     );
   }
@@ -511,19 +620,14 @@ class _CurvedTextPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final painters = <TextPainter>[];
-    var total = 0.0;
-    for (final ch in text.characters) {
-      final p = TextPainter(
-        text: TextSpan(text: ch, style: style),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      painters.add(p);
-      total += p.width;
-    }
-    if (painters.isEmpty || total <= 0) return;
+    final layout = _layoutCurved(text, style, amount);
+    final painters = layout.painters;
+    if (painters.isEmpty || layout.total <= 0) return;
 
-    final a = amount / 100.0;
+    // Move the arc so its bounding box starts at (0, 0).
+    canvas.translate(-layout.bounds.left, -layout.bounds.top);
+
+    final a = layout.a;
     if (a.abs() < 0.01) {
       var x = 0.0;
       for (final p in painters) {
@@ -534,8 +638,8 @@ class _CurvedTextPainter extends CustomPainter {
     }
 
     final theta = a.abs() * math.pi; // total sweep, up to 180°
-    final r = total / theta;
-    final cx = size.width / 2;
+    final r = layout.total / theta;
+    final cx = layout.total / 2;
     var travelled = 0.0;
 
     for (final p in painters) {
@@ -553,10 +657,10 @@ class _CurvedTextPainter extends CustomPainter {
         // Smile: chars hang on the bottom of the circle.
         canvas.translate(
           cx + r * math.sin(phi),
-          size.height - r * (1 - math.cos(phi)),
+          layout.height - r * (1 - math.cos(phi)),
         );
         canvas.rotate(-phi);
-        p.paint(canvas, Offset(-p.width / 2, -size.height));
+        p.paint(canvas, Offset(-p.width / 2, -layout.height));
       }
       canvas.restore();
     }

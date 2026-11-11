@@ -218,6 +218,17 @@ class EditableItemWidget extends StatelessWidget {
       EditorProvider provider, {
         double? widthOverride,
       }) {
+    // Curved text: the box must wrap the whole arc, not the flat text.
+    final fx = provider.textEffect(item.id ?? '');
+    if (fx.type == TextEffectType.curve) {
+      final cs = curvedTextSize(
+        item.text ?? '',
+        buildTextStyle(item, provider),
+        fx.curve,
+      );
+      return Size(math.max(1.0, cs.width), math.max(1.0, cs.height));
+    }
+
     final multiline = isMultilineText(item);
     final boxWidth = widthOverride ?? item.width;
     final wrapWidth = multiline && boxWidth > 12.0 ? boxWidth : double.infinity;
@@ -918,12 +929,13 @@ class EditableItemWidget extends StatelessWidget {
 
     // For single-line text, do not force a narrow width that causes wrapping.
     // For multiline text, respect the item width.
-    final renderWidth = isMultiline
+    final isCurved = editorProvider.textEffect(id).type == TextEffectType.curve;
+    final renderWidth = isMultiline && !isCurved
         ? math.max(12.0, item.width)
         : double.infinity;
 
     return SizedBox(
-      width: isMultiline ? renderWidth : null,
+      width: isMultiline && !isCurved ? renderWidth : null,
       child: Align(
         alignment: switch (editorProvider.textAlignment(id)) {
           TextAlign.center => Alignment.topCenter,

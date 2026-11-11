@@ -619,7 +619,7 @@ class HomeScreenProvider extends ChangeNotifier {
       debugPrint('🌐 Language: $language');
 
       final result = await HomeRepository.instance.myBrandCategory(
-        industrySlug: industrySlug??'',
+        industrySlug: industrySlug ?? '',
         language: language,
         keyword: keyword ?? '',
       );
