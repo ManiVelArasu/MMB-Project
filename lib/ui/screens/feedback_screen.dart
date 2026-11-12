@@ -83,6 +83,7 @@ class FeedbackScreen extends StatelessWidget {
                         color: AppColors.appRed,
                         borderRadius: BorderRadius.all(Radius.circular(10.r)),
                       ),
+                      textStyle: TextStyle(color: AppColors.appWhite),
                       buttonPress: () async {
                         final response = await provider.submitFeedbackApi(
                           appVersion: '2.4.1',

@@ -37,10 +37,7 @@ class AiImageScreen extends StatelessWidget {
         return Scaffold(
           extendBodyBehindAppBar: true,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: HomeCustomAppBar(
-            showApiName: false,
-            customName: 'AI HUB',
-          ),
+          appBar: HomeCustomAppBar(showApiName: false, customName: 'AI HUB'),
           body: Stack(
             children: [
               Positioned(
@@ -142,7 +139,7 @@ class AiImageScreen extends StatelessWidget {
                 color: const Color(0xFFEAE8FF),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child:Image.asset("assets/images/magic_media.png")
+              child: Image.asset("assets/images/magic_media.png"),
             ),
           ),
           const SizedBox(height: 8),
@@ -357,7 +354,7 @@ class AiImageScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Image.asset("assets/images/magicpen.png",width: 18,height: 18,),
+        Image.asset("assets/images/magicpen.png", width: 18, height: 18),
         const SizedBox(width: 6),
         Row(
           children: [

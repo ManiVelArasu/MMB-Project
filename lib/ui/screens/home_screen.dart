@@ -6,7 +6,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:gal/gal.dart';
 import 'package:mmb_app/ui/screens/search_screen.dart';
 import 'package:mmb_app/ui/screens/template_detail_screen.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
@@ -1592,12 +1591,30 @@ class _HomeScreenView extends StatelessWidget {
                       const SizedBox(width: 8),
 
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           Navigator.pop(dialogContext);
-                          Navigator.pushNamed(
-                            context,
-                            '/PlansAndPricingScreen',
-                          );
+                            final planProvider = PlanProvider();
+
+                            final bool hasActivePlan =
+                                await planProvider
+                                .fetchMySubscription();
+
+                            if (!context.mounted) return;
+
+                            if (hasActivePlan) {
+                              Navigator.pushNamed(
+                                context,
+                                "/MySubscriptionScreen",
+                              );
+                            } else {
+                              Navigator.pushNamed(
+                                context,
+                                "/FreePlanScreen",
+                                arguments: {"showSkip": true},
+                              );
+                            }
+                            ;
+
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF202020),

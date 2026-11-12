@@ -183,150 +183,162 @@ class _ProductsView extends StatelessWidget {
 
                 Expanded(
                   child: provider.filteredProducts.isEmpty
-                      ? Center(
-                    child: AppText(
-                      "No products found",
-                      style: TextStyle(color: p.emptyText, fontSize: 13),
-                    ),
-                  )
+                      ? (provider.allCount == 0
+                            // No products at all -> full empty state
+                            ? _EmptyProductsState(
+                                p: p,
+                                onLater: () => Navigator.pop(context),
+                                onAdd: () =>
+                                    showAddProductServiceSheet(context),
+                              )
+                            // Products exist, but not in this filter
+                            : Center(
+                                child: AppText(
+                                  "No products found",
+                                  style: TextStyle(
+                                    color: p.emptyText,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ))
                       : GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
-                    physics: const BouncingScrollPhysics(),
-                    gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                      // Cards per row.
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      // Lower value (0.65 / 0.7) makes cards bigger.
-                      childAspectRatio: 0.68,
-                    ),
-                    itemCount: provider.filteredProducts.length,
-                    itemBuilder: (context, index) {
-                      final item = provider.filteredProducts[index];
-
-                      return ProductCard(
-                        item: item,
-                        onToggleActive: (value) async {
-                          final id = item.uid?.toString() ?? '';
-
-                          if (id.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Product ID not found'),
+                          padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
+                          physics: const BouncingScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                // Cards per row.
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                                // Lower value (0.65 / 0.7) makes cards bigger.
+                                childAspectRatio: 0.68,
                               ),
-                            );
-                            return;
-                          }
+                          itemCount: provider.filteredProducts.length,
+                          itemBuilder: (context, index) {
+                            final item = provider.filteredProducts[index];
 
-                          final success = await provider.setProductActive(
-                            id: id,
-                            isActive: value,
-                          );
+                            return ProductCard(
+                              item: item,
+                              onToggleActive: (value) async {
+                                final id = item.uid?.toString() ?? '';
 
-                          if (!context.mounted) return;
+                                if (id.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Product ID not found'),
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                          if (!success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  provider.errorMessage ??
-                                      'Unable to update status',
-                                ),
-                              ),
-                            );
-                          }
-                        },
+                                final success = await provider.setProductActive(
+                                  id: id,
+                                  isActive: value,
+                                );
 
-                        // Edit
-                        onEdit: () {
-                          showAddProductServiceSheet(
-                            context,
-                            product: item,
-                          );
-                        },
+                                if (!context.mounted) return;
 
-                        // Delete
-                        onDelete: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (dialogContext) => AlertDialog(
-                              backgroundColor: p.surface,
-                              surfaceTintColor: Colors.transparent,
-                              title: Text(
-                                'Delete product?',
-                                style: TextStyle(
-                                  color: isDark
-                                      ? Colors.white
-                                      : Colors.black87,
-                                ),
-                              ),
-                              content: Text(
-                                'Are you sure you want to delete ${item.name ?? 'this item'}?',
-                                style: TextStyle(
-                                  color: isDark
-                                      ? Colors.white70
-                                      : Colors.black54,
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(dialogContext, false),
-                                  child: Text(
-                                    'Cancel',
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black87,
+                                if (!success) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        provider.errorMessage ??
+                                            'Unable to update status',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+
+                              // Edit
+                              onEdit: () {
+                                showAddProductServiceSheet(
+                                  context,
+                                  product: item,
+                                );
+                              },
+
+                              // Delete
+                              onDelete: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (dialogContext) => AlertDialog(
+                                    backgroundColor: p.surface,
+                                    surfaceTintColor: Colors.transparent,
+                                    title: Text(
+                                      'Delete product?',
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black87,
+                                      ),
+                                    ),
+                                    content: Text(
+                                      'Are you sure you want to delete ${item.name ?? 'this item'}?',
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? Colors.white70
+                                            : Colors.black54,
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(dialogContext, false),
+                                        child: Text(
+                                          'Cancel',
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white
+                                                : Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(dialogContext, true),
+                                        child: const Text(
+                                          'Delete',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirm != true || !context.mounted) return;
+
+                                final id = item.id?.toString() ?? '';
+
+                                if (id.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Product ID not found'),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                final success = await provider.deleteProduct(
+                                  id,
+                                );
+
+                                if (!context.mounted) return;
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      success
+                                          ? 'Product deleted successfully'
+                                          : provider.errorMessage ??
+                                                'Unable to delete product',
                                     ),
                                   ),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(dialogContext, true),
-                                  child: const Text(
-                                    'Delete',
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-
-                          if (confirm != true || !context.mounted) return;
-
-                          final id = item.id?.toString() ?? '';
-
-                          if (id.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Product ID not found'),
-                              ),
+                                );
+                              },
                             );
-                            return;
-                          }
-
-                          final success = await provider.deleteProduct(
-                            id,
-                          );
-
-                          if (!context.mounted) return;
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                success
-                                    ? 'Product deleted successfully'
-                                    : provider.errorMessage ??
-                                    'Unable to delete product',
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                          },
+                        ),
                 ),
               ],
             );
@@ -337,11 +349,11 @@ class _ProductsView extends StatelessWidget {
   }
 
   Widget _filterChip(
-      String text,
-      ProductsProvider provider,
-      _Palette p, {
-        required int count,
-      }) {
+    String text,
+    ProductsProvider provider,
+    _Palette p, {
+    required int count,
+  }) {
     final selected = provider.selectedFilter == text;
 
     return GestureDetector(
@@ -388,9 +400,9 @@ class _ProductsView extends StatelessWidget {
   }
 
   Future<void> showAddProductServiceSheet(
-      BuildContext context, {
-        ProductListData? product,
-      }) async {
+    BuildContext context, {
+    ProductListData? product,
+  }) async {
     final productsProvider = context.read<ProductsProvider>();
 
     debugPrint('6. OPENING ADD SHEET');
@@ -415,5 +427,111 @@ class _ProductsView extends StatelessWidget {
       await productsProvider.fetchProducts();
       debugPrint('9. FETCH PRODUCTS COMPLETED');
     }
+  }
+}
+
+/// Shown when the user has no products or services at all.
+class _EmptyProductsState extends StatelessWidget {
+  const _EmptyProductsState({
+    required this.p,
+    required this.onAdd,
+    required this.onLater,
+  });
+
+  final _Palette p;
+  final VoidCallback onAdd;
+  final VoidCallback onLater;
+
+  // TODO: your illustration asset path
+  static const String _imageAsset = 'assets/images/add_product_service.png';
+
+  @override
+  Widget build(BuildContext context) {
+    const red = Color(0xFFED1C24);
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              _imageAsset,
+              height: 120,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.storefront_rounded, size: 80, color: red),
+            ),
+            const SizedBox(height: 24),
+            AppText(
+              'Add Your Products & Services',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: p.title,
+                fontSize: AppFontSize.fontSize18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            AppText(
+              'Add your products and services to showcase what your business '
+              'offers and make your marketing content more useful.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: p.bodyText,
+                fontSize: AppFontSize.fontSize14,
+                fontWeight: FontWeight.w400,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              runSpacing: 10,
+              children: [
+                OutlinedButton(
+                  onPressed: onLater,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: red,
+                    side: const BorderSide(color: red),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const AppText(
+                    'Maybe Later',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: onAdd,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: red,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const AppText(
+                    'Add Products & Services',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
