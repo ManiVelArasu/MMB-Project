@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/appbar_widget.dart';
 
 import 'package:provider/provider.dart';
@@ -12,6 +11,8 @@ import '../../network/provider/notification_provider.dart';
 import '../../widgets/notification_section.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../industry/widgets/scaffold_widget.dart';
+import '../shimmer/notification_shimmer.dart';
+
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -28,7 +29,7 @@ class NotificationScreen extends StatelessWidget {
           return CommonScaffold(
             isDarkMode: isDark,
 
-extendBodyBehindAppBar: false,
+            extendBodyBehindAppBar: false,
             appBar: CustomAppBar(
               showTitle: true,
               title: "Notification",
@@ -61,16 +62,14 @@ extendBodyBehindAppBar: false,
   // ============================================================
 
   Widget _buildNotificationBody(
-    BuildContext context,
-    NotificationProvider provider,
-    bool isDark,
-  ) {
-    if (provider.isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          color: isDark ? Colors.redAccent : Colors.red,
-        ),
-      );
+      BuildContext context,
+      NotificationProvider provider,
+      bool isDark,
+      ) {
+    // First load (nothing to show yet): shimmer. On refresh the list stays on
+    // screen and the RefreshIndicator shows its own spinner.
+    if (provider.isLoading && provider.notifications.isEmpty) {
+      return NotificationShimmer(isDark: isDark);
     }
 
     if (provider.errorMessage != null) {

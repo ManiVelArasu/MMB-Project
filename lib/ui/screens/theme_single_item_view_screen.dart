@@ -11,6 +11,7 @@ import '../../Api Model/theme_single_model.dart';
 import '../../component/network_image.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
+import '../../network/provider/plan_provider.dart';
 import '../../network/provider/theme_screen_provider.dart';
 import '../../network/provider/theme_single_provider.dart';
 
@@ -38,7 +39,6 @@ class ThemeSingleitemViewScreen extends StatelessWidget {
   }
 }
 
-
 class _ThemeSingleItemContent extends StatefulWidget {
   final String variantId;
 
@@ -55,9 +55,7 @@ class _ThemeSingleItemContentState extends State<_ThemeSingleItemContent> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-            context.read<ThemeSingleItemProvider>().fetchPlans(widget.variantId);
-
-
+      context.read<ThemeSingleItemProvider>().fetchPlans(widget.variantId);
     });
   }
 
@@ -66,8 +64,6 @@ class _ThemeSingleItemContentState extends State<_ThemeSingleItemContent> {
     return const ThemeDetailView();
   }
 }
-
-
 
 class ThemeDetailView extends StatelessWidget {
   const ThemeDetailView({super.key});
@@ -80,8 +76,6 @@ class ThemeDetailView extends StatelessWidget {
 
     return Consumer<ThemeSingleItemProvider>(
       builder: (context, provider, child) {
-
-
         if (provider.isLoadingPlans) {
           return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -91,8 +85,6 @@ class ThemeDetailView extends StatelessWidget {
             ),
           );
         }
-
-
 
         if (provider.plansErrorMessage != null) {
           return Scaffold(
@@ -111,7 +103,6 @@ class ThemeDetailView extends StatelessWidget {
             ),
           );
         }
-
 
         final data = provider.plansData?.data;
 
@@ -153,8 +144,6 @@ class ThemeDetailView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
 
                   children: [
-
-
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
@@ -273,7 +262,7 @@ class ThemeDetailView extends StatelessWidget {
                       title,
 
                       style: TextStyle(
-                        color: isDark ? AppColors.appWhite :AppColors.appBlack,
+                        color: isDark ? AppColors.appWhite : AppColors.appBlack,
 
                         fontSize: 24.sp,
                         fontWeight: FontWeight.w500,
@@ -329,7 +318,6 @@ class ThemeDetailView extends StatelessWidget {
                                 ? const Color(0xFF2A1A1C)
                                 : const Color(0xFFFFE9EB),
                             borderRadius: BorderRadius.circular(15.r),
-
                           ),
                           child: AppText(
                             tag.toString(),
@@ -359,20 +347,33 @@ class ThemeDetailView extends StatelessWidget {
                               ),
                               elevation: 0,
                             ),
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: AppText(
-                                    "Theme Unlocked Successfully!",
-                                  ),
-                                ),
-                              );
+                            onPressed: () async {
+                              final planProvider = PlanProvider();
+
+                              final bool hasActivePlan = await planProvider
+                                  .fetchMySubscription();
+
+                              if (!context.mounted) return;
+
+                              if (hasActivePlan) {
+                                Navigator.pushNamed(
+                                  context,
+                                  "/MySubscriptionScreen",
+                                );
+                              } else {
+                                Navigator.pushNamed(
+                                  context,
+                                  "/FreePlanScreen",
+                                  arguments: {"showSkip": true},
+                                );
+                              }
+                              ;
                             },
                             child: AppText(
                               "Get This Varient →",
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize:   AppFontSize.fontSize14,
+                                fontSize: AppFontSize.fontSize14,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -382,7 +383,6 @@ class ThemeDetailView extends StatelessWidget {
                     ),
 
                     SizedBox(height: 20.h),
-
 
                     MockupSliderWidget(
                       templates: data?.templates ?? [],
@@ -442,8 +442,6 @@ class ThemeDetailView extends StatelessWidget {
                                         : const Color(0xFFFFF0F2),
 
                                     borderRadius: BorderRadius.circular(15.r),
-
-
                                   ),
 
                                   child: Text(
@@ -614,7 +612,6 @@ Widget _buildSeriesPlaceholder(bool isDark) {
 String _cleanDescription(String value) {
   return value.replaceAll('\n', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
 }
-
 
 class MockupSliderWidget extends StatefulWidget {
   final List<dynamic> templates;

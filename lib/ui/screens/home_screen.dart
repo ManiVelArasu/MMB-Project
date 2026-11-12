@@ -14,6 +14,7 @@ import 'package:mmb_app/ui/screens/video_widget/video_widget.dart';
 import 'package:mmb_app/ui/screens/widget/download.dart';
 import 'package:mmb_app/ui/screens/widget/dwonload_widget.dart';
 import 'package:mmb_app/ui/screens/widget/template_popup.dart';
+import 'package:mmb_app/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
 import '../../Api Model/Template_model.dart';
 import '../../Api Model/special_days.dart';
@@ -29,6 +30,7 @@ import '../../network/provider/custom_the'
     'me_provider.dart';
 import '../../network/provider/common_provider.dart';
 import '../../network/provider/home_screen_provider.dart';
+import '../../network/provider/plan_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
 import '../shimmer/app_loading.dart';
@@ -60,8 +62,8 @@ class _HomeScreenView extends StatelessWidget {
     final bool isInitialLoading =
         (homeScreenProvider.isLoadingCategories ||
             homeScreenProvider.isKeyWordsLoading) &&
-            homeScreenProvider.templateCategories.isEmpty &&
-            homeScreenProvider.keyWords.isEmpty;
+        homeScreenProvider.templateCategories.isEmpty &&
+        homeScreenProvider.keyWords.isEmpty;
 
     if (isInitialLoading) {
       return Scaffold(
@@ -633,7 +635,7 @@ class _HomeScreenView extends StatelessWidget {
                                   SizedBox(height: 12.h),
 
                                   SizedBox(
-                                    height: 112.h,  // 105.h -> 125.h
+                                    height: 112.h, // 105.h -> 125.h
                                     child: ListView.separated(
                                       scrollDirection: Axis.horizontal,
                                       physics: const BouncingScrollPhysics(),
@@ -717,7 +719,6 @@ class _HomeScreenView extends StatelessWidget {
                                                           ),
                                                   ),
                                                 ),
-
 
                                                 SizedBox(
                                                   height: 30.h,
@@ -811,11 +812,13 @@ class _HomeScreenView extends StatelessWidget {
                                   AppShimmer(
                                     isDark: isDark,
                                     child: SizedBox(
-                                      height: isYoutubeThumbnail ? 175.h : 165.h,
+                                      height: isYoutubeThumbnail
+                                          ? 175.h
+                                          : 165.h,
                                       child: ListView.separated(
                                         scrollDirection: Axis.horizontal,
                                         physics:
-                                        const NeverScrollableScrollPhysics(),
+                                            const NeverScrollableScrollPhysics(),
                                         itemCount: 3,
                                         separatorBuilder: (_, __) =>
                                             SizedBox(width: 12.w),
@@ -2063,9 +2066,9 @@ class _HomeScreenView extends StatelessWidget {
   }
 
   Widget _buildMyZoneSlider(
-      HomeScreenProvider homeScreenProvider,
-      bool isDark,
-      ) {
+    HomeScreenProvider homeScreenProvider,
+    bool isDark,
+  ) {
     final popularTemplates = homeScreenProvider.popularTemplates
         .take(4)
         .toList();
@@ -2074,135 +2077,136 @@ class _HomeScreenView extends StatelessWidget {
       height: 360.h,
       child: popularTemplates.isEmpty
           ? Container(
-        margin: EdgeInsets.symmetric(horizontal: 25.w),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16.r),
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16.r),
-          child: Image.asset(
-            "assets/images/BName.png",
-            fit: BoxFit.cover,
-          ),
-        ),
-      )
-          : PageView.builder(
-        controller: homeScreenProvider.zonePageController,
-        itemCount: popularTemplates.length,
-        itemBuilder: (context, index) {
-          final item = popularTemplates[index];
-
-          final thumbnailKey = item.thumbnailS3Key ?? '';
-
-          final imageUrl = thumbnailKey.isEmpty
-              ? ''
-              : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
-
-          final phone =
-              homeScreenProvider.provider.me?.data.phone?.toString() ??
-                  '';
-
-          final email =
-              homeScreenProvider.provider.me?.data.email?.toString() ??
-                  '';
-
-          return Container(
-            margin: EdgeInsets.symmetric(horizontal: 25.w),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16.r),
-              color: isDark
-                  ? const Color(0xFF1E1E1E)
-                  : Colors.grey.shade100,
-            ),
-            // Everything inside this boundary is what gets downloaded.
-            child: RepaintBoundary(
-              key: homeScreenProvider.zoneKey(index),
+              margin: EdgeInsets.symmetric(horizontal: 25.w),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.r),
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
+              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16.r),
-                child: Stack(
-                  clipBehavior: Clip.hardEdge,
-                  children: [
-                    // =========================
-                    // TEMPLATE IMAGE
-                    // =========================
-                    Positioned.fill(child: buildProfileImage(imageUrl)),
-
-                    // =========================
-                    // BOTTOM BLUE INFO WITH WAVE
-                    // =========================
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      height: 55.h,
-                      child: ClipPath(
-                        clipper: BottomWaveClipper(),
-                        child: Container(
-                          padding: EdgeInsets.only(
-                            left: 20.w,
-                            right: 20.w,
-                            top: 12.h, // push content below the curve
-                          ),
-                          color: const Color(0xFF246BFE),
-                          child: Row(
-                            children: [
-                              // PHONE ICON
-                              SizedBox(width: 8.w),
-                              Icon(
-                                Icons.phone,
-                                color: Colors.white,
-                                size: 14.sp,
-                              ),
-
-                              SizedBox(width: 8.w),
-
-                              // PHONE
-                              Expanded(
-                                flex: 5,
-                                child: Text(
-                                  phone,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9.sp,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-
-                              SizedBox(width: 5.w),
-
-                              // EMAIL
-                              Expanded(
-                                flex: 6,
-                                child: Text(
-                                  email,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.right,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9.sp,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                child: Image.asset(
+                  "assets/images/BName.png",
+                  fit: BoxFit.cover,
                 ),
               ),
+            )
+          : PageView.builder(
+              controller: homeScreenProvider.zonePageController,
+              itemCount: popularTemplates.length,
+              itemBuilder: (context, index) {
+                final item = popularTemplates[index];
+
+                final thumbnailKey = item.thumbnailS3Key ?? '';
+
+                final imageUrl = thumbnailKey.isEmpty
+                    ? ''
+                    : '${ApiEndpoints.cdnImageUrl}/$thumbnailKey';
+
+                final phone =
+                    homeScreenProvider.provider.me?.data.phone?.toString() ??
+                    '';
+
+                final email =
+                    homeScreenProvider.provider.me?.data.email?.toString() ??
+                    '';
+
+                return Container(
+                  margin: EdgeInsets.symmetric(horizontal: 25.w),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16.r),
+                    color: isDark
+                        ? const Color(0xFF1E1E1E)
+                        : Colors.grey.shade100,
+                  ),
+                  // Everything inside this boundary is what gets downloaded.
+                  child: RepaintBoundary(
+                    key: homeScreenProvider.zoneKey(index),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16.r),
+                      child: Stack(
+                        clipBehavior: Clip.hardEdge,
+                        children: [
+                          // =========================
+                          // TEMPLATE IMAGE
+                          // =========================
+                          Positioned.fill(child: buildProfileImage(imageUrl)),
+
+                          // =========================
+                          // BOTTOM BLUE INFO WITH WAVE
+                          // =========================
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            height: 55.h,
+                            child: ClipPath(
+                              clipper: BottomWaveClipper(),
+                              child: Container(
+                                padding: EdgeInsets.only(
+                                  left: 20.w,
+                                  right: 20.w,
+                                  top: 12.h, // push content below the curve
+                                ),
+                                color: const Color(0xFF246BFE),
+                                child: Row(
+                                  children: [
+                                    // PHONE ICON
+                                    SizedBox(width: 8.w),
+                                    Icon(
+                                      Icons.phone,
+                                      color: Colors.white,
+                                      size: 14.sp,
+                                    ),
+
+                                    SizedBox(width: 8.w),
+
+                                    // PHONE
+                                    Expanded(
+                                      flex: 5,
+                                      child: Text(
+                                        phone,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9.sp,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+
+                                    SizedBox(width: 5.w),
+
+                                    // EMAIL
+                                    Expanded(
+                                      flex: 6,
+                                      child: Text(
+                                        email,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9.sp,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
+
   Widget _buildMyFrameHeader(bool isDark, BuildContext context) {
     return Row(
       children: [
@@ -2317,8 +2321,23 @@ class _HomeScreenView extends StatelessWidget {
         "description":
             "List your business on MMB and get discovered by potential customers.",
         "button": "GO PREMIUM",
-        "onTap": () {
-          Navigator.pushNamed(context, "/PlansAndPricingScreen");
+        "onTap": () async {
+          final planProvider = PlanProvider();
+
+          final bool hasActivePlan = await planProvider.fetchMySubscription();
+
+          if (!context.mounted) return;
+
+          if (hasActivePlan) {
+            Navigator.pushNamed(context, "/MySubscriptionScreen");
+          } else {
+            Navigator.pushNamed(
+              context,
+              "/FreePlanScreen",
+              arguments: {"showSkip": true},
+            );
+          }
+          ;
         },
         "gradient": const [Color(0xFFFFEEEE), Color(0xFFFFF9EA)],
         "titleColor": const Color(0xFFD4A017),
@@ -2419,25 +2438,20 @@ class _HomeScreenView extends StatelessWidget {
 
                       SizedBox(height: 7.h),
 
-                      SizedBox(
-                        height: 28.h,
-                        child: ElevatedButton(
-                          onPressed: onTap,
-                          style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            backgroundColor: titleColor,
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(horizontal: 14.w),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                          ),
-                          child: AppText(
-                            button,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: AppFontSize.fontSize14,
-                              fontWeight: FontWeight.w800,
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: SizedBox(
+                          height: 28.h,
+                          child: IntrinsicWidth(
+                            child: ButtonWidget(
+                              buttonPress: onTap,
+                              title: button,
+                              buttonColor: titleColor,
+                              textStyle: TextStyle(
+                                color: Colors.white,
+                                fontSize: AppFontSize.fontSize14,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                         ),
