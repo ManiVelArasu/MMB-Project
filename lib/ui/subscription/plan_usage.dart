@@ -879,12 +879,33 @@ class _PlanUsageView extends StatelessWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                AppText(
-                                  '₹${plan.price ?? '0'}',
-                                  style: TextStyle(
-                                    fontSize: AppFontSize.fontSize18,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF171A2B),
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Row(
+                                    children: [
+                                      AppText(
+                                        '₹${plan.totalPrice ?? '0'}',
+                                        style: TextStyle(
+                                          fontSize: AppFontSize.fontSize16,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF171A2B),
+                                        ),
+                                      ),
+                                      AppText(
+                                        '₹${plan.strikePrice ?? '0'}',
+                                        style: TextStyle(
+                                          fontSize: AppFontSize.fontSize14,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF9A9CA8),
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                          decorationColor: const Color(
+                                            0xFF9A9CA8,
+                                          ),
+                                          decorationThickness: 2,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 const SizedBox(height: 8),

@@ -185,8 +185,7 @@ class Template {
       id: json['id']?.toString(),
       uid: json['uid']?.toString(),
       familyId: json['family_id']?.toString(),
-      familyUid:
-      json['familyUid']?.toString(),
+      familyUid: (json['family_uid'] ?? json['familyUid'])?.toString(),
       name: json['name']?.toString(),
       categoryId: json['category_id']?.toString(),
       languageId: json['language_id']?.toString(),

@@ -3729,15 +3729,27 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       return true;
     }
 
-    // Backward compatibility for older saved projects.
-    return item.position.dx.abs() < 1.0 &&
-        item.position.dy.abs() < 1.0 &&
-        item.width >= 1000 &&
-        item.height >= 1000;
+    // Fallback for template/old-project backgrounds without a tracked id:
+    // anything that sits at the origin and covers (almost) the whole canvas,
+    // measured with its scale applied and against the real canvas size.
+    final sc = item.scale.abs() <= 0 ? 1.0 : item.scale.abs();
+    final cw = canvasWidth > 0 ? canvasWidth : 1080.0;
+    final ch = canvasHeight > 0 ? canvasHeight : 1350.0;
+    return item.position.dx.abs() <= 12.0 &&
+        item.position.dy.abs() <= 12.0 &&
+        item.width * sc >= cw * 0.95 &&
+        item.height * sc >= ch * 0.95;
   }
 
   void _removeBackgroundLayers() {
+    final removedIds = _items
+        .where(_isBackgroundLayer)
+        .map((e) => e.id)
+        .whereType<String>()
+        .toList();
     _items.removeWhere(_isBackgroundLayer);
+    // Forget stale template-background ids so they can never match again.
+    _templateBackgroundIds.removeAll(removedIds);
   }
 
   void setBackgroundColor(Color color) {

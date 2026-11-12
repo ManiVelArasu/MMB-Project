@@ -148,7 +148,20 @@ class HomeRepository {
         method: ApiMethod.get,
         queryParams: queryParams,
       ),
-      fromJson: (json) => SpecialDays.fromJson(json as Map<String, dynamic>),
+      fromJson: (json) {
+        // raw is_locked values straight from the server
+        try {
+          final data = (json as Map<String, dynamic>)['data'] as List? ?? [];
+          for (final ev in data) {
+            for (final t in (ev['Templates'] as List? ?? [])) {
+              debugPrint('RAW is_locked=${t['is_locked']} uid=${t['uid']}');
+            }
+          }
+        } catch (e) {
+          debugPrint('RAW log error: $e');
+        }
+        return SpecialDays.fromJson(json as Map<String, dynamic>);
+      },
     );
 
     return result;

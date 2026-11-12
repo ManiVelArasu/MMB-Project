@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/foundation.dart'
     show consolidateHttpClientResponseBytes, mapEquals;
 import 'package:google_fonts/google_fonts.dart';
@@ -100,57 +101,92 @@ class EditableItemWidget extends StatelessWidget {
 
         final itemWidget = KeyedSubtree(
           key: ValueKey(currentItem.id),
-          child: GestureDetector(
-            behavior: isTextItem
-                ? HitTestBehavior.deferToChild
-                : HitTestBehavior.opaque,
-            // Single tap selects an element; double tap edits text.
-            // Move/resize/rotate are handled by the selection overlay to avoid
-            // competing gestures on the same canvas element.
-            onTap: () {
-              if (!isSelected) {
-                onItemSelected(currentItem.type ?? '', currentItem.id!);
-              }
-            },
-            onDoubleTap: () {
-              if (isTextItem && !isBackground) {
-                showTextEditor(
-                  context,
-                  provider,
-                  currentItem.id!,
-                  currentItem.text ?? '',
+          child: _MinTouchTarget(
+            visualSize: Size(
+              bodyWidth * currentItem.scale.clamp(0.01, 10.0),
+              bodyHeight * currentItem.scale.clamp(0.01, 10.0),
+            ),
+            enabled: !isBackground,
+            child: GestureDetector(
+              // Whole text box is tappable (not only the glyph pixels).
+              behavior: HitTestBehavior.opaque,
+              // Press-and-drag moves the item directly (selects it first), so
+              // small text needs no separate tap-then-drag.
+              onPanStart: isBackground
+                  ? null
+                  : (_) {
+                if (!isSelected) {
+                  onItemSelected(currentItem.type ?? '', currentItem.id!);
+                }
+              },
+              onPanUpdate: isBackground
+                  ? null
+                  : (d) {
+                final id = currentItem.id ?? '';
+                final idx = provider.items.indexWhere((e) => e.id == id);
+                if (idx < 0) return;
+                final box = context.findRenderObject();
+                double k = 1.0;
+                if (box is RenderBox && box.attached) {
+                  k = box.getTransformTo(null).getMaxScaleOnAxis();
+                }
+                if (!k.isFinite || k <= 0) k = 1.0;
+                provider.updateItemTransform(
+                  id,
+                  position: provider.items[idx].position + d.delta / k,
+                  clampToFrame: false,
                 );
-              }
-            },
-            child: Transform.scale(
-              scale: currentItem.scale.clamp(0.01, 10.0),
-              alignment: Alignment.topLeft,
-              child: Transform.rotate(
-                angle: currentItem.rotation,
-                alignment: Alignment.center,
-                child: Transform.scale(
-                  scaleX: state.flipX ? -1 : 1,
-                  scaleY: state.flipY ? -1 : 1,
+              },
+              onPanEnd: isBackground ? null : (_) => provider.commitTransform(),
+              onPanCancel: isBackground ? null : () => provider.commitTransform(),
+              // Single tap selects an element; double tap edits text.
+              // Move/resize/rotate are handled by the selection overlay to avoid
+              // competing gestures on the same canvas element.
+              onTap: () {
+                if (!isSelected) {
+                  onItemSelected(currentItem.type ?? '', currentItem.id!);
+                }
+              },
+              onDoubleTap: () {
+                if (isTextItem && !isBackground) {
+                  showTextEditor(
+                    context,
+                    provider,
+                    currentItem.id!,
+                    currentItem.text ?? '',
+                  );
+                }
+              },
+              child: Transform.scale(
+                scale: currentItem.scale.clamp(0.01, 10.0),
+                alignment: Alignment.topLeft,
+                child: Transform.rotate(
+                  angle: currentItem.rotation,
                   alignment: Alignment.center,
-                  child: SizedBox(
-                    width: bodyWidth,
-                    height: bodyHeight,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          width: bodyWidth,
-                          height: bodyHeight,
-                          child: Opacity(
-                            opacity: currentItem.opacity.clamp(0.0, 1.0),
-                            child: _buildItemContent(
-                              currentItem,
-                              context,
-                              isBackground: isBackground,
+                  child: Transform.scale(
+                    scaleX: state.flipX ? -1 : 1,
+                    scaleY: state.flipY ? -1 : 1,
+                    alignment: Alignment.center,
+                    child: SizedBox(
+                      width: bodyWidth,
+                      height: bodyHeight,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: bodyWidth,
+                            height: bodyHeight,
+                            child: Opacity(
+                              opacity: currentItem.opacity.clamp(0.0, 1.0),
+                              child: _buildItemContent(
+                                currentItem,
+                                context,
+                                isBackground: isBackground,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -946,6 +982,65 @@ class EditableItemWidget extends StatelessWidget {
         child: textWidget,
       ),
     );
+  }
+}
+
+/// Keeps the hit area of an item at least ~48 logical px (on screen) so tiny
+/// text/stickers are easy to touch. Hits inside the enlarged zone are clamped
+/// into the child so its gesture detector still receives them.
+class _MinTouchTarget extends SingleChildRenderObjectWidget {
+  const _MinTouchTarget({
+    required this.visualSize,
+    required this.enabled,
+    required super.child,
+  });
+
+  final Size visualSize;
+  final bool enabled;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderMinTouchTarget(visualSize, enabled);
+
+  @override
+  void updateRenderObject(
+      BuildContext context,
+      covariant _RenderMinTouchTarget renderObject,
+      ) {
+    renderObject
+      ..visualSize = visualSize
+      ..enabled = enabled;
+  }
+}
+
+class _RenderMinTouchTarget extends RenderProxyBox {
+  _RenderMinTouchTarget(this.visualSize, this.enabled);
+
+  Size visualSize;
+  bool enabled;
+  static const double _minScreen = 48.0;
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (!enabled || child == null) {
+      return super.hitTest(result, position: position);
+    }
+    double k = 1.0;
+    try {
+      k = getTransformTo(null).getMaxScaleOnAxis();
+    } catch (_) {}
+    if (!k.isFinite || k <= 0) k = 1.0;
+    final w = math.max(size.width, visualSize.width);
+    final h = math.max(size.height, visualSize.height);
+    final extraX = math.max(0.0, (_minScreen / k - w) / 2);
+    final extraY = math.max(0.0, (_minScreen / k - h) / 2);
+    final zone = Rect.fromLTRB(-extraX, -extraY, w + extraX, h + extraY);
+    if (!zone.contains(position)) return false;
+    final clamped = Offset(
+      position.dx.clamp(0.0, size.width).toDouble(),
+      position.dy.clamp(0.0, size.height).toDouble(),
+    );
+    return child!.hitTest(result, position: clamped);
   }
 }
 
