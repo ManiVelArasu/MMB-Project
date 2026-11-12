@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 
 import 'dart:typed_data';
 import 'package:extended_image/extended_image.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/foundation.dart'
@@ -41,7 +42,7 @@ class EditableItemWidget extends StatelessWidget {
     return Selector<EditorProvider, _ItemViewState>(
       selector: (_, provider) {
         final currentItem = provider.items.firstWhere(
-              (e) => e.id == item.id,
+          (e) => e.id == item.id,
           orElse: () => item,
         );
         return _ItemViewState(
@@ -69,9 +70,9 @@ class EditableItemWidget extends StatelessWidget {
             .toLowerCase();
         final isTextItem =
             normalizedItemType == 'text' ||
-                normalizedItemType == 'textbox' ||
-                normalizedItemType == 'i-text' ||
-                normalizedItemType == 'itext';
+            normalizedItemType == 'textbox' ||
+            normalizedItemType == 'i-text' ||
+            normalizedItemType == 'itext';
 
         // Text is sized from its real measured layout (same helper the
         // selection overlay uses) so the rotation pivot, the blue box and the
@@ -107,85 +108,106 @@ class EditableItemWidget extends StatelessWidget {
               bodyHeight * currentItem.scale.clamp(0.01, 10.0),
             ),
             enabled: !isBackground,
-            child: GestureDetector(
-              // Whole text box is tappable (not only the glyph pixels).
+            child: RawGestureDetector(
               behavior: HitTestBehavior.opaque,
               // Press-and-drag moves the item directly (selects it first), so
-              // small text needs no separate tap-then-drag.
-              onPanStart: isBackground
-                  ? null
-                  : (_) {
-                if (!isSelected) {
-                  onItemSelected(currentItem.type ?? '', currentItem.id!);
-                }
-              },
-              onPanUpdate: isBackground
-                  ? null
-                  : (d) {
-                final id = currentItem.id ?? '';
-                final idx = provider.items.indexWhere((e) => e.id == id);
-                if (idx < 0) return;
-                final box = context.findRenderObject();
-                double k = 1.0;
-                if (box is RenderBox && box.attached) {
-                  k = box.getTransformTo(null).getMaxScaleOnAxis();
-                }
-                if (!k.isFinite || k <= 0) k = 1.0;
-                provider.updateItemTransform(
-                  id,
-                  position: provider.items[idx].position + d.delta / k,
-                  clampToFrame: false,
-                );
-              },
-              onPanEnd: isBackground ? null : (_) => provider.commitTransform(),
-              onPanCancel: isBackground ? null : () => provider.commitTransform(),
-              // Single tap selects an element; double tap edits text.
-              // Move/resize/rotate are handled by the selection overlay to avoid
-              // competing gestures on the same canvas element.
-              onTap: () {
-                if (!isSelected) {
-                  onItemSelected(currentItem.type ?? '', currentItem.id!);
-                }
-              },
-              onDoubleTap: () {
-                if (isTextItem && !isBackground) {
-                  showTextEditor(
-                    context,
-                    provider,
-                    currentItem.id!,
-                    currentItem.text ?? '',
-                  );
-                }
-              },
-              child: Transform.scale(
-                scale: currentItem.scale.clamp(0.01, 10.0),
-                alignment: Alignment.topLeft,
-                child: Transform.rotate(
-                  angle: currentItem.rotation,
-                  alignment: Alignment.center,
-                  child: Transform.scale(
-                    scaleX: state.flipX ? -1 : 1,
-                    scaleY: state.flipY ? -1 : 1,
+              // small text needs no separate tap-then-drag. Starts after only
+              // a few px and keeps the item under the finger.
+              gestures: isBackground
+                  ? const <Type, GestureRecognizerFactory>{}
+                  : <Type, GestureRecognizerFactory>{
+                      EagerPanRecognizer:
+                          GestureRecognizerFactoryWithHandlers<
+                            EagerPanRecognizer
+                          >(() => EagerPanRecognizer(), (r) {
+                            r
+                              ..onStart = (down) {
+                                if (!isSelected) {
+                                  onItemSelected(
+                                    currentItem.type ?? '',
+                                    currentItem.id!,
+                                  );
+                                }
+                                final id = currentItem.id ?? '';
+                                final idx = provider.items.indexWhere(
+                                  (e) => e.id == id,
+                                );
+                                if (idx < 0) return;
+                                r.anchor = provider.items[idx].position;
+                                final box = context.findRenderObject();
+                                double k = 1.0;
+                                if (box is RenderBox && box.attached) {
+                                  k = box
+                                      .getTransformTo(null)
+                                      .getMaxScaleOnAxis();
+                                }
+                                if (!k.isFinite || k <= 0) k = 1.0;
+                                r.scale = k;
+                              }
+                              ..onUpdate = (position) {
+                                final id = currentItem.id ?? '';
+                                provider.updateItemTransform(
+                                  id,
+                                  position:
+                                      r.anchor +
+                                      (position - r.downPosition) / r.scale,
+                                  clampToFrame: false,
+                                );
+                              }
+                              ..onEnd = () => provider.commitTransform();
+                          }),
+                    },
+              child: GestureDetector(
+                // Whole text box is tappable (not only the glyph pixels).
+                behavior: HitTestBehavior.opaque,
+                // Single tap selects an element; double tap edits text.
+                // Move/resize/rotate are handled by the selection overlay to avoid
+                // competing gestures on the same canvas element.
+                onTap: () {
+                  if (!isSelected) {
+                    onItemSelected(currentItem.type ?? '', currentItem.id!);
+                  }
+                },
+                onDoubleTap: () {
+                  if (isTextItem && !isBackground) {
+                    showTextEditor(
+                      context,
+                      provider,
+                      currentItem.id!,
+                      currentItem.text ?? '',
+                    );
+                  }
+                },
+                child: Transform.scale(
+                  scale: currentItem.scale.clamp(0.01, 10.0),
+                  alignment: Alignment.topLeft,
+                  child: Transform.rotate(
+                    angle: currentItem.rotation,
                     alignment: Alignment.center,
-                    child: SizedBox(
-                      width: bodyWidth,
-                      height: bodyHeight,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Container(
-                            width: bodyWidth,
-                            height: bodyHeight,
-                            child: Opacity(
-                              opacity: currentItem.opacity.clamp(0.0, 1.0),
-                              child: _buildItemContent(
-                                currentItem,
-                                context,
-                                isBackground: isBackground,
+                    child: Transform.scale(
+                      scaleX: state.flipX ? -1 : 1,
+                      scaleY: state.flipY ? -1 : 1,
+                      alignment: Alignment.center,
+                      child: SizedBox(
+                        width: bodyWidth,
+                        height: bodyHeight,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: bodyWidth,
+                              height: bodyHeight,
+                              child: Opacity(
+                                opacity: currentItem.opacity.clamp(0.0, 1.0),
+                                child: _buildItemContent(
+                                  currentItem,
+                                  context,
+                                  isBackground: isBackground,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -200,10 +222,7 @@ class EditableItemWidget extends StatelessWidget {
         Widget animated(Widget child) => AnimatedItemShell(
           animation: state.animation,
           previewTick: state.animationTick,
-          pivot: Offset(
-            bodyWidth * itemScale / 2,
-            bodyHeight * itemScale / 2,
-          ),
+          pivot: Offset(bodyWidth * itemScale / 2, bodyHeight * itemScale / 2),
           child: child,
         );
 
@@ -250,10 +269,10 @@ class EditableItemWidget extends StatelessWidget {
   /// [widthOverride] lets a resize gesture ask "how tall would it be at this
   /// wrap width?" before committing it.
   static Size measureTextBox(
-      EditorItem item,
-      EditorProvider provider, {
-        double? widthOverride,
-      }) {
+    EditorItem item,
+    EditorProvider provider, {
+    double? widthOverride,
+  }) {
     // Curved text: the box must wrap the whole arc, not the flat text.
     final fx = provider.textEffect(item.id ?? '');
     if (fx.type == TextEffectType.curve) {
@@ -283,19 +302,19 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   static Widget buildStandaloneMediaContent(
-      BuildContext context,
-      EditorItem item,
-      ) {
+    BuildContext context,
+    EditorItem item,
+  ) {
     final widget = EditableItemWidget(item: item, onItemSelected: (_, __) {});
     return widget._buildItemContent(item, context, isBackground: true);
   }
 
   static Future<void> showTextEditor(
-      BuildContext context,
-      EditorProvider provider,
-      String itemId,
-      String initialText,
-      ) async {
+    BuildContext context,
+    EditorProvider provider,
+    String itemId,
+    String initialText,
+  ) async {
     final matchingItems = provider.items.where((e) => e.id == itemId);
 
     if (itemId.isEmpty || matchingItems.isEmpty) {
@@ -466,7 +485,7 @@ class EditableItemWidget extends StatelessWidget {
   List<double> _mixMatrices(List<double> a, List<double> b, double amount) {
     return List<double>.generate(
       20,
-          (i) => a[i] + (b[i] - a[i]) * amount,
+      (i) => a[i] + (b[i] - a[i]) * amount,
       growable: false,
     );
   }
@@ -753,10 +772,10 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _buildItemContent(
-      EditorItem item,
-      BuildContext context, {
-        bool isBackground = false,
-      }) {
+    EditorItem item,
+    BuildContext context, {
+    bool isBackground = false,
+  }) {
     if (item.type == 'video') {
       return SizedBox(
         width: item.width,
@@ -788,29 +807,29 @@ class EditableItemWidget extends StatelessWidget {
 
       final image = isHttp
           ? Image.network(
-        source,
-        fit: isBackground ? BoxFit.cover : BoxFit.fill,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, error, stackTrace) {
-          debugPrint('Background image error: $error');
-          return const SizedBox.shrink();
-        },
-      )
+              source,
+              fit: isBackground ? BoxFit.cover : BoxFit.fill,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, error, stackTrace) {
+                debugPrint('Background image error: $error');
+                return const SizedBox.shrink();
+              },
+            )
           : Image.file(
-        File(
-          source.startsWith('file://')
-              ? source.replaceFirst('file://', '')
-              : source,
-        ),
-        fit: isBackground ? BoxFit.cover : BoxFit.fill,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, error, stackTrace) {
-          debugPrint('Local image error: $error');
-          return const SizedBox.shrink();
-        },
-      );
+              File(
+                source.startsWith('file://')
+                    ? source.replaceFirst('file://', '')
+                    : source,
+              ),
+              fit: isBackground ? BoxFit.cover : BoxFit.fill,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, error, stackTrace) {
+                debugPrint('Local image error: $error');
+                return const SizedBox.shrink();
+              },
+            );
 
       final provider = context.read<EditorProvider>();
       final id = item.id ?? '';
@@ -988,6 +1007,86 @@ class EditableItemWidget extends StatelessWidget {
 /// Keeps the hit area of an item at least ~48 logical px (on screen) so tiny
 /// text/stickers are easy to touch. Hits inside the enlarged zone are clamped
 /// into the child so its gesture detector still receives them.
+/// One-finger drag that starts after only a few pixels of movement.
+///
+/// The stock pan recognizer waits ~36 px before it accepts the drag, so small
+/// items lag behind the finger and slip out from under it. This one accepts
+/// after [slop] px and reports positions measured from the touch-down point,
+/// so the item stays exactly under the finger (Canva-like).
+class EagerPanRecognizer extends OneSequenceGestureRecognizer {
+  EagerPanRecognizer({super.debugOwner, this.slop = 4.0});
+
+  final double slop;
+
+  /// Called once the drag is accepted; [down] is the touch-down position.
+  void Function(Offset down)? onStart;
+
+  /// Called for every move; [position] is the current global position.
+  void Function(Offset position)? onUpdate;
+  VoidCallback? onEnd;
+
+  /// Scratch values the owner can store when the drag starts.
+  Offset anchor = Offset.zero;
+  double scale = 1.0;
+
+  int? _pointer;
+  Offset _down = Offset.zero;
+  bool _accepted = false;
+
+  Offset get downPosition => _down;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    // Only the first finger drags; a second finger is left to pinch-zoom.
+    if (_pointer != null) return;
+    startTrackingPointer(event.pointer, event.transform);
+    _pointer = event.pointer;
+    _down = event.position;
+    _accepted = false;
+  }
+
+  @override
+  void handleEvent(PointerEvent event) {
+    if (event.pointer != _pointer) return;
+
+    if (event is PointerMoveEvent) {
+      if (!_accepted && (event.position - _down).distance > slop) {
+        resolve(GestureDisposition.accepted);
+      }
+      if (_accepted) onUpdate?.call(event.position);
+    } else if (event is PointerUpEvent || event is PointerCancelEvent) {
+      final wasAccepted = _accepted;
+      if (!wasAccepted) resolve(GestureDisposition.rejected);
+      _pointer = null;
+      _accepted = false;
+      stopTrackingPointer(event.pointer);
+      if (wasAccepted) onEnd?.call();
+    }
+  }
+
+  @override
+  void acceptGesture(int pointer) {
+    if (pointer != _pointer) return;
+    _accepted = true;
+    onStart?.call(_down);
+  }
+
+  @override
+  void rejectGesture(int pointer) {
+    if (pointer == _pointer) {
+      _pointer = null;
+      _accepted = false;
+    }
+    stopTrackingPointer(pointer);
+  }
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {}
+
+  @override
+  String get debugDescription => 'eager pan';
+}
+
 class _MinTouchTarget extends SingleChildRenderObjectWidget {
   const _MinTouchTarget({
     required this.visualSize,
@@ -1004,9 +1103,9 @@ class _MinTouchTarget extends SingleChildRenderObjectWidget {
 
   @override
   void updateRenderObject(
-      BuildContext context,
-      covariant _RenderMinTouchTarget renderObject,
-      ) {
+    BuildContext context,
+    covariant _RenderMinTouchTarget renderObject,
+  ) {
     renderObject
       ..visualSize = visualSize
       ..enabled = enabled;
@@ -1018,7 +1117,7 @@ class _RenderMinTouchTarget extends RenderProxyBox {
 
   Size visualSize;
   bool enabled;
-  static const double _minScreen = 48.0;
+  static const double _minScreen = 56.0;
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
@@ -1074,19 +1173,19 @@ class _ItemViewState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is _ItemViewState &&
-              runtimeType == other.runtimeType &&
-              currentItem == other.currentItem &&
-              isSelected == other.isSelected &&
-              flipX == other.flipX &&
-              flipY == other.flipY &&
-              filterIntensity == other.filterIntensity &&
-              tint == other.tint &&
-              blur == other.blur &&
-              maskUrl == other.maskUrl &&
-              animation == other.animation &&
-              animationTick == other.animationTick &&
-              textEffect == other.textEffect;
+      other is _ItemViewState &&
+          runtimeType == other.runtimeType &&
+          currentItem == other.currentItem &&
+          isSelected == other.isSelected &&
+          flipX == other.flipX &&
+          flipY == other.flipY &&
+          filterIntensity == other.filterIntensity &&
+          tint == other.tint &&
+          blur == other.blur &&
+          maskUrl == other.maskUrl &&
+          animation == other.animation &&
+          animationTick == other.animationTick &&
+          textEffect == other.textEffect;
 
   @override
   int get hashCode => Object.hash(
@@ -1177,8 +1276,8 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
       final trimmedText = utf8.decode(bytes, allowMalformed: true).trimLeft();
       final isSvg =
           trimmedText.startsWith('<svg') ||
-              (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
-              trimmedText.startsWith('<!DOCTYPE svg');
+          (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
+          trimmedText.startsWith('<!DOCTYPE svg');
 
       ui.Image decodedImage;
       if (isSvg) {
@@ -1202,7 +1301,7 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
               .replaceAll(RegExp(r'\\s+'), ' ');
           throw FormatException(
             'Mask response is not SVG or a supported raster image. '
-                'Response begins with: $preview',
+            'Response begins with: $preview',
           );
         }
         final pngBytes = Uint8List.fromList(img.encodePng(decoded));
@@ -1588,7 +1687,7 @@ class _FabricClipPathClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(covariant _FabricClipPathClipper oldClipper) =>
       !identical(oldClipper.clip, clip) ||
-          !identical(oldClipper.object, object);
+      !identical(oldClipper.object, object);
 }
 
 /// Fabric `clipPath` with `absolutePositioned: true`: the clip window lives in
