@@ -32,7 +32,7 @@ val hasReleaseKey = listOf(
 // --------------------------------------------------
 
 android {
-    namespace = "com.mobile.mmb.project_mmb"
+    namespace = "com.makemybrand.app"
 
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
@@ -48,7 +48,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.mobile.mmb.project_mmb"
+        applicationId = "com.makemybrand.app"
 
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion

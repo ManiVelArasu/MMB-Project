@@ -417,6 +417,7 @@ class _EditorViewState extends State<EditorView> {
   Offset? _tapDownPos;
   int _tapDownMs = 0;
   bool _tapSelectedByCanvas = false;
+  Offset? _lastTapCanvasPos;
 
   String? _pickItemAt(EditorProvider provider, Offset canvasPoint) {
     EditorItem? best;
@@ -4116,13 +4117,12 @@ class _EditorViewState extends State<EditorView> {
                               if (!quick || (e.localPosition - down).distance > 10) {
                                 return;
                               }
-                              final id = _pickItemAt(
-                                provider,
-                                Offset(
-                                  e.localPosition.dx / scaleX,
-                                  e.localPosition.dy / scaleY,
-                                ),
+                              final dbgPt = Offset(
+                                e.localPosition.dx / scaleX,
+                                e.localPosition.dy / scaleY,
                               );
+                              _lastTapCanvasPos = dbgPt;
+                              final id = _pickItemAt(provider, dbgPt);
                               if (id == null) return;
                               _tapSelectedByCanvas = true;
                               if (provider.selectedItemId != id) {
@@ -4163,6 +4163,25 @@ class _EditorViewState extends State<EditorView> {
                                         canvasWidth: canvasSize.width,
                                         canvasHeight: canvasSize.height,
                                         onSelected: () {
+                                          // A tap anywhere inside an item's box
+                                          // belongs to that item, never to the
+                                          // background lying underneath it.
+                                          final tapAt = _lastTapCanvasPos;
+                                          if (tapAt != null) {
+                                            final hitId =
+                                            _pickItemAt(provider, tapAt);
+                                            if (hitId != null) {
+                                              final hit = provider.items
+                                                  .firstWhere(
+                                                    (x) => x.id == hitId,
+                                              );
+                                              provider.setSelectedItem(
+                                                hit.type,
+                                                hit.id,
+                                              );
+                                              return;
+                                            }
+                                          }
                                           final bg = backgroundItems.first;
 
                                           // Select the background exactly like a normal

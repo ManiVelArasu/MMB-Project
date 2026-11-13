@@ -3616,7 +3616,17 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     // API/Fabric background IDs are explicitly tracked while importing the
     // template. This is the important path for replacing API backgrounds.
+    // Old autosaved projects may carry the flag on SEVERAL big layers (older
+    // import marked every canvas-sized image). Only the lowest tracked layer is
+    // the real background; the rest are normal selectable items.
     if (item.id != null && _templateBackgroundIds.contains(item.id)) {
+      for (final e in _items) {
+        if (e.id != null &&
+            _templateBackgroundIds.contains(e.id) &&
+            (e.type == 'image' || e.type == 'video' || e.type == 'shape')) {
+          return e.id == item.id;
+        }
+      }
       return true;
     }
 

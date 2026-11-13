@@ -42,7 +42,7 @@ class EditableItemWidget extends StatelessWidget {
     return Selector<EditorProvider, _ItemViewState>(
       selector: (_, provider) {
         final currentItem = provider.items.firstWhere(
-          (e) => e.id == item.id,
+              (e) => e.id == item.id,
           orElse: () => item,
         );
         return _ItemViewState(
@@ -72,9 +72,9 @@ class EditableItemWidget extends StatelessWidget {
             .toLowerCase();
         final isTextItem =
             normalizedItemType == 'text' ||
-            normalizedItemType == 'textbox' ||
-            normalizedItemType == 'i-text' ||
-            normalizedItemType == 'itext';
+                normalizedItemType == 'textbox' ||
+                normalizedItemType == 'i-text' ||
+                normalizedItemType == 'itext';
 
         // Text is sized from its real measured layout (same helper the
         // selection overlay uses) so the rotation pivot, the blue box and the
@@ -118,47 +118,47 @@ class EditableItemWidget extends StatelessWidget {
               gestures: isBackground
                   ? const <Type, GestureRecognizerFactory>{}
                   : <Type, GestureRecognizerFactory>{
-                      EagerPanRecognizer:
-                          GestureRecognizerFactoryWithHandlers<
-                            EagerPanRecognizer
-                          >(() => EagerPanRecognizer(), (r) {
-                            r
-                              ..onStart = (down) {
-                                if (!isSelected) {
-                                  onItemSelected(
-                                    currentItem.type ?? '',
-                                    currentItem.id!,
-                                  );
-                                }
-                                final id = currentItem.id ?? '';
-                                final idx = provider.items.indexWhere(
-                                  (e) => e.id == id,
-                                );
-                                if (idx < 0) return;
-                                r.anchor = provider.items[idx].position;
-                                final box = context.findRenderObject();
-                                double k = 1.0;
-                                if (box is RenderBox && box.attached) {
-                                  k = box
-                                      .getTransformTo(null)
-                                      .getMaxScaleOnAxis();
-                                }
-                                if (!k.isFinite || k <= 0) k = 1.0;
-                                r.scale = k;
-                              }
-                              ..onUpdate = (position) {
-                                final id = currentItem.id ?? '';
-                                provider.updateItemTransform(
-                                  id,
-                                  position:
-                                      r.anchor +
-                                      (position - r.downPosition) / r.scale,
-                                  clampToFrame: false,
-                                );
-                              }
-                              ..onEnd = () => provider.commitTransform();
-                          }),
-                    },
+                EagerPanRecognizer:
+                GestureRecognizerFactoryWithHandlers<
+                    EagerPanRecognizer
+                >(() => EagerPanRecognizer(), (r) {
+                  r
+                    ..onStart = (down) {
+                      if (!isSelected) {
+                        onItemSelected(
+                          currentItem.type ?? '',
+                          currentItem.id!,
+                        );
+                      }
+                      final id = currentItem.id ?? '';
+                      final idx = provider.items.indexWhere(
+                            (e) => e.id == id,
+                      );
+                      if (idx < 0) return;
+                      r.anchor = provider.items[idx].position;
+                      final box = context.findRenderObject();
+                      double k = 1.0;
+                      if (box is RenderBox && box.attached) {
+                        k = box
+                            .getTransformTo(null)
+                            .getMaxScaleOnAxis();
+                      }
+                      if (!k.isFinite || k <= 0) k = 1.0;
+                      r.scale = k;
+                    }
+                    ..onUpdate = (position) {
+                      final id = currentItem.id ?? '';
+                      provider.updateItemTransform(
+                        id,
+                        position:
+                        r.anchor +
+                            (position - r.downPosition) / r.scale,
+                        clampToFrame: false,
+                      );
+                    }
+                    ..onEnd = () => provider.commitTransform();
+                }),
+              },
               child: GestureDetector(
                 // Whole text box is tappable (not only the glyph pixels).
                 behavior: HitTestBehavior.opaque,
@@ -168,8 +168,8 @@ class EditableItemWidget extends StatelessWidget {
                 onTap: () {
                   debugPrint(
                     'TAP item id=${currentItem.id} type=${currentItem.type} '
-                    'bg=$isBackground pos=${currentItem.position} '
-                    'size=${currentItem.width}x${currentItem.height}',
+                        'bg=$isBackground pos=${currentItem.position} '
+                        'size=${currentItem.width}x${currentItem.height}',
                   );
                   if (!isSelected) {
                     onItemSelected(currentItem.type ?? '', currentItem.id!);
@@ -276,10 +276,10 @@ class EditableItemWidget extends StatelessWidget {
   /// [widthOverride] lets a resize gesture ask "how tall would it be at this
   /// wrap width?" before committing it.
   static Size measureTextBox(
-    EditorItem item,
-    EditorProvider provider, {
-    double? widthOverride,
-  }) {
+      EditorItem item,
+      EditorProvider provider, {
+        double? widthOverride,
+      }) {
     // Curved text: the box must wrap the whole arc, not the flat text.
     final fx = provider.textEffect(item.id ?? '');
     if (fx.type == TextEffectType.curve) {
@@ -309,19 +309,19 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   static Widget buildStandaloneMediaContent(
-    BuildContext context,
-    EditorItem item,
-  ) {
+      BuildContext context,
+      EditorItem item,
+      ) {
     final widget = EditableItemWidget(item: item, onItemSelected: (_, __) {});
     return widget._buildItemContent(item, context, isBackground: true);
   }
 
   static Future<void> showTextEditor(
-    BuildContext context,
-    EditorProvider provider,
-    String itemId,
-    String initialText,
-  ) async {
+      BuildContext context,
+      EditorProvider provider,
+      String itemId,
+      String initialText,
+      ) async {
     final matchingItems = provider.items.where((e) => e.id == itemId);
 
     if (itemId.isEmpty || matchingItems.isEmpty) {
@@ -492,7 +492,7 @@ class EditableItemWidget extends StatelessWidget {
   List<double> _mixMatrices(List<double> a, List<double> b, double amount) {
     return List<double>.generate(
       20,
-      (i) => a[i] + (b[i] - a[i]) * amount,
+          (i) => a[i] + (b[i] - a[i]) * amount,
       growable: false,
     );
   }
@@ -779,10 +779,10 @@ class EditableItemWidget extends StatelessWidget {
   }
 
   Widget _buildItemContent(
-    EditorItem item,
-    BuildContext context, {
-    bool isBackground = false,
-  }) {
+      EditorItem item,
+      BuildContext context, {
+        bool isBackground = false,
+      }) {
     if (item.type == 'video') {
       return SizedBox(
         width: item.width,
@@ -814,27 +814,27 @@ class EditableItemWidget extends StatelessWidget {
 
       final image = isHttp
           ? Image.network(
-              source,
-              fit: isBackground ? BoxFit.cover : BoxFit.fill,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (_, error, stackTrace) {
-                return const SizedBox.shrink();
-              },
-            )
+        source,
+        fit: isBackground ? BoxFit.cover : BoxFit.fill,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, error, stackTrace) {
+          return const SizedBox.shrink();
+        },
+      )
           : Image.file(
-              File(
-                source.startsWith('file://')
-                    ? source.replaceFirst('file://', '')
-                    : source,
-              ),
-              fit: isBackground ? BoxFit.cover : BoxFit.fill,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (_, error, stackTrace) {
-                return const SizedBox.shrink();
-              },
-            );
+        File(
+          source.startsWith('file://')
+              ? source.replaceFirst('file://', '')
+              : source,
+        ),
+        fit: isBackground ? BoxFit.cover : BoxFit.fill,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, error, stackTrace) {
+          return const SizedBox.shrink();
+        },
+      );
 
       final provider = context.read<EditorProvider>();
       final id = item.id ?? '';
@@ -1105,9 +1105,9 @@ class _PaintOnlyClipPath extends SingleChildRenderObjectWidget {
 
   @override
   void updateRenderObject(
-    BuildContext context,
-    covariant _RenderPaintOnlyClipPath renderObject,
-  ) {
+      BuildContext context,
+      covariant _RenderPaintOnlyClipPath renderObject,
+      ) {
     renderObject.clipper = clipper;
   }
 }
@@ -1142,9 +1142,9 @@ class _MinTouchTarget extends SingleChildRenderObjectWidget {
 
   @override
   void updateRenderObject(
-    BuildContext context,
-    covariant _RenderMinTouchTarget renderObject,
-  ) {
+      BuildContext context,
+      covariant _RenderMinTouchTarget renderObject,
+      ) {
     renderObject
       ..visualSize = visualSize
       ..enabled = enabled;
@@ -1212,19 +1212,19 @@ class _ItemViewState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is _ItemViewState &&
-          runtimeType == other.runtimeType &&
-          currentItem == other.currentItem &&
-          isSelected == other.isSelected &&
-          flipX == other.flipX &&
-          flipY == other.flipY &&
-          filterIntensity == other.filterIntensity &&
-          tint == other.tint &&
-          blur == other.blur &&
-          maskUrl == other.maskUrl &&
-          animation == other.animation &&
-          animationTick == other.animationTick &&
-          textEffect == other.textEffect;
+          other is _ItemViewState &&
+              runtimeType == other.runtimeType &&
+              currentItem == other.currentItem &&
+              isSelected == other.isSelected &&
+              flipX == other.flipX &&
+              flipY == other.flipY &&
+              filterIntensity == other.filterIntensity &&
+              tint == other.tint &&
+              blur == other.blur &&
+              maskUrl == other.maskUrl &&
+              animation == other.animation &&
+              animationTick == other.animationTick &&
+              textEffect == other.textEffect;
 
   @override
   int get hashCode => Object.hash(
@@ -1315,8 +1315,8 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
       final trimmedText = utf8.decode(bytes, allowMalformed: true).trimLeft();
       final isSvg =
           trimmedText.startsWith('<svg') ||
-          (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
-          trimmedText.startsWith('<!DOCTYPE svg');
+              (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
+              trimmedText.startsWith('<!DOCTYPE svg');
 
       ui.Image decodedImage;
       if (isSvg) {
@@ -1340,7 +1340,7 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
               .replaceAll(RegExp(r'\\s+'), ' ');
           throw FormatException(
             'Mask response is not SVG or a supported raster image. '
-            'Response begins with: $preview',
+                'Response begins with: $preview',
           );
         }
         final pngBytes = Uint8List.fromList(img.encodePng(decoded));
@@ -1725,7 +1725,7 @@ class _FabricClipPathClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(covariant _FabricClipPathClipper oldClipper) =>
       !identical(oldClipper.clip, clip) ||
-      !identical(oldClipper.object, object);
+          !identical(oldClipper.object, object);
 }
 
 /// Fabric `clipPath` with `absolutePositioned: true`: the clip window lives in

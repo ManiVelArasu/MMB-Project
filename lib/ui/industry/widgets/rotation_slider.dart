@@ -16,7 +16,6 @@ class RotationSlider extends StatefulWidget {
 
 class _RotationSliderState extends State<RotationSlider>
     with SingleTickerProviderStateMixin {
-
   double min = -180;
   double max = 180;
 
@@ -40,26 +39,22 @@ class _RotationSliderState extends State<RotationSlider>
             alignment: Alignment.center,
             children: [
               /// TICK MARKS
-              CustomPaint(
-                painter: _TickPainter(),
-                size: Size(width, 30),
-              ),
+              CustomPaint(painter: _TickPainter(), size: Size(width, 30)),
 
               /// BLUE MOVING BAR
               /// BLUE MOVING BAR (center vertically)
               Positioned(
                 left: pos - 2,
-                top: 0,   // <-- center by matching height
+                top: 0,
                 child: Container(
                   width: 4,
-                  height: 30,  // same height as tick canvas
+                  height: 30,
                   decoration: BoxDecoration(
                     color: Color(0xff4ED8F2),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-
 
               /// ANGLE LABEL
               // Positioned(
@@ -98,8 +93,8 @@ class _TickPainter extends CustomPainter {
 
       // draw tick centered vertically
       canvas.drawLine(
-        Offset(x, centerY - 8),   // top
-        Offset(x, centerY + 8),   // bottom
+        Offset(x, centerY - 8), // top
+        Offset(x, centerY + 8), // bottom
         tickPaint,
       );
     }
