@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mmb_app/network/provider/common_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../Api Model/product_model.dart';
 import '../../Repository/product_repository.dart';
@@ -40,9 +41,6 @@ class ProductsProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Saved industry details
-      final industrySlug = prefs.getString('saved_category_slug') ?? '';
-
       final savedUid = prefs.getString('business_uid');
       final businessUid = savedUid?.trim();
 
@@ -51,6 +49,7 @@ class ProductsProvider extends ChangeNotifier {
         notifyListeners();
         // return false;
       }
+      print(businessUid);
       final result = await ProductRepository.instance.productList(
         businessUid ?? '',
       );

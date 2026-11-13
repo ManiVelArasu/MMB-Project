@@ -146,47 +146,6 @@ class _BrowseView extends StatelessWidget {
     );
   }
 
-  // ---------------- categories dropdown ----------------
-  Widget _categoryDropdown(
-    BuildContext context,
-    BrowseTemplatesProvider p,
-    bool isDark,
-  ) {
-    return GestureDetector(
-      onTap: p.categories.isEmpty
-          ? null
-          : () => _showCategorySheet(context, p, isDark),
-      child: Container(
-        height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                p.isCategoriesLoading ? 'Loading...' : 'Categories',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: isDark ? Colors.white70 : Colors.black87,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _categoryChipsShimmer(bool isDark) {
     const widths = <double>[90, 120, 80, 110, 100, 130, 85, 115, 95, 105];
     return Padding(

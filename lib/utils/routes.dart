@@ -244,7 +244,7 @@ class RouteGenerator {
       case "/ThemeSingleitemViewScreen":
         final String variantId = settings.arguments as String? ?? '';
         return MaterialPageRoute(
-          builder: (context) => ThemeSingleitemViewScreen(variantId: variantId),
+          builder: (context) => ThemeSingleItemViewScreen(variantId: variantId),
         );
       case "/FaqScreen":
         return MaterialPageRoute(builder: (context) => const FaqScreen());

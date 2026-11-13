@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -122,27 +121,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
-  Future<void> verifyOtp({
-    required String verificationId,
-    required String smsCode,
-    required VoidCallback onSuccess,
-    required Function(String) onError,
-  }) async {
-    try {
-      setLoading(true);
 
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: verificationId,
-        smsCode: smsCode,
-      );
-
-      setLoading(false);
-      onSuccess();
-    } on FirebaseAuthException catch (e) {
-      setLoading(false);
-      onError(e.message ?? "OTP verification failed");
-    }
-  }
 
   Future<bool> apiSendOtp(String phone, String purpose) async {
     _isLoginLoading = true;

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/project_list.dart';
@@ -15,33 +14,9 @@ import '../../network/provider/prpject_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
 import '../../widgets/button_widget.dart';
+import '../../widgets/color_widget.dart';
 import '../industry/widgets/scaffold_widget.dart';
 import '../shimmer/app_loading.dart';
-
-/// Light / dark colours for this screen. Light values are the original ones.
-class _Palette {
-  const _Palette(this.isDark);
-
-  final bool isDark;
-
-  Color get background =>
-      isDark ? const Color(0xFF121212) : const Color(0xFFF7F7F7);
-  Color get surface => isDark ? const Color(0xFF1E1E1E) : Colors.white;
-  Color get border => isDark ? const Color(0xFF2E2E2E) : Colors.grey.shade200;
-  Color get placeholder =>
-      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100;
-  Color get heading => isDark ? Colors.white : const Color(0xFF111827);
-  Color get body => isDark ? Colors.white : Colors.black87;
-  Color get subText => isDark ? Colors.white60 : Colors.black54;
-  Color get icon => isDark ? Colors.white : Colors.black;
-  Color get mutedIcon => isDark ? Colors.white38 : Colors.grey;
-  Color get backButtonBg =>
-      isDark ? const Color(0xFF3A2022) : const Color(0xFFFFE5E7);
-  Color get tabActive => isDark ? Colors.white : Colors.black;
-  Color get tabInactive =>
-      isDark ? const Color(0xFF6B6B6B) : const Color(0xFFC8C8C8);
-  Color get shadow => Colors.black.withValues(alpha: isDark ? 0.35 : 0.05);
-}
 
 class MyUploadsScreen extends StatelessWidget {
   const MyUploadsScreen({super.key});
@@ -66,7 +41,7 @@ class _MyUploadsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<CustomThemeProvider>().isDarkMode;
-    final p = _Palette(isDark);
+    final p = AppPalette(isDark);
 
     return CommonScaffold(
       isDarkMode: isDark,
@@ -158,7 +133,6 @@ class _MyUploadsView extends StatelessWidget {
         builder: (context, provider, child) {
           return Column(
             children: [
-              // Images / Videos tabs
               Container(
                 width: double.infinity,
                 color: p.background,
@@ -177,7 +151,7 @@ class _MyUploadsView extends StatelessWidget {
                   builder: (context, projectProvider, child) {
                     return AppLoadingView(
                       isInitialLoading:
-                          projectProvider.isLoadingPlans &&
+                      projectProvider.isLoadingPlans &&
                           projectProvider.plansData == null,
                       isRefreshing: provider.isUploading,
                       isDark: isDark,
@@ -194,7 +168,6 @@ class _MyUploadsView extends StatelessWidget {
                               .where((item) => item.isVideo)
                               .toList();
 
-                          // IMAGES TAB
                           if (provider.selectedTab == "Images") {
                             if (uploadedImages.isEmpty &&
                                 downloadedProjects.isEmpty) {
@@ -207,7 +180,6 @@ class _MyUploadsView extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Uploaded images
                                   if (uploadedImages.isNotEmpty) ...[
                                     Text(
                                       "My Uploads",
@@ -226,29 +198,27 @@ class _MyUploadsView extends StatelessWidget {
                                     ),
                                   ],
 
-                                  // Downloaded projects
                                   if (downloadedProjects.isNotEmpty) ...[
                                     GridView.builder(
                                       shrinkWrap: true,
                                       physics:
-                                          const NeverScrollableScrollPhysics(),
+                                      const NeverScrollableScrollPhysics(),
                                       itemCount: downloadedProjects.length,
                                       gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount: 2,
-                                            crossAxisSpacing: 12,
-                                            mainAxisSpacing: 14,
-                                            childAspectRatio: 0.78,
-                                          ),
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: 12,
+                                        mainAxisSpacing: 14,
+                                        childAspectRatio: 0.78,
+                                      ),
                                       itemBuilder: (context, index) {
                                         final project =
-                                            downloadedProjects[index];
+                                        downloadedProjects[index];
 
                                         return _buildDownloadedProjectCard(
                                           context,
                                           project,
                                           p,
-                                          provider,
                                         );
                                       },
                                     ),
@@ -258,7 +228,6 @@ class _MyUploadsView extends StatelessWidget {
                             );
                           }
 
-                          // VIDEOS TAB
                           if (uploadedVideos.isEmpty) {
                             return _buildEmptyState(p);
                           }
@@ -283,7 +252,7 @@ class _MyUploadsView extends StatelessWidget {
   }
 
   /// Shared "No Downloads Yet" state for the Images and Videos tabs.
-  Widget _buildEmptyState(_Palette p) {
+  Widget _buildEmptyState(AppPalette p) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -308,7 +277,7 @@ class _MyUploadsView extends StatelessWidget {
 
             AppText(
               'Your downloaded designs will appear here. '
-              'Create your first design and download it when it’s ready.',
+                  'Create your first design and download it when it’s ready.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: p.subText),
             ),
@@ -355,11 +324,10 @@ class _MyUploadsView extends StatelessWidget {
   }
 
   Widget _buildDownloadedProjectCard(
-    BuildContext context,
-    ProjectListModel project,
-    _Palette p,
-    UploadProvider provider,
-  ) {
+      BuildContext context,
+      ProjectListModel project,
+      AppPalette p,
+      ) {
     final key = project.thumbnailS3Key?.trim() ?? '';
 
     final imageUrl = key.isEmpty
@@ -384,52 +352,41 @@ class _MyUploadsView extends StatelessWidget {
           Expanded(
             child: Stack(
               children: [
-                // Project Image
                 Positioned.fill(
                   child: imageUrl.isEmpty
                       ? Container(
-                          color: p.placeholder,
-                          child: Icon(
-                            Icons.image_outlined,
-                            size: 40,
-                            color: p.mutedIcon,
-                          ),
-                        )
+                    color: p.placeholder,
+                    child: Icon(
+                      Icons.image_outlined,
+                      size: 40,
+                      color: p.mutedIcon,
+                    ),
+                  )
                       : CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          width: double.infinity,
-                          height: double.infinity,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: p.placeholder,
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: p.placeholder,
-                            child: Center(
-                              child: Icon(
-                                Icons.broken_image_outlined,
-                                size: 35,
-                                color: p.mutedIcon,
-                              ),
-                            ),
-                          ),
+                    imageUrl: imageUrl,
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: p.placeholder,
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: p.placeholder,
+                      child: Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          size: 35,
+                          color: p.mutedIcon,
                         ),
+                      ),
+                    ),
+                  ),
                 ),
 
-                /*  // Three Dot Menu - Top Right
-                Positioned(
-                  top: 7.h,
-                  right: 7.w,
-                  child: TemplateActionPopup(
-                    isFavorite: false,
-                    onEdit: () {},
-                    onDownload: () => _downloadProject(context, project, imageUrl),
-                    onDelete: () => _confirmDeleteProject(context, project),
-                  ),
-                ),*/
+
               ],
             ),
           ),
@@ -448,30 +405,18 @@ class _MyUploadsView extends StatelessWidget {
               ),
             ),
           ),
-          /* Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: AppText(
-              _getEditedTime(project.updatedAt?.toIso8601String()),
-              maxLines: 1,
-              style: TextStyle(
-                fontSize: AppFontSize.fontSize13,
-                fontWeight: FontWeight.w400,
 
-                color: AppColors.appGrey,
-              ),
-            ),
-          ),*/
         ],
       ),
     );
   }
 
   Widget _buildMasonryGrid(
-    BuildContext context,
-    List<UploadItem> items,
-    UploadProvider provider,
-    _Palette p,
-  ) {
+      BuildContext context,
+      List<UploadItem> items,
+      UploadProvider provider,
+      AppPalette p,
+      ) {
     final leftItems = <UploadItem>[];
     final rightItems = <UploadItem>[];
 
@@ -512,11 +457,11 @@ class _MyUploadsView extends StatelessWidget {
   }
 
   Widget _buildUploadItem(
-    BuildContext context,
-    UploadItem item,
-    UploadProvider provider,
-    _Palette p,
-  ) {
+      BuildContext context,
+      UploadItem item,
+      UploadProvider provider,
+      AppPalette p,
+      ) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
@@ -524,7 +469,6 @@ class _MyUploadsView extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: Stack(
           children: [
-            // Image
             if (item.isVideo)
               Container(
                 width: double.infinity,
@@ -544,7 +488,6 @@ class _MyUploadsView extends StatelessWidget {
                 fit: BoxFit.fitWidth,
               ),
 
-            // 3 Dot
             Positioned(
               top: 8,
               right: 8,
@@ -571,7 +514,6 @@ class _MyUploadsView extends StatelessWidget {
                 ),
                 onSelected: (value) {
                   if (value == "download") {
-                    //_downloadItem(context, item);
                   } else if (value == "delete") {
                     provider.deleteUpload(item.id);
                   }
@@ -628,7 +570,7 @@ class _MyUploadsView extends StatelessWidget {
     );
   }
 
-  Widget _tab(String title, UploadProvider provider, _Palette p) {
+  Widget _tab(String title, UploadProvider provider, AppPalette p) {
     final selected = provider.selectedTab == title;
 
     return GestureDetector(
@@ -657,66 +599,4 @@ class _MyUploadsView extends StatelessWidget {
     );
   }
 
-  void _showUploadMenu(
-    BuildContext context,
-    UploadItem item,
-    UploadProvider provider,
-  ) {
-    final p = _Palette(context.read<CustomThemeProvider>().isDarkMode);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: p.isDark ? const Color(0xFF1E1E1E) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (_) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-
-              ListTile(
-                leading: Icon(Icons.download, size: 22, color: p.icon),
-                title: AppText(
-                  "DOWNLOAD",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: p.icon,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.red,
-                  size: 22,
-                ),
-                title: AppText(
-                  "DELETE",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: p.icon,
-                  ),
-                ),
-                onTap: () {
-                  provider.deleteUpload(item.id);
-                  Navigator.pop(context);
-                },
-              ),
-
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
-  }
 }

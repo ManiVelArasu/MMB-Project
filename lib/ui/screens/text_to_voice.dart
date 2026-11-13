@@ -307,26 +307,6 @@ class _TextToVoiceView extends StatelessWidget {
       },
     );
   }
-
-  static Widget _circleIcon({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(25),
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: const BoxDecoration(
-          color: Color(0xFFFFE4E5),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: _voiceRed, size: 20),
-      ),
-    );
-  }
-
   static Widget _dropdown({
     required String value,
     required List<String> values,

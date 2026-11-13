@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart'
     show consolidateHttpClientResponseBytes;
 import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
+import 'package:mmb_app/widgets/color_widget.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
@@ -24,27 +25,7 @@ import '../../utils/theme/app.fonts.dart';
 
 import '../shimmer/app_loading.dart';
 
-class _Palette {
-  const _Palette(this.isDark);
 
-  final bool isDark;
-
-  Color get background =>
-      isDark ? const Color(0xFF121212) : const Color(0xFFF7F7F7);
-  Color get surface => isDark ? const Color(0xFF1E1E1E) : Colors.white;
-  Color get border => isDark ? const Color(0xFF2E2E2E) : Colors.grey.shade200;
-  Color get placeholder =>
-      isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100;
-  Color get heading => isDark ? Colors.white : const Color(0xFF111827);
-  Color get body => isDark ? Colors.white : Colors.black87;
-  Color get subText => isDark ? Colors.white60 : Colors.black54;
-  Color get icon => isDark ? Colors.white : Colors.black;
-  Color get mutedIcon => isDark ? Colors.white38 : Colors.grey;
-  Color get tabActive => isDark ? Colors.white : Colors.black;
-  Color get tabInactive =>
-      isDark ? const Color(0xFF6B6B6B) : const Color(0xFFC8C8C8);
-  Color get shadow => Colors.black.withValues(alpha: isDark ? 0.35 : 0.05);
-}
 
 class MyDownloadScreen extends StatelessWidget {
   const MyDownloadScreen({super.key});
@@ -69,7 +50,7 @@ class _MyUploadsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<CustomThemeProvider>().isDarkMode;
-    final p = _Palette(isDark);
+    final p = AppPalette(isDark);
 
     return Scaffold(
       backgroundColor: p.background,
@@ -214,7 +195,7 @@ class _MyUploadsView extends StatelessWidget {
   }
 
   /// Shared "No Downloads Yet" state for the Images and Videos tabs.
-  Widget _buildEmptyState(_Palette p) {
+  Widget _buildEmptyState(AppPalette p) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -535,7 +516,7 @@ class _MyUploadsView extends StatelessWidget {
   Widget _buildDownloadedProjectCard(
     BuildContext context,
     ProjectListModel project,
-    _Palette p,
+      AppPalette p,
     UploadProvider provider,
   ) {
     final key = project.thumbnailS3Key?.trim() ?? '';
@@ -675,7 +656,7 @@ class _MyUploadsView extends StatelessWidget {
     BuildContext context,
     List<UploadItem> items,
     UploadProvider provider,
-    _Palette p,
+      AppPalette p,
   ) {
     final leftItems = <UploadItem>[];
     final rightItems = <UploadItem>[];
@@ -720,7 +701,7 @@ class _MyUploadsView extends StatelessWidget {
     BuildContext context,
     UploadItem item,
     UploadProvider provider,
-    _Palette p,
+      AppPalette p,
   ) {
     return Container(
       width: double.infinity,
@@ -833,7 +814,7 @@ class _MyUploadsView extends StatelessWidget {
     );
   }
 
-  Widget _tab(String title, UploadProvider provider, _Palette p) {
+  Widget _tab(String title, UploadProvider provider, AppPalette p) {
     final selected = provider.selectedTab == title;
 
     return GestureDetector(
@@ -859,69 +840,6 @@ class _MyUploadsView extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  void _showUploadMenu(
-    BuildContext context,
-    UploadItem item,
-    UploadProvider provider,
-  ) {
-    final p = _Palette(context.read<CustomThemeProvider>().isDarkMode);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: p.isDark ? const Color(0xFF1E1E1E) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (_) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-
-              ListTile(
-                leading: Icon(Icons.download, size: 22, color: p.icon),
-                title: Text(
-                  "DOWNLOAD",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: p.icon,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.red,
-                  size: 22,
-                ),
-                title: Text(
-                  "DELETE",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: p.icon,
-                  ),
-                ),
-                onTap: () {
-                  provider.deleteUpload(item.id);
-                  Navigator.pop(context);
-                },
-              ),
-
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
     );
   }
 }

@@ -7,6 +7,10 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// --------------------------------------------------
+// Keystore Configuration
+// --------------------------------------------------
+
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 
@@ -23,8 +27,13 @@ val hasReleaseKey = listOf(
     !keystoreProperties.getProperty(it).isNullOrBlank()
 }
 
+// --------------------------------------------------
+// Android Configuration
+// --------------------------------------------------
+
 android {
     namespace = "com.mobile.mmb.project_mmb"
+
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -40,11 +49,34 @@ android {
 
     defaultConfig {
         applicationId = "com.mobile.mmb.project_mmb"
+
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
+
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        ndk {
+            abiFilters += listOf(
+                "armeabi-v7a",
+                "arm64-v8a"
+            )
+        }
     }
+
+    // Native Library Optimization
+    packaging {
+        jniLibs {
+            excludes += setOf(
+                "lib/x86/**",
+                "lib/x86_64/**"
+            )
+        }
+    }
+
+    // --------------------------------------------------
+    // Signing Configuration
+    // --------------------------------------------------
 
     signingConfigs {
         create("release") {
@@ -52,12 +84,17 @@ android {
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
                 storePassword = keystoreProperties.getProperty("storePassword")
+
                 storeFile = file(
                     keystoreProperties.getProperty("storeFile")
                 )
             }
         }
     }
+
+    // --------------------------------------------------
+    // Build Types
+    // --------------------------------------------------
 
     buildTypes {
         debug {
@@ -71,10 +108,24 @@ android {
                 signingConfigs.getByName("debug")
             }
 
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // Android code optimization
+            isMinifyEnabled = true
+
+            // Remove unused Android resources
+            isShrinkResources = true
+
+            proguardFiles(
+                getDefaultProguardFile(
+                    "proguard-android-optimize.txt"
+                ),
+                "proguard-rules.pro"
+            )
         }
     }
+
+    // --------------------------------------------------
+    // Kotlin Configuration
+    // --------------------------------------------------
 
     kotlin {
         compilerOptions {
@@ -85,14 +136,32 @@ android {
     }
 }
 
+// --------------------------------------------------
+// Flutter Configuration
+// --------------------------------------------------
+
 flutter {
     source = "../.."
 }
 
+// --------------------------------------------------
+// Dependencies
+// --------------------------------------------------
+
 dependencies {
-    implementation("com.google.mlkit:segmentation-selfie:16.0.0-beta6")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    // Google ML Kit Selfie Segmentation
+    implementation(
+        "com.google.mlkit:segmentation-selfie:16.0.0-beta6"
+    )
 
-    implementation("com.google.android.gms:play-services-auth:20.5.0")
+    // Kotlin Coroutines
+    implementation(
+        "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
+    )
+
+    // Google Play Services Authentication
+    implementation(
+        "com.google.android.gms:play-services-auth:20.5.0"
+    )
 }

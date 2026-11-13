@@ -64,7 +64,9 @@ class EditableItemWidget extends StatelessWidget {
         final isSelected = state.isSelected;
         final provider = context.read<EditorProvider>();
 
-        final isBackground = _isCanvasBackground(currentItem);
+        // Same rule the canvas/selection overlay use (provider is the single
+        // source of truth), so a full-size overlay image stays selectable.
+        final isBackground = provider.isCanvasBackgroundItem(currentItem);
         final normalizedItemType = (currentItem.type ?? '')
             .trim()
             .toLowerCase();
@@ -164,6 +166,11 @@ class EditableItemWidget extends StatelessWidget {
                 // Move/resize/rotate are handled by the selection overlay to avoid
                 // competing gestures on the same canvas element.
                 onTap: () {
+                  debugPrint(
+                    'TAP item id=${currentItem.id} type=${currentItem.type} '
+                    'bg=$isBackground pos=${currentItem.position} '
+                    'size=${currentItem.width}x${currentItem.height}',
+                  );
                   if (!isSelected) {
                     onItemSelected(currentItem.type ?? '', currentItem.id!);
                   }
@@ -228,7 +235,7 @@ class EditableItemWidget extends StatelessWidget {
 
         if (absoluteClip == null) return animated(itemWidget);
         return animated(
-          ClipPath(
+          _PaintOnlyClipPath(
             clipper: _FabricAbsoluteClipper(absoluteClip, currentItem.position),
             child: itemWidget,
           ),
@@ -812,7 +819,6 @@ class EditableItemWidget extends StatelessWidget {
               width: double.infinity,
               height: double.infinity,
               errorBuilder: (_, error, stackTrace) {
-                debugPrint('Background image error: $error');
                 return const SizedBox.shrink();
               },
             )
@@ -826,7 +832,6 @@ class EditableItemWidget extends StatelessWidget {
               width: double.infinity,
               height: double.infinity,
               errorBuilder: (_, error, stackTrace) {
-                debugPrint('Local image error: $error');
                 return const SizedBox.shrink();
               },
             );
@@ -897,7 +902,7 @@ class EditableItemWidget extends StatelessWidget {
             clip is Map &&
             clip['inverted'] != true &&
             clip['absolutePositioned'] != true) {
-          rendered = ClipPath(
+          rendered = _PaintOnlyClipPath(
             clipper: _FabricClipPathClipper(rawObject, clip),
             child: rendered,
           );
@@ -933,7 +938,6 @@ class EditableItemWidget extends StatelessWidget {
             );
           },
           errorBuilder: (context, error, stackTrace) {
-            debugPrint('Sticker load failed: $source | $error');
             return const Icon(Icons.broken_image);
           },
         );
@@ -1085,6 +1089,41 @@ class EagerPanRecognizer extends OneSequenceGestureRecognizer {
 
   @override
   String get debugDescription => 'eager pan';
+}
+
+/// Clips only what is *drawn*. The whole bounding box stays tappable, so an
+/// item with a hole or empty areas (ring, arc, clipped image) can be selected
+/// by tapping anywhere on it, not only on the visible pixels.
+class _PaintOnlyClipPath extends SingleChildRenderObjectWidget {
+  const _PaintOnlyClipPath({required this.clipper, super.child});
+
+  final CustomClipper<Path> clipper;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderPaintOnlyClipPath(clipper: clipper);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant _RenderPaintOnlyClipPath renderObject,
+  ) {
+    renderObject.clipper = clipper;
+  }
+}
+
+class _RenderPaintOnlyClipPath extends RenderClipPath {
+  _RenderPaintOnlyClipPath({super.clipper});
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (!size.contains(position)) return false;
+    if (hitTestChildren(result, position: position) || hitTestSelf(position)) {
+      result.add(BoxHitTestEntry(this, position));
+      return true;
+    }
+    return false;
+  }
 }
 
 class _MinTouchTarget extends SingleChildRenderObjectWidget {
@@ -1325,7 +1364,6 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
       });
     } catch (error, stackTrace) {
       if (mounted) setState(() => _failed = true);
-      debugPrint('Image mask load failed: $error');
       debugPrintStack(stackTrace: stackTrace);
     }
   }

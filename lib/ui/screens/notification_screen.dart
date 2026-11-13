@@ -57,10 +57,6 @@ class NotificationScreen extends StatelessWidget {
     );
   }
 
-  // ============================================================
-  // BODY
-  // ============================================================
-
   Widget _buildNotificationBody(
       BuildContext context,
       NotificationProvider provider,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mmb_app/component/appbar_widget.dart';
-import 'package:mmb_app/component/home_appbar.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/ai_hub_provider.dart';
@@ -33,8 +32,7 @@ class ContentGeneratorView extends StatelessWidget {
 }
 
 class _ContentGeneratorBody extends StatelessWidget {
-  const _ContentGeneratorBody({super.key});
-
+  const _ContentGeneratorBody();
   @override
   Widget build(BuildContext context) {
     return Consumer<AiHubProvider>(
@@ -191,22 +189,6 @@ class _ContentGeneratorBody extends StatelessWidget {
       },
     );
   }
-}
-
-Widget _circleButton({required IconData icon, required VoidCallback onTap}) {
-  return Material(
-    color: _softRed,
-    shape: const CircleBorder(),
-    child: InkWell(
-      customBorder: const CircleBorder(),
-      onTap: onTap,
-      child: SizedBox(
-        width: 34,
-        height: 34,
-        child: Icon(icon, color: _red, size: 19),
-      ),
-    ),
-  );
 }
 
 Widget _intro() {

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:mmb_app/component/appbar_widget.dart';
-import 'package:mmb_app/component/bottom_navigation.dart';
+
 import 'package:mmb_app/component/custom_searchbar.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/component/home_appbar.dart';
@@ -14,11 +13,6 @@ import '../../network/provider/ai_hub_provider.dart';
 
 class AiHubScreen extends StatelessWidget {
   const AiHubScreen({super.key});
-
-  static const Color _red = Color(0xFFF51F2B);
-  static const Color _navy = Color(0xFF080808);
-  static const Color _border = Color(0xFFFFE2E4);
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -251,7 +245,7 @@ class _AiHubView extends StatelessWidget {
                           width: 27,
                           height: 25,
                           decoration: BoxDecoration(
-                            color: _red.withOpacity(0.42),
+                            color: _red.withValues(alpha: .42),
                             borderRadius: BorderRadius.circular(7),
                           ),
                           child: provider.isGenerating
@@ -460,82 +454,4 @@ class _AiHubView extends StatelessWidget {
     );
   }
 
-  Widget _bottomNavigation(AiHubProvider provider) {
-    const labels = ['CUSTOM', 'B-SERIES', 'MY\nPAGE', 'NEAR ME', 'YOU'];
-    const icons = [
-      Icons.edit_note,
-      Icons.dashboard,
-      Icons.rocket_launch,
-      Icons.storefront,
-      Icons.person,
-    ];
-
-    return Container(
-      height: 58,
-      color: _navy,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(labels.length, (index) {
-          final selected = provider.selectedBottomIndex == index;
-          if (index == 2) {
-            return GestureDetector(
-              onTap: () => provider.selectBottomItem(index),
-              child: Container(
-                width: 57,
-                height: 57,
-                decoration: BoxDecoration(
-                  color: _red,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2.5),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.rocket_launch, color: Colors.white, size: 17),
-                    SizedBox(height: 1),
-                    Text(
-                      'MY\nPAGE',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 7,
-                        height: 0.9,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          return Expanded(
-            child: InkWell(
-              onTap: () => provider.selectBottomItem(index),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    icons[index],
-                    size: 17,
-                    color: selected ? _red : Colors.white,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    labels[index],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: selected ? _red : Colors.white,
-                      fontSize: 7,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
 }

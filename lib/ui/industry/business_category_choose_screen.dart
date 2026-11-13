@@ -35,8 +35,6 @@ class BusinessCategoryChooseViewScreen extends StatelessWidget {
     final accountProvider = context.watch<BusinessProvider>();
     final industryProvider = context.watch<IndustryProvider>();
 
-    bool isBusiness = accountProvider.currentIndex == 0;
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(

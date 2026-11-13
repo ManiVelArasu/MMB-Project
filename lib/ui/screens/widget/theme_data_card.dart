@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 
-import '../../../Api Model/theme_screen_model.dart';
+
 import '../../../component/custom_widget.dart';
-import '../../../component/network_image.dart';
-import '../../../core/api/api_endpoints.dart';
+
 import '../../../utils/theme/app.fonts.dart';
 
-import '../theme_single_item_view_screen.dart';
+
 
 class BrandSeriesCard extends StatelessWidget {
   final String? thumbnail;

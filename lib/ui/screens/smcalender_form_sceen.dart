@@ -82,7 +82,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
               children: [
                 Positioned.fill(
                   child: Image.asset(
-                    'assets/images/sm_mask.png',
+                    'assets/images/sm_background.png',
                     fit: BoxFit.fill,
                     alignment: Alignment.topCenter,
                   ),

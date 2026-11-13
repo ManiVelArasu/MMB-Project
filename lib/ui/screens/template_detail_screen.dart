@@ -412,36 +412,6 @@ class _TemplateDetailBody extends StatelessWidget {
     );
   }
 
-  // =====================================================================
-  // PAGE INDICATORS
-  // =====================================================================
-
-  Widget _buildPageIndicators(TemplateDetailProvider provider, bool isDark) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(4, (index) {
-        final isSelected = provider.selectedIndex == index;
-
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          margin: EdgeInsets.symmetric(horizontal: 3.w),
-          width: isSelected ? 24.w : 6.w,
-          height: 6.h,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primaryColor
-                : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(10.r),
-          ),
-        );
-      }),
-    );
-  }
-
-  // =====================================================================
-  // RESIZE → CANVAS SIZE (px)
-  // =====================================================================
-
   ({double width, double height}) _canvasSizeFor(String resizeSize) {
     if (resizeSize.contains("4:5")) {
       return (width: 1080, height: 1350);

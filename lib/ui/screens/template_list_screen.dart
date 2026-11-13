@@ -28,7 +28,7 @@ class TemplateListScreen extends StatelessWidget {
 
     return ChangeNotifierProvider(
       create: (_) =>
-      TemplateListProvider()..loadSpecialDays(type: type, range: range),
+          TemplateListProvider()..loadSpecialDays(type: type, range: range),
       child: _TemplateListScreenView(type, range),
     );
   }
@@ -73,182 +73,171 @@ class _TemplateListScreenView extends StatelessWidget {
                 final specialDays = provider.specialDays?.data ?? [];
 
                 final List<SpecialDayTemplateItem> templates = [];
-
-                for (final specialDay in specialDays) {
-                  for (final template in specialDay.templates) {
-                    templates.add(
-                      SpecialDayTemplateItem(
-                        template: specialDay,
-                        specialDayName: specialDay.name ?? '',
-                      ),
-                    );
-                  }
-                }
-
                 final Widget content = templates.isEmpty
                     ? _EmptyState(isDark: isDark)
                     : Padding(
-                  padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 30.h),
-                  child: Column(
-                    children: [
-                      AppText(
-                        "Find the Right Festival Templates",
-                        style: TextStyle(
-                          color: AppColors.appBlack,
-                          fontWeight: FontWeight.w600,
-                          fontSize: AppFontSize.fontSize18,
-                        ),
-                      ),
-
-                      AppText(
-                        "Choose the festival to discover ready-to-edit designs for promotions, offers, announcements, and everyday marketing.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.lightedGrey,
-                          fontWeight: FontWeight.w400,
-                          fontSize: AppFontSize.fontSize14,
-                        ),
-                      ),
-
-                      SizedBox(height: 10.h),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomSearchBar(
-                              hintText: 'Search your festival',
-                              prefixAsset: "assets/images/search.png",
-                              suffixAsset: "assets/images/mic.png",
-                              borderColor: const Color(0xFFFFCDD2),
-                              showSuffixIcon: false,
-                              onChanged: (query) {},
-                              onSubmitted: (query) {
-                                final q = query.trim();
-                                if (q.length < 2) return;
-
-                                FocusManager.instance.primaryFocus?.unfocus();
-
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        SearchScreen(initialQuery: q),
-                                  ),
-                                );
-                              },
+                        padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 30.h),
+                        child: Column(
+                          children: [
+                            AppText(
+                              "Find the Right Festival Templates",
+                              style: TextStyle(
+                                color: AppColors.appBlack,
+                                fontWeight: FontWeight.w600,
+                                fontSize: AppFontSize.fontSize18,
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 10.w),
-                          GestureDetector(
-                            onTap: () async {
-                              final DateTime today = DateUtils.dateOnly(
-                                DateTime.now(),
-                              );
 
-                              // Current month-oda last day (month + 1, day 0 = previous month end)
-                              final DateTime lastDayOfMonth = DateTime(
-                                today.year,
-                                today.month + 1,
-                                0,
-                              );
+                            AppText(
+                              "Choose the festival to discover ready-to-edit designs for promotions, offers, announcements, and everyday marketing.",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppColors.lightedGrey,
+                                fontWeight: FontWeight.w400,
+                                fontSize: AppFontSize.fontSize14,
+                              ),
+                            ),
 
-                              final DateTimeRange? dateRange =
-                              await showDateRangePicker(
-                                context: context,
-                                firstDate: today,
-                                lastDate: lastDayOfMonth,
-                                initialDateRange: DateTimeRange(
-                                  start: today,
-                                  end: today,
-                                ),
-                                builder: (context, child) {
-                                  return Theme(
-                                    data: Theme.of(context).copyWith(
-                                      colorScheme: Theme.of(context)
-                                          .colorScheme
-                                          .copyWith(
-                                        primary: const Color(
-                                          0xFFE53935,
+                            SizedBox(height: 10.h),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: CustomSearchBar(
+                                    hintText: 'Search your festival',
+                                    prefixAsset: "assets/images/search.png",
+                                    suffixAsset: "assets/images/mic.png",
+                                    borderColor: const Color(0xFFFFCDD2),
+                                    showSuffixIcon: false,
+                                    onChanged: (query) {},
+                                    onSubmitted: (query) {
+                                      final q = query.trim();
+                                      if (q.length < 2) return;
+
+                                      FocusManager.instance.primaryFocus
+                                          ?.unfocus();
+
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              SearchScreen(initialQuery: q),
                                         ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                SizedBox(width: 10.w),
+                                GestureDetector(
+                                  onTap: () async {
+                                    final DateTime today = DateUtils.dateOnly(
+                                      DateTime.now(),
+                                    );
+
+                                    // Current month-oda last day (month + 1, day 0 = previous month end)
+                                    final DateTime lastDayOfMonth = DateTime(
+                                      today.year,
+                                      today.month + 1,
+                                      0,
+                                    );
+
+                                    final DateTimeRange? dateRange =
+                                        await showDateRangePicker(
+                                          context: context,
+                                          firstDate: today,
+                                          lastDate: lastDayOfMonth,
+                                          initialDateRange: DateTimeRange(
+                                            start: today,
+                                            end: today,
+                                          ),
+                                          builder: (context, child) {
+                                            return Theme(
+                                              data: Theme.of(context).copyWith(
+                                                colorScheme: Theme.of(context)
+                                                    .colorScheme
+                                                    .copyWith(
+                                                      primary: const Color(
+                                                        0xFFE53935,
+                                                      ),
+                                                    ),
+                                              ),
+                                              child: child!,
+                                            );
+                                          },
+                                        );
+
+                                    if (dateRange != null && context.mounted) {
+                                      final String fromDate =
+                                          '${dateRange.start.year}-'
+                                          '${dateRange.start.month.toString().padLeft(2, '0')}-'
+                                          '${dateRange.start.day.toString().padLeft(2, '0')}';
+
+                                      final String toDate =
+                                          '${dateRange.end.year}-'
+                                          '${dateRange.end.month.toString().padLeft(2, '0')}-'
+                                          '${dateRange.end.day.toString().padLeft(2, '0')}';
+
+                                      await context
+                                          .read<TemplateListProvider>()
+                                          .loadSpecialDays(
+                                            fromDate: fromDate,
+                                            toDate: toDate,
+                                          );
+                                    }
+                                  },
+                                  child: Image.asset(
+                                    'assets/images/calender.png',
+                                    width: 44.w,
+                                    height: 44.h,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: 15.h),
+
+                            Expanded(
+                              child: RefreshIndicator(
+                                // RefreshIndicator shows its own spinner.
+                                onRefresh: () => provider.loadSpecialDays(
+                                  type: type,
+                                  range: range,
+                                  showOverlayLoader: false,
+                                ),
+                                child: GridView.builder(
+                                  padding: EdgeInsets.only(bottom: 40.h),
+                                  physics: const AlwaysScrollableScrollPhysics(
+                                    parent: BouncingScrollPhysics(),
+                                  ),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: 10.w,
+                                        mainAxisSpacing: 10.h,
+                                        childAspectRatio: 0.78,
                                       ),
-                                    ),
-                                    child: child!,
-                                  );
-                                },
-                              );
+                                  itemCount: specialDays.length,
+                                  itemBuilder: (context, index) {
+                                    final item = specialDays[index];
 
-                              if (dateRange != null && context.mounted) {
-                                final String fromDate =
-                                    '${dateRange.start.year}-'
-                                    '${dateRange.start.month.toString().padLeft(2, '0')}-'
-                                    '${dateRange.start.day.toString().padLeft(2, '0')}';
+                                    if (item.templates.isEmpty) {
+                                      return const SizedBox.shrink();
+                                    }
 
-                                final String toDate =
-                                    '${dateRange.end.year}-'
-                                    '${dateRange.end.month.toString().padLeft(2, '0')}-'
-                                    '${dateRange.end.day.toString().padLeft(2, '0')}';
-
-                                await context
-                                    .read<TemplateListProvider>()
-                                    .loadSpecialDays(
-                                  fromDate: fromDate,
-                                  toDate: toDate,
-                                );
-                              }
-                            },
-                            child: Image.asset(
-                              'assets/images/calender.png',
-                              width: 44.w,
-                              height: 44.h,
-                              fit: BoxFit.contain,
+                                    return _TemplateCard(
+                                      specialDay: item,
+                                      specialDayName: item.name ?? '',
+                                      isDark: isDark,
+                                      templateCount: item.templates.length,
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: 15.h),
-
-                      Expanded(
-                        child: RefreshIndicator(
-                          // RefreshIndicator shows its own spinner.
-                          onRefresh: () => provider.loadSpecialDays(
-                            type: type,
-                            range: range,
-                            showOverlayLoader: false,
-                          ),
-                          child: GridView.builder(
-                            padding: EdgeInsets.only(bottom: 40.h),
-                            physics: const AlwaysScrollableScrollPhysics(
-                              parent: BouncingScrollPhysics(),
-                            ),
-                            gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 10.w,
-                              mainAxisSpacing: 10.h,
-                              childAspectRatio: 0.78,
-                            ),
-                            itemCount: specialDays.length,
-                            itemBuilder: (context, index) {
-                              final item = specialDays[index];
-
-                              if (item.templates.isEmpty) {
-                                return const SizedBox.shrink();
-                              }
-
-                              return _TemplateCard(
-                                specialDay: item,
-                                specialDayName: item.name ?? '',
-                                isDark: isDark,
-                                templateCount: item.templates.length,
-                              );
-                            },
-                          ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                );
+                      );
 
                 // First open: shimmer. Date filter: screen stays and a normal
                 // loader shows on top. Pull-to-refresh uses its own spinner.
@@ -330,14 +319,14 @@ class _TemplateCard extends StatelessWidget {
                   child: imageUrl.isEmpty
                       ? const Center(child: Icon(Icons.image_outlined))
                       : CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorWidget: (_, __, ___) => const Center(
-                      child: Icon(Icons.image_not_supported_rounded),
-                    ),
-                  ),
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorWidget: (_, __, ___) => const Center(
+                            child: Icon(Icons.image_not_supported_rounded),
+                          ),
+                        ),
                 ),
                 Positioned(
                   top: 8.h,

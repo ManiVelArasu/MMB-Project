@@ -208,7 +208,7 @@ class ProfileScreenProvider extends ChangeNotifier {
     ),
     QuickActionModel(
       title: "My\nDownloads",
-      iconPath: "assets/images/document-download.png",
+      iconPath: "assets/images/document_download.png",
       gradientColors: [Color(0xFFF6F4FF), Color(0xFFEEEBFF)],
       onTap: (context) {
         Navigator.pushNamed(context, "/MyDownloadsScreen");

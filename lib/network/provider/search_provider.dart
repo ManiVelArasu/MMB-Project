@@ -1,5 +1,7 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+
+import 'package:flutter/material.dart';
+
 import '../../Repository/search_repository.dart';
 
 class SearchSuggestion {
@@ -24,22 +26,50 @@ class SearchSuggestion {
 }
 
 class SearchProvider extends ChangeNotifier {
+  SearchProvider({String initialQuery = ''}) {
+    controller = TextEditingController(text: initialQuery);
+    controller.selection = TextSelection.collapsed(
+      offset: controller.text.length,
+    );
+
+    _firstLoad = initialQuery.trim().length >= 2;
+
+    scrollController.addListener(_onScroll);
+
+    final initial = initialQuery.trim();
+    if (initial.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_disposed) return;
+        if (initial.length >= 2) {
+          search(initial);
+        } else {
+          onTextChanged(initial);
+        }
+      });
+    }
+  }
+
   static const int pageSize = 30;
   static const int maxQueryLength = 100;
 
-  final SearchProfileRepository _repository = SearchProfileRepository.instance;
+  final SearchProfileRepository _repository =
+      SearchProfileRepository.instance;
+
+  late final TextEditingController controller;
+  final FocusNode focusNode = FocusNode();
+  final ScrollController scrollController = ScrollController();
 
   Timer? _debounce;
   bool _disposed = false;
+  bool _firstLoad = false;
 
-  // ---------------- state ----------------
   List<SearchSuggestion> _suggestions = [];
   List<SearchSuggestion> get suggestions => _suggestions;
 
   List<Map<String, dynamic>> _results = [];
   List<Map<String, dynamic>> get results => _results;
 
-  bool _isLoading = false; // first page
+  bool _isLoading = false;
   bool get isLoading => _isLoading;
 
   bool _isLoadingMore = false;
@@ -57,8 +87,10 @@ class SearchProvider extends ChangeNotifier {
   String _activeQuery = '';
   String get activeQuery => _activeQuery;
 
-  // Latest typed text, used to ignore stale suggestion responses.
   String _typed = '';
+
+  bool get isWaitingForFirstResult =>
+      _firstLoad && !_hasSearched && _error == null;
 
   @override
   void notifyListeners() {
@@ -69,54 +101,68 @@ class SearchProvider extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _debounce?.cancel();
+    controller.dispose();
+    focusNode.dispose();
+    scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     super.dispose();
   }
 
-  // ---------------- typing ----------------
+  void _onScroll() {
+    if (!scrollController.hasClients) return;
+
+    if (scrollController.position.pixels >=
+        scrollController.position.maxScrollExtent - 300) {
+      loadMore();
+    }
+  }
 
   void onTextChanged(String text) {
-    final q = text.trim();
-    _typed = q;
+    final query = text.trim();
+    _firstLoad = false;
+    _typed = query;
     _debounce?.cancel();
 
-    if (q.isEmpty) {
+    if (query.isEmpty) {
       clear();
       return;
     }
 
     _debounce = Timer(
       const Duration(milliseconds: 250),
-      () => _loadSuggestions(q),
+          () => _loadSuggestions(query),
     );
   }
 
-  Future<void> _loadSuggestions(String q) async {
+  Future<void> _loadSuggestions(String query) async {
     try {
-      final result = await _repository.suggestions(q);
+      final result = await _repository.suggestions(query);
 
-      // Stale response → ignore
-      if (q != _typed) return;
+      if (_disposed || query != _typed) return;
 
       if (result.isSuccess && result.data is Map) {
         final data = (result.data as Map)['data'];
         _suggestions = data is List
             ? data
-                  .whereType<Map>()
-                  .map(
-                    (e) =>
-                        SearchSuggestion.fromJson(Map<String, dynamic>.from(e)),
-                  )
-                  .where((s) => s.label.isNotEmpty)
-                  .toList()
+            .whereType<Map>()
+            .map(
+              (item) => SearchSuggestion.fromJson(
+            Map<String, dynamic>.from(item),
+          ),
+        )
+            .where((item) => item.label.isNotEmpty)
+            .toList()
             : [];
       } else {
         _suggestions = [];
       }
-    } catch (e) {
-      debugPrint('❌ Suggestions error: $e');
-      if (q != _typed) return;
+    } catch (error) {
+      debugPrint('Suggestions error: $error');
+      if (_disposed || query != _typed) return;
       _suggestions = [];
     }
+
     notifyListeners();
   }
 
@@ -126,8 +172,12 @@ class SearchProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Clear Search: reset everything. No API call is made.
-  /// _activeQuery is reset too, so any in-flight response is ignored.
+  void clearSearch() {
+    controller.clear();
+    focusNode.requestFocus();
+    clear();
+  }
+
   void clear() {
     _debounce?.cancel();
     _typed = '';
@@ -139,21 +189,41 @@ class SearchProvider extends ChangeNotifier {
     _hasMore = false;
     _isLoading = false;
     _isLoadingMore = false;
+    _firstLoad = false;
     notifyListeners();
   }
 
-  // ---------------- search ----------------
+  void pickSuggestion(SearchSuggestion suggestion) {
+    controller.text = suggestion.query;
+    controller.selection = TextSelection.collapsed(
+      offset: suggestion.query.length,
+    );
+    submit(suggestion.query);
+  }
 
-  /// Enter / search button / suggestion tap.
+  void submit(String text) {
+    final query = text.trim();
+    if (query.length < 2) return;
+    focusNode.unfocus();
+    search(query);
+  }
+
+  void retry() {
+    if (_activeQuery.isNotEmpty) {
+      search(_activeQuery);
+    }
+  }
+
   Future<void> search(String text) async {
-    final q = text.trim();
-    if (q.length < 2) return; // API needs 2–100 chars
+    final queryText = text.trim();
+    if (queryText.length < 2) return;
 
     _debounce?.cancel();
-    _typed = q;
-    _activeQuery = q.length > maxQueryLength
-        ? q.substring(0, maxQueryLength)
-        : q;
+    _typed = queryText;
+    _activeQuery = queryText.length > maxQueryLength
+        ? queryText.substring(0, maxQueryLength)
+        : queryText;
+
     _suggestions = [];
     _hasSearched = true;
     _isLoading = true;
@@ -161,6 +231,7 @@ class SearchProvider extends ChangeNotifier {
     _hasMore = false;
     _error = null;
     _results = [];
+    _firstLoad = false;
     notifyListeners();
 
     final query = _activeQuery;
@@ -171,7 +242,8 @@ class SearchProvider extends ChangeNotifier {
         limit: pageSize,
         offset: 0,
       );
-      if (query != _activeQuery) return;
+
+      if (_disposed || query != _activeQuery) return;
 
       if (result.isSuccess) {
         final page = _parseCards(result.data);
@@ -180,12 +252,12 @@ class SearchProvider extends ChangeNotifier {
       } else {
         _error = result.error?.message ?? 'Search failed';
       }
-    } catch (e) {
-      debugPrint('❌ Search error: $e');
-      if (query != _activeQuery) return;
+    } catch (error) {
+      debugPrint('Search error: $error');
+      if (_disposed || query != _activeQuery) return;
       _error = 'Search failed. Please try again.';
     } finally {
-      if (query == _activeQuery) {
+      if (!_disposed && query == _activeQuery) {
         _isLoading = false;
         notifyListeners();
       }
@@ -193,7 +265,10 @@ class SearchProvider extends ChangeNotifier {
   }
 
   Future<void> loadMore() async {
-    if (_isLoading || _isLoadingMore || !_hasMore || _activeQuery.isEmpty) {
+    if (_isLoading ||
+        _isLoadingMore ||
+        !_hasMore ||
+        _activeQuery.isEmpty) {
       return;
     }
 
@@ -208,7 +283,8 @@ class SearchProvider extends ChangeNotifier {
         limit: pageSize,
         offset: _results.length,
       );
-      if (query != _activeQuery) return;
+
+      if (_disposed || query != _activeQuery) return;
 
       if (result.isSuccess) {
         final page = _parseCards(result.data);
@@ -217,11 +293,12 @@ class SearchProvider extends ChangeNotifier {
       } else {
         _hasMore = false;
       }
-    } catch (e) {
-      debugPrint('❌ Load more error: $e');
+    } catch (error) {
+      debugPrint('Load more error: $error');
+      if (_disposed || query != _activeQuery) return;
       _hasMore = false;
     } finally {
-      if (query == _activeQuery) {
+      if (!_disposed && query == _activeQuery) {
         _isLoadingMore = false;
         notifyListeners();
       }
@@ -231,9 +308,10 @@ class SearchProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _parseCards(dynamic json) {
     final data = json is Map ? json['data'] : json;
     if (data is! List) return [];
+
     return data
         .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
+        .map((item) => Map<String, dynamic>.from(item))
         .toList();
   }
 }

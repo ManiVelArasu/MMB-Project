@@ -12,30 +12,19 @@ class ChangeNumberBottomSheet extends StatefulWidget {
 }
 
 class _ChangeNumberBottomSheetState extends State<ChangeNumberBottomSheet> {
-  // ============================================================
-  // STEPS
-  // 0 = Current number
-  // 1 = Current OTP
-  // 2 = New number
-  // 3 = New OTP
-  // 4 = Success
-  // ============================================================
+
 
   int _step = 0;
 
   bool isLoading = false;
 
-  // ============================================================
-  // CONTROLLERS
-  // ============================================================
+
 
   late final TextEditingController currentMobileController;
 
   final TextEditingController newMobileController = TextEditingController();
 
-  // ============================================================
-  // CURRENT OTP
-  // ============================================================
+
 
   final List<TextEditingController> currentOtpControllers = List.generate(
     6,
@@ -47,9 +36,7 @@ class _ChangeNumberBottomSheetState extends State<ChangeNumberBottomSheet> {
     (_) => FocusNode(),
   );
 
-  // ============================================================
-  // NEW OTP
-  // ============================================================
+
 
   final List<TextEditingController> newOtpControllers = List.generate(
     6,
@@ -58,9 +45,6 @@ class _ChangeNumberBottomSheetState extends State<ChangeNumberBottomSheet> {
 
   final List<FocusNode> newOtpFocusNodes = List.generate(6, (_) => FocusNode());
 
-  // ============================================================
-  // INIT
-  // ============================================================
 
   @override
   void initState() {
@@ -71,9 +55,6 @@ class _ChangeNumberBottomSheetState extends State<ChangeNumberBottomSheet> {
     );
   }
 
-  // ============================================================
-  // DISPOSE
-  // ============================================================
 
   @override
   void dispose() {
@@ -99,25 +80,15 @@ class _ChangeNumberBottomSheetState extends State<ChangeNumberBottomSheet> {
     super.dispose();
   }
 
-  // ============================================================
-  // CURRENT OTP
-  // ============================================================
-
   String get currentOtp {
     return currentOtpControllers.map((controller) => controller.text).join();
   }
-
-  // ============================================================
-  // NEW OTP
-  // ============================================================
 
   String get newOtp {
     return newOtpControllers.map((controller) => controller.text).join();
   }
 
-  // ============================================================
-  // SEND CURRENT OTP
-  // ============================================================
+
 
   Future<void> _sendCurrentOtp() async {
     if (isLoading) return;

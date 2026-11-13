@@ -7,7 +7,6 @@ import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import '../../Api Model/theme_screen_model.dart';
-import '../../component/bottom_navigation.dart';
 import '../../component/custom_searchbar.dart';
 import '../../component/home_appbar.dart';
 import '../../component/network_image.dart';

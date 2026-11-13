@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:mmb_app/component/appbar_widget.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart';
@@ -539,53 +538,4 @@ class AiImageScreen extends StatelessWidget {
     }
   }
 
-  Widget _bottomNavigation(BuildContext context, AiHubProvider provider) {
-    const labels = ['CUSTOM', 'B SERIES', 'MY PAGE', 'NEAR ME', 'YOU'];
-
-    const icons = [
-      Icons.edit_note,
-      Icons.inventory_2_outlined,
-      Icons.person_outline,
-      Icons.location_on_outlined,
-      Icons.person,
-    ];
-
-    return Container(
-      color: Colors.black,
-      padding: const EdgeInsets.fromLTRB(4, 9, 4, 18),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(labels.length, (index) {
-          final selected = provider.selectedBottomIndex == index;
-
-          return InkWell(
-            onTap: () => provider.selectBottomItem(index),
-            child: SizedBox(
-              width: 58,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icons[index],
-                    size: 20,
-                    color: selected ? accent : Colors.white,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    labels[index],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w700,
-                      color: selected ? accent : Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
 }

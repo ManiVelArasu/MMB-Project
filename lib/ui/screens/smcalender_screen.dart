@@ -57,7 +57,7 @@ class SmCalendarView extends StatelessWidget {
                           fit: BoxFit.cover,
                           alignment: Alignment.topCenter,
                           color: isDark
-                              ? Colors.black.withOpacity(0.35)
+                              ? Colors.black.withValues(alpha: .35)
                               : null,
                           colorBlendMode:
                           isDark ? BlendMode.darken : null,

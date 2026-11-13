@@ -122,11 +122,6 @@ class TemplateEditScreen extends StatelessWidget {
       if (pc != null) resolvedProjectContent = pc.toString();
     }
 
-    debugPrint('====================================');
-    debugPrint('📂 TEMPLATE EDIT SCREEN');
-    debugPrint('Template UID : $resolvedTemplateUid');
-    debugPrint('====================================');
-
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => EditorProvider()),
@@ -417,6 +412,46 @@ class _EditorViewState extends State<EditorView> {
   bool _isInitialized = false;
   final GlobalKey _canvasKey = GlobalKey();
 
+  // Canvas-level tap picking: a tap anywhere inside an item's box selects it,
+  // even when the item's own gesture detector misses (clips, rings, overlaps).
+  Offset? _tapDownPos;
+  int _tapDownMs = 0;
+  bool _tapSelectedByCanvas = false;
+
+  String? _pickItemAt(EditorProvider provider, Offset canvasPoint) {
+    EditorItem? best;
+    double bestArea = double.infinity;
+    for (final it in provider.items.reversed) {
+      if (it.id == null || _isCanvasBackground(it)) continue;
+      final t = (it.type ?? '').trim().toLowerCase();
+      final isText = t == 'text' || t == 'textbox' || t == 'i-text' || t == 'itext';
+      final sc = it.scale.isFinite && it.scale.abs() > 0
+          ? it.scale.clamp(0.01, 10.0).toDouble()
+          : 1.0;
+      final Size body = isText
+          ? EditableItemWidget.measureTextBox(it, provider)
+          : Size(math.max(1.0, it.width), math.max(1.0, it.height));
+      // canvas point -> item local (un-scaled, un-rotated) space
+      var local = (canvasPoint - it.position) / sc;
+      final centre = Offset(body.width / 2, body.height / 2);
+      final rel = local - centre;
+      final a = -(it.rotation.isFinite ? it.rotation : 0.0);
+      final rx = rel.dx * math.cos(a) - rel.dy * math.sin(a);
+      final ry = rel.dx * math.sin(a) + rel.dy * math.cos(a);
+      local = Offset(rx, ry) + centre;
+      const pad = 6.0; // small touch slack (canvas units)
+      final rect = Rect.fromLTWH(0, 0, body.width, body.height).inflate(pad / sc);
+      if (!rect.contains(local)) continue;
+      final area = body.width * body.height * sc * sc;
+      // smallest box wins (sticker over a big image); ties -> topmost
+      if (area < bestArea) {
+        bestArea = area;
+        best = it;
+      }
+    }
+    return best?.id;
+  }
+
   Timer? _projectSaveTimer;
   bool _projectSaveListenerAttached = false;
   bool _projectAutoSaveReady = false;
@@ -485,7 +520,6 @@ class _EditorViewState extends State<EditorView> {
         image.dispose();
       }
     } catch (e, stackTrace) {
-      debugPrint('Thumbnail capture failed: $e');
       debugPrintStack(stackTrace: stackTrace);
       return null;
     } finally {
@@ -539,7 +573,6 @@ class _EditorViewState extends State<EditorView> {
         final success = saveResult.when(
           success: (_) => true,
           failure: (error) {
-            debugPrint('Project save failed: ${error.message}');
             return false;
           },
         );
@@ -556,7 +589,6 @@ class _EditorViewState extends State<EditorView> {
         setState(() {});
       } while (_projectSaveQueued && mounted);
     } catch (e, stackTrace) {
-      debugPrint('Project autosave error: $e');
       debugPrintStack(stackTrace: stackTrace);
 
       if (mounted) {
@@ -673,9 +705,7 @@ class _EditorViewState extends State<EditorView> {
     final resizeCanvas = hasExplicitResize ? _getCanvasSize() : null;
     final uid = widget.templateUid?.trim() ?? '';
 
-    // =====================================================
     // EXISTING PROJECT (Download screen -> Edit)
-    // =====================================================
     final openProjectUid = widget.projectUid?.trim() ?? '';
     if (openProjectUid.isNotEmpty) {
       await _openExistingProject(
@@ -686,15 +716,8 @@ class _EditorViewState extends State<EditorView> {
       return;
     }
 
-    // =====================================================
     // TEMPLATE DESIGN
-    // =====================================================
     if (uid.isNotEmpty) {
-      debugPrint('========================================');
-      debugPrint('📡 TEMPLATE API START');
-      debugPrint('Template UID: $uid');
-      debugPrint('========================================');
-
       final templateSuccess = await editorProvider.loadTemplateByUid(
         uid,
         canvasWidth: resizeCanvas?.width,
@@ -704,8 +727,6 @@ class _EditorViewState extends State<EditorView> {
       if (!mounted) return;
 
       if (!templateSuccess) {
-        debugPrint('❌ TEMPLATE API FAILED');
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: AppText(
@@ -719,7 +740,6 @@ class _EditorViewState extends State<EditorView> {
       final detail = editorProvider.templateDetail;
 
       if (detail == null || detail.data.items.isEmpty) {
-        debugPrint('❌ TEMPLATE DETAIL OR ITEMS EMPTY');
         return;
       }
 
@@ -751,15 +771,6 @@ class _EditorViewState extends State<EditorView> {
         editorProvider.exportCurrentPageJson(),
       );
 
-      debugPrint('========================================');
-      debugPrint('✅ TEMPLATE API SUCCESS');
-      debugPrint('Template ID: $templateId');
-      debugPrint('Template UID: $templateUidFromApi');
-      debugPrint('Template Name: $templateName');
-      debugPrint('Thumbnail S3 Key: $thumbnailS3Key');
-      debugPrint('Editor JSON length: ${templateContent.length}');
-      debugPrint('========================================');
-
       final projectSuccess = await projectProvider.createProject(
         name: templateName,
         content: templateContent,
@@ -769,8 +780,6 @@ class _EditorViewState extends State<EditorView> {
       if (!mounted) return;
 
       if (!projectSuccess) {
-        debugPrint('❌ PROJECT CREATE FAILED');
-
         if (projectProvider.isQuotaExceeded) {
           await _showPlanRequiredDialog();
         } else {
@@ -789,17 +798,8 @@ class _EditorViewState extends State<EditorView> {
       // Preserve the template's numeric API id for every subsequent project
       // update/autosave. Blank projects explicitly keep this value null.
       projectProvider.setTemplateId(templateId);
-      debugPrint('========================================');
-      debugPrint('✅ PROJECT CREATED FROM TEMPLATE');
-      debugPrint('Project ID: ${projectProvider.projectId}');
-      debugPrint('Project UID: ${projectProvider.projectUid}');
-      debugPrint('Project Name: ${projectProvider.projectName}');
-      debugPrint('Template ID: ${projectProvider.templateId}');
-      debugPrint('========================================');
     } else {
-      // =====================================================
       // CREATE NEW / BLANK DESIGN
-      // =====================================================
       final canvasSize = resizeCanvas ?? _getCanvasSize();
 
       editorProvider.setCanvasSize(canvasSize.width, canvasSize.height);
@@ -830,13 +830,6 @@ class _EditorViewState extends State<EditorView> {
         'fonts': <dynamic>[],
       });
 
-      debugPrint('========================================');
-      debugPrint('📡 CREATE NEW PROJECT');
-      debugPrint('Project Name: $projectName');
-      debugPrint('Content length: ${blankContent.length}');
-      debugPrint('Template ID: not sent (blank project)');
-      debugPrint('========================================');
-
       final projectSuccess = await projectProvider.createProject(
         name: projectName,
         content: blankContent,
@@ -846,8 +839,6 @@ class _EditorViewState extends State<EditorView> {
       if (!mounted) return;
 
       if (!projectSuccess) {
-        debugPrint('❌ PROJECT CREATE FAILED');
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: AppText(
@@ -860,9 +851,6 @@ class _EditorViewState extends State<EditorView> {
 
       // Blank project has no template ID.
       projectProvider.setTemplateId(null);
-
-      debugPrint('✅ CREATE NEW PROJECT SUCCESS');
-      debugPrint('Project UID: ${projectProvider.projectUid}');
     }
 
     _enableProjectAutoSave();
@@ -935,7 +923,6 @@ class _EditorViewState extends State<EditorView> {
       final success = result.when(
         success: (_) => true,
         failure: (error) {
-          debugPrint('Project update on open failed: ${error.message}');
           return false;
         },
       );
@@ -943,7 +930,6 @@ class _EditorViewState extends State<EditorView> {
       if (!mounted) return;
       setState(() => _projectSaveStatus = success ? 'Saved' : 'Save failed');
     } catch (e, st) {
-      debugPrint('Project update on open error: $e\n$st');
       if (mounted) setState(() => _projectSaveStatus = 'Save failed');
     }
   }
@@ -1071,7 +1057,6 @@ class _EditorViewState extends State<EditorView> {
         client.close(force: true);
       }
     } catch (e) {
-      debugPrint('Unable to add remote shape: $e');
       if (context.mounted) {
         Fluttertoast.showToast(msg: 'Unable to add shape');
       }
@@ -2661,9 +2646,6 @@ class _EditorViewState extends State<EditorView> {
                                     File(localPath),
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, error, stackTrace) {
-                                      debugPrint(
-                                        'Local media thumbnail error: $error',
-                                      );
                                       return Container(
                                         color: Colors.black12,
                                         child: const Icon(
@@ -2690,9 +2672,6 @@ class _EditorViewState extends State<EditorView> {
                                       );
                                     },
                                     errorBuilder: (_, error, stackTrace) {
-                                      debugPrint(
-                                        'Network media thumbnail error: $error',
-                                      );
                                       return Container(
                                         color: Colors.black12,
                                         child: const Icon(
@@ -4089,7 +4068,6 @@ class _EditorViewState extends State<EditorView> {
                 onCaption: () => (),
                 onSchedule: () => (),
               ),
-              //_showExportSheet(context, provider),
             ),
           ],
         ),
@@ -4121,161 +4099,196 @@ class _EditorViewState extends State<EditorView> {
                               .where(_isCanvasBackground)
                               .toList();
 
-                          return GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              provider.clearSelection();
+                          return Listener(
+                            behavior: HitTestBehavior.translucent,
+                            onPointerDown: (e) {
+                              _tapDownPos = e.localPosition;
+                              _tapDownMs = DateTime.now().millisecondsSinceEpoch;
+                              _tapSelectedByCanvas = false;
                             },
-                            child: ClipRect(
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  Positioned.fill(
-                                    child: DecoratedBox(
-                                      decoration: BoxDecoration(
-                                        color: provider.backgroundColor,
-                                        gradient:
-                                        provider.importedBackgroundGradient,
+                            onPointerUp: (e) {
+                              final down = _tapDownPos;
+                              _tapDownPos = null;
+                              if (down == null) return;
+                              final quick = DateTime.now().millisecondsSinceEpoch -
+                                  _tapDownMs <
+                                  400;
+                              if (!quick || (e.localPosition - down).distance > 10) {
+                                return;
+                              }
+                              final id = _pickItemAt(
+                                provider,
+                                Offset(
+                                  e.localPosition.dx / scaleX,
+                                  e.localPosition.dy / scaleY,
+                                ),
+                              );
+                              if (id == null) return;
+                              _tapSelectedByCanvas = true;
+                              if (provider.selectedItemId != id) {
+                                final it =
+                                provider.items.firstWhere((x) => x.id == id);
+                                provider.setSelectedItem(it.type, it.id);
+                              }
+                            },
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                if (_tapSelectedByCanvas) {
+                                  _tapSelectedByCanvas = false;
+                                  return;
+                                }
+                                provider.clearSelection();
+                              },
+                              child: ClipRect(
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Positioned.fill(
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: provider.backgroundColor,
+                                          gradient:
+                                          provider.importedBackgroundGradient,
+                                        ),
                                       ),
                                     ),
-                                  ),
 
-                                  if (backgroundItems.isNotEmpty)
-                                    _InteractiveBackgroundLayer(
-                                      key: ValueKey(backgroundItems.first.id),
-                                      item: backgroundItems.first,
-                                      scaleX: scaleX,
-                                      scaleY: scaleY,
-                                      canvasWidth: canvasSize.width,
-                                      canvasHeight: canvasSize.height,
-                                      onSelected: () {
-                                        final bg = backgroundItems.first;
+                                    if (backgroundItems.isNotEmpty)
+                                      _InteractiveBackgroundLayer(
+                                        key: ValueKey(backgroundItems.first.id),
+                                        item: backgroundItems.first,
+                                        scaleX: scaleX,
+                                        scaleY: scaleY,
+                                        canvasWidth: canvasSize.width,
+                                        canvasHeight: canvasSize.height,
+                                        onSelected: () {
+                                          final bg = backgroundItems.first;
 
-                                        // Select the background exactly like a normal
-                                        // image layer so the image editor toolbar opens.
-                                        provider.setSelectedItem(
-                                          bg.type,
-                                          bg.id,
-                                        );
+                                          // Select the background exactly like a normal
+                                          // image layer so the image editor toolbar opens.
+                                          provider.setSelectedItem(
+                                            bg.type,
+                                            bg.id,
+                                          );
 
-                                        if (mounted) {
-                                          setState(() {
-                                            _bottomNavIndex = 3;
-                                          });
-                                        }
-                                      },
-                                    ),
+                                          if (mounted) {
+                                            setState(() {
+                                              _bottomNavIndex = 3;
+                                            });
+                                          }
+                                        },
+                                      ),
 
-                                  // IMPORTANT: selecting an item must NOT change its
-                                  // layer/z-order. Keep the provider's original order.
-                                  // A click only selects the item; Bring To Front /
-                                  // Send To Back are the only actions that should change
-                                  // the actual layer order.
-                                  ...(() {
-                                    final orderedItems = provider.items
-                                        .where(
-                                          (item) => !_isCanvasBackground(item),
-                                    )
-                                        .toList();
-
-                                    return orderedItems.map((item) {
-                                      return Positioned(
-                                        left: item.position.dx * scaleX,
-                                        top: item.position.dy * scaleY,
-                                        child: Transform.scale(
-                                          scale: scaleX,
-                                          alignment: Alignment.topLeft,
-                                          child: EditableItemWidget(
-                                            item: item,
-                                            onItemSelected: (type, id) {
-                                              provider.setSelectedItem(
-                                                type,
-                                                id,
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      );
-                                    });
-                                  })(),
-
-                                  // -----------------------------------------
-                                  // FRAME ATTACHED TO SELECTED IMAGE
-                                  // -----------------------------------------
-                                  if (provider.selectedFrameUrl != null &&
-                                      provider.selectedItemId != null)
-                                    Builder(
-                                      builder: (_) {
-                                        final selected = provider.items
-                                            .where(
-                                              (e) =>
-                                          e.id ==
-                                              provider.selectedItemId,
-                                        )
-                                            .toList();
-
-                                        if (selected.isEmpty ||
-                                            selected.first.type != 'image') {
-                                          return const SizedBox.shrink();
-                                        }
-
-                                        final item = selected.first;
-                                        return Positioned(
-                                          left: item.position.dx * scaleX,
-                                          top: item.position.dy * scaleY,
-                                          width:
-                                          item.width * item.scale * scaleX,
-                                          height:
-                                          item.height * item.scale * scaleY,
-                                          child: IgnorePointer(
-                                            child: Transform.rotate(
-                                              angle: item.rotation.isFinite
-                                                  ? item.rotation
-                                                  : 0.0,
-                                              child: Image.asset(
-                                                provider.selectedFrameUrl!,
-                                                fit: BoxFit.fill,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-
-                                  if (!_isCapturingThumbnail &&
-                                      provider.selectedItemId != null)
+                                    // IMPORTANT: selecting an item must NOT change its
+                                    // layer/z-order. Keep the provider's original order.
+                                    // A click only selects the item; Bring To Front /
+                                    // Send To Back are the only actions that should change
+                                    // the actual layer order.
                                     ...(() {
-                                      final selectedItems = provider.items
+                                      final orderedItems = provider.items
                                           .where(
-                                            (e) =>
-                                        e.id == provider.selectedItemId,
+                                            (item) => !_isCanvasBackground(item),
                                       )
                                           .toList();
 
-                                      if (selectedItems.isEmpty) {
-                                        return <Widget>[];
-                                      }
-
-                                      final selected = selectedItems.first;
-
-                                      if (_isCanvasBackground(selected)) {
-                                        return <Widget>[];
-                                      }
-
-                                      return <Widget>[
-                                        _TransformSelectionOverlay(
-                                          key: ValueKey(
-                                            'selection_overlay_${selected.id}',
+                                      return orderedItems.map((item) {
+                                        return Positioned(
+                                          left: item.position.dx * scaleX,
+                                          top: item.position.dy * scaleY,
+                                          child: Transform.scale(
+                                            scale: scaleX,
+                                            alignment: Alignment.topLeft,
+                                            child: EditableItemWidget(
+                                              item: item,
+                                              onItemSelected: (type, id) {
+                                                provider.setSelectedItem(
+                                                  type,
+                                                  id,
+                                                );
+                                              },
+                                            ),
                                           ),
-                                          item: selected,
-                                          scaleX: scaleX,
-                                          scaleY: scaleY,
-                                          canvasWidth: canvasSize.width,
-                                          canvasHeight: canvasSize.height,
-                                        ),
-                                      ];
+                                        );
+                                      });
                                     })(),
-                                ],
+
+                                    // FRAME ATTACHED TO SELECTED IMAGE
+                                    if (provider.selectedFrameUrl != null &&
+                                        provider.selectedItemId != null)
+                                      Builder(
+                                        builder: (_) {
+                                          final selected = provider.items
+                                              .where(
+                                                (e) =>
+                                            e.id ==
+                                                provider.selectedItemId,
+                                          )
+                                              .toList();
+
+                                          if (selected.isEmpty ||
+                                              selected.first.type != 'image') {
+                                            return const SizedBox.shrink();
+                                          }
+
+                                          final item = selected.first;
+                                          return Positioned(
+                                            left: item.position.dx * scaleX,
+                                            top: item.position.dy * scaleY,
+                                            width:
+                                            item.width * item.scale * scaleX,
+                                            height:
+                                            item.height * item.scale * scaleY,
+                                            child: IgnorePointer(
+                                              child: Transform.rotate(
+                                                angle: item.rotation.isFinite
+                                                    ? item.rotation
+                                                    : 0.0,
+                                                child: Image.asset(
+                                                  provider.selectedFrameUrl!,
+                                                  fit: BoxFit.fill,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+
+                                    if (!_isCapturingThumbnail &&
+                                        provider.selectedItemId != null)
+                                      ...(() {
+                                        final selectedItems = provider.items
+                                            .where(
+                                              (e) =>
+                                          e.id == provider.selectedItemId,
+                                        )
+                                            .toList();
+
+                                        if (selectedItems.isEmpty) {
+                                          return <Widget>[];
+                                        }
+
+                                        final selected = selectedItems.first;
+
+                                        if (_isCanvasBackground(selected)) {
+                                          return <Widget>[];
+                                        }
+
+                                        return <Widget>[
+                                          _TransformSelectionOverlay(
+                                            key: ValueKey(
+                                              'selection_overlay_${selected.id}',
+                                            ),
+                                            item: selected,
+                                            scaleX: scaleX,
+                                            scaleY: scaleY,
+                                            canvasWidth: canvasSize.width,
+                                            canvasHeight: canvasSize.height,
+                                          ),
+                                        ];
+                                      })(),
+                                  ],
+                                ),
                               ),
                             ),
                           );
@@ -4344,8 +4357,6 @@ class _EditorViewState extends State<EditorView> {
                         return const Center(child: CircularProgressIndicator());
                       },
                       errorBuilder: (_, error, stackTrace) {
-                        debugPrint('❌ Thumbnail load failed: $error');
-
                         return const Center(
                           child: Icon(
                             Icons.broken_image_outlined,
@@ -4459,11 +4470,7 @@ class _EditorViewState extends State<EditorView> {
               'FRAMES',
                   () => _showFramesBottomSheet(context, provider, isDark),
             ),
-            /*_bottomTool(
-             Image.asset("assets/images/text.png"),
-              'MY BRAND',
-                  () => _showMyBrandBottomSheet(context, provider, isDark),
-            ),*/
+
             _bottomTool(
               Image.asset("assets/images/text.png"),
               'TEXT',
@@ -4766,9 +4773,7 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  // ---------------------------------------------------------------------
   // ANIMATE panel (docked at the bottom when an item is selected).
-  // ---------------------------------------------------------------------
   bool _supportsAnimation(EditorProvider provider, String id) {
     final matches = provider.items.where((e) => e.id == id);
     if (matches.isEmpty) return false;
@@ -5160,9 +5165,7 @@ class _EditorViewState extends State<EditorView> {
       );
     }
 
-    // ------------------------------------------------------------------
     // EFFECTS body (text only)
-    // ------------------------------------------------------------------
     List<Widget> effectsBody() {
       final fx = provider.textEffect(id);
       return [
@@ -5283,9 +5286,7 @@ class _EditorViewState extends State<EditorView> {
       ];
     }
 
-    // ------------------------------------------------------------------
     // ANIMATE body
-    // ------------------------------------------------------------------
     Widget modeChip(ItemAnimationMode mode) {
       final selected = anim.mode == mode;
       return Expanded(
@@ -6157,82 +6158,6 @@ class _EditorViewState extends State<EditorView> {
           },
         );
       },
-    );
-  }
-
-  void _showTextAlignmentBottomSheet(
-      BuildContext context,
-      EditorProvider provider,
-      String id,
-      bool isDark,
-      ) {
-    final alignments = <Map<String, dynamic>>[
-      {
-        'label': 'Left',
-        'icon': Icons.format_align_left,
-        'value': TextAlign.left,
-      },
-      {
-        'label': 'Center',
-        'icon': Icons.format_align_center,
-        'value': TextAlign.center,
-      },
-      {
-        'label': 'Right',
-        'icon': Icons.format_align_right,
-        'value': TextAlign.right,
-      },
-      {
-        'label': 'Justify',
-        'icon': Icons.format_align_justify,
-        'value': TextAlign.justify,
-      },
-    ];
-    const accent = Color(0xFFFF202A);
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: isDark ? const Color(0xFF17191E) : Colors.white,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (sheetContext, setSheetState) {
-          final fg = isDark ? Colors.white : const Color(0xFF222222);
-          final currentAlign = provider.textAlignment(id);
-          return SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: alignments.map((a) {
-                final selected = currentAlign == a['value'];
-                return ListTile(
-                  leading: Icon(
-                    a['icon'] as IconData,
-                    color: selected ? accent : fg,
-                  ),
-                  title: AppText(
-                    a['label'] as String,
-                    style: TextStyle(
-                      color: selected ? accent : fg,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                  ),
-                  trailing: selected
-                      ? const Icon(Icons.check_rounded, color: accent)
-                      : null,
-                  onTap: () {
-                    if (provider.isItemLocked(id)) {
-                      Fluttertoast.showToast(
-                        msg: 'Item is locked. Unlock it first.',
-                      );
-                      return;
-                    }
-                    provider.updateTextAlignment(id, a['value'] as TextAlign);
-                    setSheetState(() {});
-                    Navigator.pop(sheetContext);
-                  },
-                );
-              }).toList(),
-            ),
-          );
-        },
-      ),
     );
   }
 
@@ -8012,7 +7937,6 @@ class _EditorViewState extends State<EditorView> {
           await _musicPlayer.play(_musicSource(path));
       }
     } catch (e) {
-      debugPrint('Music toggle error: $e');
       provider.setMusicPlaying(false);
     }
   }
@@ -8053,7 +7977,6 @@ class _EditorViewState extends State<EditorView> {
       await _musicPlayer.stop();
       await _musicPlayer.play(_musicSource(path));
     } catch (e, stackTrace) {
-      debugPrint('Music upload error: $e');
       debugPrintStack(stackTrace: stackTrace);
       provider.setMusicPlaying(false);
       Fluttertoast.showToast(msg: 'Unable to upload music');
@@ -8070,7 +7993,6 @@ class _EditorViewState extends State<EditorView> {
       await _musicPlayer.stop();
       await _musicPlayer.play(_musicSource(path));
     } catch (e) {
-      debugPrint('Music play error: $e');
       provider.setMusicPlaying(false);
     }
   }
@@ -8600,11 +8522,6 @@ class _EditorViewState extends State<EditorView> {
                                 try {
                                   // Connect your TTS API here.
                                   // It should return an audio file or URL.
-                                  /* await _generateTextAudio(
-                                    text: text,
-                                    voice: selectedVoice,
-                                    provider: provider,
-                                  );*/
 
                                   if (!sheetContext.mounted) return;
 
@@ -8620,8 +8537,6 @@ class _EditorViewState extends State<EditorView> {
                                     ),
                                   );
                                 } catch (e) {
-                                  debugPrint('TTS error: $e');
-
                                   if (!sheetContext.mounted) return;
 
                                   setSheetState(() {
@@ -8744,7 +8659,6 @@ class _EditorViewState extends State<EditorView> {
       );
       Fluttertoast.showToast(msg: 'JSON ready to save/share');
     } catch (e) {
-      debugPrint('JSON export error: $e');
       Fluttertoast.showToast(msg: 'Unable to export JSON');
     }
   }
@@ -8807,13 +8721,7 @@ class _EditorViewState extends State<EditorView> {
       await zipFile.writeAsBytes(zipBytes, flush: true);
 
       if (!context.mounted) return;
-      /*await SharePl.shareXFiles(
-        [XFile(zipFile.path, mimeType: 'application/zip')],
-        subject: 'MMB Editor Project ZIP',
-        text: 'Exported MMB page JSON and PNG.',
-      );*/
     } catch (e) {
-      debugPrint('ZIP export error: $e');
       Fluttertoast.showToast(msg: 'Unable to create ZIP');
     }
   }
@@ -9082,7 +8990,6 @@ class _EditorViewState extends State<EditorView> {
         ),
       );
     } catch (e, st) {
-      debugPrint('❌ Animated export error: $e\n$st');
       messenger.showSnackBar(
         SnackBar(content: AppText('Unable to export: $e')),
       );
@@ -9101,8 +9008,6 @@ class _EditorViewState extends State<EditorView> {
   Future<String?> downloadExportFile({required String fileUrl}) async {
     try {
       if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://')) {
-        debugPrint('❌ Invalid download URL: $fileUrl');
-
         return null;
       }
 
@@ -9112,18 +9017,10 @@ class _EditorViewState extends State<EditorView> {
 
       final filePath = '${directory.path}/$fileName';
 
-      debugPrint('📥 Download URL: $fileUrl');
-      debugPrint('📁 Save path: $filePath');
-
       await Dio().download(fileUrl, filePath);
-
-      debugPrint('✅ File saved: $filePath');
 
       return filePath;
     } catch (e, stackTrace) {
-      debugPrint('❌ Download error: $e');
-      debugPrint(stackTrace.toString());
-
       return null;
     }
   }
@@ -9144,8 +9041,6 @@ class _EditorViewState extends State<EditorView> {
     }
 
     try {
-      debugPrint('📤 Calling export API...');
-
       // API success மட்டும் check பண்ணுகிறோம்.
       await projectProvider.exportProject(projectUid: projectUid);
 
@@ -9157,8 +9052,6 @@ class _EditorViewState extends State<EditorView> {
 
       if (projectProvider.exportError != null &&
           projectProvider.exportError!.isNotEmpty) {
-        debugPrint('❌ Export API error: ${projectProvider.exportError}');
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: AppText(projectProvider.exportError!)),
         );
@@ -9166,22 +9059,15 @@ class _EditorViewState extends State<EditorView> {
         return;
       }
 
-      debugPrint('✅ Export API successful');
-
       // Give Flutter time to finish latest canvas changes.
       await Future.delayed(const Duration(milliseconds: 300));
 
       if (!context.mounted) return;
 
-      // -------------------------------------------------------
       // CAPTURE CANVAS
-      // -------------------------------------------------------
-
       final renderObject = _canvasKey.currentContext?.findRenderObject();
 
       if (renderObject == null || renderObject is! RenderRepaintBoundary) {
-        debugPrint('❌ RepaintBoundary not found');
-
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: AppText('Unable to capture design')),
         );
@@ -9190,8 +9076,6 @@ class _EditorViewState extends State<EditorView> {
       }
 
       final boundary = renderObject;
-
-      debugPrint('📸 Capturing canvas...');
 
       // Hide the selection box / handles so they are not in the saved image.
       if (mounted) setState(() => _isCapturingThumbnail = true);
@@ -9209,8 +9093,6 @@ class _EditorViewState extends State<EditorView> {
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
       if (byteData == null) {
-        debugPrint('❌ PNG conversion failed');
-
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: AppText('Unable to create image')),
         );
@@ -9220,12 +9102,7 @@ class _EditorViewState extends State<EditorView> {
 
       final bytes = byteData.buffer.asUint8List();
 
-      debugPrint('✅ Canvas captured: ${bytes.length} bytes');
-
-      // -------------------------------------------------------
       // SAVE TO GALLERY
-      // -------------------------------------------------------
-
       bool hasAccess = await Gal.hasAccess();
 
       if (!hasAccess) {
@@ -9235,8 +9112,6 @@ class _EditorViewState extends State<EditorView> {
       }
 
       if (!hasAccess) {
-        debugPrint('❌ Gallery permission denied');
-
         if (!context.mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -9250,16 +9125,12 @@ class _EditorViewState extends State<EditorView> {
 
       await Gal.putImageBytes(bytes, name: fileName);
 
-      debugPrint('✅ IMAGE SAVED TO GALLERY');
-
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: AppText('Image saved to Gallery successfully')),
       );
     } catch (e, stackTrace) {
-      debugPrint('❌ Export/download error: $e');
-
       debugPrintStack(stackTrace: stackTrace);
 
       if (!context.mounted) return;
@@ -9268,44 +9139,6 @@ class _EditorViewState extends State<EditorView> {
         context,
       ).showSnackBar(SnackBar(content: AppText('Unable to save image: $e')));
     }
-  }
-
-  Widget _exportTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: .06),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white10),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: const Color(0xFFFFC107), size: 28),
-            const SizedBox(height: 8),
-            AppText(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 3),
-            AppText(
-              subtitle,
-              style: const TextStyle(color: Colors.white54, fontSize: 10),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showPagesSheet(
@@ -10191,46 +10024,6 @@ class _ImageSelectionPainter extends CustomPainter {
       RRect.fromRectAndRadius(rect, Radius.circular(radius)),
       paint,
     );
-  }
-
-  void _drawDashedRRect(
-      Canvas canvas,
-      RRect rrect,
-      Paint paint, {
-        required double dash,
-        required double gap,
-        required bool dotted,
-      }) {
-    final path = Path()..addRRect(rrect);
-    final metrics = path.computeMetrics();
-
-    for (final metric in metrics) {
-      double distance = 0.0;
-      while (distance < metric.length) {
-        final segmentLength = math.min(dash, metric.length - distance);
-        final p1 = metric.getTangentForOffset(distance);
-        final p2 = metric.getTangentForOffset(distance + segmentLength);
-        if (p1 == null || p2 == null) break;
-
-        if (dotted) {
-          canvas.drawCircle(
-            p1.position + (p2.position - p1.position) / 2.0,
-            paint.strokeWidth / 2.0,
-            Paint()
-              ..color = paint.color
-              ..style = PaintingStyle.fill,
-          );
-        } else {
-          final segmentPath = metric.extractPath(
-            distance,
-            distance + segmentLength,
-          );
-          canvas.drawPath(segmentPath, paint);
-        }
-
-        distance += segmentLength + gap;
-      }
-    }
   }
 
   @override

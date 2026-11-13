@@ -23,7 +23,7 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = item.isActive == '1' || item.isActive == 'true';
-    final imageUrl = "item.image" ?? '';
+    final imageUrl = "item.image" ;
 
     return Container(
       padding: const EdgeInsets.all(4),

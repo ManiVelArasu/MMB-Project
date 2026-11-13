@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import '../../component/home_appbar.dart';
-import '../../network/provider/auth_provider.dart';
 import '../../network/provider/bottom_provider.dart';
 import '../../network/provider/business_provider.dart';
 import '../../network/provider/common_provider.dart';
@@ -1358,7 +1356,7 @@ void _showLanguagesBottomSheet(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               AppText(
-                                language.name ?? '',
+                                language.name,
                                 style: TextStyle(
                                   color: isSelected
                                       ? AppColors.appBlack

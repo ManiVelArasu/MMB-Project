@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/ui/screens/search_screen.dart';
@@ -20,7 +18,7 @@ class CustomCreateScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // CustomScreenProvider is created once by CustomBottomNavScreen.
+
     return const _CustomCreateBody();
   }
 }

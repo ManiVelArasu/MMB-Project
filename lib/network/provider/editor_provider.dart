@@ -103,7 +103,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       );
     } catch (e) {
       myUploadsError = e.toString();
-      debugPrint('❌ MyUploads API failed: $e');
     } finally {
       isLoadingMyUploads = false;
       notifyListeners();
@@ -127,8 +126,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               (filename.toLowerCase().endsWith('.png')
                   ? 'image/png'
                   : 'image/jpeg');
-
-      debugPrint('🚀 MEDIA UPLOAD | slot=$slot | filename=$filename');
 
       final initResult = await ApiRepository.instance
           .request<Map<String, dynamic>>(
@@ -161,7 +158,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           return true;
         },
         failure: (error) {
-          debugPrint('❌ Presign API failed: ${error.message}');
           return false;
         },
       );
@@ -237,10 +233,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               'uploading': 'false',
             });
           }
-          debugPrint('Uploaded image key: $uploadKey');
-          debugPrint('Uploaded image URL: ${assetCdnUrl(uploadKey)}');
-          debugPrint('Local image path: ${imageFile.path}');
-          debugPrint('✅ Upload confirmed: $uploadKey');
           notifyListeners();
         },
         failure: (error) =>
@@ -248,7 +240,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       );
       return confirmResult;
     } catch (e, stackTrace) {
-      debugPrint('❌ uploadImageAndConfirm exception: $e');
       debugPrintStack(stackTrace: stackTrace);
       return ApiResult.failure(
         ApiError(message: e.toString(), type: ApiErrorType.unknown),
@@ -294,7 +285,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       );
       return result.when(success: (_) => true, failure: (_) => false);
     } catch (e) {
-      debugPrint('❌ Could not upload picked image: $e');
       uploadedMediaImages.removeWhere(
             (item) => item['localPath'] == imageFile.path,
       );
@@ -323,10 +313,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   final Map<String, String> _outlineStyles = {};
   final Map<String, String> _outlineJoins = {};
 
-  // ---------------------------------------------------------------------
   // Item animations + lock. Kept in side maps (like the outline styles) so
   // the existing EditorItem model stays untouched.
-  // ---------------------------------------------------------------------
   final Map<String, ItemAnimation> _itemAnimations = {};
   final Map<String, int> _animationPreviewTicks = {};
   final Set<String> _lockedItems = <String>{};
@@ -860,7 +848,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       setData(result);
       return result;
     } catch (e) {
-      debugPrint('Freepik category error [$query]: $e');
       setData(<String>[]);
       return <String>[];
     } finally {
@@ -899,7 +886,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         backgroundAssets = result.toSet().toList();
       }
     } catch (e) {
-      debugPrint('Background Pexels error [$normalized]: $e');
       if (_backgroundRequestIds[normalized] == requestId &&
           _backgroundQuery == normalized) {
         backgroundAssets = <String>[];
@@ -939,7 +925,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             .toList();
       }
     } catch (e) {
-      debugPrint('Media Pexels images error [$normalized]: $e');
       if (requestId == _mediaImagesRequestId &&
           _mediaImagesQuery == normalized) {
         mediaImageAssets = <String>[];
@@ -1048,7 +1033,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             : result.toSet().toList();
       }
     } catch (e) {
-      debugPrint('Element category error [$normalized, page=$page]: $e');
       if (!append && _elementCategoryRequestIds[requestKey] == requestId) {
         _elementCategoryAssets[normalized] = <String>[];
         _assetCategoryItems[normalized] = <AssetCategoryItem>[];
@@ -1167,7 +1151,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         }
       }
     } catch (e) {
-      debugPrint('Element category all error [$normalized]: $e');
     } finally {
       if (_elementCategoryRequestIds['${normalized}__all'] == requestId) {
         _elementCategoryAllInProgress.remove(normalized);
@@ -1247,8 +1230,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
 
     try {
-      debugPrint('📄 Loading template: $safeUid');
-
       final result = await TemplateRepository.instance.getTemplateByUid(
         uid: safeUid,
       );
@@ -1281,7 +1262,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       try {
         decoded = jsonDecode(content);
       } catch (e) {
-        debugPrint('❌ Invalid template JSON: $e');
         _templateDetailError = 'Invalid template content JSON';
         return false;
       }
@@ -1401,8 +1381,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
       // Empty template
       if (objects.isEmpty) {
-        debugPrint('⚠️ Template has no objects');
-
         _items.clear();
 
         if (canvasWidth != null &&
@@ -1415,7 +1393,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         isTemplateLoaded = true;
         _templateDetailError = null;
 
-        debugPrint('✅ Empty template loaded: ${template.name}');
         return true;
       }
 
@@ -1427,9 +1404,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             (object) => object['type'] != null || object['objectType'] != null,
       )
           .toList();
-
-      debugPrint('📦 API objects: ${objects.length}');
-      debugPrint('📦 Valid editor objects: ${validObjects.length}');
 
       final extraPages = extraPageObjects
           .map(
@@ -1454,15 +1428,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       isTemplateLoaded = true;
       _templateDetailError = null;
 
-      debugPrint(
-        '✅ Template loaded: ${template.name} | '
-            '${_items.length} objects',
-      );
-
-      debugPrint('Template ID: ${template.id}');
-      debugPrint('Template UID: ${template.uid}');
-      debugPrint('Thumbnail S3 Key: ${template.thumbnailS3Key}');
-
       return true;
     } catch (e, stackTrace) {
       _templateDetailError = e
@@ -1475,9 +1440,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       }
 
       isTemplateLoaded = false;
-
-      debugPrint('❌ Template load failed [$safeUid]: $e');
-      debugPrint('$stackTrace');
 
       return false;
     } finally {
@@ -1749,12 +1711,17 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             templateUid,
           );
           if (imageUrl.isNotEmpty) {
-            final isTemplateBackground = _isTemplateBackgroundObject(
-              json,
-              canvasWidth: canvasWidth,
-              canvasHeight: canvasHeight,
-              tolerant: true,
-            );
+            // Only the FIRST (lowest) canvas-sized image is the background.
+            // Later full-canvas images are overlays (rings, frames, textures)
+            // and must stay selectable/editable.
+            final isTemplateBackground =
+                _templateBackgroundIds.isEmpty &&
+                    _isTemplateBackgroundObject(
+                      json,
+                      canvasWidth: canvasWidth,
+                      canvasHeight: canvasHeight,
+                      tolerant: true,
+                    );
 
             final imageItem = EditorItem(
               id: id,
@@ -1819,8 +1786,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       notifyListeners();
     } catch (e, stackTrace) {
       isTemplateLoaded = false;
-      debugPrint('JSON Load Error: $e');
-      debugPrint('$stackTrace');
       notifyListeners();
     }
   }
@@ -1898,9 +1863,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     if (fileName.isEmpty || uid.isEmpty) {
       if (isAbsoluteHttp) return src;
-      debugPrint(
-        '⚠️ Template image URL could not be resolved. uid=$uid src=$src',
-      );
       return '';
     }
 
@@ -1908,21 +1870,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         'templates/$uid/$fileName';
   }
 
-  EditorItem _normalizeImportedItem(EditorItem item) {
-    if (_isBackgroundLayer(item)) {
-      return item.copyWith(position: Offset.zero);
-    }
-
-    final safeScale = _maxScaleForFrame(item, item.scale);
-    final scaled = item.copyWith(scale: safeScale);
-    return scaled.copyWith(
-      position: _clampPositionForFrame(scaled, scaled.position),
-    );
-  }
-
-  // ---------------------------------------------------------------------
   // FABRIC GROUP FLATTENING
-  // ---------------------------------------------------------------------
   // A Fabric `group` (Canva-style grouped layers) used to fall into the
   // "unknown type" branch and became ONE grey rectangle, so none of the
   // text / images / shapes inside it were editable. We now expand every
@@ -2018,32 +1966,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   FontWeight _parseFontWeight(dynamic value) {
     final weight = int.tryParse(value?.toString() ?? '700') ?? 700;
     return weight >= 700 ? FontWeight.bold : FontWeight.normal;
-  }
-
-  String _outlineStyleFromFabric(
-      dynamic dashArray, {
-        double strokeWidth = 0,
-        String? strokeCap,
-      }) {
-    if (dashArray is! List || dashArray.isEmpty || strokeWidth <= 0) {
-      return 'solid';
-    }
-
-    final values = dashArray
-        .map((e) => _toDouble(e))
-        .whereType<double>()
-        .where((e) => e >= 0)
-        .toList();
-
-    if (values.isEmpty) return 'solid';
-
-    // Fabric dotted borders are commonly represented as [1, gap] or a
-    // very small dash. Round caps make those dashes render as real dots.
-    final first = values.first;
-    if ((strokeCap == 'round' && first <= strokeWidth * 2.0) || first <= 2.0) {
-      return first <= strokeWidth ? 'fine_dotted' : 'dotted';
-    }
-    return 'dashed';
   }
 
   Gradient? _parseGradient(dynamic fill) {
@@ -2209,8 +2131,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// otherwise the PNG is kept as the group's source and can be split into
   /// raster child elements when the user presses UNGROUP ELEMENTS.
   void addFreePikElement(String thumbnailUrl) {
-    debugPrint('Sticker URL: $thumbnailUrl');
-
     final uri = Uri.tryParse(thumbnailUrl);
     final path = uri?.path.toLowerCase() ?? '';
 
@@ -2223,9 +2143,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final svg = isRasterImage
         ? null
         : FreePikService.svgForThumbnail(thumbnailUrl);
-
-    debugPrint('Is raster image: $isRasterImage');
-    debugPrint('SVG available: ${svg != null}');
 
     _saveState();
 
@@ -2377,7 +2294,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       selectedItemType = 'image';
       notifyListeners();
     } catch (e) {
-      debugPrint('Raster ungroup failed: $e');
     }
   }
 
@@ -2396,7 +2312,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       }
       return Uint8List.fromList(chunks);
     } catch (e) {
-      debugPrint('Image bytes load failed: $e');
       return null;
     }
   }
@@ -2489,7 +2404,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       codec.dispose();
       return data?.buffer.asUint8List();
     } catch (e) {
-      debugPrint('Image crop failed: $e');
       return null;
     }
   }
@@ -3121,7 +3035,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               'ry': item.borderRadius,
             };
           } else {
-            debugPrint('⚠️ Shape "$shapeType" ($id) has no saved geometry');
           }
         }
         _templateFlipX[id] = m['flipX'] == true;
@@ -3129,11 +3042,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         if (m['isBackground'] == true) _templateBackgroundIds.add(id);
       }
 
-      debugPrint(
-        '📂 Project loaded: ${_items.length} items '
-            '${_items.map((e) => e.type).toList()} | '
-            'raw: ${_templateRawObjects.length}',
-      );
       isTemplateLoaded = true;
       _pages
         ..clear()
@@ -3144,7 +3052,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       notifyListeners();
       return true;
     } catch (e, st) {
-      debugPrint('❌ loadProjectContent failed: $e\n$st');
       return false;
     }
   }
@@ -3219,8 +3126,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
       freePikAssets = result.toSet().toList();
     } catch (e) {
-      debugPrint("Error fetching assets: $e");
-
       if (_isDisposed ||
           _elementCategoryRequestIds['__generic__'] != requestId) {
         return;
@@ -3265,7 +3170,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         freePikStickers = result.toSet().toList();
       }
     } catch (e) {
-      debugPrint("Error fetching stickers: $e");
       if (_elementCategoryRequestIds['__stickers__'] == requestId) {
         freePikStickers = <String>[];
       }
@@ -3431,8 +3335,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     try {
       final searchQuery = query.trim().isEmpty ? "background" : query.trim();
 
-      debugPrint("Searching Pexels videos: $searchQuery");
-
       _pexelsVideoAssets =
       await FreePikService.searchPexelsVideoAssets(
         searchQuery,
@@ -3441,16 +3343,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       ).timeout(
         const Duration(seconds: 15),
         onTimeout: () {
-          debugPrint("Pexels video search timeout");
           return <PexelsVideoAsset>[];
         },
       );
-
-      debugPrint("Pexels videos found: ${_pexelsVideoAssets.length}");
     } catch (e, stackTrace) {
-      debugPrint("Fetch Freepik Videos Error: $e");
-      debugPrint("$stackTrace");
-
       _pexelsVideoAssets = [];
     } finally {
       _isVideosLoading = false;
@@ -3735,10 +3631,24 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final sc = item.scale.abs() <= 0 ? 1.0 : item.scale.abs();
     final cw = canvasWidth > 0 ? canvasWidth : 1080.0;
     final ch = canvasHeight > 0 ? canvasHeight : 1350.0;
-    return item.position.dx.abs() <= 12.0 &&
-        item.position.dy.abs() <= 12.0 &&
-        item.width * sc >= cw * 0.95 &&
-        item.height * sc >= ch * 0.95;
+    bool coversCanvas(EditorItem e) {
+      final s = e.scale.abs() <= 0 ? 1.0 : e.scale.abs();
+      return e.position.dx.abs() <= 12.0 &&
+          e.position.dy.abs() <= 12.0 &&
+          e.width * s >= cw * 0.95 &&
+          e.height * s >= ch * 0.95;
+    }
+
+    if (!coversCanvas(item)) return false;
+    // Only the lowest canvas-sized layer counts as the background; anything
+    // stacked above it is a normal, selectable item.
+    for (final e in _items) {
+      if ((e.type == 'image' || e.type == 'video' || e.type == 'shape') &&
+          coversCanvas(e)) {
+        return e.id == item.id;
+      }
+    }
+    return true;
   }
 
   void _removeBackgroundLayers() {
@@ -3838,14 +3748,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
-  // ============================================================
   // COPY ENTIRE CURRENT PAGE
-  // ============================================================
   void copyCurrentPage() {
     _syncCurrentPage();
 
     if (_items.isEmpty) {
-      debugPrint('Copy page: no items');
       return;
     }
 
@@ -3877,12 +3784,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
-  // ============================================================
   // PASTE ENTIRE COPIED PAGE INTO ANOTHER PAGE
-  // ============================================================
   bool pasteCopiedPage() {
     if (!hasCopiedPage) {
-      debugPrint('Paste page: nothing copied');
       return false;
     }
 
@@ -3923,11 +3827,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     _syncCurrentPage();
     notifyListeners();
-
-    debugPrint(
-      'FULL PAGE PASTED: ${pastedItems.length} items -> '
-          'Page ${_currentPageIndex + 1}',
-    );
 
     return true;
   }

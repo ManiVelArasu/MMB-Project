@@ -2317,7 +2317,7 @@ class _HomeScreenView extends StatelessWidget {
                 onSchedule: () => (),
               );
             },
-            child: Image.asset('assets/images/download.png'),
+            child: Image.asset('assets/images/content.png'),
           ),
         ),
       ],

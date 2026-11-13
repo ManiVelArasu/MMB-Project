@@ -2,14 +2,14 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:mmb_app/ui/industry/search_bottom_sheet.dart';
+
 import 'package:mmb_app/ui/screens/widget/search_sub_category.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../component/custom_widget.dart';
-import '../../../network/provider/business_change_provider.dart';
+
 import '../../../network/provider/custom_theme_provider.dart';
 import '../../../network/provider/industry_provider.dart';
 import '../../../utils/theme/app.colors.dart';

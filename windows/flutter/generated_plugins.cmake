@@ -6,8 +6,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
   emoji_picker_flutter
   file_selector_windows
-  firebase_auth
-  firebase_core
   flutter_inappwebview_windows
   flutter_tts
   gal

@@ -1,12 +1,10 @@
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
 import 'package:mmb_app/component/appbar_widget.dart';
-import 'package:mmb_app/component/home_appbar.dart';
 import 'package:provider/provider.dart';
 
 import '../../component/custom_widget.dart';
 import '../../network/provider/business_provider.dart';
-import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/industry_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
@@ -37,8 +35,6 @@ class _BusinessCategoryViewState extends State<BusinessCategoryView> {
   Widget build(BuildContext context) {
     final accountProvider = context.watch<BusinessProvider>();
     final industryProvider = context.watch<IndustryProvider>();
-
-    bool isBusiness = accountProvider.currentIndex == 0;
 
     return Scaffold(
       backgroundColor: Colors.white,

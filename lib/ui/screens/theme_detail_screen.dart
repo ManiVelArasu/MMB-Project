@@ -57,10 +57,6 @@ class ThemeDetailView extends StatelessWidget {
             themeItem?.description ??
             "Fresh, vibrant, energetic visuals for businesses that want to grab attention instantly, while keeping every single post consistent, lively, and unmistakably you.";
 
-        final List<dynamic> tags = themeItem?.tags.isNotEmpty == true
-            ? themeItem!.tags
-            : ["Fresh", "Bright", "Energetic", "Modern", "Friendly"];
-
         final List<Variant> variants = themeItem?.variants ?? [];
 
         return Scaffold(

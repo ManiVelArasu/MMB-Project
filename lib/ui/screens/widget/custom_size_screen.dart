@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -189,7 +188,7 @@ class _CustomSizeScreenState extends State<CustomSizeScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20.r),
                           color: isSelected
-                              ? Colors.red.withOpacity(0.08)
+                              ? Colors.red.withValues(alpha: .08)
                               : Colors.white,
                           border: Border.all(
                             color: isSelected

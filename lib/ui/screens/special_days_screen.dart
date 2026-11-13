@@ -151,41 +151,42 @@ class _SpecialDaysScreenView extends StatelessWidget {
                       Expanded(
                         child: templates.isEmpty
                             ? _EmptyState(
-                          isDark: isDark,
-                          message: 'No special days found for these dates',
-                        )
-                            : RefreshIndicator(
-                          color: _kRed,
-                          onRefresh: () {
-                            // Refresh-ல் full screen loader வராது
-                            return provider.loadSpecialDays(
-                              showLoader: false,
-                            );
-                          },
-                          child: GridView.builder(
-                            padding: EdgeInsets.only(bottom: 40.h),
-                            physics: const AlwaysScrollableScrollPhysics(
-                              parent: BouncingScrollPhysics(),
-                            ),
-                            gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 10.w,
-                              mainAxisSpacing: 10.h,
-                              childAspectRatio: 0.78,
-                            ),
-                            itemCount: templates.length,
-                            itemBuilder: (context, index) {
-                              final item = templates[index];
-
-                              return _TemplateCard(
-                                template: item.template,
-                                specialDayName: item.specialDayName,
                                 isDark: isDark,
-                              );
-                            },
-                          ),
-                        ),
+                                message:
+                                    'No special days found for these dates',
+                              )
+                            : RefreshIndicator(
+                                color: _kRed,
+                                onRefresh: () {
+                                  // Refresh-ல் full screen loader வராது
+                                  return provider.loadSpecialDays(
+                                    showLoader: false,
+                                  );
+                                },
+                                child: GridView.builder(
+                                  padding: EdgeInsets.only(bottom: 40.h),
+                                  physics: const AlwaysScrollableScrollPhysics(
+                                    parent: BouncingScrollPhysics(),
+                                  ),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: 10.w,
+                                        mainAxisSpacing: 10.h,
+                                        childAspectRatio: 0.78,
+                                      ),
+                                  itemCount: templates.length,
+                                  itemBuilder: (context, index) {
+                                    final item = templates[index];
+
+                                    return _TemplateCard(
+                                      template: item.template,
+                                      specialDayName: item.specialDayName,
+                                      isDark: isDark,
+                                    );
+                                  },
+                                ),
+                              ),
                       ),
                     ],
                   ),
@@ -255,13 +256,23 @@ class _CalendarButton extends StatelessWidget {
 
 String _formatApiDate(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-'
-        '${d.month.toString().padLeft(2, '0')}-'
-        '${d.day.toString().padLeft(2, '0')}';
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
 
 String _prettyDate(DateTime d) {
   const m = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   return '${d.day} ${m[d.month - 1]}';
 }
@@ -280,9 +291,9 @@ const String _customKey = 'custom';
 /// Rest of this month) + "Pick custom range" that opens the calendar.
 /// Returns the chosen range, or null if dismissed.
 Future<DateTimeRange?> _pickSpecialDaysRange(
-    BuildContext context, {
-      required bool isDark,
-    }) async {
+  BuildContext context, {
+  required bool isDark,
+}) async {
   final today = DateUtils.dateOnly(DateTime.now());
   final monthEnd = DateTime(today.year, today.month + 1, 0);
 
@@ -602,42 +613,42 @@ class _TemplateCard extends StatelessWidget {
                     width: double.infinity,
                     child: imageUrl.isEmpty
                         ? Container(
-                      color: const Color(0xFFFFE5E5),
-                      child: Icon(
-                        Icons.image_outlined,
-                        color: _kRed,
-                        size: 38.sp,
-                      ),
-                    )
-                        : CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) {
-                        return Container(
-                          color: isDark
-                              ? const Color(0xFF292929)
-                              : const Color(0xFFF3F3F3),
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
+                            color: const Color(0xFFFFE5E5),
+                            child: Icon(
+                              Icons.image_outlined,
                               color: _kRed,
+                              size: 38.sp,
                             ),
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) {
+                              return Container(
+                                color: isDark
+                                    ? const Color(0xFF292929)
+                                    : const Color(0xFFF3F3F3),
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: _kRed,
+                                  ),
+                                ),
+                              );
+                            },
+                            errorWidget: (_, __, ___) {
+                              return Container(
+                                color: const Color(0xFFFFE5E5),
+                                child: Icon(
+                                  Icons.image_not_supported_rounded,
+                                  color: _kRed,
+                                  size: 32.sp,
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                      errorWidget: (_, __, ___) {
-                        return Container(
-                          color: const Color(0xFFFFE5E5),
-                          child: Icon(
-                            Icons.image_not_supported_rounded,
-                            color: _kRed,
-                            size: 32.sp,
-                          ),
-                        );
-                      },
-                    ),
                   ),
 
                   // crown (left, locked only) + popup (always right)
@@ -666,7 +677,9 @@ class _TemplateCard extends StatelessWidget {
                             if (uid.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: AppText('Template UID not available'),
+                                  content: AppText(
+                                    'Template UID not available',
+                                  ),
                                 ),
                               );
                               return;

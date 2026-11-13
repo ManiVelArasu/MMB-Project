@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/ui/screens/template_detail_screen.dart';
@@ -13,7 +12,7 @@ import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
-import '../../network/provider/home_screen_provider.dart';
+
 
 class SpecialDayTemplatesScreen extends StatelessWidget {
   final String specialDayName;

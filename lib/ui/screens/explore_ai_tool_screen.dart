@@ -1,7 +1,6 @@
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:mmb_app/component/appbar_widget.dart';
 import 'package:mmb_app/component/home_appbar.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
@@ -11,25 +10,21 @@ import '../../component/custom_widget.dart';
 import '../../network/provider/custom_screen_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 
-class ExploreAiToolScreen extends StatefulWidget {
+class ExploreAiToolScreen extends StatelessWidget {
   const ExploreAiToolScreen({super.key});
 
-  @override
-  State<ExploreAiToolScreen> createState() => _ExploreAiToolScreenState();
-}
-
-class _ExploreAiToolScreenState extends State<ExploreAiToolScreen> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<CustomThemeProvider>();
     final isDark = themeProvider.isDarkMode;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: HomeCustomAppBar(),
       body: Stack(
         children: [
-          if (!isDark) // Only show the white/light plan gradient when in light mode
+          if (!isDark)
             Positioned(
               top: 0,
               left: 0,
@@ -41,13 +36,21 @@ class _ExploreAiToolScreenState extends State<ExploreAiToolScreen> {
                 alignment: Alignment.topCenter,
               ),
             ),
+
           SafeArea(
             child: ChangeNotifierProvider(
               create: (_) => CustomScreenProvider(),
-              child: Consumer2<CustomScreenProvider, CustomThemeProvider>(
+              child: Consumer2<
+                  CustomScreenProvider,
+                  CustomThemeProvider>(
                 builder: (context, provider, themeProvider, child) {
+                  final isDark = themeProvider.isDarkMode;
+
                   return Padding(
-                    padding: const EdgeInsets.only(left: 15, right: 15),
+                    padding: const EdgeInsets.only(
+                      left: 15,
+                      right: 15,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -59,22 +62,26 @@ class _ExploreAiToolScreenState extends State<ExploreAiToolScreen> {
                             color: AppColors.appBlack,
                           ),
                         ),
-                        SizedBox(height: 10),
+
+                        const SizedBox(height: 10),
+
                         Expanded(
                           child: SingleChildScrollView(
                             child: GridView.builder(
                               shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
+                              physics:
+                              const NeverScrollableScrollPhysics(),
                               itemCount: provider.aiToolsList.length,
                               gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    crossAxisSpacing: 12.w,
-                                    mainAxisSpacing: 12.h,
-                                    childAspectRatio: 0.82,
-                                  ),
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12.w,
+                                mainAxisSpacing: 12.h,
+                                childAspectRatio: 0.82,
+                              ),
                               itemBuilder: (context, index) {
-                                final tool = provider.aiToolsList[index];
+                                final tool =
+                                provider.aiToolsList[index];
 
                                 return InkWell(
                                   onTap: () {
@@ -83,14 +90,16 @@ class _ExploreAiToolScreenState extends State<ExploreAiToolScreen> {
                                       tool.routeName,
                                     );
                                   },
-
+                                  borderRadius:
+                                  BorderRadius.circular(16.r),
                                   child: Container(
                                     padding: EdgeInsets.all(12.r),
                                     decoration: BoxDecoration(
                                       color: isDark
                                           ? const Color(0xFF1E1E1E)
                                           : Colors.white,
-                                      borderRadius: BorderRadius.circular(16.r),
+                                      borderRadius:
+                                      BorderRadius.circular(16.r),
                                       border: Border.all(
                                         color: isDark
                                             ? Colors.grey.shade800
@@ -100,7 +109,8 @@ class _ExploreAiToolScreenState extends State<ExploreAiToolScreen> {
                                       boxShadow: [
                                         BoxShadow(
                                           color: Colors.black.withValues(
-                                            alpha: isDark ? 0.2 : 0.02,
+                                            alpha:
+                                            isDark ? 0.2 : 0.02,
                                           ),
                                           blurRadius: 8.r,
                                           offset: Offset(0, 2.h),
@@ -109,29 +119,29 @@ class _ExploreAiToolScreenState extends State<ExploreAiToolScreen> {
                                     ),
                                     child: Column(
                                       mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                      MainAxisAlignment.center,
                                       children: [
                                         SizedBox(
                                           height: 52.h,
                                           width: 52.w,
-                                          child:
-                                              tool.imagePath.trim().isNotEmpty
+                                          child: tool.imagePath
+                                              .trim()
+                                              .isNotEmpty
                                               ? Image.asset(
-                                                  tool.imagePath,
-                                                  fit: BoxFit.contain,
-                                                  errorBuilder:
-                                                      (
-                                                        context,
-                                                        error,
-                                                        stackTrace,
-                                                      ) => _buildFallbackIcon(),
-                                                )
+                                            tool.imagePath,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (
+                                                context,
+                                                error,
+                                                stackTrace,
+                                                ) =>
+                                                _buildFallbackIcon(),
+                                          )
                                               : _buildFallbackIcon(),
                                         ),
 
                                         SizedBox(height: 10.h),
 
-                                        // 2. TOOL TITLE
                                         AppText(
                                           tool.title,
                                           textAlign: TextAlign.center,
@@ -140,15 +150,16 @@ class _ExploreAiToolScreenState extends State<ExploreAiToolScreen> {
                                                 ? Colors.white
                                                 : Colors.black,
                                             fontSize: 13.sp,
-                                            fontWeight: FontWeight.w800,
+                                            fontWeight:
+                                            FontWeight.w800,
                                           ),
                                           maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                          overflow:
+                                          TextOverflow.ellipsis,
                                         ),
 
                                         SizedBox(height: 4.h),
 
-                                        // 3. TOOL SUBTITLE
                                         AppText(
                                           tool.subtitle,
                                           textAlign: TextAlign.center,
@@ -157,11 +168,13 @@ class _ExploreAiToolScreenState extends State<ExploreAiToolScreen> {
                                                 ? Colors.grey.shade400
                                                 : Colors.grey.shade600,
                                             fontSize: 9.5.sp,
-                                            fontWeight: FontWeight.w500,
+                                            fontWeight:
+                                            FontWeight.w500,
                                             height: 1.2,
                                           ),
                                           maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
+                                          overflow:
+                                          TextOverflow.ellipsis,
                                         ),
                                       ],
                                     ),
@@ -171,7 +184,8 @@ class _ExploreAiToolScreenState extends State<ExploreAiToolScreen> {
                             ),
                           ),
                         ),
-                        SizedBox(height: 10),
+
+                        const SizedBox(height: 10),
                       ],
                     ),
                   );

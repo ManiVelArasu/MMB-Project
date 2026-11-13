@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -117,21 +116,21 @@ class CommonShareBottomSheet {
                   SizedBox(height: 20.h),
                   _section(
                     context: sheetContext,
-                    items: shareItems ?? _defaultShareItems,
+                    items: shareItems,
                     isDark: isDark,
                   ),
                   SizedBox(height: 16.h),
                   _section(
                     context: sheetContext,
                     title: 'Message',
-                    items: messageItems ?? _defaultMessageItems,
+                    items: messageItems,
                     isDark: isDark,
                   ),
                   SizedBox(height: 16.h),
                   _section(
                     context: sheetContext,
                     title: 'Manage',
-                    items: manageItems ?? _defaultManageItems,
+                    items: manageItems ,
                     isDark: isDark,
                   ),
                 ],
@@ -142,30 +141,6 @@ class CommonShareBottomSheet {
       },
     );
   }
-
-  static final List<ShareItem> _defaultShareItems = [
-    ShareItem('Download', Icons.download_rounded),
-    ShareItem('Instagram', Icons.camera_alt_rounded),
-    ShareItem('Facebook', Icons.facebook_rounded),
-    ShareItem('X (Twitter)', Icons.close_rounded),
-    ShareItem('LinkedIn', Icons.link_rounded),
-    ShareItem('Pinterest', Icons.push_pin_rounded),
-    ShareItem('Boost', Icons.rocket_launch_rounded),
-  ];
-
-  static final List<ShareItem> _defaultMessageItems = [
-    ShareItem('WhatsApp', Icons.chat_rounded),
-    ShareItem('Messenger', Icons.message_rounded),
-    ShareItem('Drive', Icons.drive_file_move_rounded),
-    ShareItem('Link', Icons.link_rounded),
-  ];
-
-  static final List<ShareItem> _defaultManageItems = [
-    ShareItem('Caption', Icons.description_rounded),
-    ShareItem('Schedule', Icons.calendar_month_rounded),
-    ShareItem('Link', Icons.link_rounded),
-  ];
-
   static Widget _section({
     required BuildContext context,
     required List<ShareItem> items,

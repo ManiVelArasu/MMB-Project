@@ -15,14 +15,10 @@ import '../../network/provider/plan_provider.dart';
 import '../../network/provider/theme_screen_provider.dart';
 import '../../network/provider/theme_single_provider.dart';
 
-// ============================================================
-// SCREEN
-// ============================================================
-
-class ThemeSingleitemViewScreen extends StatelessWidget {
+class ThemeSingleItemViewScreen extends StatelessWidget {
   final String variantId;
 
-  const ThemeSingleitemViewScreen({super.key, required this.variantId});
+  const ThemeSingleItemViewScreen({super.key, required this.variantId});
 
   @override
   Widget build(BuildContext context) {
@@ -565,7 +561,7 @@ Widget _buildBrandSeriesSection(BuildContext context, bool isDark) {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => ThemeSingleitemViewScreen(
+                            builder: (_) => ThemeSingleItemViewScreen(
                               variantId: variant!.uid!,
                             ),
                           ),
@@ -591,22 +587,6 @@ String _getPerfectFor(ThemeItem item) {
   }
 
   return "Perfect for modern brands";
-}
-
-Widget _buildSeriesPlaceholder(bool isDark) {
-  return Container(
-    color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200,
-
-    child: Center(
-      child: Icon(
-        Icons.palette_outlined,
-
-        size: 35.sp,
-
-        color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
-      ),
-    ),
-  );
 }
 
 String _cleanDescription(String value) {

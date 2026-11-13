@@ -1,12 +1,9 @@
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/network/provider/common_provider.dart';
 import 'package:mmb_app/ui/screens/profile_screen.dart';
 import 'package:mmb_app/ui/screens/widget/business_card.dart';
-import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import '../../component/appbar_widget.dart';
@@ -674,7 +671,6 @@ class BusinessProfileView extends StatelessWidget {
       CommonProvider provider,
       BusinessProfileProvider businessProfileProvider,
       ) {
-    final theme = Theme.of(context);
     final String personalUrl =
         '${ApiEndpoints.cdnImageUrl}/${provider.me?.data.profilePhotoS3Key ?? ''}';
     return Scaffold(
@@ -2094,14 +2090,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
     );
   }
 
-  bool _sameColors(List<Color> a, List<Color> b) {
-    if (a.length != b.length) return false;
 
-    for (int i = 0; i < a.length; i++) {
-      if (a[i].value != b[i].value) return false;
-    }
-    return true;
-  }
 
   Color? _colorFromHex(String value) {
     var hex = value.trim().replaceAll("#", "");

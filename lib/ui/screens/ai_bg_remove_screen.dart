@@ -5,9 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:provider/provider.dart';
-
-import '../../component/appbar_widget.dart';
-import '../../component/custom_searchbar.dart';
 import '../../component/home_appbar.dart';
 import '../../network/provider/ai_hub_provider.dart';
 import '../../utils/theme/app.colors.dart';

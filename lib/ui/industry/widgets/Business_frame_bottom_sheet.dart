@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 import '../../../network/provider/business_provider.dart';
-import '../../../network/provider/custom_theme_provider.dart';
+
 
 class UpdateBusinessSheet extends StatefulWidget {
   const UpdateBusinessSheet({super.key});
@@ -41,7 +41,7 @@ class _UpdateBusinessSheetState extends State<UpdateBusinessSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final customColor = Provider.of<CustomThemeProvider>(context).colors;
+
 
     return Container(
       decoration: BoxDecoration(
