@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,83 +23,65 @@ import 'network/provider/custom_theme_provider.dart';
 import 'network/provider/common_provider.dart';
 import 'network/provider/plan_provider.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  if (WebViewPlatform.instance == null) {
-    WebViewPlatform.instance = AndroidWebViewPlatform();
-  }
-  SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.manual,
-    overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
-  );
+/// Startup-la network/refresh evlo neram wait pannalaam.
+/// Athukku mela aana app-a open pannidum (black screen varaadhu).
+const Duration _kStartupTimeout = Duration(seconds: 8);
 
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ),
-  );
+void main() {
+  runZonedGuarded(
+        () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  await _initApi();
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+        debugPrint('❌ FlutterError: ${details.exceptionAsString()}');
+      };
 
-  await _initializeApp();
+      try {
+        if (WebViewPlatform.instance == null) {
+          WebViewPlatform.instance = AndroidWebViewPlatform();
+        }
+      } catch (e) {
+        debugPrint('❌ WebView init error: $e');
+      }
 
-  runApp(const MyApp());
-}
-
-Future<void> _initializeApp() async {
-  final prefs = await SharedPreferences.getInstance();
-
-  final accessToken = prefs.getString('auth_token');
-  final refreshToken = prefs.getString('refresh_token');
-
-  debugPrint('🔐 Stored access token: ${accessToken != null}');
-  debugPrint('🔄 Stored refresh token: ${refreshToken != null}');
-
-  await ApiHandler.instance.setTokens(
-    token: accessToken ?? '',
-    refreshToken: refreshToken,
-  );
-
-  if (refreshToken == null || refreshToken.isEmpty) {
-    return;
-  }
-
-  try {
-    // Separate Dio for startup refresh so this request cannot trigger the
-    // normal 401 interceptor recursively.
-    final refreshDio = Dio(
-      BaseOptions(
-        baseUrl: ApiEndpoints.baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
-        headers: const {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
-
-    final repository = RefreshRepository(refreshDio);
-    final result = await repository.refreshToken(refreshToken: refreshToken);
-
-    if (result != null) {
-      // Save BOTH tokens and update ApiHandler's in-memory token.
-      await ApiHandler.instance.setTokens(
-        token: result.accessToken,
-        refreshToken: result.refreshToken,
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
       );
 
-      debugPrint('✅ Startup refresh successful');
-    } else {
-      debugPrint('❌ Startup refresh failed; keeping stored access token');
-    }
-  } catch (e, stackTrace) {
-    debugPrint('❌ Startup refresh exception: $e');
-    debugPrintStack(stackTrace: stackTrace);
-  }
+      SystemChrome.setSystemUIOverlayStyle(
+        const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+        ),
+      );
+
+      // Startup init fail aanaalum / timeout aanaalum runApp kattaayam call aaganum.
+      try {
+        await _initApi().timeout(
+          _kStartupTimeout,
+          onTimeout: () {
+            debugPrint('⏱️ Startup init timed out, launching app anyway');
+          },
+        );
+      } catch (e, stackTrace) {
+        debugPrint('❌ Startup init error: $e');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+
+      runApp(const MyApp());
+    },
+        (error, stackTrace) {
+      debugPrint('❌ Uncaught error: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    },
+  );
 }
 
+/// ApiHandler init + stored tokens load + ore oru thadavai token refresh.
+/// (Munnadi _initApi and _initializeApp rendum refresh call pannichu,
+/// ippo onnaaga merge pannirukken.)
 Future<void> _initApi() async {
   final dioForInterceptor = Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl));
 
@@ -114,28 +98,37 @@ Future<void> _initApi() async {
 
   final prefs = await SharedPreferences.getInstance();
 
-  final accessToken = prefs.getString('auth_token');
+  // Login 'access_token' nu save pannudhu, main 'auth_token' nu padikkudhu.
+  // Rendaiyum check pannurom.
+  final accessToken =
+      prefs.getString('auth_token') ?? prefs.getString('access_token');
   final refreshToken = prefs.getString('refresh_token');
+
+  debugPrint('🔐 Stored access token: ${accessToken != null}');
+  debugPrint('🔄 Stored refresh token: ${refreshToken != null}');
 
   if (accessToken != null && accessToken.isNotEmpty) {
     await ApiHandler.instance.setTokens(
       token: accessToken,
       refreshToken: refreshToken,
     );
+  } else {
+    debugPrint('✅ No stored session');
   }
 
-  // 4. Refresh using stored refresh token
+  // Refresh token illana (first install / logout) -> direct-a app open.
   if (refreshToken == null || refreshToken.isEmpty) {
     return;
   }
 
   try {
+    // Separate Dio: 401 interceptor recursion varaama irukka.
     final refreshDio = Dio(
       BaseOptions(
         baseUrl: ApiEndpoints.baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
-        headers: {
+        connectTimeout: const Duration(seconds: 6),
+        receiveTimeout: const Duration(seconds: 6),
+        headers: const {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
@@ -143,15 +136,13 @@ Future<void> _initApi() async {
     );
 
     final repository = RefreshRepository(refreshDio);
-
     final result = await repository.refreshToken(refreshToken: refreshToken);
 
     if (result == null) {
-      debugPrint('❌ Startup refresh failed');
+      debugPrint('❌ Startup refresh failed; keeping stored access token');
       return;
     }
 
-    // 5. Save NEW access + refresh token
     await ApiHandler.instance.setTokens(
       token: result.accessToken,
       refreshToken: result.refreshToken,
