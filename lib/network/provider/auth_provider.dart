@@ -9,13 +9,19 @@ import 'business_provider.dart';
 import 'common_provider.dart';
 
 class AuthProvider extends ChangeNotifier with MyNotifier {
+  // ---------------------------------------------------------------------
+  // TEST / DEMO ACCOUNT
+  // ---------------------------------------------------------------------
+  static const String testMobile = '9000000001';
+  static const String testOtp = '305861';
+
   String _mobileNumber = "";
   String? mobileError;
   bool _isEditingMobile = false;
 
   final List<TextEditingController> _controllers = List.generate(
     6,
-    (index) => TextEditingController(),
+        (index) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
 
@@ -27,6 +33,35 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
   List<TextEditingController> get controllers => _controllers;
 
   List<FocusNode> get focusNodes => _focusNodes;
+
+  /// Returns true when the current number is the test number
+  /// (works with or without +91 prefix).
+  bool get isTestNumber {
+    final digits = _mobileNumber.replaceAll(RegExp(r'\D'), '');
+    final last10 =
+    digits.length >= 10 ? digits.substring(digits.length - 10) : digits;
+    return last10 == testMobile;
+  }
+
+  /// Fills the OTP boxes with the test OTP if the number is the test number.
+  void fillTestOtpIfNeeded() {
+    if (!isTestNumber) return;
+    for (int i = 0; i < 6; i++) {
+      _controllers[i].text = testOtp[i];
+    }
+    notifyListeners();
+  }
+
+  // ---------------------------------------------------------------------
+  // AUTO VERIFY (test number)
+  // ---------------------------------------------------------------------
+  bool _autoVerifyDone = false;
+
+  /// True when test number + all 6 OTP boxes filled + not already verifying.
+  bool get shouldAutoVerify =>
+      isTestNumber && isOtpComplete() && !_isVerifyLoading && !_autoVerifyDone;
+
+  void markAutoVerifyDone() => _autoVerifyDone = true;
 
   /// set method
 
@@ -68,6 +103,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
     return number;
   }
+
   Future<bool> updateAndSaveNewMobile() async {
     if (newMobileInput.trim().length != 10) {
       mobileError = "Enter a valid 10-digit number";
@@ -77,6 +113,12 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     try {
       _mobileNumber = newMobileInput.trim();
       mobileError = null;
+
+      // New number -> old OTP clear, test number na refill
+      _autoVerifyDone = false;
+      clearOtp();
+      fillTestOtpIfNeeded();
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('saved_mobile_number', _mobileNumber);
 
@@ -88,9 +130,11 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       return false;
     }
   }
+
   Future<void> clearAuthDataForNewLogin() async {
     _mobileNumber = "";
     newMobileInput = "";
+    _autoVerifyDone = false;
     clearOtp();
 
     final prefs = await SharedPreferences.getInstance();
@@ -107,7 +151,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   bool isOtpComplete() {
     return _controllers.every(
-      (controller) => controller.text.trim().isNotEmpty,
+          (controller) => controller.text.trim().isNotEmpty,
     );
   }
 
@@ -120,8 +164,6 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
       controller.clear();
     }
   }
-
-
 
   Future<bool> apiSendOtp(String phone, String purpose) async {
     _isLoginLoading = true;
@@ -211,6 +253,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
   Future<Map<String, dynamic>?> verifyOtpApi(BuildContext context) async {
     final String enteredOtp = getOtp();
+
+    debugPrint("🔥 verifyOtpApi called | mobile: $_mobileNumber | otp: $enteredOtp");
 
     if (enteredOtp.length < 6) {
       _errorMessage = "Please enter complete 6-digit OTP";
@@ -355,7 +399,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 "/AccountTypeScreen",
-                (route) => false,
+                    (route) => false,
                 arguments: {"showSkip": true},
               );
 
@@ -404,14 +448,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               if (hasName) {
                 debugPrint(
                   "✅ PERSONAL PROFILE COMPLETE"
-                  " → CustomBottomNavScreen",
+                      " → CustomBottomNavScreen",
                 );
-
-                await Future.delayed(const Duration(seconds: 5));
-
-                if (!context.mounted) {
-                  return data;
-                }
 
                 Navigator.pushNamedAndRemoveUntil(
                   context,
@@ -425,13 +463,13 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               else {
                 debugPrint(
                   "⚠️ PERSONAL PROFILE INCOMPLETE"
-                  " → BusinessDetailsScreen",
+                      " → BusinessDetailsScreen",
                 );
 
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   "/BusinessDetailsScreen",
-                  (route) => false,
+                      (route) => false,
                 );
               }
 
@@ -468,7 +506,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               if (!businessSuccess) {
                 debugPrint(
                   "⚠️ BUSINESS DATA NOT FOUND"
-                  " → BusinessDetailsScreen",
+                      " → BusinessDetailsScreen",
                 );
 
                 _isVerifyLoading = false;
@@ -481,7 +519,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   "/BusinessDetailsScreen",
-                  (route) => false,
+                      (route) => false,
                 );
 
                 return data;
@@ -525,14 +563,8 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               if (hasName) {
                 debugPrint(
                   "✅ BUSINESS PROFILE COMPLETE"
-                  " → CustomBottomNavScreen",
+                      " → CustomBottomNavScreen",
                 );
-
-                await Future.delayed(const Duration(seconds: 5));
-
-                if (!context.mounted) {
-                  return data;
-                }
 
                 Navigator.pushNamedAndRemoveUntil(
                   context,
@@ -546,13 +578,13 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
               else {
                 debugPrint(
                   "⚠️ BUSINESS PROFILE INCOMPLETE"
-                  " → BusinessDetailsScreen",
+                      " → BusinessDetailsScreen",
                 );
 
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   "/BusinessDetailsScreen",
-                  (route) => false,
+                      (route) => false,
                 );
               }
 
@@ -577,7 +609,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
             Navigator.pushNamedAndRemoveUntil(
               context,
               "/AccountTypeScreen",
-              (route) => false,
+                  (route) => false,
               arguments: {"showSkip": true},
             );
 
@@ -605,7 +637,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
 
           debugPrint(
             "❌ OTP VERIFICATION FAILED: "
-            "${error.message}",
+                "${error.message}",
           );
 
           notifyListeners();
@@ -705,6 +737,7 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     final savedNumber = prefs.getString('saved_mobile_number');
     if (savedNumber != null && savedNumber.isNotEmpty) {
       _mobileNumber = savedNumber;
+      fillTestOtpIfNeeded();
       notifyListeners();
     }
   }

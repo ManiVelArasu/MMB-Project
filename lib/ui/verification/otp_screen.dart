@@ -13,6 +13,9 @@ import '../../utils/height_measure.dart';
 import '../../widgets/button_widget.dart';
 import '../../widgets/title_value_widget.dart';
 
+/// Test number (9000000001) kudutha OTP fill aana udane auto-verify aaganuma?
+const bool kAutoVerifyTestOtp = true;
+
 class OtpScreen extends StatelessWidget {
   const OtpScreen({super.key});
 
@@ -28,6 +31,7 @@ class OtpScreen extends StatelessWidget {
         final provider = AuthProvider();
         if (phone.isNotEmpty) {
           provider.setMobileNumber(phone);
+          provider.fillTestOtpIfNeeded();
         } else {
           provider.loadSavedMobileNumber();
         }
@@ -39,6 +43,26 @@ class OtpScreen extends StatelessWidget {
 
         return Consumer<AuthProvider>(
           builder: (context, authProvider, child) {
+            // -----------------------------------------------------------
+            // AUTO VERIFY: test number + OTP boxes full -> verify API call
+            // -----------------------------------------------------------
+            if (kAutoVerifyTestOtp && authProvider.shouldAutoVerify) {
+              authProvider.markAutoVerifyDone();
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                if (!context.mounted) return;
+                debugPrint(
+                  "🔥 AUTO VERIFY STARTED, OTP: ${authProvider.getOtp()}",
+                );
+                final res = await authProvider.verifyOtpApi(context);
+                if (res == null) {
+                  Fluttertoast.showToast(
+                    msg: authProvider.errorMessage ??
+                        "OTP verification failed",
+                  );
+                }
+              });
+            }
+
             return Scaffold(
               resizeToAvoidBottomInset: false,
               appBar: AppBar(
@@ -106,10 +130,10 @@ class OtpScreen extends StatelessWidget {
                                               TextInputType.phone,
                                               autofocus: authProvider
                                                   .isEditingMobile,
-                                              initialValue:
-                                              authProvider.mobileNumber,
-                                              onChanged:
-                                              authProvider.updateMobile,
+                                              initialValue: authProvider
+                                                  .mobileNumber,
+                                              onChanged: authProvider
+                                                  .updateMobile,
                                               decoration:
                                               const InputDecoration(
                                                 border: InputBorder.none,
@@ -127,7 +151,8 @@ class OtpScreen extends StatelessWidget {
                                               enabled: authProvider
                                                   .isEditingMobile,
                                             ),
-                                            if (authProvider.mobileError !=
+                                            if (authProvider
+                                                .mobileError !=
                                                 null)
                                               Padding(
                                                 padding:
@@ -135,7 +160,8 @@ class OtpScreen extends StatelessWidget {
                                                   top: 4,
                                                 ),
                                                 child: Text(
-                                                  authProvider.mobileError!,
+                                                  authProvider
+                                                      .mobileError!,
                                                   style: const TextStyle(
                                                     color: Colors.red,
                                                     fontSize: 12,
@@ -145,12 +171,14 @@ class OtpScreen extends StatelessWidget {
                                           ],
                                         )
                                             : Text(
-                                          authProvider.mobileNumber.isEmpty
+                                          authProvider
+                                              .mobileNumber.isEmpty
                                               ? "Enter mobile number"
-                                              : authProvider.mobileNumber,
-                                          style: theme.bodyMedium!.copyWith(
-                                            color:
-                                            authProvider
+                                              : authProvider
+                                              .mobileNumber,
+                                          style:
+                                          theme.bodyMedium!.copyWith(
+                                            color: authProvider
                                                 .mobileNumber
                                                 .isEmpty
                                                 ? Colors.grey
@@ -210,8 +238,7 @@ class OtpScreen extends StatelessWidget {
                                             ),
                                           ),
                                           child: Center(
-                                            child:
-                                            authProvider
+                                            child: authProvider
                                                 .controllers[index]
                                                 .text
                                                 .isEmpty &&
@@ -242,6 +269,14 @@ class OtpScreen extends StatelessWidget {
                                       child: Opacity(
                                         opacity: 0.0,
                                         child: TextFormField(
+                                          // Number maarina field rebuild aagi
+                                          // initialValue refresh aagum
+                                          key: ValueKey(
+                                            authProvider.mobileNumber,
+                                          ),
+                                          initialValue: authProvider.isTestNumber
+                                              ? AuthProvider.testOtp
+                                              : null,
                                           autofocus: true,
                                           keyboardType: TextInputType.number,
                                           autofillHints: const [
@@ -249,7 +284,8 @@ class OtpScreen extends StatelessWidget {
                                           ],
                                           maxLength: 6,
                                           inputFormatters: [
-                                            FilteringTextInputFormatter.digitsOnly,
+                                            FilteringTextInputFormatter
+                                                .digitsOnly,
                                           ],
                                           decoration: const InputDecoration(
                                             counterText: '',
@@ -258,10 +294,12 @@ class OtpScreen extends StatelessWidget {
                                           onChanged: (value) async {
                                             for (int i = 0; i < 6; i++) {
                                               if (i < value.length) {
-                                                authProvider.controllers[i].text =
-                                                value[i];
+                                                authProvider
+                                                    .controllers[i]
+                                                    .text = value[i];
                                               } else {
-                                                authProvider.controllers[i].clear();
+                                                authProvider.controllers[i]
+                                                    .clear();
                                               }
                                             }
 
@@ -270,9 +308,18 @@ class OtpScreen extends StatelessWidget {
                                             // OTP 6 digits completed
                                             if (value.length == 6 &&
                                                 !authProvider.isVerifyLoading) {
-                                              await authProvider.verifyOtpApi(
-                                                context,
+                                              debugPrint(
+                                                "🔥 onChanged 6 digits -> verify",
                                               );
+                                              final res = await authProvider
+                                                  .verifyOtpApi(context);
+                                              if (res == null) {
+                                                Fluttertoast.showToast(
+                                                  msg: authProvider
+                                                      .errorMessage ??
+                                                      "OTP verification failed",
+                                                );
+                                              }
                                             }
                                           },
                                         ),
@@ -286,8 +333,10 @@ class OtpScreen extends StatelessWidget {
                                   child: Padding(
                                     padding: const EdgeInsets.all(12.0),
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      mainAxisAlignment:
+                                      MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.center,
                                       children: [
                                         Text(
                                           "Didn't receive the code?",
@@ -300,8 +349,10 @@ class OtpScreen extends StatelessWidget {
                                           onTap: authProvider.isReSendLoading
                                               ? null
                                               : () async {
-                                            if (authProvider.submitLogin()) {
-                                              String? otp = await authProvider
+                                            if (authProvider
+                                                .submitLogin()) {
+                                              String? otp =
+                                              await authProvider
                                                   .reSendOtp(
                                                 authProvider.mobileNumber,
                                                 "login",
@@ -310,10 +361,12 @@ class OtpScreen extends StatelessWidget {
                                               if (otp != null &&
                                                   context.mounted) {
                                                 final prefs =
-                                                await SharedPreferences.getInstance();
+                                                await SharedPreferences
+                                                    .getInstance();
                                                 await prefs.setString(
                                                   'saved_mobile_number',
-                                                  authProvider.mobileNumber,
+                                                  authProvider
+                                                      .mobileNumber,
                                                 );
 
                                                 Fluttertoast.showToast(
@@ -327,9 +380,11 @@ class OtpScreen extends StatelessWidget {
                                               ? SizedBox(
                                             height: 20,
                                             width: 20,
-                                            child: CircularProgressIndicator(
+                                            child:
+                                            CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              color: customColor.redColor,
+                                              color:
+                                              customColor.redColor,
                                             ),
                                           )
                                               : Text(
@@ -337,7 +392,8 @@ class OtpScreen extends StatelessWidget {
                                             style: theme.titleMedium!
                                                 .copyWith(
                                               fontWeight: FontWeight.w600,
-                                              color: customColor.redColor,
+                                              color:
+                                              customColor.redColor,
                                             ),
                                           ),
                                         ),
@@ -348,88 +404,43 @@ class OtpScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-                          /*  Column(
-                        children: [
+
+                          // CONTINUE button (manual verify / retry)
                           ButtonWidget(
                             isLoading: authProvider.isVerifyLoading,
+                            title: "CONTINUE",
+                            height: 54.h,
+                            textStyle: theme.titleLarge!.copyWith(
+                              color: customColor.whiteColor,
+                              fontWeight: FontWeight.w700,
+                            ),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(16),
                               color: customColor.redColor,
-                              border: Border.all(
-                                color: customColor.borderColor,
-                              ),
                             ),
                             buttonPress: () async {
-                              final responseData = await authProvider
-                                  .verifyOtpApi(context);
+                              debugPrint(
+                                "🔥 CONTINUE clicked, OTP: ${authProvider.getOtp()}",
+                              );
 
-                              if (!context.mounted) return;
+                              if (!authProvider.isOtpComplete()) {
+                                Fluttertoast.showToast(
+                                  msg: "Enter complete 6-digit OTP",
+                                );
+                                return;
+                              }
 
-                              if (responseData != null) {
-                                String message =
-                                    responseData['message'] ??
-                                    "OTP Verified Successfully";
-                                Fluttertoast.showToast(msg: message);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      authProvider.errorMessage ??
-                                          "Invalid OTP",
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
+                              final res =
+                              await authProvider.verifyOtpApi(context);
+                              if (res == null) {
+                                Fluttertoast.showToast(
+                                  msg: authProvider.errorMessage ??
+                                      "OTP verification failed",
                                 );
                               }
                             },
-                            title: "CONTINUE",
                           ),
-                          height24,
-                          Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(12.0.r),
-                              child: RichText(
-                                textAlign: TextAlign.center,
-                                text: TextSpan(
-                                  style: theme.bodyMedium!.copyWith(
-                                    fontSize: 14,
-                                  ),
-                                  children: [
-                                    TextSpan(
-                                      text: "By continuing, you agree to our ",
-                                      style: theme.bodyMedium!.copyWith(
-                                        color: customColor.textColor,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: "Terms & Conditions",
-                                      style: theme.bodyMedium!.copyWith(
-                                        color: customColor.baseColor,
-                                      ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {},
-                                    ),
-                                    TextSpan(
-                                      text: " and ",
-                                      style: theme.bodyMedium!.copyWith(
-                                        color: customColor.textColor,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: "Privacy Policy",
-                                      style: theme.bodyMedium!.copyWith(
-                                        color: customColor.baseColor,
-                                      ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {},
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),*/
+                          height12,
                         ],
                       ),
                     ),
@@ -524,8 +535,7 @@ class OtpScreen extends StatelessWidget {
 
                 authProvider.setNewMobileInput(controller.text);
 
-                final success =
-                await authProvider.updateAndSaveNewMobile();
+                final success = await authProvider.updateAndSaveNewMobile();
 
                 if (!dialogContext.mounted) return;
 

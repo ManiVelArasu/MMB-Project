@@ -18,8 +18,6 @@ import 'common_provider.dart';
 
 class HomeScreenProvider extends ChangeNotifier {
   bool _initialized = false;
-
-  // Keeps existing content visible while pull-to-refresh APIs run.
   bool _isSilentRefresh = false;
 
   HomeScreenProvider({bool loadSpecialDaysOnInit = true}) {
@@ -28,7 +26,7 @@ class HomeScreenProvider extends ChangeNotifier {
   String _selectedMySpace = '';
 
   String get selectedMySpace => _selectedMySpace;
-
+  final CommonProvider provider = CommonProvider.instance;
   void setSelectedMySpace(String title) {
     _selectedMySpace = title;
     notifyListeners();
@@ -39,7 +37,7 @@ class HomeScreenProvider extends ChangeNotifier {
       debugPrint("⚠️ HomeScreenProvider already initialized");
       return;
     }
-
+    getMeRepository.businessApi();
     _initialized = true;
 
     debugPrint("========================================");
@@ -112,7 +110,6 @@ class HomeScreenProvider extends ChangeNotifier {
   String get businessName => _businessName;
   String selectedDate = "2";
   final GetMeRepository getMeRepository = GetMeRepository.instance;
-  final CommonProvider provider = CommonProvider.instance;
 
   final BusinessProfileRepository businessProfileRepository =
       BusinessProfileRepository.instance;
@@ -823,6 +820,7 @@ class HomeScreenProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   final Map<int, GlobalKey> _zoneKeys = {};
 
   GlobalKey zoneKey(int index) =>
@@ -847,8 +845,8 @@ class HomeScreenProvider extends ChangeNotifier {
           : 0;
 
       final boundary =
-      _zoneKeys[index]?.currentContext?.findRenderObject()
-      as RenderRepaintBoundary?;
+          _zoneKeys[index]?.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
 
       if (boundary == null) return 'Nothing to download';
 
@@ -882,6 +880,7 @@ class HomeScreenProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   void clearUserData() {
     // User-specific data
     _businessName = "";

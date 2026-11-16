@@ -1,4 +1,4 @@
-package com.mobile.mmb.project_mmb
+package com.makemybrand.app
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
