@@ -7,6 +7,7 @@ import '../../component/custom_searchbar.dart';
 import '../../component/custom_widget.dart';
 import '../../component/home_appbar.dart';
 import '../../network/provider/custom_screen_provider.dart';
+import '../../network/provider/search_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
 
@@ -18,7 +19,6 @@ class CustomCreateScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return const _CustomCreateBody();
   }
 }
@@ -30,6 +30,7 @@ class _CustomCreateBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
     final themeProvider = context.watch<CustomThemeProvider>();
+    final searchProvider = context.watch<SearchProvider>();
     final isDark = themeProvider.isDarkMode;
 
     return Consumer<CustomScreenProvider>(
@@ -84,20 +85,32 @@ class _CustomCreateBody extends StatelessWidget {
                     child: Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: size.width * 0.04,
-                        vertical: 12.h,
+                        vertical: 6.h,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           CustomSearchBar(
+                            controller: searchProvider.controller,
                             hintText: "Search templates, Brand Series...",
                             prefixAsset: "assets/images/search.png",
                             suffixAsset: "assets/images/mic.png",
-                            borderColor: const Color(0xFFFFCDD2),
-                            showSuffixIcon: false,
-                            onSubmitted: (query) {
-                              final q = query.trim();
+                            borderColor: AppColors.searchBorderColor,
+
+                            onChanged: searchProvider.onTextChanged,
+
+                            suggestions: searchProvider.suggestions
+                                .map((e) => e.label)
+                                .toList(),
+
+                            showSuggestions: true,
+
+                            onSuggestionTap: (value) {
+                              final q = value.trim();
                               if (q.length < 2) return;
+
+                              searchProvider.clearSuggestions();
+                              searchProvider.controller.clear();
 
                               FocusManager.instance.primaryFocus?.unfocus();
 
@@ -108,8 +121,23 @@ class _CustomCreateBody extends StatelessWidget {
                                 ),
                               );
                             },
+
+                            onSubmitted: (query) {
+                              final q = query.trim();
+                              if (q.length < 2) return;
+
+                              FocusManager.instance.primaryFocus?.unfocus();
+                              searchProvider.clearSuggestions();
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SearchScreen(initialQuery: q),
+                                ),
+                              );
+                            },
                           ),
-                          SizedBox(height: 24.h),
+                          SizedBox(height: 12.h),
 
                           _buildHeader(
                             title: "Create from Scratch",
@@ -119,10 +147,8 @@ class _CustomCreateBody extends StatelessWidget {
                             isDark: isDark,
                           ),
 
-                          SizedBox(height: 4.h),
-
                           SizedBox(
-                            height: 210.h,
+                            height: 190.h,
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
                               itemCount:
@@ -197,7 +223,7 @@ class _CustomCreateBody extends StatelessWidget {
                               },
                             ),
                           ),
-                          SizedBox(height: 10.h),
+                          SizedBox(height: 12.h),
 
                           _buildHeader(
                             title: "AI HUB",
@@ -278,10 +304,10 @@ class _CustomCreateBody extends StatelessWidget {
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           color: isDark
-                                              ? Colors.white
-                                              : Colors.black,
-                                          fontSize: 13.sp,
-                                          fontWeight: FontWeight.w800,
+                                              ? AppColors.appWhite
+                                              : AppColors.headingBlack,
+                                          fontSize: AppFontSize.fontSize18,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -297,8 +323,8 @@ class _CustomCreateBody extends StatelessWidget {
                                           color: isDark
                                               ? Colors.grey.shade400
                                               : Colors.grey.shade600,
-                                          fontSize: 9.5.sp,
-                                          fontWeight: FontWeight.w500,
+                                          fontSize: AppFontSize.fontSize14,
+                                          fontWeight: FontWeight.w400,
                                           height: 1.2,
                                         ),
                                         maxLines: 2,
@@ -481,7 +507,7 @@ class _CustomCreateBody extends StatelessWidget {
                 AppText(
                   subtitle,
                   style: TextStyle(
-                    color: isDark ? Colors.white60 : Colors.grey,
+                    color: isDark ? Colors.white60 : AppColors.appBlack,
                     fontSize: 11.sp,
                   ),
                 ),

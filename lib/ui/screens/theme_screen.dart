@@ -12,6 +12,7 @@ import '../../component/home_appbar.dart';
 import '../../component/network_image.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
+import '../../network/provider/search_provider.dart';
 import '../../network/provider/theme_screen_provider.dart';
 import '../industry/widgets/scaffold_widget.dart';
 
@@ -36,6 +37,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final themeProvider = context.watch<CustomThemeProvider>();
+    final searchProvider = context.watch<SearchProvider>();
     final isDark = themeProvider.isDarkMode;
 
     return Consumer<ThemesScreenProvider>(
@@ -149,23 +151,54 @@ class _ThemesScreenState extends State<ThemesScreen> {
 
                           /// Search
                           CustomSearchBar(
+                            controller: searchProvider.controller,
                             hintText: "Search Brand Series",
                             prefixAsset: "assets/images/search.png",
                             suffixAsset: "assets/images/mic.png",
-                            borderColor: const Color(0xFFFFCDD2),
-                            showSuffixIcon: false,
-                            onSubmitted: (query) {
-                              final q = query.trim();
+                            borderColor: AppColors.searchBorderColor,
+
+                            onChanged: searchProvider.onTextChanged,
+
+                            suggestions: searchProvider.suggestions
+                                .map((e) => e.label)
+                                .toList(),
+
+                            showSuggestions: true,
+
+                            onSuggestionTap: (value) {
+                              final q = value.trim();
                               if (q.length < 2) return;
+
+                              searchProvider.clearSuggestions();
+                              searchProvider.controller.clear();
 
                               FocusManager.instance.primaryFocus?.unfocus();
 
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => SearchScreen(initialQuery: q)),
+                                MaterialPageRoute(
+                                  builder: (_) => SearchScreen(initialQuery: q),
+                                ),
+                              );
+                            },
+
+                            onSubmitted: (query) {
+                              final q = query.trim();
+                              if (q.length < 2) return;
+
+                              FocusManager.instance.primaryFocus?.unfocus();
+                              searchProvider.clearSuggestions();
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SearchScreen(initialQuery: q),
+                                ),
                               );
                             },
                           ),
+
+
 
                           SizedBox(height: 20.h),
                           ListView.builder(

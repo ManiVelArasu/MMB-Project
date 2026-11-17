@@ -76,9 +76,7 @@ class _SearchView extends StatelessWidget {
                     height: 46,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF1E1E1E)
-                          : Colors.white,
+                      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: AppColors.searchBorderColor),
                     ),
@@ -106,10 +104,7 @@ class _SearchView extends StatelessWidget {
                               border: InputBorder.none,
                               isDense: true,
                               hintText: 'Search templates, Brand Series...',
-                              hintStyle: TextStyle(
-                                color: sub,
-                                fontSize: 14,
-                              ),
+                              hintStyle: TextStyle(color: sub, fontSize: 14),
                             ),
                             onChanged: provider.onTextChanged,
                             onSubmitted: provider.submit,
@@ -118,19 +113,13 @@ class _SearchView extends StatelessWidget {
                         if (provider.controller.text.isNotEmpty)
                           GestureDetector(
                             onTap: provider.clearSearch,
-                            child: Icon(
-                              Icons.close,
-                              size: 20,
-                              color: sub,
-                            ),
+                            child: Icon(Icons.close, size: 20, color: sub),
                           ),
                       ],
                     ),
                   ),
                 ),
-                Expanded(
-                  child: _buildBody(context, provider, isDark, fg, sub),
-                ),
+                Expanded(child: _buildBody(context, provider, isDark, fg, sub)),
               ],
             ),
           ),
@@ -139,13 +128,120 @@ class _SearchView extends StatelessWidget {
     );
   }
 
+  Widget _buildInitialEmptyState(
+    BuildContext context,
+    SearchProvider provider,
+    bool isDark,
+    Color fg,
+    Color sub,
+  ) {
+    final popularSearches = [
+      'Birthday',
+      'Wedding',
+      'Business',
+      'Festival',
+      'Instagram Post',
+      'Food',
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 35),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 15),
+
+          Center(
+            child: Image.asset(
+              'assets/images/no_downloads.png',
+              width: 130,
+              height: 130,
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          Center(
+            child: AppText(
+              'What are you looking for?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: AppFontSize.fontSize18,
+                fontWeight: FontWeight.w600,
+                color: fg,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Center(
+            child: AppText(
+              'Discover templates for your next big idea. '
+              'Search by industry, occasion or design type.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, height: 1.5, color: sub),
+            ),
+          ),
+
+          const SizedBox(height: 35),
+
+          AppText(
+            'Popular Searches',
+            style: TextStyle(
+              fontSize: AppFontSize.fontSize18,
+              fontWeight: FontWeight.w500,
+              color: fg,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Wrap(
+            spacing: 10,
+            runSpacing: 12,
+            children: popularSearches.map((item) {
+              return InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  provider.controller.text = item;
+                  provider.submit(item);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF252525) : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: AppText(
+                    item,
+                    style: TextStyle(
+                      fontSize: AppFontSize.fontSize14,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBody(
-      BuildContext context,
-      SearchProvider provider,
-      bool isDark,
-      Color fg,
-      Color sub,
-      ) {
+    BuildContext context,
+    SearchProvider provider,
+    bool isDark,
+    Color fg,
+    Color sub,
+  ) {
     if (provider.isWaitingForFirstResult && !provider.hasSearched) {
       return _searchShimmer(isDark);
     }
@@ -154,26 +250,20 @@ class _SearchView extends StatelessWidget {
       return ListView.separated(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         itemCount: provider.suggestions.length,
-        separatorBuilder: (_, __) => Divider(
-          height: 1,
-          color: isDark ? Colors.white12 : Colors.black12,
-        ),
+        separatorBuilder: (_, __) =>
+            Divider(height: 1, color: isDark ? Colors.white12 : Colors.black12),
         itemBuilder: (_, index) {
           final suggestion = provider.suggestions[index];
           return ListTile(
             contentPadding: EdgeInsets.zero,
             dense: true,
-            leading: Icon(
-              _iconFor(suggestion.type),
-              size: 20,
-              color: sub,
-            ),
+            leading: Icon(_iconFor(suggestion.type), size: 20, color: sub),
             title: _highlight(
               suggestion.label,
               provider.controller.text.trim(),
               fg,
             ),
-            trailing: Text(
+            trailing: AppText(
               _captionFor(suggestion.type),
               style: TextStyle(fontSize: 11, color: sub),
             ),
@@ -188,18 +278,11 @@ class _SearchView extends StatelessWidget {
     }
 
     if (provider.error != null) {
-      return _message(
-        provider.error!,
-        sub,
-        retry: provider.retry,
-      );
+      return _message(provider.error!, sub, retry: provider.retry);
     }
 
-    if (!provider.hasSearched) {
-      return _message(
-        'Search for templates, festivals, categories...',
-        sub,
-      );
+    if (!provider.hasSearched && provider.controller.text.trim().isEmpty) {
+      return _buildInitialEmptyState(context, provider, isDark, fg, sub);
     }
 
     if (provider.results.isEmpty) {
@@ -210,8 +293,7 @@ class _SearchView extends StatelessWidget {
       controller: provider.scrollController,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-      itemCount:
-      provider.results.length + (provider.isLoadingMore ? 1 : 0),
+      itemCount: provider.results.length + (provider.isLoadingMore ? 1 : 0),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,
@@ -228,11 +310,7 @@ class _SearchView extends StatelessWidget {
             ),
           );
         }
-        return _resultCard(
-          context,
-          provider.results[index],
-          isDark,
-        );
+        return _resultCard(context, provider.results[index], isDark);
       },
     );
   }
@@ -248,10 +326,10 @@ class _SearchView extends StatelessWidget {
   );
 
   Widget _resultCard(
-      BuildContext context,
-      Map<String, dynamic> template,
-      bool isDark,
-      ) {
+    BuildContext context,
+    Map<String, dynamic> template,
+    bool isDark,
+  ) {
     final uid = template['uid']?.toString().trim() ?? '';
     final key = template['thumbnail_s3_key']?.toString().trim() ?? '';
     final locked = template['is_locked'] == true;
@@ -298,11 +376,11 @@ class _SearchView extends StatelessWidget {
             imageUrl.isEmpty
                 ? _placeholder(isDark)
                 : CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => _placeholder(isDark),
-              errorWidget: (_, __, ___) => _placeholder(isDark),
-            ),
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => _placeholder(isDark),
+                    errorWidget: (_, __, ___) => _placeholder(isDark),
+                  ),
             if (locked)
               Container(
                 color: Colors.black.withValues(alpha: 0.4),
@@ -322,18 +400,10 @@ class _SearchView extends StatelessWidget {
 
   Widget _placeholder(bool isDark) => Container(
     color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200,
-    child: Icon(
-      Icons.image_outlined,
-      size: 36,
-      color: Colors.grey.shade400,
-    ),
+    child: Icon(Icons.image_outlined, size: 36, color: Colors.grey.shade400),
   );
 
-  Widget _message(
-      String text,
-      Color color, {
-        VoidCallback? retry,
-      }) {
+  Widget _message(String text, Color color, {VoidCallback? retry}) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -347,10 +417,7 @@ class _SearchView extends StatelessWidget {
             ),
             if (retry != null) ...[
               const SizedBox(height: 12),
-              TextButton(
-                onPressed: retry,
-                child: const Text('Retry'),
-              ),
+              TextButton(onPressed: retry, child: const Text('Retry')),
             ],
           ],
         ),
@@ -413,10 +480,7 @@ class _SearchView extends StatelessWidget {
     }
   }
 
-  Widget _buildEmptyState(
-      BuildContext context,
-      SearchProvider provider,
-      ) {
+  Widget _buildEmptyState(BuildContext context, SearchProvider provider) {
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,

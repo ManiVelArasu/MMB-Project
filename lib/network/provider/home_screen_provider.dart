@@ -27,6 +27,8 @@ class HomeScreenProvider extends ChangeNotifier {
 
   String get selectedMySpace => _selectedMySpace;
   final CommonProvider provider = CommonProvider.instance;
+
+
   void setSelectedMySpace(String title) {
     _selectedMySpace = title;
     notifyListeners();

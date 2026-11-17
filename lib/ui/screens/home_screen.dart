@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mmb_app/network/provider/search_provider.dart';
 import 'package:mmb_app/ui/screens/search_screen.dart';
 import 'package:mmb_app/ui/screens/template_detail_screen.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
@@ -54,7 +55,7 @@ class _HomeScreenView extends StatelessWidget {
     final themeProvider = context.watch<CustomThemeProvider>();
     final commonProvider = context.watch<CommonProvider>();
     final homeScreenProvider = context.watch<HomeScreenProvider>();
-
+    final searchProvider = context.watch<SearchProvider>();
     final me = commonProvider.me;
     final isDark = themeProvider.isDarkMode;
 
@@ -106,16 +107,43 @@ class _HomeScreenView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CustomSearchBar(
+                        controller: searchProvider.controller,
                         hintText: "Search templates, Brand Series...",
                         prefixAsset: "assets/images/search.png",
                         suffixAsset: "assets/images/mic.png",
                         borderColor: AppColors.searchBorderColor,
-                        onChanged: (query) {},
+
+                        onChanged: searchProvider.onTextChanged,
+
+                        suggestions: searchProvider.suggestions
+                            .map((e) => e.label)
+                            .toList(),
+
+                        showSuggestions: true,
+
+                        onSuggestionTap: (value) {
+                          final q = value.trim();
+                          if (q.length < 2) return;
+
+                          searchProvider.clearSuggestions();
+                          searchProvider.controller.clear();
+
+                          FocusManager.instance.primaryFocus?.unfocus();
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SearchScreen(initialQuery: q),
+                            ),
+                          );
+                        },
+
                         onSubmitted: (query) {
                           final q = query.trim();
                           if (q.length < 2) return;
 
                           FocusManager.instance.primaryFocus?.unfocus();
+                          searchProvider.clearSuggestions();
 
                           Navigator.push(
                             context,
@@ -1593,28 +1621,26 @@ class _HomeScreenView extends StatelessWidget {
                       ElevatedButton(
                         onPressed: () async {
                           Navigator.pop(dialogContext);
-                            final planProvider = PlanProvider();
+                          final planProvider = PlanProvider();
 
-                            final bool hasActivePlan =
-                                await planProvider
-                                .fetchMySubscription();
+                          final bool hasActivePlan = await planProvider
+                              .fetchMySubscription();
 
-                            if (!context.mounted) return;
+                          if (!context.mounted) return;
 
-                            if (hasActivePlan) {
-                              Navigator.pushNamed(
-                                context,
-                                "/MySubscriptionScreen",
-                              );
-                            } else {
-                              Navigator.pushNamed(
-                                context,
-                                "/FreePlanScreen",
-                                arguments: {"showSkip": true},
-                              );
-                            }
-                            ;
-
+                          if (hasActivePlan) {
+                            Navigator.pushNamed(
+                              context,
+                              "/MySubscriptionScreen",
+                            );
+                          } else {
+                            Navigator.pushNamed(
+                              context,
+                              "/FreePlanScreen",
+                              arguments: {"showSkip": true},
+                            );
+                          }
+                          ;
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF202020),

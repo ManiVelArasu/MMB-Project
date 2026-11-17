@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mmb_app/network/provider/search_provider.dart';
 import 'package:mmb_app/theme/app_theme.dart';
 import 'package:mmb_app/utils/routes.dart';
 import 'package:provider/provider.dart';
@@ -29,7 +30,7 @@ const Duration _kStartupTimeout = Duration(seconds: 8);
 
 void main() {
   runZonedGuarded(
-        () async {
+    () async {
       WidgetsFlutterBinding.ensureInitialized();
 
       FlutterError.onError = (details) {
@@ -72,7 +73,7 @@ void main() {
 
       runApp(const MyApp());
     },
-        (error, stackTrace) {
+    (error, stackTrace) {
       debugPrint('❌ Uncaught error: $error');
       debugPrintStack(stackTrace: stackTrace);
     },
@@ -178,6 +179,7 @@ class _MyAppState extends State<MyApp> {
             ChangeNotifierProvider(create: (_) => CustomThemeProvider()),
             ChangeNotifierProvider(create: (_) => BusinessProvider()),
             ChangeNotifierProvider(create: (_) => PlanProvider()),
+            ChangeNotifierProvider(create: (_) => SearchProvider()),
             ChangeNotifierProvider<CommonProvider>(
               create: (_) => CommonProvider.instance,
             ),

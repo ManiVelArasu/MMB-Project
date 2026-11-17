@@ -45,7 +45,8 @@ class LoginScreen extends StatelessWidget {
                     children: [
                       height20,
                       const TitleValueWidget(
-                        title: "Create Professional Social Media Posts in Minutes",
+                        title:
+                            "Create Professional Social Media Posts in Minutes",
                         subTitle:
                             "Join businesses creating eye-catching social media content with ready-made templates and powerful AI tools",
                         subTitleColor: Colors.red,
@@ -53,7 +54,13 @@ class LoginScreen extends StatelessWidget {
                       SizedBox(height: 10),
                       // Title
 
-                      AppText("Get started with your mobile number",style: TextStyle(fontSize: AppFontSize.fontSize16,fontWeight: FontWeight.w500),),
+                      AppText(
+                        "Get started with your mobile number",
+                        style: TextStyle(
+                          fontSize: AppFontSize.fontSize16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                       SizedBox(height: 10),
                       Container(
                         padding: const EdgeInsets.symmetric(

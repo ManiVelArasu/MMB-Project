@@ -21,6 +21,7 @@ class AppColors {
   ///BASE COLORS-------->
   static const Color appWhite = Color(0xffFFFFFF);
   static const Color appBlack = Color(0xff000000);
+  static const Color headingBlack = Color(0xff040404);
   static const Color appTransparent = Colors.transparent;
 
   ///----------->
