@@ -280,8 +280,8 @@ class _CustomCreateBody extends StatelessWidget {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       SizedBox(
-                                        height: 52.h,
-                                        width: 52.w,
+                                        height: 80.h,
+                                        width: 80.w,
                                         child: tool.imagePath.trim().isNotEmpty
                                             ? Image.asset(
                                                 tool.imagePath,

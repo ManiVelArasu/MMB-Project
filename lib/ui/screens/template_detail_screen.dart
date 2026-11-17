@@ -621,7 +621,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
             fontWeight: FontWeight.w500,
             color: selected
                 ? Colors.red
-                : (isDark ? Colors.white70 : Colors.black87),
+                : (isDark ? Colors.white70 :   AppColors.appGrey),
           ),
         ),
       ),
@@ -636,8 +636,8 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
         AppText(
           title,
           style: TextStyle(
-            fontSize: 13.sp,
-            fontWeight: FontWeight.w600,
+            fontSize: AppFontSize.fontSize14,
+            fontWeight: FontWeight.w400,
             color: titleColor,
           ),
         ),
@@ -678,8 +678,8 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
             AppText(
               name,
               style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w700,
+                fontSize: AppFontSize.fontSize18,
+                fontWeight: FontWeight.w500,
                 color: titleColor,
               ),
             ),
@@ -693,6 +693,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
           if (sizes.isNotEmpty)
             _chipGroup(
               'Available Sizes',
+
               sizes
                   .map(
                     (e) => _infoChip(
@@ -703,13 +704,13 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
                     ),
                   )
                   .toList(),
-              titleColor,
+              AppColors.appGrey,
             ),
           if (languages.isNotEmpty)
             _chipGroup(
               'Available Language',
               languages.map((l) => _infoChip(l, isDark)).toList(),
-              titleColor,
+              AppColors.appGrey,
             ),
         ],
       ),

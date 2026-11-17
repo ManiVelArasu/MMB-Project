@@ -57,6 +57,16 @@ class EditableItemWidget extends StatelessWidget {
           animation: provider.itemAnimation(currentItem.id ?? ''),
           animationTick: provider.animationPreviewTick(currentItem.id ?? ''),
           textEffect: provider.textEffect(currentItem.id ?? ''),
+          text: currentItem.text,
+          fontSize: currentItem.fontSize,
+          fontFamily: currentItem.fontFamily,
+          color: currentItem.color,
+          textWeight: provider.textWeight(currentItem.id ?? ''),
+          textFontStyle: provider.textStyle(currentItem.id ?? ''),
+          textUnderline: provider.textUnderline(currentItem.id ?? ''),
+          letterSpacing: provider.textLetterSpacing(currentItem.id ?? ''),
+          lineSpacing: provider.textLineSpacing(currentItem.id ?? ''),
+          textAlign: provider.textAlignment(currentItem.id ?? ''),
         );
       },
       builder: (context, state, child) {
@@ -67,6 +77,11 @@ class EditableItemWidget extends StatelessWidget {
         // Same rule the canvas/selection overlay use (provider is the single
         // source of truth), so a full-size overlay image stays selectable.
         final isBackground = provider.isCanvasBackgroundItem(currentItem);
+        // Warm the alpha mask so taps are pixel-accurate from the first touch.
+        if (!isBackground && currentItem.type == 'image') {
+          final u = (currentItem.contentUrl ?? '').trim();
+          if (u.isNotEmpty) ItemAlphaCache.maskFor(u);
+        }
         final normalizedItemType = (currentItem.type ?? '')
             .trim()
             .toLowerCase();
@@ -102,6 +117,13 @@ class EditableItemWidget extends StatelessWidget {
           }
         }
 
+        // Hit-test scale: visibleAt receives PRE-scale layout coordinates,
+        // while isVisibleAt expects POST-scale ones (it divides by scale).
+        final hitScale =
+        currentItem.scale.isFinite && currentItem.scale.abs() > 0
+            ? currentItem.scale.clamp(0.01, 10.0).toDouble()
+            : 1.0;
+
         final itemWidget = KeyedSubtree(
           key: ValueKey(currentItem.id),
           child: _MinTouchTarget(
@@ -110,6 +132,13 @@ class EditableItemWidget extends StatelessWidget {
               bodyHeight * currentItem.scale.clamp(0.01, 10.0),
             ),
             enabled: !isBackground,
+            visibleAt: isBackground
+                ? null
+                : (p) => EditableItemWidget.isVisibleAt(
+              currentItem,
+              provider,
+              p * hitScale,
+            ),
             child: RawGestureDetector(
               behavior: HitTestBehavior.opaque,
               // Press-and-drag moves the item directly (selects it first), so
@@ -242,6 +271,44 @@ class EditableItemWidget extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// True when the point (given relative to the item's top-left, in canvas
+  /// units, before item scale/rotation) lands on a VISIBLE pixel of the item.
+  /// Items that are not plain images, are still loading, are clipped or masked
+  /// answer true (bounding-box behaviour), so nothing becomes unselectable.
+  static bool isVisibleAt(
+      EditorItem item,
+      EditorProvider provider,
+      Offset relToPosition,
+      ) {
+    if ((item.type ?? '') != 'image') return true;
+    final id = item.id ?? '';
+    final url = (item.contentUrl ?? '').trim();
+    if (url.isEmpty) return true;
+    final raw = provider.templateRawObject(id);
+    if (raw != null && raw['clipPath'] is Map) return true;
+    final mask = provider.imageMaskUrl(id);
+    if (mask != null && mask.trim().isNotEmpty) return true;
+
+    final alpha = ItemAlphaCache.maskFor(url);
+    if (alpha == null) return true; // not decoded yet -> bounding box
+
+    final sc = item.scale.isFinite && item.scale.abs() > 0
+        ? item.scale.clamp(0.01, 10.0).toDouble()
+        : 1.0;
+    final w = math.max(1.0, item.width).toDouble();
+    final h = math.max(1.0, item.height).toDouble();
+    var local = relToPosition / sc;
+    final centre = Offset(w / 2, h / 2);
+    final rel = local - centre;
+    final a = -(item.rotation.isFinite ? item.rotation : 0.0);
+    var x = rel.dx * math.cos(a) - rel.dy * math.sin(a) + centre.dx;
+    var y = rel.dx * math.sin(a) + rel.dy * math.cos(a) + centre.dy;
+    if (provider.templateFlipX(id)) x = w - x;
+    if (provider.templateFlipY(id)) y = h - y;
+    if (x < 0 || y < 0 || x > w || y > h) return true; // outside the image
+    return alpha.opaqueAt(x / w, y / h);
   }
 
   static bool isTextType(String? type) {
@@ -404,7 +471,10 @@ class EditableItemWidget extends StatelessWidget {
       },
     );
 
-    if (!context.mounted || savedText == null) return;
+    // Cancel -> nothing to do. Do NOT bail out because `context` is gone:
+    // the caller's widget may have been rebuilt while the dialog was open
+    // (selection changed, overlay re-keyed...), and the edit must still apply.
+    if (savedText == null) return;
 
     final stillExists = provider.items.any((e) => e.id == itemId);
 
@@ -815,11 +885,26 @@ class EditableItemWidget extends StatelessWidget {
       final image = isHttp
           ? Image.network(
         source,
+        // Per-image loader while this image downloads.
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          final total = progress.expectedTotalBytes;
+          return _ItemImageLoader(
+            progress: total != null && total > 0
+                ? progress.cumulativeBytesLoaded / total
+                : null,
+          );
+        },
         fit: isBackground ? BoxFit.cover : BoxFit.fill,
         width: double.infinity,
         height: double.infinity,
+        // Native decoder failed (SVG / AVIF / HEIC / odd encoding):
+        // fetch the bytes ourselves and render them another way.
         errorBuilder: (_, error, stackTrace) {
-          return const SizedBox.shrink();
+          return _FallbackNetworkImage(
+            url: source,
+            fit: isBackground ? BoxFit.cover : BoxFit.fill,
+          );
         },
       )
           : Image.file(
@@ -828,6 +913,10 @@ class EditableItemWidget extends StatelessWidget {
               ? source.replaceFirst('file://', '')
               : source,
         ),
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded || frame != null) return child;
+          return const _ItemImageLoader();
+        },
         fit: isBackground ? BoxFit.cover : BoxFit.fill,
         width: double.infinity,
         height: double.infinity,
@@ -1130,15 +1219,17 @@ class _MinTouchTarget extends SingleChildRenderObjectWidget {
   const _MinTouchTarget({
     required this.visualSize,
     required this.enabled,
+    this.visibleAt,
     required super.child,
   });
 
   final Size visualSize;
   final bool enabled;
+  final bool Function(Offset)? visibleAt;
 
   @override
   RenderObject createRenderObject(BuildContext context) =>
-      _RenderMinTouchTarget(visualSize, enabled);
+      _RenderMinTouchTarget(visualSize, enabled)..visibleAt = visibleAt;
 
   @override
   void updateRenderObject(
@@ -1147,7 +1238,8 @@ class _MinTouchTarget extends SingleChildRenderObjectWidget {
       ) {
     renderObject
       ..visualSize = visualSize
-      ..enabled = enabled;
+      ..enabled = enabled
+      ..visibleAt = visibleAt;
   }
 }
 
@@ -1156,6 +1248,7 @@ class _RenderMinTouchTarget extends RenderProxyBox {
 
   Size visualSize;
   bool enabled;
+  bool Function(Offset)? visibleAt;
   static const double _minScreen = 56.0;
 
   @override
@@ -1163,6 +1256,9 @@ class _RenderMinTouchTarget extends RenderProxyBox {
     if (!enabled || child == null) {
       return super.hitTest(result, position: position);
     }
+    // Transparent pixel of an image: let the item underneath take the tap.
+    final vis = visibleAt;
+    if (vis != null && !vis(position)) return false;
     double k = 1.0;
     try {
       k = getTransformTo(null).getMaxScaleOnAxis();
@@ -1195,6 +1291,20 @@ class _ItemViewState {
   final int animationTick;
   final TextEffect textEffect;
 
+  // Text content / style. Compared explicitly so that editing the text (or
+  // its style) always rebuilds the item, even if EditorItem's own == ignores
+  // these fields.
+  final String? text;
+  final double fontSize;
+  final String? fontFamily;
+  final Color? color;
+  final FontWeight textWeight;
+  final FontStyle textFontStyle;
+  final bool textUnderline;
+  final double letterSpacing;
+  final double lineSpacing;
+  final TextAlign textAlign;
+
   _ItemViewState({
     required this.currentItem,
     required this.isSelected,
@@ -1207,6 +1317,16 @@ class _ItemViewState {
     required this.animation,
     required this.animationTick,
     required this.textEffect,
+    required this.text,
+    required this.fontSize,
+    required this.fontFamily,
+    required this.color,
+    required this.textWeight,
+    required this.textFontStyle,
+    required this.textUnderline,
+    required this.letterSpacing,
+    required this.lineSpacing,
+    required this.textAlign,
   });
 
   @override
@@ -1224,7 +1344,17 @@ class _ItemViewState {
               maskUrl == other.maskUrl &&
               animation == other.animation &&
               animationTick == other.animationTick &&
-              textEffect == other.textEffect;
+              textEffect == other.textEffect &&
+              text == other.text &&
+              fontSize == other.fontSize &&
+              fontFamily == other.fontFamily &&
+              color == other.color &&
+              textWeight == other.textWeight &&
+              textFontStyle == other.textFontStyle &&
+              textUnderline == other.textUnderline &&
+              letterSpacing == other.letterSpacing &&
+              lineSpacing == other.lineSpacing &&
+              textAlign == other.textAlign;
 
   @override
   int get hashCode => Object.hash(
@@ -1239,6 +1369,18 @@ class _ItemViewState {
     animation,
     animationTick,
     textEffect,
+    Object.hash(
+      text,
+      fontSize,
+      fontFamily,
+      color,
+      textWeight,
+      textFontStyle,
+      textUnderline,
+      letterSpacing,
+      lineSpacing,
+      textAlign,
+    ),
   );
 }
 
@@ -1763,4 +1905,235 @@ class _FabricAbsoluteClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(covariant _FabricAbsoluteClipper oldClipper) =>
       !identical(oldClipper.clip, clip) || oldClipper.origin != origin;
+}
+
+/// Down-sampled alpha masks of item images, used for pixel-accurate tapping.
+class ItemAlphaCache {
+  static final Map<String, _AlphaMask?> _masks = {};
+  static final Set<String> _loading = {};
+  static const int _maxSide = 192;
+
+  /// Returns the mask when ready; otherwise starts decoding and returns null.
+  static _AlphaMask? maskFor(String url) {
+    if (_masks.containsKey(url)) return _masks[url];
+    if (_loading.add(url)) _load(url);
+    return null;
+  }
+
+  static Future<void> _load(String url) async {
+    try {
+      final ImageProvider provider =
+      (url.startsWith('http://') || url.startsWith('https://'))
+          ? NetworkImage(url)
+          : FileImage(
+        File(
+          url.startsWith('file://')
+              ? url.replaceFirst('file://', '')
+              : url,
+        ),
+      );
+      final done = Completer<ui.Image>();
+      final stream = provider.resolve(ImageConfiguration.empty);
+      late ImageStreamListener l;
+      l = ImageStreamListener(
+            (info, _) {
+          if (!done.isCompleted) done.complete(info.image.clone());
+          stream.removeListener(l);
+        },
+        onError: (e, st) {
+          if (!done.isCompleted) done.completeError(e, st);
+          stream.removeListener(l);
+        },
+      );
+      stream.addListener(l);
+      final src = await done.future;
+
+      final k = math.min(1.0, _maxSide / math.max(src.width, src.height));
+      final mw = math.max(1, (src.width * k).round());
+      final mh = math.max(1, (src.height * k).round());
+      final rec = ui.PictureRecorder();
+      final canvas = Canvas(rec);
+      canvas.drawImageRect(
+        src,
+        Rect.fromLTWH(0, 0, src.width.toDouble(), src.height.toDouble()),
+        Rect.fromLTWH(0, 0, mw.toDouble(), mh.toDouble()),
+        Paint()..filterQuality = FilterQuality.medium,
+      );
+      final small = await rec.endRecording().toImage(mw, mh);
+      final data = await small.toByteData(format: ui.ImageByteFormat.rawRgba);
+      src.dispose();
+      small.dispose();
+      if (data == null) {
+        _masks[url] = null;
+        return;
+      }
+      final a = Uint8List(mw * mh);
+      for (var i = 0; i < a.length; i++) {
+        a[i] = data.getUint8(i * 4 + 3);
+      }
+      _masks[url] = _AlphaMask(mw, mh, a);
+    } catch (_) {
+      _masks[url] = null; // decode failed -> bounding-box behaviour
+    }
+  }
+}
+
+class _AlphaMask {
+  _AlphaMask(this.w, this.h, this.alpha);
+  final int w;
+  final int h;
+  final Uint8List alpha;
+
+  /// [u],[v] in 0..1. Looks at a small neighbourhood so thin strokes and
+  /// finger-size imprecision still count as a hit.
+  bool opaqueAt(double u, double v) {
+    final cx = (u * w).floor().clamp(0, w - 1);
+    final cy = (v * h).floor().clamp(0, h - 1);
+    for (var dy = -1; dy <= 1; dy++) {
+      for (var dx = -1; dx <= 1; dx++) {
+        final x = (cx + dx).clamp(0, w - 1);
+        final y = (cy + dy).clamp(0, h - 1);
+        if (alpha[y * w + x] > 24) return true;
+      }
+    }
+    return false;
+  }
+}
+
+/// Placeholder shown inside an image item while its picture is loading.
+/// Sized relative to the item so it looks right at any canvas scale.
+class _ItemImageLoader extends StatelessWidget {
+  const _ItemImageLoader({this.progress});
+
+  final double? progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        final w = box.maxWidth.isFinite ? box.maxWidth : 100.0;
+        final h = box.maxHeight.isFinite ? box.maxHeight : 100.0;
+        final d = (math.min(w, h) * 0.22).clamp(8.0, 140.0).toDouble();
+        return ColoredBox(
+          color: const Color(0x1A808080),
+          child: Center(
+            child: SizedBox(
+              width: d,
+              height: d,
+              child: CircularProgressIndicator(
+                value: progress,
+                strokeWidth: (d * 0.1).clamp(1.0, 10.0).toDouble(),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FallbackData {
+  const _FallbackData({this.svgText, this.png});
+  final String? svgText;
+  final Uint8List? png;
+}
+
+/// Used when Android's native decoder rejects a network image. Downloads the
+/// bytes, then renders SVG via flutter_svg, or re-encodes any format the
+/// `image` package understands as PNG. Results are cached per URL.
+class _FallbackNetworkImage extends StatefulWidget {
+  const _FallbackNetworkImage({required this.url, required this.fit});
+
+  final String url;
+  final BoxFit fit;
+
+  static final Map<String, Future<_FallbackData?>> _cache = {};
+
+  static Future<_FallbackData?> load(String url) =>
+      _cache.putIfAbsent(url, () => _fetch(url));
+
+  static Future<_FallbackData?> _fetch(String url) async {
+    final client = HttpClient();
+    try {
+      final uri = Uri.parse(url);
+      final request = await client.getUrl(uri);
+      request.headers.set(
+        HttpHeaders.acceptHeader,
+        'image/png,image/jpeg,image/webp,image/svg+xml,image/*,*/*;q=0.8',
+      );
+      final response = await request.close();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw HttpException('HTTP ${response.statusCode}', uri: uri);
+      }
+      final bytes = await consolidateHttpClientResponseBytes(response);
+      if (bytes.isEmpty) return null;
+
+      final first = bytes.indexWhere((b) => b > 32);
+      if (first >= 0 && bytes[first] == 0x3C) {
+        // starts with '<' -> SVG (or an HTML/XML error page)
+        final text = utf8.decode(bytes, allowMalformed: true);
+        final t = text.trimLeft();
+        final isSvg =
+            t.startsWith('<svg') ||
+                ((t.startsWith('<?xml') || t.startsWith('<!')) &&
+                    t.contains('<svg'));
+        if (isSvg) return _FallbackData(svgText: text);
+      }
+
+      final decoded = img.decodeImage(bytes);
+      if (decoded == null) {
+        debugPrint('Image format not supported, skipped: $url');
+        return null;
+      }
+      return _FallbackData(png: Uint8List.fromList(img.encodePng(decoded)));
+    } catch (e) {
+      debugPrint('Fallback image load failed for $url: $e');
+      return null;
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  @override
+  State<_FallbackNetworkImage> createState() => _FallbackNetworkImageState();
+}
+
+class _FallbackNetworkImageState extends State<_FallbackNetworkImage> {
+  late Future<_FallbackData?> _future = _FallbackNetworkImage.load(widget.url);
+
+  @override
+  void didUpdateWidget(covariant _FallbackNetworkImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _future = _FallbackNetworkImage.load(widget.url);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_FallbackData?>(
+      future: _future,
+      builder: (context, snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return const _ItemImageLoader();
+        }
+        final data = snap.data;
+        if (data == null) return const SizedBox.shrink();
+        if (data.svgText != null) {
+          return svg.SvgPicture.string(
+            data.svgText!,
+            fit: widget.fit,
+            width: double.infinity,
+            height: double.infinity,
+          );
+        }
+        return Image.memory(
+          data.png!,
+          fit: widget.fit,
+          width: double.infinity,
+          height: double.infinity,
+        );
+      },
+    );
+  }
 }

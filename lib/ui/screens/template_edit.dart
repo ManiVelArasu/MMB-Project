@@ -420,19 +420,17 @@ class _EditorViewState extends State<EditorView> {
   Offset? _lastTapCanvasPos;
 
   String? _pickItemAt(EditorProvider provider, Offset canvasPoint) {
-    EditorItem? best;
-    double bestArea = double.infinity;
-    for (final it in provider.items.reversed) {
-      if (it.id == null || _isCanvasBackground(it)) continue;
+    // Shared geometry: is the point inside the item's (rotated) box?
+    bool inBox(EditorItem it, double pad) {
       final t = (it.type ?? '').trim().toLowerCase();
-      final isText = t == 'text' || t == 'textbox' || t == 'i-text' || t == 'itext';
+      final isText =
+          t == 'text' || t == 'textbox' || t == 'i-text' || t == 'itext';
       final sc = it.scale.isFinite && it.scale.abs() > 0
           ? it.scale.clamp(0.01, 10.0).toDouble()
           : 1.0;
       final Size body = isText
           ? EditableItemWidget.measureTextBox(it, provider)
           : Size(math.max(1.0, it.width), math.max(1.0, it.height));
-      // canvas point -> item local (un-scaled, un-rotated) space
       var local = (canvasPoint - it.position) / sc;
       final centre = Offset(body.width / 2, body.height / 2);
       final rel = local - centre;
@@ -440,11 +438,39 @@ class _EditorViewState extends State<EditorView> {
       final rx = rel.dx * math.cos(a) - rel.dy * math.sin(a);
       final ry = rel.dx * math.sin(a) + rel.dy * math.cos(a);
       local = Offset(rx, ry) + centre;
-      const pad = 6.0; // small touch slack (canvas units)
-      final rect = Rect.fromLTWH(0, 0, body.width, body.height).inflate(pad / sc);
-      if (!rect.contains(local)) continue;
-      final area = body.width * body.height * sc * sc;
-      // smallest box wins (sticker over a big image); ties -> topmost
+      return Rect.fromLTWH(
+        0,
+        0,
+        body.width,
+        body.height,
+      ).inflate(pad / sc).contains(local);
+    }
+
+    // Pass 1: topmost item whose VISIBLE pixel is under the finger
+    // (transparent parts of an image never steal the tap).
+    for (final it in provider.items.reversed) {
+      if (it.id == null || _isCanvasBackground(it)) continue;
+      if (!inBox(it, 0)) continue;
+      if (EditableItemWidget.isVisibleAt(
+        it,
+        provider,
+        canvasPoint - it.position,
+      )) {
+        return it.id;
+      }
+    }
+
+    // Pass 2 (nothing visible there, e.g. hole of a ring / thin stroke):
+    // fall back to the smallest box around the point, with touch slack.
+    EditorItem? best;
+    double bestArea = double.infinity;
+    for (final it in provider.items.reversed) {
+      if (it.id == null || _isCanvasBackground(it)) continue;
+      if (!inBox(it, 6.0)) continue;
+      final sc = it.scale.isFinite && it.scale.abs() > 0
+          ? it.scale.clamp(0.01, 10.0).toDouble()
+          : 1.0;
+      final area = it.width * it.height * sc * sc;
       if (area < bestArea) {
         bestArea = area;
         best = it;
@@ -695,6 +721,20 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Future<void> _loadTemplateJsonAndInitEditor() async {
+    try {
+      await _loadTemplateJsonAndInitEditorImpl();
+    } finally {
+      // Whatever happened (success, error, early return) the init phase is
+      // over. Blank designs never started preloading, so start it now.
+      _initDone = true;
+      if (mounted) {
+        setState(() {});
+        unawaited(_preloadCanvasAssets());
+      }
+    }
+  }
+
+  Future<void> _loadTemplateJsonAndInitEditorImpl() async {
     final editorProvider = Provider.of<EditorProvider>(context, listen: false);
 
     final projectProvider = Provider.of<ProjectProvider>(
@@ -737,6 +777,10 @@ class _EditorViewState extends State<EditorView> {
         );
         return;
       }
+
+      // Template items are imported now: start downloading every image in
+      // parallel with the project-create call below.
+      unawaited(_preloadCanvasAssets());
 
       final detail = editorProvider.templateDetail;
 
@@ -901,6 +945,7 @@ class _EditorViewState extends State<EditorView> {
     );
 
     _enableProjectAutoSave();
+    unawaited(_preloadCanvasAssets());
     setState(() => _projectOpened = true);
 
     editorProvider.fetchFreePikAssets('furniture');
@@ -3773,6 +3818,125 @@ class _EditorViewState extends State<EditorView> {
 
   bool _isCapturingThumbnail = false;
 
+  // ---------------- EDITOR OPEN: WAIT FOR ALL IMAGES ----------------
+  // The canvas is only shown once the template/project is imported AND every
+  // image on it is downloaded + decoded, so it opens fully drawn instead of
+  // images popping in one by one.
+  bool _initDone = false;
+  bool _assetsReady = false;
+  bool _assetsPreloadStarted = false;
+  int _assetsTotal = 0;
+  int _assetsLoaded = 0;
+
+  static final RegExp _rasterUrl = RegExp(
+    r'\.(png|jpe?g|webp|gif)(\?.*)?$',
+    caseSensitive: false,
+  );
+
+  Future<void> _preloadCanvasAssets() async {
+    if (_assetsPreloadStarted || !mounted) return;
+    _assetsPreloadStarted = true;
+    try {
+      final provider = context.read<EditorProvider>();
+      final imageSources = <String>{};
+      final otherSources = <String>{};
+      for (final it in provider.items) {
+        final type = (it.type ?? '').trim().toLowerCase();
+        final src = (it.contentUrl ?? '').trim();
+        if (src.isEmpty) continue;
+        if (type == 'image') {
+          imageSources.add(src);
+        } else if ((type == 'svg_group' || type == 'svg_element') &&
+            src.startsWith('http') &&
+            _rasterUrl.hasMatch(src)) {
+          otherSources.add(src);
+        }
+      }
+      final all = <String>{...imageSources, ...otherSources};
+      if (mounted) {
+        setState(() {
+          _assetsTotal = all.length;
+          _assetsLoaded = 0;
+        });
+      }
+
+      await Future.wait(
+        all.map((src) async {
+          try {
+            if (!mounted) return;
+            final ImageProvider p =
+            (src.startsWith('http://') || src.startsWith('https://'))
+                ? NetworkImage(src)
+                : FileImage(
+              File(
+                src.startsWith('file://')
+                    ? src.replaceFirst('file://', '')
+                    : src,
+              ),
+            );
+            await precacheImage(
+              p,
+              context,
+              onError: (_, __) {},
+            ).timeout(const Duration(seconds: 25), onTimeout: () {});
+            // Warm the alpha mask used for pixel-accurate tapping.
+            if (imageSources.contains(src)) ItemAlphaCache.maskFor(src);
+          } catch (_) {}
+          if (mounted) setState(() => _assetsLoaded++);
+        }),
+      );
+    } catch (_) {}
+    if (mounted) setState(() => _assetsReady = true);
+  }
+
+  Widget _buildEditorLoader(bool isDark) {
+    final total = _assetsTotal;
+    final done = _assetsLoaded.clamp(0, total == 0 ? 0 : total);
+    final String label = total == 0
+        ? 'Preparing editor...'
+        : 'Loading images $done / $total';
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 56,
+              height: 56,
+              child: CircularProgressIndicator(
+                strokeWidth: 4,
+                value: total == 0 ? null : done / total,
+              ),
+            ),
+            const SizedBox(height: 18),
+            AppText(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white70 : Colors.black54,
+              ),
+            ),
+            if (total > 0) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: 180,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    minHeight: 5,
+                    value: done / total,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   // ---------------- PINCH-ZOOM OF THE SELECTED ELEMENT ----------------
   final GlobalKey _pinchKey = GlobalKey();
   String _pinchId = '';
@@ -3980,6 +4144,12 @@ class _EditorViewState extends State<EditorView> {
         ),
       );
     }
+    // Show the editor only when the design is imported and all its images
+    // are downloaded.
+    if (!_initDone || !_assetsReady) {
+      return _buildEditorLoader(isDark);
+    }
+
     final Size canvasSize = (hasTemplateUid || _isOpeningProject)
         ? Size(
       provider.canvasWidth > 0 ? provider.canvasWidth : 1080.0,
@@ -4104,17 +4274,20 @@ class _EditorViewState extends State<EditorView> {
                             behavior: HitTestBehavior.translucent,
                             onPointerDown: (e) {
                               _tapDownPos = e.localPosition;
-                              _tapDownMs = DateTime.now().millisecondsSinceEpoch;
+                              _tapDownMs =
+                                  DateTime.now().millisecondsSinceEpoch;
                               _tapSelectedByCanvas = false;
                             },
                             onPointerUp: (e) {
                               final down = _tapDownPos;
                               _tapDownPos = null;
                               if (down == null) return;
-                              final quick = DateTime.now().millisecondsSinceEpoch -
-                                  _tapDownMs <
-                                  400;
-                              if (!quick || (e.localPosition - down).distance > 10) {
+                              final quick =
+                                  DateTime.now().millisecondsSinceEpoch -
+                                      _tapDownMs <
+                                      400;
+                              if (!quick ||
+                                  (e.localPosition - down).distance > 10) {
                                 return;
                               }
                               final dbgPt = Offset(
@@ -4126,8 +4299,9 @@ class _EditorViewState extends State<EditorView> {
                               if (id == null) return;
                               _tapSelectedByCanvas = true;
                               if (provider.selectedItemId != id) {
-                                final it =
-                                provider.items.firstWhere((x) => x.id == id);
+                                final it = provider.items.firstWhere(
+                                      (x) => x.id == id,
+                                );
                                 provider.setSelectedItem(it.type, it.id);
                               }
                             },
@@ -4148,8 +4322,8 @@ class _EditorViewState extends State<EditorView> {
                                       child: DecoratedBox(
                                         decoration: BoxDecoration(
                                           color: provider.backgroundColor,
-                                          gradient:
-                                          provider.importedBackgroundGradient,
+                                          gradient: provider
+                                              .importedBackgroundGradient,
                                         ),
                                       ),
                                     ),
@@ -4168,8 +4342,10 @@ class _EditorViewState extends State<EditorView> {
                                           // background lying underneath it.
                                           final tapAt = _lastTapCanvasPos;
                                           if (tapAt != null) {
-                                            final hitId =
-                                            _pickItemAt(provider, tapAt);
+                                            final hitId = _pickItemAt(
+                                              provider,
+                                              tapAt,
+                                            );
                                             if (hitId != null) {
                                               final hit = provider.items
                                                   .firstWhere(
@@ -4207,7 +4383,8 @@ class _EditorViewState extends State<EditorView> {
                                     ...(() {
                                       final orderedItems = provider.items
                                           .where(
-                                            (item) => !_isCanvasBackground(item),
+                                            (item) =>
+                                        !_isCanvasBackground(item),
                                       )
                                           .toList();
 
@@ -4221,6 +4398,11 @@ class _EditorViewState extends State<EditorView> {
                                             child: EditableItemWidget(
                                               item: item,
                                               onItemSelected: (type, id) {
+                                                // Canvas-level picking already chose the
+                                                // topmost visible item for this tap; a lower
+                                                // item's onTap must not override it.
+                                                if (_tapSelectedByCanvas)
+                                                  return;
                                                 provider.setSelectedItem(
                                                   type,
                                                   id,
@@ -4255,9 +4437,13 @@ class _EditorViewState extends State<EditorView> {
                                             left: item.position.dx * scaleX,
                                             top: item.position.dy * scaleY,
                                             width:
-                                            item.width * item.scale * scaleX,
+                                            item.width *
+                                                item.scale *
+                                                scaleX,
                                             height:
-                                            item.height * item.scale * scaleY,
+                                            item.height *
+                                                item.scale *
+                                                scaleY,
                                             child: IgnorePointer(
                                               child: Transform.rotate(
                                                 angle: item.rotation.isFinite
@@ -4279,7 +4465,8 @@ class _EditorViewState extends State<EditorView> {
                                         final selectedItems = provider.items
                                             .where(
                                               (e) =>
-                                          e.id == provider.selectedItemId,
+                                          e.id ==
+                                              provider.selectedItemId,
                                         )
                                             .toList();
 

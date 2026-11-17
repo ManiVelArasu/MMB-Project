@@ -49,7 +49,9 @@ class FavoriteButton extends StatelessWidget {
             final ok = await fav.toggle(templateId);
             if (!ok && context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Something went wrong. Try again.')),
+                const SnackBar(
+                  content: Text('Something went wrong. Try again.'),
+                ),
               );
             }
           },
@@ -60,7 +62,9 @@ class FavoriteButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF2A1A1C) : const Color(0xFFFFECEE),
               shape: radius == null ? BoxShape.circle : BoxShape.rectangle,
-              borderRadius: radius == null ? null : BorderRadius.circular(radius!),
+              borderRadius: radius == null
+                  ? null
+                  : BorderRadius.circular(radius!),
             ),
             child: Icon(
               isFav ? Icons.favorite : Icons.favorite_border,

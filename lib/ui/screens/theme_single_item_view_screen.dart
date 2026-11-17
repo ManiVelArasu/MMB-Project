@@ -11,6 +11,7 @@ import '../../Api Model/theme_single_model.dart';
 import '../../component/network_image.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
+import '../../network/provider/favorite_provider.dart';
 import '../../network/provider/plan_provider.dart';
 import '../../network/provider/theme_screen_provider.dart';
 import '../../network/provider/theme_single_provider.dart';
@@ -171,7 +172,7 @@ class ThemeDetailView extends StatelessWidget {
 
                         GestureDetector(
                           onTap: () {
-                            provider.toggleFavorite();
+                            //_toggleFavorite(context,'${data?.templates.firstOrNull?.}');
                           },
 
                           child: Container(
@@ -468,7 +469,17 @@ class ThemeDetailView extends StatelessWidget {
     );
   }
 }
+Future<void> _toggleFavorite(BuildContext context, String familyUid) async {
+  if (familyUid.isEmpty) return;
 
+  final ok = await context.read<FavoriteProvider>().toggle(familyUid);
+
+  if (!ok && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: AppText('Something went wrong. Try again.')),
+    );
+  }
+}
 Widget _buildBrandSeriesSection(BuildContext context, bool isDark) {
   return Consumer<ThemesScreenProvider>(
     builder: (context, provider, child) {
