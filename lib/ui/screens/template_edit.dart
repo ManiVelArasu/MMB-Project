@@ -1562,7 +1562,7 @@ class _EditorViewState extends State<EditorView> {
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           fontSize: 16,
-                                          fontWeight: FontWeight.w800,
+                                          fontWeight: FontWeight.w600,
                                           color: isDark
                                               ? Colors.white
                                               : Colors.black,
@@ -2278,7 +2278,7 @@ class _EditorViewState extends State<EditorView> {
                         title,
                         style: TextStyle(
                           fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                           color: isDark
                               ? Colors.white
                               : const Color(0xFF151515),
@@ -2419,7 +2419,7 @@ class _EditorViewState extends State<EditorView> {
                             title,
                             style: const TextStyle(
                               fontSize: 18,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -4605,7 +4605,7 @@ class _EditorViewState extends State<EditorView> {
                       style: TextStyle(
                         color: active ? Colors.white : fg,
                         fontSize: 13,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -4650,7 +4650,7 @@ class _EditorViewState extends State<EditorView> {
                             'Font Color',
                             style: TextStyle(
                               fontSize: 22,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                               color: fg,
                             ),
                           ),
@@ -4853,7 +4853,7 @@ class _EditorViewState extends State<EditorView> {
                 label,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   color: active ? accent : fg.withValues(alpha: .65),
                 ),
               ),
@@ -4951,7 +4951,7 @@ class _EditorViewState extends State<EditorView> {
       padding: const EdgeInsets.only(top: 8, bottom: 10),
       child: AppText(
         text,
-        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: fg),
+        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: fg),
       ),
     );
 
@@ -5099,7 +5099,7 @@ class _EditorViewState extends State<EditorView> {
                   labelOf(v),
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                     color: selected ? accent : fg,
                   ),
                 ),
@@ -5124,7 +5124,7 @@ class _EditorViewState extends State<EditorView> {
                   labelOf(value).toUpperCase(),
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: fg.withValues(alpha: .8),
                   ),
                 ),
@@ -5287,7 +5287,7 @@ class _EditorViewState extends State<EditorView> {
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                   color: fg,
                                 ),
                               ),
@@ -5330,7 +5330,7 @@ class _EditorViewState extends State<EditorView> {
                 mode.label,
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   color: selected ? Colors.white : fg,
                 ),
               ),
@@ -5411,7 +5411,7 @@ class _EditorViewState extends State<EditorView> {
                   style: TextStyle(
                     color: accent,
                     fontSize: 13,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -7900,7 +7900,7 @@ class _EditorViewState extends State<EditorView> {
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 8,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               AppText(
@@ -7910,7 +7910,7 @@ class _EditorViewState extends State<EditorView> {
                 style: const TextStyle(
                   color: Colors.amber,
                   fontSize: 8,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -8065,7 +8065,7 @@ class _EditorViewState extends State<EditorView> {
                               'Music',
                               style: TextStyle(
                                 fontSize: 17,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -8586,7 +8586,7 @@ class _EditorViewState extends State<EditorView> {
                                 'CONVERT',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -9199,7 +9199,7 @@ class _EditorViewState extends State<EditorView> {
                           'Pages',
                           style: TextStyle(
                             fontSize: 20,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                             color: isDark ? Colors.white : Colors.black,
                           ),
                         ),

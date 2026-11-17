@@ -151,7 +151,7 @@ class ExploreAiToolScreen extends StatelessWidget {
                                                 : Colors.black,
                                             fontSize: 13.sp,
                                             fontWeight:
-                                            FontWeight.w800,
+                                            FontWeight.w600,
                                           ),
                                           maxLines: 1,
                                           overflow:

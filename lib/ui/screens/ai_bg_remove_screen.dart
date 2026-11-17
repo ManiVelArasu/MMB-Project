@@ -311,7 +311,7 @@ class AiRemoveBgScreen extends StatelessWidget {
               )
             : const AppText(
                 'REMOVE BACKGROUND',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
               ),
       ),
     );

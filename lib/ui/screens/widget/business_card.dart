@@ -49,7 +49,7 @@ class BusinessCategoryCard extends StatelessWidget {
                   'EDIT',
                   style: TextStyle(
                     fontSize: AppFontSize.fontSize11,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: const Color(0xFFFF252D),
                   ),
                 ),

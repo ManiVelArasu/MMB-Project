@@ -94,7 +94,7 @@ class _LanguagesBottomSheetState extends State<LanguagesBottomSheet> {
                   "Selected Languages",
                   style: TextStyle(
                     fontSize: 16.sp,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: Colors.black,
                   ),
                 ),

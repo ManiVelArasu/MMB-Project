@@ -209,7 +209,7 @@ class CustomBottomNavView extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 10.sp,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               color: isSelected ? AppColors.appRed : Colors.white,
               letterSpacing: 0.5,
             ),

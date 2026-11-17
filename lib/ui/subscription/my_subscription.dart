@@ -459,7 +459,7 @@ class _MySubscriptionView extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -473,7 +473,7 @@ class _MySubscriptionView extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 17,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
 
@@ -545,7 +545,7 @@ class _MySubscriptionView extends StatelessWidget {
                 icon: const Icon(Icons.visibility_outlined, size: 18),
                 label: const Text(
                   "VIEW PLAN DETAILS",
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFFF2027),
@@ -811,7 +811,7 @@ class _MySubscriptionView extends StatelessWidget {
                           style: TextStyle(
                             color: Color(0xFF171A2B),
                             fontSize: AppFontSize.fontSize36,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
 

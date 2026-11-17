@@ -860,7 +860,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 14.sp,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -891,7 +891,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                           style: TextStyle(
                             fontSize: 12.sp,
                             color: Colors.red,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),

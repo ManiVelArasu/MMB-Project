@@ -150,7 +150,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                                     ? const Color(0xFF00A878)
                                     : Colors.red,
                                 fontSize: 11,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -218,7 +218,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                             'INVOICE',
                             style: TextStyle(
                               color: Colors.red,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -243,7 +243,7 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                             'RECEIPT',
                             style: TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -253,34 +253,6 @@ class _PaymentDetailsScreenState extends State<PaymentDetailsScreen> {
                 ),
 
                 SizedBox(height: 20.h),
-
-                /*    const Text(
-                  'BILLING DETAILS',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-
-                SizedBox(height: 9.h),
-
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(16.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(color: const Color(0xFFE7E0D7)),
-                  ),
-                  child: Column(
-                    children: [
-                      _detailRow('Billed To', widget.billedTo),
-                      _detailRow('Email/Mobile', widget.email),
-                      _detailRow('GSTIN', widget.gstin),
-                    ],
-                  ),
-                ),*/
               ],
             ),
           ),

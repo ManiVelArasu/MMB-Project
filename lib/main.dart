@@ -22,6 +22,7 @@ import 'network/provider/bottom_provider.dart';
 import 'network/provider/business_provider.dart';
 import 'network/provider/custom_theme_provider.dart';
 import 'network/provider/common_provider.dart';
+import 'network/provider/favorite_provider.dart';
 import 'network/provider/plan_provider.dart';
 
 /// Startup-la network/refresh evlo neram wait pannalaam.
@@ -180,6 +181,7 @@ class _MyAppState extends State<MyApp> {
             ChangeNotifierProvider(create: (_) => BusinessProvider()),
             ChangeNotifierProvider(create: (_) => PlanProvider()),
             ChangeNotifierProvider(create: (_) => SearchProvider()),
+            ChangeNotifierProvider(create: (_) => FavoriteProvider()),
             ChangeNotifierProvider<CommonProvider>(
               create: (_) => CommonProvider.instance,
             ),

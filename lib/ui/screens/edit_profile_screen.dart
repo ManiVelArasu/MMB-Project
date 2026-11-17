@@ -912,7 +912,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
             enabled: edit,
             style: TextStyle(
               fontSize: 13.5.sp,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               color: edit ? Colors.black87 : Colors.grey.shade600,
             ),
             decoration: const InputDecoration(

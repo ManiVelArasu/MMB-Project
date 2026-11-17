@@ -30,6 +30,7 @@ import '../ui/screens/my_upload_screen.dart';
 import '../ui/screens/notification_screen.dart';
 import '../ui/screens/help_support_screen.dart';
 import '../ui/screens/profile_screen.dart';
+import '../ui/screens/search_screen.dart';
 import '../ui/screens/smcalender_form_sceen.dart';
 import '../ui/screens/smcalender_screen.dart';
 import '../ui/screens/social_calender_result_screen.dart';
@@ -367,6 +368,9 @@ class RouteGenerator {
       case '/BusinessCategorySearchScreen':
         return MaterialPageRoute(
           builder: (_) => const BusinessCategorySearchScreen(),
+        );case '/SearchScreen':
+        return MaterialPageRoute(
+          builder: (_) => const SearchScreen(),
         );
       case '/ContentGeneratorScreen':
         return MaterialPageRoute(

@@ -184,7 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         style: TextStyle(
                                           fontSize: 52.sp,
                                           height: 0.9,
-                                          fontWeight: FontWeight.w800,
+                                          fontWeight: FontWeight.w600,
                                           color: const Color(0xFFF5222D),
                                         ),
                                       ),

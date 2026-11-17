@@ -6,15 +6,16 @@ import 'package:mmb_app/component/custom_searchbar.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/ui/screens/search_screen.dart';
 import 'package:mmb_app/ui/screens/template_detail_screen.dart';
+import 'package:mmb_app/ui/screens/widget/favorite_button.dart';
 import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/special_days.dart';
-import '../../Repository/home_repository.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
+import '../../network/provider/favorite_provider.dart';
 import '../../network/provider/special_days_provider.dart';
 import '../shimmer/app_loading.dart';
 
@@ -43,13 +44,11 @@ class _SpecialDaysScreenView extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-
       appBar: CustomAppBar(
         showTitle: true,
-        title: "Special Days",
+        title: 'Special Days',
         showRightIcon: false,
       ),
-
       body: Stack(
         children: [
           Positioned(
@@ -58,7 +57,7 @@ class _SpecialDaysScreenView extends StatelessWidget {
             right: 0,
             height: 300.h,
             child: Image.asset(
-              "assets/images/plan_gradient.png",
+              'assets/images/plan_gradient.png',
               fit: BoxFit.cover,
               alignment: Alignment.topCenter,
             ),
@@ -76,7 +75,6 @@ class _SpecialDaysScreenView extends StatelessWidget {
                 final specialDays = provider.specialDays?.data ?? [];
 
                 final List<SpecialDayTemplateItem> templates = [];
-
                 for (final specialDay in specialDays) {
                   for (final template in specialDay.templates) {
                     templates.add(
@@ -95,16 +93,15 @@ class _SpecialDaysScreenView extends StatelessWidget {
                   child: Column(
                     children: [
                       AppText(
-                        "Find the Right Festival Templates",
+                        'Find the Right Festival Templates',
                         style: TextStyle(
                           color: AppColors.appBlack,
                           fontWeight: FontWeight.w600,
                           fontSize: AppFontSize.fontSize18,
                         ),
                       ),
-
                       AppText(
-                        "Choose the festival to discover ready-to-edit designs for promotions, offers, announcements, and everyday marketing.",
+                        'Choose the festival to discover ready-to-edit designs for promotions, offers, announcements, and everyday marketing.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: AppColors.lightedGrey,
@@ -112,16 +109,14 @@ class _SpecialDaysScreenView extends StatelessWidget {
                           fontSize: AppFontSize.fontSize14,
                         ),
                       ),
-
                       SizedBox(height: 10.h),
-
                       Row(
                         children: [
                           Expanded(
                             child: CustomSearchBar(
                               hintText: 'Search your festival',
-                              prefixAsset: "assets/images/search.png",
-                              suffixAsset: "assets/images/mic.png",
+                              prefixAsset: 'assets/images/search.png',
+                              suffixAsset: 'assets/images/mic.png',
                               borderColor: const Color(0xFFFFCDD2),
                               showSuffixIcon: false,
                               onChanged: (query) {},
@@ -145,9 +140,7 @@ class _SpecialDaysScreenView extends StatelessWidget {
                           _CalendarButton(isDark: isDark),
                         ],
                       ),
-
                       SizedBox(height: 15.h),
-
                       Expanded(
                         child: templates.isEmpty
                             ? _EmptyState(
@@ -157,12 +150,9 @@ class _SpecialDaysScreenView extends StatelessWidget {
                               )
                             : RefreshIndicator(
                                 color: _kRed,
-                                onRefresh: () {
-                                  // Refresh-ல் full screen loader வராது
-                                  return provider.loadSpecialDays(
-                                    showLoader: false,
-                                  );
-                                },
+                                // No full screen loader on pull-to-refresh
+                                onRefresh: () =>
+                                    provider.loadSpecialDays(showLoader: false),
                                 child: GridView.builder(
                                   padding: EdgeInsets.only(bottom: 40.h),
                                   physics: const AlwaysScrollableScrollPhysics(
@@ -548,43 +538,48 @@ class _TemplateCard extends StatelessWidget {
     required this.isDark,
   });
 
+  /// Card tap / popup "Customize" -> Template Detail screen
+  void _openDetail(BuildContext context) {
+    final uid = template.uid?.toString().trim() ?? '';
+
+    if (uid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: AppText('Template UID not available')),
+      );
+      return;
+    }
+
+    int? categoryId;
+    try {
+      final dynamic raw = template.categoryId;
+      categoryId = raw is int ? raw : int.tryParse('$raw');
+    } catch (_) {
+      categoryId = null;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            TemplateDetailScreen(templateUid: uid, categoryId: categoryId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final key = template.thumbnailS3Key?.trim() ?? '';
-
     final imageUrl = key.isEmpty
         ? ''
         : key.startsWith('http://') || key.startsWith('https://')
         ? key
         : '${ApiEndpoints.cdnImageUrl}/$key';
 
+    // Same key as every other screen, so the heart stays in sync.
+    final familyUid = template.familyUid?.trim() ?? '';
+
     return GestureDetector(
-      onTap: () {
-        final uid = (template.uid?.toString().trim()) ?? '';
-
-        if (uid.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: AppText('Template UID not available')),
-          );
-          return;
-        }
-
-        int? categoryId;
-        try {
-          final dynamic raw = template.categoryId;
-          categoryId = raw is int ? raw : int.tryParse('$raw');
-        } catch (_) {
-          categoryId = null;
-        }
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                TemplateDetailScreen(templateUid: uid, categoryId: categoryId),
-          ),
-        );
-      },
+      onTap: () => _openDetail(context),
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
@@ -601,7 +596,6 @@ class _TemplateCard extends StatelessWidget {
           ],
         ),
         clipBehavior: Clip.antiAlias,
-
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -625,29 +619,25 @@ class _TemplateCard extends StatelessWidget {
                             width: double.infinity,
                             height: double.infinity,
                             fit: BoxFit.cover,
-                            placeholder: (_, __) {
-                              return Container(
-                                color: isDark
-                                    ? const Color(0xFF292929)
-                                    : const Color(0xFFF3F3F3),
-                                child: const Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: _kRed,
-                                  ),
-                                ),
-                              );
-                            },
-                            errorWidget: (_, __, ___) {
-                              return Container(
-                                color: const Color(0xFFFFE5E5),
-                                child: Icon(
-                                  Icons.image_not_supported_rounded,
+                            placeholder: (_, __) => Container(
+                              color: isDark
+                                  ? const Color(0xFF292929)
+                                  : const Color(0xFFF3F3F3),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
                                   color: _kRed,
-                                  size: 32.sp,
                                 ),
-                              );
-                            },
+                              ),
+                            ),
+                            errorWidget: (_, __, ___) => Container(
+                              color: const Color(0xFFFFE5E5),
+                              child: Icon(
+                                Icons.image_not_supported_rounded,
+                                color: _kRed,
+                                size: 32.sp,
+                              ),
+                            ),
                           ),
                   ),
 
@@ -661,82 +651,23 @@ class _TemplateCard extends StatelessWidget {
                       children: [
                         if (template.isLocked)
                           Image.asset(
-                            "assets/images/crown.png",
+                            'assets/images/crown.png',
                             width: 20.w,
                             height: 20.w,
                           )
                         else
                           const SizedBox.shrink(),
-                        TemplateActionPopup(
-                          isFavorite: true,
-                          showDownload: false,
-                          showDelete: false,
-                          onCustomize: () {
-                            final uid = (template.uid?.toString().trim()) ?? '';
-
-                            if (uid.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: AppText(
-                                    'Template UID not available',
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-
-                            int? categoryId;
-                            try {
-                              final dynamic raw = template.categoryId;
-                              categoryId = raw is int
-                                  ? raw
-                                  : int.tryParse('$raw');
-                            } catch (_) {
-                              categoryId = null;
-                            }
-
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => TemplateDetailScreen(
-                                  templateUid: uid,
-                                  categoryId: categoryId,
-                                ),
-                              ),
-                            );
-                          },
-                          onDownload: () async {},
-                          onFavorite: () async {
-                            final uid = template.uid?.trim() ?? '';
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              barrierColor: Colors.black45,
-                              useRootNavigator: true,
-                              builder: (_) => const PopScope(
-                                canPop: false,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: _kRed,
-                                  ),
-                                ),
-                              ),
-                            );
-
-                            try {
-                              await HomeRepository.instance.favorite(uid);
-                            } catch (e) {
-                              debugPrint('Favorite Template Error: $e');
-                            } finally {
-                              // close loader
-                              if (context.mounted) {
-                                Navigator.of(
-                                  context,
-                                  rootNavigator: true,
-                                ).pop();
-                              }
-                            }
-                          },
+                        Selector<FavoriteProvider, bool>(
+                          selector: (_, p) => p.isFavorite(familyUid),
+                          builder: (_, isFav, __) => TemplateActionPopup(
+                            isFavorite: true,
+                            showDownload: false,
+                            showDelete: false,
+                            onCustomize: () => _openDetail(context),
+                            onDownload: () async {},
+                            onFavorite: () =>
+                                toggleFavorite(context, familyUid),
+                          ),
                         ),
                       ],
                     ),
@@ -756,7 +687,7 @@ class _TemplateCard extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11.sp,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
@@ -769,6 +700,17 @@ class _TemplateCard extends StatelessWidget {
   }
 }
 
+Future<void> toggleFavorite(BuildContext context, String familyUid) async {
+  if (familyUid.isEmpty) return;
+
+  final ok = await context.read<FavoriteProvider>().toggle(familyUid);
+
+  if (!ok && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: AppText('Something went wrong. Try again.')),
+    );
+  }
+}
 // ============================================================
 // EMPTY STATE
 // ============================================================
@@ -791,9 +733,7 @@ class _EmptyState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.event_busy_rounded, size: 46.sp, color: _kRed),
-
             SizedBox(height: 10.h),
-
             AppText(
               message,
               textAlign: TextAlign.center,
@@ -803,7 +743,6 @@ class _EmptyState extends StatelessWidget {
                 color: isDark ? Colors.white70 : Colors.black54,
               ),
             ),
-
             SizedBox(height: 14.h),
 
             // Quick way back to today's data

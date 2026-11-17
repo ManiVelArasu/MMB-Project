@@ -167,11 +167,16 @@ class HomeRepository {
     return result;
   }
 
-  Future<ApiResult<dynamic>> favorite(String? templateId) {
+  Future<ApiResult<dynamic>> favorite(
+    String? templateId, {
+    required bool favourited,
+    required int likesCount,
+  }) {
     return ApiRepository.instance.request<dynamic>(
       config: ApiRequestConfig(
-        endpoint: ApiEndpoints.favoriteTemplate('${templateId}'),
-        method: ApiMethod.put,
+        endpoint: ApiEndpoints.favoriteTemplate('$templateId'),
+        method: favourited ? ApiMethod.put : ApiMethod.delete,
+        body: {'favourited': favourited, 'likes_count': likesCount},
       ),
       fromJson: (json) => json,
     );

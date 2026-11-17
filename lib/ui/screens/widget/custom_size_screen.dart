@@ -258,7 +258,7 @@ class _CustomSizeScreenState extends State<CustomSizeScreen> {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: AppFontSize.fontSize14,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -288,7 +288,7 @@ class _CustomSizeScreenState extends State<CustomSizeScreen> {
                         style: TextStyle(
                           fontSize: AppFontSize.fontSize12,
                           color: Colors.red,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),

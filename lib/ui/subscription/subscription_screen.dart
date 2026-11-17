@@ -190,7 +190,7 @@ class _PlansAndPricingBody extends StatelessWidget {
                                                   style: TextStyle(
                                                     fontSize:
                                                         AppFontSize.fontSize26,
-                                                    fontWeight: FontWeight.w800,
+                                                    fontWeight: FontWeight.w600,
                                                     color: Colors.black,
                                                     height: 1.0,
                                                   ),
@@ -200,7 +200,7 @@ class _PlansAndPricingBody extends StatelessWidget {
                                                   style: TextStyle(
                                                     fontSize:
                                                         AppFontSize.fontSize12,
-                                                    fontWeight: FontWeight.w800,
+                                                    fontWeight: FontWeight.w600,
                                                     color: Colors.black,
                                                   ),
                                                 ),

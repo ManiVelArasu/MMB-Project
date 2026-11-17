@@ -542,18 +542,6 @@ class HomeScreenProvider extends ChangeNotifier {
     await fetchSpecialDays(from: _formatApiDate(from), to: _formatApiDate(to));
   }
 
-  Future<void> favoriteTemplate(String templateId) async {
-    try {
-      final response = await HomeRepository.instance.favorite(templateId);
-
-      if (response.data != null) {
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('Favorite Template Error: $e');
-    }
-  }
-
   String _formatApiDate(DateTime date) =>
       '${date.year.toString().padLeft(4, '0')}-'
       '${date.month.toString().padLeft(2, '0')}-'

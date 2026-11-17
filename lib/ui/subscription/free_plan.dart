@@ -491,7 +491,7 @@ class _PlansAndPricingBody extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 9.sp,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -661,7 +661,7 @@ class _ReviewOrderDialogState extends State<ReviewOrderDialog> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15.sp,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   color: Colors.black,
                 ),
               ),
@@ -691,7 +691,7 @@ class _ReviewOrderDialogState extends State<ReviewOrderDialog> {
                       'All-Access Pass',
                       style: TextStyle(
                         fontSize: 13.sp,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         color: Colors.black,
                       ),
                     ),
@@ -782,7 +782,7 @@ class _ReviewOrderDialogState extends State<ReviewOrderDialog> {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 10.sp,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -815,7 +815,7 @@ class _ReviewOrderDialogState extends State<ReviewOrderDialog> {
           title,
           style: TextStyle(
             fontSize: 10.sp,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             color: Colors.black,
           ),
         ),
@@ -850,7 +850,7 @@ class _ReviewOrderDialogState extends State<ReviewOrderDialog> {
               style: TextStyle(
                 fontSize: 10.sp,
                 color: Colors.black,
-                fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+                fontWeight: isBold ? FontWeight.w600 : FontWeight.w600,
               ),
             ),
           ),

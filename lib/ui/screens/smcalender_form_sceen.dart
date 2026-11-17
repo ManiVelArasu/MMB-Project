@@ -421,7 +421,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                         'GENERATE',
                         style: TextStyle(
                           fontSize: 13.sp,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -470,7 +470,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                 'Your Calendar Plan',
                 style: TextStyle(
                   fontSize: 17.sp,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   color: Colors.black,
                 ),
               ),

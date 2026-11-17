@@ -1053,7 +1053,7 @@ class _PlanUsageView extends StatelessWidget {
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 8,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),

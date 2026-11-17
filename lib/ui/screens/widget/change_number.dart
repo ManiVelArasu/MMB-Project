@@ -649,7 +649,7 @@ class _ChangeNumberBottomSheetState extends State<ChangeNumberBottomSheet> {
           Text(
             "Mobile Number Updated\nSuccessfully",
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
           ),
 
           SizedBox(height: 10.h),
@@ -742,7 +742,7 @@ class _ChangeNumberBottomSheetState extends State<ChangeNumberBottomSheet> {
           children: [
             Text(
               "Change Mobile Number",
-              style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800),
+              style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w600),
             ),
 
             GestureDetector(
@@ -946,7 +946,7 @@ class _ChangeNumberBottomSheetState extends State<ChangeNumberBottomSheet> {
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 10.sp,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
       ),

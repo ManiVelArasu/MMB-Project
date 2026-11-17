@@ -74,7 +74,7 @@ class _UpdateBusinessSheetState extends State<UpdateBusinessSheet> {
                   "Update Business Info",
                   style: TextStyle(
                     fontSize: 18.sp,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: Colors.black,
                   ),
                 ),

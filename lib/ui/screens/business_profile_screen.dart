@@ -1618,7 +1618,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                       style: TextStyle(
                         color: dc.text,
                         fontSize: 15.sp,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -1853,7 +1853,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                       style: TextStyle(
                         color: dc.text,
                         fontSize: 15.sp,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -1897,7 +1897,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                                   style: TextStyle(
                                     color: dc.text,
                                     fontSize: 12.sp,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 SizedBox(height: 2.h),
@@ -1964,7 +1964,7 @@ class _BrandKitSectionState extends State<_BrandKitSection> {
                       style: TextStyle(
                         color: dc.text,
                         fontSize: 12.sp,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     SizedBox(height: 8.h),

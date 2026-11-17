@@ -290,7 +290,7 @@ class _ChangePlanScreenState extends State<ChangePlanScreen> {
                                 style: TextStyle(
                                   color: Colors.red,
                                   fontWeight:
-                                  FontWeight.w800,
+                                  FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -331,7 +331,7 @@ class _ChangePlanScreenState extends State<ChangePlanScreen> {
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight:
-                                  FontWeight.w800,
+                                  FontWeight.w600,
                                 ),
                               ),
                             ),

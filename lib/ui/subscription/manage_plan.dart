@@ -310,7 +310,7 @@ class _ManagePlanViewState extends State<_ManagePlanView> {
                                 "BACK",
                                 style: TextStyle(
                                   color: Colors.red,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -341,7 +341,7 @@ class _ManagePlanViewState extends State<_ManagePlanView> {
                                 "CONTINUE",
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -1244,7 +1244,7 @@ class _ChangePlanBottomSheetState extends State<_ChangePlanBottomSheet> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                 ),
