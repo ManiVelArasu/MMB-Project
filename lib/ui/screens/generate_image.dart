@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../component/appbar_widget.dart';
 import '../../network/provider/ai_hub_provider.dart';
+import '../../utils/theme/app.fonts.dart';
 
 const Color _red = Color(0xFFF5222D);
 const Color _border = Color(0xFFFFDCDD);
@@ -66,10 +67,10 @@ class _GenerateImagesView extends StatelessWidget {
                             child: Image.asset("assets/images/ai_image.png")
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                           Expanded(
                             child: AppText(
                               'Describe what you need get unique images for posts & products.',
-                              style: TextStyle(fontSize: 11, height: 1.35, color: Color(0xFF424242)),
+                              style: TextStyle(fontSize: AppFontSize.fontSize14, fontWeight: FontWeight.w400, height: 1.35, color: Color(0xFF424242)),
                             ),
                           ),
                         ],
@@ -90,7 +91,7 @@ class _GenerateImagesView extends StatelessWidget {
                                 border: Border.all(color: _border),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: AppText(_suggestions[index], style: const TextStyle(fontSize: 9.5)),
+                              child: AppText(_suggestions[index], style:  TextStyle(fontSize: AppFontSize.fontSize12, fontWeight: FontWeight.w400, )),
                             ),
                           ),
                         ),
@@ -171,10 +172,10 @@ class _GenerateImagesView extends StatelessWidget {
                           const Icon(Icons.auto_awesome, color: _red, size: 14),
                           const SizedBox(width: 8),
                           AppText('${provider.creditsAvailable} AI Credits Available',
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500)),
+                              style:  TextStyle(fontSize: AppFontSize.fontSize14, fontWeight: FontWeight.w400, )),
                           const SizedBox(width: 5),
                           AppText('${provider.creditsUsed} credits will be used',
-                              style: const TextStyle(fontSize: 10, color: _red)),
+                              style:  TextStyle(fontSize: AppFontSize.fontSize14, fontWeight: FontWeight.w400,color: _red)),
                         ],
                       ),
                       if (provider.errorMessage != null) ...[
@@ -263,35 +264,6 @@ class _GenerateImagesView extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _header(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Row(
-        children: [
-          _circleButton(Icons.arrow_back, () => Navigator.maybePop(context)),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: AppText('Generate Images', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-          ),
-          _circleButton(Icons.power_settings_new, () {}),
-        ],
-      ),
-    );
-  }
-
-  Widget _circleButton(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        width: 28,
-        height: 28,
-        decoration: const BoxDecoration(color: _softRed, shape: BoxShape.circle),
-        child: Icon(icon, color: _red, size: 15),
-      ),
     );
   }
 

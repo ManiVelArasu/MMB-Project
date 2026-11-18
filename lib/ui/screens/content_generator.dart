@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:mmb_app/component/appbar_widget.dart';
 import 'package:provider/provider.dart';
 
+import '../../component/custom_widget.dart';
 import '../../network/provider/ai_hub_provider.dart';
+import '../../utils/theme/app.fonts.dart';
 
 const Color _red = Color(0xFFF5222D);
 const Color _border = Color(0xFFFFDCDD);
@@ -55,11 +57,11 @@ class _ContentGeneratorBody extends StatelessWidget {
                       const SizedBox(height: 20),
                       _intro(),
                       const SizedBox(height: 18),
-                      const Text(
+                       AppText(
                         'What do you need?',
                         style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                          fontSize:AppFontSize.fontSize18,
+                          fontWeight: FontWeight.w500,
                           color: Colors.black,
                         ),
                       ),
@@ -85,11 +87,12 @@ class _ContentGeneratorBody extends StatelessWidget {
                                   border: Border.all(color: _border),
                                   borderRadius: BorderRadius.circular(18),
                                 ),
-                                child: Text(
+                                child: AppText(
                                   suggestion,
                                   maxLines: 1,
-                                  style: const TextStyle(
-                                    fontSize: 10.5,
+                                  style:  TextStyle(
+                                    fontSize:AppFontSize.fontSize12,
+                                    fontWeight: FontWeight.w400,
                                     color: Color(0xFF555555),
                                   ),
                                 ),
@@ -101,29 +104,41 @@ class _ContentGeneratorBody extends StatelessWidget {
                       const SizedBox(height: 13),
                       _promptBox(context, provider),
                       const SizedBox(height: 12),
-                      const Text.rich(
+                      Text.rich(
                         TextSpan(
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 10.5,
                             height: 1.5,
                             color: Color(0xFF777777),
                           ),
                           children: [
-                            TextSpan(
+                             TextSpan(
                               text:
                                   'AI can make mistakes, please check for accuracy. See ',
+                              style: TextStyle(
+                                fontSize:AppFontSize.fontSize14,
+                                fontWeight: FontWeight.w300,
+                              ),
                             ),
                             TextSpan(
                               text: 'terms',
                               style: TextStyle(
                                 decoration: TextDecoration.underline,
+                                fontSize:AppFontSize.fontSize14,
+                                fontWeight: FontWeight.w300,
                               ),
                             ),
-                            TextSpan(text: ' or\nshare '),
-                            TextSpan(
+                             TextSpan(text: ' or share ', style: TextStyle(
+
+                              fontSize:AppFontSize.fontSize14,
+                              fontWeight: FontWeight.w300,
+                            ),),
+                             TextSpan(
                               text: 'feedback',
                               style: TextStyle(
                                 decoration: TextDecoration.underline,
+                                fontSize:AppFontSize.fontSize14,
+                                fontWeight: FontWeight.w300,
                               ),
                             ),
                           ],
@@ -134,20 +149,22 @@ class _ContentGeneratorBody extends StatelessWidget {
                         children: [
                           const Icon(Icons.auto_awesome, color: _red, size: 15),
                           const SizedBox(width: 9),
-                          Text(
+                          AppText(
                             '${provider.creditsAvailable} AI Credits Available',
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
+                            style:  TextStyle(
+                              fontSize:AppFontSize.fontSize14,
+                              fontWeight: FontWeight.w400,
+
+
                             ),
                           ),
                           const SizedBox(width: 5),
-                          Text(
+                          AppText(
                             '${provider.creditsUsed} credits will be used',
-                            style: const TextStyle(
-                              fontSize: 11.5,
+                            style:  TextStyle(
+                              fontSize:AppFontSize.fontSize14,
+                              fontWeight: FontWeight.w300,
                               color: _red,
-                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -205,12 +222,13 @@ Widget _intro() {
         child: Image.asset("assets/images/caption.png"),
       ),
       const SizedBox(width: 14),
-      const Expanded(
-        child: Text(
+       Expanded(
+        child: AppText(
           'Generate captions, promotional copy, taglines, product descriptions and social content tailored to your business.',
           style: TextStyle(
             color: Color(0xFF444444),
-            fontSize: 11.5,
+            fontSize:AppFontSize.fontSize14,
+            fontWeight: FontWeight.w400,
             height: 1.45,
           ),
         ),
