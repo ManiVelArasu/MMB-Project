@@ -488,6 +488,30 @@ class _EditorViewState extends State<EditorView> {
   bool _projectSaveQueued = false;
   String _projectSaveStatus = '';
   String? _lastQueuedContent;
+  int _lastPageCount = 1;
+
+  // Small preview of every page, keyed by the page's stable id. A page's
+  // preview is refreshed whenever the Pages sheet opens while it is open.
+  final Map<String, Uint8List> _pageThumbs = {};
+
+  Future<void> _captureCurrentPageThumb(EditorProvider provider) async {
+    try {
+      final boundary = _canvasKey.currentContext?.findRenderObject();
+      if (boundary is! RenderRepaintBoundary) return;
+      final w = boundary.size.width;
+      if (w <= 0) return;
+      final image = await boundary.toImage(pixelRatio: 160 / w);
+      try {
+        final data = await image.toByteData(format: ui.ImageByteFormat.png);
+        if (data != null) {
+          _pageThumbs[provider.pageIdAt(provider.currentPageIndex)] =
+              data.buffer.asUint8List();
+        }
+      } finally {
+        image.dispose();
+      }
+    } catch (_) {}
+  }
   String? _lastSavedProjectContent;
 
   void _attachProjectAutoSaveListener() {
@@ -511,6 +535,15 @@ class _EditorViewState extends State<EditorView> {
     _projectSaveTimer?.cancel();
     _projectSaveStatus = 'Saving...';
     setState(() {});
+
+    // A page was added / deleted -> call PATCH project/{id} right away
+    // instead of waiting for the normal 500 ms debounce.
+    final pageCountChanged = editorProvider.pageCount != _lastPageCount;
+    _lastPageCount = editorProvider.pageCount;
+    if (pageCountChanged) {
+      _saveProjectNow();
+      return;
+    }
 
     _projectSaveTimer = Timer(const Duration(milliseconds: 500), () {
       _saveProjectNow();
@@ -706,6 +739,7 @@ class _EditorViewState extends State<EditorView> {
     final initialContent = jsonEncode(editorProvider.exportCurrentPageJson());
     _lastQueuedContent = initialContent;
     _lastSavedProjectContent = initialContent;
+    _lastPageCount = editorProvider.pageCount;
 
     _projectAutoSaveReady = true;
     _attachProjectAutoSaveListener();
@@ -5078,7 +5112,11 @@ class _EditorViewState extends State<EditorView> {
               backgroundColor: const Color(0xFFE0E0E0),
               iconColor: const Color(0xFF555555),
               tooltip: 'Pages',
-              onPressed: () => _showPagesSheet(context, provider, isDark),
+              onPressed: () async {
+                await _captureCurrentPageThumb(provider);
+                if (!mounted) return;
+                _showPagesSheet(this.context, provider, isDark);
+              },
               onLongPress: () {
                 provider.copyCurrentPage();
                 Fluttertoast.showToast(
@@ -10296,145 +10334,232 @@ class _EditorViewState extends State<EditorView> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
-        return StatefulBuilder(
-          builder: (sheetContext, setModalState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * .58,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF17191E) : Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
-              ),
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
-              child: Column(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade500,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+        return SafeArea(
+          child: StatefulBuilder(
+            builder: (sheetContext, setModalState) {
+              final fg = isDark ? Colors.white : Colors.black;
+          
+              Widget pageRow(int index) {
+                final id = provider.pageIdAt(index);
+                final selected = index == provider.currentPageIndex;
+                final thumb = _pageThumbs[id];
+                return Container(
+                  key: ValueKey(id),
+                  margin: const EdgeInsets.only(bottom: 6),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? (isDark
+                        ? const Color(0xFF3A2528)
+                        : const Color(0xFFFFE6E4))
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppText(
-                          'Pages',
-                          style: TextStyle(
-                            fontSize: AppFontSize.fontSize20,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
-                        ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      provider.switchPage(index);
+                      Navigator.pop(modalContext);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 6,
                       ),
-                      IconButton(
-                        tooltip: 'Add page',
-                        onPressed: () {
-                          provider.addPage();
-                          setModalState(() {});
-                        },
-                        icon: const Icon(
-                          Icons.add_circle_rounded,
-                          color: Colors.red,
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Duplicate page',
-                        onPressed: () {
-                          provider.duplicateCurrentPage();
-                          setModalState(() {});
-                        },
-                        icon: const Icon(
-                          Icons.library_add_rounded,
-                          color: Colors.red,
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Delete page',
-                        onPressed: () {
-                          provider.deleteCurrentPage();
-                          setModalState(() {});
-                        },
-                        icon: const Icon(
-                          Icons.delete_outline_rounded,
-                          color: Colors.red,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(),
-                  Expanded(
-                    child: GridView.builder(
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: .82,
-                      ),
-                      itemCount: provider.pageCount,
-                      itemBuilder: (_, index) {
-                        final selected = index == provider.currentPageIndex;
-                        return GestureDetector(
-                          onTap: () {
-                            provider.switchPage(index);
-                            Navigator.pop(modalContext);
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF252932)
-                                  : Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: selected
-                                    ? Colors.red
-                                    : Colors.transparent,
-                                width: 2,
+                      child: Row(
+                        children: [
+                          // Hold the handle and drag to reorder pages.
+                          ReorderableDragStartListener(
+                            index: index,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 10,
+                              ),
+                              child: Icon(
+                                Icons.drag_indicator_rounded,
+                                size: 20,
+                                color: Colors.grey.shade500,
                               ),
                             ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.description_rounded,
-                                  size: 42,
-                                  color: selected ? Colors.red : Colors.grey,
-                                ),
-                                const SizedBox(height: 8),
-                                AppText(
-                                  'Page ${index + 1}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark ? Colors.white : Colors.black,
-                                  ),
-                                ),
-                                if (selected)
-                                  Padding(
-                                    padding: EdgeInsets.only(top: 4),
-                                    child: AppText(
-                                      'CURRENT',
-                                      style: TextStyle(
-                                        color: Colors.red,
-                                        fontSize: AppFontSize.fontSize9,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                              ],
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.white12
+                                    : const Color(0xFFE6E6E6),
+                              ),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: thumb == null
+                                ? null
+                                : Image.memory(
+                              thumb,
+                              fit: BoxFit.cover,
+                              gaplessPlayback: true,
                             ),
                           ),
-                        );
-                      },
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: AppText(
+                              provider.pageNameAt(index),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: fg,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ],
-              ),
-            );
-          },
+                );
+              }
+          
+              return Container(
+                height: MediaQuery.of(context).size.height * .62,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF17191E) : Colors.white,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(28),
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade500,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppText(
+                            'Pages · ${provider.pageCount}',
+                            style: TextStyle(
+                              fontSize: AppFontSize.fontSize18,
+                              fontWeight: FontWeight.w700,
+                              color: fg,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Duplicate page',
+                          onPressed: () {
+                            final srcId = provider.pageIdAt(
+                              provider.currentPageIndex,
+                            );
+                            provider.duplicateCurrentPage();
+                            // The copy starts with the same preview.
+                            final t = _pageThumbs[srcId];
+                            if (t != null) {
+                              _pageThumbs[provider.pageIdAt(
+                                provider.currentPageIndex,
+                              )] =
+                                  t;
+                            }
+                            setModalState(() {});
+                          },
+                          icon: const Icon(
+                            Icons.library_add_rounded,
+                            color: Colors.red,
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Delete page',
+                          onPressed: () {
+                            provider.deleteCurrentPage();
+                            setModalState(() {});
+                          },
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Expanded(
+                      child: ReorderableListView.builder(
+                        buildDefaultDragHandles: false,
+                        padding: EdgeInsets.zero,
+                        itemCount: provider.pageCount,
+                        proxyDecorator: (child, index, animation) => Material(
+                          color: Colors.transparent,
+                          elevation: 6,
+                          borderRadius: BorderRadius.circular(12),
+                          child: child,
+                        ),
+                        onReorder: (oldIndex, newIndex) {
+                          provider.reorderPage(oldIndex, newIndex);
+                          setModalState(() {});
+                        },
+                        itemBuilder: (_, index) => pageRow(index),
+                      ),
+                    ),
+                    Divider(
+                      height: 12,
+                      color: isDark ? Colors.white10 : Colors.black12,
+                    ),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        provider.addPage();
+                        setModalState(() {});
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white24
+                                    : const Color(0xFF555555),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(
+                                Icons.add_rounded,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            AppText(
+                              'Add page',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: fg,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         );
       },
     );

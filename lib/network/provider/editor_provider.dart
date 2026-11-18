@@ -1782,6 +1782,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       _pages
         ..clear()
         ..add(_items.map((e) => e.copyWith()).toList());
+      _pageIds.clear();
+      _pageNames.clear();
       _currentPageIndex = 0;
       notifyListeners();
     } catch (e, stackTrace) {
@@ -2794,6 +2796,60 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       return '#${color.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
     }
 
+    Map<String, dynamic> itemJson(EditorItem item) {
+      final id = item.id ?? '';
+      return {
+        'id': id,
+        'type': item.type,
+        'text': item.text,
+        'contentUrl': item.contentUrl,
+        'isLocal': item.isLocal,
+        'left': item.position.dx,
+        'top': item.position.dy,
+        'width': item.width,
+        'height': item.height,
+        'scale': item.scale,
+        'rotation': item.rotation,
+        'opacity': item.opacity,
+        'fontSize': item.fontSize,
+        'fontFamily': item.fontFamily,
+        'color': colorToHex(item.color),
+        'filterType': item.filterType,
+        'brightness': item.brightness,
+        'contrast': item.contrast,
+        'saturation': item.saturation,
+        'borderRadius': item.borderRadius,
+        'outlineWidth': item.outlineWidth,
+        'outlineColor': colorToHex(item.outlineColor),
+        'outlineStyle': outlineStyle(id),
+        'outlineJoin': outlineJoin(id),
+        'animation': itemAnimation(id).toJson(),
+        'textEffect': textEffect(id).toJson(),
+        'locked': isItemLocked(id),
+        // Needed to re-open the project later (shapes / clip paths / flips).
+        if (_templateRawObjects[id] != null) 'raw': _templateRawObjects[id],
+        'flipX': templateFlipX(id),
+        'flipY': templateFlipY(id),
+        'isBackground': _templateBackgroundIds.contains(id),
+        'textFormatting': {
+          'letterSpacing': textLetterSpacing(id),
+          'lineSpacing': textLineSpacing(id),
+          'alignment': textAlignment(id).name,
+          'fontWeight': textWeight(id).value,
+          'fontStyle': textStyle(id).name,
+          'underline': textUnderline(id),
+        },
+      };
+    }
+
+    // All pages (the open page uses the live _items list).
+    final allPages = <List<EditorItem>>[];
+    if (_pages.length > 1) {
+      for (var i = 0; i < _pages.length; i++) {
+        allPages.add(i == _currentPageIndex ? _items : _pages[i]);
+      }
+    }
+
     return {
       'version': 1,
       'page': currentPageIndex + 1,
@@ -2803,51 +2859,19 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       'music': _selectedMusicPath == null
           ? null
           : {'title': _selectedMusicTitle, 'localPath': _selectedMusicPath},
-      'items': _items.map((item) {
-        final id = item.id ?? '';
-        return {
-          'id': id,
-          'type': item.type,
-          'text': item.text,
-          'contentUrl': item.contentUrl,
-          'isLocal': item.isLocal,
-          'left': item.position.dx,
-          'top': item.position.dy,
-          'width': item.width,
-          'height': item.height,
-          'scale': item.scale,
-          'rotation': item.rotation,
-          'opacity': item.opacity,
-          'fontSize': item.fontSize,
-          'fontFamily': item.fontFamily,
-          'color': colorToHex(item.color),
-          'filterType': item.filterType,
-          'brightness': item.brightness,
-          'contrast': item.contrast,
-          'saturation': item.saturation,
-          'borderRadius': item.borderRadius,
-          'outlineWidth': item.outlineWidth,
-          'outlineColor': colorToHex(item.outlineColor),
-          'outlineStyle': outlineStyle(id),
-          'outlineJoin': outlineJoin(id),
-          'animation': itemAnimation(id).toJson(),
-          'textEffect': textEffect(id).toJson(),
-          'locked': isItemLocked(id),
-          // Needed to re-open the project later (shapes / clip paths / flips).
-          if (_templateRawObjects[id] != null) 'raw': _templateRawObjects[id],
-          'flipX': templateFlipX(id),
-          'flipY': templateFlipY(id),
-          'isBackground': _templateBackgroundIds.contains(id),
-          'textFormatting': {
-            'letterSpacing': textLetterSpacing(id),
-            'lineSpacing': textLineSpacing(id),
-            'alignment': textAlignment(id).name,
-            'fontWeight': textWeight(id).value,
-            'fontStyle': textStyle(id).name,
-            'underline': textUnderline(id),
-          },
-        };
-      }).toList(),
+      'items': _items.map(itemJson).toList(),
+      // Multi-page projects: every page is saved (not only the open one).
+      if (allPages.length > 1) ...{
+        'pageCount': allPages.length,
+        'currentPage': _currentPageIndex,
+        'editorPages': [
+          for (var i = 0; i < allPages.length; i++)
+            {
+              'name': pageNameAt(i),
+              'items': allPages[i].map(itemJson).toList(),
+            },
+        ],
+      },
     };
   }
 
@@ -2941,112 +2965,146 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       }
 
       var index = 0;
-      for (final raw in (root['items'] as List)) {
-        index++;
-        if (raw is! Map) continue;
-        final m = Map<String, dynamic>.from(raw);
-        final id = (m['id']?.toString().trim().isNotEmpty ?? false)
-            ? m['id'].toString()
-            : 'project_item_$index';
+      List<EditorItem> parsePageItems(List rawItems) {
+        final parsed = <EditorItem>[];
+        for (final raw in rawItems) {
+          index++;
+          if (raw is! Map) continue;
+          final m = Map<String, dynamic>.from(raw);
+          final id = (m['id']?.toString().trim().isNotEmpty ?? false)
+              ? m['id'].toString()
+              : 'project_item_$index';
 
-        var item = EditorItem(
-          id: id,
-          type: m['type']?.toString() ?? 'image',
-          text: m['text']?.toString(),
-          contentUrl: m['contentUrl']?.toString(),
-          isLocal: m['isLocal'] == true,
-          position: Offset(
-            _toDouble(m['left']) ?? 0.0,
-            _toDouble(m['top']) ?? 0.0,
-          ),
-          width: math.max(1.0, _toDouble(m['width']) ?? 100.0),
-          height: math.max(1.0, _toDouble(m['height']) ?? 100.0),
-          scale: _toDouble(m['scale']) ?? 1.0,
-          rotation: _toDouble(m['rotation']) ?? 0.0,
-          opacity: _toDouble(m['opacity']) ?? 1.0,
-          fontSize: _toDouble(m['fontSize']) ?? 36.0,
-          fontFamily: _cleanFontFamily(m['fontFamily']),
-          color: hexArgb(m['color']),
-          outlineColor: hexArgb(m['outlineColor']) ?? const Color(0xFFD9D9D9),
-          outlineWidth: _toDouble(m['outlineWidth']) ?? 0.0,
-          borderRadius: _toDouble(m['borderRadius']) ?? 0.0,
-        );
-        item = item.copyWith(
-          filterType: m['filterType']?.toString() ?? 'normal',
-          brightness: _toDouble(m['brightness']) ?? item.brightness,
-          contrast: _toDouble(m['contrast']) ?? item.contrast,
-          saturation: _toDouble(m['saturation']) ?? item.saturation,
-        );
-        _items.add(item);
-
-        _outlineStyles[id] = m['outlineStyle']?.toString() ?? 'none';
-        _outlineJoins[id] = m['outlineJoin']?.toString() ?? 'round';
-        if (m['animation'] != null) {
-          final loadedAnim = ItemAnimation.fromJson(m['animation']);
-          if (!loadedAnim.isNone) _itemAnimations[id] = loadedAnim;
-        }
-        if (m['locked'] == true) _lockedItems.add(id);
-        if (m['textEffect'] != null) {
-          final fx = TextEffect.fromJson(m['textEffect']);
-          if (!fx.isNone) _textEffects[id] = fx;
-        }
-
-        final tf = m['textFormatting'];
-        if (tf is Map) {
-          _textLetterSpacing[id] = _toDouble(tf['letterSpacing']) ?? 0.0;
-          _textLineSpacing[id] = _toDouble(tf['lineSpacing']) ?? 1.0;
-          final alignName = tf['alignment']?.toString();
-          _textAlignment[id] = TextAlign.values.firstWhere(
-                (a) => a.name == alignName,
-            orElse: () => TextAlign.left,
+          var item = EditorItem(
+            id: id,
+            type: m['type']?.toString() ?? 'image',
+            text: m['text']?.toString(),
+            contentUrl: m['contentUrl']?.toString(),
+            isLocal: m['isLocal'] == true,
+            position: Offset(
+              _toDouble(m['left']) ?? 0.0,
+              _toDouble(m['top']) ?? 0.0,
+            ),
+            width: math.max(1.0, _toDouble(m['width']) ?? 100.0),
+            height: math.max(1.0, _toDouble(m['height']) ?? 100.0),
+            scale: _toDouble(m['scale']) ?? 1.0,
+            rotation: _toDouble(m['rotation']) ?? 0.0,
+            opacity: _toDouble(m['opacity']) ?? 1.0,
+            fontSize: _toDouble(m['fontSize']) ?? 36.0,
+            fontFamily: _cleanFontFamily(m['fontFamily']),
+            color: hexArgb(m['color']),
+            outlineColor: hexArgb(m['outlineColor']) ?? const Color(0xFFD9D9D9),
+            outlineWidth: _toDouble(m['outlineWidth']) ?? 0.0,
+            borderRadius: _toDouble(m['borderRadius']) ?? 0.0,
           );
-          final weight = (_toDouble(tf['fontWeight']) ?? 400).round();
-          _textWeight[id] = FontWeight.values.firstWhere(
-                (w) => w.value == weight,
-            orElse: () => FontWeight.normal,
+          item = item.copyWith(
+            filterType: m['filterType']?.toString() ?? 'normal',
+            brightness: _toDouble(m['brightness']) ?? item.brightness,
+            contrast: _toDouble(m['contrast']) ?? item.contrast,
+            saturation: _toDouble(m['saturation']) ?? item.saturation,
           );
-          _textStyle[id] = tf['fontStyle']?.toString() == 'italic'
-              ? FontStyle.italic
-              : FontStyle.normal;
-          _textUnderline[id] = tf['underline'] == true;
-        }
+          parsed.add(item);
 
-        if (m['raw'] is Map) {
-          _templateRawObjects[id] = Map<String, dynamic>.from(m['raw'] as Map);
-        } else if (item.type == 'shape') {
-          // Projects saved before `raw` was exported: rebuild the shape from
-          // the saved fields so rect / circle shapes are not blank.
-          final shapeType = (item.text ?? 'rect').toLowerCase();
-          if (shapeType == 'rect' ||
-              shapeType == 'rectangle' ||
-              shapeType == 'circle' ||
-              shapeType == 'ellipse') {
-            String hex(Color? c) => c == null
-                ? 'transparent'
-                : '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
-            _templateRawObjects[id] = {
-              'type': shapeType,
-              'width': item.width,
-              'height': item.height,
-              'fill': hex(item.color),
-              'stroke': item.outlineWidth > 0 ? hex(item.outlineColor) : null,
-              'strokeWidth': item.outlineWidth,
-              'rx': item.borderRadius,
-              'ry': item.borderRadius,
-            };
-          } else {
+          _outlineStyles[id] = m['outlineStyle']?.toString() ?? 'none';
+          _outlineJoins[id] = m['outlineJoin']?.toString() ?? 'round';
+          if (m['animation'] != null) {
+            final loadedAnim = ItemAnimation.fromJson(m['animation']);
+            if (!loadedAnim.isNone) _itemAnimations[id] = loadedAnim;
           }
+          if (m['locked'] == true) _lockedItems.add(id);
+          if (m['textEffect'] != null) {
+            final fx = TextEffect.fromJson(m['textEffect']);
+            if (!fx.isNone) _textEffects[id] = fx;
+          }
+
+          final tf = m['textFormatting'];
+          if (tf is Map) {
+            _textLetterSpacing[id] = _toDouble(tf['letterSpacing']) ?? 0.0;
+            _textLineSpacing[id] = _toDouble(tf['lineSpacing']) ?? 1.0;
+            final alignName = tf['alignment']?.toString();
+            _textAlignment[id] = TextAlign.values.firstWhere(
+                  (a) => a.name == alignName,
+              orElse: () => TextAlign.left,
+            );
+            final weight = (_toDouble(tf['fontWeight']) ?? 400).round();
+            _textWeight[id] = FontWeight.values.firstWhere(
+                  (w) => w.value == weight,
+              orElse: () => FontWeight.normal,
+            );
+            _textStyle[id] = tf['fontStyle']?.toString() == 'italic'
+                ? FontStyle.italic
+                : FontStyle.normal;
+            _textUnderline[id] = tf['underline'] == true;
+          }
+
+          if (m['raw'] is Map) {
+            _templateRawObjects[id] = Map<String, dynamic>.from(m['raw'] as Map);
+          } else if (item.type == 'shape') {
+            // Projects saved before `raw` was exported: rebuild the shape from
+            // the saved fields so rect / circle shapes are not blank.
+            final shapeType = (item.text ?? 'rect').toLowerCase();
+            if (shapeType == 'rect' ||
+                shapeType == 'rectangle' ||
+                shapeType == 'circle' ||
+                shapeType == 'ellipse') {
+              String hex(Color? c) => c == null
+                  ? 'transparent'
+                  : '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
+              _templateRawObjects[id] = {
+                'type': shapeType,
+                'width': item.width,
+                'height': item.height,
+                'fill': hex(item.color),
+                'stroke': item.outlineWidth > 0 ? hex(item.outlineColor) : null,
+                'strokeWidth': item.outlineWidth,
+                'rx': item.borderRadius,
+                'ry': item.borderRadius,
+              };
+            } else {
+            }
+          }
+          _templateFlipX[id] = m['flipX'] == true;
+          _templateFlipY[id] = m['flipY'] == true;
+          if (m['isBackground'] == true) _templateBackgroundIds.add(id);
         }
-        _templateFlipX[id] = m['flipX'] == true;
-        _templateFlipY[id] = m['flipY'] == true;
-        if (m['isBackground'] == true) _templateBackgroundIds.add(id);
+        return parsed;
       }
+
+      // Multi-page project (`editorPages`) or the old single-page format.
+      final pagesRaw = root['editorPages'];
+      final loadedPages = <List<EditorItem>>[];
+      final loadedNames = <String?>[];
+      if (pagesRaw is List && pagesRaw.length > 1) {
+        for (final pg in pagesRaw) {
+          loadedNames.add(pg is Map ? pg['name']?.toString() : null);
+          final list = (pg is Map && pg['items'] is List)
+              ? pg['items'] as List
+              : const [];
+          loadedPages.add(parsePageItems(list));
+        }
+      } else {
+        loadedPages.add(parsePageItems(root['items'] as List));
+      }
+      final savedPage = (_toDouble(root['currentPage']) ?? 0).round();
+      final openPage = savedPage.clamp(0, loadedPages.length - 1).toInt();
 
       isTemplateLoaded = true;
       _pages
         ..clear()
-        ..add(_items.map((e) => e.copyWith()).toList());
-      _currentPageIndex = 0;
+        ..addAll(
+          loadedPages.map((l) => l.map((e) => e.copyWith()).toList()),
+        );
+      _currentPageIndex = openPage;
+      _pageIds.clear();
+      _pageNames.clear();
+      _ensurePageMeta();
+      for (var i = 0; i < loadedNames.length && i < _pageNames.length; i++) {
+        final n = loadedNames[i]?.trim() ?? '';
+        if (n.isNotEmpty) _pageNames[i] = n;
+      }
+      _items
+        ..clear()
+        ..addAll(loadedPages[openPage].map((e) => e.copyWith()));
       _history.clear();
       _saveState();
       notifyListeners();
@@ -3742,6 +3800,67 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   int get pageCount => _pages.isEmpty ? 1 : _pages.length;
   int get currentPageIndex => _currentPageIndex;
 
+  // ---- per-page meta (stable id + name), kept parallel to _pages ----
+  final List<String> _pageIds = [];
+  final List<String> _pageNames = [];
+  int _pageIdSeq = 0;
+
+  String _nextPageName() {
+    var k = _pageNames.length + 1;
+    while (_pageNames.contains('Page $k')) {
+      k++;
+    }
+    return 'Page $k';
+  }
+
+  void _ensurePageMeta() {
+    final n = _pages.isEmpty ? 1 : _pages.length;
+    while (_pageIds.length < n) {
+      _pageIds.add('pg_${DateTime.now().microsecondsSinceEpoch}_${_pageIdSeq++}');
+    }
+    while (_pageNames.length < n) {
+      _pageNames.add(_nextPageName());
+    }
+    if (_pageIds.length > n) _pageIds.removeRange(n, _pageIds.length);
+    if (_pageNames.length > n) _pageNames.removeRange(n, _pageNames.length);
+  }
+
+  /// Stable id of a page (survives reordering). Used to cache thumbnails.
+  String pageIdAt(int index) {
+    _ensurePageMeta();
+    return _pageIds[index.clamp(0, _pageIds.length - 1).toInt()];
+  }
+
+  String pageNameAt(int index) {
+    _ensurePageMeta();
+    return _pageNames[index.clamp(0, _pageNames.length - 1).toInt()];
+  }
+
+  /// Drag & drop ordering (ReorderableListView semantics for [newIndex]).
+  void reorderPage(int oldIndex, int newIndex) {
+    if (pageCount < 2) return;
+    _syncCurrentPage();
+    _ensurePageMeta();
+    if (newIndex > oldIndex) newIndex -= 1;
+    if (oldIndex < 0 ||
+        oldIndex >= _pages.length ||
+        newIndex < 0 ||
+        newIndex >= _pages.length ||
+        oldIndex == newIndex) {
+      return;
+    }
+    final openId = _pageIds[_currentPageIndex];
+    final page = _pages.removeAt(oldIndex);
+    _pages.insert(newIndex, page);
+    final id = _pageIds.removeAt(oldIndex);
+    _pageIds.insert(newIndex, id);
+    final name = _pageNames.removeAt(oldIndex);
+    _pageNames.insert(newIndex, name);
+    // The open page stays open, only its position in the list changes.
+    _currentPageIndex = _pageIds.indexOf(openId);
+    notifyListeners();
+  }
+
   void _syncCurrentPage() {
     if (_pages.isEmpty) {
       _pages.add(_items.map((e) => e.copyWith()).toList());
@@ -3753,6 +3872,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   void addPage({bool duplicateCurrent = false}) {
     _syncCurrentPage();
+    _ensurePageMeta();
+    final sourceName = _pageNames[_currentPageIndex];
     final source = duplicateCurrent
         ? _items
         .map(
@@ -3764,6 +3885,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         : <EditorItem>[];
     _pages.add(source);
     _currentPageIndex = _pages.length - 1;
+    _ensurePageMeta();
+    if (duplicateCurrent) {
+      _pageNames[_currentPageIndex] = '$sourceName copy';
+    }
     _items
       ..clear()
       ..addAll(source.map((e) => e.copyWith()));
@@ -3792,6 +3917,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       notifyListeners();
       return;
     }
+    _ensurePageMeta();
+    _pageIds.removeAt(_currentPageIndex);
+    _pageNames.removeAt(_currentPageIndex);
     _pages.removeAt(_currentPageIndex);
     if (_currentPageIndex >= _pages.length) {
       _currentPageIndex = _pages.length - 1;
