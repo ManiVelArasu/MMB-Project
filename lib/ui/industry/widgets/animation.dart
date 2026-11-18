@@ -143,12 +143,11 @@ class ItemAnimation {
 
   bool get isNone => type == ItemAnimationType.none;
 
-  /// Move only slides in and then stays at its rest position, so BOTH is
-  /// treated as ENTRANCE (no exit movement). Explicit EXIT still works.
+  /// Every effect plays in and then STAYS at its rest position (the item must
+  /// never vanish at the end of the clip), so BOTH is treated as ENTRANCE for
+  /// all animation types. Only an explicit EXIT makes the item animate out.
   ItemAnimationMode get effectiveMode =>
-      (type == ItemAnimationType.move && mode == ItemAnimationMode.both)
-          ? ItemAnimationMode.entrance
-          : mode;
+      mode == ItemAnimationMode.both ? ItemAnimationMode.entrance : mode;
 
   ItemAnimation copyWith({
     ItemAnimationType? type,

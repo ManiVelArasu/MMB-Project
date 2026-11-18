@@ -3326,6 +3326,51 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool _isVideosLoading = false;
   bool get isVideosLoading => _isVideosLoading;
 
+  // Media -> Videos keeps its own state so it never conflicts with the
+  // Background -> Videos results.
+  List<PexelsVideoAsset> mediaVideoAssets = [];
+  bool isMediaVideosLoading = false;
+  String _mediaVideosQuery = '';
+  String get mediaVideosQuery => _mediaVideosQuery;
+  int _mediaVideosRequestId = 0;
+
+  Future<void> fetchMediaVideos(String query) async {
+    final normalized = query.trim();
+    final requestId = ++_mediaVideosRequestId;
+
+    _mediaVideosQuery = normalized;
+    isMediaVideosLoading = true;
+    mediaVideoAssets = <PexelsVideoAsset>[];
+    notifyListeners();
+
+    try {
+      final result = await FreePikService.searchPexelsVideoAssets(
+        normalized,
+        page: 1,
+        limit: 24,
+      ).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => <PexelsVideoAsset>[],
+      );
+
+      if (requestId == _mediaVideosRequestId) {
+        final seen = <String>{};
+        mediaVideoAssets = result
+            .where((a) => a.videoUrl.trim().isNotEmpty && seen.add(a.videoUrl))
+            .toList();
+      }
+    } catch (e) {
+      if (requestId == _mediaVideosRequestId) {
+        mediaVideoAssets = <PexelsVideoAsset>[];
+      }
+    } finally {
+      if (requestId == _mediaVideosRequestId) {
+        isMediaVideosLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
   Future<void> fetchFreePikVideos(String query) async {
     if (_isVideosLoading) return;
 

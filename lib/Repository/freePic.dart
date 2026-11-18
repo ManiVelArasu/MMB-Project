@@ -6,7 +6,31 @@ class PexelsVideoAsset {
   final String videoUrl;
   final String? thumbnailUrl;
 
-  const PexelsVideoAsset({required this.videoUrl, this.thumbnailUrl});
+  /// Clip length in seconds (0 when the API did not send it).
+  final int durationSeconds;
+
+  /// Source video size (0 when unknown).
+  final double width;
+  final double height;
+
+  const PexelsVideoAsset({
+    required this.videoUrl,
+    this.thumbnailUrl,
+    this.durationSeconds = 0,
+    this.width = 0,
+    this.height = 0,
+  });
+
+  /// width / height, or 0 when the size is unknown.
+  double get aspectRatio => (width > 0 && height > 0) ? width / height : 0;
+
+  /// "0:33" style label for the duration badge ('' when unknown).
+  String get durationLabel {
+    if (durationSeconds <= 0) return '';
+    final m = durationSeconds ~/ 60;
+    final s = durationSeconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
 }
 
 class AssetCategoryItem {
@@ -527,6 +551,7 @@ class FreePikService {
         if (item is! Map) continue;
 
         String? videoUrl;
+        double fileW = 0, fileH = 0;
         final files =
             item['video_files'] ??
                 item['videoFiles'] ??
@@ -552,6 +577,8 @@ class FreePikService {
                 .trim();
             if (_isHttpUrl(value) && _looksLikeVideoUrl(value!)) {
               videoUrl = value;
+              fileW = double.tryParse('${file['width'] ?? 0}') ?? 0;
+              fileH = double.tryParse('${file['height'] ?? 0}') ?? 0;
               break;
             }
           }
@@ -640,9 +667,24 @@ class FreePikService {
           }
         }
 
+        final durationSeconds =
+        (num.tryParse('${item['duration'] ?? 0}') ?? 0).round();
+        var itemW = double.tryParse('${item['width'] ?? 0}') ?? 0;
+        var itemH = double.tryParse('${item['height'] ?? 0}') ?? 0;
+        if (itemW <= 0 || itemH <= 0) {
+          itemW = fileW;
+          itemH = fileH;
+        }
+
         seen.add(videoUrl);
         assets.add(
-          PexelsVideoAsset(videoUrl: videoUrl, thumbnailUrl: thumbnail),
+          PexelsVideoAsset(
+            videoUrl: videoUrl,
+            thumbnailUrl: thumbnail,
+            durationSeconds: durationSeconds,
+            width: itemW,
+            height: itemH,
+          ),
         );
       }
 
