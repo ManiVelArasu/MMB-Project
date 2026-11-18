@@ -57,7 +57,7 @@ class ExploreAiToolScreen extends StatelessWidget {
                         AppText(
                           "AI HUB",
                           style: TextStyle(
-                            fontSize: AppFontSize.fontSize22,
+                            fontSize: AppFontSize.fontSize18,
                             fontWeight: FontWeight.w500,
                             color: AppColors.appBlack,
                           ),
@@ -122,8 +122,8 @@ class ExploreAiToolScreen extends StatelessWidget {
                                       MainAxisAlignment.center,
                                       children: [
                                         SizedBox(
-                                          height: 52.h,
-                                          width: 52.w,
+                                          height: 80.h,
+                                          width: 80.w,
                                           child: tool.imagePath
                                               .trim()
                                               .isNotEmpty
@@ -149,9 +149,8 @@ class ExploreAiToolScreen extends StatelessWidget {
                                             color: isDark
                                                 ? Colors.white
                                                 : Colors.black,
-                                            fontSize: 13.sp,
-                                            fontWeight:
-                                            FontWeight.w600,
+                                            fontSize: AppFontSize.fontSize18,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                           maxLines: 1,
                                           overflow:
@@ -167,9 +166,8 @@ class ExploreAiToolScreen extends StatelessWidget {
                                             color: isDark
                                                 ? Colors.grey.shade400
                                                 : Colors.grey.shade600,
-                                            fontSize: 9.5.sp,
-                                            fontWeight:
-                                            FontWeight.w500,
+                                            fontSize: AppFontSize.fontSize14,
+                                            fontWeight: FontWeight.w400,
                                             height: 1.2,
                                           ),
                                           maxLines: 2,

@@ -11,6 +11,7 @@ import '../../component/custom_widget.dart';
 import '../../component/home_appbar.dart';
 import '../../component/network_image.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../network/provider/plan_provider.dart';
 import '../../network/provider/theme_screen_provider.dart';
 
 import '../../network/provider/custom_theme_provider.dart';
@@ -164,14 +165,26 @@ class ThemeDetailView extends StatelessWidget {
                               ),
                               elevation: 0,
                             ),
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: AppText(
-                                    "Theme Unlocked Successfully!",
-                                  ),
-                                ),
-                              );
+                            onPressed: () async {
+                              final planProvider = PlanProvider();
+
+                              final bool hasActivePlan = await planProvider
+                                  .fetchMySubscription();
+
+                              if (!context.mounted) return;
+
+                              if (hasActivePlan) {
+                                Navigator.pushNamed(
+                                  context,
+                                  "/MySubscriptionScreen",
+                                );
+                              } else {
+                                Navigator.pushNamed(
+                                  context,
+                                  "/FreePlanScreen",
+                                  arguments: {"showSkip": true},
+                                );
+                              };
                             },
                             child: AppText(
                               "Unlock $title →",
@@ -342,13 +355,4 @@ class ThemeDetailView extends StatelessWidget {
     );
   }
 
-  String _getPerfectFor(ThemeItem item) {
-    final caption = item.caption?.trim() ?? "";
-
-    if (caption.isNotEmpty) {
-      return "Perfect for $caption";
-    }
-
-    return "Perfect for modern brands";
-  }
 }

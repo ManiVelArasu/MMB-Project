@@ -363,8 +363,7 @@ class ThemeDetailView extends StatelessWidget {
                                   "/FreePlanScreen",
                                   arguments: {"showSkip": true},
                                 );
-                              }
-                              ;
+                              };
                             },
                             child: AppText(
                               "Get This Varient →",

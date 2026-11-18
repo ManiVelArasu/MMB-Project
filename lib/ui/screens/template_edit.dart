@@ -181,6 +181,8 @@ class _EditorViewState extends State<EditorView> {
 
   /// 0 = Effects (text only), 1 = Animate.
   int _animatePanelTab = 1;
+  // Compact docked panel so the canvas stays big while an animation plays.
+  bool _animatePanelCollapsed = false;
   final AudioPlayer _musicPlayer = AudioPlayer();
   StreamSubscription<Duration>? _musicPositionSubscription;
   StreamSubscription<Duration>? _musicDurationSubscription;
@@ -3813,6 +3815,8 @@ class _EditorViewState extends State<EditorView> {
     _musicCompleteSubscription?.cancel();
     _musicStateSubscription?.cancel();
     _musicPlayer.dispose();
+    _zoomH.dispose();
+    _zoomV.dispose();
     super.dispose();
   }
 
@@ -3938,7 +3942,6 @@ class _EditorViewState extends State<EditorView> {
   }
 
   // ---------------- PINCH-ZOOM OF THE SELECTED ELEMENT ----------------
-  final GlobalKey _pinchKey = GlobalKey();
   String _pinchId = '';
   double _pinchStartScale = 1.0;
   Offset _pinchStartCenter = Offset.zero; // canvas units
@@ -3953,17 +3956,23 @@ class _EditorViewState extends State<EditorView> {
     return null;
   }
 
-  void _onPinchStart(ScaleStartDetails d) {
+  double _pinchStartRotation = 0.0;
+
+  /// Snapshots the selected element so a two-finger gesture on it can resize
+  /// (pinch) and rotate (twist) it around its own centre, like Canva.
+  /// Returns false when nothing is selected or the element is locked.
+  bool _beginItemPinch() {
     final provider = context.read<EditorProvider>();
     final item = _selectedZoomItem(provider);
-    if (item == null) {
+    if (item == null || provider.isItemLocked(item.id ?? '')) {
       _pinchId = '';
-      return;
+      return false;
     }
     _pinchId = item.id ?? '';
     _pinchStartScale = item.scale.isFinite
         ? item.scale.clamp(0.01, 10.0).toDouble()
         : 1.0;
+    _pinchStartRotation = item.rotation.isFinite ? item.rotation : 0.0;
     _pinchBaseSize = EditableItemWidget.isTextType(item.type)
         ? EditableItemWidget.measureTextBox(item, provider)
         : Size(math.max(1.0, item.width), math.max(1.0, item.height));
@@ -3972,9 +3981,10 @@ class _EditorViewState extends State<EditorView> {
         item.position +
             Offset(_pinchBaseSize.width, _pinchBaseSize.height) *
                 (_pinchStartScale / 2);
+    return true;
   }
 
-  void _onPinchUpdate(ScaleUpdateDetails d) {
+  void _updateItemPinch(ScaleUpdateDetails d) {
     if (_pinchId.isEmpty) return;
     final provider = context.read<EditorProvider>();
     final newScale = (_pinchStartScale * d.scale).clamp(0.02, 10.0).toDouble();
@@ -3983,37 +3993,618 @@ class _EditorViewState extends State<EditorView> {
     provider.updateItemTransform(
       _pinchId,
       scale: newScale,
+      rotation: _snapAngle(_pinchStartRotation + d.rotation),
       position: _pinchStartCenter - half,
       clampToFrame: false,
     );
   }
 
-  void _onPinchEnd(ScaleEndDetails d) {
+  void _endItemPinch() {
     if (_pinchId.isEmpty) return;
     context.read<EditorProvider>().commitTransform();
     _pinchId = '';
   }
 
+  /// Magnetic snap to 0 / 90 / 180 / 270 degrees while twisting.
+  double _snapAngle(double a) {
+    const step = math.pi / 2;
+    const tolerance = 0.06; // ~3.5 degrees
+    final n = (a / step).roundToDouble();
+    return (a - n * step).abs() < tolerance ? n * step : a;
+  }
+
+
   /// Two fingers on the canvas pinch-zoom ONLY the selected element.
   /// One-finger gestures (move / resize / rotate) are untouched.
-  Widget _pinchZoomLayer({required bool enabled, required Widget child}) {
-    return RawGestureDetector(
-      key: _pinchKey,
-      behavior: HitTestBehavior.translucent,
-      gestures: enabled
-          ? <Type, GestureRecognizerFactory>{
-        _TwoFingerScaleRecognizer:
-        GestureRecognizerFactoryWithHandlers<
-            _TwoFingerScaleRecognizer
-        >(() => _TwoFingerScaleRecognizer(), (r) {
-          r
-            ..onStart = _onPinchStart
-            ..onUpdate = _onPinchUpdate
-            ..onEnd = _onPinchEnd;
-        }),
+  // ---------------- CANVAS ZOOM (precise editing of small items) ----------------
+  // The canvas is laid out at (fit size * zoom) inside a two-axis scroll view.
+  // Because the zoom changes the real layout size (not a Transform), every
+  // existing gesture/overlay calculation (which divides by scaleX/scaleY)
+  // stays correct, and handles keep their normal on-screen size.
+  bool _zoomModeOn = false;
+
+  /// "Hand" tool while zoomed in: one finger always pans the screen, objects
+  /// are never moved / resized / rotated. Tapping an object still selects it.
+  bool _panMode = false;
+  double _canvasZoom = 1.0;
+  double _zoomOffH = 0.0;
+  double _zoomOffV = 0.0;
+  Size _zoomViewSize = Size.zero;
+  Size _zoomFit = Size.zero;
+  Size _zoomCanvasLogical = const Size(1080, 1080);
+  final ScrollController _zoomH = ScrollController();
+  final ScrollController _zoomV = ScrollController();
+  static const double _zoomMax = 4.0;
+  // Breathing room around the page so edge handles stay visible / tappable.
+  static const double _zoomPad = 28.0;
+  static const List<double> _zoomLevels = <double>[1.0, 1.5, 2.0, 3.0, 4.0];
+  double _zoomGestureStart = 1.0;
+  Offset _zoomGestureFrac = Offset.zero;
+
+  /// Where the canvas starts inside the scrolled content (it is centred when
+  /// smaller than the viewport, plus 16px padding).
+  double _zoomOrigin(double canvasLen, double viewLen) =>
+      (math.max(viewLen, canvasLen + _zoomPad * 2) -
+          (canvasLen + _zoomPad * 2)) /
+          2 +
+          _zoomPad;
+
+  /// Fraction (0..1 over the canvas) that sits under [viewPoint].
+  Offset _zoomFracAt(Offset viewPoint, double zoom) {
+    final cw = _zoomFit.width * zoom;
+    final ch = _zoomFit.height * zoom;
+    return Offset(
+      (_zoomOffH + viewPoint.dx - _zoomOrigin(cw, _zoomViewSize.width)) / cw,
+      (_zoomOffV + viewPoint.dy - _zoomOrigin(ch, _zoomViewSize.height)) / ch,
+    );
+  }
+
+  /// Sets the zoom so that canvas fraction [frac] ends up under [viewPoint].
+  void _applyZoom(double zoom, Offset frac, Offset viewPoint) {
+    if (_zoomFit.isEmpty || _zoomViewSize.isEmpty) return;
+    final z = zoom.clamp(1.0, _zoomMax).toDouble();
+    final vw = _zoomViewSize.width, vh = _zoomViewSize.height;
+    final cw = _zoomFit.width * z, ch = _zoomFit.height * z;
+    final maxH = math.max(0.0, math.max(vw, cw + _zoomPad * 2) - vw);
+    final maxV = math.max(0.0, math.max(vh, ch + _zoomPad * 2) - vh);
+    final h = (_zoomOrigin(cw, vw) + frac.dx * cw - viewPoint.dx)
+        .clamp(0.0, maxH)
+        .toDouble();
+    final v = (_zoomOrigin(ch, vh) + frac.dy * ch - viewPoint.dy)
+        .clamp(0.0, maxV)
+        .toDouble();
+    setState(() {
+      _canvasZoom = z;
+      _zoomOffH = h;
+      _zoomOffV = v;
+      if (z > 1.001) _zoomModeOn = true;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncZoomOffsets());
+  }
+
+  /// Pushes the wanted offsets into the scroll controllers (after layout).
+  void _syncZoomOffsets() {
+    if (!mounted) return;
+    void sync(ScrollController c, double want) {
+      if (!c.hasClients) return;
+      final p = c.position;
+      final t = want.clamp(0.0, p.maxScrollExtent).toDouble();
+      if ((p.pixels - t).abs() > 0.5) c.jumpTo(t);
+    }
+
+    sync(_zoomH, _zoomOffH);
+    sync(_zoomV, _zoomOffV);
+  }
+
+  /// Canvas fraction to zoom around: the selected item's centre when there is
+  /// one, otherwise the middle of what is currently on screen.
+  Offset _zoomAnchorFrac(EditorProvider p) {
+    final id = p.selectedItemId;
+    if (id != null) {
+      for (final e in p.items) {
+        if (e.id != id || _isCanvasBackground(e)) continue;
+        final base = EditableItemWidget.isTextType(e.type)
+            ? EditableItemWidget.measureTextBox(e, p)
+            : Size(math.max(1.0, e.width), math.max(1.0, e.height));
+        final sc = e.scale.isFinite
+            ? e.scale.clamp(0.01, 10.0).toDouble()
+            : 1.0;
+        final c = e.position + Offset(base.width * sc / 2, base.height * sc / 2);
+        return Offset(
+          c.dx / _zoomCanvasLogical.width,
+          c.dy / _zoomCanvasLogical.height,
+        );
       }
-          : const <Type, GestureRecognizerFactory>{},
-      child: child,
+    }
+    return _zoomFracAt(
+      Offset(_zoomViewSize.width / 2, _zoomViewSize.height / 2),
+      _canvasZoom,
+    );
+  }
+
+  void _stepZoom(EditorProvider p, int dir) {
+    final cur = _canvasZoom;
+    final next = dir > 0
+        ? _zoomLevels.firstWhere((l) => l > cur + 0.01, orElse: () => _zoomMax)
+        : _zoomLevels.lastWhere((l) => l < cur - 0.01, orElse: () => 1.0);
+    _applyZoom(
+      next,
+      _zoomAnchorFrac(p),
+      Offset(_zoomViewSize.width / 2, _zoomViewSize.height / 2),
+    );
+  }
+
+  void _toggleZoomMode(EditorProvider p) {
+    if (_zoomModeOn) {
+      setState(() {
+        _zoomModeOn = false;
+        _panMode = false;
+        _canvasZoom = 1.0;
+        _zoomOffH = 0.0;
+        _zoomOffV = 0.0;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _syncZoomOffsets());
+    } else {
+      setState(() => _zoomModeOn = true);
+      _applyZoom(
+        2.0,
+        _zoomAnchorFrac(p),
+        Offset(_zoomViewSize.width / 2, _zoomViewSize.height / 2),
+      );
+    }
+  }
+
+  // ---- Canva-style gestures on the canvas viewport ----
+  //  * normal mode, element selected        -> pinch anywhere resizes + rotates it
+  //  * zoom mode, two fingers ON the element -> resize + rotate that element
+  //  * otherwise two fingers                -> zoom (+ pan) the canvas
+  //  * one finger on empty space (zoomed)   -> pan the canvas
+  //  * one finger on the selected element   -> move it (selection overlay)
+  bool _gestureOnItem = false;
+  // After lifting a finger from an element pinch the rest of that gesture is
+  // ignored, so the canvas does not suddenly start panning.
+  bool _gestureSuppressed = false;
+
+  /// True when [viewPoint] (viewport coordinates) is on / right next to the
+  /// selected element.
+  bool _isOverSelectedItem(Offset viewPoint) {
+    final provider = context.read<EditorProvider>();
+    final item = _selectedZoomItem(provider);
+    if (item == null || _zoomFit.isEmpty) return false;
+
+    final frac = _zoomFracAt(viewPoint, _canvasZoom);
+    final point = Offset(
+      frac.dx * _zoomCanvasLogical.width,
+      frac.dy * _zoomCanvasLogical.height,
+    );
+
+    // Finger slack: 28 screen px, converted to canvas units.
+    final unitsPerPx =
+        _zoomCanvasLogical.width / (_zoomFit.width * _canvasZoom);
+    final pad = 28.0 * unitsPerPx;
+
+    final sc = item.scale.isFinite && item.scale.abs() > 0
+        ? item.scale.clamp(0.01, 10.0).toDouble()
+        : 1.0;
+    final body = EditableItemWidget.isTextType(item.type)
+        ? EditableItemWidget.measureTextBox(item, provider)
+        : Size(math.max(1.0, item.width), math.max(1.0, item.height));
+    final centre = Offset(body.width / 2, body.height / 2);
+    final rel = (point - item.position) / sc - centre;
+    final a = -(item.rotation.isFinite ? item.rotation : 0.0);
+    final local =
+        Offset(
+          rel.dx * math.cos(a) - rel.dy * math.sin(a),
+          rel.dx * math.sin(a) + rel.dy * math.cos(a),
+        ) +
+            centre;
+    return Rect.fromLTWH(
+      0,
+      0,
+      body.width,
+      body.height,
+    ).inflate(pad / sc).contains(local);
+  }
+
+  // ScaleGestureRecognizer calls onEnd + onStart again whenever a finger is
+  // added or lifted, so every start re-decides what the gesture targets.
+  void _onCanvasGestureStart(ScaleStartDetails d) {
+    if (_gestureSuppressed) return;
+    // Normal (not zoomed) mode: with an element selected, a pinch anywhere
+    // resizes it. Zoom mode: only a pinch ON the element resizes it, a pinch
+    // elsewhere zooms the canvas.
+    final targetsItem = _panMode
+        ? false
+        : (_zoomModeOn ? _isOverSelectedItem(d.localFocalPoint) : true);
+    _gestureOnItem =
+        d.pointerCount >= 2 && targetsItem && _beginItemPinch();
+    _zoomGestureStart = _canvasZoom;
+    _zoomGestureFrac = _zoomFracAt(d.localFocalPoint, _canvasZoom);
+  }
+
+  void _onCanvasGestureUpdate(ScaleUpdateDetails d) {
+    if (_gestureSuppressed) return;
+    if (_gestureOnItem) {
+      _updateItemPinch(d);
+      return;
+    }
+    // Pinch = zoom around the fingers; moving the fingers = pan.
+    _applyZoom(
+      _zoomGestureStart * d.scale,
+      _zoomGestureFrac,
+      d.localFocalPoint,
+    );
+  }
+
+  void _onCanvasGestureEnd(ScaleEndDetails d) {
+    if (_gestureOnItem) {
+      _endItemPinch();
+      _gestureOnItem = false;
+      // One finger was lifted but another is still down: ignore the rest of
+      // this touch sequence (cleared in _onCanvasGestureIdle).
+      if (d.pointerCount > 0) _gestureSuppressed = true;
+    }
+  }
+
+  /// A brand new touch sequence begins (first finger down): always start clean.
+  void _onCanvasGestureFresh() {
+    _gestureSuppressed = false;
+    _gestureOnItem = false;
+  }
+
+  /// All fingers are up. ScaleGestureRecognizer does NOT always send a final
+  /// onEnd(pointerCount: 0) (e.g. after one finger was lifted first), so the
+  /// reset / clean-up must not depend on it.
+  void _onCanvasGestureIdle() {
+    if (_gestureOnItem) {
+      _endItemPinch();
+      _gestureOnItem = false;
+    }
+    _gestureSuppressed = false;
+    if (!mounted) return;
+    // Pinched back to "fit": leave zoom mode, like Canva.
+    if (_zoomModeOn && _canvasZoom < 1.02) {
+      setState(() {
+        _zoomModeOn = false;
+        _panMode = false;
+        _canvasZoom = 1.0;
+        _zoomOffH = 0.0;
+        _zoomOffV = 0.0;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _syncZoomOffsets());
+    }
+  }
+
+  // ---- Double-tap to zoom (Canva style) ----
+  // Double-tap empty space: fit -> 200% around the finger, zoomed -> fit.
+  // Detected with raw pointer events so a normal single tap is never delayed.
+  int _dtPointers = 0;
+  bool _dtMulti = false;
+  Offset? _dtDownPos;
+  int _dtDownMs = 0;
+  Offset? _dtLastTapPos;
+  int _dtLastTapMs = 0;
+
+  void _dtDown(PointerDownEvent e) {
+    _dtPointers++;
+    if (_dtPointers > 1) {
+      _dtMulti = true;
+      _dtLastTapPos = null;
+    } else {
+      _dtMulti = false;
+      _dtDownPos = e.localPosition;
+      _dtDownMs = DateTime.now().millisecondsSinceEpoch;
+    }
+  }
+
+  void _dtUp(PointerUpEvent e) {
+    _dtPointers = math.max(0, _dtPointers - 1);
+    if (_dtPointers > 0) return;
+    final down = _dtDownPos;
+    _dtDownPos = null;
+    if (_dtMulti || down == null) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final quick =
+        now - _dtDownMs < 250 && (e.localPosition - down).distance < 10;
+    if (!quick) {
+      _dtLastTapPos = null;
+      return;
+    }
+    final last = _dtLastTapPos;
+    if (last != null &&
+        now - _dtLastTapMs < 320 &&
+        (e.localPosition - last).distance < 40) {
+      _dtLastTapPos = null;
+      _onDoubleTapZoom(e.localPosition);
+    } else {
+      _dtLastTapPos = e.localPosition;
+      _dtLastTapMs = now;
+    }
+  }
+
+  void _dtCancel(PointerCancelEvent e) {
+    _dtPointers = 0;
+    _dtDownPos = null;
+    _dtLastTapPos = null;
+  }
+
+  void _onDoubleTapZoom(Offset viewPoint) {
+    if (_zoomFit.isEmpty || _zoomViewSize.isEmpty) return;
+    // Double-tap on the selected item is left alone (e.g. edit text).
+    if (_isOverSelectedItem(viewPoint)) return;
+    if (_canvasZoom > 1.05) {
+      _applyZoom(
+        1.0,
+        const Offset(0.5, 0.5),
+        Offset(_zoomViewSize.width / 2, _zoomViewSize.height / 2),
+      );
+      setState(() {
+        _zoomModeOn = false;
+        _panMode = false;
+      });
+    } else {
+      _applyZoom(2.0, _zoomFracAt(viewPoint, _canvasZoom), viewPoint);
+    }
+  }
+
+  Widget _zoomViewport({
+    required double aspectRatio,
+    required Size canvasSize,
+    required Widget canvas,
+    Widget Function(double scaleX, double scaleY, Offset origin)?
+    overlayBuilder,
+  }) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final vw = c.maxWidth, vh = c.maxHeight;
+        final availW = math.max(1.0, vw - _zoomPad * 2);
+        final availH = math.max(1.0, vh - _zoomPad * 2);
+        final fitW = math.min(availW, availH * aspectRatio);
+        final fitH = fitW / aspectRatio;
+        _zoomViewSize = Size(vw, vh);
+        _zoomFit = Size(fitW, fitH);
+        _zoomCanvasLogical = canvasSize;
+
+        // Exports / thumbnails always capture the un-zoomed canvas.
+        final z = _isCapturingThumbnail ? 1.0 : _canvasZoom;
+        final cw = fitW * z, ch = fitH * z;
+        WidgetsBinding.instance.addPostFrameCallback((_) => _syncZoomOffsets());
+
+        final scroller = SizedBox(
+          width: vw,
+          height: vh,
+          child: SingleChildScrollView(
+            controller: _zoomV,
+            physics: const NeverScrollableScrollPhysics(),
+            child: SingleChildScrollView(
+              controller: _zoomH,
+              scrollDirection: Axis.horizontal,
+              physics: const NeverScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: vw, minHeight: vh),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(_zoomPad),
+                    child: SizedBox(
+                      width: cw,
+                      height: ch,
+                      // Pan mode: objects are untouchable, so a tap can
+                      // never select anything. Turn pan mode off to edit.
+                      child: IgnorePointer(ignoring: _panMode, child: canvas),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Selection box + handles are drawn in a viewport-sized layer on top
+        // of the (clipped) canvas, so nothing is cut at the page edge and
+        // handles outside the page can still be touched.
+        Widget? overlay;
+        if (!_isCapturingThumbnail && overlayBuilder != null) {
+          overlay = overlayBuilder(
+            cw / canvasSize.width,
+            ch / canvasSize.height,
+            Offset(
+              _zoomOrigin(cw, vw) - _zoomOffH,
+              _zoomOrigin(ch, vh) - _zoomOffV,
+            ),
+          );
+        }
+
+        final layered = Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              // Tap on the grey area around the page = unselect.
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () {
+                  if (_panMode) return;
+                  context.read<EditorProvider>().clearSelection();
+                },
+                child: scroller,
+              ),
+            ),
+            if (overlay != null)
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: _panMode,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [overlay],
+                  ),
+                ),
+              ),
+          ],
+        );
+
+        return RawGestureDetector(
+          behavior: HitTestBehavior.translucent,
+          gestures: <Type, GestureRecognizerFactory>{
+            _TwoFingerScaleRecognizer:
+            GestureRecognizerFactoryWithHandlers<_TwoFingerScaleRecognizer>(
+                  () => _TwoFingerScaleRecognizer(),
+                  (r) {
+                r
+                // One finger pans the canvas only while it is zoomed in.
+                  ..allowSinglePointer = _canvasZoom > 1.01
+                  ..onStart = _onCanvasGestureStart
+                  ..onUpdate = _onCanvasGestureUpdate
+                  ..onEnd = _onCanvasGestureEnd
+                  ..onFreshSequence = _onCanvasGestureFresh
+                  ..onIdle = _onCanvasGestureIdle;
+              },
+            ),
+          },
+          child: Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: _dtDown,
+            onPointerUp: _dtUp,
+            onPointerCancel: _dtCancel,
+            child: SizedBox(width: vw, height: vh, child: layered),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Selection box + handles of the selected (non-background) item.
+  Widget _buildSelectionOverlay(
+      EditorProvider provider,
+      double scaleX,
+      double scaleY,
+      Offset origin,
+      Size canvasSize,
+      ) {
+    final id = provider.selectedItemId;
+    if (id == null) return const SizedBox.shrink();
+    EditorItem? selected;
+    for (final e in provider.items) {
+      if (e.id == id) {
+        selected = e;
+        break;
+      }
+    }
+    if (selected == null || _isCanvasBackground(selected)) {
+      return const SizedBox.shrink();
+    }
+    return _TransformSelectionOverlay(
+      key: ValueKey('selection_overlay_${selected.id}'),
+      item: selected,
+      scaleX: scaleX,
+      scaleY: scaleY,
+      origin: origin,
+      canvasWidth: canvasSize.width,
+      canvasHeight: canvasSize.height,
+    );
+  }
+
+  Widget _buildZoomControls(EditorProvider provider, bool isDark) {
+    final bg = isDark ? const Color(0xFF2A2A2A) : Colors.white;
+    final fg = isDark ? Colors.white : Colors.black87;
+
+    Widget btn(
+        IconData icon,
+        String tip,
+        VoidCallback onTap, {
+          bool active = false,
+        }) {
+      return Tooltip(
+        message: tip,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: active ? const Color(0xFFFFC107) : null,
+            ),
+            child: Icon(icon, size: 22, color: active ? Colors.black : fg),
+          ),
+        ),
+      );
+    }
+
+    return Positioned(
+      left: 12,
+      bottom: 12,
+      child: Material(
+        elevation: 4,
+        color: bg,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (provider.selectedItemId != null)
+                btn(
+                  Icons.highlight_off_rounded,
+                  'Unselect',
+                      () => provider.clearSelection(),
+                ),
+              if (_zoomModeOn) ...[
+                btn(
+                  Icons.add_rounded,
+                  'Zoom in',
+                      () => _stepZoom(provider, 1),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Text(
+                    '${(_canvasZoom * 100).round()}%',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: fg,
+                    ),
+                  ),
+                ),
+                btn(
+                  Icons.remove_rounded,
+                  'Zoom out',
+                      () => _stepZoom(provider, -1),
+                ),
+                btn(
+                  Icons.fit_screen_rounded,
+                  'Fit to screen',
+                      () => _applyZoom(
+                    1.0,
+                    const Offset(0.5, 0.5),
+                    Offset(_zoomViewSize.width / 2, _zoomViewSize.height / 2),
+                  ),
+                ),
+                btn(
+                  Icons.pan_tool_rounded,
+                  _panMode ? 'Pan mode on' : 'Move screen',
+                      () {
+                    setState(() => _panMode = !_panMode);
+                    if (_panMode) provider.clearSelection();
+                    Fluttertoast.showToast(
+                      msg: _panMode
+                          ? 'Pan mode: drag to move the screen'
+                          : 'Edit mode: drag to move objects',
+                    );
+                  },
+                  active: _panMode,
+                ),
+              ],
+              btn(
+                _zoomModeOn ? Icons.close_rounded : Icons.zoom_in_rounded,
+                _zoomModeOn ? 'Exit zoom' : 'Zoom in to edit',
+                    () => _toggleZoomMode(provider),
+                active: _zoomModeOn,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -4246,261 +4837,227 @@ class _EditorViewState extends State<EditorView> {
 
       body: Stack(
         children: [
-          _pinchZoomLayer(
-            enabled: _selectedZoomItem(provider) != null,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: RepaintBoundary(
-                  key: _canvasKey,
-                  child: AspectRatio(
-                    aspectRatio: aspectRatio,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: provider.backgroundColor,
-                      ),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final double scaleX =
-                              constraints.maxWidth / canvasSize.width;
-                          final double scaleY =
-                              constraints.maxHeight / canvasSize.height;
+          _zoomViewport(
+            aspectRatio: aspectRatio,
+            canvasSize: canvasSize,
+            overlayBuilder: (sx, sy, origin) =>
+                _buildSelectionOverlay(provider, sx, sy, origin, canvasSize),
+            canvas: RepaintBoundary(
+              key: _canvasKey,
+              child: AspectRatio(
+                aspectRatio: aspectRatio,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: provider.backgroundColor,
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final double scaleX =
+                          constraints.maxWidth / canvasSize.width;
+                      final double scaleY =
+                          constraints.maxHeight / canvasSize.height;
 
-                          final backgroundItems = provider.items
-                              .where(_isCanvasBackground)
-                              .toList();
+                      final backgroundItems = provider.items
+                          .where(_isCanvasBackground)
+                          .toList();
 
-                          return Listener(
-                            behavior: HitTestBehavior.translucent,
-                            onPointerDown: (e) {
-                              _tapDownPos = e.localPosition;
-                              _tapDownMs =
-                                  DateTime.now().millisecondsSinceEpoch;
+                      return Listener(
+                        behavior: HitTestBehavior.translucent,
+                        onPointerDown: (e) {
+                          _tapDownPos = e.localPosition;
+                          _tapDownMs =
+                              DateTime.now().millisecondsSinceEpoch;
+                          _tapSelectedByCanvas = false;
+                        },
+                        onPointerUp: (e) {
+                          final down = _tapDownPos;
+                          _tapDownPos = null;
+                          if (down == null) return;
+                          final quick =
+                              DateTime.now().millisecondsSinceEpoch -
+                                  _tapDownMs <
+                                  400;
+                          if (!quick ||
+                              (e.localPosition - down).distance > 10) {
+                            return;
+                          }
+                          final dbgPt = Offset(
+                            e.localPosition.dx / scaleX,
+                            e.localPosition.dy / scaleY,
+                          );
+                          _lastTapCanvasPos = dbgPt;
+                          final id = _pickItemAt(provider, dbgPt);
+                          if (id == null) return;
+                          _tapSelectedByCanvas = true;
+                          if (provider.selectedItemId != id) {
+                            final it = provider.items.firstWhere(
+                                  (x) => x.id == id,
+                            );
+                            provider.setSelectedItem(it.type, it.id);
+                          }
+                        },
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            if (_tapSelectedByCanvas) {
                               _tapSelectedByCanvas = false;
-                            },
-                            onPointerUp: (e) {
-                              final down = _tapDownPos;
-                              _tapDownPos = null;
-                              if (down == null) return;
-                              final quick =
-                                  DateTime.now().millisecondsSinceEpoch -
-                                      _tapDownMs <
-                                      400;
-                              if (!quick ||
-                                  (e.localPosition - down).distance > 10) {
-                                return;
-                              }
-                              final dbgPt = Offset(
-                                e.localPosition.dx / scaleX,
-                                e.localPosition.dy / scaleY,
-                              );
-                              _lastTapCanvasPos = dbgPt;
-                              final id = _pickItemAt(provider, dbgPt);
-                              if (id == null) return;
-                              _tapSelectedByCanvas = true;
-                              if (provider.selectedItemId != id) {
-                                final it = provider.items.firstWhere(
-                                      (x) => x.id == id,
-                                );
-                                provider.setSelectedItem(it.type, it.id);
-                              }
-                            },
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () {
-                                if (_tapSelectedByCanvas) {
-                                  _tapSelectedByCanvas = false;
-                                  return;
-                                }
-                                provider.clearSelection();
-                              },
-                              child: ClipRect(
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Positioned.fill(
-                                      child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: provider.backgroundColor,
-                                          gradient: provider
-                                              .importedBackgroundGradient,
+                              return;
+                            }
+                            provider.clearSelection();
+                          },
+                          child: ClipRect(
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Positioned.fill(
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: provider.backgroundColor,
+                                      gradient: provider
+                                          .importedBackgroundGradient,
+                                    ),
+                                  ),
+                                ),
+
+                                if (backgroundItems.isNotEmpty)
+                                  _InteractiveBackgroundLayer(
+                                    key: ValueKey(backgroundItems.first.id),
+                                    // Zoomed in: one finger pans the canvas,
+                                    // it must not drag the background.
+                                    gesturesEnabled: _canvasZoom <= 1.01,
+                                    item: backgroundItems.first,
+                                    scaleX: scaleX,
+                                    scaleY: scaleY,
+                                    canvasWidth: canvasSize.width,
+                                    canvasHeight: canvasSize.height,
+                                    onSelected: () {
+                                      // A tap anywhere inside an item's box
+                                      // belongs to that item, never to the
+                                      // background lying underneath it.
+                                      final tapAt = _lastTapCanvasPos;
+                                      if (tapAt != null) {
+                                        final hitId = _pickItemAt(
+                                          provider,
+                                          tapAt,
+                                        );
+                                        if (hitId != null) {
+                                          final hit = provider.items
+                                              .firstWhere(
+                                                (x) => x.id == hitId,
+                                          );
+                                          provider.setSelectedItem(
+                                            hit.type,
+                                            hit.id,
+                                          );
+                                          return;
+                                        }
+                                      }
+                                      final bg = backgroundItems.first;
+
+                                      // Select the background exactly like a normal
+                                      // image layer so the image editor toolbar opens.
+                                      provider.setSelectedItem(
+                                        bg.type,
+                                        bg.id,
+                                      );
+
+                                      if (mounted) {
+                                        setState(() {
+                                          _bottomNavIndex = 3;
+                                        });
+                                      }
+                                    },
+                                  ),
+
+                                // IMPORTANT: selecting an item must NOT change its
+                                // layer/z-order. Keep the provider's original order.
+                                // A click only selects the item; Bring To Front /
+                                // Send To Back are the only actions that should change
+                                // the actual layer order.
+                                ...(() {
+                                  final orderedItems = provider.items
+                                      .where(
+                                        (item) =>
+                                    !_isCanvasBackground(item),
+                                  )
+                                      .toList();
+
+                                  return orderedItems.map((item) {
+                                    return Positioned(
+                                      left: item.position.dx * scaleX,
+                                      top: item.position.dy * scaleY,
+                                      child: Transform.scale(
+                                        scale: scaleX,
+                                        alignment: Alignment.topLeft,
+                                        child: EditableItemWidget(
+                                          item: item,
+                                          onItemSelected: (type, id) {
+                                            // Canvas-level picking already chose the
+                                            // topmost visible item for this tap; a lower
+                                            // item's onTap must not override it.
+                                            if (_tapSelectedByCanvas)
+                                              return;
+                                            provider.setSelectedItem(
+                                              type,
+                                              id,
+                                            );
+                                          },
                                         ),
                                       ),
-                                    ),
+                                    );
+                                  });
+                                })(),
 
-                                    if (backgroundItems.isNotEmpty)
-                                      _InteractiveBackgroundLayer(
-                                        key: ValueKey(backgroundItems.first.id),
-                                        item: backgroundItems.first,
-                                        scaleX: scaleX,
-                                        scaleY: scaleY,
-                                        canvasWidth: canvasSize.width,
-                                        canvasHeight: canvasSize.height,
-                                        onSelected: () {
-                                          // A tap anywhere inside an item's box
-                                          // belongs to that item, never to the
-                                          // background lying underneath it.
-                                          final tapAt = _lastTapCanvasPos;
-                                          if (tapAt != null) {
-                                            final hitId = _pickItemAt(
-                                              provider,
-                                              tapAt,
-                                            );
-                                            if (hitId != null) {
-                                              final hit = provider.items
-                                                  .firstWhere(
-                                                    (x) => x.id == hitId,
-                                              );
-                                              provider.setSelectedItem(
-                                                hit.type,
-                                                hit.id,
-                                              );
-                                              return;
-                                            }
-                                          }
-                                          final bg = backgroundItems.first;
-
-                                          // Select the background exactly like a normal
-                                          // image layer so the image editor toolbar opens.
-                                          provider.setSelectedItem(
-                                            bg.type,
-                                            bg.id,
-                                          );
-
-                                          if (mounted) {
-                                            setState(() {
-                                              _bottomNavIndex = 3;
-                                            });
-                                          }
-                                        },
-                                      ),
-
-                                    // IMPORTANT: selecting an item must NOT change its
-                                    // layer/z-order. Keep the provider's original order.
-                                    // A click only selects the item; Bring To Front /
-                                    // Send To Back are the only actions that should change
-                                    // the actual layer order.
-                                    ...(() {
-                                      final orderedItems = provider.items
+                                // FRAME ATTACHED TO SELECTED IMAGE
+                                if (provider.selectedFrameUrl != null &&
+                                    provider.selectedItemId != null)
+                                  Builder(
+                                    builder: (_) {
+                                      final selected = provider.items
                                           .where(
-                                            (item) =>
-                                        !_isCanvasBackground(item),
+                                            (e) =>
+                                        e.id ==
+                                            provider.selectedItemId,
                                       )
                                           .toList();
 
-                                      return orderedItems.map((item) {
-                                        return Positioned(
-                                          left: item.position.dx * scaleX,
-                                          top: item.position.dy * scaleY,
-                                          child: Transform.scale(
-                                            scale: scaleX,
-                                            alignment: Alignment.topLeft,
-                                            child: EditableItemWidget(
-                                              item: item,
-                                              onItemSelected: (type, id) {
-                                                // Canvas-level picking already chose the
-                                                // topmost visible item for this tap; a lower
-                                                // item's onTap must not override it.
-                                                if (_tapSelectedByCanvas)
-                                                  return;
-                                                provider.setSelectedItem(
-                                                  type,
-                                                  id,
-                                                );
-                                              },
+                                      if (selected.isEmpty ||
+                                          selected.first.type != 'image') {
+                                        return const SizedBox.shrink();
+                                      }
+
+                                      final item = selected.first;
+                                      return Positioned(
+                                        left: item.position.dx * scaleX,
+                                        top: item.position.dy * scaleY,
+                                        width:
+                                        item.width *
+                                            item.scale *
+                                            scaleX,
+                                        height:
+                                        item.height *
+                                            item.scale *
+                                            scaleY,
+                                        child: IgnorePointer(
+                                          child: Transform.rotate(
+                                            angle: item.rotation.isFinite
+                                                ? item.rotation
+                                                : 0.0,
+                                            child: Image.asset(
+                                              provider.selectedFrameUrl!,
+                                              fit: BoxFit.fill,
                                             ),
                                           ),
-                                        );
-                                      });
-                                    })(),
-
-                                    // FRAME ATTACHED TO SELECTED IMAGE
-                                    if (provider.selectedFrameUrl != null &&
-                                        provider.selectedItemId != null)
-                                      Builder(
-                                        builder: (_) {
-                                          final selected = provider.items
-                                              .where(
-                                                (e) =>
-                                            e.id ==
-                                                provider.selectedItemId,
-                                          )
-                                              .toList();
-
-                                          if (selected.isEmpty ||
-                                              selected.first.type != 'image') {
-                                            return const SizedBox.shrink();
-                                          }
-
-                                          final item = selected.first;
-                                          return Positioned(
-                                            left: item.position.dx * scaleX,
-                                            top: item.position.dy * scaleY,
-                                            width:
-                                            item.width *
-                                                item.scale *
-                                                scaleX,
-                                            height:
-                                            item.height *
-                                                item.scale *
-                                                scaleY,
-                                            child: IgnorePointer(
-                                              child: Transform.rotate(
-                                                angle: item.rotation.isFinite
-                                                    ? item.rotation
-                                                    : 0.0,
-                                                child: Image.asset(
-                                                  provider.selectedFrameUrl!,
-                                                  fit: BoxFit.fill,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-
-                                    if (!_isCapturingThumbnail &&
-                                        provider.selectedItemId != null)
-                                      ...(() {
-                                        final selectedItems = provider.items
-                                            .where(
-                                              (e) =>
-                                          e.id ==
-                                              provider.selectedItemId,
-                                        )
-                                            .toList();
-
-                                        if (selectedItems.isEmpty) {
-                                          return <Widget>[];
-                                        }
-
-                                        final selected = selectedItems.first;
-
-                                        if (_isCanvasBackground(selected)) {
-                                          return <Widget>[];
-                                        }
-
-                                        return <Widget>[
-                                          _TransformSelectionOverlay(
-                                            key: ValueKey(
-                                              'selection_overlay_${selected.id}',
-                                            ),
-                                            item: selected,
-                                            scaleX: scaleX,
-                                            scaleY: scaleY,
-                                            canvasWidth: canvasSize.width,
-                                            canvasHeight: canvasSize.height,
-                                          ),
-                                        ];
-                                      })(),
-                                  ],
-                                ),
-                              ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                              ],
                             ),
-                          );
-                        },
-                      ),
-                    ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -4513,6 +5070,7 @@ class _EditorViewState extends State<EditorView> {
             right: 12,
             child: IgnorePointer(child: saveIndicator),
           ),
+          if (!_isCapturingThumbnail) _buildZoomControls(provider, isDark),
         ],
       ),
 
@@ -4990,12 +5548,23 @@ class _EditorViewState extends State<EditorView> {
     setState(() {
       _animatePanelItemId = id;
       _animatePanelTab = tab;
+      _animatePanelCollapsed = false;
     });
   }
 
   void _closeAnimatePanel() {
     if (_animatePanelItemId == null) return;
-    setState(() => _animatePanelItemId = null);
+    setState(() {
+      _animatePanelItemId = null;
+      _animatePanelCollapsed = false;
+    });
+  }
+
+  /// Shrinks the ANIMATE panel to a slim bar so the canvas (and the animation
+  /// preview) gets almost the whole screen.
+  void _collapseAnimatePanel() {
+    if (_animatePanelCollapsed) return;
+    setState(() => _animatePanelCollapsed = true);
   }
 
   Widget _buildAnimatePanel(
@@ -5247,7 +5816,10 @@ class _EditorViewState extends State<EditorView> {
                   max: 2.9,
                   divisions: 29,
                   onChanged: (v) => provider.setItemAnimationDelay(id, v),
-                  onChangeEnd: (_) => provider.previewItemAnimation(id),
+                  onChangeEnd: (_) {
+                    provider.previewItemAnimation(id);
+                    _collapseAnimatePanel();
+                  },
                 ),
               ),
               valueBox(anim.delay.toStringAsFixed(1)),
@@ -5502,7 +6074,10 @@ class _EditorViewState extends State<EditorView> {
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: () => provider.setItemAnimationMode(id, mode),
+            onTap: () {
+              provider.setItemAnimationMode(id, mode);
+              _collapseAnimatePanel();
+            },
             child: Container(
               height: 42,
               alignment: Alignment.center,
@@ -5539,7 +6114,10 @@ class _EditorViewState extends State<EditorView> {
                 label: t.label,
                 selected: anim.type == t,
                 isNone: t == ItemAnimationType.none,
-                onTap: () => provider.setItemAnimationType(id, t),
+                onTap: () {
+                  provider.setItemAnimationType(id, t);
+                  if (t != ItemAnimationType.none) _collapseAnimatePanel();
+                },
               );
             }).toList(),
           ),
@@ -5554,7 +6132,10 @@ class _EditorViewState extends State<EditorView> {
               values: ItemAnimDirection.values,
               labelOf: (d) => d.label,
               iconOf: (d) => d.icon,
-              onSelected: (d) => provider.setItemAnimationDirection(id, d),
+              onSelected: (d) {
+                provider.setItemAnimationDirection(id, d);
+                _collapseAnimatePanel();
+              },
             ),
             const SizedBox(height: 10),
           ],
@@ -5564,7 +6145,10 @@ class _EditorViewState extends State<EditorView> {
               values: ItemAnimAxis.values,
               labelOf: (a) => a.label,
               iconOf: (a) => a.icon,
-              onSelected: (a) => provider.setItemAnimationAxis(id, a),
+              onSelected: (a) {
+                provider.setItemAnimationAxis(id, a);
+                _collapseAnimatePanel();
+              },
             ),
             const SizedBox(height: 6),
           ],
@@ -5579,6 +6163,7 @@ class _EditorViewState extends State<EditorView> {
               return;
             }
             provider.previewItemAnimation(id);
+            _collapseAnimatePanel();
           },
           child: Container(
             height: 46,
@@ -5606,6 +6191,90 @@ class _EditorViewState extends State<EditorView> {
           ),
         ),
       ];
+    }
+
+    // Slim bar: the canvas gets the freed space, so the animation preview is
+    // big enough to actually see. Type chips + replay stay reachable.
+    if (_animatePanelCollapsed && !showEffects) {
+      Widget typeChip(ItemAnimationType t) {
+        final sel = anim.type == t;
+        return Padding(
+          padding: const EdgeInsets.only(right: 6),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () => provider.setItemAnimationType(id, t),
+            child: Container(
+              height: 36,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: sel ? accent.withValues(alpha: .15) : soft,
+                borderRadius: BorderRadius.circular(18),
+                border: sel ? Border.all(color: accent) : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(t.icon, size: 16, color: sel ? accent : fg),
+                  const SizedBox(width: 6),
+                  AppText(
+                    t.label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: sel ? accent : fg,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
+      return Container(
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: const [
+            BoxShadow(blurRadius: 10, color: Color(0x33000000)),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 36,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: ItemAnimationType.values.map(typeChip).toList(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                quick(Icons.replay_rounded, () {
+                  if (anim.isNone) {
+                    Fluttertoast.showToast(msg: 'Select an animation first');
+                    return;
+                  }
+                  provider.previewItemAnimation(id);
+                }),
+                const SizedBox(width: 6),
+                quick(
+                  Icons.tune_rounded,
+                      () => setState(() => _animatePanelCollapsed = false),
+                ),
+                const SizedBox(width: 6),
+                quick(Icons.close_rounded, _closeAnimatePanel),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     return Container(
@@ -9510,8 +10179,15 @@ class _TransformSelectionOverlay extends StatefulWidget {
   final double canvasWidth;
   final double canvasHeight;
 
+  /// Where the canvas' top-left corner sits inside the area this overlay is
+  /// laid out in. The overlay lives in a viewport-sized layer (NOT inside the
+  /// clipped canvas) so handles at the page edge are never cut off and stay
+  /// tappable.
+  final Offset origin;
+
   const _TransformSelectionOverlay({
     super.key,
+    this.origin = Offset.zero,
     required this.item,
     required this.scaleX,
     required this.scaleY,
@@ -9581,9 +10257,9 @@ class _TransformSelectionOverlayState
 
   double get _unitY => widget.isBackground ? widget.scaleY : widget.scaleX;
 
-  double get _left => widget.item.position.dx * widget.scaleX;
+  double get _left => widget.item.position.dx * widget.scaleX + widget.origin.dx;
 
-  double get _top => widget.item.position.dy * widget.scaleY;
+  double get _top => widget.item.position.dy * widget.scaleY + widget.origin.dy;
 
   // On-screen box size in logical pixels.
   double get _boxWidth => _baseVisualWidth * _itemScale * widget.scaleX;
@@ -10249,8 +10925,12 @@ class _InteractiveBackgroundLayer extends StatefulWidget {
   final double canvasHeight;
   final VoidCallback onSelected;
 
+  /// When false only taps are handled (no drag / pinch / rotate).
+  final bool gesturesEnabled;
+
   const _InteractiveBackgroundLayer({
     super.key,
+    this.gesturesEnabled = true,
     required this.item,
     required this.scaleX,
     required this.scaleY,
@@ -10296,7 +10976,9 @@ class _InteractiveBackgroundLayerState
       child: GestureDetector(
         onTap: widget.onSelected,
 
-        onScaleStart: (details) {
+        onScaleStart: !widget.gesturesEnabled
+            ? null
+            : (details) {
           widget.onSelected();
 
           _startPosition = item.position;
@@ -10306,7 +10988,9 @@ class _InteractiveBackgroundLayerState
           _startRotation = item.rotation;
         },
 
-        onScaleUpdate: (details) {
+        onScaleUpdate: !widget.gesturesEnabled
+            ? null
+            : (details) {
           final provider = context.read<EditorProvider>();
 
           // Move
@@ -10606,10 +11290,21 @@ class _RemoveBackgroundSlideSheetState
 class _TwoFingerScaleRecognizer extends ScaleGestureRecognizer {
   _TwoFingerScaleRecognizer({super.debugOwner});
 
+  /// When true a one-finger drag is handled too (used to pan a zoomed canvas).
+  /// When false only gestures with two or more fingers are handled.
+  bool allowSinglePointer = false;
+
+  /// Called when the first finger of a new touch sequence goes down.
+  VoidCallback? onFreshSequence;
+
+  /// Called when the last finger of a touch sequence is gone.
+  VoidCallback? onIdle;
+
   final Set<int> _down = <int>{};
 
   @override
   void addAllowedPointer(PointerDownEvent event) {
+    if (_down.isEmpty) onFreshSequence?.call();
     super.addAllowedPointer(event);
     _down.add(event.pointer);
     if (_down.length >= 2) resolve(GestureDisposition.accepted);
@@ -10620,7 +11315,9 @@ class _TwoFingerScaleRecognizer extends ScaleGestureRecognizer {
     if (event is PointerUpEvent || event is PointerCancelEvent) {
       _down.remove(event.pointer);
     }
-    if (_down.length < 2 && event is PointerMoveEvent) return;
+    if (!allowSinglePointer && _down.length < 2 && event is PointerMoveEvent) {
+      return;
+    }
     super.handleEvent(event);
   }
 
@@ -10634,5 +11331,6 @@ class _TwoFingerScaleRecognizer extends ScaleGestureRecognizer {
   void didStopTrackingLastPointer(int pointer) {
     _down.clear();
     super.didStopTrackingLastPointer(pointer);
+    onIdle?.call();
   }
 }

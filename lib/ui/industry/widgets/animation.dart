@@ -143,6 +143,13 @@ class ItemAnimation {
 
   bool get isNone => type == ItemAnimationType.none;
 
+  /// Move only slides in and then stays at its rest position, so BOTH is
+  /// treated as ENTRANCE (no exit movement). Explicit EXIT still works.
+  ItemAnimationMode get effectiveMode =>
+      (type == ItemAnimationType.move && mode == ItemAnimationMode.both)
+          ? ItemAnimationMode.entrance
+          : mode;
+
   ItemAnimation copyWith({
     ItemAnimationType? type,
     ItemAnimationMode? mode,
@@ -404,7 +411,7 @@ class _AnimatedItemShellState extends State<AnimatedItemShell>
     _playingAnimation = widget.animation;
     _controller.duration = Duration(
       milliseconds: ItemAnimationTimeline.totalMs(
-        _playingAnimation.mode,
+        _playingAnimation.effectiveMode,
         _playingAnimation.delay,
       ),
     );
@@ -432,7 +439,7 @@ class _AnimatedItemShellState extends State<AnimatedItemShell>
         if (exportMs != null) {
           if (!widget.animation.isNone) {
             final f = ItemAnimationTimeline.atExport(
-              widget.animation.mode,
+              widget.animation.effectiveMode,
               exportMs,
               widget.animation.delay * 1000,
             );
@@ -442,13 +449,13 @@ class _AnimatedItemShellState extends State<AnimatedItemShell>
           }
         } else if (_playing) {
           final total = ItemAnimationTimeline.totalMs(
-            _playingAnimation.mode,
+            _playingAnimation.effectiveMode,
             _playingAnimation.delay,
           );
           final delayMs = _playingAnimation.delay * 1000;
           // During the delay the item stays in its start pose.
           final frame = ItemAnimationTimeline.at(
-            _playingAnimation.mode,
+            _playingAnimation.effectiveMode,
             math.max(0.0, _controller.value * total - delayMs),
           );
           p = frame.progress;
