@@ -102,7 +102,7 @@ class _ConfirmPlanContent extends StatelessWidget {
                           AppText(
                             "Make My Brand Premium",
                             style: TextStyle(
-                              fontSize: 16.sp,
+                              fontSize: AppFontSize.fontSize16,
                               fontWeight: FontWeight.bold,
                               color: AppColors.appRed, // Red color title
                             ),
@@ -111,7 +111,7 @@ class _ConfirmPlanContent extends StatelessWidget {
                           AppText(
                             "Unlock unlimited professional designs",
                             style: TextStyle(
-                              fontSize: 12.sp,
+                              fontSize: AppFontSize.fontSize12,
                               fontWeight: FontWeight.w500,
                               color: Colors.black54,
                             ),

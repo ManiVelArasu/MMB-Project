@@ -8,6 +8,7 @@ import '../../component/custom_widget.dart';
 import '../../model/notification_model.dart';
 import '../../network/provider/common_provider.dart';
 import '../../network/provider/notification_provider.dart';
+import '../../utils/theme/app.fonts.dart';
 import '../../widgets/notification_section.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../industry/widgets/scaffold_widget.dart';
@@ -88,7 +89,7 @@ class NotificationScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: isDark ? Colors.white70 : Colors.black54,
-                  fontSize: 14,
+                  fontSize: AppFontSize.fontSize14,
                 ),
               ),
 
@@ -127,7 +128,7 @@ class NotificationScreen extends StatelessWidget {
               "No notifications yet",
               style: TextStyle(
                 color: isDark ? Colors.white70 : Colors.black54,
-                fontSize: 15,
+                fontSize: AppFontSize.fontSize15,
                 fontWeight: FontWeight.w600,
               ),
             ),

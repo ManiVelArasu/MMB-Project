@@ -4,12 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:mmb_app/component/custom_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../network/provider/auth_provider.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/height_measure.dart';
+import '../../utils/theme/app.fonts.dart';
 import '../../widgets/button_widget.dart';
 import '../../widgets/title_value_widget.dart';
 
@@ -96,12 +98,12 @@ class OtpScreen extends StatelessWidget {
                                 if (receivedOtp.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(bottom: 12),
-                                    child: Text(
+                                    child: AppText(
                                       "Your OTP is: $receivedOtp",
                                       style: TextStyle(
                                         color: customColor.redColor,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 16.sp,
+                                        fontSize: AppFontSize.fontSize16,
                                       ),
                                     ),
                                   ),
@@ -159,12 +161,12 @@ class OtpScreen extends StatelessWidget {
                                                 const EdgeInsets.only(
                                                   top: 4,
                                                 ),
-                                                child: Text(
+                                                child: AppText(
                                                   authProvider
                                                       .mobileError!,
-                                                  style: const TextStyle(
+                                                  style:  TextStyle(
                                                     color: Colors.red,
-                                                    fontSize: 12,
+                                                    fontSize: AppFontSize.fontSize12,
                                                   ),
                                                 ),
                                               ),

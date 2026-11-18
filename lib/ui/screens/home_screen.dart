@@ -321,7 +321,7 @@ class _HomeScreenView extends StatelessWidget {
                       maxLines: 2,
                       style: TextStyle(
                         color: isDark ? Colors.white : Colors.black,
-                        fontSize: 10.sp,
+                        fontSize: AppFontSize.fontSize10,
                         fontWeight: FontWeight.w600,
                         height: 1.1,
                       ),
@@ -1846,7 +1846,7 @@ class _HomeScreenView extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Padding(
+                 Padding(
                   padding: EdgeInsets.fromLTRB(20, 18, 20, 16),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1864,7 +1864,7 @@ class _HomeScreenView extends StatelessWidget {
                         child: AppText(
                           'Premium template',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: AppFontSize.fontSize16,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF202124),
                           ),
@@ -1880,8 +1880,8 @@ class _HomeScreenView extends StatelessWidget {
                     child: AppText(
                       '"$templateName" is part of the premium\n'
                       'collection. Upgrade your plan to use it in your designs.',
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style:  TextStyle(
+                        fontSize: AppFontSize.fontSize14,
                         height: 1.45,
                         color: Color(0xFF666666),
                       ),
@@ -1925,10 +1925,10 @@ class _HomeScreenView extends StatelessWidget {
                             borderRadius: BorderRadius.circular(9),
                           ),
                         ),
-                        child: const AppText(
+                        child:  AppText(
                           'Upgrade to premium',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppFontSize.fontSize13,
                             fontWeight: FontWeight.w700,
                           ),
                         ),

@@ -23,4 +23,6 @@ class AppFontSize {
   static double fontSize32 = Platform.isIOS ? 30.0 : 28.0;
   static double fontSize36 = Platform.isIOS ? 38.0 : 36.0;
   static double fontSize50 = Platform.isIOS ? 52.0 : 50.0;
+  static double fontSize8 = Platform.isIOS ? 10.0 : 8.0;
+  static double fontSize9 = Platform.isIOS ? 11.0 : 9.0;
 }

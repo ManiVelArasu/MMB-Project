@@ -149,7 +149,7 @@ class _SubscriptionActivatedScreenState
                             AppText(
                               "YOU NOW HAVE ACCESS TO",
                               style: TextStyle(
-                                fontSize: 12.sp,
+                                fontSize: AppFontSize.fontSize12,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.deepOrange,
                               ),

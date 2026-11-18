@@ -102,19 +102,19 @@ class AiImageScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(13),
         border: Border.all(color: borderColor),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.search, color: Color(0xFFFFA69D)),
-          SizedBox(width: 8),
+          const Icon(Icons.search, color: Color(0xFFFFA69D)),
+          const SizedBox(width: 8),
           Expanded(
-            child: Text(
+            child: AppText(
               'Search templates, Brand Series...',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: Colors.black38),
+              style: TextStyle(  fontSize: AppFontSize.fontSize11, color: Colors.black38),
             ),
           ),
-          Icon(Icons.mic_none, size: 19),
+          const Icon(Icons.mic_none, size: 19),
         ],
       ),
     );
@@ -220,9 +220,9 @@ class AiImageScreen extends StatelessWidget {
                         border: Border.all(color: borderColor),
                         borderRadius: BorderRadius.circular(18),
                       ),
-                      child: Text(
+                      child: AppText(
                         suggestion,
-                        style: const TextStyle(fontSize: 10),
+                        style:  TextStyle( fontSize: AppFontSize.fontSize10,),
                       ),
                     ),
                   ),
@@ -240,13 +240,13 @@ class AiImageScreen extends StatelessWidget {
                   controller: provider.promptImageController,
                   minLines: 4,
                   maxLines: 6,
-                  decoration: const InputDecoration(
+                  decoration:  InputDecoration(
                     hintText: 'Describe the image you want to create...',
-                    hintStyle: TextStyle(fontSize: 12, color: Colors.black26),
+                    hintStyle: TextStyle( fontSize: AppFontSize.fontSize12, color: Colors.black26),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(12),
                   ),
-                  style: const TextStyle(fontSize: 12),
+                  style:  TextStyle( fontSize: AppFontSize.fontSize12,),
                 ),
                 const Divider(height: 1, color: borderColor),
                 Padding(
@@ -324,7 +324,7 @@ class AiImageScreen extends StatelessWidget {
           value: items.contains(value) ? value : items.first,
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down, size: 15),
-          style: const TextStyle(fontSize: 10, color: Colors.black87),
+          style:  TextStyle( fontSize: AppFontSize.fontSize10, color: Colors.black87),
           items: items.map((item) {
             return DropdownMenuItem<String>(
               value: item,
@@ -417,12 +417,12 @@ class AiImageScreen extends StatelessWidget {
                 ),
               ),
             )
-          : const SizedBox(
+          :  SizedBox(
               height: 200,
               child: Center(
-                child: Text(
+                child: AppText(
                   'Your generated image will appear here.',
-                  style: TextStyle(fontSize: 11, color: Colors.black38),
+                  style: TextStyle( fontSize: AppFontSize.fontSize10, color: Colors.black38),
                 ),
               ),
             ),
@@ -457,9 +457,9 @@ class AiImageScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(11),
                   ),
                 ),
-                child: const Text(
+                child:  AppText(
                   'REGENERATE',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                  style: TextStyle( fontSize: AppFontSize.fontSize11, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -478,9 +478,9 @@ class AiImageScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(11),
                   ),
                 ),
-                child: const Text(
+                child:  AppText(
                   'DOWNLOAD',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                  style: TextStyle( fontSize: AppFontSize.fontSize11, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -497,7 +497,7 @@ class AiImageScreen extends StatelessWidget {
         color: const Color(0xFFFFEDF1),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(text, style: const TextStyle(fontSize: 10)),
+      child: Text(text, style:  TextStyle( fontSize: AppFontSize.fontSize10,)),
     );
   }
 

@@ -18,9 +18,11 @@ import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart' as svg;
 
 import '../../../Api Model/editor_model.dart';
+import '../../../component/custom_widget.dart';
 import '../../../network/provider/editor_provider.dart';
 import 'package:image/image.dart' as img;
 
+import '../../../utils/theme/app.fonts.dart';
 import '../../screens/video_widget/editor_video.dart';
 import '../../screens/video_widget/video_widget.dart';
 import 'animation.dart';
@@ -418,11 +420,11 @@ class EditableItemWidget extends StatelessWidget {
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: const Color(0xFF1E1E2C),
-          title: const Text(
+          title:  AppText(
             'Edit Text',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: AppFontSize.fontSize16,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -432,7 +434,7 @@ class EditableItemWidget extends StatelessWidget {
             minLines: 1,
             maxLines: 5,
             textInputAction: TextInputAction.newline,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
+            style:  TextStyle(color: Colors.white,  fontSize: AppFontSize.fontSize16,),
             decoration: const InputDecoration(
               hintText: 'Type text here...',
               hintStyle: TextStyle(color: Colors.white54),

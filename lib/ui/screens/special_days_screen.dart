@@ -362,7 +362,7 @@ Future<DateTimeRange?> _pickSpecialDaysRange(
                     child: Text(
                       'Select dates',
                       style: TextStyle(
-                        fontSize: 20.sp,
+                        fontSize: AppFontSize.fontSize20,
                         fontWeight: FontWeight.w700,
                         color: fg,
                       ),
@@ -384,7 +384,7 @@ Future<DateTimeRange?> _pickSpecialDaysRange(
               SizedBox(height: 4.h),
               Text(
                 'Special days are available till ${_prettyDate(monthEnd)}',
-                style: TextStyle(fontSize: 12.sp, color: sub),
+                style: TextStyle( fontSize: AppFontSize.fontSize12, color: sub),
               ),
 
               SizedBox(height: 18.h),
@@ -415,7 +415,7 @@ Future<DateTimeRange?> _pickSpecialDaysRange(
                           Text(
                             p.label,
                             style: TextStyle(
-                              fontSize: 13.sp,
+                              fontSize: AppFontSize.fontSize13,
                               fontWeight: FontWeight.w600,
                               color: fg,
                             ),
@@ -449,15 +449,15 @@ Future<DateTimeRange?> _pickSpecialDaysRange(
                     size: 20,
                   ),
                 ),
-                title: Text(
+                title: AppText(
                   'Pick custom range',
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: AppFontSize.fontSize14,
                     fontWeight: FontWeight.w600,
                     color: fg,
                   ),
                 ),
-                subtitle: Text(
+                subtitle: AppText(
                   'Choose start and end date',
                   style: TextStyle(fontSize: 12.sp, color: sub),
                 ),
@@ -686,7 +686,7 @@ class _TemplateCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 11.sp,
+                    fontSize: AppFontSize.fontSize11,
                     fontWeight: FontWeight.w600,
                     color: isDark ? Colors.white : Colors.black87,
                   ),
@@ -738,7 +738,7 @@ class _EmptyState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14.sp,
+                fontSize: AppFontSize.fontSize14,
                 fontWeight: FontWeight.w700,
                 color: isDark ? Colors.white70 : Colors.black54,
               ),

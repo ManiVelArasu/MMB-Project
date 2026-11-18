@@ -53,7 +53,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Select up to 3 content goals'),
+            content: AppText('Select up to 3 content goals'),
             duration: Duration(seconds: 1),
           ),
         );
@@ -67,6 +67,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
     final isDark = context.watch<CustomThemeProvider>().isDarkMode;
     return CommonScaffold(
       isDarkMode: isDark,
+      extendBodyBehindAppBar: true,
       appBar: CustomAppBar(
         title: "AI Social Media Calendar",
         showRightIcon: false,
@@ -99,7 +100,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                           'posts tailored to your business.',
                           style: TextStyle(
                             color: AppColors.appGrey,
-                            fontSize: 12.sp,
+                            fontSize: AppFontSize.fontSize12,
                             height: 1.4,
                           ),
                         ),
@@ -227,10 +228,10 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                                       borderRadius: BorderRadius.circular(5.r),
                                     ),
                                     alignment: Alignment.center,
-                                    child: Text(
+                                    child: AppText(
                                       '$count',
                                       style: TextStyle(
-                                        fontSize: 12.sp,
+                                        fontSize: AppFontSize.fontSize12,
                                         fontWeight: FontWeight.w600,
                                         color: selected
                                             ? Colors.white
@@ -420,7 +421,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                       child: Text(
                         'GENERATE',
                         style: TextStyle(
-                          fontSize: 13.sp,
+                          fontSize: AppFontSize.fontSize13,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -469,7 +470,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
               child: AppText(
                 'Your Calendar Plan',
                 style: TextStyle(
-                  fontSize: 17.sp,
+                  fontSize: AppFontSize.fontSize17,
                   fontWeight: FontWeight.w600,
                   color: Colors.black,
                 ),
@@ -483,7 +484,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                 month,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14.sp,
+                  fontSize: AppFontSize.fontSize14,
                   color: Colors.red,
                   fontWeight: FontWeight.w500,
                 ),
@@ -499,14 +500,14 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                 AppText(
                   '$totalPosts Posts',
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: AppFontSize.fontSize12,
                     fontWeight: FontWeight.w700,
                     color: Colors.black87,
                   ),
                 ),
                 AppText(
                   platforms.join(' + '),
-                  style: TextStyle(fontSize: 12.sp, color: Colors.black54),
+                  style: TextStyle( fontSize: AppFontSize.fontSize12, color: Colors.black54),
                 ),
               ],
             ),
@@ -521,10 +522,10 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
 
             SizedBox(height: 14.h),
 
-            const AppText(
+             AppText(
               'Estimated Usage',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppFontSize.fontSize12,
                 fontWeight: FontWeight.w700,
                 color: Colors.black,
               ),
@@ -538,11 +539,11 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
               children: [
                 AppText(
                   '$credits AI Credits',
-                  style: TextStyle(fontSize: 12.sp, color: Colors.black54),
+                  style: TextStyle( fontSize: AppFontSize.fontSize12, color: Colors.black54),
                 ),
                 AppText(
                   '($remainingCredits credits remaining)',
-                  style: TextStyle(fontSize: 11.sp, color: Colors.red),
+                  style: TextStyle( fontSize: AppFontSize.fontSize11,color: Colors.red),
                 ),
               ],
             ),
@@ -555,7 +556,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                 child: AppText(
                   'Low AI credits: Top-Up/Upgrade',
                   style: TextStyle(
-                    fontSize: 11.sp,
+                    fontSize: AppFontSize.fontSize11,
                     color: Colors.red,
                     decoration: TextDecoration.underline,
                   ),
@@ -583,7 +584,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
                 child: AppText(
                   'Generate Calendar: $credits Credits',
                   style: TextStyle(
-                    fontSize: 13.sp,
+                    fontSize: AppFontSize.fontSize13,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -602,7 +603,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
         AppText(
           title,
           style: TextStyle(
-            fontSize: 12.sp,
+            fontSize: AppFontSize.fontSize12,
             fontWeight: FontWeight.w700,
             color: Colors.black,
           ),
@@ -610,7 +611,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
         SizedBox(height: 3.h),
         AppText(
           value.isEmpty ? '-' : value,
-          style: TextStyle(fontSize: 12.sp, height: 1.4, color: Colors.black54),
+          style: TextStyle( fontSize: AppFontSize.fontSize12, height: 1.4, color: Colors.black54),
         ),
       ],
     );
@@ -630,7 +631,7 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
         child: AppText(
           title,
           style: TextStyle(
-            fontSize: 10,
+            fontSize: AppFontSize.fontSize10,
             fontWeight: FontWeight.w700,
             color: selected ? Colors.white : Colors.black,
           ),
@@ -659,9 +660,9 @@ class _SocialCalendarFormBodyState extends State<_SocialCalendarFormBody> {
         ),
         if (subtitle.isNotEmpty) ...[
           const SizedBox(width: 3),
-          Text(
+          AppText(
             subtitle,
-            style: const TextStyle(fontSize: 9, color: Color(0xFF555555)),
+            style:  TextStyle( fontSize: AppFontSize.fontSize10, color: Color(0xFF555555)),
           ),
         ],
         if (showInfo) ...[

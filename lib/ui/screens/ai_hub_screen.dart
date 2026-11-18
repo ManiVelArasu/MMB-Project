@@ -304,10 +304,10 @@ class _AiHubView extends StatelessWidget {
                 border: Border.all(color: _border),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
+              child:  AppText(
                 'Fill in the details and generate, your content will appear here.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 9, color: Color(0xFFBDBDBD)),
+                style: TextStyle( fontSize: AppFontSize.fontSize10, color: Color(0xFFBDBDBD)),
               ),
             )
           else
@@ -367,10 +367,10 @@ class _AiHubView extends StatelessWidget {
               color: const Color(0xFFFFF4F5),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Text(
+            child: AppText(
               provider.generatedContent,
-              style: const TextStyle(
-                fontSize: 11,
+              style:  TextStyle(
+                fontSize: AppFontSize.fontSize11,
                 height: 1.4,
                 color: Color(0xFF444444),
               ),
@@ -401,9 +401,9 @@ class _AiHubView extends StatelessWidget {
                     ),
                     padding: EdgeInsets.zero,
                   ),
-                  child: const Text(
+                  child:  AppText(
                     'REGENERATE',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                    style: TextStyle( fontSize: AppFontSize.fontSize10, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -430,9 +430,9 @@ class _AiHubView extends StatelessWidget {
                     ),
                     padding: EdgeInsets.zero,
                   ),
-                  child: const Text(
+                  child:  AppText(
                     'COPY',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                    style: TextStyle( fontSize: AppFontSize.fontSize10, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -450,7 +450,7 @@ class _AiHubView extends StatelessWidget {
         color: const Color(0xFFFFECEE),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(text, style: const TextStyle(fontSize: 8)),
+      child: AppText(text, style:  TextStyle( fontSize: AppFontSize.fontSize8,)),
     );
   }
 

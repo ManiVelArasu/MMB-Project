@@ -116,10 +116,10 @@ class _MyUploadsView extends StatelessWidget {
                   color: Color(0xFFED1C24),
                 ),
               ),
-              label: const AppText(
+              label:  AppText(
                 "ADD NEW",
                 style: TextStyle(
-                  fontSize: 9,
+                  fontSize: AppFontSize.fontSize10,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                 ),
@@ -181,10 +181,10 @@ class _MyUploadsView extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (uploadedImages.isNotEmpty) ...[
-                                    Text(
+                                    AppText(
                                       "My Uploads",
                                       style: TextStyle(
-                                        fontSize: 16,
+                                        fontSize: AppFontSize.fontSize16,
                                         fontWeight: FontWeight.w700,
                                         color: p.heading,
                                       ),
@@ -267,7 +267,7 @@ class _MyUploadsView extends StatelessWidget {
             AppText(
               'No Downloads Yet',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: AppFontSize.fontSize18,
                 fontWeight: FontWeight.w700,
                 color: p.heading,
               ),
@@ -279,7 +279,7 @@ class _MyUploadsView extends StatelessWidget {
               'Your downloaded designs will appear here. '
                   'Create your first design and download it when it’s ready.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: p.subText),
+              style: TextStyle( fontSize: AppFontSize.fontSize13, color: p.subText),
             ),
 
             const SizedBox(height: 20),
@@ -534,7 +534,7 @@ class _MyUploadsView extends StatelessWidget {
                         AppText(
                           "DOWNLOAD",
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.fontSize12,
                             fontWeight: FontWeight.w500,
                             color: p.icon,
                           ),
@@ -553,7 +553,7 @@ class _MyUploadsView extends StatelessWidget {
                         AppText(
                           "DELETE",
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.fontSize12,
                             fontWeight: FontWeight.w500,
                             color: p.icon,
                           ),

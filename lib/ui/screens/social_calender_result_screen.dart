@@ -55,7 +55,7 @@ class _SocialCalendarResultScreenState
                           "Your SM Calendar for the month",
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontSize: AppFontSize.fontSize15,
                             color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
@@ -157,7 +157,7 @@ class _SocialCalendarResultScreenState
                                   child: AppText(
                                     "$dayNum",
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: AppFontSize.fontSize12,
                                       fontWeight: FontWeight.bold,
                                       color: isHighlighted
                                           ? Colors.white
@@ -191,7 +191,7 @@ class _SocialCalendarResultScreenState
                             "Week $weekNum",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: AppFontSize.fontSize14,
                               color: isSelected
                                   ? (isDark ? Colors.white : Colors.black)
                                   : Colors.grey,
@@ -276,12 +276,12 @@ class _SocialCalendarResultScreenState
                                         ),
                                       );
                                     },
-                                    child: const AppText(
+                                    child:  AppText(
                                       "DOWNLOAD",
                                       style: TextStyle(
                                         color: Colors.red,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 14,
+                                        fontSize: AppFontSize.fontSize14,
                                       ),
                                     ),
                                   ),
@@ -309,12 +309,12 @@ class _SocialCalendarResultScreenState
                                         ),
                                       );
                                     },
-                                    child: const AppText(
+                                    child:  AppText(
                                       "SAVE",
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 14,
+                                        fontSize: AppFontSize.fontSize14,
                                       ),
                                     ),
                                   ),
@@ -335,12 +335,12 @@ class _SocialCalendarResultScreenState
                               onPressed: () {
                                 provider.generateTemplates();
                               },
-                              child: const AppText(
+                              child:  AppText(
                                 "USE TEMPLATES",
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 15,
+                                  fontSize: AppFontSize.fontSize15,
                                 ),
                               ),
                             ),
@@ -401,7 +401,7 @@ class _SocialCalendarResultScreenState
                 postNumber,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 13,
+                  fontSize: AppFontSize.fontSize13,
                   color: isDark ? Colors.white : Colors.black,
                 ),
               ),
@@ -419,9 +419,9 @@ class _SocialCalendarResultScreenState
                 ),
                 child: AppText(
                   date,
-                  style: const TextStyle(
+                  style:  TextStyle(
                     color: Colors.red,
-                    fontSize: 11,
+                    fontSize: AppFontSize.fontSize11,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -433,7 +433,7 @@ class _SocialCalendarResultScreenState
             "Topic: $topic",
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 13,
+              fontSize: AppFontSize.fontSize13,
               color: isDark ? Colors.white70 : Colors.black87,
             ),
           ),
@@ -442,7 +442,7 @@ class _SocialCalendarResultScreenState
             text: TextSpan(
               style: TextStyle(
                 color: isDark ? Colors.grey.shade300 : Colors.black,
-                fontSize: 12,
+                fontSize: AppFontSize.fontSize12,
                 height: 1.4,
               ),
               children: [
@@ -502,7 +502,7 @@ class _SocialCalendarResultScreenState
               "VIEW ALL",
               style: TextStyle(
                 color: isDark ? Colors.white : Colors.black,
-                fontSize: 11,
+                fontSize: AppFontSize.fontSize11,
                 fontWeight: FontWeight.bold,
               ),
             ),

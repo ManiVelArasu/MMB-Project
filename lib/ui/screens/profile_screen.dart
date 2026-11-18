@@ -153,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       AppText(
                                         'Great News!',
                                         style: TextStyle(
-                                          fontSize: 24.sp,
+                                          fontSize: AppFontSize.fontSize24,
                                           height: 1.1,
                                           fontWeight: FontWeight.w700,
                                           color: isDark
@@ -195,7 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         child: AppText(
                                           'Free AI Credits\nhave been added to your account',
                                           style: TextStyle(
-                                            fontSize: 13.sp,
+                                            fontSize: AppFontSize.fontSize13,
                                             height: 1.18,
                                             fontWeight: FontWeight.w600,
                                             color: isDark
@@ -1456,10 +1456,10 @@ void _showLanguagesBottomSheet(
                           strokeWidth: 2,
                         ),
                       )
-                          : Text(
+                          : AppText(
                         'Save',
                         style: TextStyle(
-                          fontSize: 16.sp,
+                          fontSize: AppFontSize.fontSize16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

@@ -277,7 +277,7 @@ class AccountTypeScreen extends StatelessWidget {
             AppText(
               title,
               style: theme.bodyLarge!.copyWith(
-                fontSize: 16.sp,
+                fontSize:AppFontSize.fontSize16,
                 fontWeight: FontWeight.w700,
                 color: customColor.blackColor,
               ),
@@ -287,7 +287,7 @@ class AccountTypeScreen extends StatelessWidget {
             AppText(
               description,
               style: theme.bodyMedium!.copyWith(
-                fontSize: 15.sp,
+                fontSize:AppFontSize.fontSize15,
                 height: 1.35,
                 fontWeight: FontWeight.w400,
                 color: customColor.blackColor,

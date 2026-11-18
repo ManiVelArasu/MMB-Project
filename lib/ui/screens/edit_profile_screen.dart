@@ -197,7 +197,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
               AppText(
                 "Social",
                 style: TextStyle(
-                  fontSize: 17.sp,
+                  fontSize: AppFontSize.fontSize17,
                   fontWeight: FontWeight.w900,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
@@ -386,7 +386,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
                   AppText(
                     "Mobile Number",
                     style: TextStyle(
-                      fontSize: 9.sp,
+                      fontSize: AppFontSize.fontSize10,
                       color: Colors.grey.shade600,
                       fontWeight: FontWeight.w500,
                     ),
@@ -409,7 +409,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
                           "Verified",
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 8.sp,
+                            fontSize: AppFontSize.fontSize10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -424,7 +424,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
                     ? provider.contactController.text.trim()
                     : "+91 98000 00001",
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: AppFontSize.fontSize12,
                   color: Colors.black87,
                   fontWeight: FontWeight.w500,
                 ),
@@ -447,7 +447,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
                 "CHANGE NUMBER",
                 style: TextStyle(
                   color: const Color(0xFFE91E63),
-                  fontSize: 9.sp,
+                  fontSize: AppFontSize.fontSize10,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -477,7 +477,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
           AppText(
             label,
             style: TextStyle(
-              fontSize: 9.sp,
+              fontSize: AppFontSize.fontSize10,
               color: Colors.grey.shade600,
               fontWeight: FontWeight.w500,
             ),
@@ -487,7 +487,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
             controller: controller,
             keyboardType: keyboardType,
             style: TextStyle(
-              fontSize: 12.sp,
+              fontSize: AppFontSize.fontSize12,
               color: Colors.black87,
               fontWeight: FontWeight.w500,
             ),

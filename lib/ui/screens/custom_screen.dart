@@ -394,7 +394,7 @@ class _CustomCreateBody extends StatelessWidget {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     style: TextStyle(
-                      fontSize: 11.sp,
+                        fontSize: AppFontSize.fontSize11,
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white : Colors.black,
                     ),
@@ -803,7 +803,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                                   AppText(
                                     item["title"],
                                     style: TextStyle(
-                                      fontSize: 12.sp,
+                                      fontSize: AppFontSize.fontSize12,
                                       fontWeight: FontWeight.w600,
                                       color: isSelected
                                           ? Colors.red
@@ -816,7 +816,7 @@ class _CustomSizeBottomSheetState extends State<_CustomSizeBottomSheet> {
                                   AppText(
                                     item["subtitle"],
                                     style: TextStyle(
-                                      fontSize: 10.sp,
+                                      fontSize: AppFontSize.fontSize10,
                                       color: isDark
                                           ? Colors.grey.shade400
                                           : Colors.grey.shade600,

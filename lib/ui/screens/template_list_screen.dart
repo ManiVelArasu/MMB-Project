@@ -523,10 +523,10 @@ Widget _buildEmptyState(BuildContext context) {
 
                     const SizedBox(height: 8),
 
-                    const AppText(
+                     AppText(
                       'No Templates Found',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: AppFontSize.fontSize18,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -536,7 +536,7 @@ Widget _buildEmptyState(BuildContext context) {
                     AppText(
                       'We couldn’t find any templates matching your search. Try a different keyword or explore our categories.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 13),
+                      style:  TextStyle( fontSize: AppFontSize.fontSize13,),
                     ),
 
                     const SizedBox(height: 20),

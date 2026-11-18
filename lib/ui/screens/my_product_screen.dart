@@ -101,9 +101,9 @@ class _ProductsView extends StatelessWidget {
                   color: Color(0xFFED1C24),
                 ),
               ),
-              label: const AppText(
+              label:  AppText(
                 "ADD NEW",
-                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900),
+                style: TextStyle(  fontSize:AppFontSize.fontSize9, fontWeight: FontWeight.w900),
               ),
             ),
           ),
@@ -170,7 +170,7 @@ class _ProductsView extends StatelessWidget {
                       "No products found",
                       style: TextStyle(
                         color: p.emptyText,
-                        fontSize: 13,
+                        fontSize: AppFontSize.fontSize13,
                       ),
                     ),
                   ))

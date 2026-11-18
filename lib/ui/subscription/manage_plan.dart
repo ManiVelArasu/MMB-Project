@@ -8,6 +8,7 @@ import '../../Api Model/plans_type.dart';
 import '../../network/provider/plan_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
+import '../shimmer/subscription_shimmer.dart';
 import 'invoice_screen.dart';
 
 class ManagePlanScreen extends StatelessWidget {
@@ -449,7 +450,7 @@ class _ManagePlanViewState extends State<_ManagePlanView> {
           : CustomAppBar(title: "Change Plan", showRightIcon: false),
       body: SafeArea(
         child: provider.isLoadingSubscription && data == null
-            ? const Center(child: CircularProgressIndicator())
+            ? const CommonManagePlanShimmer()
             : SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(10, 0, 10, 20),
                 child: Column(
@@ -1239,11 +1240,11 @@ class _ChangePlanBottomSheetState extends State<_ChangePlanBottomSheet> {
                             color: Colors.white,
                           ),
                         )
-                      : const AppText(
+                      :  AppText(
                           "PAY DIFFERENCE & UPGRADE",
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: AppFontSize.fontSize12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -1251,12 +1252,12 @@ class _ChangePlanBottomSheetState extends State<_ChangePlanBottomSheet> {
               ),
 
               const SizedBox(height: 9),
-              const Center(
-                child: Text(
+               Center(
+                child: AppText(
                   "Downgrades take effect from your next billing cycle instead of\ncharging you today.",
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 8,
+                    fontSize: AppFontSize.fontSize8,
                     color: Colors.grey,
                     height: 1.4,
                   ),

@@ -34,6 +34,7 @@ class SmCalendarView extends StatelessWidget {
       builder: (context, provider, child) {
         return CommonScaffold(
           isDarkMode: isDark,
+          extendBodyBehindAppBar: true,
           appBar: CustomAppBar(
             title: "My Monthly SM Calendars",
             showRightIcon: false,
@@ -46,9 +47,7 @@ class SmCalendarView extends StatelessWidget {
                 right: 0,
                 height: 150.h,
                 child: Container(
-                  color: isDark
-                      ? const Color(0xFF1E1E1E)
-                      : Colors.white,
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   child: Stack(
                     children: [
                       Positioned.fill(
@@ -59,8 +58,7 @@ class SmCalendarView extends StatelessWidget {
                           color: isDark
                               ? Colors.black.withValues(alpha: .35)
                               : null,
-                          colorBlendMode:
-                          isDark ? BlendMode.darken : null,
+                          colorBlendMode: isDark ? BlendMode.darken : null,
                         ),
                       ),
                       Positioned(
@@ -70,9 +68,7 @@ class SmCalendarView extends StatelessWidget {
                         child: AppText(
                           "Plan your content with AI and get ready-to-use posts tailored to your business.",
                           style: TextStyle(
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.appGrey,
+                            color: isDark ? Colors.white : AppColors.appGrey,
                             fontSize: AppFontSize.fontSize14,
                             height: 1.4,
                             fontWeight: FontWeight.w400,
@@ -114,7 +110,7 @@ class SmCalendarView extends StatelessWidget {
                                 color: isDark
                                     ? Colors.white
                                     : Theme.of(context).colorScheme.onSurface,
-                                fontSize: 18.sp,
+                                fontSize: AppFontSize.fontSize18,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -169,7 +165,7 @@ class SmCalendarView extends StatelessWidget {
                                           isMonthly ? 'MONTHLY' : 'WEEKLY',
                                           style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 10.sp,
+                                            fontSize: AppFontSize.fontSize10,
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),
@@ -184,7 +180,7 @@ class SmCalendarView extends StatelessWidget {
                                           color: isDark
                                               ? Colors.white
                                               : Colors.black87,
-                                          fontSize: 18.sp,
+                                          fontSize: AppFontSize.fontSize18,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -202,7 +198,7 @@ class SmCalendarView extends StatelessWidget {
                                           color: isDark
                                               ? Colors.white70
                                               : Colors.black87,
-                                          fontSize: 12.5.sp,
+                                          fontSize: AppFontSize.fontSize12,
                                           fontWeight: FontWeight.w400,
                                         ),
                                       ),
@@ -225,7 +221,7 @@ class SmCalendarView extends StatelessWidget {
                                                     color: isDark
                                                         ? Colors.grey.shade400
                                                         : Colors.black87,
-                                                    fontSize: 11.sp,
+                                                    fontSize: AppFontSize.fontSize11,
                                                   ),
                                                 ),
                                                 SizedBox(height: 2.h),
@@ -235,7 +231,7 @@ class SmCalendarView extends StatelessWidget {
                                                     color: isDark
                                                         ? Colors.white
                                                         : Colors.black,
-                                                    fontSize: 16.sp,
+                                                    fontSize: AppFontSize.fontSize16,
                                                     fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
@@ -253,7 +249,7 @@ class SmCalendarView extends StatelessWidget {
                                                     color: isDark
                                                         ? Colors.grey.shade400
                                                         : Colors.black87,
-                                                    fontSize: 11.sp,
+                                                    fontSize: AppFontSize.fontSize11,
                                                   ),
                                                 ),
                                                 SizedBox(height: 2.h),
@@ -263,7 +259,7 @@ class SmCalendarView extends StatelessWidget {
                                                     color: isDark
                                                         ? Colors.white
                                                         : Colors.black,
-                                                    fontSize: 16.sp,
+                                                    fontSize: AppFontSize.fontSize16,
                                                     fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
@@ -281,7 +277,7 @@ class SmCalendarView extends StatelessWidget {
                                                     color: isDark
                                                         ? Colors.grey.shade400
                                                         : Colors.black87,
-                                                    fontSize: 11.sp,
+                                                    fontSize: AppFontSize.fontSize11,
                                                   ),
                                                 ),
                                                 SizedBox(height: 2.h),
@@ -291,7 +287,7 @@ class SmCalendarView extends StatelessWidget {
                                                     color: isDark
                                                         ? Colors.white
                                                         : Colors.black,
-                                                    fontSize: 16.sp,
+                                                    fontSize: AppFontSize.fontSize16,
                                                     fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
@@ -329,12 +325,12 @@ class SmCalendarView extends StatelessWidget {
                                 "/SocialCalendarFormScreen",
                               );
                             },
-                            child: const AppText(
+                            child: AppText(
                               "GENERATE",
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontSize: AppFontSize.fontSize16,
                               ),
                             ),
                           ),

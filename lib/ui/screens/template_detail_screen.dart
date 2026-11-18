@@ -403,7 +403,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
             label,
             style: TextStyle(
               color: isDark ? Colors.white54 : Colors.black54,
-              fontSize: 14.sp,
+              fontSize: AppFontSize.fontSize14,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -617,7 +617,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
         child: AppText(
           label,
           style: TextStyle(
-            fontSize: 12.sp,
+            fontSize: AppFontSize.fontSize12,
             fontWeight: FontWeight.w500,
             color: selected
                 ? Colors.red
@@ -913,7 +913,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
           child: AppText(
             title,
             style: TextStyle(
-              fontSize: 15.sp,
+              fontSize: AppFontSize.fontSize15,
               fontWeight: FontWeight.bold,
               color: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
             ),
@@ -928,7 +928,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
           child: AppText(
             '$count',
             style: TextStyle(
-              fontSize: 11.sp,
+              fontSize: AppFontSize.fontSize11,
               fontWeight: FontWeight.w600,
               color: isDark ? Colors.white70 : Colors.black54,
             ),
@@ -953,7 +953,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
             AppText(
               'Loading templates...',
               style: TextStyle(
-                fontSize: 13.sp,
+                fontSize: AppFontSize.fontSize13,
                 color: isDark ? Colors.white54 : Colors.black54,
               ),
             ),
@@ -979,7 +979,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 13.sp,
+                fontSize: AppFontSize.fontSize13,
                 color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
               ),
             ),
@@ -1072,7 +1072,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
             label,
             style: TextStyle(
               color: color,
-              fontSize: 10.sp,
+              fontSize: AppFontSize.fontSize10,
               fontWeight: FontWeight.w600,
             ),
           ),

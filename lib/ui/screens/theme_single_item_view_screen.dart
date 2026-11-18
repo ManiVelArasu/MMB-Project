@@ -261,7 +261,7 @@ class ThemeDetailView extends StatelessWidget {
                       style: TextStyle(
                         color: isDark ? AppColors.appWhite : AppColors.appBlack,
 
-                        fontSize: 24.sp,
+                        fontSize: AppFontSize.fontSize24,
                         fontWeight: FontWeight.w500,
                       ),
 
@@ -275,7 +275,7 @@ class ThemeDetailView extends StatelessWidget {
 
                       style: TextStyle(
                         color: AppColors.appRed,
-                        fontSize: 13.sp,
+                        fontSize: AppFontSize.fontSize13,
                         fontWeight: FontWeight.w600,
                       ),
 

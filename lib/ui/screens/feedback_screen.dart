@@ -7,6 +7,7 @@ import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
 import '../../network/provider/feedback_provider.dart';
 import '../../utils/theme/app.colors.dart';
+import '../../utils/theme/app.fonts.dart';
 import '../../widgets/button_widget.dart';
 import '../../widgets/emoji_rating.dart';
 import '../../widgets/feedback_textfield.dart';
@@ -43,7 +44,7 @@ class FeedbackScreen extends StatelessWidget {
                     "Our support Team will available Monday to Saturday,10 AM-7 PM to assist you with any queries",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 18.sp,
+                      fontSize: AppFontSize.fontSize18,
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white : Colors.black87,
                       height: 1.4,
@@ -61,7 +62,7 @@ class FeedbackScreen extends StatelessWidget {
                     child: AppText(
                       "Do you have any thoughts you'd like to share:",
                       style: TextStyle(
-                        fontSize: 16.sp,
+                        fontSize: AppFontSize.fontSize16,
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white70 : Colors.black87,
                       ),

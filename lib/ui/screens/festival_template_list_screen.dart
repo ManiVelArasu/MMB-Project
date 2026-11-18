@@ -13,6 +13,7 @@ import '../../component/custom_widget.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/favorite_provider.dart';
+import '../../utils/theme/app.fonts.dart';
 
 class SpecialDayTemplatesScreen extends StatelessWidget {
   final String specialDayName;
@@ -222,12 +223,12 @@ class SpecialDayTemplatesScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 18, 20, 16),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
+                      const Padding(
                         padding: EdgeInsets.only(top: 3),
                         child: Icon(
                           Icons.local_offer_rounded,
@@ -235,14 +236,14 @@ class SpecialDayTemplatesScreen extends StatelessWidget {
                           size: 18,
                         ),
                       ),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: AppText(
                           'Premium template',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: AppFontSize.fontSize16,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF202124),
+                            color: const Color(0xFF202124),
                           ),
                         ),
                       ),
@@ -256,8 +257,8 @@ class SpecialDayTemplatesScreen extends StatelessWidget {
                     child: AppText(
                       '"$templateName" is part of the premium\n'
                           'collection. Upgrade your plan to use it in your designs.',
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style:  TextStyle(
+                        fontSize: AppFontSize.fontSize14,
                         height: 1.45,
                         color: Color(0xFF666666),
                       ),
@@ -301,10 +302,10 @@ class SpecialDayTemplatesScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(9),
                           ),
                         ),
-                        child: const AppText(
+                        child:  AppText(
                           'Upgrade to premium',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppFontSize.fontSize13,
                             fontWeight: FontWeight.w700,
                           ),
                         ),

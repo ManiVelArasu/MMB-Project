@@ -10,6 +10,7 @@ import '../../Api Model/plan_usage.dart';
 import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
 import '../../network/provider/plan_provider.dart';
+import '../shimmer/plan_usage_shimmer.dart';
 
 class PlanUsageScreen extends StatefulWidget {
   const PlanUsageScreen({super.key});
@@ -123,9 +124,9 @@ class _PlanUsageView extends StatelessWidget {
 
       appBar: CustomAppBar(title: "Plan Usage", showRightIcon: false),
 
-      body: provider.isLoadingPlanUsage && provider.planUsageData == null
-          ? const Center(child: CircularProgressIndicator(color: Colors.red))
-          : provider.planUsageError != null && provider.planUsageData == null
+      body: provider.isLoadingPlanUsage &&
+          provider.planUsageData == null
+          ? const CommonPlanUsageShimmer(): provider.planUsageError != null && provider.planUsageData == null
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -258,10 +259,10 @@ class _PlanUsageView extends StatelessWidget {
 
               // Unlimited
               if (unlimited)
-                const AppText(
+                 AppText(
                   "Unlimited",
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: AppFontSize.fontSize10,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF171A2B),
                   ),
@@ -390,7 +391,7 @@ class _PlanUsageView extends StatelessWidget {
               child: AppText(
                 "Additional Credits Purchased "
                 "+${_formatNumber(topupGranted)}",
-                style: const TextStyle(fontSize: 8, color: Color(0xFF555555)),
+                style:  TextStyle( fontSize: AppFontSize.fontSize10, color: Color(0xFF555555)),
               ),
             ),
           ],
@@ -459,8 +460,8 @@ class _PlanUsageView extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 9,
+            style:  TextStyle(
+              fontSize: AppFontSize.fontSize10,
               fontWeight: FontWeight.w600,
               color: Color(0xFF171A2B),
             ),
@@ -471,7 +472,7 @@ class _PlanUsageView extends StatelessWidget {
           AppText(
             credits.isEmpty ? "Credits" : "$credits Credits",
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 8, color: Color(0xFF333333)),
+            style:  TextStyle( fontSize: AppFontSize.fontSize10, color: Color(0xFF333333)),
           ),
         ],
       ),

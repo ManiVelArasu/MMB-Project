@@ -6,6 +6,7 @@ import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../network/provider/plan_provider.dart';
+import '../shimmer/subscription_shimmer.dart';
 
 class MySubscriptionScreen extends StatelessWidget {
   final bool hideBackButton;
@@ -188,8 +189,8 @@ class _MySubscriptionView extends StatelessWidget {
             // LOADING
             // ==================================================
 
-            if (provider.isLoadingSubscription && data == null) {
-              return const Center(child: CircularProgressIndicator());
+            if (provider.isLoadingSubscription && apiData == null) {
+              return const CommonManagePlanShimmer();
             }
 
             // ==================================================
@@ -454,11 +455,11 @@ class _MySubscriptionView extends StatelessWidget {
                     color: const Color(0xFFFF2027),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const AppText(
+                  child:  AppText(
                     "SUBSCRIPTION CANCELLED",
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 11,
+                      fontSize: AppFontSize.fontSize11,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -470,9 +471,9 @@ class _MySubscriptionView extends StatelessWidget {
                 AppText(
                   "$planName access ends "
                   "$formattedEndDate",
-                  style: const TextStyle(
+                  style:  TextStyle(
                     color: Colors.white,
-                    fontSize: 17,
+                    fontSize: AppFontSize.fontSize17,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -485,9 +486,9 @@ class _MySubscriptionView extends StatelessWidget {
                   "until your current cycle ends, "
                   "then your account moves to "
                   "the Free plan.",
-                  style: const TextStyle(
+                  style:  TextStyle(
                     color: Colors.white,
-                    fontSize: 12,
+                    fontSize: AppFontSize.fontSize12,
                     height: 1.45,
                     fontWeight: FontWeight.w500,
                   ),
@@ -512,11 +513,11 @@ class _MySubscriptionView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppText(
+                 AppText(
                   "What's included",
                   style: TextStyle(
                     color: Color(0xFF171A2B),
-                    fontSize: 17,
+                    fontSize: AppFontSize.fontSize17,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

@@ -6,6 +6,7 @@ import '../../component/custom_widget.dart';
 import '../../network/provider/faq_provider.dart';
 
 import '../../network/provider/custom_theme_provider.dart';
+import '../../utils/theme/app.fonts.dart';
 import '../industry/widgets/scaffold_widget.dart';
 
 class FaqScreen extends StatelessWidget {
@@ -35,7 +36,7 @@ class FaqScreen extends StatelessWidget {
                       "Got questions? We've got answers!",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: AppFontSize.fontSize20,
                         fontWeight: FontWeight.w600,
                         color: isDark ? Colors.white70 : Colors.black87,
                       ),
@@ -71,7 +72,7 @@ class FaqScreen extends StatelessWidget {
                                   child: Text(
                                     faq.question,
                                     style: TextStyle(
-                                      fontSize: 22,
+                                      fontSize: AppFontSize.fontSize22,
                                       fontWeight: FontWeight.w600,
                                       color: isDark
                                           ? Colors.white
@@ -103,10 +104,10 @@ class FaqScreen extends StatelessWidget {
                           if (faq.isExpanded) ...[
                             const SizedBox(height: 18),
 
-                            Text(
+                            AppText(
                               faq.answer,
                               style: TextStyle(
-                                fontSize: 17,
+                                fontSize: AppFontSize.fontSize17,
                                 height: 1.6,
                                 color: isDark
                                     ? Colors.grey.shade400

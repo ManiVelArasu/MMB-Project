@@ -397,7 +397,7 @@ class BusinessProfileView extends StatelessWidget {
                                     color: isDark
                                         ? Colors.white60
                                         : Colors.grey,
-                                    fontSize: 12.sp,
+                                    fontSize: AppFontSize.fontSize12,
                                   ),
                                 ),
                               )
@@ -787,7 +787,7 @@ class BusinessProfileView extends StatelessWidget {
                           "${provider.me!.data.name!.isEmpty ? "${provider.me?.data.name}" : provider.me?.data.name}",
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: 20.sp,
+                            fontSize: AppFontSize.fontSize20,
                             fontWeight: FontWeight.w900,
                           ),
                         ),

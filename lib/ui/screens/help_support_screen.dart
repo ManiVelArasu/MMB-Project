@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import '../../component/appbar_widget.dart';
 import '../../component/custom_widget.dart';
@@ -40,7 +41,7 @@ class HelpSupportScreen extends StatelessWidget {
                       "Our support team is available Monday to Saturday,\n10 AM – 7 PM to assist you with any queries.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 17,
+                        fontSize: AppFontSize.fontSize17,
                         fontWeight: FontWeight.w500,
                         color: isDark ? Colors.white70 : const Color(0xFF1F2937),
                         height: 1.5,
@@ -76,7 +77,7 @@ class HelpSupportScreen extends StatelessWidget {
                               AppText(
                                 "Chat Support",
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: AppFontSize.fontSize18,
                                   fontWeight: FontWeight.bold,
                                   color: isDark ? Colors.white : const Color(0xFF1F2937),
                                 ),
@@ -85,7 +86,7 @@ class HelpSupportScreen extends StatelessWidget {
                               AppText(
                                 "Get instant help through live chat. Our support team is ready to assist you with your queries.",
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: AppFontSize.fontSize14,
                                   color: isDark ? Colors.grey.shade400 : const Color(0xFF6B7280),
                                   height: 1.5,
                                 ),
@@ -100,10 +101,10 @@ class HelpSupportScreen extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   /// Email
-                  const AppText(
+                   AppText(
                     "Write to us",
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: AppFontSize.fontSize15,
                       color: Color(0xFF9CA3AF),
                     ),
                   ),
@@ -113,7 +114,7 @@ class HelpSupportScreen extends StatelessWidget {
                   AppText(
                     "support@makemybrand.com",
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: AppFontSize.fontSize20,
                       fontWeight: FontWeight.bold,
                       color: isDark ? Colors.blueAccent : const Color(0xFF1E3A8A),
                     ),
@@ -125,7 +126,7 @@ class HelpSupportScreen extends StatelessWidget {
                   AppText(
                     "Support Tickets",
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.fontSize13,
                       fontWeight: FontWeight.w600,
                       color: isDark ? Colors.white70 : Colors.black87,
                     ),

@@ -74,9 +74,9 @@ class AiRemoveBgScreen extends StatelessWidget {
                               Text(
                                 provider.bgErrorMessage!,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style:  TextStyle(
                                   color: accent,
-                                  fontSize: 12,
+                                  fontSize: AppFontSize.fontSize12,
                                 ),
                               ),
                             ],
@@ -224,7 +224,7 @@ class AiRemoveBgScreen extends StatelessWidget {
                   ),
                 ],
               )
-            : const Column(
+            :  Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
@@ -235,7 +235,7 @@ class AiRemoveBgScreen extends StatelessWidget {
                   SizedBox(height: 10),
                   AppText(
                     'Drag & drop your image',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: TextStyle( fontSize: AppFontSize.fontSize13, fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 6),
                   AppText(
@@ -244,7 +244,7 @@ class AiRemoveBgScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.black38,
-                      fontSize: 11,
+                      fontSize: AppFontSize.fontSize11,
                       height: 1.4,
                     ),
                   ),
@@ -309,9 +309,9 @@ class AiRemoveBgScreen extends StatelessWidget {
                   color: Colors.white,
                 ),
               )
-            : const AppText(
+            :  AppText(
                 'REMOVE BACKGROUND',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                style: TextStyle( fontSize: AppFontSize.fontSize12, fontWeight: FontWeight.w600),
               ),
       ),
     );

@@ -279,7 +279,7 @@ class ThemeDetailView extends StatelessWidget {
                           child: AppText(
                             "Also works great for",
                             style: TextStyle(
-                              fontSize: 11.sp,
+                              fontSize: AppFontSize.fontSize11,
                               color: isDark
                                   ? Colors.grey.shade400
                                   : Colors.grey.shade600,
@@ -298,7 +298,7 @@ class ThemeDetailView extends StatelessWidget {
                         "Beyond the obvious",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 20.sp,
+                          fontSize: AppFontSize.fontSize20,
                           fontWeight: FontWeight.w500,
                           color: isDark ? Colors.white : Colors.black,
                         ),

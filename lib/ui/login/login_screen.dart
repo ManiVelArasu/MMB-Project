@@ -74,7 +74,7 @@ class LoginScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            AppText(
                               "Mobile number",
                               style: theme.bodySmall!.copyWith(
                                 fontWeight: FontWeight.w600,
@@ -107,7 +107,7 @@ class LoginScreen extends StatelessWidget {
                                   authProvider.mobileError!,
                                   style: TextStyle(
                                     color: Colors.red,
-                                    fontSize: 12.sp,
+                                    fontSize: AppFontSize.fontSize12,
                                   ),
                                 ),
                               ),
@@ -173,7 +173,7 @@ class LoginScreen extends StatelessWidget {
                           child: RichText(
                             textAlign: TextAlign.center,
                             text: TextSpan(
-                              style: theme.bodyMedium!.copyWith(fontSize: 14),
+                              style: theme.bodyMedium!.copyWith( fontSize: AppFontSize.fontSize14,),
                               children: [
                                 TextSpan(
                                   text: "By continuing, you agree to our ",

@@ -226,10 +226,10 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                           ),
                           SizedBox(width: 10.w),
                           Expanded(
-                            child: Text(
+                            child: AppText(
                               feature.displayLabel ?? feature.label ?? "",
                               style: TextStyle(
-                                fontSize: 13.5.sp,
+                                fontSize: AppFontSize.fontSize13,
                                 fontWeight: FontWeight.w600,
                                 color: isAvailable
                                     ? Colors.black87
@@ -271,10 +271,10 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                       ),
                       elevation: 0,
                     ),
-                    child: Text(
+                    child: AppText(
                       'START ${widget.plan.name?.toUpperCase() ?? "PLAN"}',
                       style: TextStyle(
-                        fontSize: 16.sp,
+                        fontSize: AppFontSize.fontSize16,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         letterSpacing: 1.1,
@@ -296,7 +296,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                             : "You'll be charged ₹$annualPrice/year until cancelled.",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 11.5.sp,
+                          fontSize: AppFontSize.fontSize11,
                           fontWeight: FontWeight.w500,
                           color: Colors.grey.shade700,
                         ),
@@ -309,10 +309,10 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                             onTap: () {},
                             child: const TextStyleLink(text: 'Terms of Use'),
                           ),
-                          Text(
+                          AppText(
                             ' | ',
                             style: TextStyle(
-                              fontSize: 12.sp,
+                              fontSize: AppFontSize.fontSize12,
                               color: Colors.grey.shade700,
                             ),
                           ),
@@ -381,7 +381,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                         AppText(
                           '₹$originalPrice',
                           style: TextStyle(
-                            fontSize: 13.sp,
+                            fontSize: AppFontSize.fontSize13,
                             fontWeight: FontWeight.w600,
                             color: Colors.grey.shade500,
                             decoration: TextDecoration.lineThrough,
@@ -393,7 +393,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                       AppText(
                         amount,
                         style: TextStyle(
-                          fontSize: 20.sp,
+                          fontSize: AppFontSize.fontSize20,
                           fontWeight: FontWeight.w600,
                           color: Colors.black,
                         ),
@@ -401,7 +401,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                       AppText(
                         period,
                         style: TextStyle(
-                          fontSize: 12.sp,
+                          fontSize: AppFontSize.fontSize12,
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
                         ),

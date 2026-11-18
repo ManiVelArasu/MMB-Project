@@ -576,13 +576,13 @@ class _ChangePlanScreenState extends State<ChangePlanScreen> {
                     mainAxisAlignment:
                     MainAxisAlignment.spaceBetween,
                     children: const [
-                      Text(
+                      AppText(
                         "Prorated difference",
                         style: TextStyle(
                           color: Colors.grey,
                         ),
                       ),
-                      Text(
+                      AppText(
                         "₹500",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
@@ -596,18 +596,18 @@ class _ChangePlanScreenState extends State<ChangePlanScreen> {
                   Row(
                     mainAxisAlignment:
                     MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
+                    children:  [
+                      AppText(
                         "Charged today",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text(
+                      AppText(
                         "₹500",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: AppFontSize.fontSize16,
                         ),
                       ),
                     ],
@@ -648,13 +648,13 @@ class _ChangePlanScreenState extends State<ChangePlanScreen> {
 
             const SizedBox(height: 6),
 
-            const Center(
-              child: Text(
+             Center(
+              child: AppText(
                 "Downgrades take effect from your next billing cycle "
                     "instead of charging you today.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: AppFontSize.fontSize10,
                   color: Colors.grey,
                 ),
               ),
