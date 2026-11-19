@@ -11550,41 +11550,6 @@ class _InteractiveBackgroundLayerState
                 ),
               ),
             ),
-            Positioned(
-              right: -18,
-              top: -18,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: widget.onSelected,
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF2196F3),
-                        width: 1.5,
-                      ),
-                      boxShadow: const [
-                        BoxShadow(
-                          blurRadius: 6,
-                          offset: Offset(0, 2),
-                          color: Color(0x22000000),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.more_horiz_rounded,
-                      size: 20,
-                      color: Color(0xFF222222),
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
