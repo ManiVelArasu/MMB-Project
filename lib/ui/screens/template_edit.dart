@@ -482,6 +482,9 @@ class _EditorViewState extends State<EditorView> {
   }
 
   Timer? _projectSaveTimer;
+  // Cached so dispose() can do the final save without touching `context`.
+  EditorProvider? _editorRef;
+  ProjectProvider? _projectRef;
   bool _projectSaveListenerAttached = false;
   bool _projectAutoSaveReady = false;
   bool _projectSaveRunning = false;
@@ -738,6 +741,8 @@ class _EditorViewState extends State<EditorView> {
     // should not immediately trigger an extra PATCH because of provider
     // notifications that happen during screen setup.
     final editorProvider = context.read<EditorProvider>();
+    _editorRef = editorProvider;
+    _projectRef = context.read<ProjectProvider>();
     final initialContent = jsonEncode(editorProvider.exportCurrentPageJson());
     _lastQueuedContent = initialContent;
     _lastSavedProjectContent = initialContent;
@@ -1077,7 +1082,7 @@ class _EditorViewState extends State<EditorView> {
             '${dir.path}/shape_${DateTime.now().microsecondsSinceEpoch}.$ext',
           );
           await file.writeAsBytes(bytes, flush: true);
-          provider.addImage(file.path, isLocal: true);
+          provider.addShape(file.path, isLocal: true);
           if (context.mounted) Navigator.pop(context);
           return;
         }
@@ -1134,7 +1139,7 @@ class _EditorViewState extends State<EditorView> {
         // Render remote SVG as a real local PNG image layer. The existing
         // canvas renderer supports image layers, so the selected shape is
         // immediately visible on the canvas.
-        provider.addImage(file.path, isLocal: true);
+        provider.addShape(file.path, isLocal: true);
 
         if (context.mounted) Navigator.pop(context);
       } finally {
@@ -1211,7 +1216,7 @@ class _EditorViewState extends State<EditorView> {
 
       await file.writeAsBytes(byteData.buffer.asUint8List(), flush: true);
 
-      provider.addImage(file.path, isLocal: true);
+      provider.addShape(file.path, isLocal: true);
 
       if (context.mounted) {
         Navigator.pop(context);
@@ -4173,34 +4178,35 @@ class _EditorViewState extends State<EditorView> {
   }
 
   @override
-  Future<void> dispose() async {
+  void dispose() {
     _projectSaveTimer?.cancel();
 
-    // Best-effort final PATCH when the editor is closed. We deliberately call
-    // the repository directly here because dispose() cannot await a Future and
-    // the screen-scoped ProjectProvider may be disposed immediately afterwards.
-    if (_projectAutoSaveReady) {
+    // Final save when the editor closes. dispose() must be synchronous: no
+    // await, no setState, no context. Anything pending in the 500 ms debounce
+    // (e.g. a mask applied right before pressing back) is flushed here.
+    final editor = _editorRef;
+    final project = _projectRef;
+    if (editor != null && _projectSaveListenerAttached) {
+      editor.removeListener(_onEditorChangedForProjectSave);
+      _projectSaveListenerAttached = false;
+    }
+    if (_projectAutoSaveReady && editor != null && project != null) {
       try {
-        final projectProvider = context.read<ProjectProvider>();
-        final editorProvider = context.read<EditorProvider>();
-        final uid = projectProvider.projectUid?.trim() ?? '';
+        final uid = project.projectUid?.trim() ?? '';
         if (uid.isNotEmpty) {
-          final thumbnailBase64 = await _getThumbnailBase64(editorProvider);
-          final content = jsonEncode(editorProvider.exportCurrentPageJson());
+          final content = jsonEncode(editor.exportCurrentPageJson());
           if (content != _lastSavedProjectContent) {
             // ignore: discarded_futures
             ProjectRepository.instance.updateProject(
               projectUid: uid,
-              name: projectProvider.projectName ?? 'Untitled design',
+              name: project.projectName ?? 'Untitled design',
               content: content,
-              thumbnailS3Key: thumbnailBase64,
             );
           }
         }
-        if (_projectSaveListenerAttached) {
-          editorProvider.removeListener(_onEditorChangedForProjectSave);
-        }
-      } catch (_) {}
+      } catch (e, st) {
+        debugPrintStack(stackTrace: st);
+      }
     }
 
     _musicPositionSubscription?.cancel();
@@ -4250,6 +4256,13 @@ class _EditorViewState extends State<EditorView> {
         }
       }
       final all = <String>{...imageSources, ...otherSources};
+      // Masks saved with the project: download them now so they are ready
+      // (and cached) before the canvas is shown.
+      final maskSources = <String>{};
+      for (final it in provider.items) {
+        final m = provider.imageMaskUrl(it.id ?? '')?.trim() ?? '';
+        if (m.isNotEmpty) maskSources.add(m);
+      }
       if (mounted) {
         setState(() {
           _assetsTotal = all.length;
@@ -4281,6 +4294,11 @@ class _EditorViewState extends State<EditorView> {
           } catch (_) {}
           if (mounted) setState(() => _assetsLoaded++);
         }),
+      );
+      await Future.wait(
+        maskSources.map(
+              (u) => ItemMaskCache.load(u).then<void>((_) {}, onError: (_) {}),
+        ),
       );
     } catch (_) {}
     if (mounted) setState(() => _assetsReady = true);
@@ -5156,20 +5174,30 @@ class _EditorViewState extends State<EditorView> {
               onPressed: () => Navigator.pop(context),
             ),
             const Spacer(),
+            // Dark = something to undo, faded = nothing to undo.
             _editorToolbarButton(
               icon: Icons.undo_rounded,
-              backgroundColor: const Color(0xFFE0E0E0),
-              iconColor: const Color(0xFF555555),
+              backgroundColor: provider.canUndo
+                  ? const Color(0xFFE0E0E0)
+                  : const Color(0xFFF1F1F1),
+              iconColor: provider.canUndo
+                  ? Colors.black
+                  : const Color(0xFFBDBDBD),
               tooltip: 'Undo',
-              onPressed: () => provider.undo(),
+              onPressed: provider.canUndo ? provider.undo : null,
             ),
             const SizedBox(width: 10),
+            // Dark = something to redo, faded = nothing to redo.
             _editorToolbarButton(
               icon: Icons.redo_rounded,
-              backgroundColor: const Color(0xFFF1F1F1),
-              iconColor: const Color(0xFFBDBDBD),
+              backgroundColor: provider.canRedo
+                  ? const Color(0xFFE0E0E0)
+                  : const Color(0xFFF1F1F1),
+              iconColor: provider.canRedo
+                  ? Colors.black
+                  : const Color(0xFFBDBDBD),
               tooltip: 'Redo',
-              onPressed: () => provider.redo(),
+              onPressed: provider.canRedo ? provider.redo : null,
             ),
             const SizedBox(width: 10),
             _editorToolbarButton(
@@ -5525,7 +5553,7 @@ class _EditorViewState extends State<EditorView> {
     required Color backgroundColor,
     required Color iconColor,
     required String tooltip,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
     VoidCallback? onLongPress,
   }) {
     return Tooltip(
@@ -5563,6 +5591,15 @@ class _EditorViewState extends State<EditorView> {
 
     if (type == 'text' || type == 'textbox') {
       return _buildTextEditorToolbar(context, provider, isDark);
+    }
+
+    // Shapes picked from the Shapes panel are flat PNG images. They must open
+    // the same bottom toolbar as every other shape (FILL / OUTLINE / ANIMATE /
+    // FRONT / BACK / DUPLICATE / DELETE), not the image toolbar.
+    if (animSelId != null &&
+        type == 'image' &&
+        provider.isShapeImage(animSelId)) {
+      return _buildShapeEditorToolbar(context, provider, isDark);
     }
 
     if (type == 'shape' ||
@@ -7742,7 +7779,11 @@ class _EditorViewState extends State<EditorView> {
       orElse: () => provider.items.first,
     );
 
-    final fillColor = item.color ?? Colors.white;
+    // Shape-images (Shapes panel) are recoloured through imageFill, real
+    // shapes through item.color.
+    final fillColor = item.type == 'image'
+        ? (provider.imageFill(id) ?? Colors.black)
+        : (item.color ?? Colors.white);
     final outlineColor = item.outlineColor;
     final outlineStyle = provider.outlineStyle(id);
     final outlineJoin = provider.outlineJoin(id);
@@ -8063,8 +8104,11 @@ class _EditorViewState extends State<EditorView> {
       orElse: () => provider.items.first,
     );
 
+    final isImageFill = !isOutline && item.type == 'image';
     Color current = isOutline
         ? (item.outlineColor)
+        : isImageFill
+        ? (provider.imageFill(id) ?? Colors.black)
         : (item.color ?? Colors.white);
 
     final picked = await showDialog<Color>(
@@ -8125,6 +8169,13 @@ class _EditorViewState extends State<EditorView> {
                   onPressed: () => Navigator.pop(dialogContext),
                   child: const AppText('CANCEL'),
                 ),
+                if (isImageFill)
+                  TextButton(
+                    // Transparent = "remove the recolour".
+                    onPressed: () =>
+                        Navigator.pop(dialogContext, Colors.transparent),
+                    child: const AppText('RESET'),
+                  ),
                 FilledButton(
                   onPressed: () => Navigator.pop(dialogContext, current),
                   child: const AppText('APPLY'),
@@ -8140,6 +8191,8 @@ class _EditorViewState extends State<EditorView> {
 
     if (isOutline) {
       provider.updateOutline(id, item.outlineWidth, picked);
+    } else if (isImageFill) {
+      provider.updateImageFill(id, picked.a == 0 ? null : picked);
     } else {
       provider.updateShapeFill(id, picked);
     }
@@ -8238,6 +8291,24 @@ class _EditorViewState extends State<EditorView> {
                   'CLOSE',
                       () => provider.clearSelection(),
                 ),
+                // Shapes from the Shapes panel: same first tools as a shape.
+                if (provider.isShapeImage(id)) ...[
+                  _shapeColorTool(
+                    'FILL',
+                    provider.imageFill(id) ?? Colors.black,
+                        () => _showShapeColorPicker(
+                      context,
+                      provider,
+                      id,
+                      isOutline: false,
+                    ),
+                  ),
+                  _bottomTool(
+                    Icons.border_style_rounded,
+                    'OUTLINE',
+                        () => _showOutlineSheet(context, provider, id, isDark),
+                  ),
+                ],
                 if (!_isCanvasBackground(item))
                   _bottomTool(
                     Icons.animation,
@@ -8303,7 +8374,9 @@ class _EditorViewState extends State<EditorView> {
                   'ADJUST',
                       () => _showAdjustSheet(context, provider, id, isDark),
                 ),
-                if (!_isCanvasBackground(item) && item.type != 'video')
+                if (!provider.isShapeImage(id) &&
+                    !_isCanvasBackground(item) &&
+                    item.type != 'video')
                   _bottomTool(
                     Icons.border_style_rounded,
                     'OUTLINE',

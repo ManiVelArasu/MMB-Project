@@ -69,6 +69,7 @@ class EditableItemWidget extends StatelessWidget {
           letterSpacing: provider.textLetterSpacing(currentItem.id ?? ''),
           lineSpacing: provider.textLineSpacing(currentItem.id ?? ''),
           textAlign: provider.textAlignment(currentItem.id ?? ''),
+          imageFill: provider.imageFill(currentItem.id ?? ''),
           outlineWidth: currentItem.outlineWidth,
           outlineColor: currentItem.outlineColor,
           outlineStyle: provider.outlineStyle(currentItem.id ?? ''),
@@ -947,6 +948,15 @@ class EditableItemWidget extends StatelessWidget {
 
       Widget rendered = image;
 
+      // Solid recolour (Fill) - keeps the image's alpha, swaps every colour.
+      final imageFill = provider.imageFill(id);
+      if (imageFill != null) {
+        rendered = ColorFiltered(
+          colorFilter: ColorFilter.mode(imageFill, BlendMode.srcIn),
+          child: rendered,
+        );
+      }
+
       final preset = _matrixForFilter(item.filterType);
       if (preset != null && intensity > 0.001) {
         final matrix = _mixMatrices(_identityMatrix(), preset, intensity);
@@ -1344,6 +1354,8 @@ class _ItemViewState {
   final double lineSpacing;
   final TextAlign textAlign;
 
+  final Color? imageFill;
+
   // Outline (shape stroke / image border).
   final double outlineWidth;
   final Color? outlineColor;
@@ -1373,6 +1385,7 @@ class _ItemViewState {
     required this.letterSpacing,
     required this.lineSpacing,
     required this.textAlign,
+    required this.imageFill,
     required this.outlineWidth,
     required this.outlineColor,
     required this.outlineStyle,
@@ -1406,6 +1419,7 @@ class _ItemViewState {
               letterSpacing == other.letterSpacing &&
               lineSpacing == other.lineSpacing &&
               textAlign == other.textAlign &&
+              imageFill == other.imageFill &&
               outlineWidth == other.outlineWidth &&
               outlineColor == other.outlineColor &&
               outlineStyle == other.outlineStyle &&
@@ -1436,6 +1450,7 @@ class _ItemViewState {
       letterSpacing,
       lineSpacing,
       textAlign,
+      imageFill,
       outlineWidth,
       outlineColor,
       outlineStyle,
@@ -1443,6 +1458,114 @@ class _ItemViewState {
       rawPaintKey,
     ),
   );
+}
+
+/// Downloads + decodes mask images once and keeps them for the whole app
+/// session. A project that is re-opened asks for its masks while the editor is
+/// still loading (many images downloading at the same time), so the request is
+/// retried and the decoded image is cached instead of failing silently.
+class ItemMaskCache {
+  static final Map<String, Future<ui.Image>> _cache = {};
+
+  static Future<ui.Image> load(String url) {
+    final key = url.trim();
+    final existing = _cache[key];
+    if (existing != null) return existing;
+    final future = _loadWithRetry(key);
+    _cache[key] = future;
+    // A failed load must not stay cached, otherwise it can never recover.
+    future.then<void>((_) {}, onError: (Object _) {
+      if (identical(_cache[key], future)) _cache.remove(key);
+    });
+    return future;
+  }
+
+  static Future<ui.Image> _loadWithRetry(String url) async {
+    Object? lastError;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await _download(url);
+      } catch (e, st) {
+        lastError = e;
+        debugPrint('Mask load failed (attempt ${attempt + 1}) $url: $e');
+        debugPrintStack(stackTrace: st, maxFrames: 3);
+        await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
+      }
+    }
+    throw lastError ?? Exception('Mask load failed');
+  }
+
+  static Future<ui.Image> _download(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null ||
+        !uri.hasScheme ||
+        !(uri.scheme == 'http' || uri.scheme == 'https')) {
+      throw const FormatException('Mask URL is not a valid HTTP(S) URL');
+    }
+
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 20);
+    Uint8List bytes;
+    try {
+      final request = await client.getUrl(uri);
+      request.headers.set(
+        HttpHeaders.acceptHeader,
+        'image/png,image/jpeg,image/webp,image/*,*/*;q=0.8',
+      );
+      final response = await request.close().timeout(
+        const Duration(seconds: 30),
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw HttpException(
+          'Mask request failed with HTTP ${response.statusCode}',
+          uri: uri,
+        );
+      }
+      bytes = await consolidateHttpClientResponseBytes(response);
+    } finally {
+      client.close(force: true);
+    }
+
+    final trimmedText = utf8.decode(bytes, allowMalformed: true).trimLeft();
+    final isSvg =
+        trimmedText.startsWith('<svg') ||
+            (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
+            trimmedText.startsWith('<!DOCTYPE svg');
+
+    if (isSvg) {
+      final svgText = utf8.decode(bytes, allowMalformed: false);
+      final pictureInfo = await svg.vg.loadPicture(
+        svg.SvgStringLoader(svgText),
+        null,
+      );
+      try {
+        final width = pictureInfo.size.width.ceil().clamp(1, 4096).toInt();
+        final height = pictureInfo.size.height.ceil().clamp(1, 4096).toInt();
+        return await pictureInfo.picture.toImage(width, height);
+      } finally {
+        pictureInfo.picture.dispose();
+      }
+    }
+
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) {
+      final preview = utf8
+          .decode(bytes.take(180).toList(), allowMalformed: true)
+          .replaceAll(RegExp(r'\\s+'), ' ');
+      throw FormatException(
+        'Mask response is not SVG or a supported raster image. '
+            'Response begins with: $preview',
+      );
+    }
+    final pngBytes = Uint8List.fromList(img.encodePng(decoded));
+    final codec = await ui.instantiateImageCodec(pngBytes);
+    try {
+      final frame = await codec.getNextFrame();
+      return frame.image;
+    } finally {
+      codec.dispose();
+    }
+  }
 }
 
 /// Applies a transparent PNG mask to the image content without changing the
@@ -1458,9 +1581,9 @@ class _NetworkAlphaMask extends StatefulWidget {
 }
 
 class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
+  // The decoded image is shared through ItemMaskCache, so it is never
+  // disposed here.
   ui.Image? _maskImage;
-  ImageStream? _stream;
-  ImageStreamListener? _listener;
   bool _failed = false;
 
   @override
@@ -1473,8 +1596,6 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
   void didUpdateWidget(covariant _NetworkAlphaMask oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.maskUrl != widget.maskUrl) {
-      _removeListener();
-      _maskImage?.dispose();
       _maskImage = null;
       _failed = false;
       _resolveMask();
@@ -1482,108 +1603,19 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
   }
 
   Future<void> _resolveMask() async {
+    final url = widget.maskUrl;
     try {
-      final uri = Uri.tryParse(widget.maskUrl);
-      if (uri == null ||
-          !uri.hasScheme ||
-          !(uri.scheme == 'http' || uri.scheme == 'https')) {
-        throw const FormatException('Mask URL is not a valid HTTP(S) URL');
-      }
-
-      // Fetch the bytes directly instead of using NetworkImage's platform
-      // decoder. Some CDN mask assets are served in formats the Android image
-      // decoder cannot decode. Re-encode supported raster formats as PNG.
-      final client = HttpClient();
-      Uint8List bytes;
-      try {
-        final request = await client.getUrl(uri);
-        request.headers.set(
-          HttpHeaders.acceptHeader,
-          'image/png,image/jpeg,image/webp,image/*,*/*;q=0.8',
-        );
-        final response = await request.close();
-        if (response.statusCode < 200 || response.statusCode >= 300) {
-          throw HttpException(
-            'Mask request failed with HTTP ${response.statusCode}',
-            uri: uri,
-          );
-        }
-        bytes = await consolidateHttpClientResponseBytes(response);
-      } finally {
-        client.close(force: true);
-      }
-
-      // CDN mask assets may be SVG or raster images. Convert either format
-      // into a ui.Image so the same alpha-mask shader can render it.
-      final trimmedText = utf8.decode(bytes, allowMalformed: true).trimLeft();
-      final isSvg =
-          trimmedText.startsWith('<svg') ||
-              (trimmedText.startsWith('<?xml') && trimmedText.contains('<svg')) ||
-              trimmedText.startsWith('<!DOCTYPE svg');
-
-      ui.Image decodedImage;
-      if (isSvg) {
-        final svgText = utf8.decode(bytes, allowMalformed: false);
-        final pictureInfo = await svg.vg.loadPicture(
-          svg.SvgStringLoader(svgText),
-          null,
-        );
-        try {
-          final width = pictureInfo.size.width.ceil().clamp(1, 4096).toInt();
-          final height = pictureInfo.size.height.ceil().clamp(1, 4096).toInt();
-          decodedImage = await pictureInfo.picture.toImage(width, height);
-        } finally {
-          pictureInfo.picture.dispose();
-        }
-      } else {
-        final decoded = img.decodeImage(bytes);
-        if (decoded == null) {
-          final preview = utf8
-              .decode(bytes.take(180).toList(), allowMalformed: true)
-              .replaceAll(RegExp(r'\\s+'), ' ');
-          throw FormatException(
-            'Mask response is not SVG or a supported raster image. '
-                'Response begins with: $preview',
-          );
-        }
-        final pngBytes = Uint8List.fromList(img.encodePng(decoded));
-        final codec = await ui.instantiateImageCodec(pngBytes);
-        try {
-          final frame = await codec.getNextFrame();
-          decodedImage = frame.image;
-        } finally {
-          codec.dispose();
-        }
-      }
-
-      if (!mounted) {
-        decodedImage.dispose();
-        return;
-      }
+      final image = await ItemMaskCache.load(url);
+      if (!mounted || url != widget.maskUrl) return;
       setState(() {
-        _maskImage?.dispose();
-        _maskImage = decodedImage;
+        _maskImage = image;
         _failed = false;
       });
-    } catch (error, stackTrace) {
-      if (mounted) setState(() => _failed = true);
-      debugPrintStack(stackTrace: stackTrace);
+    } catch (error) {
+      if (mounted && url == widget.maskUrl) {
+        setState(() => _failed = true);
+      }
     }
-  }
-
-  void _removeListener() {
-    if (_stream != null && _listener != null) {
-      _stream!.removeListener(_listener!);
-    }
-    _stream = null;
-    _listener = null;
-  }
-
-  @override
-  void dispose() {
-    _removeListener();
-    _maskImage?.dispose();
-    super.dispose();
   }
 
   @override
@@ -1601,22 +1633,10 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
           TileMode.clamp,
           TileMode.clamp,
           Float64List.fromList(<double>[
-            sx,
-            0,
-            0,
-            0,
-            0,
-            sy,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
+            sx, 0, 0, 0,
+            0, sy, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1,
           ]),
           filterQuality: FilterQuality.medium,
         );
