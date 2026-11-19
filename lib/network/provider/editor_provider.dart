@@ -1883,14 +1883,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             // Only the FIRST (lowest) canvas-sized image is the background.
             // Later full-canvas images are overlays (rings, frames, textures)
             // and must stay selectable/editable.
-            final isTemplateBackground =
-                _templateBackgroundIds.isEmpty &&
-                    _isTemplateBackgroundObject(
-                      json,
-                      canvasWidth: canvasWidth,
-                      canvasHeight: canvasHeight,
-                      tolerant: true,
-                    );
+            // Template images (even canvas-sized ones) stay NORMAL layers so
+            // they can be selected, moved and resized like in the web editor.
+            // Only backgrounds the user sets in the editor (bg_ ids) are
+            // locked canvas backgrounds.
+            const isTemplateBackground = false;
 
             final imageItem = EditorItem(
               id: id,
@@ -3347,7 +3344,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           }
           _templateFlipX[id] = m['flipX'] == true;
           _templateFlipY[id] = m['flipY'] == true;
-          if (m['isBackground'] == true) _templateBackgroundIds.add(id);
+          // `isBackground` is ignored on purpose: older projects flagged the
+          // template's canvas-sized image as background, which blocked
+          // select / resize. It is a normal layer now.
         }
         return parsed;
       }
@@ -4042,30 +4041,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       return true;
     }
 
-    // Fallback for template/old-project backgrounds without a tracked id:
-    // anything that sits at the origin and covers (almost) the whole canvas,
-    // measured with its scale applied and against the real canvas size.
-    final sc = item.scale.abs() <= 0 ? 1.0 : item.scale.abs();
-    final cw = canvasWidth > 0 ? canvasWidth : 1080.0;
-    final ch = canvasHeight > 0 ? canvasHeight : 1350.0;
-    bool coversCanvas(EditorItem e) {
-      final s = e.scale.abs() <= 0 ? 1.0 : e.scale.abs();
-      return e.position.dx.abs() <= 12.0 &&
-          e.position.dy.abs() <= 12.0 &&
-          e.width * s >= cw * 0.95 &&
-          e.height * s >= ch * 0.95;
-    }
-
-    if (!coversCanvas(item)) return false;
-    // Only the lowest canvas-sized layer counts as the background; anything
-    // stacked above it is a normal, selectable item.
-    for (final e in _items) {
-      if ((e.type == 'image' || e.type == 'video' || e.type == 'shape') &&
-          coversCanvas(e)) {
-        return e.id == item.id;
-      }
-    }
-    return true;
+    // Anything else (including canvas-sized template images) is a normal,
+    // selectable layer.
+    return false;
   }
 
   void _removeBackgroundLayers() {
