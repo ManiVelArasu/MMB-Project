@@ -169,7 +169,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                       "Free Plan",
                       style: TextStyle(
                         fontSize: 20.sp,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         color: themeColor,
                       ),
                     ),

@@ -69,6 +69,18 @@ class EditableItemWidget extends StatelessWidget {
           letterSpacing: provider.textLetterSpacing(currentItem.id ?? ''),
           lineSpacing: provider.textLineSpacing(currentItem.id ?? ''),
           textAlign: provider.textAlignment(currentItem.id ?? ''),
+          outlineWidth: currentItem.outlineWidth,
+          outlineColor: currentItem.outlineColor,
+          outlineStyle: provider.outlineStyle(currentItem.id ?? ''),
+          outlineJoin: provider.outlineJoin(currentItem.id ?? ''),
+          // Shape fill / stroke live in the (mutated in place) raw map.
+          rawPaintKey: (() {
+            final r = provider.templateRawObject(currentItem.id ?? '');
+            if (r == null) return '';
+            return '${r['fill']}|${r['stroke']}|${r['strokeWidth']}|'
+                '${r['strokeDashArray']}|${r['strokeLineJoin']}|'
+                '${r['strokeLineCap']}';
+          })(),
         );
       },
       builder: (context, state, child) {
@@ -1000,6 +1012,31 @@ class EditableItemWidget extends StatelessWidget {
         }
       }
 
+      // User outline (colour / thickness / style) drawn on top of the image.
+      final outlineStyle = provider.outlineStyle(id);
+      if (!isBackground &&
+          item.outlineWidth > 0 &&
+          outlineStyle != 'none') {
+        return SizedBox.expand(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              rendered,
+              IgnorePointer(
+                child: CustomPaint(
+                  painter: _ItemOutlinePainter(
+                    color: item.outlineColor ?? const Color(0xFFD9D9D9),
+                    width: item.outlineWidth,
+                    style: outlineStyle,
+                    join: provider.outlineJoin(id),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
       return SizedBox.expand(child: rendered);
     }
 
@@ -1307,6 +1344,13 @@ class _ItemViewState {
   final double lineSpacing;
   final TextAlign textAlign;
 
+  // Outline (shape stroke / image border).
+  final double outlineWidth;
+  final Color? outlineColor;
+  final String outlineStyle;
+  final String outlineJoin;
+  final String rawPaintKey;
+
   _ItemViewState({
     required this.currentItem,
     required this.isSelected,
@@ -1329,6 +1373,11 @@ class _ItemViewState {
     required this.letterSpacing,
     required this.lineSpacing,
     required this.textAlign,
+    required this.outlineWidth,
+    required this.outlineColor,
+    required this.outlineStyle,
+    required this.outlineJoin,
+    required this.rawPaintKey,
   });
 
   @override
@@ -1356,7 +1405,12 @@ class _ItemViewState {
               textUnderline == other.textUnderline &&
               letterSpacing == other.letterSpacing &&
               lineSpacing == other.lineSpacing &&
-              textAlign == other.textAlign;
+              textAlign == other.textAlign &&
+              outlineWidth == other.outlineWidth &&
+              outlineColor == other.outlineColor &&
+              outlineStyle == other.outlineStyle &&
+              outlineJoin == other.outlineJoin &&
+              rawPaintKey == other.rawPaintKey;
 
   @override
   int get hashCode => Object.hash(
@@ -1382,6 +1436,11 @@ class _ItemViewState {
       letterSpacing,
       lineSpacing,
       textAlign,
+      outlineWidth,
+      outlineColor,
+      outlineStyle,
+      outlineJoin,
+      rawPaintKey,
     ),
   );
 }
@@ -1567,6 +1626,82 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
   }
 }
 
+/// Dash lengths for an outline style (same values the provider stores).
+List<double>? _outlineDashFor(String style) => switch (style) {
+  'dashed' => const <double>[12, 8],
+  'dotted' => const <double>[1, 6],
+  'fine_dotted' => const <double>[1, 3],
+  _ => null,
+};
+
+/// Splits [source] into dashes. [dash] = on/off lengths, repeated.
+Path _dashPath(Path source, List<double> dash) {
+  final out = Path();
+  if (dash.length < 2 || dash.any((d) => !d.isFinite || d <= 0)) {
+    return source;
+  }
+  for (final metric in source.computeMetrics()) {
+    var distance = 0.0;
+    var i = 0;
+    var draw = true;
+    while (distance < metric.length) {
+      final len = dash[i % dash.length];
+      if (draw) {
+        out.addPath(
+          metric.extractPath(distance, math.min(distance + len, metric.length)),
+          Offset.zero,
+        );
+      }
+      distance += len;
+      draw = !draw;
+      i++;
+    }
+  }
+  return out;
+}
+
+StrokeJoin _strokeJoinFor(String? join) => switch (join) {
+  'bevel' => StrokeJoin.bevel,
+  'miter' => StrokeJoin.miter,
+  _ => StrokeJoin.round,
+};
+
+/// Border drawn around an image (inside its box).
+class _ItemOutlinePainter extends CustomPainter {
+  _ItemOutlinePainter({
+    required this.color,
+    required this.width,
+    required this.style,
+    required this.join,
+  });
+
+  final Color color;
+  final double width;
+  final String style;
+  final String join;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (width <= 0 || size.isEmpty) return;
+    final rect = (Offset.zero & size).deflate(width / 2);
+    if (rect.isEmpty) return;
+    final dash = _outlineDashFor(style);
+    final round = style == 'dotted' || style == 'fine_dotted';
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width
+      ..strokeJoin = _strokeJoinFor(join)
+      ..strokeCap = round ? StrokeCap.round : StrokeCap.butt;
+    final path = Path()..addRect(rect);
+    canvas.drawPath(dash == null ? path : _dashPath(path, dash), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ItemOutlinePainter o) =>
+      o.color != color || o.width != width || o.style != style || o.join != join;
+}
+
 /// Renders Fabric.js Rect, Circle and Path objects imported from a template.
 class _FabricShapePainter extends CustomPainter {
   _FabricShapePainter(this.raw, {this.fillColor});
@@ -1630,16 +1765,32 @@ class _FabricShapePainter extends CustomPainter {
     final stroke = _c(raw['stroke']);
     final sw = _n(raw['strokeWidth']) / math.max(0.01, (sx + sy) / 2);
     final fp = Paint()..style = PaintingStyle.fill;
+    final avg = math.max(0.01, (sx + sy) / 2);
+    final dashRaw = raw['strokeDashArray'];
+    final List<double>? dash =
+    dashRaw is List && dashRaw.length >= 2
+        ? dashRaw.map((e) => _n(e) / avg).toList()
+        : null;
+    final capName = raw['strokeLineCap']?.toString();
     final sp = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = sw;
+      ..strokeWidth = sw
+      ..strokeJoin = _strokeJoinFor(raw['strokeLineJoin']?.toString())
+      ..strokeCap = capName == 'round'
+          ? StrokeCap.round
+          : (capName == 'square' ? StrokeCap.square : StrokeCap.butt);
+    void strokePath(Path p, Color c) {
+      canvas.drawPath(dash == null ? p : _dashPath(p, dash), sp..color = c);
+    }
+
     final type = (raw['type'] ?? '').toString().toLowerCase();
 
     if (type == 'circle' || type == 'ellipse') {
       final r = Rect.fromLTWH(0, 0, w, h);
       if (fill != null) canvas.drawOval(r, fp..color = fill);
-      if (stroke != null && sw > 0)
-        canvas.drawOval(r.deflate(sw / 2), sp..color = stroke);
+      if (stroke != null && sw > 0) {
+        strokePath(Path()..addOval(r.deflate(sw / 2)), stroke);
+      }
     } else if (type == 'rect' || type == 'rectangle') {
       final rx = _n(raw['rx']).clamp(0.0, w / 2);
       final ry = _n(raw['ry'], rx).clamp(0.0, h / 2);
@@ -1651,7 +1802,7 @@ class _FabricShapePainter extends CustomPainter {
           ),
         );
       if (fill != null) canvas.drawPath(path, fp..color = fill);
-      if (stroke != null && sw > 0) canvas.drawPath(path, sp..color = stroke);
+      if (stroke != null && sw > 0) strokePath(path, stroke);
     } else if (type == 'path' && raw['path'] is List) {
       final path = Path();
       Offset? start;
@@ -1679,14 +1830,16 @@ class _FabricShapePainter extends CustomPainter {
         }
       }
       if (fill != null) canvas.drawPath(path, fp..color = fill);
-      if (stroke != null && sw > 0) canvas.drawPath(path, sp..color = stroke);
+      if (stroke != null && sw > 0) strokePath(path, stroke);
     }
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _FabricShapePainter oldDelegate) =>
-      !mapEquals(oldDelegate.raw, raw) || oldDelegate.fillColor != fillColor;
+  // The provider edits `raw` in place (stroke colour / width / dash), so the
+  // old and new delegate hold the SAME map and a comparison can never see the
+  // change. Always repaint; shapes are cheap.
+  bool shouldRepaint(covariant _FabricShapePainter oldDelegate) => true;
 }
 
 /// Applies a Fabric.js `clipPath` (rect / circle / ellipse / path) to an image
