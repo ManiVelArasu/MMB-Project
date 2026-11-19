@@ -1523,280 +1523,354 @@ class _EditorViewState extends State<EditorView> {
       EditorProvider provider,
       bool isDark,
       ) {
+    // Chips + templates all come from the API through EditorProvider.
+    provider.fetchEditorTemplateCategories();
+    final chipScroll = ScrollController();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
-        return ChangeNotifierProvider(
-          create: (_) => HomeScreenProvider(),
-          child: Container(
-            height: MediaQuery.of(modalContext).size.height * 0.72,
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF17191E) : Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.grey.shade700
-                            : Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
+        // The sheet is a separate route: hand the editor provider down to it.
+        return ChangeNotifierProvider<EditorProvider>.value(
+          value: provider,
+          child: Consumer<EditorProvider>(
+            builder: (sheetContext, p, _) {
+              final chips = p.editorTemplateChips;
+              final selectedIndex = chips.isEmpty
+                  ? 0
+                  : p.selectedEditorTemplateCategoryIndex
+                  .clamp(0, chips.length - 1)
+                  .toInt();
+              final templates = p.editorSelectedCategoryTemplates;
+              final loadingTemplates = p.isEditorSelectedCategoryLoading;
+              final fg = isDark ? Colors.white : Colors.black;
+              final borderColor = isDark
+                  ? Colors.white24
+                  : const Color(0xFFD9D9D9);
+              final mutedColor = isDark ? Colors.white60 : Colors.black54;
+
+              Widget chip(int index) {
+                final selected = index == selectedIndex;
+                return GestureDetector(
+                  onTap: () => p.selectEditorTemplateCategory(index),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? (isDark
+                          ? const Color(0xFF4A2024)
+                          : const Color(0xFFFFE3E3))
+                          : (isDark ? const Color(0xFF24262B) : Colors.white),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: selected ? Colors.redAccent : borderColor,
                       ),
                     ),
-                    const Spacer(),
-                    InkWell(
-                      onTap: () => Navigator.pop(modalContext),
-                      borderRadius: BorderRadius.circular(20),
+                    child: AppText(
+                      chips[index].name,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: selected
+                            ? Colors.redAccent
+                            : (isDark ? Colors.white70 : Colors.black87),
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              // ‹ › buttons that scroll the chip row.
+              Widget arrow(IconData icon, double delta) {
+                return InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () {
+                    if (!chipScroll.hasClients) return;
+                    final target = (chipScroll.offset + delta)
+                        .clamp(0.0, chipScroll.position.maxScrollExtent)
+                        .toDouble();
+                    chipScroll.animateTo(
+                      target,
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOut,
+                    );
+                  },
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF24262B) : Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Icon(icon, size: 20, color: fg),
+                  ),
+                );
+              }
+
+              Widget templateCard(dynamic template) {
+                final uid = _templateStringValue(template, const [
+                  'uid',
+                  'templateUid',
+                  'template_uid',
+                ]);
+                final imageKey = _templateStringValue(template, const [
+                  'thumbnailS3Key',
+                  'thumbnail_s3_key',
+                  'previewS3Key',
+                  'preview_s3_key',
+                  's3Key',
+                  's3_key',
+                  'thumbnail',
+                  'image',
+                  'preview',
+                ]);
+                final imageUrl = _templateImageUrl(imageKey);
+
+                return GestureDetector(
+                  onTap: uid.isEmpty
+                      ? null
+                      : () async {
+                    Navigator.pop(modalContext);
+                    await provider.loadTemplateByUid(uid);
+                    if (mounted) setState(() {});
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF25272D)
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade200,
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: imageUrl.isEmpty
+                        ? const Center(
+                      child: Icon(
+                        Icons.image_outlined,
+                        color: Colors.grey,
+                        size: 30,
+                      ),
+                    )
+                        : Image.network(
+                      imageUrl,
+                      cacheWidth: 800,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: Colors.grey,
+                          size: 30,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              Widget body() {
+                if (chips.isEmpty) {
+                  if (p.isLoadingEditorTemplateCategories) {
+                    return Center(
+                      child: _templatesLoadingLabel(mutedColor),
+                    );
+                  }
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppText(
+                          p.editorTemplateCategoryError ??
+                              'No categories found',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () =>
+                              p.fetchEditorTemplateCategories(force: true),
+                          child: const AppText('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                // Request running and nothing to show yet.
+                if (loadingTemplates && templates.isEmpty) {
+                  return Center(child: _templatesLoadingLabel(mutedColor));
+                }
+
+                // Request finished, category has no templates.
+                if (templates.isEmpty) {
+                  return Align(
+                    alignment: Alignment.topCenter,
+                    child: CustomPaint(
+                      painter: _DashedRRectPainter(
+                        color: isDark
+                            ? Colors.white24
+                            : const Color(0xFFD0D0D0),
+                        radius: 14,
+                      ),
                       child: Container(
-                        padding: const EdgeInsets.all(7),
+                        width: double.infinity,
+                        height: 76,
+                        alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: isDark
-                              ? const Color(0xFF2A1A1C)
-                              : Colors.red.shade50,
-                          shape: BoxShape.circle,
+                              ? const Color(0xFF1E2026)
+                              : const Color(0xFFFAFAFA),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.red,
-                          size: 18,
+                        child: AppText(
+                          'No templates in this category yet',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: mutedColor,
+                          ),
                         ),
                       ),
                     ),
+                  );
+                }
+
+                return GridView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 18),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: .8,
+                  ),
+                  itemCount: templates.length,
+                  itemBuilder: (_, index) => templateCard(templates[index]),
+                );
+              }
+
+              return Container(
+                height: MediaQuery.of(modalContext).size.height * 0.72,
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF17191E) : Colors.white,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(28),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        const Spacer(),
+                        InkWell(
+                          onTap: () => Navigator.pop(modalContext),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF2A1A1C)
+                                  : Colors.red.shade50,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.red,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    AppText(
+                      'Templates',
+                      style: TextStyle(
+                        fontSize: AppFontSize.fontSize18,
+                        fontWeight: FontWeight.w600,
+                        color: fg,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    AppText(
+                      'Choose a template to replace the current design',
+                      style: TextStyle(fontSize: 12, color: mutedColor),
+                    ),
+                    const SizedBox(height: 12),
+                    if (chips.isNotEmpty)
+                      Row(
+                        children: [
+                          arrow(Icons.chevron_left_rounded, -180),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: SizedBox(
+                              height: 38,
+                              child: ListView.builder(
+                                controller: chipScroll,
+                                scrollDirection: Axis.horizontal,
+                                itemCount: chips.length,
+                                itemBuilder: (_, index) => chip(index),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          arrow(Icons.chevron_right_rounded, 180),
+                        ],
+                      ),
+                    if (chips.isNotEmpty) const SizedBox(height: 12),
+                    Expanded(child: body()),
                   ],
                 ),
-                const SizedBox(height: 8),
-                AppText(
-                  'Templates',
-                  style: TextStyle(
-                    fontSize: AppFontSize.fontSize18,
-                    fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                AppText(
-                  'Choose a template to replace the current design',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? Colors.white60 : Colors.black54,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: Consumer<HomeScreenProvider>(
-                    builder: (sheetContext, homeProvider, _) {
-                      final categories = homeProvider.templateCategories;
-
-                      if (categories.isEmpty) {
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFFE53935),
-                          ),
-                        );
-                      }
-
-                      return ListView.builder(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.only(bottom: 18),
-                        itemCount: categories.length,
-                        itemBuilder: (context, categoryIndex) {
-                          final category = categories[categoryIndex];
-                          final categoryName = category.name?.trim() ?? '';
-                          final slug = category.slug?.trim() ?? '';
-
-                          if (slug.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-
-                          final templates = homeProvider.templatesForCategory(
-                            slug,
-                          );
-                          final loading = homeProvider.isTemplateLoading(slug);
-
-                          if (!loading && templates.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 18),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: AppText(
-                                        categoryName,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: isDark
-                                              ? Colors.white
-                                              : Colors.black,
-                                        ),
-                                      ),
-                                    ),
-                                    if (loading)
-                                      const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 1.8,
-                                          color: Color(0xFFE53935),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 9),
-                                if (loading && templates.isEmpty)
-                                  SizedBox(
-                                    height: 150,
-                                    child: ListView.separated(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: 3,
-                                      separatorBuilder: (_, __) =>
-                                      const SizedBox(width: 10),
-                                      itemBuilder: (_, __) => Container(
-                                        width: 108,
-                                        decoration: BoxDecoration(
-                                          color: isDark
-                                              ? const Color(0xFF25272D)
-                                              : Colors.grey.shade100,
-                                          borderRadius: BorderRadius.circular(
-                                            14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  SizedBox(
-                                    height: 150,
-                                    child: ListView.separated(
-                                      scrollDirection: Axis.horizontal,
-                                      physics: const BouncingScrollPhysics(),
-                                      itemCount: templates.length,
-                                      separatorBuilder: (_, __) =>
-                                      const SizedBox(width: 10),
-                                      itemBuilder: (_, templateIndex) {
-                                        final template =
-                                        templates[templateIndex];
-                                        final uid = _templateStringValue(
-                                          template,
-                                          const [
-                                            'uid',
-                                            'templateUid',
-                                            'template_uid',
-                                          ],
-                                        );
-                                        final imageKey = _templateStringValue(
-                                          template,
-                                          const [
-                                            'thumbnailS3Key',
-                                            'thumbnail_s3_key',
-                                            'previewS3Key',
-                                            'preview_s3_key',
-                                            's3Key',
-                                            's3_key',
-                                            'thumbnail',
-                                            'image',
-                                            'preview',
-                                          ],
-                                        );
-
-                                        final imageUrl = _templateImageUrl(
-                                          imageKey,
-                                        );
-
-                                        return GestureDetector(
-                                          onTap: uid.isEmpty
-                                              ? null
-                                              : () async {
-                                            Navigator.pop(modalContext);
-                                            await provider
-                                                .loadTemplateByUid(uid);
-
-                                            if (mounted) {
-                                              setState(() {});
-                                            }
-                                          },
-                                          child: Container(
-                                            width: 108,
-                                            decoration: BoxDecoration(
-                                              color: isDark
-                                                  ? const Color(0xFF25272D)
-                                                  : Colors.grey.shade100,
-                                              borderRadius:
-                                              BorderRadius.circular(14),
-                                              border: Border.all(
-                                                color: isDark
-                                                    ? Colors.grey.shade800
-                                                    : Colors.grey.shade200,
-                                              ),
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                              BorderRadius.circular(14),
-                                              child: imageUrl.isEmpty
-                                                  ? const Center(
-                                                child: Icon(
-                                                  Icons.image_outlined,
-                                                  color: Colors.grey,
-                                                  size: 30,
-                                                ),
-                                              )
-                                                  : Image.network(
-                                                imageUrl,
-                                                cacheWidth: 800,
-                                                fit: BoxFit.cover,
-                                                errorBuilder:
-                                                    (
-                                                    _,
-                                                    __,
-                                                    ___,
-                                                    ) => const Center(
-                                                  child: Icon(
-                                                    Icons
-                                                        .broken_image_outlined,
-                                                    color:
-                                                    Colors.grey,
-                                                    size: 30,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
         );
       },
+    ).whenComplete(chipScroll.dispose);
+  }
+
+  Widget _templatesLoadingLabel(Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2, color: color),
+        ),
+        const SizedBox(width: 8),
+        AppText(
+          'Loading...',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 
@@ -10338,7 +10412,7 @@ class _EditorViewState extends State<EditorView> {
           child: StatefulBuilder(
             builder: (sheetContext, setModalState) {
               final fg = isDark ? Colors.white : Colors.black;
-          
+
               Widget pageRow(int index) {
                 final id = provider.pageIdAt(index);
                 final selected = index == provider.currentPageIndex;
@@ -10423,7 +10497,7 @@ class _EditorViewState extends State<EditorView> {
                   ),
                 );
               }
-          
+
               return Container(
                 height: MediaQuery.of(context).size.height * .62,
                 decoration: BoxDecoration(
@@ -10564,6 +10638,44 @@ class _EditorViewState extends State<EditorView> {
       },
     );
   }
+}
+
+/// Dashed rounded-rectangle border (empty-state box).
+class _DashedRRectPainter extends CustomPainter {
+  final Color color;
+  final double radius;
+
+  const _DashedRRectPainter({required this.color, this.radius = 12});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Offset.zero & size,
+          Radius.circular(radius),
+        ),
+      );
+    const dash = 6.0, gap = 4.0;
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        canvas.drawPath(
+          metric.extractPath(distance, math.min(distance + dash, metric.length)),
+          paint,
+        );
+        distance += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRRectPainter old) =>
+      old.color != color || old.radius != radius;
 }
 
 class _TransformSelectionOverlay extends StatefulWidget {

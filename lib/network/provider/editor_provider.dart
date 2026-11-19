@@ -16,6 +16,9 @@ import '../../Api Model/editor_model.dart';
 import '../../ui/industry/widgets/animation.dart';
 import '../../ui/industry/widgets/text_effect.dart';
 import '../../Repository/freePic.dart';
+import '../../Repository/home_repository.dart';
+import '../../Api Model/templatecategories.dart';
+import '../../Api Model/Template_model.dart';
 import '../../Repository/template_edit_repository.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../core/api/api_repository.dart';
@@ -25,6 +28,23 @@ import '../../core/api/models/api_error.dart';
 import '../../core/api/models/api_request_config.dart';
 import '../../core/api/models/api_result.dart';
 import '../../core/app_provider/my_notifier.dart';
+
+/// One chip of the editor's Templates sheet: a top-level category or one of
+/// its children, flattened into a single row (same as the web editor).
+class EditorTemplateChip {
+  final String name;
+  final String slug;
+
+  /// Child slugs of a parent chip (used only when the parent has no templates
+  /// of its own).
+  final List<String> childSlugs;
+
+  const EditorTemplateChip({
+    required this.name,
+    required this.slug,
+    this.childSlugs = const <String>[],
+  });
+}
 
 class EditorProvider extends ChangeNotifier with MyNotifier {
   /// User-uploaded media, available in Media > Uploads.
@@ -1800,26 +1820,38 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     return cleaned.isEmpty ? 'Roboto' : cleaned;
   }
 
+  /// Fabric.js lays every text line out at `fontSize * lineHeight * 1.13`
+  /// (its internal _fontSizeMult). That is the height the web editor really
+  /// draws, so it is also what Flutter's `height` multiplier must be.
+  ///
+  /// The old code used `objectHeight / fontSize` instead. The saved object
+  /// height is NOT the drawn line height (e.g. 150.8 for an 80 px single line
+  /// = 1.885), which pushed the glyphs down and made text overlap the shapes
+  /// under it.
   double _effectiveTextLineHeight({
     required double rawLineHeight,
     required double fontSize,
     required double objectHeight,
     required String text,
   }) {
+    const fabricFontSizeMult = 1.13;
     final lineCount = math.max(1, '\n'.allMatches(text).length + 1);
-    final raw = rawLineHeight.isFinite && rawLineHeight > 0
-        ? rawLineHeight
-        : 1.0;
+
+    if (rawLineHeight.isFinite && rawLineHeight > 0) {
+      final fabricLine = rawLineHeight * fabricFontSizeMult;
+      // A sane Fabric line height: use it as is.
+      if (fabricLine >= 0.7 && fabricLine <= 2.2) {
+        return fabricLine.clamp(0.7, 2.5).toDouble();
+      }
+    }
+
+    // Inflated / missing lineHeight: fall back to the object height.
     final measured = fontSize > 0 && objectHeight > 0
         ? objectHeight / (fontSize * lineCount)
-        : raw;
-
-    // Some Fabric exports contain an inflated lineHeight. The actual object
-    // height is a safer source when it is internally consistent.
-    if (measured.isFinite && measured >= 0.7 && measured <= 2.5) {
-      return measured.clamp(0.7, 2.5).toDouble();
-    }
-    return raw.clamp(0.7, 2.5).toDouble();
+        : 1.0;
+    return measured.isFinite
+        ? measured.clamp(0.7, 2.5).toDouble()
+        : 1.0;
   }
 
   String _resolveTemplateSrc(String rawSrc, String? templateUid) {
@@ -3035,6 +3067,31 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
                 ? FontStyle.italic
                 : FontStyle.normal;
             _textUnderline[id] = tf['underline'] == true;
+
+            // Projects saved before the line-height fix stored
+            // height / fontSize (e.g. 1.885). If the stored value is exactly
+            // that legacy number the user never edited it, so recompute it
+            // from the Fabric lineHeight kept in `raw`.
+            final rawObj = m['raw'];
+            if (rawObj is Map) {
+              final rawLh = _toDouble(rawObj['lineHeight']);
+              final rawH = _toDouble(rawObj['height']);
+              final fs =
+                  _toDouble(rawObj['fontSize']) ?? _toDouble(m['fontSize']) ?? 0;
+              final txt = (m['text'] ?? rawObj['text'] ?? '').toString();
+              if (rawLh != null && rawH != null && fs > 0) {
+                final lines = math.max(1, '\n'.allMatches(txt).length + 1);
+                final legacy = rawH / (fs * lines);
+                if (((_textLineSpacing[id] ?? 0) - legacy).abs() < 0.02) {
+                  _textLineSpacing[id] = _effectiveTextLineHeight(
+                    rawLineHeight: rawLh,
+                    fontSize: fs,
+                    objectHeight: rawH,
+                    text: txt,
+                  );
+                }
+              }
+            }
           }
 
           if (m['raw'] is Map) {
@@ -3799,6 +3856,239 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   int get pageCount => _pages.isEmpty ? 1 : _pages.length;
   int get currentPageIndex => _currentPageIndex;
+
+  // ============================================================
+  // EDITOR -> TEMPLATES SHEET
+  // Same API flow as HomeScreenProvider (categories -> templates by
+  // category), kept here so the editor does not have to create a whole
+  // HomeScreenProvider just to list templates.
+  // ============================================================
+
+  List<TemplateCategories> _editorTemplateCategories = [];
+  bool _isLoadingEditorTemplateCategories = false;
+  String? _editorTemplateCategoryError;
+  int selectedEditorTemplateCategoryIndex = 0;
+
+  /// Key = category slug. Value = GET /templates?category=<slug>
+  final Map<String, List<TemplateModel>> _editorTemplatesByCategory = {};
+  final Map<String, bool> _editorTemplateLoadingByCategory = {};
+  final Map<String, String?> _editorTemplateErrorByCategory = {};
+
+  List<TemplateCategories> get editorTemplateCategories =>
+      _editorTemplateCategories;
+  bool get isLoadingEditorTemplateCategories =>
+      _isLoadingEditorTemplateCategories;
+  String? get editorTemplateCategoryError => _editorTemplateCategoryError;
+
+  bool isEditorTemplateLoading(String slug) =>
+      _editorTemplateLoadingByCategory[slug] ?? false;
+
+  String? editorTemplateError(String slug) =>
+      _editorTemplateErrorByCategory[slug];
+
+  List<TemplateModel> editorTemplatesForCategory(String slug) =>
+      _editorTemplatesByCategory[slug] ?? const <TemplateModel>[];
+
+  /// Flat chip row: every top-level category first, then every child
+  /// category (Birthday, Wedding, Bible Verses ...), all from the API.
+  List<EditorTemplateChip> _editorTemplateChips = [];
+  List<EditorTemplateChip> get editorTemplateChips => _editorTemplateChips;
+
+  void _rebuildEditorTemplateChips() {
+    final chips = <EditorTemplateChip>[];
+    final seen = <String>{};
+
+    for (final category in _editorTemplateCategories) {
+      final slug = category.slug?.trim() ?? '';
+      final name = category.name?.trim() ?? '';
+      if (slug.isEmpty || name.isEmpty || !seen.add(slug)) continue;
+      chips.add(
+        EditorTemplateChip(
+          name: name,
+          slug: slug,
+          childSlugs: category.children
+              .map((c) => c.slug?.trim() ?? '')
+              .where((e) => e.isNotEmpty)
+              .toList(),
+        ),
+      );
+    }
+
+    for (final category in _editorTemplateCategories) {
+      for (final child in category.children) {
+        final slug = child.slug?.trim() ?? '';
+        final name = child.name?.trim() ?? '';
+        if (slug.isEmpty || name.isEmpty || !seen.add(slug)) continue;
+        chips.add(EditorTemplateChip(name: name, slug: slug));
+      }
+    }
+
+    _editorTemplateChips = chips;
+  }
+
+  EditorTemplateChip? get _selectedEditorChip {
+    if (_editorTemplateChips.isEmpty) return null;
+    final i = selectedEditorTemplateCategoryIndex
+        .clamp(0, _editorTemplateChips.length - 1)
+        .toInt();
+    return _editorTemplateChips[i];
+  }
+
+  /// Templates of the selected chip. A parent chip with no templates of its
+  /// own falls back to its children's templates.
+  List<TemplateModel> get editorSelectedCategoryTemplates {
+    final chip = _selectedEditorChip;
+    if (chip == null) return const <TemplateModel>[];
+    final own = editorTemplatesForCategory(chip.slug);
+    if (own.isNotEmpty || chip.childSlugs.isEmpty) return own;
+    return <TemplateModel>[
+      for (final slug in chip.childSlugs) ...editorTemplatesForCategory(slug),
+    ];
+  }
+
+  bool get isEditorSelectedCategoryLoading {
+    final chip = _selectedEditorChip;
+    if (chip == null) return false;
+    if (isEditorTemplateLoading(chip.slug)) return true;
+    return editorTemplatesForCategory(chip.slug).isEmpty &&
+        chip.childSlugs.any(isEditorTemplateLoading);
+  }
+
+  Future<void> fetchEditorTemplateCategories({bool force = false}) async {
+    if (_isLoadingEditorTemplateCategories) return;
+    if (_editorTemplateCategories.isNotEmpty && !force) return;
+
+    _isLoadingEditorTemplateCategories = true;
+    _editorTemplateCategoryError = null;
+    notifyListeners();
+
+    try {
+      final result = await HomeRepository.instance.templateCategory();
+
+      if (result.isSuccess && result.data != null) {
+        final response = result.data!;
+
+        if (response.success == true) {
+          final homepageCategories = response.data ?? [];
+
+          final treeResult = await HomeRepository.instance
+              .templateCategoryTree();
+
+          if (treeResult.isSuccess && treeResult.data?.success == true) {
+            final treeCategories = treeResult.data?.data ?? [];
+
+            final treeBySlug = <String, dynamic>{};
+            final treeByName = <String, dynamic>{};
+
+            for (final treeCategory in treeCategories) {
+              final slug = treeCategory.slug?.trim().toLowerCase() ?? '';
+              final name = treeCategory.name?.trim().toLowerCase() ?? '';
+
+              if (slug.isNotEmpty) treeBySlug[slug] = treeCategory;
+              if (name.isNotEmpty) treeByName[name] = treeCategory;
+            }
+
+            _editorTemplateCategories = homepageCategories.map((category) {
+              final slug = category.slug?.trim().toLowerCase() ?? '';
+              final name = category.name?.trim().toLowerCase() ?? '';
+
+              final treeCategory =
+                  (slug.isNotEmpty ? treeBySlug[slug] : null) ??
+                      (name.isNotEmpty ? treeByName[name] : null);
+
+              if (treeCategory != null && treeCategory.children.isNotEmpty) {
+                return category.copyWith(children: treeCategory.children);
+              }
+              return category;
+            }).toList();
+          } else {
+            // Keep the homepage categories even if the tree request fails.
+            _editorTemplateCategories = homepageCategories;
+          }
+
+          _editorTemplateCategoryError = null;
+        } else {
+          _editorTemplateCategoryError = 'Failed to load categories';
+        }
+      } else {
+        _editorTemplateCategoryError =
+            result.error?.message ?? 'Network Error Occurred';
+      }
+    } catch (e) {
+      _editorTemplateCategoryError = e.toString();
+    } finally {
+      _rebuildEditorTemplateChips();
+      _isLoadingEditorTemplateCategories = false;
+      notifyListeners();
+    }
+
+    // First chip is selected by default -> load its templates.
+    if (_editorTemplateChips.isNotEmpty) {
+      await selectEditorTemplateCategory(
+        selectedEditorTemplateCategoryIndex
+            .clamp(0, _editorTemplateChips.length - 1)
+            .toInt(),
+      );
+    }
+  }
+
+  Future<void> selectEditorTemplateCategory(int index) async {
+    if (index < 0 || index >= _editorTemplateChips.length) return;
+
+    selectedEditorTemplateCategoryIndex = index;
+    notifyListeners();
+
+    final chip = _editorTemplateChips[index];
+    await fetchEditorTemplatesByCategory(chip.slug);
+
+    // Parent chip with nothing of its own -> load its children instead.
+    if (editorTemplatesForCategory(chip.slug).isEmpty &&
+        chip.childSlugs.isNotEmpty) {
+      await Future.wait(chip.childSlugs.map(fetchEditorTemplatesByCategory));
+    }
+  }
+
+  Future<void> fetchEditorTemplatesByCategory(
+      String slug, {
+        bool force = false,
+      }) async {
+    final categorySlug = slug.trim();
+    if (categorySlug.isEmpty) return;
+    if (_editorTemplateLoadingByCategory[categorySlug] == true) return;
+    if (!force && _editorTemplatesByCategory.containsKey(categorySlug)) return;
+
+    _editorTemplateLoadingByCategory[categorySlug] = true;
+    _editorTemplateErrorByCategory[categorySlug] = null;
+    notifyListeners();
+
+    try {
+      final result = await HomeRepository.instance.templatesByCategory(
+        categorySlug,
+      );
+
+      if (result.isSuccess && result.data != null) {
+        final response = result.data!;
+
+        if (response.success == true) {
+          _editorTemplatesByCategory[categorySlug] = response.data;
+        } else {
+          _editorTemplatesByCategory[categorySlug] = [];
+          _editorTemplateErrorByCategory[categorySlug] =
+          'Failed to load templates';
+        }
+      } else {
+        _editorTemplatesByCategory[categorySlug] = [];
+        _editorTemplateErrorByCategory[categorySlug] =
+            result.error?.message ?? 'Network Error Occurred';
+      }
+    } catch (e) {
+      _editorTemplatesByCategory[categorySlug] = [];
+      _editorTemplateErrorByCategory[categorySlug] = e.toString();
+    } finally {
+      _editorTemplateLoadingByCategory[categorySlug] = false;
+      notifyListeners();
+    }
+  }
 
   // ---- per-page meta (stable id + name), kept parallel to _pages ----
   final List<String> _pageIds = [];
