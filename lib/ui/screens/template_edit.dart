@@ -174,6 +174,8 @@ class EditorView extends StatefulWidget {
 class _EditorViewState extends State<EditorView> {
   bool _showFlipOptions = false;
   String _shapeTab = 'style';
+  // Image whose OUTLINE editor (shape-style inline panel) is open.
+  String? _imageOutlineItemId;
   bool _showImageFilters = false;
 
   /// When equal to the selected item id, the ANIMATE panel is docked at the bottom.
@@ -5748,6 +5750,12 @@ class _EditorViewState extends State<EditorView> {
       return _buildGroupAnimationPanel(context, provider, isDark);
     }
 
+    // Selection moved away from the image whose outline editor was open.
+    if (_imageOutlineItemId != null &&
+        provider.selectedItemId != _imageOutlineItemId) {
+      _imageOutlineItemId = null;
+    }
+
     final type = (provider.selectedItemType ?? '').toLowerCase();
 
     final animSelId = provider.selectedItemId;
@@ -7908,9 +7916,8 @@ class _EditorViewState extends State<EditorView> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 28,
-                  height: 28,
-                  child: Icon(icon, color: Colors.white, size: 19),
+                  width: 18, height: 18,
+                  child: Icon(icon, color: Colors.white, size: 18),
                 ),
                 const SizedBox(height: 7),
                 AppText(
@@ -7919,7 +7926,7 @@ class _EditorViewState extends State<EditorView> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: AppFontSize.fontSize10,
+                    fontSize: AppFontSize.fontSize9,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -9350,6 +9357,9 @@ class _EditorViewState extends State<EditorView> {
     }
 
     final item = provider.items[itemIndex];
+    if (_imageOutlineItemId == id) {
+      return _buildImageOutlineToolbar(context, provider, isDark);
+    }
     return Container(
       height: 124,
       padding: const EdgeInsets.only(bottom: 6),
@@ -9414,7 +9424,7 @@ class _EditorViewState extends State<EditorView> {
                   _bottomTool(
                     Icons.border_style_rounded,
                     'OUTLINE',
-                        () => _showOutlineSheet(context, provider, id, isDark),
+                        () => _openImageOutline(provider, id),
                   ),
                 ],
                 if (!_isCanvasBackground(item))
@@ -9488,7 +9498,7 @@ class _EditorViewState extends State<EditorView> {
                   _bottomTool(
                     Icons.border_style_rounded,
                     'OUTLINE',
-                        () => _showOutlineSheet(context, provider, id, isDark),
+                        () => _openImageOutline(provider, id),
                   ),
                 _bottomTool(
                   Image.asset("assets/images/gallery_edit.png"),
@@ -9553,6 +9563,194 @@ class _EditorViewState extends State<EditorView> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  // ---- Image OUTLINE: same inline design as the shape toolbar ----
+
+  void _openImageOutline(EditorProvider provider, String id) {
+    setState(() {
+      _imageOutlineItemId = id;
+      _shapeTab = 'style';
+    });
+  }
+
+  void _closeImageOutline() {
+    if (_imageOutlineItemId == null) return;
+    setState(() => _imageOutlineItemId = null);
+  }
+
+  /// Picking a colour / style / width switches a hidden outline on and makes
+  /// sure it is actually VISIBLE (solid style, real width, opaque colour).
+  void _ensureImageOutlineOn(EditorProvider provider, String id) {
+    final matches = provider.items.where((e) => e.id == id);
+    if (matches.isEmpty) return;
+    final it = matches.first;
+    if (provider.outlineStyle(id) == 'none') {
+      provider.updateOutlineStyle(id, 'solid');
+    }
+    final cur = provider.items.firstWhere((e) => e.id == id);
+    final needWidth = cur.outlineWidth <= 0;
+    final needColor = cur.outlineColor.a == 0;
+    if (needWidth || needColor) {
+      // Scale with the image so a big photo gets a visible border.
+      final auto = (math.min(it.width, it.height) * 0.02)
+          .clamp(3.0, 12.0)
+          .toDouble();
+      provider.updateOutline(
+        id,
+        needWidth ? auto : cur.outlineWidth,
+        needColor ? Colors.black : cur.outlineColor,
+      );
+    }
+  }
+
+  Widget _buildImageOutlineToolbar(
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      ) {
+    final id = provider.selectedItemId;
+    if (id == null) return const SizedBox.shrink();
+    final matches = provider.items.where((e) => e.id == id);
+    if (matches.isEmpty) return const SizedBox.shrink();
+    final item = matches.first;
+
+    final outlineColor = item.outlineColor;
+    final outlineStyle = provider.outlineStyle(id);
+    final outlineJoin = provider.outlineJoin(id);
+
+    const tabs = <List<String>>[
+      ['style', 'STYLE'],
+      ['join', 'JOIN'],
+      ['width', 'WIDTH'],
+    ];
+    final activeTab = tabs.any((t) => t[0] == _shapeTab)
+        ? _shapeTab
+        : tabs.first[0];
+
+    Widget panel;
+    switch (activeTab) {
+      case 'join':
+        panel = _shapeJoinPanel(outlineJoin, (join) {
+          _ensureImageOutlineOn(provider, id);
+          provider.updateOutlineJoin(id, join);
+        });
+        break;
+      case 'width':
+        panel = _shapeStepSlider(
+          valueText: item.outlineWidth.round().toString(),
+          value: item.outlineWidth.clamp(0.0, 20.0).toDouble(),
+          min: 0,
+          max: 20,
+          step: 1,
+          onChanged: (v) {
+            if (v > 0) _ensureImageOutlineOn(provider, id);
+            final cur = provider.items.firstWhere((e) => e.id == id);
+            provider.updateOutline(id, v, cur.outlineColor);
+          },
+        );
+        break;
+      default:
+        panel = _shapeStylePanel(outlineStyle, (style) {
+          provider.updateOutlineStyle(id, style);
+          if (style != 'none') _ensureImageOutlineOn(provider, id);
+        });
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.black,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 60,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _shapeTile(
+                    Icons.arrow_back_rounded,
+                    'BACK',
+                    _closeImageOutline,
+                  ),
+                  _shapeSwatchTile('OUTLINE', outlineColor, () async {
+                    _ensureImageOutlineOn(provider, id);
+                    await _showShapeColorPicker(
+                      context,
+                      provider,
+                      id,
+                      isOutline: true,
+                    );
+                  }),
+                  _shapeTile(
+                    Icons.close_rounded,
+                    'CLOSE',
+                        () {
+                      _closeImageOutline();
+                      provider.clearSelection();
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 32,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (final t in tabs)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _shapeTab = t[0]),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: activeTab == t[0]
+                                ? const Color(0xFFFFC107)
+                                : const Color(0xFF1F232C),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: AppText(
+                            t[1],
+                            style: TextStyle(
+                              color: activeTab == t[0]
+                                  ? Colors.black
+                                  : Colors.white70,
+                              fontSize: AppFontSize.fontSize11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              height: 74,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF14171D),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: panel,
+            ),
+          ],
+        ),
       ),
     );
   }

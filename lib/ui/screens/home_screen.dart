@@ -209,21 +209,24 @@ class _HomeScreenView extends StatelessWidget {
       );
     }
 
-    return CustomSearchBar(
-      controller: searchProvider.controller,
-      hintText: 'Search templates, Brand Series...',
-      prefixAsset: 'assets/images/search.png',
-      suffixAsset: 'assets/images/mic.png',
-      borderColor: AppColors.searchBorderColor,
-      onChanged: searchProvider.onTextChanged,
-      suggestions: searchProvider.suggestions.map((e) => e.label).toList(),
-      showSuggestions: true,
-      onSuggestionTap: (value) {
-        if (value.trim().length < 2) return;
-        searchProvider.controller.clear();
-        openSearch(value);
-      },
-      onSubmitted: openSearch,
+    return Hero(
+      tag: 'search_bar_hero',
+      child: Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.pushNamed(context, '/SearchScreen'),
+          child: AbsorbPointer(
+            child: CustomSearchBar(
+              hintText: "Search templates, Brand Series...",
+              prefixAsset: "assets/images/search.png",
+              suffixAsset: "assets/images/mic.png",
+              borderColor: AppColors.searchBorderColor,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -789,7 +792,6 @@ class _HomeScreenView extends StatelessWidget {
   // CARD TOP BAR  (crown + favorite / customize popup, shared by cards)
   // =====================================================================
 
-
   Widget _buildCardTopBar(BuildContext context, dynamic template) {
     final locked = (template.isLocked as bool?) ?? false;
     final familyUid = (template.familyUid as String?)?.trim() ?? '';
@@ -827,11 +829,9 @@ class _HomeScreenView extends StatelessWidget {
                     isFavorite: true,
                     showDownload: false,
                     showDelete: false,
-                    onCustomize: () =>
-                        _customizeTemplate(context, template),
+                    onCustomize: () => _customizeTemplate(context, template),
                     onDownload: () => _downloadTemplate(template),
-                    onFavorite: () =>
-                        _toggleFavorite(context, familyUid),
+                    onFavorite: () => _toggleFavorite(context, familyUid),
                   ),
                 ),
               ),
@@ -841,7 +841,6 @@ class _HomeScreenView extends StatelessWidget {
       ),
     );
   }
-
 
   Future<void> _toggleFavorite(BuildContext context, String familyUid) async {
     if (familyUid.isEmpty) return;
@@ -1846,7 +1845,7 @@ class _HomeScreenView extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                 Padding(
+                Padding(
                   padding: EdgeInsets.fromLTRB(20, 18, 20, 16),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1880,7 +1879,7 @@ class _HomeScreenView extends StatelessWidget {
                     child: AppText(
                       '"$templateName" is part of the premium\n'
                       'collection. Upgrade your plan to use it in your designs.',
-                      style:  TextStyle(
+                      style: TextStyle(
                         fontSize: AppFontSize.fontSize14,
                         height: 1.45,
                         color: Color(0xFF666666),
@@ -1925,7 +1924,7 @@ class _HomeScreenView extends StatelessWidget {
                             borderRadius: BorderRadius.circular(9),
                           ),
                         ),
-                        child:  AppText(
+                        child: AppText(
                           'Upgrade to premium',
                           style: TextStyle(
                             fontSize: AppFontSize.fontSize13,

@@ -368,9 +368,24 @@ class RouteGenerator {
       case '/BusinessCategorySearchScreen':
         return MaterialPageRoute(
           builder: (_) => const BusinessCategorySearchScreen(),
-        );case '/SearchScreen':
-        return MaterialPageRoute(
-          builder: (_) => const SearchScreen(),
+        );
+      case '/SearchScreen':
+        final initialQuery = args is String
+            ? args
+            : (args is Map ? args['query']?.toString() ?? '' : '');
+        return PageRouteBuilder<void>(
+          settings: settings,
+          transitionDuration: const Duration(milliseconds: 350),
+          reverseTransitionDuration: const Duration(milliseconds: 280),
+          pageBuilder: (_, __, ___) => SearchScreen(initialQuery: initialQuery),
+          transitionsBuilder: (_, animation, __, child) {
+            final curved = CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+              reverseCurve: Curves.easeInCubic,
+            );
+            return FadeTransition(opacity: curved, child: child);
+          },
         );
       case '/ContentGeneratorScreen':
         return MaterialPageRoute(

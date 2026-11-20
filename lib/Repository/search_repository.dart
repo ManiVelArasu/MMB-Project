@@ -28,13 +28,30 @@ class SearchProfileRepository {
 
   /// GET /templates?q=&limit=&offset=
   Future<ApiResult<dynamic>> search(
-    String query, {
-    int limit = 30,
-    int offset = 0,
-  }) {
-    final endpoint =
-        '/$_templates?q=${Uri.encodeQueryComponent(query)}'
-        '&limit=$limit&offset=$offset';
+      String query, {
+        int limit = 30,
+        int offset = 0,
+        String? tags,
+        String? templateType,
+        String? language,
+        String? size,
+      }) {
+    final params = <String, String>{
+      'q': query,
+      'limit': '$limit',
+      'offset': '$offset',
+      if (tags != null && tags.isNotEmpty) 'tags': tags,
+      if (templateType != null && templateType.isNotEmpty)
+        'template_type': templateType,
+      if (language != null && language.isNotEmpty) 'language': language,
+      if (size != null && size.isNotEmpty) 'size': size,
+    };
+
+    final queryString = params.entries
+        .map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+
+    final endpoint = '/$_templates?$queryString';
 
     debugPrint('🔍 SEARCH: $endpoint');
 

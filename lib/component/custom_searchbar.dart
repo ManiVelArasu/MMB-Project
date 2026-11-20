@@ -107,7 +107,7 @@ class CustomSearchBar extends StatelessWidget {
               filled: true,
               fillColor: fillColor,
               contentPadding: EdgeInsets.symmetric(
-                vertical: 14.h,
+                vertical: 6.h,
                 horizontal: 16.w,
               ),
               border: OutlineInputBorder(

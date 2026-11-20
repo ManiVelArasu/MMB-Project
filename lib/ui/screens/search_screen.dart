@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mmb_app/ui/screens/widget/search_filter.dart';
 import 'package:provider/provider.dart';
 
 import 'package:mmb_app/component/appbar_widget.dart';
@@ -65,61 +66,85 @@ class _SearchView extends StatelessWidget {
               ),
             ),
           SafeArea(
+            bottom: false,
             child: Column(
               children: [
                 Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: size.width * 0.04,
-                    vertical: size.height * 0.015,
+                  padding: EdgeInsets.fromLTRB(
+                    size.width * 0.04,
+                    size.height * 0.012,
+                    size.width * 0.04,
+                    10,
                   ),
-                  child: Container(
-                    height: 46,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.searchBorderColor),
-                    ),
-                    child: Row(
-                      children: [
-                        Image.asset(
-                          'assets/images/search.png',
-                          width: 20,
-                          height: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: provider.controller,
-                            focusNode: provider.focusNode,
-                            autofocus: true,
-                            textInputAction: TextInputAction.search,
-                            inputFormatters: [
-                              LengthLimitingTextInputFormatter(
-                                SearchProvider.maxQueryLength,
-                              ),
-                            ],
-                            style: TextStyle(color: fg, fontSize: 15),
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              isDense: true,
-                              hintText: 'Search templates, Brand Series...',
-                              hintStyle: TextStyle(color: sub, fontSize: 14),
+                  child: Hero(
+                    tag: 'search_bar_hero',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        height: 46,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.searchBorderColor),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
                             ),
-                            onChanged: provider.onTextChanged,
-                            onSubmitted: provider.submit,
-                          ),
+                          ],
                         ),
-                        if (provider.controller.text.isNotEmpty)
-                          GestureDetector(
-                            onTap: provider.clearSearch,
-                            child: Icon(Icons.close, size: 20, color: sub),
-                          ),
-                      ],
+                        child: Row(
+                          children: [
+                            Image.asset(
+                              'assets/images/search.png',
+                              width: 20,
+                              height: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                controller: provider.controller,
+                                focusNode: provider.focusNode,
+                                autofocus: true,
+                                textInputAction: TextInputAction.search,
+                                inputFormatters: [
+                                  LengthLimitingTextInputFormatter(
+                                    SearchProvider.maxQueryLength,
+                                  ),
+                                ],
+                                style: TextStyle(color: fg, fontSize: 15),
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  hintText: 'Search templates, Brand Series...',
+                                  hintStyle: TextStyle(color: sub, fontSize: 14),
+                                ),
+                                onChanged: provider.onTextChanged,
+                                onSubmitted: provider.submit,
+                              ),
+                            ),
+                            if (provider.controller.text.isNotEmpty)
+                              GestureDetector(
+                                onTap: provider.clearSearch,
+                                child: Icon(Icons.close, size: 20, color: sub),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
+                SearchFilterBar(
+                  isDark: isDark,
+                  horizontalPadding: size.width * 0.04,
+                ),
+                const SizedBox(height: 10),
                 Expanded(child: _buildBody(context, provider, isDark, fg, sub)),
+                // Hidden while the keyboard is open so it never floats on it.
+                if (MediaQuery.of(context).viewInsets.bottom == 0)
+                  const SearchBottomBar(),
               ],
             ),
           ),
@@ -129,12 +154,12 @@ class _SearchView extends StatelessWidget {
   }
 
   Widget _buildInitialEmptyState(
-    BuildContext context,
-    SearchProvider provider,
-    bool isDark,
-    Color fg,
-    Color sub,
-  ) {
+      BuildContext context,
+      SearchProvider provider,
+      bool isDark,
+      Color fg,
+      Color sub,
+      ) {
     final popularSearches = [
       'Birthday',
       'Wedding',
@@ -178,7 +203,7 @@ class _SearchView extends StatelessWidget {
           Center(
             child: AppText(
               'Discover templates for your next big idea. '
-              'Search by industry, occasion or design type.',
+                  'Search by industry, occasion or design type.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, height: 1.5, color: sub),
             ),
@@ -236,12 +261,12 @@ class _SearchView extends StatelessWidget {
   }
 
   Widget _buildBody(
-    BuildContext context,
-    SearchProvider provider,
-    bool isDark,
-    Color fg,
-    Color sub,
-  ) {
+      BuildContext context,
+      SearchProvider provider,
+      bool isDark,
+      Color fg,
+      Color sub,
+      ) {
     if (provider.isWaitingForFirstResult && !provider.hasSearched) {
       return _searchShimmer(isDark);
     }
@@ -286,7 +311,7 @@ class _SearchView extends StatelessWidget {
     }
 
     if (provider.results.isEmpty) {
-      return _buildEmptyState(context, provider);
+      return _buildEmptyState(context, provider, isDark, fg, sub);
     }
 
     return GridView.builder(
@@ -326,10 +351,10 @@ class _SearchView extends StatelessWidget {
   );
 
   Widget _resultCard(
-    BuildContext context,
-    Map<String, dynamic> template,
-    bool isDark,
-  ) {
+      BuildContext context,
+      Map<String, dynamic> template,
+      bool isDark,
+      ) {
     final uid = template['uid']?.toString().trim() ?? '';
     final key = template['thumbnail_s3_key']?.toString().trim() ?? '';
     final locked = template['is_locked'] == true;
@@ -368,6 +393,13 @@ class _SearchView extends StatelessWidget {
           border: Border.all(
             color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -376,11 +408,11 @@ class _SearchView extends StatelessWidget {
             imageUrl.isEmpty
                 ? _placeholder(isDark)
                 : CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => _placeholder(isDark),
-                    errorWidget: (_, __, ___) => _placeholder(isDark),
-                  ),
+              imageUrl: imageUrl,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => _placeholder(isDark),
+              errorWidget: (_, __, ___) => _placeholder(isDark),
+            ),
             if (locked)
               Container(
                 color: Colors.black.withValues(alpha: 0.4),
@@ -480,88 +512,129 @@ class _SearchView extends StatelessWidget {
     }
   }
 
-  Widget _buildEmptyState(BuildContext context, SearchProvider provider) {
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        physics: const ClampingScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    'assets/images/no_downloads.png',
-                    width: 140,
-                    height: 140,
-                  ),
-                  const SizedBox(height: 8),
-                  AppText(
-                    'No Templates Found',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+  // Put the sad-magnifier illustration here (add it to pubspec assets).
+  static const String _noResultImage = 'assets/images/no_results.png';
+
+  Widget _buildEmptyState(
+      BuildContext context,
+      SearchProvider provider,
+      bool isDark,
+      Color fg,
+      Color sub,
+      ) {
+    final query = provider.activeQuery;
+    final filtered = provider.hasActiveFilters;
+
+    return Column(
+      children: [
+        if (query.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: AppText(
+              filtered
+                  ? 'No designs for \u201c$query\u201d with these filters.'
+                  : 'No designs for \u201c$query\u201d.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: sub),
+            ),
+          ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              keyboardDismissBehavior:
+              ScrollViewKeyboardDismissBehavior.onDrag,
+              physics: const ClampingScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(15, 0, 15, 40),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          _noResultImage,
+                          width: 140,
+                          height: 140,
+                          errorBuilder: (_, __, ___) => Image.asset(
+                            'assets/images/no_downloads.png',
+                            width: 140,
+                            height: 140,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        AppText(
+                          'No Templates Found',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: fg,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        AppText(
+                          'We couldn\u2019t find any templates matching your search. '
+                              'Try a different keyword or explore our categories.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 13, color: fg),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: ButtonWidget(
+                                buttonPress: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/BrowseTemplatesScreen',
+                                  );
+                                },
+                                title: 'Browse Categories',
+                                textStyle: TextStyle(
+                                  fontSize: AppFontSize.fontSize14,
+                                  color: AppColors.appRed,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textColor: AppColors.appRed,
+                                buttonColor: AppColors.appWhite,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: AppColors.appRed),
+                                  borderRadius: const BorderRadius.all(
+                                    Radius.circular(15),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: ButtonWidget(
+                                buttonPress: filtered
+                                    ? provider.clearFilters
+                                    : provider.clearSearch,
+                                title: filtered
+                                    ? 'Clear Filters'
+                                    : 'Clear Search',
+                                textStyle: TextStyle(
+                                  fontSize: AppFontSize.fontSize14,
+                                  color: AppColors.appWhite,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textColor: AppColors.appWhite,
+                                buttonColor: AppColors.appRed,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  AppText(
-                    'We couldn’t find any templates matching your search. Try a different keyword or explore our categories.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: ButtonWidget(
-                          buttonPress: () {
-                            Navigator.pushNamed(
-                              context,
-                              '/BrowseTemplatesScreen',
-                            );
-                          },
-                          title: 'Browse Categories',
-                          textStyle: TextStyle(
-                            fontSize: AppFontSize.fontSize14,
-                            color: AppColors.appRed,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textColor: AppColors.appRed,
-                          buttonColor: AppColors.appWhite,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.appRed),
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(15),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: ButtonWidget(
-                          buttonPress: provider.clearSearch,
-                          title: 'Clear Search',
-                          textStyle: TextStyle(
-                            fontSize: AppFontSize.fontSize14,
-                            color: AppColors.appWhite,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textColor: AppColors.appWhite,
-                          buttonColor: AppColors.appRed,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

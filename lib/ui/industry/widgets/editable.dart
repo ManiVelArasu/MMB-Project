@@ -1027,18 +1027,33 @@ class EditableItemWidget extends StatelessWidget {
       if (!isBackground &&
           item.outlineWidth > 0 &&
           outlineStyle != 'none') {
+        // A cropped / shaped image (circle, rounded, custom path) gets its
+        // outline along that shape instead of the rectangular box.
+        final outlineRaw = provider.templateRawObject(id);
+        final outlineClip = outlineRaw?['clipPath'];
+        final CustomClipper<Path>? outlineShape =
+        (outlineRaw != null &&
+            outlineClip is Map &&
+            outlineClip['inverted'] != true &&
+            outlineClip['absolutePositioned'] != true)
+            ? _FabricClipPathClipper(outlineRaw, outlineClip)
+            : null;
         return SizedBox.expand(
           child: Stack(
             fit: StackFit.expand,
             children: [
               rendered,
-              IgnorePointer(
-                child: CustomPaint(
-                  painter: _ItemOutlinePainter(
-                    color: item.outlineColor ?? const Color(0xFFD9D9D9),
-                    width: item.outlineWidth,
-                    style: outlineStyle,
-                    join: provider.outlineJoin(id),
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    size: Size.infinite,
+                    painter: _ItemOutlinePainter(
+                      color: item.outlineColor ?? const Color(0xFFD9D9D9),
+                      width: item.outlineWidth,
+                      style: outlineStyle,
+                      join: provider.outlineJoin(id),
+                      shape: outlineShape,
+                    ),
                   ),
                 ),
               ),
@@ -1693,18 +1708,28 @@ class _ItemOutlinePainter extends CustomPainter {
     required this.width,
     required this.style,
     required this.join,
+    this.shape,
   });
 
   final Color color;
   final double width;
   final String style;
   final String join;
+  final CustomClipper<Path>? shape;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (width <= 0 || size.isEmpty) return;
     final rect = (Offset.zero & size).deflate(width / 2);
     if (rect.isEmpty) return;
+    Path? shapePath;
+    if (shape != null) {
+      try {
+        shapePath = shape!.getClip(size);
+      } catch (_) {
+        shapePath = null;
+      }
+    }
     final dash = _outlineDashFor(style);
     final round = style == 'dotted' || style == 'fine_dotted';
     final paint = Paint()
@@ -1713,13 +1738,17 @@ class _ItemOutlinePainter extends CustomPainter {
       ..strokeWidth = width
       ..strokeJoin = _strokeJoinFor(join)
       ..strokeCap = round ? StrokeCap.round : StrokeCap.butt;
-    final path = Path()..addRect(rect);
+    final path = shapePath ?? (Path()..addRect(rect));
     canvas.drawPath(dash == null ? path : _dashPath(path, dash), paint);
   }
 
   @override
   bool shouldRepaint(covariant _ItemOutlinePainter o) =>
-      o.color != color || o.width != width || o.style != style || o.join != join;
+      o.color != color ||
+          o.width != width ||
+          o.style != style ||
+          o.join != join ||
+          o.shape != shape;
 }
 
 /// Renders Fabric.js Rect, Circle and Path objects imported from a template.
