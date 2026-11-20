@@ -4745,12 +4745,30 @@ class _EditorViewState extends State<EditorView> {
   // added or lifted, so every start re-decides what the gesture targets.
   void _onCanvasGestureStart(ScaleStartDetails d) {
     if (_gestureSuppressed) return;
-    // Normal (not zoomed) mode: with an element selected, a pinch anywhere
-    // resizes it. Zoom mode: only a pinch ON the element resizes it, a pinch
-    // elsewhere zooms the canvas.
-    final targetsItem = _panMode
-        ? false
-        : (_zoomModeOn ? _isOverSelectedItem(d.localFocalPoint) : true);
+    // Canva behaviour (same in normal and zoomed mode):
+    //  * two fingers on the selected object      -> resize / rotate it
+    //  * two fingers on any other object         -> select it, then resize it
+    //  * two fingers on empty space / background -> zoom the whole canvas
+    var targetsItem = false;
+    if (!_panMode && d.pointerCount >= 2) {
+      final provider = context.read<EditorProvider>();
+      targetsItem = _isOverSelectedItem(d.localFocalPoint);
+      if (!targetsItem && !provider.multiSelectMode) {
+        final frac = _zoomFracAt(d.localFocalPoint, _canvasZoom);
+        final hitId = _pickItemAt(
+          provider,
+          Offset(
+            frac.dx * _zoomCanvasLogical.width,
+            frac.dy * _zoomCanvasLogical.height,
+          ),
+        );
+        if (hitId != null) {
+          final hit = provider.items.firstWhere((x) => x.id == hitId);
+          provider.setSelectedItem(hit.type, hit.id);
+          targetsItem = true;
+        }
+      }
+    }
     _gestureOnItem = d.pointerCount >= 2 && targetsItem && _beginItemPinch();
     _zoomGestureStart = _canvasZoom;
     _zoomGestureFrac = _zoomFracAt(d.localFocalPoint, _canvasZoom);
@@ -5093,54 +5111,7 @@ class _EditorViewState extends State<EditorView> {
                   'Unselect',
                       () => provider.clearSelection(),
                 ),
-              if (_zoomModeOn) ...[
-                btn(Icons.add_rounded, 'Zoom in', () => _stepZoom(provider, 1)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Text(
-                    '${(_canvasZoom * 100).round()}%',
-                    style: TextStyle(
-                      fontSize: AppFontSize.fontSize11,
-                      fontWeight: FontWeight.w700,
-                      color: fg,
-                    ),
-                  ),
-                ),
-                btn(
-                  Icons.remove_rounded,
-                  'Zoom out',
-                      () => _stepZoom(provider, -1),
-                ),
-                btn(
-                  Icons.fit_screen_rounded,
-                  'Fit to screen',
-                      () => _applyZoom(
-                    1.0,
-                    const Offset(0.5, 0.5),
-                    Offset(_zoomViewSize.width / 2, _zoomViewSize.height / 2),
-                  ),
-                ),
-                btn(
-                  Icons.pan_tool_rounded,
-                  _panMode ? 'Pan mode on' : 'Move screen',
-                      () {
-                    setState(() => _panMode = !_panMode);
-                    if (_panMode) provider.clearSelection();
-                    Fluttertoast.showToast(
-                      msg: _panMode
-                          ? 'Pan mode: drag to move the screen'
-                          : 'Edit mode: drag to move objects',
-                    );
-                  },
-                  active: _panMode,
-                ),
-              ],
-              btn(
-                _zoomModeOn ? Icons.close_rounded : Icons.zoom_in_rounded,
-                _zoomModeOn ? 'Exit zoom' : 'Zoom in to edit',
-                    () => _toggleZoomMode(provider),
-                active: _zoomModeOn,
-              ),
+              // Zoom buttons removed: zoom is pinch-only (Canva style).
             ],
           ),
         ),
@@ -12653,30 +12624,78 @@ class _TransformSelectionOverlayState
       return const SizedBox.shrink();
     }
 
-    // Canva-style corner buttons: delete (TL), edit (TR, text only),
-    // rotate (BL) and resize (BR). They sit on the corners; when the box is
-    // tiny they slide outward just enough so they never overlap each other
-    // or hide the content.
-    const btnGap = 40.0; // min distance between two button centres
-    final dx = math.max(0.0, (btnGap - width) / 2);
-    final dy = math.max(0.0, (btnGap - height) / 2);
-    final tl = Offset(-dx, -dy);
-    final tr = Offset(width + dx, -dy);
-    final bl = Offset(-dx, height + dy);
-    final br = Offset(width + dx, height + dy);
-
-    // Edge handles (circles on left/right, bars on top/bottom) live BETWEEN
-    // the corner buttons; touch zone reaches outside the box, only a few px in.
+    // Canva-style selection: white round knobs on the corners / sides, a
+    // floating pill toolbar (edit / duplicate / delete) above the box and a
+    // rotate button (plus a move button for text) below it.
     const outer = 26.0;
+    const insetX = 22.0;
+    const insetY = 22.0;
     final innerX = math.min(8.0, width * 0.2);
     final innerY = math.min(8.0, height * 0.2);
-    final insetX = math.max(0.0, 22.0 - dx);
-    final insetY = math.max(0.0, 22.0 - dy);
+    final cin = math.min(18.0, math.min(width, height) / 2);
     final sideLenV = height - insetY * 2;
     final sideLenH = width - insetX * 2;
     final itemId = widget.item.id ?? '';
+    final bs = Size(width, height);
 
-    return Positioned(
+    // Buttons under the box (box coordinates).
+    final belowY = height + 34.0;
+    final rotateCenter = Offset(width / 2 + (_isText ? -24.0 : 0.0), belowY);
+    final moveCenter = Offset(width / 2 + 24.0, belowY);
+
+    // ---- floating toolbar geometry (screen space, always upright) ----
+    final cx = _left + width / 2;
+    final cy = _top + height / 2;
+    final ac = math.cos(_rotation).abs(), as_ = math.sin(_rotation).abs();
+    final ex = (width * ac + height * as_) / 2;
+    final ey = (width * as_ + height * ac) / 2;
+    final barCount = _isText ? 3 : 2;
+    final barW = barCount * 44.0 + 16.0;
+    const barH = 44.0;
+
+    Widget barBtn(IconData icon, VoidCallback onTap, {Color? color}) {
+      return InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, size: 22, color: color ?? Colors.black87),
+        ),
+      );
+    }
+
+    final toolbar = Material(
+      elevation: 6,
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(24),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isText)
+              barBtn(
+                Icons.edit_rounded,
+                    () => EditableItemWidget.showTextEditor(
+                  context,
+                  _provider,
+                  itemId,
+                  widget.item.text ?? '',
+                ),
+              ),
+            barBtn(Icons.copy_rounded, () => _provider.duplicateItem(itemId)),
+            barBtn(
+              Icons.delete_outline_rounded,
+                  () => _provider.removeItem(itemId),
+              color: const Color(0xFFE5533D),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final rotatedBox = Positioned(
       left: _left - _pad,
       top: _top - _pad,
       width: width + _pad * 2,
@@ -12710,17 +12729,17 @@ class _TransformSelectionOverlayState
                           _startFocalPoint = down;
                         }
                         ..onUpdate = (position) {
-                          final dx =
+                          final mx =
                               (position.dx - _startFocalPoint.dx) /
                                   widget.scaleX;
-                          final dy =
+                          final my =
                               (position.dy - _startFocalPoint.dy) /
                                   widget.scaleY;
                           _provider.updateItemTransform(
                             widget.item.id ?? '',
                             position: Offset(
-                              _startPosition.dx + dx,
-                              _startPosition.dy + dy,
+                              _startPosition.dx + mx,
+                              _startPosition.dy + my,
                             ),
                             clampToFrame: false,
                           );
@@ -12751,15 +12770,16 @@ class _TransformSelectionOverlayState
               ),
             ),
 
+            // Side knobs.
             if (sideLenV >= 14) ...[
               _handle(
                 alignment: Alignment.centerLeft,
-                box: Size(width, height),
+                box: bs,
                 hit: Rect.fromLTRB(-outer, insetY, innerX, height - insetY),
               ),
               _handle(
                 alignment: Alignment.centerRight,
-                box: Size(width, height),
+                box: bs,
                 hit: Rect.fromLTRB(
                   width - innerX,
                   insetY,
@@ -12771,12 +12791,12 @@ class _TransformSelectionOverlayState
             if (!_isText && sideLenH >= 14) ...[
               _handle(
                 alignment: Alignment.topCenter,
-                box: Size(width, height),
+                box: bs,
                 hit: Rect.fromLTRB(insetX, -outer, width - insetX, innerY),
               ),
               _handle(
                 alignment: Alignment.bottomCenter,
-                box: Size(width, height),
+                box: bs,
                 hit: Rect.fromLTRB(
                   insetX,
                   height - innerY,
@@ -12786,33 +12806,36 @@ class _TransformSelectionOverlayState
               ),
             ],
 
-            // Delete (top-left).
-            _actionButton(
-              center: tl,
-              icon: Icons.close_rounded,
-              background: const Color(0xFFE5533D),
-              foreground: Colors.white,
-              onTap: () => _provider.removeItem(itemId),
+            // Corner knobs (uniform resize), drawn last so they win the hit.
+            _handle(
+              alignment: Alignment.topLeft,
+              box: bs,
+              hit: Rect.fromLTRB(-outer, -outer, cin, cin),
+            ),
+            _handle(
+              alignment: Alignment.topRight,
+              box: bs,
+              hit: Rect.fromLTRB(width - cin, -outer, width + outer, cin),
+            ),
+            _handle(
+              alignment: Alignment.bottomLeft,
+              box: bs,
+              hit: Rect.fromLTRB(-outer, height - cin, cin, height + outer),
+            ),
+            _handle(
+              alignment: Alignment.bottomRight,
+              box: bs,
+              hit: Rect.fromLTRB(
+                width - cin,
+                height - cin,
+                width + outer,
+                height + outer,
+              ),
             ),
 
-            // Edit text (top-right, text items only).
-            if (_isText)
-              _actionButton(
-                center: tr,
-                icon: Icons.edit_rounded,
-                background: Colors.white,
-                foreground: Colors.black87,
-                onTap: () => EditableItemWidget.showTextEditor(
-                  context,
-                  _provider,
-                  itemId,
-                  widget.item.text ?? '',
-                ),
-              ),
-
-            // Rotate (bottom-left).
+            // Rotate (below the box).
             _actionButton(
-              center: bl,
+              center: rotateCenter,
               icon: Icons.rotate_right_rounded,
               background: Colors.white,
               foreground: Colors.black87,
@@ -12838,18 +12861,58 @@ class _TransformSelectionOverlayState
               },
             ),
 
-            // Resize (bottom-right): drag along the diagonal to scale.
-            _actionButton(
-              center: br,
-              icon: Icons.open_in_full_rounded,
-              flipIcon: true,
-              background: Colors.white,
-              foreground: Colors.black87,
-              onPanStart: _onResizeStart,
-              onPanUpdate: (d) => _onResizeUpdate(Alignment.bottomRight, d),
-            ),
+            // Move handle (text only): drag it to move the text anywhere.
+            if (_isText)
+              _actionButton(
+                center: moveCenter,
+                icon: Icons.open_with_rounded,
+                background: Colors.white,
+                foreground: Colors.black87,
+                onPanStart: (details) {
+                  _startPosition = widget.item.position;
+                  _startFocalPoint = details.globalPosition;
+                },
+                onPanUpdate: (details) {
+                  final mx =
+                      (details.globalPosition.dx - _startFocalPoint.dx) /
+                          widget.scaleX;
+                  final my =
+                      (details.globalPosition.dy - _startFocalPoint.dy) /
+                          widget.scaleY;
+                  _provider.updateItemTransform(
+                    itemId,
+                    position: Offset(
+                      _startPosition.dx + mx,
+                      _startPosition.dy + my,
+                    ),
+                    clampToFrame: false,
+                  );
+                },
+              ),
           ],
         ),
+      ),
+    );
+
+    return Positioned.fill(
+      child: LayoutBuilder(
+        builder: (context, c) {
+          final vw = c.maxWidth, vh = c.maxHeight;
+          // Above the box; when there is no room, below the rotate button.
+          var top = cy - ey - barH - 14;
+          if (top < 6) top = cy + ey + 74;
+          top = top.clamp(6.0, math.max(6.0, vh - barH - 6)).toDouble();
+          final left = (cx - barW / 2)
+              .clamp(6.0, math.max(6.0, vw - barW - 6))
+              .toDouble();
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              rotatedBox,
+              Positioned(left: left, top: top, child: toolbar),
+            ],
+          );
+        },
       ),
     );
   }
@@ -13099,42 +13162,28 @@ class _ResizeHandleVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Middle handles use thin lines; corner handles stay round.
+    const shadow = [
+      BoxShadow(color: Color(0x40000000), blurRadius: 4, offset: Offset(0, 1)),
+    ];
+    // Top / bottom: white pill. Everything else: white round knob.
     if (alignment.x == 0) {
       return Container(
-        width: 20,
-        height: 3,
+        width: 24,
+        height: 8,
         decoration: BoxDecoration(
-          color: const Color(0xFF3568F5),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      );
-    }
-    if (alignment.y == 0) {
-      // Left / right: round white knob like the reference editor.
-      return Container(
-        width: 18,
-        height: 18,
-        decoration: const BoxDecoration(
           color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x40000000),
-              blurRadius: 4,
-              offset: Offset(0, 1),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(4),
+          boxShadow: shadow,
         ),
       );
     }
     return Container(
-      width: 12,
-      height: 12,
-      decoration: BoxDecoration(
+      width: 18,
+      height: 18,
+      decoration: const BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF3568F5), width: 1.5),
+        boxShadow: shadow,
       ),
     );
   }
