@@ -17,6 +17,8 @@ import '../../ui/industry/widgets/animation.dart';
 import '../../ui/industry/widgets/text_effect.dart';
 import '../../Repository/freePic.dart';
 import '../../Repository/home_repository.dart';
+import '../../Repository/business_profile_repository.dart';
+import '../../Api Model/frames_model.dart';
 import '../../Api Model/templatecategories.dart';
 import '../../Api Model/Template_model.dart';
 import '../../Repository/template_edit_repository.dart';
@@ -1801,6 +1803,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   void setSelectedFrame(String frameUrl) {
     selectedFrameUrl = frameUrl;
+    notifyListeners();
+  }
+
+  /// Removes the frame that is applied on the selected image.
+  void clearSelectedFrame() {
+    selectedFrameUrl = null;
     notifyListeners();
   }
 
@@ -4222,6 +4230,77 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   int get currentPageIndex => _currentPageIndex;
 
   // ============================================================
+  // EDITOR -> FRAMES SHEET
+  // Same static / animated frames API flow as BusinessProfileProvider
+  // (loadFrames / updateFrameTab / selectedFrames), kept here so the editor
+  // reads the very same frames as the profile screen.
+  // ============================================================
+
+  final BusinessProfileRepository _framesRepository =
+      BusinessProfileRepository.instance;
+
+  List<FramesList> _staticFrames = [];
+  List<FramesList> _animatedFrames = [];
+
+  bool _isFramesLoading = false;
+  String? _framesError;
+  int _selectedFrameTab = 0;
+
+  bool get isFramesLoading => _isFramesLoading;
+  String? get framesError => _framesError;
+  int get selectedFrameTab => _selectedFrameTab;
+
+  List<FramesList> get staticFrames => _staticFrames;
+  List<FramesList> get animatedFrames => _animatedFrames;
+
+  List<FramesList> get selectedFrames =>
+      _selectedFrameTab == 0 ? _staticFrames : _animatedFrames;
+
+  Future<void> loadFrames(String type) async {
+    _isFramesLoading = true;
+    _framesError = null;
+    notifyListeners();
+
+    try {
+      final result = await _framesRepository.frames(type);
+
+      final framesData = result.data;
+
+      if (framesData != null && framesData.success == true) {
+        if (type == 'static') {
+          _staticFrames = framesData.data;
+        } else if (type == 'animated') {
+          _animatedFrames = framesData.data;
+        }
+      } else {
+        _framesError = 'Unable to load $type frames';
+      }
+    } catch (e, stackTrace) {
+      _framesError = 'Failed to load frames';
+      debugPrint('Frames API error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    } finally {
+      _isFramesLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void updateFrameTab(int index) {
+    _selectedFrameTab = index;
+    notifyListeners();
+
+    if (index == 0) {
+      if (_staticFrames.isEmpty) {
+        loadFrames('static');
+      }
+    } else {
+      if (_animatedFrames.isEmpty) {
+        loadFrames('animated');
+      }
+    }
+  }
+
+  // ============================================================
   // EDITOR -> TEMPLATES SHEET
   // Same API flow as HomeScreenProvider (categories -> templates by
   // category), kept here so the editor does not have to create a whole
@@ -4554,6 +4633,108 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void duplicateCurrentPage() => addPage(duplicateCurrent: true);
+
+  /// Copies everything that is stored per item id (text spacing, fills,
+  /// outline, raw template shape data ...) from [oldId] to [newId], so a
+  /// duplicated page looks exactly like the source page.
+  void _cloneItemMeta(String oldId, String newId) {
+    void c<T>(Map<String, T> m) {
+      final v = m[oldId];
+      if (v != null) m[newId] = v;
+    }
+
+    void cs(Set<String> set) {
+      if (set.contains(oldId)) set.add(newId);
+    }
+
+    c(_imageMaskUrls);
+    c(_imageMaskNames);
+    c(_outlineStyles);
+    c(_outlineJoins);
+    c(_itemAnimations);
+    c(_textEffects);
+    c(_templateFlipX);
+    c(_templateFlipY);
+    c(_textLetterSpacing);
+    c(_textLineSpacing);
+    c(_textAlignment);
+    c(_textWeight);
+    c(_textStyle);
+    c(_textUnderline);
+    c(_imageFilterIntensity);
+    c(_imageTint);
+    c(_imageBlur);
+    c(_imageFill);
+    c(_imageFlipX);
+    c(_imageFlipY);
+    cs(_lockedItems);
+    cs(_templateBackgroundIds);
+    cs(_shapeImageIds);
+    final raw = _templateRawObjects[oldId];
+    if (raw != null) {
+      _templateRawObjects[newId] = Map<String, dynamic>.from(
+        jsonDecode(jsonEncode(raw)) as Map,
+      );
+    }
+  }
+
+  /// Duplicates the page at [index] (any page, not only the open one).
+  /// The copy is placed right after the source and becomes the open page.
+  void duplicatePageAt(int index) {
+    _syncCurrentPage();
+    _ensurePageMeta();
+    if (index < 0 || index >= _pages.length) return;
+    _resetHistory();
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    final sourceName = _pageNames[index];
+    final source = _pages[index];
+    final copied = <EditorItem>[];
+    for (var i = 0; i < source.length; i++) {
+      final e = source[i];
+      final oldId = e.id;
+      final newId = '${stamp}_${i}_${oldId ?? ''}';
+      copied.add(e.copyWith(id: newId));
+      if (oldId != null) _cloneItemMeta(oldId, newId);
+    }
+    final at = index + 1;
+    _pages.insert(at, copied);
+    _pageIds.insert(at, 'pg_${stamp}_${_pageIdSeq++}');
+    _pageNames.insert(at, '$sourceName copy');
+    _currentPageIndex = at;
+    _items
+      ..clear()
+      ..addAll(copied.map((e) => e.copyWith()));
+    clearSelection();
+    notifyListeners();
+  }
+
+  /// Deletes the page at [index] (any page, not only the open one).
+  void deletePageAt(int index) {
+    _syncCurrentPage();
+    _ensurePageMeta();
+    if (index < 0 || index >= _pages.length) return;
+    if (_pages.length <= 1) {
+      deleteCurrentPage();
+      return;
+    }
+    _resetHistory();
+    final wasOpen = index == _currentPageIndex;
+    _pageIds.removeAt(index);
+    _pageNames.removeAt(index);
+    _pages.removeAt(index);
+    if (index < _currentPageIndex) {
+      _currentPageIndex -= 1; // the open page just moved one slot up
+    } else if (wasOpen) {
+      if (_currentPageIndex >= _pages.length) {
+        _currentPageIndex = _pages.length - 1;
+      }
+      _items
+        ..clear()
+        ..addAll(_pages[_currentPageIndex].map((e) => e.copyWith()));
+    }
+    clearSelection();
+    notifyListeners();
+  }
 
   void switchPage(int index) {
     if (index < 0 || index >= pageCount || index == _currentPageIndex) return;

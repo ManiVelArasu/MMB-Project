@@ -36,7 +36,6 @@ import '../../network/provider/plan_provider.dart';
 import '../industry/widgets/animation.dart';
 import '../industry/widgets/editable.dart';
 import '../../network/provider/custom_theme_provider.dart';
-import '../../network/provider/home_screen_provider.dart';
 import '../../network/provider/prpject_provider.dart';
 import 'dart:core';
 
@@ -608,7 +607,7 @@ class _EditorViewState extends State<EditorView> {
     }
   }
 
-  Future<void> _saveProjectNow() async {
+  Future<void> _saveProjectNow({bool force = false}) async {
     if (!_projectAutoSaveReady || !mounted) return;
 
     final projectProvider = context.read<ProjectProvider>();
@@ -629,6 +628,7 @@ class _EditorViewState extends State<EditorView> {
       setState(() => _projectSaveStatus = 'Saving...');
     }
 
+    var forceThis = force;
     try {
       do {
         _projectSaveQueued = false;
@@ -636,9 +636,13 @@ class _EditorViewState extends State<EditorView> {
         // Export the latest canvas content without truncating text.
         final content = jsonEncode(editorProvider.exportCurrentPageJson());
 
-        if (content == _lastSavedProjectContent) {
+        // `force` = a page was deleted / duplicated from the Pages sheet:
+        // always call PATCH project/{id}, even when the open page's JSON
+        // did not change.
+        if (!forceThis && content == _lastSavedProjectContent) {
           continue;
         }
+        forceThis = false;
         final thumbnailBase64 = await _getThumbnailBase64(editorProvider);
         final saveResult = await ProjectRepository.instance.updateProject(
           projectUid: uid,
@@ -849,8 +853,6 @@ class _EditorViewState extends State<EditorView> {
       // nullable string templateId. Do not use uid/familyUid here.
       final int? templateId = int.tryParse(data.id ?? '');
       final int? templateUId = int.tryParse(data.familyId ?? '');
-      final templateUidFromApi = data.uid?.toString();
-      final thumbnailS3Key = data.thumbnailS3Key?.toString();
       final templateName = data.name?.toString().trim().isNotEmpty == true
           ? data.name.toString().trim()
           : 'Untitled design';
@@ -1243,238 +1245,347 @@ class _EditorViewState extends State<EditorView> {
       EditorProvider provider,
       bool isDark,
       ) {
-    int selectedTab = 0;
-
     final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black;
-    final mutedColor = isDark ? Colors.white54 : Colors.black26;
-    final cardBorder = isDark ? Colors.white24 : Colors.grey.shade300;
+    final textColor = isDark ? Colors.white : const Color(0xFF1B1B1B);
+    final mutedColor = isDark ? Colors.white54 : const Color(0xFF9A9A9A);
+    final cardBorder = isDark ? Colors.white24 : const Color(0xFFE2E2E2);
+    const accent = Color(0xFFFF252D);
 
-    final staticFrames = <Map<String, String>>[
-      {'asset': 'assets/images/thumbnail1.png', 'name': 'Free', 'price': ''},
-      {
-        'asset': 'assets/images/thumbnail1.png',
-        'name': 'Rs.0 (Rs.100 Unlocked)',
-        'price': '',
-      },
-      {'asset': 'assets/images/thumbnail1.png', 'name': 'Free', 'price': ''},
-      {'asset': 'assets/images/thumbnail1.png', 'name': 'Free', 'price': ''},
-    ];
+    // Frames come from the same API as the business profile screen.
+    // Opening the sheet always starts on "Static Frames".
+    provider.updateFrameTab(0);
 
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
-        return StatefulBuilder(
-          builder: (sheetContext, setSheetState) {
-            final frames = staticFrames;
+        // The sheet is a separate route: hand the editor provider down to it.
+        return ChangeNotifierProvider<EditorProvider>.value(
+          value: provider,
+          child: Consumer<EditorProvider>(
+            builder: (sheetContext, p, _) {
+              final selectedTab = p.selectedFrameTab;
+              final frames = p.selectedFrames;
+              final applied = p.selectedFrameUrl;
 
-            return Container(
-              height: MediaQuery.of(sheetContext).size.height * 0.50,
-              padding: const EdgeInsets.fromLTRB(20, 12, 0, 16),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(30),
-                ),
-              ),
-              child: SafeArea(
-                top: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Drag handle
-                    Center(
-                      child: Container(
-                        width: 100,
-                        height: 5,
-                        decoration: BoxDecoration(
+              // "No frame" tile (only while a frame is applied).
+              Widget noneCard() {
+                return SizedBox(
+                  width: 78,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            p.clearSelectedFrame();
+                            Navigator.pop(modalContext);
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF2C2C2C)
+                                  : const Color(0xFFF6F6F6),
+                              border: Border.all(color: cardBorder),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.block_rounded,
+                              size: 24,
+                              color: mutedColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      AppText(
+                        'None',
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 11.5,
                           color: mutedColor,
-                          borderRadius: BorderRadius.circular(10),
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 28),
+                    ],
+                  ),
+                );
+              }
 
-                    // Header
-                    Padding(
-                      padding: const EdgeInsets.only(right: 20),
-                      child: Row(
-                        children: [
-                          AppText(
-                            'My Frames',
-                            style: TextStyle(
-                              fontSize: AppFontSize.fontSize18,
-                              fontWeight: FontWeight.w500,
-                              color: textColor,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFFE5E7),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.circle,
-                                color: Color(0xFFEF2029),
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
+              Widget frameCard(dynamic frame) {
+                final key = (frame.thumbnailS3Key ?? '').toString().trim();
+                final imageUrl = key.isEmpty
+                    ? ''
+                    : '${ApiEndpoints.cdnImageUrl}/$key';
+                final priceRaw = (frame.price ?? '').toString().trim();
+                final isFree =
+                    priceRaw.isEmpty ||
+                        priceRaw == '0' ||
+                        priceRaw == '0.0' ||
+                        priceRaw == '0.00';
+                final isApplied = imageUrl.isNotEmpty && applied == imageUrl;
 
-                          // Edit button
-                          _frameHeaderButton(
-                            icon: Icons.edit_outlined,
-                            onTap: () {
-                              // Add your existing frame edit action here.
-                            },
-                          ),
-                          const SizedBox(width: 12),
-
-                          // Add button
-                          _frameHeaderButton(
-                            icon: Icons.add,
-                            onTap: () {
-                              // Add your existing create-frame action here.
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Tabs
-                    Padding(
-                      padding: const EdgeInsets.only(right: 20),
-                      child: Row(
-                        children: [
-                          _frameTab(
-                            title: 'Static Frames',
-                            selected: selectedTab == 0,
-                            onTap: () {
-                              setSheetState(() => selectedTab = 0);
-                            },
-                            textColor: textColor,
-                            mutedColor: mutedColor,
-                          ),
-                          const SizedBox(width: 22),
-                          _frameTab(
-                            title: 'Animated Frames',
-                            selected: selectedTab == 1,
-                            onTap: () {
-                              setSheetState(() => selectedTab = 1);
-                            },
-                            textColor: textColor,
-                            mutedColor: mutedColor,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-
-                    // Frame cards
-                    Expanded(
-                      child: selectedTab == 0
-                          ? ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.only(
-                          right: 20,
-                          bottom: 12,
-                        ),
-                        itemCount: frames.length,
-                        separatorBuilder: (_, __) =>
-                        const SizedBox(width: 16),
-                        itemBuilder: (context, index) {
-                          final frame = frames[index];
-
-                          return SizedBox(
-                            width: 105,
-                            child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      provider.setSelectedFrame(
-                                        frame['asset']!,
-                                      );
-                                      Navigator.pop(modalContext);
-                                    },
-                                    child: Container(
-                                      width: double.infinity,
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? const Color(0xFF2C2C2C)
-                                            : Colors.white,
-                                        border: Border.all(
-                                          color: cardBorder,
-                                        ),
-                                        borderRadius:
-                                        BorderRadius.circular(12),
+                return SizedBox(
+                  width: 92,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: imageUrl.isEmpty
+                              ? null
+                              : () {
+                            p.setSelectedFrame(imageUrl);
+                            Navigator.pop(modalContext);
+                            if (p.selectedItemType != 'image') {
+                              Fluttertoast.showToast(
+                                msg: 'Select an image to see the frame',
+                              );
+                            }
+                          },
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? const Color(0xFF2C2C2C)
+                                        : Colors.white,
+                                    border: Border.all(
+                                      color: isApplied ? accent : cardBorder,
+                                      width: isApplied ? 1.8 : 1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(9),
+                                    child: imageUrl.isEmpty
+                                        ? const Center(
+                                      child: Icon(
+                                        Icons.image_not_supported_rounded,
+                                        color: Colors.grey,
                                       ),
-                                      child: ClipRRect(
-                                        borderRadius:
-                                        BorderRadius.circular(11),
-                                        child: Image.asset(
-                                          frame['asset']!,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (
-                                              context,
-                                              error,
-                                              stackTrace,
-                                              ) {
-                                            return const Center(
-                                              child: Icon(
-                                                Icons.image_outlined,
-                                                size: 42,
-                                                color: Colors.blue,
-                                              ),
-                                            );
-                                          },
+                                    )
+                                        : Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.contain,
+                                      loadingBuilder:
+                                          (_, child, progress) {
+                                        if (progress == null) {
+                                          return child;
+                                        }
+                                        return const Center(
+                                          child: SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child:
+                                            CircularProgressIndicator(
+                                              strokeWidth: 1.5,
+                                              color: accent,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder: (_, __, ___) =>
+                                      const Center(
+                                        child: Icon(
+                                          Icons
+                                              .image_not_supported_rounded,
+                                          color: Colors.grey,
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 7),
-                                AppText(
-                                  frame['name']!,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: AppFontSize.fontSize14,
-                                    color: textColor,
-                                    fontWeight: FontWeight.w500,
+                              ),
+                              if (isApplied)
+                                Positioned(
+                                  top: 5,
+                                  right: 5,
+                                  child: Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: const BoxDecoration(
+                                      color: accent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.check_rounded,
+                                      size: 13,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                      )
-                          : Center(
-                        child: AppText(
-                          'No animated frames available',
-                          style: TextStyle(
-                            color: mutedColor,
-                            fontSize: AppFontSize.fontSize14,
+                            ],
                           ),
                         ),
                       ),
+                      const SizedBox(height: 5),
+                      AppText(
+                        isFree ? 'Free' : 'RS. $priceRaw',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: isFree ? const Color(0xFF2E9E5B) : textColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              Widget framesBody() {
+                if (p.isFramesLoading && frames.isEmpty) {
+                  return const Center(
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: accent,
+                      ),
                     ),
-                  ],
+                  );
+                }
+
+                if (frames.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppText(
+                          p.framesError ??
+                              (selectedTab == 0
+                                  ? 'No static frames available'
+                                  : 'No animated frames available'),
+                          style: TextStyle(color: mutedColor, fontSize: 12.5),
+                        ),
+                        if (p.framesError != null)
+                          TextButton(
+                            onPressed: () => p.loadFrames(
+                              selectedTab == 0 ? 'static' : 'animated',
+                            ),
+                            child: const AppText('Retry'),
+                          ),
+                      ],
+                    ),
+                  );
+                }
+
+                final showNone = applied != null;
+                return ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(right: 16),
+                  itemCount: frames.length + (showNone ? 1 : 0),
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  itemBuilder: (_, index) {
+                    if (showNone && index == 0) return noneCard();
+                    return frameCard(frames[index - (showNone ? 1 : 0)]);
+                  },
+                );
+              }
+
+              // Height follows the content, so the sheet stays compact.
+              return Container(
+                padding: const EdgeInsets.fromLTRB(16, 8, 0, 8),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(22),
+                  ),
                 ),
-              ),
-            );
-          },
+                child: SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Drag handle
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white24
+                                : const Color(0xFFD6D6D6),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Header
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: Row(
+                          children: [
+                            AppText(
+                              'My Frames',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: textColor,
+                              ),
+                            ),
+                            const Spacer(),
+                            _frameHeaderButton(
+                              icon: Icons.edit_outlined,
+                              onTap: () {
+                                // Add your existing frame edit action here.
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _frameHeaderButton(
+                              icon: Icons.add_rounded,
+                              onTap: () {
+                                // Add your existing create-frame action here.
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Tabs
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: Row(
+                          children: [
+                            _frameTab(
+                              title: 'Static',
+                              selected: selectedTab == 0,
+                              onTap: () => p.updateFrameTab(0),
+                              textColor: textColor,
+                              mutedColor: mutedColor,
+                            ),
+                            const SizedBox(width: 22),
+                            _frameTab(
+                              title: 'Animated',
+                              selected: selectedTab == 1,
+                              onTap: () => p.updateFrameTab(1),
+                              textColor: textColor,
+                              mutedColor: mutedColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Frame cards (from the API)
+                      SizedBox(height: 132, child: framesBody()),
+                      const SizedBox(height: 4),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
         );
       },
     );
@@ -1486,15 +1597,15 @@ class _EditorViewState extends State<EditorView> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        width: 42,
-        height: 42,
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
           color: const Color(0xFFFFE5E7),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: const Color(0xFFFF252D), size: 22),
+        child: Icon(icon, color: const Color(0xFFFF252D), size: 18),
       ),
     );
   }
@@ -1507,28 +1618,29 @@ class _EditorViewState extends State<EditorView> {
     required Color mutedColor,
   }) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 5),
+      // Underline is exactly as wide as the label.
+      child: IntrinsicWidth(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AppText(
               title,
               style: TextStyle(
-                fontSize: AppFontSize.fontSize18,
-                fontWeight: FontWeight.w500,
+                fontSize: 13.5,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 color: selected ? textColor : mutedColor,
               ),
             ),
-            const SizedBox(height: 5),
-            if (selected)
-              Container(
-                height: 2,
-                width: title == 'Static Frames' ? 142 : 160,
-                color: const Color(0xFFFF252D),
+            const SizedBox(height: 4),
+            Container(
+              height: 2,
+              decoration: BoxDecoration(
+                color: selected ? const Color(0xFFFF252D) : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
               ),
+            ),
           ],
         ),
       ),
@@ -5485,7 +5597,18 @@ class _EditorViewState extends State<EditorView> {
                                             angle: item.rotation.isFinite
                                                 ? item.rotation
                                                 : 0.0,
-                                            child: Image.asset(
+                                            // API frames are network images,
+                                            // the old built-in ones are assets.
+                                            child:
+                                            provider.selectedFrameUrl!
+                                                .startsWith('http')
+                                                ? Image.network(
+                                              provider.selectedFrameUrl!,
+                                              fit: BoxFit.fill,
+                                              errorBuilder: (_, __, ___) =>
+                                              const SizedBox.shrink(),
+                                            )
+                                                : Image.asset(
                                               provider.selectedFrameUrl!,
                                               fit: BoxFit.fill,
                                             ),
@@ -11737,6 +11860,140 @@ class _EditorViewState extends State<EditorView> {
     }
   }
 
+  /// "Delete page?" confirmation. Returns true only when the user taps
+  /// "Delete page".
+  Future<bool> _confirmDeletePage(
+      BuildContext ctx,
+      String pageName,
+      bool isDark,
+      ) async {
+    final bg = isDark ? const Color(0xFF1E2026) : Colors.white;
+    final footerBg = isDark ? const Color(0xFF17191E) : const Color(0xFFF8F8F8);
+    final fg = isDark ? Colors.white : Colors.black;
+    final sub = isDark ? Colors.white60 : const Color(0xFF7A7A7A);
+
+    final result = await showDialog<bool>(
+      context: ctx,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              color: bg,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText(
+                          'Delete page?',
+                          style: TextStyle(
+                            fontSize: AppFontSize.fontSize18,
+                            fontWeight: FontWeight.w700,
+                            color: fg,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        AppText(
+                          '\u201C$pageName\u201D and everything on it will be '
+                              'removed. This can\u2019t be undone.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.35,
+                            color: sub,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    decoration: BoxDecoration(
+                      color: footerBg,
+                      border: Border(
+                        top: BorderSide(
+                          color: isDark ? Colors.white10 : Colors.black12,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: isDark
+                                ? Colors.transparent
+                                : Colors.white,
+                            foregroundColor: fg,
+                            side: BorderSide(
+                              color: isDark
+                                  ? Colors.white24
+                                  : const Color(0xFFE0E0E0),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                          ),
+                          child: AppText(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: fg,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFBE0E0),
+                            foregroundColor: const Color(0xFFE5000F),
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                          ),
+                          child: const AppText(
+                            'Delete page',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFE5000F),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    return result == true;
+  }
+
   void _showPagesSheet(
       BuildContext context,
       EditorProvider provider,
@@ -11830,6 +12087,75 @@ class _EditorViewState extends State<EditorView> {
                               ),
                             ),
                           ),
+                          // Per-page actions.
+                          IconButton(
+                            tooltip: 'Duplicate page',
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
+                            iconSize: 20,
+                            onPressed: () {
+                              final srcId = provider.pageIdAt(index);
+                              provider.duplicatePageAt(index);
+                              // The copy starts with the same preview.
+                              final t = _pageThumbs[srcId];
+                              if (t != null) {
+                                _pageThumbs[provider.pageIdAt(
+                                  provider.currentPageIndex,
+                                )] =
+                                    t;
+                              }
+                              _lastPageCount = provider.pageCount;
+                              setModalState(() {});
+                              _saveProjectNow(force: true);
+                            },
+                            icon: const Icon(
+                              Icons.library_add_rounded,
+                              color: Colors.red,
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Delete page',
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
+                            iconSize: 20,
+                            // The last remaining page cannot be deleted.
+                            onPressed: provider.pageCount <= 1
+                                ? null
+                                : () async {
+                              final removedId = provider.pageIdAt(index);
+                              final ok = await _confirmDeletePage(
+                                sheetContext,
+                                provider.pageNameAt(index),
+                                isDark,
+                              );
+                              if (!ok || !mounted) return;
+                              // Page list can't change under a modal
+                              // dialog, but stay safe.
+                              if (index >= provider.pageCount ||
+                                  provider.pageIdAt(index) != removedId) {
+                                return;
+                              }
+                              provider.deletePageAt(index);
+                              _pageThumbs.remove(removedId);
+                              _lastPageCount = provider.pageCount;
+                              setModalState(() {});
+                              _saveProjectNow(force: true);
+                            },
+                            icon: Icon(
+                              Icons.delete_outline_rounded,
+                              color: provider.pageCount <= 1
+                                  ? Colors.grey
+                                  : Colors.red,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -11867,39 +12193,6 @@ class _EditorViewState extends State<EditorView> {
                               fontWeight: FontWeight.w700,
                               color: fg,
                             ),
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Duplicate page',
-                          onPressed: () {
-                            final srcId = provider.pageIdAt(
-                              provider.currentPageIndex,
-                            );
-                            provider.duplicateCurrentPage();
-                            // The copy starts with the same preview.
-                            final t = _pageThumbs[srcId];
-                            if (t != null) {
-                              _pageThumbs[provider.pageIdAt(
-                                provider.currentPageIndex,
-                              )] =
-                                  t;
-                            }
-                            setModalState(() {});
-                          },
-                          icon: const Icon(
-                            Icons.library_add_rounded,
-                            color: Colors.red,
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Delete page',
-                          onPressed: () {
-                            provider.deleteCurrentPage();
-                            setModalState(() {});
-                          },
-                          icon: const Icon(
-                            Icons.delete_outline_rounded,
-                            color: Colors.red,
                           ),
                         ),
                       ],
@@ -12928,7 +13221,6 @@ class _RemoveBackgroundSlideSheetState
         _progress = 1;
         _completed = true;
       });
-      // The action is invoked only after the slider reaches the end.
       widget.onSlideComplete();
       Navigator.of(context).pop();
     } else {
