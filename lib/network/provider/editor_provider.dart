@@ -366,6 +366,95 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   bool isItemLocked(String id) => _lockedItems.contains(id);
 
+  // ---- Multi-select + GROUP animation ----
+  bool _multiSelectMode = false;
+  // Insertion order = tap order (drives the cascade delay).
+  final Set<String> _multiSelectedIds = <String>{};
+
+  bool get multiSelectMode => _multiSelectMode;
+  List<String> get multiSelectedIds => _multiSelectedIds.toList();
+  bool isMultiSelected(String id) => _multiSelectedIds.contains(id);
+
+  void setMultiSelectMode(bool on) {
+    _multiSelectMode = on;
+    _multiSelectedIds.clear();
+    if (on) {
+      selectedItemType = null;
+      selectedItemId = null;
+    }
+    notifyListeners();
+  }
+
+  void toggleMultiSelect(String id) {
+    if (!_multiSelectMode) return;
+    final i = _items.indexWhere((e) => e.id == id);
+    if (i == -1 || isCanvasBackgroundItem(_items[i])) return;
+    if (!_multiSelectedIds.add(id)) _multiSelectedIds.remove(id);
+    notifyListeners();
+  }
+
+  void selectAllForMulti() {
+    _multiSelectedIds
+      ..clear()
+      ..addAll(
+        _items
+            .where((e) => e.id != null && !isCanvasBackgroundItem(e))
+            .map((e) => e.id!),
+      );
+    notifyListeners();
+  }
+
+  void clearMultiSelection() {
+    _multiSelectedIds.clear();
+    notifyListeners();
+  }
+
+  /// Applies ONE animation to every multi-selected item. Item N (tap order)
+  /// starts at baseDelay + N * stagger seconds -> cascade. stagger 0 = together.
+  void applyGroupAnimation({
+    required ItemAnimationType type,
+    required ItemAnimationMode mode,
+    required ItemAnimDirection direction,
+    required ItemAnimAxis axis,
+    double baseDelay = 0.0,
+    double stagger = 0.0,
+    bool preview = true,
+  }) {
+    final ids = _multiSelectedIds
+        .where((id) => _items.any((e) => e.id == id))
+        .toList();
+    if (ids.isEmpty) return;
+    _saveState();
+    for (var i = 0; i < ids.length; i++) {
+      final id = ids[i];
+      if (type == ItemAnimationType.none) {
+        _itemAnimations.remove(id);
+        continue;
+      }
+      final delay = (baseDelay + stagger * i).clamp(0.0, 2.9).toDouble();
+      _itemAnimations[id] = itemAnimation(id).copyWith(
+        type: type,
+        mode: mode,
+        direction: direction,
+        axis: axis,
+        delay: delay,
+      );
+      if (preview) _animationPreviewTicks[id] = animationPreviewTick(id) + 1;
+    }
+    notifyListeners();
+  }
+
+  void previewGroupAnimation() {
+    var any = false;
+    for (final id in _multiSelectedIds) {
+      if (!_items.any((e) => e.id == id)) continue;
+      if (itemAnimation(id).isNone) continue;
+      _animationPreviewTicks[id] = animationPreviewTick(id) + 1;
+      any = true;
+    }
+    if (any) notifyListeners();
+  }
+
   // ---- Text effects (outline / text box / shadow / curve / ...) ----
   final Map<String, TextEffect> _textEffects = {};
 
@@ -451,9 +540,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void setItemAnimationDelay(String id, double seconds) {
     if (!_items.any((e) => e.id == id)) return;
     _saveState();
-    _itemAnimations[id] = itemAnimation(id).copyWith(
-      delay: seconds.clamp(0.0, 2.9).toDouble(),
-    );
+    _itemAnimations[id] = itemAnimation(
+      id,
+    ).copyWith(delay: seconds.clamp(0.0, 2.9).toDouble());
     notifyListeners();
   }
 
@@ -469,6 +558,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     if (!_lockedItems.add(id)) _lockedItems.remove(id);
     notifyListeners();
   }
+
   final Map<String, Map<String, dynamic>> _templateRawObjects = {};
   final Set<String> _templateBackgroundIds = <String>{};
 
@@ -816,6 +906,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   /// Forget all undo/redo steps (new project, template load, page switch).
   void _resetHistory() {
+    _multiSelectMode = false;
+    _multiSelectedIds.clear();
     _undoStack.clear();
     _redoStack.clear();
     _transformBaseline = null;
@@ -1995,9 +2087,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final measured = fontSize > 0 && objectHeight > 0
         ? objectHeight / (fontSize * lineCount)
         : 1.0;
-    return measured.isFinite
-        ? measured.clamp(0.7, 2.5).toDouble()
-        : 1.0;
+    return measured.isFinite ? measured.clamp(0.7, 2.5).toDouble() : 1.0;
   }
 
   String _resolveTemplateSrc(String rawSrc, String? templateUid) {
@@ -2472,8 +2562,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       selectedItemId = created.first.id;
       selectedItemType = 'image';
       notifyListeners();
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<Uint8List?> _readImageBytes(String source, bool isLocal) async {
@@ -2927,6 +3016,53 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
+  // ---- Corner radius (rect shapes) --------------------------------------
+  /// True when the selected shape is a rectangle, i.e. it has corners.
+  bool supportsCornerRadius(String id) {
+    final raw = _templateRawObjects[id];
+    if (raw == null) return false;
+    final t = (raw['type'] ?? '').toString().toLowerCase();
+    return t == 'rect' || t == 'rectangle';
+  }
+
+  /// Current corner radius of the shape (what is applied right now).
+  double shapeCornerRadius(String id) {
+    final raw = _templateRawObjects[id];
+    final fromRaw = raw == null
+        ? null
+        : (_toDouble(raw['rx']) ?? _toDouble(raw['ry']));
+    if (fromRaw != null) return fromRaw;
+    final index = _items.indexWhere((e) => e.id == id);
+    return index == -1 ? 0.0 : _items[index].borderRadius;
+  }
+
+  /// Largest useful radius: half of the shorter side (fully rounded).
+  double shapeMaxCornerRadius(String id) {
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return 100.0;
+    final raw = _templateRawObjects[id];
+    final w =
+        (raw == null ? null : _toDouble(raw['width'])) ?? _items[index].width;
+    final h =
+        (raw == null ? null : _toDouble(raw['height'])) ?? _items[index].height;
+    final m = (w < h ? w : h) / 2.0;
+    return m.isFinite && m >= 1.0 ? m : 1.0;
+  }
+
+  void updateShapeCornerRadius(String id, double radius) {
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return;
+    _saveState();
+    final r = radius.clamp(0.0, shapeMaxCornerRadius(id)).toDouble();
+    _items[index] = _items[index].copyWith(borderRadius: r);
+    final raw = _templateRawObjects[id];
+    if (raw != null) {
+      raw['rx'] = r;
+      raw['ry'] = r;
+    }
+    notifyListeners();
+  }
+
   void bringToFront(String id) {
     int index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
@@ -3278,7 +3414,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               final rawLh = _toDouble(rawObj['lineHeight']);
               final rawH = _toDouble(rawObj['height']);
               final fs =
-                  _toDouble(rawObj['fontSize']) ?? _toDouble(m['fontSize']) ?? 0;
+                  _toDouble(rawObj['fontSize']) ??
+                      _toDouble(m['fontSize']) ??
+                      0;
               final txt = (m['text'] ?? rawObj['text'] ?? '').toString();
               if (rawLh != null && rawH != null && fs > 0) {
                 final lines = math.max(1, '\n'.allMatches(txt).length + 1);
@@ -3296,7 +3434,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           }
 
           if (m['raw'] is Map) {
-            _templateRawObjects[id] = Map<String, dynamic>.from(m['raw'] as Map);
+            _templateRawObjects[id] = Map<String, dynamic>.from(
+              m['raw'] as Map,
+            );
           } else if (item.type == 'shape') {
             // Projects saved before `raw` was exported: rebuild the shape from
             // the saved fields so rect / circle shapes are not blank.
@@ -3318,8 +3458,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
                 'rx': item.borderRadius,
                 'ry': item.borderRadius,
               };
-            } else {
-            }
+            } else {}
           }
           final adj = m['imageAdjust'];
           if (adj is Map) {
@@ -3372,9 +3511,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       isTemplateLoaded = true;
       _pages
         ..clear()
-        ..addAll(
-          loadedPages.map((l) => l.map((e) => e.copyWith()).toList()),
-        );
+        ..addAll(loadedPages.map((l) => l.map((e) => e.copyWith()).toList()));
       _currentPageIndex = openPage;
       _pageIds.clear();
       _pageNames.clear();
@@ -3685,7 +3822,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
 
     try {
-      final result = await FreePikService.searchPexelsVideoAssets(
+      final result =
+      await FreePikService.searchPexelsVideoAssets(
         normalized,
         page: 1,
         limit: 24,
@@ -4332,7 +4470,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void _ensurePageMeta() {
     final n = _pages.isEmpty ? 1 : _pages.length;
     while (_pageIds.length < n) {
-      _pageIds.add('pg_${DateTime.now().microsecondsSinceEpoch}_${_pageIdSeq++}');
+      _pageIds.add(
+        'pg_${DateTime.now().microsecondsSinceEpoch}_${_pageIdSeq++}',
+      );
     }
     while (_pageNames.length < n) {
       _pageNames.add(_nextPageName());
