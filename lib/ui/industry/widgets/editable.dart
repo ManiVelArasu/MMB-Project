@@ -56,6 +56,8 @@ class EditableItemWidget extends StatelessWidget {
           tint: provider.imageTint(currentItem.id ?? ''),
           blur: provider.imageBlur(currentItem.id ?? ''),
           maskUrl: provider.imageMaskUrl(currentItem.id ?? ''),
+          maskOffset: provider.imageMaskOffset(currentItem.id ?? ''),
+          maskScale: provider.imageMaskScale(currentItem.id ?? ''),
           animation: provider.itemAnimation(currentItem.id ?? ''),
           animationTick: provider.animationPreviewTick(currentItem.id ?? ''),
           textEffect: provider.textEffect(currentItem.id ?? ''),
@@ -1002,7 +1004,12 @@ class EditableItemWidget extends StatelessWidget {
 
       final maskUrl = provider.imageMaskUrl(id);
       if (maskUrl != null && maskUrl.trim().isNotEmpty) {
-        rendered = _NetworkAlphaMask(maskUrl: maskUrl, child: rendered);
+        rendered = _NetworkAlphaMask(
+          maskUrl: maskUrl,
+          offset: provider.imageMaskOffset(id),
+          scale: provider.imageMaskScale(id),
+          child: rendered,
+        );
       }
 
       // Fabric.js `clipPath` that moves WITH the image (not absolutePositioned).
@@ -1351,6 +1358,8 @@ class _ItemViewState {
   final double tint;
   final double blur;
   final String? maskUrl;
+  final Offset maskOffset;
+  final double maskScale;
   final ItemAnimation animation;
   final int animationTick;
   final TextEffect textEffect;
@@ -1387,6 +1396,8 @@ class _ItemViewState {
     required this.tint,
     required this.blur,
     required this.maskUrl,
+    required this.maskOffset,
+    required this.maskScale,
     required this.animation,
     required this.animationTick,
     required this.textEffect,
@@ -1421,6 +1432,8 @@ class _ItemViewState {
               tint == other.tint &&
               blur == other.blur &&
               maskUrl == other.maskUrl &&
+              maskOffset == other.maskOffset &&
+              maskScale == other.maskScale &&
               animation == other.animation &&
               animationTick == other.animationTick &&
               textEffect == other.textEffect &&
@@ -1451,6 +1464,8 @@ class _ItemViewState {
     tint,
     blur,
     maskUrl,
+    maskOffset,
+    maskScale,
     animation,
     animationTick,
     textEffect,
@@ -1589,7 +1604,16 @@ class _NetworkAlphaMask extends StatefulWidget {
   final String maskUrl;
   final Widget child;
 
-  const _NetworkAlphaMask({required this.maskUrl, required this.child});
+  /// Mask position (fractions of the image box) and size (1 = whole box).
+  final Offset offset;
+  final double scale;
+
+  const _NetworkAlphaMask({
+    required this.maskUrl,
+    required this.child,
+    this.offset = Offset.zero,
+    this.scale = 1.0,
+  });
 
   @override
   State<_NetworkAlphaMask> createState() => _NetworkAlphaMaskState();
@@ -1638,20 +1662,29 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
     final mask = _maskImage;
     // On failure keep the original image visible rather than hiding the canvas.
     if (mask == null || _failed) return widget.child;
+    final moved = widget.scale != 1.0 || widget.offset != Offset.zero;
     return ShaderMask(
       blendMode: BlendMode.dstIn,
       shaderCallback: (Rect bounds) {
-        final sx = bounds.width / mask.width;
-        final sy = bounds.height / mask.height;
+        // Mask pixel -> image box: fit the box, shrink/grow around the centre
+        // by `scale`, then shift by `offset` (fractions of the box).
+        final s = widget.scale;
+        final sx = bounds.width / mask.width * s;
+        final sy = bounds.height / mask.height * s;
+        final tx = bounds.width * (0.5 - s / 2 + widget.offset.dx);
+        final ty = bounds.height * (0.5 - s / 2 + widget.offset.dy);
+        // Outside a moved/shrunk mask nothing is visible (decal); the
+        // untouched mask keeps the original clamp behaviour.
+        final tile = moved ? TileMode.decal : TileMode.clamp;
         return ImageShader(
           mask,
-          TileMode.clamp,
-          TileMode.clamp,
+          tile,
+          tile,
           Float64List.fromList(<double>[
             sx, 0, 0, 0,
             0, sy, 0, 0,
             0, 0, 1, 0,
-            0, 0, 0, 1,
+            tx, ty, 0, 1,
           ]),
           filterQuality: FilterQuality.medium,
         );

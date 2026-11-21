@@ -647,6 +647,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _saveState();
     _imageMaskNames[id] = name;
     _imageMaskUrls[id] = assetCdnUrl(url);
+    _imageMaskOffsets.remove(id);
+    _imageMaskScales.remove(id);
     notifyListeners();
   }
 
@@ -654,6 +656,177 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _saveState();
     _imageMaskNames.remove(id);
     _imageMaskUrls.remove(id);
+    _imageMaskOffsets.remove(id);
+    _imageMaskScales.remove(id);
+    notifyListeners();
+  }
+
+  // ---------------- Mask position / size (EDIT MASK) ----------------
+  // Offset is in fractions of the image box (0.1 = 10 % of the width/height),
+  // scale 1.0 = mask covers the whole image box.
+  final Map<String, Offset> _imageMaskOffsets = {};
+  final Map<String, double> _imageMaskScales = {};
+
+  Offset imageMaskOffset(String id) => _imageMaskOffsets[id] ?? Offset.zero;
+  double imageMaskScale(String id) => _imageMaskScales[id] ?? 1.0;
+
+  /// Moves / resizes the mask on the image. Slider ticks that follow each
+  /// other quickly are merged into ONE undo step by _saveState().
+  void updateImageMaskTransform(String id, {Offset? offset, double? scale}) {
+    if (!_items.any((e) => e.id == id)) return;
+    if (!_imageMaskUrls.containsKey(id)) return;
+    _saveState();
+    if (offset != null) {
+      _imageMaskOffsets[id] = Offset(
+        offset.dx.clamp(-1.0, 1.0).toDouble(),
+        offset.dy.clamp(-1.0, 1.0).toDouble(),
+      );
+    }
+    if (scale != null) {
+      _imageMaskScales[id] = scale.clamp(0.1, 3.0).toDouble();
+    }
+    _syncCurrentPage();
+    notifyListeners();
+  }
+
+  void resetImageMaskTransform(String id) {
+    if (!_items.any((e) => e.id == id)) return;
+    _saveState();
+    _imageMaskOffsets.remove(id);
+    _imageMaskScales.remove(id);
+    _syncCurrentPage();
+    notifyListeners();
+  }
+
+  // ---------------- Replace image (keeps animation & all settings) --------
+  String? _pendingReplaceImageId;
+  String? get pendingReplaceImageId => _pendingReplaceImageId;
+
+  /// The next image picked from the media sheet REPLACES [id] instead of
+  /// being added as a new layer.
+  void beginReplaceImage(String id) {
+    _pendingReplaceImageId = id;
+  }
+
+  void cancelReplaceImage() {
+    _pendingReplaceImageId = null;
+  }
+
+  /// Swaps only the picture of an image layer. Position, size, rotation,
+  /// opacity, animation, mask, filters, outline, flip and layer order stay as
+  /// they were - only the old image content is gone.
+  void replaceImageContent(String id, String url, {bool isLocal = false}) {
+    final value = url.trim();
+    final index = _items.indexWhere((e) => e.id == id);
+    if (value.isEmpty || index == -1) return;
+    _saveState();
+    final old = _items[index];
+    _items[index] = old.copyWith(contentUrl: value, isLocal: isLocal);
+    // Same aspect-ratio correction as a freshly added image, but only for
+    // normal layers (a background always covers the canvas).
+    if (!_isBackgroundLayer(old)) {
+      _fitItemToImageAspect(
+        id,
+        value,
+        isLocal,
+        boxW: old.width * old.scale,
+        boxH: old.height * old.scale,
+        center: old.position +
+            Offset(old.width * old.scale / 2, old.height * old.scale / 2),
+      );
+    }
+    // Play the entrance animation again so the user sees it on the new image.
+    if (_itemAnimations[id] != null) {
+      _animationPreviewTicks[id] = animationPreviewTick(id) + 1;
+    }
+    selectedItemType = 'image';
+    selectedItemId = id;
+    _syncCurrentPage();
+    notifyListeners();
+  }
+
+  /// Resolves the real picture size and re-fits the layer inside [boxW]x[boxH]
+  /// (aspect ratio preserved, centred on [center]) so nothing looks stretched.
+  void _fitItemToImageAspect(
+      String id,
+      String url,
+      bool isLocal, {
+        required double boxW,
+        required double boxH,
+        required Offset center,
+      }) {
+    try {
+      final ImageProvider provider = (url.startsWith('http://') ||
+          url.startsWith('https://'))
+          ? NetworkImage(url)
+          : FileImage(File(url.replaceFirst('file://', '')));
+      final stream = provider.resolve(const ImageConfiguration());
+      late ImageStreamListener listener;
+      listener = ImageStreamListener((info, _) {
+        stream.removeListener(listener);
+        final iw = info.image.width.toDouble();
+        final ih = info.image.height.toDouble();
+        final index = _items.indexWhere((e) => e.id == id);
+        if (index == -1 || iw <= 0 || ih <= 0) return;
+        if (_items[index].contentUrl != url) return; // replaced again meanwhile
+        final k = math.min(boxW / iw, boxH / ih);
+        final w = iw * k, h = ih * k;
+        final cur = _items[index];
+        // Layer keeps its own scale; width/height are the un-scaled box.
+        final sc = cur.scale <= 0 ? 1.0 : cur.scale;
+        _items[index] = cur.copyWith(
+          width: w / sc,
+          height: h / sc,
+          position: Offset(center.dx - w / 2, center.dy - h / 2),
+        );
+        _syncCurrentPage();
+        notifyListeners();
+      }, onError: (_, __) => stream.removeListener(listener));
+      stream.addListener(listener);
+    } catch (_) {}
+  }
+
+  // ---------------- Detach background ----------------
+  final Set<String> _detachedBackgroundIds = <String>{};
+
+  /// Turns the canvas background picture into a normal layer that can be
+  /// moved, resized, masked, animated... The canvas behind it becomes white.
+  void detachBackground(String id) {
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return;
+    final item = _items[index];
+    if (item.type != 'image' || !_isBackgroundLayer(item)) return;
+    _saveState();
+    _templateBackgroundIds.remove(id);
+    _detachedBackgroundIds.add(id);
+    if (_backgroundColor == Colors.transparent) {
+      _backgroundColor = Colors.white;
+    }
+    // Slightly smaller + centred so the user immediately sees it is free.
+    const factor = 0.85;
+    final boxW = canvasWidth * factor;
+    final boxH = canvasHeight * factor;
+    final center = Offset(canvasWidth / 2, canvasHeight / 2);
+    _items[index] = item.copyWith(
+      width: boxW,
+      height: boxH,
+      scale: 1.0,
+      position: Offset(center.dx - boxW / 2, center.dy - boxH / 2),
+    );
+    final url = (item.contentUrl ?? '').trim();
+    if (url.isNotEmpty) {
+      _fitItemToImageAspect(
+        id,
+        url,
+        item.isLocal,
+        boxW: boxW,
+        boxH: boxH,
+        center: center,
+      );
+    }
+    selectedItemType = 'image';
+    selectedItemId = id;
+    _syncCurrentPage();
     notifyListeners();
   }
 
@@ -845,6 +1018,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     keep(_imageMaskUrls);
     keep(_imageMaskNames);
+    keep(_imageMaskOffsets);
+    keep(_imageMaskScales);
+    keepSet(_detachedBackgroundIds);
     keep(_outlineStyles);
     keep(_outlineJoins);
     keep(_itemAnimations);
@@ -1813,6 +1989,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void clearSelection() {
+    _pendingReplaceImageId = null;
     selectedItemType = null;
     selectedItemId = null;
     notifyListeners();
@@ -1867,6 +2044,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       if (!appendAsPage) {
         _templateRawObjects.clear();
         _templateBackgroundIds.clear();
+        _detachedBackgroundIds.clear();
         _templateFlipX.clear();
         _templateFlipY.clear();
         _outlineStyles.clear();
@@ -2779,6 +2957,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final value = url.trim();
     if (value.isEmpty) return;
 
+    // REPLACE mode: swap the picture of the selected layer only.
+    final replaceId = _pendingReplaceImageId;
+    if (replaceId != null) {
+      _pendingReplaceImageId = null;
+      if (_items.any((e) => e.id == replaceId)) {
+        replaceImageContent(replaceId, value, isLocal: isLocal);
+        return;
+      }
+    }
+
     _saveState();
 
     final imageId = 'image_${DateTime.now().microsecondsSinceEpoch}';
@@ -3187,6 +3375,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             if (_imageFill[id] != null) 'fill': colorToHex(_imageFill[id]),
             if (_imageMaskUrls[id] != null) 'maskUrl': _imageMaskUrls[id],
             if (_imageMaskNames[id] != null) 'maskName': _imageMaskNames[id],
+            if (_imageMaskOffsets[id] != null) ...{
+              'maskOffsetX': _imageMaskOffsets[id]!.dx,
+              'maskOffsetY': _imageMaskOffsets[id]!.dy,
+            },
+            if (_imageMaskScales[id] != null) 'maskScale': _imageMaskScales[id],
+            if (_detachedBackgroundIds.contains(id)) 'detachedBackground': true,
           },
         'textFormatting': {
           'letterSpacing': textLetterSpacing(id),
@@ -3332,6 +3526,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       _shapeImageIds.clear();
       _imageMaskUrls.clear();
       _imageMaskNames.clear();
+      _imageMaskOffsets.clear();
+      _imageMaskScales.clear();
+      _detachedBackgroundIds.clear();
 
       final savedW = _toDouble(root['canvasWidth']);
       final savedH = _toDouble(root['canvasHeight']);
@@ -3487,6 +3684,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               _imageMaskUrls[id] = mu;
               final mn = adj['maskName']?.toString() ?? '';
               if (mn.isNotEmpty) _imageMaskNames[id] = mn;
+              final mx = _toDouble(adj['maskOffsetX']);
+              final my = _toDouble(adj['maskOffsetY']);
+              if (mx != null && my != null) {
+                _imageMaskOffsets[id] = Offset(mx, my);
+              }
+              final ms = _toDouble(adj['maskScale']);
+              if (ms != null) _imageMaskScales[id] = ms.clamp(0.1, 3.0);
+            }
+            if (adj['detachedBackground'] == true) {
+              _detachedBackgroundIds.add(id);
             }
           }
           _templateFlipX[id] = m['flipX'] == true;
@@ -4166,6 +4373,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     if (!isBackgroundType) return false;
 
+    // The user detached this picture from the canvas background.
+    if (item.id != null && _detachedBackgroundIds.contains(item.id)) {
+      return false;
+    }
+
     // API/Fabric background IDs are explicitly tracked while importing the
     // template. This is the important path for replacing API backgrounds.
     // Old autosaved projects may carry the flag on SEVERAL big layers (older
@@ -4649,6 +4861,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     c(_imageMaskUrls);
     c(_imageMaskNames);
+    c(_imageMaskOffsets);
+    c(_imageMaskScales);
     c(_outlineStyles);
     c(_outlineJoins);
     c(_itemAnimations);

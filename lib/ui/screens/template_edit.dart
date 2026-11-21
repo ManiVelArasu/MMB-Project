@@ -173,6 +173,8 @@ class EditorView extends StatefulWidget {
 
 class _EditorViewState extends State<EditorView> {
   bool _showFlipOptions = false;
+  // Image whose mask is being moved / resized (EDIT MASK toolbar).
+  String? _maskEditItemId;
   String _shapeTab = 'style';
   // Image whose OUTLINE editor (shape-style inline panel) is open.
   String? _imageOutlineItemId;
@@ -3593,6 +3595,8 @@ class _EditorViewState extends State<EditorView> {
     ).whenComplete(() {
       sheetOpen = false;
       searchController.dispose();
+      // Sheet closed without picking anything -> leave REPLACE mode.
+      provider.cancelReplaceImage();
     });
   }
 
@@ -9408,6 +9412,9 @@ class _EditorViewState extends State<EditorView> {
     if (_imageOutlineItemId == id) {
       return _buildImageOutlineToolbar(context, provider, isDark);
     }
+    if (_maskEditItemId == id && provider.imageMaskUrl(id) != null) {
+      return _buildMaskEditToolbar(context, provider, id);
+    }
     return Container(
       height: 124,
       padding: const EdgeInsets.only(bottom: 6),
@@ -9481,15 +9488,44 @@ class _EditorViewState extends State<EditorView> {
                     'ANIMATE',
                         () => _openAnimatePanel(provider, id),
                   ),
+                if (item.type == 'image')
+                  _bottomTool(
+                    Icons.swap_horiz_rounded,
+                    'REPLACE',
+                        () {
+                      // Next picked image replaces THIS one; animation,
+                      // position, size, mask... stay on the layer.
+                      provider.beginReplaceImage(id);
+                      _showMediaBottomSheet(context, provider, isDark);
+                    },
+                  ),
+                if (item.type == 'image' && _isCanvasBackground(item))
+                  _bottomTool(
+                    Icons.layers_clear_rounded,
+                    'DETACH BG',
+                        () {
+                      provider.detachBackground(id);
+                      if (mounted) setState(() {});
+                      Fluttertoast.showToast(
+                        msg: 'Background detached. You can move it now.',
+                      );
+                    },
+                  ),
                 _bottomTool(
                   Image.asset("assets/images/edit_upload.png"),
                   'UPLOADS',
-                      () => _showMediaBottomSheet(context, provider, isDark),
+                      () {
+                    provider.cancelReplaceImage();
+                    _showMediaBottomSheet(context, provider, isDark);
+                  },
                 ),
                 _bottomTool(
                   Image.asset("assets/images/gallery.png"),
                   'IMAGES',
-                      () => _showMediaBottomSheet(context, provider, isDark),
+                      () {
+                    provider.cancelReplaceImage();
+                    _showMediaBottomSheet(context, provider, isDark);
+                  },
                 ),
                 _bottomTool(
                   Image.asset("assets/images/crop.png"),
@@ -9516,6 +9552,13 @@ class _EditorViewState extends State<EditorView> {
                   'MASK',
                       () => _showApiMaskSheet(context, provider, id),
                 ),
+                // Only when a mask is applied: move / resize it on the image.
+                if (provider.imageMaskUrl(id) != null)
+                  _bottomTool(
+                    Icons.open_with_rounded,
+                    'EDIT MASK',
+                        () => setState(() => _maskEditItemId = id),
+                  ),
                 _bottomTool(
                   Image.asset("assets/images/magic_pen.png"),
                   'REMOVE BG',
@@ -9612,6 +9655,130 @@ class _EditorViewState extends State<EditorView> {
             ),
         ],
       ),
+    );
+  }
+
+  // ---- EDIT MASK: move / resize the applied mask anywhere on the image ----
+  Widget _buildMaskEditToolbar(
+      BuildContext context,
+      EditorProvider provider,
+      String id,
+      ) {
+    Widget slider(
+        String label,
+        double value,
+        double min,
+        double max,
+        ValueChanged<double> onChanged,
+        ) {
+      return Row(
+        children: [
+          SizedBox(
+            width: 64,
+            child: AppText(
+              label,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: AppFontSize.fontSize12,
+              ),
+            ),
+          ),
+          Expanded(
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 3,
+                activeTrackColor: Colors.amberAccent,
+                inactiveTrackColor: Colors.white24,
+                thumbColor: Colors.amberAccent,
+                overlayShape: SliderComponentShape.noOverlay,
+              ),
+              child: Slider(
+                value: value.clamp(min, max).toDouble(),
+                min: min,
+                max: max,
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: provider,
+      builder: (context, _) {
+        final off = provider.imageMaskOffset(id);
+        final sc = provider.imageMaskScale(id);
+        return Container(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+          decoration: const BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  AppText(
+                    'Edit Mask',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: AppFontSize.fontSize14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => provider.resetImageMaskTransform(id),
+                    child: const AppText(
+                      'RESET',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => setState(() => _maskEditItemId = null),
+                    child: const AppText(
+                      'DONE',
+                      style: TextStyle(
+                        color: Colors.amberAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              slider(
+                'Size',
+                sc,
+                0.1,
+                3.0,
+                    (v) => provider.updateImageMaskTransform(id, scale: v),
+              ),
+              slider(
+                'Left / Right',
+                off.dx,
+                -1.0,
+                1.0,
+                    (v) => provider.updateImageMaskTransform(
+                  id,
+                  offset: Offset(v, off.dy),
+                ),
+              ),
+              slider(
+                'Up / Down',
+                off.dy,
+                -1.0,
+                1.0,
+                    (v) => provider.updateImageMaskTransform(
+                  id,
+                  offset: Offset(off.dx, v),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
