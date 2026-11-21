@@ -4921,8 +4921,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final current = _items[index];
 
     if (_isBackgroundLayer(current)) {
+      // The caller (canvas) keeps the position inside the page, so a zoomed
+      // background can be panned / resized like in Canva.
       _items[index] = current.copyWith(
-        position: Offset.zero,
+        position: position ?? current.position,
         scale: scale ?? current.scale,
         rotation: rotation ?? current.rotation,
         width: width ?? current.width,

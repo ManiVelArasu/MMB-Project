@@ -90,53 +90,8 @@ class _CustomCreateBody extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CustomSearchBar(
-                            controller: searchProvider.controller,
-                            hintText: "Search templates, Brand Series...",
-                            prefixAsset: "assets/images/search.png",
-                            suffixAsset: "assets/images/mic.png",
-                            borderColor: AppColors.searchBorderColor,
+                          _buildSearchBar(context, searchProvider),
 
-                            onChanged: searchProvider.onTextChanged,
-
-                            suggestions: searchProvider.suggestions
-                                .map((e) => e.label)
-                                .toList(),
-
-                            showSuggestions: true,
-
-                            onSuggestionTap: (value) {
-                              final q = value.trim();
-                              if (q.length < 2) return;
-
-                              searchProvider.clearSuggestions();
-                              searchProvider.controller.clear();
-
-                              FocusManager.instance.primaryFocus?.unfocus();
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SearchScreen(initialQuery: q),
-                                ),
-                              );
-                            },
-
-                            onSubmitted: (query) {
-                              final q = query.trim();
-                              if (q.length < 2) return;
-
-                              FocusManager.instance.primaryFocus?.unfocus();
-                              searchProvider.clearSuggestions();
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SearchScreen(initialQuery: q),
-                                ),
-                              );
-                            },
-                          ),
                           SizedBox(height: 12.h),
 
                           _buildHeader(
@@ -350,7 +305,27 @@ class _CustomCreateBody extends StatelessWidget {
       },
     );
   }
-
+  Widget _buildSearchBar(BuildContext context, SearchProvider searchProvider) {
+    return Hero(
+      tag: 'search_bar_hero',
+      child: Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.pushNamed(context, '/SearchScreen'),
+          child: AbsorbPointer(
+            child: CustomSearchBar(
+              hintText: "Search templates, Brand Series...",
+              prefixAsset: "assets/images/search.png",
+              suffixAsset: "assets/images/mic.png",
+              borderColor: AppColors.searchBorderColor,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   Widget _buildSizeCard({
     required bool isDark,
     required double imgW,

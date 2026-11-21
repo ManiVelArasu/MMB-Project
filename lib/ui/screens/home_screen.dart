@@ -196,19 +196,6 @@ class _HomeScreenView extends StatelessWidget {
   // =====================================================================
 
   Widget _buildSearchBar(BuildContext context, SearchProvider searchProvider) {
-    void openSearch(String query) {
-      final q = query.trim();
-      if (q.length < 2) return;
-
-      FocusManager.instance.primaryFocus?.unfocus();
-      searchProvider.clearSuggestions();
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => SearchScreen(initialQuery: q)),
-      );
-    }
-
     return Hero(
       tag: 'search_bar_hero',
       child: Material(
@@ -868,10 +855,6 @@ class _HomeScreenView extends StatelessWidget {
       return;
     }
 
-    if ((template.isLocked as bool?) ?? false) {
-      _showPremiumTemplateDialog(context, template);
-      return;
-    }
 
     _openTemplateDetail(context, template);
   }

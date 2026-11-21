@@ -1,7 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mmb_app/ui/screens/template_detail_screen.dart';
 import 'package:mmb_app/ui/screens/widget/search_filter.dart';
+import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:provider/provider.dart';
 
 import 'package:mmb_app/component/appbar_widget.dart';
@@ -136,11 +138,8 @@ class _SearchView extends StatelessWidget {
                     ),
                   ),
                 ),
-                SearchFilterBar(
-                  isDark: isDark,
-                  horizontalPadding: size.width * 0.04,
-                ),
-                const SizedBox(height: 10),
+                // Language filter now lives in the bottom bar.
+                const SizedBox(height: 4),
                 Expanded(child: _buildBody(context, provider, isDark, fg, sub)),
                 // Hidden while the keyboard is open so it never floats on it.
                 if (MediaQuery.of(context).viewInsets.bottom == 0)
@@ -160,83 +159,85 @@ class _SearchView extends StatelessWidget {
       Color fg,
       Color sub,
       ) {
-    final popularSearches = [
-      'Birthday',
-      'Wedding',
-      'Business',
-      'Festival',
-      'Instagram Post',
-      'Food',
-    ];
-
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 35),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 15),
-
+          // ---------- Header (small + compact, near the top) ----------
           Center(
             child: Image.asset(
               'assets/images/no_downloads.png',
-              width: 130,
-              height: 130,
+              width: 90,
+              height: 90,
             ),
           ),
-
-          const SizedBox(height: 20),
-
+          const SizedBox(height: 10),
           Center(
             child: AppText(
               'What are you looking for?',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: AppFontSize.fontSize18,
+                fontSize: AppFontSize.fontSize16,
                 fontWeight: FontWeight.w600,
                 color: fg,
               ),
             ),
           ),
-
-          const SizedBox(height: 10),
-
+          const SizedBox(height: 6),
           Center(
             child: AppText(
-              'Discover templates for your next big idea. '
-                  'Search by industry, occasion or design type.',
+              'Search by industry, occasion or design type.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, height: 1.5, color: sub),
+              style: TextStyle(fontSize: 12.5, height: 1.4, color: sub),
             ),
           ),
 
-          const SizedBox(height: 35),
-
-          AppText(
-            'Popular Searches',
-            style: TextStyle(
-              fontSize: AppFontSize.fontSize18,
-              fontWeight: FontWeight.w500,
-              color: fg,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          Wrap(
-            spacing: 10,
-            runSpacing: 12,
-            children: popularSearches.map((item) {
-              return InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () {
-                  provider.controller.text = item;
-                  provider.submit(item);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+          // ---------- Recent searches ----------
+          if (provider.recentSearches.isNotEmpty) ...[
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                Icon(Icons.history_rounded, size: 18, color: sub),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: AppText(
+                    'Recent Searches',
+                    style: TextStyle(
+                      fontSize: AppFontSize.fontSize15,
+                      fontWeight: FontWeight.w600,
+                      color: fg,
+                    ),
                   ),
+                ),
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: provider.clearRecent,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: AppText(
+                      'Clear all',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red.shade400,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 10,
+              children: provider.recentSearches.map((item) {
+                return Container(
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF252525) : Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -244,17 +245,51 @@ class _SearchView extends StatelessWidget {
                       color: isDark ? Colors.white24 : Colors.grey.shade300,
                     ),
                   ),
-                  child: AppText(
-                    item,
-                    style: TextStyle(
-                      fontSize: AppFontSize.fontSize14,
-                      fontWeight: FontWeight.w400,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(20),
+                        ),
+                        onTap: () {
+                          provider.controller.text = item;
+                          provider.submit(item);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width * .55,
+                            ),
+                            child: Text(
+                              item,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: AppFontSize.fontSize13,
+                                color: fg,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        borderRadius: const BorderRadius.horizontal(
+                          right: Radius.circular(20),
+                        ),
+                        onTap: () => provider.removeRecent(item),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 8, 10, 8),
+                          child: Icon(Icons.close_rounded, size: 15, color: sub),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              );
-            }).toList(),
-          ),
+                );
+              }).toList(),
+            ),
+          ],
         ],
       ),
     );
@@ -272,29 +307,56 @@ class _SearchView extends StatelessWidget {
     }
 
     if (provider.suggestions.isNotEmpty) {
-      return ListView.separated(
+      final query = provider.controller.text.trim();
+      final cardBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+      final divider = isDark ? Colors.white10 : const Color(0xFFEFEFEF);
+
+      return ListView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        itemCount: provider.suggestions.length,
-        separatorBuilder: (_, __) =>
-            Divider(height: 1, color: isDark ? Colors.white12 : Colors.black12),
-        itemBuilder: (_, index) {
-          final suggestion = provider.suggestions[index];
-          return ListTile(
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            leading: Icon(_iconFor(suggestion.type), size: 20, color: sub),
-            title: _highlight(
-              suggestion.label,
-              provider.controller.text.trim(),
-              fg,
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? Colors.white12 : const Color(0xFFEDEDED),
+              ),
+              boxShadow: isDark
+                  ? null
+                  : const [
+                BoxShadow(
+                  color: Color(0x0F000000),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
-            trailing: AppText(
-              _captionFor(suggestion.type),
-              style: TextStyle(fontSize: 11, color: sub),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                for (var i = 0; i < provider.suggestions.length; i++) ...[
+                  _suggestionTile(
+                    provider.suggestions[i],
+                    query,
+                    isDark,
+                    fg,
+                    sub,
+                        () => provider.pickSuggestion(provider.suggestions[i]),
+                  ),
+                  if (i != provider.suggestions.length - 1)
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 66,
+                      endIndent: 0,
+                      color: divider,
+                    ),
+                ],
+              ],
             ),
-            onTap: () => provider.pickSuggestion(suggestion),
-          );
-        },
+          ),
+        ],
       );
     }
 
@@ -365,27 +427,24 @@ class _SearchView extends StatelessWidget {
         ? key
         : '${ApiEndpoints.cdnImageUrl}/$key';
 
-    return GestureDetector(
-      onTap: () {
-        if (uid.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Template UID not available')),
-          );
-          return;
-        }
-
-        if (locked) {
-          Navigator.pushNamed(context, '/PlansAndPricingScreen');
-          return;
-        }
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => TemplateEditScreen(templateUid: uid),
-          ),
+    void open() {
+      if (uid.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Template UID not available')),
         );
-      },
+        return;
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              TemplateDetailScreen(templateUid: uid),
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: open,
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -413,23 +472,57 @@ class _SearchView extends StatelessWidget {
               placeholder: (_, __) => _placeholder(isDark),
               errorWidget: (_, __, ___) => _placeholder(isDark),
             ),
-            if (locked)
-              Container(
-                color: Colors.black.withValues(alpha: 0.4),
-                child: const Center(
-                  child: Icon(
-                    Icons.lock_rounded,
-                    color: Colors.white,
-                    size: 30,
-                  ),
-                ),
-              ),
+
+            // Locked => crown only, not locked => 3-dot menu only
+            _buildCardTopBar(context, template, locked: locked, uid: uid),
           ],
         ),
       ),
     );
   }
-
+  Widget _buildCardTopBar(
+      BuildContext context,
+      Map<String, dynamic> template, {
+        required bool locked,
+        required String uid,
+      }) {
+    return Positioned(
+      top: 5,
+      right: 5,
+      child: locked
+          ? SizedBox(
+        width: 24,
+        height: 28,
+        child: Image.asset(
+          'assets/images/crown.png',
+          fit: BoxFit.contain,
+        ),
+      )
+          : SizedBox(
+        width: 38,
+        height: 25,
+        child: TemplateActionPopup(
+          isFavorite: true,
+          showDownload: false,
+          showDelete: false,
+          onCustomize: () {
+            if (uid.isEmpty) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => TemplateEditScreen(templateUid: uid),
+              ),
+            );
+          },
+          onDownload: () {},
+          onFavorite: () {
+            // TODO: connect your favorite API here
+            // (family uid: template['family_uid'])
+          },
+        ),
+      ),
+    );
+  }
   Widget _placeholder(bool isDark) => Container(
     color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200,
     child: Icon(Icons.image_outlined, size: 36, color: Colors.grey.shade400),
@@ -457,16 +550,81 @@ class _SearchView extends StatelessWidget {
     );
   }
 
+  Widget _suggestionTile(
+      SearchSuggestion s,
+      String query,
+      bool isDark,
+      Color fg,
+      Color sub,
+      VoidCallback onTap,
+      ) {
+    final caption = _captionFor(s.type);
+    final soft = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF4F4F6);
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: soft,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(_iconFor(s.type), size: 19, color: sub),
+            ),
+            const SizedBox(width: 16),
+            Expanded(child: _highlight(s.label, query, fg)),
+            if (caption.isNotEmpty) ...[
+              const SizedBox(width: 10),
+              Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: soft,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  caption,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                    color: sub,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _highlight(String label, String query, Color color) {
-    final base = TextStyle(fontSize: 15, color: color);
+    final base = TextStyle(
+      fontSize: 14.5,
+      fontWeight: FontWeight.w400,
+      color: color,
+    );
     final index = query.isEmpty
         ? -1
         : label.toLowerCase().indexOf(query.toLowerCase());
 
-    if (index < 0) return Text(label, style: base);
+    if (index < 0) {
+      return Text(
+        label,
+        style: base,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
 
-    return RichText(
-      text: TextSpan(
+    return Text.rich(
+      TextSpan(
         style: base,
         children: [
           TextSpan(text: label.substring(0, index)),
@@ -477,6 +635,8 @@ class _SearchView extends StatelessWidget {
           TextSpan(text: label.substring(index + query.length)),
         ],
       ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 

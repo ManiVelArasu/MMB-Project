@@ -4,31 +4,6 @@ import '../../Repository/custom_theme_repository.dart';
 import '../../model/custom_screen_model.dart';
 
 class CustomScreenProvider extends ChangeNotifier {
-  // 1. Create Your Own Canvas Ratios Data List
-  final List<CanvasRatioModel> canvasRatios = [
-    CanvasRatioModel(
-      title: "POST",
-      dimension: "1080X1080",
-      imagePath: "assets/images/1080.png",
-    ),
-    CanvasRatioModel(
-      title: "PORTRAIT",
-      dimension: "1080X1440",
-      imagePath: "assets/images/post_1440.png",
-    ),
-    CanvasRatioModel(
-      title: "STORY/REEL",
-      dimension: "1080X1920",
-      imagePath: "assets/images/post_1920.png",
-    ),
-    CanvasRatioModel(
-      title: "LANDSCAPE",
-      dimension: "1080X566",
-      imagePath: "assets/images/post_566.png",
-    ),
-  ];
-
-  // 2. Generate with AI Tools Data List
   final List<AIToolModel> aiToolsList = [
     AIToolModel(
       title: "Logo Generator",

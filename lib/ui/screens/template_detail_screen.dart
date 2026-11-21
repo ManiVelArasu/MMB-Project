@@ -1,15 +1,20 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:gal/gal.dart';
+import 'package:http/http.dart' as http;
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/ui/screens/widget/empty_state.dart';
 import 'package:mmb_app/ui/screens/widget/favorite_button.dart';
+import 'package:mmb_app/ui/screens/widget/search_filter.dart';
 import 'package:provider/provider.dart';
 
 import '../../Api Model/Template_model.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
+import '../../network/provider/home_screen_provider.dart';
+import '../../network/provider/search_provider.dart';
 import '../../network/provider/template_detail_provider.dart';
 import '../../utils/theme/app.colors.dart';
 import '../../utils/theme/app.fonts.dart';
@@ -169,10 +174,6 @@ class _TemplateDetailBody extends StatefulWidget {
 }
 
 class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
-  /// Bottom bar (IMAGE / VIDEO / POST SIZE / CATEGORIES) opens only
-  /// when the gallery icon (next to the heart) is tapped.
-  bool _showBottomBar = false;
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TemplateDetailProvider>();
@@ -182,7 +183,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
 
     final showShimmer =
         !provider.hasLoaded ||
-        (provider.isLoading && provider.selectedTemplate == null);
+            (provider.isLoading && provider.selectedTemplate == null);
     final showOverlayLoader =
         provider.isLoading && provider.hasLoaded && !showShimmer;
 
@@ -198,29 +199,30 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
           child: provider.selectedTemplate == null
               ? _buildEmptyState(isDark)
               : Column(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.symmetric(horizontal: 16.w),
-                        child: Column(
-                          children: [
-                            SizedBox(height: 10.h),
-                            _buildTopBanner(provider, isDark),
-                            SizedBox(height: 12.h),
-                            _buildActionRow(provider, isDark),
-                            SizedBox(height: 16.h),
-                            _buildTemplateInfo(provider, isDark),
-                            SizedBox(height: 18.h),
-                            _buildContent(provider, isDark),
-                            SizedBox(height: 24.h),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (_showBottomBar) _buildBottomBar(provider, isDark),
-                  ],
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w),
+                  child: Column(
+                    children: [
+                      SizedBox(height: 10.h),
+                      _buildTopBanner(provider, isDark),
+                      SizedBox(height: 12.h),
+                      _buildActionRow(provider, isDark),
+
+                      SizedBox(height: 18.h),
+                      _buildContent(provider, isDark),
+                      SizedBox(height: 24.h),
+                    ],
+                  ),
                 ),
+              ),
+              // Always visible (IMAGE / VIDEO / LANGUAGE / POST SIZE /
+              // CATEGORIES).
+              _buildBottomBar(provider, isDark),
+            ],
+          ),
         ),
       ),
     );
@@ -235,7 +237,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
     final fallback = _defaultKeyFor(provider.selectedTemplate);
     if (fallback.isEmpty) return;
     WidgetsBinding.instance.addPostFrameCallback(
-      (_) => provider.setResizeSize(fallback),
+          (_) => provider.setResizeSize(fallback),
     );
   }
 
@@ -244,9 +246,9 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
   // =====================================================================
 
   PreferredSizeWidget _buildAppBar(
-    TemplateDetailProvider provider,
-    bool isDark,
-  ) {
+      TemplateDetailProvider provider,
+      bool isDark,
+      ) {
     return AppBar(
       backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       elevation: 0,
@@ -297,7 +299,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
         _AppBarButton(
           isDark: isDark,
           onTap: () {
-            // TODO: download action
+            _onDownloadMyZone(context);
           },
           child: const Icon(
             Icons.file_download_outlined,
@@ -316,7 +318,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
       imagePath: 'assets/images/no_templates.png',
       title: 'No Templates Available',
       message:
-          'We’re adding more templates for this category. '
+      'We’re adding more templates for this category. '
           'Explore other categories to find the right design for your business.',
       primaryButtonText: 'GO BACK',
       secondaryButtonText: 'EXPLORE TEMPLATES',
@@ -371,14 +373,14 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
                   child: thumbnail.isEmpty
                       ? _bannerPlaceholder(label, isDark)
                       : CachedNetworkImage(
-                          imageUrl: thumbnail,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          errorWidget: (_, __, ___) =>
-                              _bannerPlaceholder(label, isDark),
-                        ),
+                    imageUrl: thumbnail,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    errorWidget: (_, __, ___) =>
+                        _bannerPlaceholder(label, isDark),
+                  ),
                 ),
               );
             },
@@ -413,7 +415,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
   }
 
   // =====================================================================
-  // ACTION ROW  (FRAME | heart | gallery | edit)
+  // ACTION ROW  (FRAME | heart | edit)
   // =====================================================================
 
   Widget _buildActionRow(TemplateDetailProvider provider, bool isDark) {
@@ -433,21 +435,11 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
         const Spacer(),
         heart,
         SizedBox(width: 10.w),
-        if (_showBottomBar)
-          _buildCustomizeButton(provider, isDark)
-        else ...[
-          _roundIconButton(
-            isDark: isDark,
-            onTap: () => setState(() => _showBottomBar = true),
-            child: Image.asset('assets/images/resize.png'),
-          ),
-          SizedBox(width: 10.w),
-          _roundIconButton(
-            isDark: isDark,
-            onTap: () => _openEditor(provider),
-            child: Image.asset('assets/images/frame_edit.png'),
-          ),
-        ],
+        _roundIconButton(
+          isDark: isDark,
+          onTap: () => _openEditor(provider),
+          child: Image.asset('assets/images/frame_edit.png'),
+        ),
       ],
     );
   }
@@ -469,36 +461,6 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
           borderRadius: BorderRadius.circular(12.r),
         ),
         child: child,
-      ),
-    );
-  }
-
-  Widget _buildCustomizeButton(TemplateDetailProvider provider, bool isDark) {
-    return InkWell(
-      onTap: () => _openEditor(provider),
-      borderRadius: BorderRadius.circular(12.r),
-      child: Container(
-        height: 40.w,
-        padding: EdgeInsets.symmetric(horizontal: 14.w),
-        decoration: BoxDecoration(
-          color: _tint(isDark),
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-           Image.asset("assets/images/customize_edit.png",width: 15,height: 15,),
-            SizedBox(width: 6.w),
-            AppText(
-              'CUSTOMIZE',
-              style: TextStyle(
-                fontSize: AppFontSize.fontSize13,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -594,11 +556,11 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
   }
 
   Widget _infoChip(
-    String label,
-    bool isDark, {
-    bool selected = false,
-    VoidCallback? onTap,
-  }) {
+      String label,
+      bool isDark, {
+        bool selected = false,
+        VoidCallback? onTap,
+      }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -621,7 +583,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
             fontWeight: FontWeight.w500,
             color: selected
                 ? Colors.red
-                : (isDark ? Colors.white70 :   AppColors.appGrey),
+                : (isDark ? Colors.white70 : AppColors.appGrey),
           ),
         ),
       ),
@@ -647,6 +609,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildTemplateInfo(TemplateDetailProvider provider, bool isDark) {
     final template = provider.selectedTemplate;
     if (template == null) return const SizedBox.shrink();
@@ -697,12 +660,12 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
               sizes
                   .map(
                     (e) => _infoChip(
-                      e.label,
-                      isDark,
-                      selected: provider.selectedResizeSize == e.key,
-                      onTap: () => provider.setResizeSize(e.key),
-                    ),
-                  )
+                  e.label,
+                  isDark,
+                  selected: provider.selectedResizeSize == e.key,
+                  onTap: () => provider.setResizeSize(e.key),
+                ),
+              )
                   .toList(),
               AppColors.appGrey,
             ),
@@ -737,7 +700,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
         return _buildTemplateGrid(
           provider: provider,
           isDark: isDark,
-          title: 'Post Size Templates',
+          title: 'All Templates',
           templates: provider.gridAllTemplates,
           emptyText: 'No templates found',
           emptyIcon: Icons.collections_outlined,
@@ -799,10 +762,10 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
   }
 
   Widget _buildTemplateCard(
-    TemplateModel template,
-    bool isDark, {
-    required bool isVideo,
-  }) {
+      TemplateModel template,
+      bool isDark, {
+        required bool isVideo,
+      }) {
     final locked = template.isLocked ?? false;
     final imageUrl = _imageUrl(template.thumbnailS3Key);
 
@@ -824,17 +787,17 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
               child: imageUrl.isEmpty
                   ? _imagePlaceholder(isDark)
                   : CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => const Center(
-                        child: SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                      errorWidget: (_, __, ___) => _imagePlaceholder(isDark),
-                    ),
+                imageUrl: imageUrl,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => const Center(
+                  child: SizedBox(
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                errorWidget: (_, __, ___) => _imagePlaceholder(isDark),
+              ),
             ),
             if (isVideo)
               Positioned(
@@ -990,102 +953,144 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
   }
 
   // =====================================================================
-  // BOTTOM BAR
+  // BOTTOM BAR  (always visible)
   // =====================================================================
-
   Widget _buildBottomBar(TemplateDetailProvider provider, bool isDark) {
-    void close() => setState(() => _showBottomBar = false);
+    final p = provider;
+    final template = p.selectedTemplate;
 
-    return Stack(
-      children: [
-        Container(
-          padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A1A1A) : Colors.black,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _navItem(provider, 0, Icons.image, 'IMAGE'),
-              _navItem(provider, 1, Icons.videocam, 'VIDEO'),
-              _navItem(provider, 2, Icons.aspect_ratio, 'POST SIZE'),
-              _navItem(
-                provider,
-                3,
-                Icons.category,
-                'CATEGORIES',
-                onTap: () {
-                  provider.loadKeyWords();
-                  _showCategorySheet(context, provider, isDark);
-                },
-              ),
-            ],
+    final languageOptions = template == null
+        ? <SearchFilterOption>[]
+        : _languagesOf(template)
+        .map((n) => SearchFilterOption(label: n, value: n))
+        .toList();
+
+    final sizeOptions = _sizeOptionsFor(template)
+        .map(
+          (o) => SearchFilterOption(
+        label: o.label,
+        value: o.key,
+        trailing: '${o.width} × ${o.height}',
+      ),
+    )
+        .toList();
+
+    final defaultSizeKey = _defaultKeyFor(template);
+
+    // Same size for every tab icon
+    Image tabIcon(String asset) =>
+        Image.asset(asset, width: 20, height: 20, fit: BoxFit.contain);
+
+    return FilterBottomBar(
+      tabs: [
+        FilterBarTab(
+          icon: tabIcon('assets/images/gallery.png'),
+          label: 'IMAGE',
+          selected: p.selectedIndex == 0,
+          onTap: () => p.setSelectedIndex(p.selectedIndex == 0 ? 2 : 0),
+        ),
+        FilterBarTab(
+          icon: tabIcon('assets/images/video.png'),
+          label: 'VIDEO',
+          selected: p.selectedIndex == 1,
+          onTap: () => p.setSelectedIndex(p.selectedIndex == 1 ? 2 : 1),
+        ),
+        FilterBarTab(
+          icon: tabIcon('assets/images/translate_black.png'),
+          label: 'LANGUAGE',
+          selected: p.language != null,
+          onTap: () => showSearchOptionSheet(
+            context,
+            title: 'Available languages',
+            allLabel: 'All languages',
+            options: languageOptions,
+            selected: p.language,
+            onChanged: p.setLanguage,
+            emptyText: 'No languages for this template',
           ),
         ),
-        // tap / swipe down to close
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: close,
-            onVerticalDragEnd: (_) => close(),
-            child: Center(
-              child: Container(
-                margin: EdgeInsets.symmetric(vertical: 6.h),
-                width: 36.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
+        FilterBarTab(
+          icon: tabIcon('assets/images/monitor-mobbile.png'),
+          label: 'POST SIZE',
+          selected:
+          defaultSizeKey.isNotEmpty && p.selectedResizeSize != defaultSizeKey,
+          onTap: () => showSearchOptionSheet(
+            context,
+            title: 'Available sizes',
+            allLabel: 'Original size',
+            options: sizeOptions,
+            selected: p.selectedResizeSize,
+            onChanged: (v) => p.setResizeSize(
+              (v == null || v.isEmpty) ? defaultSizeKey : v,
             ),
+            emptyText: 'No sizes for this template',
           ),
+        ),
+        FilterBarTab(
+          icon: tabIcon('assets/images/educare-(ekt).png'),
+          label: 'CATEGORIES',
+          selected: p.tag != null,
+          onTap: () async {
+            await p.loadKeyWords();
+            if (!mounted) return;
+            showSearchOptionSheet(
+              context,
+              title: 'Categories',
+              allLabel: 'All categories',
+              options: p.tagOptions,
+              selected: p.tag,
+              onChanged: p.setTag,
+              emptyText: 'No categories available',
+            );
+          },
         ),
       ],
     );
   }
+}
+Future<void> _onDownloadMyZone(BuildContext context) async {
+  try {
+    final provider = context.read<TemplateDetailProvider>();
+    final template = provider.selectedTemplate;
 
-  Widget _navItem(
-    TemplateDetailProvider provider,
-    int index,
-    IconData icon,
-    String label, {
-    VoidCallback? onTap,
-  }) {
-    final color = provider.selectedIndex == index ? Colors.white : Colors.grey;
+    if (template == null) return;
 
-    return InkWell(
-      onTap: () {
-        provider.setSelectedIndex(index);
-        onTap?.call();
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 24.sp),
-          SizedBox(height: 4.h),
-          AppText(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: AppFontSize.fontSize10,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+    final imageUrl = _imageUrl(template.thumbnailS3Key);
+
+    if (imageUrl.isEmpty) {
+      throw Exception('Template image not available');
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Downloading image...')),
+    );
+
+    final response = await http.get(Uri.parse(imageUrl));
+
+    if (response.statusCode != 200) {
+      throw Exception('Image download failed');
+    }
+
+    await Gal.putImageBytes(
+      response.bodyBytes,
+      name: 'MMB_${template.uid ?? 'template'}',
+    );
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Image saved to Gallery successfully!'),
       ),
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Download failed: $e')),
     );
   }
 }
-
-// ========================================================================
-// APP BAR BUTTON  (36 x 36 circle, matches the design)
-// ========================================================================
-
 class _AppBarButton extends StatelessWidget {
   final bool isDark;
   final VoidCallback onTap;
@@ -1107,165 +1112,6 @@ class _AppBarButton extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(color: _tint(isDark), shape: BoxShape.circle),
         child: child,
-      ),
-    );
-  }
-}
-
-// ========================================================================
-// CATEGORIES BOTTOM SHEET
-// ========================================================================
-
-void _showCategorySheet(
-  BuildContext context,
-  TemplateDetailProvider p,
-  bool isDark,
-) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (sheetContext) {
-      return ListenableBuilder(
-        listenable: p,
-        builder: (_, __) => Container(
-          width: double.infinity,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.7,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    height: 4,
-                    width: 50,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.grey.shade700
-                          : Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Categories',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () => Navigator.pop(sheetContext),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF2A1A1C)
-                              : Colors.red.shade50,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.red,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                if (p.isKeyWordsLoading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 30),
-                    child: Center(
-                      child: CircularProgressIndicator(color: _kRed),
-                    ),
-                  )
-                else if (p.keyWords.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 30),
-                    child: Center(child: Text('No categories found')),
-                  )
-                else
-                  Flexible(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Wrap(
-                        spacing: 10,
-                        runSpacing: 12,
-                        children: p.keyWords.map((k) {
-                          final name = k.name?.trim() ?? '';
-                          if (name.isEmpty) return const SizedBox.shrink();
-
-                          return GestureDetector(
-                            onTap: () => Navigator.pop(sheetContext),
-                            child: _CategoryChip(
-                              title: name,
-                              isDark: isDark,
-                              selected: p.tag == name,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ),
-      );
-    },
-  );
-}
-
-class _CategoryChip extends StatelessWidget {
-  final String title;
-  final bool isDark;
-  final bool selected;
-
-  const _CategoryChip({
-    required this.title,
-    required this.isDark,
-    this.selected = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      decoration: BoxDecoration(
-        color: selected
-            ? const Color(0xFFFFECEE)
-            : (isDark ? const Color(0xFF2C2C2C) : Colors.white),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: selected
-              ? Colors.red
-              : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
-          width: 1.2,
-        ),
-      ),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: isDark ? Colors.white : Colors.black87,
-        ),
       ),
     );
   }

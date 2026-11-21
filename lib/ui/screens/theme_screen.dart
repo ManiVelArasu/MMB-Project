@@ -148,57 +148,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
                           ),
 
                           SizedBox(height: 10),
-
-                          /// Search
-                          CustomSearchBar(
-                            controller: searchProvider.controller,
-                            hintText: "Search Brand Series",
-                            prefixAsset: "assets/images/search.png",
-                            suffixAsset: "assets/images/mic.png",
-                            borderColor: AppColors.searchBorderColor,
-
-                            onChanged: searchProvider.onTextChanged,
-
-                            suggestions: searchProvider.suggestions
-                                .map((e) => e.label)
-                                .toList(),
-
-                            showSuggestions: true,
-
-                            onSuggestionTap: (value) {
-                              final q = value.trim();
-                              if (q.length < 2) return;
-
-                              searchProvider.clearSuggestions();
-                              searchProvider.controller.clear();
-
-                              FocusManager.instance.primaryFocus?.unfocus();
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SearchScreen(initialQuery: q),
-                                ),
-                              );
-                            },
-
-                            onSubmitted: (query) {
-                              final q = query.trim();
-                              if (q.length < 2) return;
-
-                              FocusManager.instance.primaryFocus?.unfocus();
-                              searchProvider.clearSuggestions();
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SearchScreen(initialQuery: q),
-                                ),
-                              );
-                            },
-                          ),
-
-
+                          _buildSearchBar(context,searchProvider),
 
                           SizedBox(height: 20.h),
                           ListView.builder(
@@ -225,7 +175,27 @@ class _ThemesScreenState extends State<ThemesScreen> {
       },
     );
   }
-
+  Widget _buildSearchBar(BuildContext context, SearchProvider searchProvider) {
+    return Hero(
+      tag: 'search_bar_hero',
+      child: Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.pushNamed(context, '/SearchScreen'),
+          child: AbsorbPointer(
+            child: CustomSearchBar(
+              hintText: "Search Brand Series",
+              prefixAsset: "assets/images/search.png",
+              suffixAsset: "assets/images/mic.png",
+              borderColor: AppColors.searchBorderColor,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   Widget _brandBadge(String text, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),

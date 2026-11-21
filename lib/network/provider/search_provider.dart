@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Api Model/key_words_model.dart';
 import '../../Repository/business_profile_repository.dart';
 import '../../Repository/search_repository.dart';
+import '../../ui/screens/widget/filter_option.dart';
 import 'common_provider.dart';
 
 class SearchSuggestion {
@@ -52,6 +54,9 @@ class SearchProvider extends ChangeNotifier {
 
     scrollController.addListener(_onScroll);
     _loadKeywords();
+    _loadLanguages();
+    _loadSizes();
+    _loadRecent();
 
     final initial = initialQuery.trim();
     if (initial.isNotEmpty) {
@@ -128,6 +133,66 @@ class SearchProvider extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------
+  // RECENT SEARCHES (stored on device)
+  // ---------------------------------------------------------------------
+
+  static const String _recentKey = 'recent_searches';
+  static const int maxRecent = 10;
+
+  List<String> _recentSearches = [];
+  List<String> get recentSearches => _recentSearches;
+
+  Future<void> _loadRecent() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_disposed) return;
+      _recentSearches = prefs.getStringList(_recentKey) ?? [];
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Recent load error: $e');
+    }
+  }
+
+  Future<void> _saveRecent(String query) async {
+    final q = query.trim();
+    if (q.length < 2) return;
+
+    // Same word again -> move to the top (no duplicates, case-insensitive).
+    final list = [
+      q,
+      ..._recentSearches.where((e) => e.toLowerCase() != q.toLowerCase()),
+    ].take(maxRecent).toList();
+
+    _recentSearches = list;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_recentKey, list);
+    } catch (e) {
+      debugPrint('Recent save error: $e');
+    }
+  }
+
+  Future<void> removeRecent(String query) async {
+    _recentSearches = _recentSearches.where((e) => e != query).toList();
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_recentKey, _recentSearches);
+    } catch (_) {}
+  }
+
+  Future<void> clearRecent() async {
+    _recentSearches = [];
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_recentKey);
+    } catch (_) {}
+  }
+
+  // ---------------------------------------------------------------------
   // FILTERS  ->  templates?q=..&tags=..&template_type=..&language=..&size=..
   // ---------------------------------------------------------------------
 
@@ -136,36 +201,19 @@ class SearchProvider extends ChangeNotifier {
     SearchFilterOption(label: 'Videos', value: 'video'),
   ];
 
-  static const List<SearchFilterOption> languageOptions = [
-    SearchFilterOption(label: 'English', value: 'en'),
-    SearchFilterOption(label: 'Hindi', value: 'hi', trailing: 'हिन्दी'),
-    SearchFilterOption(label: 'Malayalam', value: 'ml', trailing: 'മലയാളം'),
-  ];
+  List<SearchFilterOption> _languageOptions = [];
 
-  // Only 'youtube-thumbnail' is a confirmed slug; check the others against
-  // the backend (or load this list from your sizes API).
-  static const List<SearchFilterOption> sizeOptions = [
-    SearchFilterOption(
-      label: 'Instagram Post Portrait',
-      value: 'instagram-post-portrait',
-      trailing: '1080 × 1350',
-    ),
-    SearchFilterOption(
-      label: 'Instagram Story',
-      value: 'instagram-story',
-      trailing: '1080 × 1920',
-    ),
-    SearchFilterOption(
-      label: 'YouTube Shorts Thumbnail',
-      value: 'youtube-shorts-thumbnail',
-      trailing: '1080 × 1920',
-    ),
-    SearchFilterOption(
-      label: 'YouTube Thumbnail',
-      value: 'youtube-thumbnail',
-      trailing: '1280 × 720',
-    ),
-  ];
+  /// Languages from the languages API (same one the profile screen uses).
+  List<SearchFilterOption> get languageOptions => _languageOptions;
+
+  bool _languagesLoading = false;
+
+  List<SearchFilterOption> _sizeOptions = [];
+
+  /// Post sizes from the sizes (industry) API. [value] is the size slug.
+  List<SearchFilterOption> get sizeOptions => _sizeOptions;
+
+  bool _sizesLoading = false;
 
   List<SearchFilterOption> _tagOptions = [];
   List<SearchFilterOption> get tagOptions => _tagOptions;
@@ -261,6 +309,31 @@ class SearchProvider extends ChangeNotifier {
     } catch (error) {
       debugPrint('Search keywords error: $error');
     }
+  }
+
+  /// Languages API -> LANGUAGE filter. [value] is the language code that goes
+  /// into `language=` of the search request.
+  Future<void> _loadLanguages({bool force = false}) async {
+    if (_languagesLoading) return;
+    if (_languageOptions.isNotEmpty && !force) return;
+    _languagesLoading = true;
+    final list = await FilterOptionsLoader.languages();
+    _languagesLoading = false;
+    if (_disposed) return;
+    if (list.isNotEmpty) _languageOptions = list;
+    notifyListeners();
+  }
+
+  /// Sizes API -> POST SIZE filter. [value] is the size slug.
+  Future<void> _loadSizes({bool force = false}) async {
+    if (_sizesLoading) return;
+    if (_sizeOptions.isNotEmpty && !force) return;
+    _sizesLoading = true;
+    final list = await FilterOptionsLoader.sizes();
+    _sizesLoading = false;
+    if (_disposed) return;
+    if (list.isNotEmpty) _sizeOptions = list;
+    notifyListeners();
   }
 
   void _onScroll() {
@@ -408,6 +481,8 @@ class SearchProvider extends ChangeNotifier {
         final page = _parseCards(result.data);
         _results = page;
         _hasMore = page.length >= pageSize;
+        // Only remember searches that actually gave results.
+        if (page.isNotEmpty) _saveRecent(query);
       } else {
         _error = result.error?.message ?? 'Search failed';
       }

@@ -6,11 +6,14 @@ import '../../Api Model/key_words_model.dart';
 import '../../Repository/business_profile_repository.dart';
 import '../../Repository/template_detail_repository.dart';
 import '../../Repository/template_edit_repository.dart';
+import '../../ui/screens/widget/filter_option.dart';
 import 'common_provider.dart';
+import 'search_provider.dart' show SearchFilterOption;
 
 class TemplateDetailProvider extends ChangeNotifier {
   TemplateDetailProvider() {
     loadSavedImage();
+    _loadFilterOptions();
   }
 
   bool _disposed = false;
@@ -29,11 +32,153 @@ class TemplateDetailProvider extends ChangeNotifier {
   // ---------------- BOTTOM TAB ----------------
   int _selectedIndex = 0;
   int get selectedIndex => _selectedIndex;
-  String? _tag;
-  String? get tag => _tag;
   void setSelectedIndex(int index) {
     _selectedIndex = index;
     notifyListeners();
+  }
+
+  // ---------------- FILTERS (same bar as the search screen) ----------------
+  // IMAGE / VIDEO = selectedIndex (0 / 1, 2 = all). LANGUAGE, POST SIZE and
+  // CATEGORIES are filters applied on the templates already loaded.
+  List<SearchFilterOption> _languageOptions = [];
+  List<SearchFilterOption> get languageOptions => _languageOptions;
+
+  List<SearchFilterOption> _sizeOptions = [];
+  List<SearchFilterOption> get sizeOptions => _sizeOptions;
+
+  String? _tag;
+  String? _language;
+  String? _size;
+  String? get tag => _tag;
+  String? get language => _language;
+  String? get size => _size;
+
+  bool get hasActiveFilters => _tag != null || _language != null || _size != null;
+
+  /// Category keywords as filter options (value = slug).
+  List<SearchFilterOption> get tagOptions => _keyWords
+      .map(
+        (k) => SearchFilterOption(
+      label: (k.name ?? '').trim(),
+      value: (k.slug ?? '').trim(),
+    ),
+  )
+      .where((o) => o.label.isNotEmpty && (o.value ?? '').isNotEmpty)
+      .toList();
+
+  Future<void> _loadFilterOptions() async {
+    final results = await Future.wait([
+      FilterOptionsLoader.languages(),
+      FilterOptionsLoader.sizes(),
+    ]);
+    if (_disposed) return;
+    _languageOptions = results[0];
+    _sizeOptions = results[1];
+    notifyListeners();
+  }
+
+  void setLanguage(String? value) {
+    if (_language == value) return;
+    _language = value;
+    notifyListeners();
+  }
+
+  void setSize(String? value) {
+    if (_size == value) return;
+    _size = value;
+    notifyListeners();
+  }
+
+  void setTag(String? value) {
+    if (_tag == value) return;
+    _tag = value;
+    notifyListeners();
+  }
+
+  void clearFilters() {
+    if (!hasActiveFilters) return;
+    _tag = null;
+    _language = null;
+    _size = null;
+    notifyListeners();
+  }
+
+  SearchFilterOption? _optionFor(List<SearchFilterOption> list, String? value) {
+    for (final o in list) {
+      if (o.value == value) return o;
+    }
+    return null;
+  }
+
+  bool _matchesLanguage(TemplateModel t) {
+    if (_language == null) return true;
+    final opt = _optionFor(_languageOptions, _language);
+    final want = <String>{
+      (opt?.label ?? '').toLowerCase().trim(),
+      (opt?.trailing ?? '').toLowerCase().trim(),
+      _language!.toLowerCase().trim(),
+    }..remove('');
+
+    final have = <String>{};
+    for (final l in t.availableLanguages) {
+      have.add((l.name ?? '').toLowerCase().trim());
+      have.add((l.nativeName ?? '').toLowerCase().trim());
+    }
+    have.add((t.language?.name ?? '').toLowerCase().trim());
+    have.remove('');
+
+    return have.any(want.contains);
+  }
+
+  bool _matchesSize(TemplateModel t) {
+    if (_size == null) return true;
+    final opt = _optionFor(_sizeOptions, _size);
+    final parts = (opt?.trailing ?? '').split('×');
+    if (parts.length != 2) return true; // unknown dimensions -> do not hide
+    final w = int.tryParse(parts[0].trim());
+    final h = int.tryParse(parts[1].trim());
+    if (w == null || h == null) return true;
+
+    bool same(num? tw, num? th) => (tw ?? 0).toInt() == w && (th ?? 0).toInt() == h;
+
+    if (same(t.templateSize?.width, t.templateSize?.height)) return true;
+    for (final z in t.availableSizes) {
+      if (same(z.width, z.height)) return true;
+    }
+    return false;
+  }
+
+  bool _matchesTag(TemplateModel t) {
+    if (_tag == null) return true;
+    final opt = _optionFor(tagOptions, _tag);
+    final name = (opt?.label ?? '').toLowerCase().trim();
+    final slug = _tag!.toLowerCase().trim();
+
+    // Use the template's own tags when the model has them ...
+    try {
+      final raw = (t as dynamic).tags;
+      if (raw is List && raw.isNotEmpty) {
+        for (final e in raw) {
+          final text = e is String
+              ? e
+              : '${(e as dynamic).slug ?? (e as dynamic).name ?? ''}';
+          final v = text.toLowerCase().trim();
+          if (v == slug || v == name) return true;
+        }
+        return false;
+      }
+    } catch (_) {}
+
+    // ... otherwise fall back to the template name.
+    final tn = (t.name ?? '').toString().toLowerCase();
+    return name.isNotEmpty && tn.contains(name);
+  }
+
+  List<TemplateModel> _applyFilters(List<TemplateModel> list) {
+    if (!hasActiveFilters) return list;
+    return list
+        .where((t) => _matchesLanguage(t) && _matchesSize(t) && _matchesTag(t))
+        .toList();
   }
 
   // ---------------- RESIZE ----------------
@@ -351,9 +496,12 @@ class TemplateDetailProvider extends ChangeNotifier {
   }
 
   // Grid lists → banner-la irukkura template thavira mathathu
-  List<TemplateModel> get gridImageTemplates => _withoutSelected(imageTemplates);
-  List<TemplateModel> get gridVideoTemplates => _withoutSelected(videoTemplates);
-  List<TemplateModel> get gridAllTemplates => _withoutSelected(allTemplates);
+  List<TemplateModel> get gridImageTemplates =>
+      _applyFilters(_withoutSelected(imageTemplates));
+  List<TemplateModel> get gridVideoTemplates =>
+      _applyFilters(_withoutSelected(videoTemplates));
+  List<TemplateModel> get gridAllTemplates =>
+      _applyFilters(_withoutSelected(allTemplates));
 
   void clearTemplates() {
     _templates = [];

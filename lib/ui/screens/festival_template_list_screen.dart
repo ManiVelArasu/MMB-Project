@@ -183,20 +183,11 @@ class SpecialDayTemplatesScreen extends StatelessWidget {
     }
 
     if (template.isLocked) {
-      _showPremiumTemplateDialog(context, template);
+      _openDetail(context, template);
       return;
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TemplateEditScreen(
-          templateUid: templateUid,
-          canvasHeight: (template.templateSize?.height ?? 0).toDouble(),
-          canvasWidth: (template.templateSize?.width ?? 0).toDouble(),
-        ),
-      ),
-    );
+    _openDetail(context, template);
   }
 
   // =====================================================================

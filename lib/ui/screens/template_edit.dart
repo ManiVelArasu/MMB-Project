@@ -4752,8 +4752,32 @@ class _EditorViewState extends State<EditorView> {
     var targetsItem = false;
     if (!_panMode && d.pointerCount >= 2) {
       final provider = context.read<EditorProvider>();
+      final zoomed = _canvasZoom > 1.05;
       targetsItem = _isOverSelectedItem(d.localFocalPoint);
-      if (!targetsItem && !provider.multiSelectMode) {
+
+      // Never trap the user: when zoomed in and the selected object fills
+      // most of the screen, a pinch on it must still zoom the canvas OUT.
+      if (targetsItem && zoomed) {
+        final sel = _selectedZoomItem(provider);
+        if (sel != null) {
+          final body = EditableItemWidget.isTextType(sel.type)
+              ? EditableItemWidget.measureTextBox(sel, provider)
+              : Size(math.max(1.0, sel.width), math.max(1.0, sel.height));
+          final sc = sel.scale.isFinite
+              ? sel.scale.clamp(0.01, 10.0).toDouble()
+              : 1.0;
+          final px = _zoomFit.width * _canvasZoom / _zoomCanvasLogical.width;
+          if (body.width * sc * px > _zoomViewSize.width * 0.7 ||
+              body.height * sc * px > _zoomViewSize.height * 0.7) {
+            targetsItem = false;
+          }
+        }
+      }
+
+      // Touching ANOTHER object selects it and pinch resizes it, but only
+      // when not zoomed in and the object is not huge. Otherwise the pinch
+      // belongs to the canvas, so zooming out always works.
+      if (!targetsItem && !zoomed && !provider.multiSelectMode) {
         final frac = _zoomFracAt(d.localFocalPoint, _canvasZoom);
         final hitId = _pickItemAt(
           provider,
@@ -4764,20 +4788,80 @@ class _EditorViewState extends State<EditorView> {
         );
         if (hitId != null) {
           final hit = provider.items.firstWhere((x) => x.id == hitId);
-          provider.setSelectedItem(hit.type, hit.id);
-          targetsItem = true;
+          final hsc = hit.scale.isFinite
+              ? hit.scale.clamp(0.01, 10.0).toDouble()
+              : 1.0;
+          final area =
+              hit.width * hit.height * hsc * hsc /
+                  (_zoomCanvasLogical.width * _zoomCanvasLogical.height);
+          if (area < 0.4 || EditableItemWidget.isTextType(hit.type)) {
+            provider.setSelectedItem(hit.type, hit.id);
+            targetsItem = true;
+          }
         }
       }
     }
     _gestureOnItem = d.pointerCount >= 2 && targetsItem && _beginItemPinch();
     _zoomGestureStart = _canvasZoom;
     _zoomGestureFrac = _zoomFracAt(d.localFocalPoint, _canvasZoom);
+
+    // Background selected + two fingers on the page (not on an object, page
+    // not zoomed in): resize / pan the background image like Canva.
+    _gestureOnBg = false;
+    if (!_gestureOnItem &&
+        !_panMode &&
+        d.pointerCount >= 2 &&
+        _canvasZoom <= 1.05) {
+      final provider = context.read<EditorProvider>();
+      final id = provider.selectedItemId;
+      if (id != null) {
+        for (final e in provider.items) {
+          if (e.id == id && provider.isCanvasBackgroundItem(e)) {
+            _gestureOnBg = true;
+            _bgId = id;
+            _bgStartScale = e.scale.isFinite ? e.scale : 1.0;
+            _bgStartPos = e.position;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  bool _gestureOnBg = false;
+  String _bgId = '';
+  double _bgStartScale = 1.0;
+  Offset _bgStartPos = Offset.zero;
+
+  void _updateBackgroundPinch(ScaleUpdateDetails d) {
+    final provider = context.read<EditorProvider>();
+    final cw = _zoomCanvasLogical.width, ch = _zoomCanvasLogical.height;
+    final ns = (_bgStartScale * d.scale).clamp(1.0, 10.0).toDouble();
+    // Image point that was under the fingers at the start stays under them.
+    final p0 = Offset(_zoomGestureFrac.dx * cw, _zoomGestureFrac.dy * ch);
+    final u = (p0 - _bgStartPos) / _bgStartScale;
+    final nowFrac = _zoomFracAt(d.localFocalPoint, _canvasZoom);
+    final pNow = Offset(nowFrac.dx * cw, nowFrac.dy * ch);
+    final raw = pNow - u * ns;
+    provider.updateItemTransform(
+      _bgId,
+      scale: ns,
+      position: Offset(
+        raw.dx.clamp(cw * (1 - ns), 0.0).toDouble(),
+        raw.dy.clamp(ch * (1 - ns), 0.0).toDouble(),
+      ),
+      clampToFrame: false,
+    );
   }
 
   void _onCanvasGestureUpdate(ScaleUpdateDetails d) {
     if (_gestureSuppressed) return;
     if (_gestureOnItem) {
       _updateItemPinch(d);
+      return;
+    }
+    if (_gestureOnBg) {
+      _updateBackgroundPinch(d);
       return;
     }
     // Pinch = zoom around the fingers; moving the fingers = pan.
@@ -4789,6 +4873,11 @@ class _EditorViewState extends State<EditorView> {
   }
 
   void _onCanvasGestureEnd(ScaleEndDetails d) {
+    // A finger was lifted: re-decide on the next start.
+    if (_gestureOnBg && d.pointerCount > 0) {
+      _gestureOnBg = false;
+      context.read<EditorProvider>().commitTransform();
+    }
     if (_gestureOnItem) {
       _endItemPinch();
       _gestureOnItem = false;
@@ -4811,6 +4900,10 @@ class _EditorViewState extends State<EditorView> {
     if (_gestureOnItem) {
       _endItemPinch();
       _gestureOnItem = false;
+    }
+    if (_gestureOnBg) {
+      _gestureOnBg = false;
+      context.read<EditorProvider>().commitTransform();
     }
     _gestureSuppressed = false;
     if (!mounted) return;
@@ -5042,8 +5135,23 @@ class _EditorViewState extends State<EditorView> {
         break;
       }
     }
-    if (selected == null || _isCanvasBackground(selected)) {
-      return const SizedBox.shrink();
+    if (selected == null) return const SizedBox.shrink();
+    if (_isCanvasBackground(selected) ||
+        provider.isCanvasBackgroundItem(selected)) {
+      // Background selected: Canva-style purple frame exactly around the page.
+      return Positioned(
+        left: origin.dx,
+        top: origin.dy,
+        width: canvasSize.width * scaleX,
+        height: canvasSize.height * scaleY,
+        child: IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFF8B3DFF), width: 2.5),
+            ),
+          ),
+        ),
+      );
     }
     return _TransformSelectionOverlay(
       key: ValueKey('selection_overlay_${selected.id}'),
@@ -13389,22 +13497,26 @@ class _InteractiveBackgroundLayerState
               (details.focalPoint.dy - _startFocalPoint.dy) /
                   widget.scaleY;
 
+          // Scale (never smaller than the page) and keep the image covering
+          // the whole page, so no empty gap can show.
+          final newScale = (_startScale * details.scale)
+              .clamp(1.0, 10.0)
+              .toDouble();
           final newPosition = Offset(
-            _startPosition.dx + dx,
-            _startPosition.dy + dy,
+            (_startPosition.dx + dx).clamp(
+              widget.canvasWidth * (1 - newScale),
+              0.0,
+            ),
+            (_startPosition.dy + dy).clamp(
+              widget.canvasHeight * (1 - newScale),
+              0.0,
+            ),
           );
-
-          // Scale
-          final newScale = (_startScale * details.scale).clamp(0.1, 10.0);
-
-          // Rotation
-          final newRotation = _startRotation + details.rotation;
 
           provider.updateItemTransform(
             item.id ?? '',
             position: newPosition,
             scale: newScale,
-            rotation: newRotation,
           );
         },
 

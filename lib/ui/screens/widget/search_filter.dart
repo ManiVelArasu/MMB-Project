@@ -34,7 +34,7 @@ class SearchFilterBar extends StatelessWidget {
             icon: Icons.translate_rounded,
             title: 'LANGUAGE',
             allLabel: 'All languages',
-            options: SearchProvider.languageOptions,
+            options: p.languageOptions,
             selected: p.language,
             onChanged: p.setLanguage,
           ),
@@ -231,45 +231,69 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-
 // ===========================================================================
-// BOTTOM BAR:  IMAGE | VIDEO | POST SIZE | CATEGORIES
+// BOTTOM BAR:  IMAGE | VIDEO | LANGUAGE | POST SIZE | CATEGORIES
+// One design, used by the search screen AND the template detail screen.
 // ===========================================================================
 
-class SearchBottomBar extends StatelessWidget {
-  const SearchBottomBar({super.key});
+class FilterBarTab {
+  const FilterBarTab({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Image icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+}
+
+/// Dark rounded bar with a grab handle and a row of icon tabs.
+/// [onClose] (optional) makes the handle tappable / swipe-down to close.
+class FilterBottomBar extends StatelessWidget {
+  const FilterBottomBar({super.key, required this.tabs, this.onClose});
+
+  final List<FilterBarTab> tabs;
+  final VoidCallback? onClose;
 
   static const Color _idle = Color(0xFF8C8C8C);
 
   @override
   Widget build(BuildContext context) {
-    final p = context.watch<SearchProvider>();
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
-    Widget tab({
-      required IconData icon,
-      required String label,
-      required bool selected,
-      required VoidCallback onTap,
-    }) {
-      final color = selected ? Colors.white : _idle;
+    Widget tab(FilterBarTab t) {
+      final color = t.selected ? Colors.white : _idle;
       return Expanded(
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            // Any bottom-bar tap takes the focus (and keyboard) off the
+            // search box.
+            FocusManager.instance.primaryFocus?.unfocus();
+            t.onTap();
+          },
           borderRadius: BorderRadius.circular(14),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 2),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 24, color: color),
+                Image(
+                  image: t.icon.image,
+                  width: 20,
+                  height: 20,
+                  fit: BoxFit.contain,
+                  color: color, // white when selected, grey when idle
+                ),
                 const SizedBox(height: 6),
                 AppText(
-                  label,
+                  t.label,
                   maxLines: 1,
                   style: TextStyle(
-                    fontSize: AppFontSize.fontSize11,
-                    fontWeight: FontWeight.w800,
+                    fontSize: AppFontSize.fontSize10,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: 0.4,
                     color: color,
                   ),
@@ -277,6 +301,26 @@ class SearchBottomBar extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      );
+    }
+
+    Widget handle = Container(
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: const Color(0xFF5A5A5A),
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+    if (onClose != null) {
+      handle = GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onClose,
+        onVerticalDragEnd: (_) => onClose!(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 4),
+          child: handle,
         ),
       );
     }
@@ -298,77 +342,97 @@ class SearchBottomBar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFF5A5A5A),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              tab(
-                icon: Icons.image_rounded,
-                label: 'IMAGE',
-                selected: p.templateType == 'image',
-                onTap: () =>
-                    p.setTemplateType(p.templateType == 'image' ? null : 'image'),
-              ),
-              tab(
-                icon: Icons.videocam_rounded,
-                label: 'VIDEO',
-                selected: p.templateType == 'video',
-                onTap: () =>
-                    p.setTemplateType(p.templateType == 'video' ? null : 'video'),
-              ),
-              tab(
-                icon: Icons.aspect_ratio_rounded,
-                label: 'POST SIZE',
-                selected: p.size != null,
-                onTap: () => showSearchOptionSheet(
-                  context,
-                  title: 'Post size',
-                  allLabel: 'All sizes',
-                  options: SearchProvider.sizeOptions,
-                  selected: p.size,
-                  onChanged: p.setSize,
-                ),
-              ),
-              tab(
-                icon: Icons.category_rounded,
-                label: 'CATEGORIES',
-                selected: p.tag != null,
-                onTap: () => showSearchOptionSheet(
-                  context,
-                  title: 'Categories',
-                  allLabel: 'All categories',
-                  options: p.tagOptions,
-                  selected: p.tag,
-                  onChanged: p.setTag,
-                  emptyText: 'No categories available',
-                ),
-              ),
-            ],
-          ),
+          handle,
+          SizedBox(height: onClose != null ? 8 : 12),
+          Row(children: [for (final t in tabs) tab(t)]),
         ],
       ),
     );
   }
 }
 
+class SearchBottomBar extends StatelessWidget {
+  const SearchBottomBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.watch<SearchProvider>();
+
+    return FilterBottomBar(
+      tabs: [
+        FilterBarTab(
+          icon: Image.asset("assets/images/gallery.png"),
+          label: 'IMAGE',
+          selected: p.templateType == 'image',
+          onTap: () =>
+              p.setTemplateType(p.templateType == 'image' ? null : 'image'),
+        ),
+        FilterBarTab(
+          icon: Image.asset("assets/images/video.png"),
+          label: 'VIDEO',
+          selected: p.templateType == 'video',
+          onTap: () =>
+              p.setTemplateType(p.templateType == 'video' ? null : 'video'),
+        ),
+        FilterBarTab(
+          icon: Image.asset("assets/images/translate_black.png"),
+          label: 'LANGUAGE',
+          selected: p.language != null,
+          onTap: () => showSearchOptionSheet(
+            context,
+            title: 'Language',
+            allLabel: 'All languages',
+            options: p.languageOptions,
+            selected: p.language,
+            onChanged: p.setLanguage,
+            emptyText: 'No languages available',
+          ),
+        ),
+        FilterBarTab(
+          icon: Image.asset("assets/images/monitor-mobbile.png"),
+          label: 'POST SIZE',
+          selected: p.size != null,
+          onTap: () => showSearchOptionSheet(
+            context,
+            title: 'Post size',
+            allLabel: 'All sizes',
+            options: p.sizeOptions,
+            selected: p.size,
+            onChanged: p.setSize,
+            emptyText: 'No sizes available',
+          ),
+        ),
+        FilterBarTab(
+          icon: Image.asset("assets/images/educare-(ekt).png"),
+          label: 'CATEGORIES',
+          selected: p.tag != null,
+          onTap: () => showSearchOptionSheet(
+            context,
+            title: 'Categories',
+            allLabel: 'All categories',
+            options: p.tagOptions,
+            selected: p.tag,
+            onChanged: p.setTag,
+            emptyText: 'No categories available',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Dark rounded bottom sheet that matches [SearchBottomBar].
 Future<void> showSearchOptionSheet(
-    BuildContext context, {
-      required String title,
-      required String allLabel,
-      required List<SearchFilterOption> options,
-      required String? selected,
-      required ValueChanged<String?> onChanged,
-      String emptyText = 'Nothing to show',
-    }) {
+  BuildContext context, {
+  required String title,
+  required String allLabel,
+  required List<SearchFilterOption> options,
+  required String? selected,
+  required ValueChanged<String?> onChanged,
+  String emptyText = 'Nothing to show',
+}) {
   final red = AppColors.appRed;
+  FocusManager.instance.primaryFocus?.unfocus();
 
   return showModalBottomSheet<void>(
     context: context,
@@ -397,8 +461,9 @@ Future<void> showSearchOptionSheet(
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: AppFontSize.fontSize14,
-                      fontWeight:
-                      isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                       color: isSelected ? Colors.white : Colors.white70,
                     ),
                   ),
@@ -453,7 +518,7 @@ Future<void> showSearchOptionSheet(
                     title.toUpperCase(),
                     style: TextStyle(
                       fontSize: AppFontSize.fontSize12,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       letterSpacing: 0.6,
                       color: Colors.white54,
                     ),
@@ -497,5 +562,5 @@ Future<void> showSearchOptionSheet(
         ),
       );
     },
-  );
+  ).whenComplete(() => FocusManager.instance.primaryFocus?.unfocus());
 }
