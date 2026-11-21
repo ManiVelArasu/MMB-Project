@@ -1,12 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/ui/screens/template_detail_screen.dart';
 import 'package:mmb_app/ui/screens/widget/search_filter.dart';
 import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:provider/provider.dart';
 
-import 'package:mmb_app/component/appbar_widget.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
@@ -33,26 +33,185 @@ class SearchScreen extends StatelessWidget {
   }
 }
 
-class _SearchView extends StatelessWidget {
+class _SearchView extends StatefulWidget {
   const _SearchView();
+
+  @override
+  State<_SearchView> createState() => _SearchViewState();
+}
+
+class _SearchViewState extends State<_SearchView> {
+  // Search field lives inside the app bar. Open by default when nothing has
+  // been searched yet; otherwise the bar shows the query + a search icon.
+  late bool _searching;
+
+  @override
+  void initState() {
+    super.initState();
+    _searching = context.read<SearchProvider>().controller.text.trim().isEmpty;
+  }
+
+  void _openSearch(SearchProvider provider) {
+    setState(() => _searching = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) provider.focusNode.requestFocus();
+    });
+  }
+
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    SearchProvider provider,
+    bool isDark,
+    Color fg,
+    Color sub,
+  ) {
+    final title = provider.hasSearched && provider.activeQuery.isNotEmpty
+        ? provider.activeQuery
+        : 'Search';
+
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: kToolbarHeight,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                  borderRadius: BorderRadius.circular(24.r),
+                  child: Container(
+                    height: 40.h,
+                    width: 40.w,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF2A1A1C)
+                          : const Color(0xFFFFECEE),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.arrow_back,
+                        color: Color(0xFFE53935),
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 5),
+                Expanded(
+                  child: _searching
+                      ? Hero(
+                          tag: 'search_bar_hero',
+                          child: Material(
+                            color: Colors.transparent,
+                            child: Container(
+                              height: 42,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF1E1E1E)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: AppColors.searchBorderColor,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: provider.controller,
+                                      focusNode: provider.focusNode,
+                                      autofocus: true,
+                                      textInputAction: TextInputAction.search,
+                                      inputFormatters: [
+                                        LengthLimitingTextInputFormatter(
+                                          SearchProvider.maxQueryLength,
+                                        ),
+                                      ],
+                                      style: TextStyle(color: fg, fontSize: 15),
+                                      decoration: InputDecoration(
+                                        border: InputBorder.none,
+                                        isDense: true,
+                                        hintText:
+                                            'Search templates, Brand Series...',
+                                        hintStyle: TextStyle(
+                                          color: sub,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      onChanged: provider.onTextChanged,
+                                      onSubmitted: (v) {
+                                        provider.submit(v);
+                                        if (v.trim().isNotEmpty) {
+                                          setState(() => _searching = false);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      if (provider.controller.text.isNotEmpty) {
+                                        provider.clearSearch();
+                                      } else if (provider.hasSearched) {
+                                        setState(() => _searching = false);
+                                      }
+                                    },
+                                    child: Icon(
+                                      Icons.close,
+                                      size: 20,
+                                      color: sub,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        )
+                      : Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: fg,
+                          ),
+                        ),
+                ),
+                if (!_searching)
+                  IconButton(
+                    icon: Icon(Icons.search_rounded, size: 24, color: fg),
+                    onPressed: () => _openSearch(provider),
+                  )
+                else
+                  const SizedBox(width: 12),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<SearchProvider>();
     final isDark = context.watch<CustomThemeProvider>().isDarkMode;
-    final size = MediaQuery.of(context).size;
     final fg = isDark ? Colors.white : Colors.black;
     final sub = isDark ? Colors.white54 : Colors.black45;
 
     return CommonScaffold(
       isDarkMode: isDark,
       extendBodyBehindAppBar: true,
-      appBar: CustomAppBar(
-        title: provider.hasSearched && provider.activeQuery.isNotEmpty
-            ? provider.activeQuery
-            : '',
-        showRightIcon: false,
-      ),
+      appBar: _buildAppBar(context, provider, isDark, fg, sub),
       body: Stack(
         children: [
           if (!isDark)
@@ -71,78 +230,16 @@ class _SearchView extends StatelessWidget {
             bottom: false,
             child: Column(
               children: [
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    size.width * 0.04,
-                    size.height * 0.012,
-                    size.width * 0.04,
-                    10,
-                  ),
-                  child: Hero(
-                    tag: 'search_bar_hero',
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Container(
-                        height: 46,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.searchBorderColor),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Image.asset(
-                              'assets/images/search.png',
-                              width: 20,
-                              height: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextField(
-                                controller: provider.controller,
-                                focusNode: provider.focusNode,
-                                autofocus: true,
-                                textInputAction: TextInputAction.search,
-                                inputFormatters: [
-                                  LengthLimitingTextInputFormatter(
-                                    SearchProvider.maxQueryLength,
-                                  ),
-                                ],
-                                style: TextStyle(color: fg, fontSize: 15),
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                  hintText: 'Search templates, Brand Series...',
-                                  hintStyle: TextStyle(color: sub, fontSize: 14),
-                                ),
-                                onChanged: provider.onTextChanged,
-                                onSubmitted: provider.submit,
-                              ),
-                            ),
-                            if (provider.controller.text.isNotEmpty)
-                              GestureDetector(
-                                onTap: provider.clearSearch,
-                                child: Icon(Icons.close, size: 20, color: sub),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
                 // Language filter now lives in the bottom bar.
                 const SizedBox(height: 4),
                 Expanded(child: _buildBody(context, provider, isDark, fg, sub)),
-                // Hidden while the keyboard is open so it never floats on it.
-                if (MediaQuery.of(context).viewInsets.bottom == 0)
+                // Only shown when result data is on screen (not on the empty/recent,
+                // suggestions, loading or no-result states) and keyboard is closed.
+                if (MediaQuery.of(context).viewInsets.bottom == 0 &&
+                    provider.suggestions.isEmpty &&
+                    !provider.isLoading &&
+                    provider.error == null &&
+                    provider.results.isNotEmpty)
                   const SearchBottomBar(),
               ],
             ),
@@ -153,12 +250,12 @@ class _SearchView extends StatelessWidget {
   }
 
   Widget _buildInitialEmptyState(
-      BuildContext context,
-      SearchProvider provider,
-      bool isDark,
-      Color fg,
-      Color sub,
-      ) {
+    BuildContext context,
+    SearchProvider provider,
+    bool isDark,
+    Color fg,
+    Color sub,
+  ) {
     return SingleChildScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       physics: const BouncingScrollPhysics(),
@@ -281,7 +378,11 @@ class _SearchView extends StatelessWidget {
                         onTap: () => provider.removeRecent(item),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(4, 8, 10, 8),
-                          child: Icon(Icons.close_rounded, size: 15, color: sub),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 15,
+                            color: sub,
+                          ),
                         ),
                       ),
                     ],
@@ -296,12 +397,12 @@ class _SearchView extends StatelessWidget {
   }
 
   Widget _buildBody(
-      BuildContext context,
-      SearchProvider provider,
-      bool isDark,
-      Color fg,
-      Color sub,
-      ) {
+    BuildContext context,
+    SearchProvider provider,
+    bool isDark,
+    Color fg,
+    Color sub,
+  ) {
     if (provider.isWaitingForFirstResult && !provider.hasSearched) {
       return _searchShimmer(isDark);
     }
@@ -325,12 +426,12 @@ class _SearchView extends StatelessWidget {
               boxShadow: isDark
                   ? null
                   : const [
-                BoxShadow(
-                  color: Color(0x0F000000),
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
-                ),
-              ],
+                      BoxShadow(
+                        color: Color(0x0F000000),
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(
@@ -342,7 +443,7 @@ class _SearchView extends StatelessWidget {
                     isDark,
                     fg,
                     sub,
-                        () => provider.pickSuggestion(provider.suggestions[i]),
+                    () => provider.pickSuggestion(provider.suggestions[i]),
                   ),
                   if (i != provider.suggestions.length - 1)
                     Divider(
@@ -413,10 +514,10 @@ class _SearchView extends StatelessWidget {
   );
 
   Widget _resultCard(
-      BuildContext context,
-      Map<String, dynamic> template,
-      bool isDark,
-      ) {
+    BuildContext context,
+    Map<String, dynamic> template,
+    bool isDark,
+  ) {
     final uid = template['uid']?.toString().trim() ?? '';
     final key = template['thumbnail_s3_key']?.toString().trim() ?? '';
     final locked = template['is_locked'] == true;
@@ -437,8 +538,7 @@ class _SearchView extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              TemplateDetailScreen(templateUid: uid),
+          builder: (_) => TemplateDetailScreen(templateUid: uid),
         ),
       );
     }
@@ -467,11 +567,11 @@ class _SearchView extends StatelessWidget {
             imageUrl.isEmpty
                 ? _placeholder(isDark)
                 : CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => _placeholder(isDark),
-              errorWidget: (_, __, ___) => _placeholder(isDark),
-            ),
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => _placeholder(isDark),
+                    errorWidget: (_, __, ___) => _placeholder(isDark),
+                  ),
 
             // Locked => crown only, not locked => 3-dot menu only
             _buildCardTopBar(context, template, locked: locked, uid: uid),
@@ -480,49 +580,51 @@ class _SearchView extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildCardTopBar(
-      BuildContext context,
-      Map<String, dynamic> template, {
-        required bool locked,
-        required String uid,
-      }) {
+    BuildContext context,
+    Map<String, dynamic> template, {
+    required bool locked,
+    required String uid,
+  }) {
     return Positioned(
       top: 5,
       right: 5,
       child: locked
           ? SizedBox(
-        width: 24,
-        height: 28,
-        child: Image.asset(
-          'assets/images/crown.png',
-          fit: BoxFit.contain,
-        ),
-      )
-          : SizedBox(
-        width: 38,
-        height: 25,
-        child: TemplateActionPopup(
-          isFavorite: true,
-          showDownload: false,
-          showDelete: false,
-          onCustomize: () {
-            if (uid.isEmpty) return;
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => TemplateEditScreen(templateUid: uid),
+              width: 24,
+              height: 28,
+              child: Image.asset(
+                'assets/images/crown.png',
+                fit: BoxFit.contain,
               ),
-            );
-          },
-          onDownload: () {},
-          onFavorite: () {
-            // TODO: connect your favorite API here
-            // (family uid: template['family_uid'])
-          },
-        ),
-      ),
+            )
+          : SizedBox(
+              width: 38,
+              height: 25,
+              child: TemplateActionPopup(
+                isFavorite: true,
+                showDownload: false,
+                showDelete: false,
+                onCustomize: () {
+                  if (uid.isEmpty) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TemplateEditScreen(templateUid: uid),
+                    ),
+                  );
+                },
+                onDownload: () {},
+                onFavorite: () {
+                  // TODO: connect your favorite API here
+                  // (family uid: template['family_uid'])
+                },
+              ),
+            ),
     );
   }
+
   Widget _placeholder(bool isDark) => Container(
     color: isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200,
     child: Icon(Icons.image_outlined, size: 36, color: Colors.grey.shade400),
@@ -551,13 +653,13 @@ class _SearchView extends StatelessWidget {
   }
 
   Widget _suggestionTile(
-      SearchSuggestion s,
-      String query,
-      bool isDark,
-      Color fg,
-      Color sub,
-      VoidCallback onTap,
-      ) {
+    SearchSuggestion s,
+    String query,
+    bool isDark,
+    Color fg,
+    Color sub,
+    VoidCallback onTap,
+  ) {
     final caption = _captionFor(s.type);
     final soft = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF4F4F6);
 
@@ -581,8 +683,7 @@ class _SearchView extends StatelessWidget {
             if (caption.isNotEmpty) ...[
               const SizedBox(width: 10),
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: soft,
                   borderRadius: BorderRadius.circular(20),
@@ -676,12 +777,12 @@ class _SearchView extends StatelessWidget {
   static const String _noResultImage = 'assets/images/no_results.png';
 
   Widget _buildEmptyState(
-      BuildContext context,
-      SearchProvider provider,
-      bool isDark,
-      Color fg,
-      Color sub,
-      ) {
+    BuildContext context,
+    SearchProvider provider,
+    bool isDark,
+    Color fg,
+    Color sub,
+  ) {
     final query = provider.activeQuery;
     final filtered = provider.hasActiveFilters;
 
@@ -701,8 +802,7 @@ class _SearchView extends StatelessWidget {
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) => SingleChildScrollView(
-              keyboardDismissBehavior:
-              ScrollViewKeyboardDismissBehavior.onDrag,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               physics: const ClampingScrollPhysics(),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
@@ -735,7 +835,7 @@ class _SearchView extends StatelessWidget {
                         const SizedBox(height: 8),
                         AppText(
                           'We couldn\u2019t find any templates matching your search. '
-                              'Try a different keyword or explore our categories.',
+                          'Try a different keyword or explore our categories.',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 13, color: fg),
                         ),

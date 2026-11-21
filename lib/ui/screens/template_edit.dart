@@ -1630,7 +1630,7 @@ class _EditorViewState extends State<EditorView> {
             AppText(
               title,
               style: TextStyle(
-                fontSize: 13.5,
+                fontSize: AppFontSize.fontSize13,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 color: selected ? textColor : mutedColor,
               ),

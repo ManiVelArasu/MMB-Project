@@ -86,4 +86,6 @@ class ApiEndpoints {
 
   static String get upload => '/uploads';
 
+  static String get framesCategories => '/frames/categories';
+  static String get framesMine => '/frames/mine';
 }
