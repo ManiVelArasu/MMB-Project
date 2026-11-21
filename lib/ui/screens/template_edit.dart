@@ -4746,9 +4746,9 @@ class _EditorViewState extends State<EditorView> {
   void _onCanvasGestureStart(ScaleStartDetails d) {
     if (_gestureSuppressed) return;
     // Canva behaviour (same in normal and zoomed mode):
-    //  * two fingers on the selected object      -> resize / rotate it
-    //  * two fingers on any other object         -> select it, then resize it
-    //  * two fingers on empty space / background -> zoom the whole canvas
+    //  * two fingers on the SELECTED object      -> resize / rotate only it
+    //  * two fingers anywhere else               -> zoom the whole canvas; the
+    //    selection never changes and no other object gets selected
     var targetsItem = false;
     if (!_panMode && d.pointerCount >= 2) {
       final provider = context.read<EditorProvider>();
@@ -4770,33 +4770,6 @@ class _EditorViewState extends State<EditorView> {
           if (body.width * sc * px > _zoomViewSize.width * 0.7 ||
               body.height * sc * px > _zoomViewSize.height * 0.7) {
             targetsItem = false;
-          }
-        }
-      }
-
-      // Touching ANOTHER object selects it and pinch resizes it, but only
-      // when not zoomed in and the object is not huge. Otherwise the pinch
-      // belongs to the canvas, so zooming out always works.
-      if (!targetsItem && !zoomed && !provider.multiSelectMode) {
-        final frac = _zoomFracAt(d.localFocalPoint, _canvasZoom);
-        final hitId = _pickItemAt(
-          provider,
-          Offset(
-            frac.dx * _zoomCanvasLogical.width,
-            frac.dy * _zoomCanvasLogical.height,
-          ),
-        );
-        if (hitId != null) {
-          final hit = provider.items.firstWhere((x) => x.id == hitId);
-          final hsc = hit.scale.isFinite
-              ? hit.scale.clamp(0.01, 10.0).toDouble()
-              : 1.0;
-          final area =
-              hit.width * hit.height * hsc * hsc /
-                  (_zoomCanvasLogical.width * _zoomCanvasLogical.height);
-          if (area < 0.4 || EditableItemWidget.isTextType(hit.type)) {
-            provider.setSelectedItem(hit.type, hit.id);
-            targetsItem = true;
           }
         }
       }
@@ -8328,33 +8301,29 @@ class _EditorViewState extends State<EditorView> {
       String id,
       bool isDark,
       ) {
-    final fonts = GoogleFonts.asMap().keys.toList()..sort();
+    String current = '';
+    for (final e in provider.items) {
+      if (e.id == id) {
+        current = (e.fontFamily ?? '')
+            .split(',')
+            .first
+            .replaceAll(RegExp(r'''^["\s']+|["\s']+$'''), '')
+            .trim();
+        break;
+      }
+    }
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => SafeArea(
-        child: Container(
-          height: MediaQuery.of(sheetContext).size.height * 0.65,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: ListView.builder(
-            itemCount: fonts.length,
-            itemBuilder: (_, index) => ListTile(
-              title: AppText(
-                fonts[index],
-                style: GoogleFonts.getFont(fonts[index]),
-              ),
-              onTap: () {
-                provider.updateFontFamily(id, fonts[index]);
-                Navigator.pop(sheetContext);
-              },
-            ),
-          ),
-        ),
+      builder: (sheetContext) => _FontPickerSheet(
+        isDark: isDark,
+        current: current,
+        onSelected: (name) {
+          provider.updateFontFamily(id, name);
+          Navigator.pop(sheetContext);
+        },
       ),
     );
   }
@@ -13797,5 +13766,164 @@ class _TwoFingerScaleRecognizer extends ScaleGestureRecognizer {
     _down.clear();
     super.didStopTrackingLastPointer(pointer);
     onIdle?.call();
+  }
+}
+
+/// Font picker sheet. Owns its own controller so it is disposed together
+/// with the sheet (not while the close animation is still running).
+class _FontPickerSheet extends StatefulWidget {
+  const _FontPickerSheet({
+    required this.isDark,
+    required this.current,
+    required this.onSelected,
+  });
+
+  final bool isDark;
+  final String current;
+  final ValueChanged<String> onSelected;
+
+  @override
+  State<_FontPickerSheet> createState() => _FontPickerSheetState();
+}
+
+class _FontPickerSheetState extends State<_FontPickerSheet> {
+  final TextEditingController _search = TextEditingController();
+  late final List<String> _all = GoogleFonts.asMap().keys.toList()..sort();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  TextStyle _preview(String family, Color color) {
+    try {
+      return GoogleFonts.getFont(family, fontSize: 22, color: color);
+    } catch (_) {
+      return TextStyle(fontSize: 22, color: color);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    final fg = isDark ? Colors.white : const Color(0xFF171717);
+    final sub = isDark ? Colors.white54 : Colors.black45;
+    final query = _search.text.trim().toLowerCase();
+    final fonts = query.isEmpty
+        ? _all
+        : _all.where((f) => f.toLowerCase().contains(query)).toList();
+    final mq = MediaQuery.of(context);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: mq.viewInsets.bottom),
+      child: SafeArea(
+        child: Container(
+          height: mq.size.height * 0.65,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _search,
+                style: TextStyle(color: fg, fontSize: 15),
+                textInputAction: TextInputAction.search,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: 'Search fonts',
+                  hintStyle: TextStyle(color: sub),
+                  prefixIcon: Icon(Icons.search_rounded, color: sub),
+                  suffixIcon: query.isEmpty
+                      ? null
+                      : IconButton(
+                    icon: Icon(Icons.close_rounded, color: sub),
+                    onPressed: () {
+                      _search.clear();
+                      setState(() {});
+                    },
+                  ),
+                  filled: true,
+                  fillColor: isDark
+                      ? const Color(0xFF2A2A2A)
+                      : const Color(0xFFF3F3F3),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: fonts.isEmpty
+                    ? Center(
+                  child: Text('No fonts found',
+                      style: TextStyle(color: sub, fontSize: 14)),
+                )
+                    : ListView.builder(
+                  keyboardDismissBehavior:
+                  ScrollViewKeyboardDismissBehavior.onDrag,
+                  itemCount: fonts.length,
+                  itemExtent: 58,
+                  itemBuilder: (_, index) {
+                    final name = fonts[index];
+                    final selected = name == widget.current;
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => widget.onSelected(name),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 2),
+                        padding:
+                        const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? const Color(0xFFFFECEE)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: selected
+                              ? Border.all(color: Colors.red)
+                              : null,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: _preview(
+                                  name,
+                                  selected ? const Color(0xFFE53935) : fg,
+                                ),
+                              ),
+                            ),
+                            if (selected)
+                              const Icon(Icons.check_circle_rounded,
+                                  color: Colors.red, size: 20),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
