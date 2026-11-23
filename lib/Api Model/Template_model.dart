@@ -60,6 +60,9 @@ class TemplateModel {
   final List<TemplateSizeModel> availableSizes;
   final bool? isLocked;
 
+  /// NEW: language / size variants of this template (API `versions`).
+  final List<TemplateVersion> versions;
+
   TemplateModel({
     this.id,
     this.uid,
@@ -85,6 +88,7 @@ class TemplateModel {
     this.availableLanguages = const [],
     this.availableSizes = const [],
     this.isLocked,
+    this.versions = const [],
   });
 
   factory TemplateModel.fromJson(Map<String, dynamic> json) {
@@ -124,6 +128,10 @@ class TemplateModel {
           .map(TemplateSizeModel.fromJson)
           .toList(),
       isLocked: json['is_locked'] ??false,
+      versions: (json['versions'] as List? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(TemplateVersion.fromJson)
+          .toList(),
     );
   }
 
@@ -154,6 +162,51 @@ class TemplateModel {
     'available_sizes':
     availableSizes.map((e) => e.toJson()).toList(),
     'is_locked': isLocked,
+    'versions': versions.map((e) => e.toJson()).toList(),
+  };
+}
+
+/// One entry of API `versions` (a language variant of the template).
+class TemplateVersion {
+  final String uid;
+  final String languageName; // "Tamil" / "English"
+  final String? languageCode; // "ta" / "en"
+  final String? thumbnailS3Key;
+  final int width;
+  final int height;
+
+  const TemplateVersion({
+    required this.uid,
+    required this.languageName,
+    this.languageCode,
+    this.thumbnailS3Key,
+    this.width = 0,
+    this.height = 0,
+  });
+
+  factory TemplateVersion.fromJson(Map<String, dynamic> json) {
+    final lang = json['Language'] is Map<String, dynamic>
+        ? json['Language'] as Map<String, dynamic>
+        : null;
+    final size = json['TemplateSize'] is Map<String, dynamic>
+        ? json['TemplateSize'] as Map<String, dynamic>
+        : null;
+
+    return TemplateVersion(
+      uid: (json['uid'] ?? '').toString(),
+      languageName: (lang?['name'] ?? '').toString().trim(),
+      languageCode: lang?['code']?.toString(),
+      thumbnailS3Key: json['thumbnail_s3_key']?.toString(),
+      width: _toInt(size?['width']) ?? 0,
+      height: _toInt(size?['height']) ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'uid': uid,
+    'thumbnail_s3_key': thumbnailS3Key,
+    'Language': {'code': languageCode, 'name': languageName},
+    'TemplateSize': {'width': width, 'height': height},
   };
 }
 

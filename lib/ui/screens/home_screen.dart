@@ -10,6 +10,7 @@ import 'package:mmb_app/ui/screens/video_widget/video_widget.dart';
 import 'package:mmb_app/ui/screens/widget/download.dart';
 import 'package:mmb_app/ui/screens/widget/dwonload_widget.dart';
 import 'package:mmb_app/ui/screens/widget/template_popup.dart';
+import 'package:mmb_app/ui/screens/widget/template_single_view_sheet.dart';
 import 'package:mmb_app/widgets/button_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -855,8 +856,19 @@ class _HomeScreenView extends StatelessWidget {
       return;
     }
 
+    int? categoryId;
+    try {
+      final dynamic raw = template.categoryId;
+      categoryId = raw is int ? raw : int.tryParse('$raw');
+    } catch (_) {
+      categoryId = null;
+    }
 
-    _openTemplateDetail(context, template);
+    TemplateQuickViewSheet.show(
+      context,
+      templateUid: uid,
+      categoryId: categoryId,
+    );
   }
 
   void _showUidMissing(BuildContext context) {

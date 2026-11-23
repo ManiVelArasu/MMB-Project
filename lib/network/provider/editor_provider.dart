@@ -127,10 +127,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           final localPreviews = uploadedMediaImages
               .where(
                 (item) =>
-            (item['uploading'] == 'true') ||
-                ((item['key'] ?? '').isEmpty &&
-                    (item['localPath'] ?? '').isNotEmpty),
-          )
+                    (item['uploading'] == 'true') ||
+                    ((item['key'] ?? '').isEmpty &&
+                        (item['localPath'] ?? '').isNotEmpty),
+              )
               .toList();
           uploadedMediaImages
             ..clear()
@@ -164,25 +164,25 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       final dio = Dio();
       final resolvedContentType =
           contentType ??
-              (filename.toLowerCase().endsWith('.png')
-                  ? 'image/png'
-                  : 'image/jpeg');
+          (filename.toLowerCase().endsWith('.png')
+              ? 'image/png'
+              : 'image/jpeg');
 
       final initResult = await ApiRepository.instance
           .request<Map<String, dynamic>>(
-        config: ApiRequestConfig(
-          endpoint: ApiEndpoints.fileUpload,
-          method: ApiMethod.post,
-          body: {
-            "target": {"slot": slot},
-            "filename": filename,
-            "content_type": resolvedContentType,
-          },
-        ),
-        fromJson: (json) {
-          return Map<String, dynamic>.from(json['data'] as Map);
-        },
-      );
+            config: ApiRequestConfig(
+              endpoint: ApiEndpoints.fileUpload,
+              method: ApiMethod.post,
+              body: {
+                "target": {"slot": slot},
+                "filename": filename,
+                "content_type": resolvedContentType,
+              },
+            ),
+            fromJson: (json) {
+              return Map<String, dynamic>.from(json['data'] as Map);
+            },
+          );
 
       String? uploadUrl;
       String? uploadKey;
@@ -238,22 +238,22 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
       final confirmResult = await ApiRepository.instance
           .request<Map<String, dynamic>>(
-        config: ApiRequestConfig(
-          endpoint: '/uploads/confirm',
-          method: ApiMethod.post,
-          body: {
-            'uploads': [
-              {
-                'key': uploadKey,
-                'width': width,
-                'height': height,
-                'filename': filename,
+            config: ApiRequestConfig(
+              endpoint: '/uploads/confirm',
+              method: ApiMethod.post,
+              body: {
+                'uploads': [
+                  {
+                    'key': uploadKey,
+                    'width': width,
+                    'height': height,
+                    'filename': filename,
+                  },
+                ],
               },
-            ],
-          },
-        ),
-        fromJson: (json) => Map<String, dynamic>.from(json['data'] as Map),
-      );
+            ),
+            fromJson: (json) => Map<String, dynamic>.from(json['data'] as Map),
+          );
 
       confirmResult.when(
         success: (data) {
@@ -262,8 +262,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             // Replace the temporary local preview only after S3 upload AND
             // confirm succeed, so the thumbnail remains visible throughout.
             uploadedMediaImages.removeWhere(
-                  (item) =>
-              item['key'] == uploadKey ||
+              (item) =>
+                  item['key'] == uploadKey ||
                   item['localPath'] == imageFile.path,
             );
             uploadedMediaImages.insert(0, {
@@ -294,7 +294,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     isUploadingMediaImage = true;
     // Show the picked image immediately while presign/S3/confirm runs.
     uploadedMediaImages.removeWhere(
-          (item) => item['localPath'] == imageFile.path,
+      (item) => item['localPath'] == imageFile.path,
     );
     uploadedMediaImages.insert(0, {
       'key': '',
@@ -327,19 +327,19 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       return result.when(success: (_) => true, failure: (_) => false);
     } catch (e) {
       uploadedMediaImages.removeWhere(
-            (item) => item['localPath'] == imageFile.path,
+        (item) => item['localPath'] == imageFile.path,
       );
       return false;
     } finally {
       // Remove the temporary tile on failure; successful uploads have already
       // replaced it with the confirmed media item above.
       final stillTemporary = uploadedMediaImages.any(
-            (item) =>
-        item['localPath'] == imageFile.path && item['uploading'] == 'true',
+        (item) =>
+            item['localPath'] == imageFile.path && item['uploading'] == 'true',
       );
       if (stillTemporary) {
         uploadedMediaImages.removeWhere(
-              (item) => item['localPath'] == imageFile.path,
+          (item) => item['localPath'] == imageFile.path,
         );
       }
       isUploadingMediaImage = false;
@@ -487,10 +487,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setItemAnimationType(
-      String id,
-      ItemAnimationType type, {
-        bool preview = true,
-      }) {
+    String id,
+    ItemAnimationType type, {
+    bool preview = true,
+  }) {
     if (!_items.any((e) => e.id == id)) return;
     _saveState();
     _itemAnimations[id] = itemAnimation(id).copyWith(type: type);
@@ -501,10 +501,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setItemAnimationMode(
-      String id,
-      ItemAnimationMode mode, {
-        bool preview = true,
-      }) {
+    String id,
+    ItemAnimationMode mode, {
+    bool preview = true,
+  }) {
     if (!_items.any((e) => e.id == id)) return;
     _saveState();
     final current = itemAnimation(id);
@@ -649,6 +649,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _imageMaskUrls[id] = assetCdnUrl(url);
     _imageMaskOffsets.remove(id);
     _imageMaskScales.remove(id);
+    // A mask picked by the user REPLACES the template's own clip mask.
+    if (hasImageClip(id)) {
+      if (_clipEditId == id) _endClipEdit();
+      _clipWindows[id] = <String, dynamic>{'released': true};
+    }
     notifyListeners();
   }
 
@@ -698,6 +703,322 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
+  // ---------------- Mask window: API clipPath + EDIT MASK ----------------
+  // A Fabric `clipPath` that comes from the API IS the image's mask (the
+  // circle around the portrait, for example). EDIT MASK pins that window on
+  // the canvas (absolutePositioned) so the picture can be dragged / scaled
+  // behind it, exactly like the web editor. The window is kept here, not in
+  // the raw template map, so undo / save / re-open all see it.
+  //   value == {'released': true}  ->  mask removed by the user.
+  final Map<String, Map<String, dynamic>> _clipWindows = {};
+  String? _clipEditId;
+  EditorItem? _clipEditBackupItem;
+  Map<String, dynamic>? _clipEditBackupWindow;
+  int _clipEditUndoLen = 0;
+
+  /// Image that is currently in EDIT MASK mode (null = none).
+  String? get clipEditItemId => _clipEditId;
+
+  /// The mask window of an image: the user's window if there is one,
+  /// otherwise the template's own `clipPath`. Null = the image is not masked.
+  Map? imageClipPath(String id) {
+    final win = _clipWindows[id];
+    if (win != null) return win['released'] == true ? null : win;
+    final clip = _templateRawObjects[id]?['clipPath'];
+    return clip is Map ? clip : null;
+  }
+
+  bool hasImageClip(String id) {
+    final c = imageClipPath(id);
+    return c != null && c['inverted'] != true;
+  }
+
+  void _endClipEdit() {
+    _clipEditId = null;
+    _clipEditBackupItem = null;
+    _clipEditBackupWindow = null;
+    _maskEditRect = null;
+  }
+
+  // ---- picked mask (mask image from the MASK sheet) as a fixed window ----
+  // Canvas rectangle the mask covers while EDIT MASK is open (null = the
+  // open edit is for a Fabric clipPath instead).
+  Rect? _maskEditRect;
+  Offset? _clipEditBackupMaskOffset;
+  double? _clipEditBackupMaskScale;
+
+  /// An image can be edited with EDIT MASK when it has a picked mask image
+  /// or a Fabric clipPath mask from the API.
+  bool hasEditableMask(String id) =>
+      _imageMaskUrls[id] != null || hasImageClip(id);
+
+  /// Canvas rectangle currently covered by the picked mask of [id].
+  /// (mask offset / scale are fractions of the image box.)
+  Rect? _maskRectOf(String id) {
+    if (_imageMaskUrls[id] == null) return null;
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return null;
+    final it = _items[index];
+    final wc = it.width * it.scale;
+    final hc = it.height * it.scale;
+    final off = imageMaskOffset(id);
+    final sm = imageMaskScale(id);
+    return Rect.fromLTWH(
+      it.position.dx + wc * (0.5 - sm / 2 + off.dx),
+      it.position.dy + hc * (0.5 - sm / 2 + off.dy),
+      wc * sm,
+      hc * sm,
+    );
+  }
+
+  /// Re-computes the mask offset / scale so the mask keeps covering [rect]
+  /// (canvas coordinates) after the image box moved or changed size.
+  void _applyMaskRect(String id, Rect rect) {
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return;
+    final it = _items[index];
+    final wc = it.width * it.scale;
+    final hc = it.height * it.scale;
+    if (!(wc > 0) || !(hc > 0)) return;
+    final sm = (rect.width / wc + rect.height / hc) / 2;
+    if (!sm.isFinite || sm <= 0) return;
+    _imageMaskScales[id] = sm;
+    _imageMaskOffsets[id] = Offset(
+      (rect.left - it.position.dx) / wc - 0.5 + sm / 2,
+      (rect.top - it.position.dy) / hc - 0.5 + sm / 2,
+    );
+  }
+
+  double _clipOrigin(dynamic v, double fallback) {
+    if (v is num) return v.toDouble();
+    switch ('$v') {
+      case 'center':
+        return 0.5;
+      case 'right':
+      case 'bottom':
+        return 1.0;
+      case 'left':
+      case 'top':
+        return 0.0;
+    }
+    return fallback;
+  }
+
+  /// Width / height of the clip shape before its own scale.
+  Size _clipShapeSize(Map c) {
+    final type = (c['type'] ?? '').toString().toLowerCase();
+    if (type == 'circle') {
+      final r = _toDouble(c['radius']) ?? 0.0;
+      return Size(r * 2, r * 2);
+    }
+    if (type == 'ellipse') {
+      return Size(
+        (_toDouble(c['rx']) ?? 0.0) * 2,
+        (_toDouble(c['ry']) ?? 0.0) * 2,
+      );
+    }
+    return Size(_toDouble(c['width']) ?? 0.0, _toDouble(c['height']) ?? 0.0);
+  }
+
+  /// Same mask, but described in CANVAS coordinates (Fabric
+  /// `absolutePositioned`), so it stays put while the image moves / scales.
+  /// The result looks exactly like the current (image-relative) mask.
+  Map<String, dynamic>? _absoluteClipFor(
+    EditorItem item,
+    Map clip,
+    Map<String, dynamic> raw,
+  ) {
+    final out = Map<String, dynamic>.from(jsonDecode(jsonEncode(clip)) as Map);
+    if (clip['absolutePositioned'] == true) return out;
+
+    final ow = (_toDouble(raw['width']) ?? item.width).abs();
+    final oh = (_toDouble(raw['height']) ?? item.height).abs();
+    if (ow <= 0 || oh <= 0) return null;
+
+    final csx = _toDouble(clip['scaleX']) ?? 1.0;
+    final csy = _toDouble(clip['scaleY']) ?? 1.0;
+    final cAngle = (_toDouble(clip['angle']) ?? 0.0) * math.pi / 180.0;
+    final shape = _clipShapeSize(clip);
+    final ox = _clipOrigin(clip['originX'], 0.0);
+    final oy = _clipOrigin(clip['originY'], 0.0);
+    final dx = (0.5 - ox) * shape.width * csx;
+    final dy = (0.5 - oy) * shape.height * csy;
+    // Centre of the clip inside the image, centre-origin, un-scaled units.
+    final ccx =
+        (_toDouble(clip['left']) ?? 0.0) +
+        dx * math.cos(cAngle) -
+        dy * math.sin(cAngle);
+    final ccy =
+        (_toDouble(clip['top']) ?? 0.0) +
+        dx * math.sin(cAngle) +
+        dy * math.cos(cAngle);
+
+    // image-box units per Fabric unit (box may differ from the raw size).
+    final kx = item.width / ow;
+    final ky = item.height / oh;
+    final s = item.scale.isFinite && item.scale > 0 ? item.scale : 1.0;
+    final rot = item.rotation.isFinite ? item.rotation : 0.0;
+
+    // Layout: canvas = position + s * (boxCentre + R(rot) * q)
+    final qx = ccx * kx;
+    final qy = ccy * ky;
+    final rx = qx * math.cos(rot) - qy * math.sin(rot);
+    final ry = qx * math.sin(rot) + qy * math.cos(rot);
+    final cx = item.position.dx + s * (item.width / 2 + rx);
+    final cy = item.position.dy + s * (item.height / 2 + ry);
+
+    out['absolutePositioned'] = true;
+    out['originX'] = 'center';
+    out['originY'] = 'center';
+    out['left'] = cx;
+    out['top'] = cy;
+    out['angle'] = (rot + cAngle) * 180.0 / math.pi;
+    out['scaleX'] = s * kx * csx;
+    out['scaleY'] = s * ky * csy;
+    return out;
+  }
+
+  /// Canvas rectangle covered by an absolute mask window.
+  Rect? _clipWindowBounds(Map c) {
+    final shape = _clipShapeSize(c);
+    final sx = (_toDouble(c['scaleX']) ?? 1.0).abs();
+    final sy = (_toDouble(c['scaleY']) ?? 1.0).abs();
+    final w = shape.width * sx;
+    final h = shape.height * sy;
+    if (!(w > 0) || !(h > 0)) return null;
+    final a = (_toDouble(c['angle']) ?? 0.0) * math.pi / 180.0;
+    final bw = w * math.cos(a).abs() + h * math.sin(a).abs();
+    final bh = w * math.sin(a).abs() + h * math.cos(a).abs();
+    final ox = _clipOrigin(c['originX'], 0.0);
+    final oy = _clipOrigin(c['originY'], 0.0);
+    final dx = (0.5 - ox) * w;
+    final dy = (0.5 - oy) * h;
+    final centre = Offset(
+      (_toDouble(c['left']) ?? 0.0) + dx * math.cos(a) - dy * math.sin(a),
+      (_toDouble(c['top']) ?? 0.0) + dx * math.sin(a) + dy * math.cos(a),
+    );
+    return Rect.fromCenter(center: centre, width: bw, height: bh);
+  }
+
+  /// EDIT MASK: the mask window stays fixed on the canvas while the picture
+  /// is dragged / scaled behind it. Returns false if [id] has no usable mask.
+  bool beginClipEdit(String id) {
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return false;
+    if (_clipEditId != null) commitClipEdit();
+    final item = _items[index];
+
+    // 1) A mask picked from the MASK sheet.
+    final maskRect = _maskRectOf(id);
+    // 2) Otherwise the Fabric clipPath that came with the template.
+    Map<String, dynamic>? window;
+    if (maskRect == null) {
+      final clip = imageClipPath(id);
+      final raw = _templateRawObjects[id];
+      if (clip == null || raw == null || clip['inverted'] == true) {
+        return false;
+      }
+      window = _absoluteClipFor(item, clip, raw);
+      if (window == null) return false;
+    }
+
+    _clipEditUndoLen = _undoStack.length;
+    _saveState();
+    _clipEditBackupItem = item.copyWith();
+    if (maskRect != null) {
+      _clipEditBackupMaskOffset = _imageMaskOffsets[id];
+      _clipEditBackupMaskScale = _imageMaskScales[id];
+      _maskEditRect = maskRect;
+    } else {
+      _clipEditBackupWindow = _clipWindows[id];
+      _clipWindows[id] = window!;
+    }
+    _clipEditId = id;
+    selectedItemType = 'image';
+    selectedItemId = id;
+    _syncCurrentPage();
+    notifyListeners();
+    return true;
+  }
+
+  /// DONE: keep the new picture position behind the mask window.
+  void commitClipEdit() {
+    if (_clipEditId == null) return;
+    _endClipEdit();
+    _syncCurrentPage();
+    notifyListeners();
+  }
+
+  /// CANCEL: back to how the image looked before EDIT MASK.
+  void cancelClipEdit() {
+    final id = _clipEditId;
+    if (id == null) return;
+    final backupItem = _clipEditBackupItem;
+    final index = _items.indexWhere((e) => e.id == id);
+    if (backupItem != null && index != -1) {
+      _items[index] = backupItem;
+    }
+    if (_maskEditRect != null) {
+      final off = _clipEditBackupMaskOffset;
+      final sc = _clipEditBackupMaskScale;
+      if (off == null) {
+        _imageMaskOffsets.remove(id);
+      } else {
+        _imageMaskOffsets[id] = off;
+      }
+      if (sc == null) {
+        _imageMaskScales.remove(id);
+      } else {
+        _imageMaskScales[id] = sc;
+      }
+    } else {
+      final backupWindow = _clipEditBackupWindow;
+      if (backupWindow == null) {
+        _clipWindows.remove(id);
+      } else {
+        _clipWindows[id] = backupWindow;
+      }
+    }
+    while (_undoStack.length > _clipEditUndoLen) {
+      _undoStack.removeLast();
+    }
+    _transformBaseline = null;
+    _endClipEdit();
+    _syncCurrentPage();
+    notifyListeners();
+  }
+
+  /// RELEASE: remove the mask, the whole picture shows again.
+  void releaseImageClip(String id) {
+    if (!_items.any((e) => e.id == id)) return;
+    if (_clipEditId == id) {
+      _endClipEdit();
+    }
+    _saveState();
+    if (_imageMaskUrls[id] != null) {
+      // picked mask image
+      _imageMaskNames.remove(id);
+      _imageMaskUrls.remove(id);
+      _imageMaskOffsets.remove(id);
+      _imageMaskScales.remove(id);
+    }
+    if (hasImageClip(id)) {
+      _clipWindows[id] = <String, dynamic>{'released': true};
+    }
+    _syncCurrentPage();
+    notifyListeners();
+  }
+
+  /// Moves the mask window together with its image (duplicate / paste).
+  void _shiftClipWindow(String id, Offset delta) {
+    final win = _clipWindows[id];
+    if (win == null || win['released'] == true) return;
+    final moved = Map<String, dynamic>.from(win);
+    moved['left'] = (_toDouble(win['left']) ?? 0.0) + delta.dx;
+    moved['top'] = (_toDouble(win['top']) ?? 0.0) + delta.dy;
+    _clipWindows[id] = moved;
+  }
+
   // ---------------- Replace image (keeps animation & all settings) --------
   String? _pendingReplaceImageId;
   String? get pendingReplaceImageId => _pendingReplaceImageId;
@@ -725,15 +1046,50 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     // Same aspect-ratio correction as a freshly added image, but only for
     // normal layers (a background always covers the canvas).
     if (!_isBackgroundLayer(old)) {
-      _fitItemToImageAspect(
-        id,
-        value,
-        isLocal,
-        boxW: old.width * old.scale,
-        boxH: old.height * old.scale,
-        center: old.position +
-            Offset(old.width * old.scale / 2, old.height * old.scale / 2),
-      );
+      // MASKED image (API clipPath / EDIT MASK window): the mask window stays
+      // where it is and the new picture COVERS it (no gaps inside the mask),
+      // like the web editor. The user can then drag / scale it with EDIT MASK.
+      Rect? windowBounds;
+      Rect? keepMaskRect;
+      final pickedMaskRect = _maskRectOf(id);
+      if (pickedMaskRect != null && !pickedMaskRect.isEmpty) {
+        // mask picked from the MASK sheet: same rule, the mask stays put.
+        windowBounds = pickedMaskRect;
+        keepMaskRect = pickedMaskRect;
+      }
+      final clip = windowBounds != null ? null : imageClipPath(id);
+      final raw = _templateRawObjects[id];
+      if (clip != null && raw != null && clip['inverted'] != true) {
+        final window = _absoluteClipFor(old, clip, raw);
+        final bounds = window == null ? null : _clipWindowBounds(window);
+        if (window != null && bounds != null && !bounds.isEmpty) {
+          _clipWindows[id] = window;
+          windowBounds = bounds;
+        }
+      }
+      if (windowBounds != null) {
+        _fitItemToImageAspect(
+          id,
+          value,
+          isLocal,
+          boxW: windowBounds.width,
+          boxH: windowBounds.height,
+          center: windowBounds.center,
+          cover: true,
+          maskRect: keepMaskRect,
+        );
+      } else {
+        _fitItemToImageAspect(
+          id,
+          value,
+          isLocal,
+          boxW: old.width * old.scale,
+          boxH: old.height * old.scale,
+          center:
+              old.position +
+              Offset(old.width * old.scale / 2, old.height * old.scale / 2),
+        );
+      }
     }
     // Play the entrance animation again so the user sees it on the new image.
     if (_itemAnimations[id] != null) {
@@ -748,16 +1104,18 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Resolves the real picture size and re-fits the layer inside [boxW]x[boxH]
   /// (aspect ratio preserved, centred on [center]) so nothing looks stretched.
   void _fitItemToImageAspect(
-      String id,
-      String url,
-      bool isLocal, {
-        required double boxW,
-        required double boxH,
-        required Offset center,
-      }) {
+    String id,
+    String url,
+    bool isLocal, {
+    required double boxW,
+    required double boxH,
+    required Offset center,
+    bool cover = false,
+    Rect? maskRect,
+  }) {
     try {
-      final ImageProvider provider = (url.startsWith('http://') ||
-          url.startsWith('https://'))
+      final ImageProvider provider =
+          (url.startsWith('http://') || url.startsWith('https://'))
           ? NetworkImage(url)
           : FileImage(File(url.replaceFirst('file://', '')));
       final stream = provider.resolve(const ImageConfiguration());
@@ -769,7 +1127,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         final index = _items.indexWhere((e) => e.id == id);
         if (index == -1 || iw <= 0 || ih <= 0) return;
         if (_items[index].contentUrl != url) return; // replaced again meanwhile
-        final k = math.min(boxW / iw, boxH / ih);
+        // cover: fill the whole box (extra is hidden by the mask window);
+        // otherwise fit INSIDE it so nothing is cropped.
+        final k = cover
+            ? math.max(boxW / iw, boxH / ih)
+            : math.min(boxW / iw, boxH / ih);
         final w = iw * k, h = ih * k;
         final cur = _items[index];
         // Layer keeps its own scale; width/height are the un-scaled box.
@@ -779,6 +1141,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           height: h / sc,
           position: Offset(center.dx - w / 2, center.dy - h / 2),
         );
+        // Picked mask: keep it exactly where it was on the canvas.
+        if (maskRect != null) _applyMaskRect(id, maskRect);
         _syncCurrentPage();
         notifyListeners();
       }, onError: (_, __) => stream.removeListener(listener));
@@ -1020,6 +1384,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     keep(_imageMaskNames);
     keep(_imageMaskOffsets);
     keep(_imageMaskScales);
+    keep(_clipWindows);
     keepSet(_detachedBackgroundIds);
     keep(_outlineStyles);
     keep(_outlineJoins);
@@ -1195,16 +1560,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final limitX = extentXAtOne <= 0
         ? 10.0
         : math.min(
-      centerX / extentXAtOne,
-      (canvasWidth - centerX) / extentXAtOne,
-    );
+            centerX / extentXAtOne,
+            (canvasWidth - centerX) / extentXAtOne,
+          );
 
     final limitY = extentYAtOne <= 0
         ? 10.0
         : math.min(
-      centerY / extentYAtOne,
-      (canvasHeight - centerY) / extentYAtOne,
-    );
+            centerY / extentYAtOne,
+            (canvasHeight - centerY) / extentYAtOne,
+          );
 
     final maxAllowed = math.max(0.05, math.min(10.0, math.min(limitX, limitY)));
 
@@ -1268,10 +1633,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   bool isEcommerceLoading = false;
 
   Future<List<String>> _fetchFreepikCategory(
-      String query, {
-        required void Function(bool) setLoading,
-        required void Function(List<String>) setData,
-      }) async {
+    String query, {
+    required void Function(bool) setLoading,
+    required void Function(List<String>) setData,
+  }) async {
     setLoading(true);
     notifyListeners();
     try {
@@ -1376,11 +1741,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Loads one element category without touching backgroundAssets or the
   /// generic freePikAssets list.
   Future<void> fetchElementCategory(
-      String query, {
-        int page = 1,
-        int limit = 4,
-        bool append = false,
-      }) async {
+    String query, {
+    int page = 1,
+    int limit = 4,
+    bool append = false,
+  }) async {
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) return;
 
@@ -1435,7 +1800,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         for (final item in merged) {
           final key =
               item.id?.toString() ??
-                  '${item.name}|${item.s3Key}|${item.s3Key ?? ''}';
+              '${item.name}|${item.s3Key}|${item.s3Key ?? ''}';
           unique[key] = item;
         }
 
@@ -1448,9 +1813,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             .map((e) => e.previewKey)
             .where(
               (e) =>
-          e.trim().isNotEmpty &&
-              !items.any((x) => x.previewKey == e && x.isLocked),
-        )
+                  e.trim().isNotEmpty &&
+                  !items.any((x) => x.previewKey == e && x.isLocked),
+            )
             .toSet()
             .toList();
       } else {
@@ -1557,7 +1922,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           for (final item in allAssetItems) {
             final key =
                 item.id?.toString() ??
-                    '${item.name}|${item.s3Key}|${item.thumbnailS3Key ?? ''}';
+                '${item.name}|${item.s3Key}|${item.thumbnailS3Key ?? ''}';
             unique[key] = item;
           }
 
@@ -1645,10 +2010,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Loads the template detail API and converts its Fabric JSON `content`
   /// into the editor's existing EditorItem list.
   Future<bool> loadTemplateByUid(
-      String uid, {
-        double? canvasWidth,
-        double? canvasHeight,
-      }) async {
+    String uid, {
+    double? canvasWidth,
+    double? canvasHeight,
+  }) async {
     final safeUid = uid.trim();
 
     if (safeUid.isEmpty) {
@@ -1712,8 +2077,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       if (root != null) {
         dynamic backgroundValue =
             root['backgroundColor'] ??
-                root['background'] ??
-                root['background_color'];
+            root['background'] ??
+            root['background_color'];
 
         if (backgroundValue == null && root['pages'] is List) {
           final pages = root['pages'] as List;
@@ -1722,8 +2087,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             final fabric = firstPage['fabric'];
             backgroundValue =
                 firstPage['backgroundColor'] ??
-                    firstPage['background_color'] ??
-                    (fabric is Map ? fabric['background'] : null);
+                firstPage['background_color'] ??
+                (fabric is Map ? fabric['background'] : null);
           }
         }
 
@@ -1841,20 +2206,20 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           .map((e) => Map<String, dynamic>.from(e))
           .where(
             (object) => object['type'] != null || object['objectType'] != null,
-      )
+          )
           .toList();
 
       final extraPages = extraPageObjects
           .map(
             (page) => page
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .where(
-              (object) =>
-          object['type'] != null || object['objectType'] != null,
-        )
-            .toList(),
-      )
+                .whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .where(
+                  (object) =>
+                      object['type'] != null || object['objectType'] != null,
+                )
+                .toList(),
+          )
           .toList();
 
       // Load into editor
@@ -1888,9 +2253,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   Size? _detectTemplateCanvasSize(
-      Map<String, dynamic> root,
-      List<dynamic> objects,
-      ) {
+    Map<String, dynamic> root,
+    List<dynamic> objects,
+  ) {
     // 1. Fabric root width / height
     final rootWidth = _toDouble(root['width']);
     final rootHeight = _toDouble(root['height']);
@@ -1963,14 +2328,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setSelectedItem(String? type, String? id) {
+    // Selecting another layer ends EDIT MASK (keeps what the user did).
+    if (_clipEditId != null && id != _clipEditId) _endClipEdit();
     // Templates can come from different Fabric/API versions (`Text`,
     // `Textbox`, `IText`, etc.). Keep one canonical type inside the editor.
     final normalizedType = (type ?? '').trim().toLowerCase();
     selectedItemType =
-    (normalizedType == 'textbox' ||
-        normalizedType == 'i-text' ||
-        normalizedType == 'itext' ||
-        normalizedType == 'text')
+        (normalizedType == 'textbox' ||
+            normalizedType == 'i-text' ||
+            normalizedType == 'itext' ||
+            normalizedType == 'text')
         ? 'text'
         : type;
     selectedItemId = id;
@@ -1989,6 +2356,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void clearSelection() {
+    _endClipEdit();
     _pendingReplaceImageId = null;
     selectedItemType = null;
     selectedItemId = null;
@@ -2032,16 +2400,18 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void loadItemsFromJson(
-      List<Map<String, dynamic>> jsonList, {
-        String? templateUid,
-        List<List<Map<String, dynamic>>> extraPages = const [],
-        bool appendAsPage = false,
-      }) {
+    List<Map<String, dynamic>> jsonList, {
+    String? templateUid,
+    List<List<Map<String, dynamic>>> extraPages = const [],
+    bool appendAsPage = false,
+  }) {
     try {
       jsonList = _flattenFabricObjects(jsonList);
 
       _items.clear();
       if (!appendAsPage) {
+        _clipWindows.clear();
+        _endClipEdit();
         _templateRawObjects.clear();
         _templateBackgroundIds.clear();
         _detachedBackgroundIds.clear();
@@ -2072,7 +2442,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         if (objectName == 'clip') {
           final fill = _parseColor(json['fill']);
           if ((_backgroundColor == Colors.white ||
-              _backgroundColor.alpha == 0) &&
+                  _backgroundColor.alpha == 0) &&
               fill != null &&
               fill.alpha > 0) {
             _backgroundColor = fill;
@@ -2108,10 +2478,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         final hasTextValue = json['text'] != null;
         final isTextObject =
             type == 'textbox' ||
-                type == 'i-text' ||
-                type == 'itext' ||
-                type == 'text' ||
-                hasTextValue;
+            type == 'i-text' ||
+            type == 'itext' ||
+            type == 'text' ||
+            hasTextValue;
 
         if (isTextObject) {
           final fontSize = _toDouble(json['fontSize']) ?? 36.0;
@@ -2208,7 +2578,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             outlineColor: rawStroke ?? const Color(0xFFD9D9D9),
             outlineWidth: rawStrokeWidth,
             borderRadius:
-            _toDouble(json['rx']) ?? _toDouble(json['ry']) ?? 16.0,
+                _toDouble(json['rx']) ?? _toDouble(json['ry']) ?? 16.0,
           );
           _items.add(shapeItem);
           _templateRawObjects[id] = Map<String, dynamic>.from(json);
@@ -2310,7 +2680,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final parsedUri = Uri.tryParse(src);
     final isAbsoluteHttp =
         parsedUri != null &&
-            (parsedUri.scheme == 'http' || parsedUri.scheme == 'https');
+        (parsedUri.scheme == 'http' || parsedUri.scheme == 'https');
     final isLegacyTemplateHost =
         src.contains('temp-m2b-assets.s3.') || src.contains('amazonaws.com');
     if (isAbsoluteHttp && !isLegacyTemplateHost) {
@@ -2333,8 +2703,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   // group (recursively) into independent layers, applying the group's
   // translate / scale / rotate / flip / opacity to each child.
   List<Map<String, dynamic>> _flattenFabricObjects(
-      List<Map<String, dynamic>> input,
-      ) {
+    List<Map<String, dynamic>> input,
+  ) {
     final out = <Map<String, dynamic>>[];
     for (final json in input) {
       if (json['visible'] == false) continue; // hidden layers stay hidden
@@ -2591,9 +2961,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     final isRasterImage =
         path.endsWith('.png') ||
-            path.endsWith('.jpg') ||
-            path.endsWith('.jpeg') ||
-            path.endsWith('.webp');
+        path.endsWith('.jpg') ||
+        path.endsWith('.jpeg') ||
+        path.endsWith('.webp');
 
     final svg = isRasterImage
         ? null
@@ -2617,8 +2987,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         text: isRasterImage
             ? 'image'
             : (svg != null && svg.trim().isNotEmpty
-            ? 'svg_group'
-            : 'raster_group'),
+                  ? 'svg_group'
+                  : 'raster_group'),
       ),
     );
 
@@ -2873,7 +3243,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           r'''\bviewBox\s*=\s*["']([^"']+)["']''',
           caseSensitive: false,
         ).firstMatch(attrs)?.group(1) ??
-            '0 0 512 512';
+        '0 0 512 512';
 
     final root = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="$viewBox">';
     final tokens = RegExp(
@@ -2990,11 +3360,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void addVideo(
-      String videoUrl, {
-        bool isLocal = false,
-        double width = 600,
-        double height = 400,
-      }) {
+    String videoUrl, {
+    bool isLocal = false,
+    double width = 600,
+    double height = 400,
+  }) {
     if (videoUrl.trim().isEmpty) return;
 
     _saveState();
@@ -3122,11 +3492,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void updateImageColorAdjustments(
-      String id, {
-        double? brightness,
-        double? contrast,
-        double? saturation,
-      }) {
+    String id, {
+    double? brightness,
+    double? contrast,
+    double? saturation,
+  }) {
     final index = _items.indexWhere((e) => e.id == id);
     if (index != -1) {
       _saveState();
@@ -3290,6 +3660,42 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         position: _items[index].position + const Offset(20, 20),
       );
       _items.add(newItem);
+      // Keep the duplicate looking identical: raw template data (text box
+      // wrapping, mask / clip, shape paths) + per-item formatting, with the
+      // mask window moved by the same offset as the copy.
+      final rawCopy = _templateRawObjects[sourceId];
+      if (rawCopy != null) {
+        _templateRawObjects[newId] = Map<String, dynamic>.from(
+          jsonDecode(jsonEncode(rawCopy)) as Map,
+        );
+      }
+      final clipCopy = _clipWindows[sourceId];
+      if (clipCopy != null) {
+        _clipWindows[newId] = Map<String, dynamic>.from(
+          jsonDecode(jsonEncode(clipCopy)) as Map,
+        );
+        _shiftClipWindow(newId, const Offset(20, 20));
+      }
+      void copyTo<T>(Map<String, T> m) {
+        final v = m[sourceId];
+        if (v != null) m[newId] = v;
+      }
+
+      copyTo(_textAlignment);
+      copyTo(_textLetterSpacing);
+      copyTo(_textLineSpacing);
+      copyTo(_textWeight);
+      copyTo(_textStyle);
+      copyTo(_textUnderline);
+      copyTo(_templateFlipX);
+      copyTo(_templateFlipY);
+      copyTo(_imageFilterIntensity);
+      copyTo(_imageTint);
+      copyTo(_imageBlur);
+      copyTo(_imageMaskUrls);
+      copyTo(_imageMaskNames);
+      copyTo(_imageMaskOffsets);
+      copyTo(_imageMaskScales);
       final outline = _outlineStyles[sourceId];
       if (outline != null) _outlineStyles[newId] = outline;
       final join = _outlineJoins[sourceId];
@@ -3362,6 +3768,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         'locked': isItemLocked(id),
         // Needed to re-open the project later (shapes / clip paths / flips).
         if (_templateRawObjects[id] != null) 'raw': _templateRawObjects[id],
+        // Mask window pinned on the canvas (EDIT MASK / replaced image).
+        if (_clipWindows[id] != null) 'clipWindow': _clipWindows[id],
         'flipX': templateFlipX(id),
         'flipY': templateFlipY(id),
         'isBackground': _templateBackgroundIds.contains(id),
@@ -3431,10 +3839,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Re-opens a saved project (the JSON that [exportCurrentPageJson] produced,
   /// or the `pages / fabric` JSON of a blank project) in the editor.
   bool loadProjectContent(
-      String content, {
-        double? canvasWidth,
-        double? canvasHeight,
-      }) {
+    String content, {
+    double? canvasWidth,
+    double? canvasHeight,
+  }) {
     try {
       final decoded = jsonDecode(content);
       if (decoded is! Map) return false;
@@ -3487,6 +3895,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
       // ---- editor JSON (exportCurrentPageJson) ----
       _items.clear();
+      _clipWindows.clear();
+      _endClipEdit();
       _templateRawObjects.clear();
       _templateBackgroundIds.clear();
       _templateFlipX.clear();
@@ -3597,12 +4007,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             _textLineSpacing[id] = _toDouble(tf['lineSpacing']) ?? 1.0;
             final alignName = tf['alignment']?.toString();
             _textAlignment[id] = TextAlign.values.firstWhere(
-                  (a) => a.name == alignName,
+              (a) => a.name == alignName,
               orElse: () => TextAlign.left,
             );
             final weight = (_toDouble(tf['fontWeight']) ?? 400).round();
             _textWeight[id] = FontWeight.values.firstWhere(
-                  (w) => w.value == weight,
+              (w) => w.value == weight,
               orElse: () => FontWeight.normal,
             );
             _textStyle[id] = tf['fontStyle']?.toString() == 'italic'
@@ -3620,8 +4030,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               final rawH = _toDouble(rawObj['height']);
               final fs =
                   _toDouble(rawObj['fontSize']) ??
-                      _toDouble(m['fontSize']) ??
-                      0;
+                  _toDouble(m['fontSize']) ??
+                  0;
               final txt = (m['text'] ?? rawObj['text'] ?? '').toString();
               if (rawLh != null && rawH != null && fs > 0) {
                 final lines = math.max(1, '\n'.allMatches(txt).length + 1);
@@ -3638,6 +4048,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             }
           }
 
+          if (m['clipWindow'] is Map) {
+            _clipWindows[id] = Map<String, dynamic>.from(
+              jsonDecode(jsonEncode(m['clipWindow'])) as Map,
+            );
+          }
           if (m['raw'] is Map) {
             _templateRawObjects[id] = Map<String, dynamic>.from(
               m['raw'] as Map,
@@ -3690,7 +4105,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
                 _imageMaskOffsets[id] = Offset(mx, my);
               }
               final ms = _toDouble(adj['maskScale']);
-              if (ms != null) _imageMaskScales[id] = ms.clamp(0.1, 3.0);
+              if (ms != null) _imageMaskScales[id] = ms.clamp(0.02, 30.0);
             }
             if (adj['detachedBackground'] == true) {
               _detachedBackgroundIds.add(id);
@@ -3969,11 +4384,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// each handle changes the corresponding width/height and the opposite
   /// edge/corner stays anchored.
   void updateItemSize(
-      String id, {
-        required double width,
-        required double height,
-        Offset? position,
-      }) {
+    String id, {
+    required double width,
+    required double height,
+    Offset? position,
+  }) {
     if (_lockedItems.contains(id)) return;
     final index = _items.indexWhere((e) => e.id == id);
     if (index == -1) return;
@@ -4038,14 +4453,14 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     try {
       final result =
-      await FreePikService.searchPexelsVideoAssets(
-        normalized,
-        page: 1,
-        limit: 24,
-      ).timeout(
-        const Duration(seconds: 20),
-        onTimeout: () => <PexelsVideoAsset>[],
-      );
+          await FreePikService.searchPexelsVideoAssets(
+            normalized,
+            page: 1,
+            limit: 24,
+          ).timeout(
+            const Duration(seconds: 20),
+            onTimeout: () => <PexelsVideoAsset>[],
+          );
 
       if (requestId == _mediaVideosRequestId) {
         final seen = <String>{};
@@ -4075,16 +4490,16 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       final searchQuery = query.trim().isEmpty ? "background" : query.trim();
 
       _pexelsVideoAssets =
-      await FreePikService.searchPexelsVideoAssets(
-        searchQuery,
-        page: 1,
-        limit: 24,
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () {
-          return <PexelsVideoAsset>[];
-        },
-      );
+          await FreePikService.searchPexelsVideoAssets(
+            searchQuery,
+            page: 1,
+            limit: 24,
+          ).timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              return <PexelsVideoAsset>[];
+            },
+          );
     } catch (e, stackTrace) {
       _pexelsVideoAssets = [];
     } finally {
@@ -4094,12 +4509,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setBackgroundImage(
-      String imageUrl, {
-        double canvasWidth = 1080.0,
-        double canvasHeight = 1080.0,
-        double? sourceWidth,
-        double? sourceHeight,
-      }) {
+    String imageUrl, {
+    double canvasWidth = 1080.0,
+    double canvasHeight = 1080.0,
+    double? sourceWidth,
+    double? sourceHeight,
+  }) {
     _saveState();
     _removeBackgroundLayers();
     _backgroundColor = Colors.transparent;
@@ -4133,12 +4548,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void setBackgroundVideo(
-      String videoUrl, {
-        double canvasWidth = 1080.0,
-        double canvasHeight = 1080.0,
-        double? sourceWidth,
-        double? sourceHeight,
-      }) {
+    String videoUrl, {
+    double canvasWidth = 1080.0,
+    double canvasHeight = 1080.0,
+    double? sourceWidth,
+    double? sourceHeight,
+  }) {
     _saveState();
     _removeBackgroundLayers();
     _backgroundColor = Colors.transparent;
@@ -4152,7 +4567,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         ? sourceWidth
         : canvasWidth;
     final sh =
-    (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
+        (sourceHeight != null && sourceHeight.isFinite && sourceHeight > 0)
         ? sourceHeight
         : canvasHeight;
 
@@ -4187,8 +4602,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   String? get backgroundImageUrl {
     final bgItem = _items.firstWhere(
-          (item) =>
-      item.position.dx == 0 &&
+      (item) =>
+          item.position.dx == 0 &&
           item.position.dy == 0 &&
           item.type == 'image',
       orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
@@ -4198,8 +4613,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   String? get backgroundVideoUrl {
     final bgItem = _items.firstWhere(
-          (item) =>
-      item.position.dx == 0 &&
+      (item) =>
+          item.position.dx == 0 &&
           item.position.dy == 0 &&
           item.type == 'video',
       orElse: () => EditorItem(id: '', type: '', position: Offset.zero),
@@ -4208,13 +4623,13 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   void replaceBackgroundImage(
-      String imageUrl,
-      String selectedItemIdToRemove, {
-        double canvasWidth = 1080.0,
-        double canvasHeight = 1350.0,
-        double? sourceWidth,
-        double? sourceHeight,
-      }) {
+    String imageUrl,
+    String selectedItemIdToRemove, {
+    double canvasWidth = 1080.0,
+    double canvasHeight = 1350.0,
+    double? sourceWidth,
+    double? sourceHeight,
+  }) {
     _saveState();
     _removeBackgroundLayers();
     _items.removeWhere((item) => item.id == selectedItemIdToRemove);
@@ -4323,11 +4738,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   bool _isTemplateBackgroundObject(
-      Map<String, dynamic> json, {
-        double? canvasWidth,
-        double? canvasHeight,
-        bool tolerant = false,
-      }) {
+    Map<String, dynamic> json, {
+    double? canvasWidth,
+    double? canvasHeight,
+    bool tolerant = false,
+  }) {
     final type = json['type']?.toString().toLowerCase().trim();
     if (type != 'image') return false;
 
@@ -4358,7 +4773,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     final coversCanvas =
         renderedWidth >= cw * coverageRatio &&
-            renderedHeight >= ch * coverageRatio;
+        renderedHeight >= ch * coverageRatio;
 
     return atOrigin && coversCanvas;
   }
@@ -4649,7 +5064,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
               final treeCategory =
                   (slug.isNotEmpty ? treeBySlug[slug] : null) ??
-                      (name.isNotEmpty ? treeByName[name] : null);
+                  (name.isNotEmpty ? treeByName[name] : null);
 
               if (treeCategory != null && treeCategory.children.isNotEmpty) {
                 return category.copyWith(children: treeCategory.children);
@@ -4704,9 +5119,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }
 
   Future<void> fetchEditorTemplatesByCategory(
-      String slug, {
-        bool force = false,
-      }) async {
+    String slug, {
+    bool force = false,
+  }) async {
     final categorySlug = slug.trim();
     if (categorySlug.isEmpty) return;
     if (_editorTemplateLoadingByCategory[categorySlug] == true) return;
@@ -4729,7 +5144,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         } else {
           _editorTemplatesByCategory[categorySlug] = [];
           _editorTemplateErrorByCategory[categorySlug] =
-          'Failed to load templates';
+              'Failed to load templates';
         }
       } else {
         _editorTemplatesByCategory[categorySlug] = [];
@@ -4824,12 +5239,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final sourceName = _pageNames[_currentPageIndex];
     final source = duplicateCurrent
         ? _items
-        .map(
-          (e) => e.copyWith(
-        id: '${DateTime.now().microsecondsSinceEpoch}_${e.id}',
-      ),
-    )
-        .toList()
+              .map(
+                (e) => e.copyWith(
+                  id: '${DateTime.now().microsecondsSinceEpoch}_${e.id}',
+                ),
+              )
+              .toList()
         : <EditorItem>[];
     _pages.add(source);
     _currentPageIndex = _pages.length - 1;
@@ -4888,6 +5303,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     if (raw != null) {
       _templateRawObjects[newId] = Map<String, dynamic>.from(
         jsonDecode(jsonEncode(raw)) as Map,
+      );
+    }
+    final clipWindow = _clipWindows[oldId];
+    if (clipWindow != null) {
+      _clipWindows[newId] = Map<String, dynamic>.from(
+        jsonDecode(jsonEncode(clipWindow)) as Map,
       );
     }
   }
@@ -5022,7 +5443,6 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
-  // PASTE ENTIRE COPIED PAGE INTO ANOTHER PAGE
   bool pasteCopiedPage() {
     if (!hasCopiedPage) {
       return false;
@@ -5117,14 +5537,14 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Updates position, scale and rotation in a single provider notification.
   /// Used by interactive canvas/background gestures.
   void updateItemTransform(
-      String id, {
-        Offset? position,
-        double? scale,
-        double? rotation,
-        double? width,
-        double? height,
-        bool clampToFrame = true,
-      }) {
+    String id, {
+    Offset? position,
+    double? scale,
+    double? rotation,
+    double? width,
+    double? height,
+    bool clampToFrame = true,
+  }) {
     if (_lockedItems.contains(id)) return;
     final index = _items.indexWhere((item) => item.id == id);
     if (index == -1) return;
@@ -5158,10 +5578,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     // toward a different canvas location while the rotation handle moved.
     final rotationOnly =
         rotation != null &&
-            position == null &&
-            scale == null &&
-            width == null &&
-            height == null;
+        position == null &&
+        scale == null &&
+        width == null &&
+        height == null;
 
     if (rotationOnly) {
       _items[index] = current.copyWith(rotation: nextRotation);
@@ -5189,6 +5609,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         : requestedPosition;
 
     _items[index] = transformed.copyWith(position: nextPosition);
+
+    // EDIT MASK on a picked mask: the mask stays fixed on the canvas while
+    // the picture moves / scales behind it.
+    if (_clipEditId == id && _maskEditRect != null) {
+      _applyMaskRect(id, _maskEditRect!);
+    }
 
     notifyListeners();
   }

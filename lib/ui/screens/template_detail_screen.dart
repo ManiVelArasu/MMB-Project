@@ -347,7 +347,7 @@ class _TemplateDetailBodyState extends State<_TemplateDetailBody> {
         color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade200,
       ),
       child: AspectRatio(
-        aspectRatio: 4 / 5,
+        aspectRatio: 6 / 6,
         child: Padding(
           padding: EdgeInsets.all(12.r),
           child: LayoutBuilder(

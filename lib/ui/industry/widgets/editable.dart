@@ -76,6 +76,9 @@ class EditableItemWidget extends StatelessWidget {
           outlineColor: currentItem.outlineColor,
           outlineStyle: provider.outlineStyle(currentItem.id ?? ''),
           outlineJoin: provider.outlineJoin(currentItem.id ?? ''),
+          // Mask window (API clipPath / EDIT MASK window) + edit-mode flag.
+          clipEditing: provider.clipEditItemId == currentItem.id,
+          clipSig: identityHashCode(provider.imageClipPath(currentItem.id ?? '')),
           // Shape fill / stroke live in the (mutated in place) raw map.
           rawPaintKey: (() {
             final r = provider.templateRawObject(currentItem.id ?? '');
@@ -125,9 +128,10 @@ class EditableItemWidget extends StatelessWidget {
         // on the canvas while the image can be dragged/resized behind it.
         Map? absoluteClip;
         if (currentItem.type == 'image' && !isBackground) {
-          final rawObject = provider.templateRawObject(currentItem.id ?? '');
-          final clip = rawObject?['clipPath'];
-          if (clip is Map &&
+          // imageClipPath = the user's mask window if there is one (EDIT MASK,
+          // replaced image), otherwise the template's own clipPath.
+          final clip = provider.imageClipPath(currentItem.id ?? '');
+          if (clip != null &&
               clip['absolutePositioned'] == true &&
               clip['inverted'] != true) {
             absoluteClip = clip;
@@ -141,7 +145,9 @@ class EditableItemWidget extends StatelessWidget {
             ? currentItem.scale.clamp(0.01, 10.0).toDouble()
             : 1.0;
 
-        final itemWidget = KeyedSubtree(
+        // [ghost] = the faded full picture shown behind the mask in EDIT MASK
+        // (same widget, but without the picked mask applied).
+        Widget buildItemWidget({bool ghost = false}) => KeyedSubtree(
           key: ValueKey(currentItem.id),
           child: _MinTouchTarget(
             visualSize: Size(
@@ -256,6 +262,7 @@ class EditableItemWidget extends StatelessWidget {
                                   currentItem,
                                   context,
                                   isBackground: isBackground,
+                                  skipMask: ghost,
                                 ),
                               ),
                             ),
@@ -269,6 +276,7 @@ class EditableItemWidget extends StatelessWidget {
             ),
           ),
         );
+        final itemWidget = buildItemWidget();
 
         // Entrance / exit animation preview. Pivot = visual centre of item.
         final itemScale = currentItem.scale.clamp(0.01, 10.0).toDouble();
@@ -279,13 +287,47 @@ class EditableItemWidget extends StatelessWidget {
           child: child,
         );
 
-        if (absoluteClip == null) return animated(itemWidget);
-        return animated(
-          _PaintOnlyClipPath(
-            clipper: _FabricAbsoluteClipper(absoluteClip, currentItem.position),
-            child: itemWidget,
-          ),
+        if (absoluteClip == null) {
+          // EDIT MASK on a mask picked from the MASK sheet: faded full
+          // picture behind, masked picture on top.
+          if (state.clipEditing) {
+            return animated(
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Opacity(
+                    opacity: 0.35,
+                    child: IgnorePointer(child: buildItemWidget(ghost: true)),
+                  ),
+                  itemWidget,
+                ],
+              ),
+            );
+          }
+          return animated(itemWidget);
+        }
+        final clipped = _PaintOnlyClipPath(
+          clipper: _FabricAbsoluteClipper(absoluteClip, currentItem.position),
+          child: itemWidget,
         );
+        // EDIT MASK mode (like the web editor): the whole picture is shown
+        // faded behind the fixed mask window, so the user can see what lies
+        // outside the mask while dragging / scaling it into place.
+        if (state.clipEditing) {
+          return animated(
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Opacity(
+                  opacity: 0.35,
+                  child: IgnorePointer(child: buildItemWidget(ghost: true)),
+                ),
+                clipped,
+              ],
+            ),
+          );
+        }
+        return animated(clipped);
       },
     );
   }
@@ -303,8 +345,7 @@ class EditableItemWidget extends StatelessWidget {
     final id = item.id ?? '';
     final url = (item.contentUrl ?? '').trim();
     if (url.isEmpty) return true;
-    final raw = provider.templateRawObject(id);
-    if (raw != null && raw['clipPath'] is Map) return true;
+    if (provider.imageClipPath(id) != null) return true;
     final mask = provider.imageMaskUrl(id);
     if (mask != null && mask.trim().isNotEmpty) return true;
 
@@ -333,9 +374,17 @@ class EditableItemWidget extends StatelessWidget {
     return t == 'text' || t == 'textbox' || t == 'i-text' || t == 'itext';
   }
 
-  static bool isMultilineText(EditorItem item) {
+  /// True when the text must be laid out inside a fixed-width box and wrapped
+  /// (and aligned left / centre / right inside that box): either it contains
+  /// explicit line breaks, or it came from the API as a Fabric `Textbox`
+  /// (which wraps automatically at its `width`, without any '\n').
+  static bool isMultilineText(EditorItem item, [EditorProvider? provider]) {
     final v = item.text ?? '';
-    return v.contains('\n') || v.contains('\r');
+    if (v.contains('\n') || v.contains('\r')) return true;
+    if (provider == null) return false;
+    final raw = provider.templateRawObject(item.id ?? '');
+    final t = (raw?['type'] ?? '').toString().trim().toLowerCase();
+    return t == 'textbox' && item.width > 12.0;
   }
 
   /// Exact TextStyle used to render a text item (also used for measuring).
@@ -375,7 +424,7 @@ class EditableItemWidget extends StatelessWidget {
       return Size(math.max(1.0, cs.width), math.max(1.0, cs.height));
     }
 
-    final multiline = isMultilineText(item);
+    final multiline = isMultilineText(item, provider);
     final boxWidth = widthOverride ?? item.width;
     final wrapWidth = multiline && boxWidth > 12.0 ? boxWidth : double.infinity;
     final painter = TextPainter(
@@ -869,6 +918,7 @@ class EditableItemWidget extends StatelessWidget {
       EditorItem item,
       BuildContext context, {
         bool isBackground = false,
+        bool skipMask = false,
       }) {
     if (item.type == 'video') {
       return SizedBox(
@@ -1002,7 +1052,7 @@ class EditableItemWidget extends StatelessWidget {
         );
       }
 
-      final maskUrl = provider.imageMaskUrl(id);
+      final maskUrl = skipMask ? null : provider.imageMaskUrl(id);
       if (maskUrl != null && maskUrl.trim().isNotEmpty) {
         rendered = _NetworkAlphaMask(
           maskUrl: maskUrl,
@@ -1017,9 +1067,9 @@ class EditableItemWidget extends StatelessWidget {
       // image slides it behind a fixed window like the web editor does.
       if (!isBackground) {
         final rawObject = provider.templateRawObject(id);
-        final clip = rawObject?['clipPath'];
+        final clip = provider.imageClipPath(id);
         if (rawObject != null &&
-            clip is Map &&
+            clip != null &&
             clip['inverted'] != true &&
             clip['absolutePositioned'] != true) {
           rendered = _PaintOnlyClipPath(
@@ -1037,10 +1087,10 @@ class EditableItemWidget extends StatelessWidget {
         // A cropped / shaped image (circle, rounded, custom path) gets its
         // outline along that shape instead of the rectangular box.
         final outlineRaw = provider.templateRawObject(id);
-        final outlineClip = outlineRaw?['clipPath'];
+        final outlineClip = provider.imageClipPath(id);
         final CustomClipper<Path>? outlineShape =
         (outlineRaw != null &&
-            outlineClip is Map &&
+            outlineClip != null &&
             outlineClip['inverted'] != true &&
             outlineClip['absolutePositioned'] != true)
             ? _FabricClipPathClipper(outlineRaw, outlineClip)
@@ -1122,7 +1172,9 @@ class EditableItemWidget extends StatelessWidget {
     final id = item.id ?? '';
 
     final textValue = item.text ?? "";
-    final isMultiline = textValue.contains("\n") || textValue.contains("\r");
+    // Same rule as measureTextBox / the selection overlay: explicit line
+    // breaks OR an API Fabric Textbox (auto-wrapping at its width).
+    final isMultiline = isMultilineText(item, editorProvider);
     final textStyle = _buildGoogleFontTextStyle(
       fontFamily: item.fontFamily,
       fontSize: item.fontSize,
@@ -1386,6 +1438,8 @@ class _ItemViewState {
   final String outlineStyle;
   final String outlineJoin;
   final String rawPaintKey;
+  final bool clipEditing;
+  final int clipSig;
 
   _ItemViewState({
     required this.currentItem,
@@ -1417,6 +1471,8 @@ class _ItemViewState {
     required this.outlineStyle,
     required this.outlineJoin,
     required this.rawPaintKey,
+    required this.clipEditing,
+    required this.clipSig,
   });
 
   @override
@@ -1452,7 +1508,9 @@ class _ItemViewState {
               outlineColor == other.outlineColor &&
               outlineStyle == other.outlineStyle &&
               outlineJoin == other.outlineJoin &&
-              rawPaintKey == other.rawPaintKey;
+              rawPaintKey == other.rawPaintKey &&
+              clipEditing == other.clipEditing &&
+              clipSig == other.clipSig;
 
   @override
   int get hashCode => Object.hash(
@@ -1486,6 +1544,8 @@ class _ItemViewState {
       outlineStyle,
       outlineJoin,
       rawPaintKey,
+      clipEditing,
+      clipSig,
     ),
   );
 }

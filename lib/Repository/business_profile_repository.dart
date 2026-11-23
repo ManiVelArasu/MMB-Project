@@ -68,4 +68,13 @@ class BusinessProfileRepository {
       fromJson: (json) => MineFrames.fromJson(json),
     );
   }
+  Future<ApiResult<Map<String, dynamic>>> frameDetail(String frameUid) {
+    return ApiRepository.instance.request<Map<String, dynamic>>(
+      config: ApiRequestConfig(
+        endpoint: '/frames/$frameUid',
+        method: ApiMethod.get,
+      ),
+      fromJson: (json) => Map<String, dynamic>.from(json as Map),
+    );
+  }
 }

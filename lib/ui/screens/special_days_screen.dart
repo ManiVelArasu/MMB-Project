@@ -8,6 +8,7 @@ import 'package:mmb_app/ui/screens/search_screen.dart';
 import 'package:mmb_app/ui/screens/template_detail_screen.dart';
 import 'package:mmb_app/ui/screens/widget/favorite_button.dart';
 import 'package:mmb_app/ui/screens/widget/template_popup.dart';
+import 'package:mmb_app/ui/screens/widget/template_single_view_sheet.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
@@ -537,7 +538,29 @@ class _TemplateCard extends StatelessWidget {
     required this.specialDayName,
     required this.isDark,
   });
+  void _customizeTemplate(BuildContext context, dynamic template) {
+    final uid = (template.uid as String?)?.trim() ?? '';
+    if (uid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: AppText('Template UID not available')),
+      );
+      return;
+    }
 
+    int? categoryId;
+    try {
+      final dynamic raw = template.categoryId;
+      categoryId = raw is int ? raw : int.tryParse('$raw');
+    } catch (_) {
+      categoryId = null;
+    }
+
+    TemplateQuickViewSheet.show(
+      context,
+      templateUid: uid,
+      categoryId: categoryId,
+    );
+  }
   /// Card tap / popup "Customize" -> Template Detail screen
   void _openDetail(BuildContext context) {
     final uid = template.uid?.toString().trim() ?? '';
@@ -579,7 +602,7 @@ class _TemplateCard extends StatelessWidget {
     final familyUid = template.familyUid?.trim() ?? '';
 
     return GestureDetector(
-      onTap: () => _openDetail(context),
+      onTap: () => _customizeTemplate(context,template),
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
@@ -663,7 +686,7 @@ class _TemplateCard extends StatelessWidget {
                             isFavorite: true,
                             showDownload: false,
                             showDelete: false,
-                            onCustomize: () => _openDetail(context),
+                            onCustomize: () => _customizeTemplate(context,template),
                             onDownload: () async {},
                             onFavorite: () =>
                                 toggleFavorite(context, familyUid),

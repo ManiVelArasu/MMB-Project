@@ -548,6 +548,58 @@ class BusinessProfileProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+  Map<String, dynamic>? _frameDetail;
+  Map<String, dynamic>? get frameDetail => _frameDetail;
+
+  String? _frameDetailUid;
+  String? get frameDetailUid => _frameDetailUid;
+
+  bool _isFrameDetailLoading = false;
+  bool get isFrameDetailLoading => _isFrameDetailLoading;
+
+  String? _frameDetailError;
+  String? get frameDetailError => _frameDetailError;
+
+  Future<void> loadFrameDetail(String frameUid) async {
+    _frameDetailUid = frameUid;
+    _frameDetail = null;
+    _frameDetailError = null;
+    _isFrameDetailLoading = true;
+    notifyListeners();
+
+    try {
+      final result = await businessProfileRepository.frameDetail(frameUid);
+
+      // User tapped another frame meanwhile -> ignore this response.
+      if (_frameDetailUid != frameUid) return;
+
+      final dynamic body = result.data;
+      if (body is Map) {
+        final dynamic inner = body['data'];
+        _frameDetail = Map<String, dynamic>.from(inner is Map ? inner : body);
+      } else {
+        _frameDetailError = 'Unable to load frame';
+      }
+    } catch (e, stackTrace) {
+      if (_frameDetailUid == frameUid) {
+        _frameDetailError = 'Failed to load frame';
+      }
+      debugPrint('Frame detail API error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    } finally {
+      if (_frameDetailUid == frameUid) {
+        _isFrameDetailLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  void clearFrameDetail() {
+    _frameDetail = null;
+    _frameDetailUid = null;
+    _frameDetailError = null;
+    _isFrameDetailLoading = false;
+  }
 
 // =========================================================
 // STATIC FRAMES
