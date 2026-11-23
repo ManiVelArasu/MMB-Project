@@ -1,4 +1,5 @@
 import '../Api Model/frames_categories.dart';
+import '../Api Model/frames_detail_model.dart';
 import '../Api Model/frames_model.dart';
 import '../Api Model/key_words_model.dart';
 import '../Api Model/mine_frames.dart';
@@ -68,11 +69,37 @@ class BusinessProfileRepository {
       fromJson: (json) => MineFrames.fromJson(json),
     );
   }
-  Future<ApiResult<Map<String, dynamic>>> frameDetail(String frameUid) {
-    return ApiRepository.instance.request<Map<String, dynamic>>(
+
+  Future<ApiResult<FramesDetailScreen>> frameDetail(String frameUid) {
+    return ApiRepository.instance.request<FramesDetailScreen>(
       config: ApiRequestConfig(
         endpoint: '/frames/$frameUid',
         method: ApiMethod.get,
+      ),
+      fromJson: (json) => FramesDetailScreen.fromJson(json),
+    );
+  }
+
+  Future<ApiResult<Map<String, dynamic>>> updateBusinessFramesDetails({
+    required String businessUid,
+    required String name,
+    required String phone,
+    String? email,
+    String? website,
+    String? logo_s3_key,
+  }) {
+    return ApiRepository.instance.request<Map<String, dynamic>>(
+      config: ApiRequestConfig(
+        endpoint: "${ApiEndpoints.Business}/$businessUid",
+        method: ApiMethod.patch,
+        body: {
+          "name": name,
+          "phone": phone,
+          if (email != null && email.isNotEmpty) "email": email,
+          if (website != null && website.isNotEmpty) "website": website,
+          if (logo_s3_key != null && logo_s3_key.isNotEmpty)
+            "logo_s3_key": logo_s3_key,
+        },
       ),
       fromJson: (json) => Map<String, dynamic>.from(json as Map),
     );

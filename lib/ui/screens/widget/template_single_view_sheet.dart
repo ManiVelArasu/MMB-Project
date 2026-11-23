@@ -555,7 +555,7 @@ class _SheetBodyState extends State<_SheetBody> {
                 'USE THIS TEMPLATE',
                 style: TextStyle(
                   fontSize: AppFontSize.fontSize14,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),

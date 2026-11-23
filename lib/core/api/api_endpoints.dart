@@ -88,4 +88,5 @@ class ApiEndpoints {
 
   static String get framesCategories => '/frames/categories';
   static String get framesMine => '/frames/mine';
+  static const String businessFramesUpdate = '/businesses/me';
 }

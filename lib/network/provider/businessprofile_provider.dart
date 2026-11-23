@@ -1,9 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Api Model/frames_model.dart';
 import '../../Api Model/key_words_model.dart';
 import '../../Repository/business_profile_repository.dart';
+import '../../Repository/business_repository.dart';
+import '../../Repository/get_me_repository.dart';
+import '../../Repository/image_upload_repository.dart';
 import '../../Repository/plan_repository.dart';
 import 'common_provider.dart';
 
@@ -57,6 +63,432 @@ class BusinessProfileProvider extends ChangeNotifier {
   }
 
   // =========================================================
+  // LOGO / PROFILE PHOTO  ->  presign -> upload -> confirm
+  //                           -> PUT /businesses/me (business)
+  //                           -> update personal detail (personal)
+  // =========================================================
+
+  final ImagePicker _picker = ImagePicker();
+
+  File? _selectedLogoFile;
+  File? get selectedLogoFile => _selectedLogoFile;
+
+  String? _logoS3Key;
+  String? get logoS3Key => _logoS3Key;
+
+  String? _profileS3Key;
+  String? get profileS3Key => _profileS3Key;
+
+  // true only when an image was uploaded successfully and not yet
+  // sent to the update API.
+  bool _isNewLogoSelected = false;
+  bool _isNewProfileSelected = false;
+
+  bool _isUploading = false;
+  bool get isUploading => _isUploading;
+
+  bool _isUpdatingProfile = false;
+  bool get isUpdatingProfile => _isUpdatingProfile;
+
+  String? _updateError;
+  String? get updateError => _updateError;
+
+  // Latest values saved with the update API. The frame preview
+  // (phone / website / logo slots) reads these.
+  String _savedPhone = '';
+  String _savedWebsite = '';
+  String get savedPhone => _savedPhone;
+  String get savedWebsite => _savedWebsite;
+
+  String? get _accountType =>
+      commonProvider.me?.data.accountType?.toString().trim().toLowerCase() ??
+          commonProvider.accountType?.toString().trim().toLowerCase();
+
+  /// Gallery / camera picker. Returns the picked file (or null).
+  Future<File?> pickLogo({ImageSource source = ImageSource.gallery}) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        imageQuality: 90,
+      );
+
+      if (image == null) return null;
+
+      _selectedLogoFile = File(image.path);
+      notifyListeners();
+
+      return _selectedLogoFile;
+    } catch (e) {
+      debugPrint('pickLogo error: $e');
+      return null;
+    }
+  }
+
+  /// Use this if the image comes from somewhere else
+  /// (crop screen, bg-remove sheet, library ...).
+  void setLogoFile(File file) {
+    _selectedLogoFile = file;
+    notifyListeners();
+  }
+
+  /// Handles every confirm response format:
+  /// {key}, {uploads:[{key}]}, {keys:[..]}, {results:[{key}]},
+  /// {files:[{key}]}, {data:{...}}
+  String? _extractS3Key(dynamic data) {
+    if (data is! Map) return null;
+
+    final direct = data['key']?.toString().trim();
+    if (direct != null && direct.isNotEmpty) return direct;
+
+    for (final listKey in const ['uploads', 'keys', 'results', 'files']) {
+      final list = data[listKey];
+
+      if (list is List && list.isNotEmpty) {
+        final first = list.first;
+
+        if (first is Map) {
+          final v = first['key']?.toString().trim();
+          if (v != null && v.isNotEmpty) return v;
+        } else if (first != null && first.toString().trim().isNotEmpty) {
+          return first.toString().trim();
+        }
+      }
+    }
+
+    if (data['data'] is Map) return _extractS3Key(data['data']);
+
+    return null;
+  }
+
+  /// STEP 1: presign -> S3 upload -> confirm  (only uploads, no update API)
+  Future<bool> uploadLogo([File? file]) async {
+    final imageFile = file ?? _selectedLogoFile;
+
+    if (imageFile == null || !await imageFile.exists()) {
+      _updateError = 'Please select an image';
+      notifyListeners();
+      return false;
+    }
+
+    final accountType = _accountType;
+
+    final String slot;
+    if (accountType == 'personal') {
+      slot = 'profile_photo';
+    } else if (accountType == 'business') {
+      slot = 'business_logo';
+    } else {
+      _updateError = 'Invalid account type: $accountType';
+      notifyListeners();
+      return false;
+    }
+
+    _isUploading = true;
+    _updateError = null;
+    notifyListeners();
+
+    try {
+      final filename = imageFile.path.split(Platform.pathSeparator).last;
+
+      debugPrint('======================================');
+      debugPrint('🚀 MEDIA UPLOAD  | $accountType | $slot | $filename');
+      debugPrint('======================================');
+
+      final uploadResult = await MediaUploadRepository.instance
+          .uploadImageAndConfirm(
+        imageFile: imageFile,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+        slot: slot,
+      );
+
+      bool success = false;
+
+      await uploadResult.when(
+        success: (data) async {
+          final key = _extractS3Key(data);
+
+          if (key == null || key.isEmpty) {
+            _updateError = 'Image uploaded but S3 key not found';
+            debugPrint('❌ Upload response without key: $data');
+            return;
+          }
+
+          final prefs = await SharedPreferences.getInstance();
+
+          if (accountType == 'personal') {
+            _profileS3Key = key;
+            _logoS3Key = null;
+            _isNewProfileSelected = true;
+            _isNewLogoSelected = false;
+
+            await prefs.remove('logo_s3_key');
+            await prefs.setString('profile_s3_key', key);
+            await prefs.setString('profile_photo_s3_key', key);
+          } else {
+            _logoS3Key = key;
+            _profileS3Key = null;
+            _isNewLogoSelected = true;
+            _isNewProfileSelected = false;
+
+            await prefs.remove('profile_s3_key');
+            await prefs.remove('profile_photo_s3_key');
+            await prefs.setString('logo_s3_key', key);
+          }
+
+          _selectedLogoFile = imageFile;
+          await prefs.setString('saved_business_image_path', imageFile.path);
+
+          debugPrint('✅ UPLOAD SUCCESS  S3 KEY: $key');
+          success = true;
+        },
+        failure: (error) {
+          _updateError = error.message;
+          debugPrint('❌ Image upload failed: ${error.message}');
+        },
+      );
+
+      return success;
+    } catch (e, stackTrace) {
+      _updateError = e.toString();
+      debugPrint('❌ uploadLogo error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      return false;
+    } finally {
+      _isUploading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Website is always sent as https://...
+  ///  "mysite.com"          -> "https://mysite.com"
+  ///  "www.mysite.com"      -> "https://www.mysite.com"
+  ///  "http://mysite.com"   -> "https://mysite.com"
+  ///  "https://mysite.com"  -> "https://mysite.com"
+  ///  "https:\\mysite.com"   -> "https://mysite.com"
+  ///  ""                    -> ""  (nothing to send)
+  String normalizeWebsite(String raw) {
+    var w = raw.trim();
+    if (w.isEmpty) return '';
+
+    // remove any existing scheme (even a mistyped one) and leading slashes
+    w = w.replaceFirst(RegExp(r'^[a-zA-Z]+:[\\/]+'), '');
+    w = w.replaceFirst(RegExp(r'^[\\/]+'), '').trim();
+
+    if (w.isEmpty) return '';
+
+    return 'https://$w';
+  }
+
+  String _formatPhone(String raw) {
+    final p = raw.trim().replaceAll(' ', '');
+
+    if (p.isEmpty) return p;
+    if (p.startsWith('+')) return p;
+
+    return '+91$p';
+  }
+
+  Future<String?> _resolveBusinessUid() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final saved = prefs.getString('business_uid');
+    if (saved != null && saved.isNotEmpty) return saved;
+
+    try {
+      final dynamic business = commonProvider.business;
+      final uid = business?.uid?.toString();
+      if (uid != null && uid.isNotEmpty) return uid;
+    } catch (_) {}
+
+    return null;
+  }
+
+  /// STEP 2 (business): PUT /businesses/me
+  /// body: logo_s3_key (only if new), name, phone, website
+  Future<bool> updateBusiness({
+    required String name,
+    required String phone,
+    String? website,
+    String? email,
+  }) async {
+    _isUpdatingProfile = true;
+    _updateError = null;
+    notifyListeners();
+
+    try {
+      final businessUid = await _resolveBusinessUid() ?? '';
+
+      final String? finalLogoKey =
+      (_isNewLogoSelected && (_logoS3Key?.trim().isNotEmpty ?? false))
+          ? _logoS3Key!.trim()
+          : null;
+
+      final cleanWebsite = normalizeWebsite(website ?? '');
+      final cleanEmail = (email ?? '').trim();
+
+      debugPrint('======================================');
+      debugPrint('🚀 PUT /businesses/me');
+      debugPrint('Name     : ${name.trim()}');
+      debugPrint('Phone    : ${_formatPhone(phone)}');
+      debugPrint('Website  : $cleanWebsite');
+      debugPrint('Logo key : $finalLogoKey');
+      debugPrint('======================================');
+
+      final result = await BusinessProfileRepository.instance.updateBusinessFramesDetails(
+        businessUid: businessUid,
+        name: name.trim(),
+        phone: _formatPhone(phone),
+        website: cleanWebsite.isEmpty ? null : cleanWebsite,
+        email: cleanEmail.isEmpty ? null : cleanEmail,
+        logo_s3_key: finalLogoKey,
+      );
+
+      bool ok = false;
+
+      await result.when(
+        success: (data) async {
+          final prefs = await SharedPreferences.getInstance();
+
+          if (finalLogoKey != null) {
+            await prefs.setString('logo_s3_key', finalLogoKey);
+          }
+
+          await prefs.setString('saved_business_name', name.trim());
+          await prefs.setString('saved_business_phone', _formatPhone(phone));
+          await prefs.setString('saved_business_website', cleanWebsite);
+
+          _isNewLogoSelected = false;
+          _businessName = name.trim();
+          _savedPhone = _formatPhone(phone);
+          _savedWebsite = cleanWebsite;
+
+          debugPrint('✅ BUSINESS UPDATE SUCCESS');
+          ok = true;
+        },
+        failure: (error) {
+          _updateError = error.message;
+          debugPrint('❌ Business update failed: ${error.message}');
+        },
+      );
+
+      if (ok) {
+        // Reload latest business data so the profile screen refreshes.
+        await commonProvider.loadBusiness(forceRefresh: true);
+      }
+
+      return ok;
+    } catch (e, stackTrace) {
+      _updateError = e.toString();
+      debugPrint('❌ updateBusiness error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      return false;
+    } finally {
+      _isUpdatingProfile = false;
+      notifyListeners();
+    }
+  }
+
+  /// STEP 2 (personal): update me
+  Future<bool> updatePersonal({
+    required String name,
+    String email = '',
+  }) async {
+    _isUpdatingProfile = true;
+    _updateError = null;
+    notifyListeners();
+
+    try {
+      final String? finalProfileKey =
+      (_isNewProfileSelected &&
+          (_profileS3Key?.trim().isNotEmpty ?? false))
+          ? _profileS3Key!.trim()
+          : null;
+
+      final result = await GetMeRepository.instance.updatePersonalDetail(
+        name.trim(),
+        email.trim(),
+        finalProfileKey,
+      );
+
+      bool ok = false;
+
+      await result.when(
+        success: (data) async {
+          final prefs = await SharedPreferences.getInstance();
+
+          if (finalProfileKey != null) {
+            await prefs.setString('profile_s3_key', finalProfileKey);
+            await prefs.setString('profile_photo_s3_key', finalProfileKey);
+            await prefs.remove('logo_s3_key');
+          }
+
+          _isNewProfileSelected = false;
+          ok = true;
+        },
+        failure: (error) {
+          _updateError = error.message;
+        },
+      );
+
+      if (ok) {
+        await commonProvider.loadMe(forceRefresh: true);
+      }
+
+      return ok;
+    } catch (e, stackTrace) {
+      _updateError = e.toString();
+      debugPrint('❌ updatePersonal error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      return false;
+    } finally {
+      _isUpdatingProfile = false;
+      notifyListeners();
+    }
+  }
+
+  /// ONE CALL FOR THE SAVE BUTTON
+  ///
+  /// 1. image select pannirundha -> presign + upload + confirm
+  /// 2. upload success aana -> business update API (PUT /businesses/me)
+  ///    (personal account -> personal update API)
+  ///
+  /// Returns true only if everything succeeded.
+  Future<bool> saveProfile({
+    required String name,
+    required String phone,
+    String? website,
+    String? email,
+    File? newImage,
+  }) async {
+    // ---- 1. UPLOAD (only when the user picked a new image) ----
+    if (newImage != null) {
+      final uploaded = await uploadLogo(newImage);
+
+      // upload fail aana update API call pannadhu
+      if (!uploaded) return false;
+    }
+
+    // ---- 2. UPDATE ----
+    if (_accountType == 'personal') {
+      return updatePersonal(name: name, email: email ?? '');
+    }
+
+    return updateBusiness(
+      name: name,
+      phone: phone,
+      website: website,
+      email: email,
+    );
+  }
+
+  void clearUpdateError() {
+    _updateError = null;
+    notifyListeners();
+  }
+
+  // =========================================================
   // REFRESH PROFILE AFTER EDIT
   // =========================================================
   //
@@ -91,7 +523,6 @@ class BusinessProfileProvider extends ChangeNotifier {
         category: category,
       );
 
-      // ApiResult-ல் data என்பது FramesData object என்று கருதப்பட்டுள்ளது.
       final framesData = result.data;
 
       if (framesData != null && framesData.success == true) {
@@ -348,8 +779,6 @@ class BusinessProfileProvider extends ChangeNotifier {
       debugPrint("================================");
 
       if (accountType == 'personal') {
-        debugPrint("👤 PERSONAL → Calling GetMe API");
-
         final success = await commonProvider.loadMe(forceRefresh: true);
 
         debugPrint("👤 PERSONAL GetMe refresh: $success");
@@ -358,8 +787,6 @@ class BusinessProfileProvider extends ChangeNotifier {
       }
 
       if (accountType == 'business') {
-        debugPrint("🏢 BUSINESS → Calling Business API");
-
         final success = await commonProvider.loadBusiness(forceRefresh: true);
 
         debugPrint("🏢 BUSINESS refresh: $success");
@@ -411,20 +838,14 @@ class BusinessProfileProvider extends ChangeNotifier {
   String? get keyWordsError => _keyWordsError;
 
   Future<bool> loadKeyWords({bool forceRefresh = false}) async {
-    // =======================================================
     // PERSONAL → DO NOT CALL API
-    // =======================================================
-
     if (commonProvider.accountType?.toLowerCase() == 'personal') {
       debugPrint("👤 PERSONAL ACCOUNT → loadKeyWords SKIPPED");
 
       return false;
     }
 
-    // =======================================================
     // BUSINESS ONLY
-    // =======================================================
-
     if (commonProvider.accountType?.toLowerCase() != 'business') {
       debugPrint("⚠️ Unknown account type → Keywords API SKIPPED");
 
@@ -444,7 +865,6 @@ class BusinessProfileProvider extends ChangeNotifier {
       final categorySlug =
           commonProvider.business?.businessCategory?.parent?.slug ?? '';
 
-      // Category slug இல்லையென்றால் API call வேண்டாம்
       if (categorySlug.isEmpty) {
         _keyWordsError = "Business category slug not found";
 
@@ -453,9 +873,7 @@ class BusinessProfileProvider extends ChangeNotifier {
         return false;
       }
 
-      debugPrint("🏢 BUSINESS → Calling Keywords API");
-
-      debugPrint("Category Slug: $categorySlug");
+      debugPrint("🏢 BUSINESS → Calling Keywords API: $categorySlug");
 
       final result = await businessProfileRepository.industryKeyWords(
         categorySlug,
@@ -471,23 +889,7 @@ class BusinessProfileProvider extends ChangeNotifier {
 
       _keyWords = data.data;
 
-      debugPrint("================================");
-
-      debugPrint("✅ KEYWORDS API SUCCESS");
-
-      debugPrint(
-        "Total Keywords : "
-            "${_keyWords.length}",
-      );
-
-      for (final keyword in _keyWords) {
-        debugPrint(
-          "Keyword : ${keyword.name} | "
-              "Slug : ${keyword.slug}",
-        );
-      }
-
-      debugPrint("================================");
+      debugPrint("✅ KEYWORDS API SUCCESS | Total: ${_keyWords.length}");
 
       return true;
     } catch (e, stackTrace) {
@@ -539,6 +941,16 @@ class BusinessProfileProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
 
     _businessName = prefs.getString('saved_business_name') ?? "";
+    _savedPhone = prefs.getString('saved_business_phone') ?? "";
+    _savedWebsite = prefs.getString('saved_business_website') ?? "";
+
+    // logo key of the current account type (needed by the frame preview)
+    final type = commonProvider.accountType?.toLowerCase();
+    if (type == 'business') {
+      _logoS3Key ??= prefs.getString('logo_s3_key');
+    } else if (type == 'personal') {
+      _profileS3Key ??= prefs.getString('profile_s3_key');
+    }
 
     notifyListeners();
   }
@@ -548,6 +960,11 @@ class BusinessProfileProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  // =========================================================
+  // FRAME DETAIL
+  // =========================================================
+
   Map<String, dynamic>? _frameDetail;
   Map<String, dynamic>? get frameDetail => _frameDetail;
 
@@ -573,10 +990,29 @@ class BusinessProfileProvider extends ChangeNotifier {
       // User tapped another frame meanwhile -> ignore this response.
       if (_frameDetailUid != frameUid) return;
 
+      // result.data is the FramesDetailScreen model (not a Map), so convert
+      // it back to a Map. `content` (Fabric JSON string) is inside it.
       final dynamic body = result.data;
+      Map<String, dynamic>? detail;
+
       if (body is Map) {
         final dynamic inner = body['data'];
-        _frameDetail = Map<String, dynamic>.from(inner is Map ? inner : body);
+        detail = Map<String, dynamic>.from(inner is Map ? inner : body);
+      } else if (body != null) {
+        try {
+          final dynamic json = (body as dynamic).data?.toJson();
+          if (json is Map) detail = Map<String, dynamic>.from(json);
+        } catch (e) {
+          debugPrint('Frame detail convert error: $e');
+        }
+      }
+
+      if (detail != null) {
+        _frameDetail = detail;
+        debugPrint(
+          'FRAME DETAIL loaded | uid=$frameUid | '
+              'content length=${detail['content']?.toString().length ?? 0}',
+        );
       } else {
         _frameDetailError = 'Unable to load frame';
       }
@@ -600,12 +1036,4 @@ class BusinessProfileProvider extends ChangeNotifier {
     _frameDetailError = null;
     _isFrameDetailLoading = false;
   }
-
-// =========================================================
-// STATIC FRAMES
-// =========================================================
-
-// =========================================================
-// STATIC KEYWORDS
-// =========================================================
 }
