@@ -1381,7 +1381,7 @@ class _HomeScreenView extends StatelessWidget {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => _openTemplateDetail(context, template),
+      onTap: () => _customizeTemplate(context, template),
       child: Container(
         margin: EdgeInsets.only(right: 12.w),
         decoration: BoxDecoration(
@@ -1713,65 +1713,69 @@ class _HomeScreenView extends StatelessWidget {
               itemBuilder: (context, index) {
                 final banner = banners[index];
 
-                return Container(
-                  margin: EdgeInsets.symmetric(horizontal: 4.w),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 16.w,
-                    vertical: 12.h,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: banner.gradient,
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: banner.onTap, // full container click
+                  child: Container(
+                    margin: EdgeInsets.symmetric(horizontal: 4.w),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 12.h,
                     ),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AppText(
-                        banner.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: banner.titleColor,
-                          fontSize: AppFontSize.fontSize24,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: banner.gradient,
                       ),
-                      SizedBox(height: 3.h),
-                      AppText(
-                        banner.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: banner.descriptionColor,
-                          fontSize: AppFontSize.fontSize16,
-                          fontWeight: FontWeight.w500,
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AppText(
+                          banner.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: banner.titleColor,
+                            fontSize: AppFontSize.fontSize24,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 7.h),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: SizedBox(
-                          height: 28.h,
-                          child: IntrinsicWidth(
-                            child: ButtonWidget(
-                              buttonPress: banner.onTap,
-                              title: banner.button,
-                              buttonColor: banner.titleColor,
-                              textStyle: TextStyle(
-                                color: Colors.white,
-                                fontSize: AppFontSize.fontSize14,
-                                fontWeight: FontWeight.w600,
+                        SizedBox(height: 3.h),
+                        AppText(
+                          banner.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: banner.descriptionColor,
+                            fontSize: AppFontSize.fontSize16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 7.h),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: SizedBox(
+                            height: 28.h,
+                            child: IntrinsicWidth(
+                              child: ButtonWidget(
+                                buttonPress: banner.onTap, // button click (as before)
+                                title: banner.button,
+                                buttonColor: banner.titleColor,
+                                textStyle: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: AppFontSize.fontSize14,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },

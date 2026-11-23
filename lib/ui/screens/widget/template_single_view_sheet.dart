@@ -134,9 +134,11 @@ class TemplateQuickViewSheet extends StatelessWidget {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => TemplateQuickViewSheet(
-        templateUid: templateUid,
-        categoryId: categoryId,
+      builder: (_) => SafeArea(
+        child: TemplateQuickViewSheet(
+          templateUid: templateUid,
+          categoryId: categoryId,
+        ),
       ),
     );
   }

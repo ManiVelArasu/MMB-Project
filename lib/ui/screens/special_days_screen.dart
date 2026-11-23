@@ -385,7 +385,7 @@ Future<DateTimeRange?> _pickSpecialDaysRange(
               SizedBox(height: 4.h),
               Text(
                 'Special days are available till ${_prettyDate(monthEnd)}',
-                style: TextStyle( fontSize: AppFontSize.fontSize12, color: sub),
+                style: TextStyle(fontSize: AppFontSize.fontSize12, color: sub),
               ),
 
               SizedBox(height: 18.h),
@@ -561,6 +561,7 @@ class _TemplateCard extends StatelessWidget {
       categoryId: categoryId,
     );
   }
+
   /// Card tap / popup "Customize" -> Template Detail screen
   void _openDetail(BuildContext context) {
     final uid = template.uid?.toString().trim() ?? '';
@@ -602,7 +603,7 @@ class _TemplateCard extends StatelessWidget {
     final familyUid = template.familyUid?.trim() ?? '';
 
     return GestureDetector(
-      onTap: () => _customizeTemplate(context,template),
+      onTap: () => _customizeTemplate(context, template),
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
@@ -686,7 +687,8 @@ class _TemplateCard extends StatelessWidget {
                             isFavorite: true,
                             showDownload: false,
                             showDelete: false,
-                            onCustomize: () => _customizeTemplate(context,template),
+                            onCustomize: () =>
+                                _customizeTemplate(context, template),
                             onDownload: () async {},
                             onFavorite: () =>
                                 toggleFavorite(context, familyUid),
