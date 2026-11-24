@@ -406,9 +406,10 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
 
         // ---- profile values fill the fields until the user edits them ----
         final resolver = BrandProfileResolver(profile: profile, business: business);
+
         _form.syncFromProfile(resolver);
         final logoUrl = resolver.imageUrl;
-
+        debugPrint('🖼️ FRAME logoUrl="$logoUrl" | logoFile=${_form.logo} | hasSlots=${content != null}');
         if (_selectedTab == _myFramesTab && content != null) {
           _shareWithTemplateEditor(
             uid: activeUid,

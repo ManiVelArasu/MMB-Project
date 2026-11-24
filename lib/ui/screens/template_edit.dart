@@ -38,6 +38,7 @@ import '../industry/widgets/animation.dart';
 import '../industry/widgets/editable.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/prpject_provider.dart';
+import '../../network/provider/businessprofile_provider.dart';
 import 'dart:core';
 
 import '../industry/widgets/gif.dart';
@@ -129,6 +130,9 @@ class TemplateEditScreen extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EditorProvider()),
 
         ChangeNotifierProvider(create: (_) => ProjectProvider()),
+        ChangeNotifierProvider(
+          create: (_) => BusinessProfileProvider(autoInit: false),
+        ),
       ],
       child: Scaffold(
         body: SafeArea(
@@ -1247,205 +1251,197 @@ class _EditorViewState extends State<EditorView> {
     }
   }
 
+  String _frameUid(dynamic f) {
+    try {
+      return (f.uid ?? '').toString().trim();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _frameThumb(dynamic f) {
+    try {
+      final key = (f.thumbnailS3Key ?? '').toString().trim();
+      return key.isEmpty ? '' : '${ApiEndpoints.cdnImageUrl}/$key';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  /// The frame already drawn on the canvas (applied here or on the
+  /// Business Frames screen).
+  bool _isFrameApplied(String uid) {
+    final active = ActiveBrandFrame.instance;
+    return uid.isNotEmpty && active.isActive && active.uid == uid;
+  }
+
+  /// true = frame applied (sheet can close).
+  Future<bool> _applyMineFrame(BusinessProfileProvider bp, dynamic frame) async {
+    final uid = _frameUid(frame);
+    if (uid.isEmpty) return false;
+
+    // Same frame already on the screen -> do not select again.
+    if (_isFrameApplied(uid)) {
+      Fluttertoast.showToast(msg: 'This frame is already applied');
+      return false;
+    }
+
+    await bp.loadFrameDetail(uid);
+    if (!mounted) return false;
+
+    final content = (bp.frameDetail?['content'] ?? '').toString();
+    if (content.isEmpty) {
+      Fluttertoast.showToast(
+        msg: bp.frameDetailError ?? 'Unable to load frame',
+      );
+      return false;
+    }
+
+    final logoKey = (bp.logoS3Key ?? bp.profileS3Key ?? '').trim();
+    final logoUrl = logoKey.isEmpty ? '' : '${ApiEndpoints.cdnImageUrl}/$logoKey';
+
+    ActiveBrandFrame.instance.update(
+      uid: uid,
+      contentJson: content,
+      enabled: true,
+      slotTexts: {
+        'phone': bp.savedPhone,
+        'web': bp.savedWebsite,
+        'name': bp.businessName,
+        // 'email': ...  (add if you have it in the provider)
+      },
+      logoFile: bp.selectedLogoFile,
+      logoUrl: logoUrl,
+    );
+
+    if (mounted) setState(() {});
+    return true;
+  }
+
   void _showFramesBottomSheet(
       BuildContext context,
       EditorProvider provider,
       bool isDark,
       ) {
+    final bp = context.read<BusinessProfileProvider>();
     final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF1B1B1B);
     final mutedColor = isDark ? Colors.white54 : const Color(0xFF9A9A9A);
     final cardBorder = isDark ? Colors.white24 : const Color(0xFFE2E2E2);
     const accent = Color(0xFFFF252D);
 
-    // Frames come from the same API as the business profile screen.
-    // Opening the sheet always starts on "Static Frames".
-    provider.updateFrameTab(0);
+    // frames/mine API (skipped when already loaded).
+    bp.loadMyFrames();
+    bp.loadSavedBusinessName(); // phone / website / logo for the slots
 
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
-        // The sheet is a separate route: hand the editor provider down to it.
-        return ChangeNotifierProvider<EditorProvider>.value(
-          value: provider,
-          child: Consumer<EditorProvider>(
+        return ChangeNotifierProvider<BusinessProfileProvider>.value(
+          value: bp,
+          child: Consumer<BusinessProfileProvider>(
             builder: (sheetContext, p, _) {
-              final selectedTab = p.selectedFrameTab;
-              final frames = p.selectedFrames;
-              final applied = p.selectedFrameUrl;
-
-              // "No frame" tile (only while a frame is applied).
-              Widget noneCard() {
-                return SizedBox(
-                  width: 78,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            p.clearSelectedFrame();
-                            Navigator.pop(modalContext);
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF2C2C2C)
-                                  : const Color(0xFFF6F6F6),
-                              border: Border.all(color: cardBorder),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.block_rounded,
-                              size: 24,
-                              color: mutedColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      AppText(
-                        'None',
-                        maxLines: 1,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: mutedColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
+              final frames = p.mineFrames;
 
               Widget frameCard(dynamic frame) {
-                final key = (frame.thumbnailS3Key ?? '').toString().trim();
-                final imageUrl = key.isEmpty
-                    ? ''
-                    : '${ApiEndpoints.cdnImageUrl}/$key';
-                final priceRaw = (frame.price ?? '').toString().trim();
-                final isFree =
-                    priceRaw.isEmpty ||
-                        priceRaw == '0' ||
-                        priceRaw == '0.0' ||
-                        priceRaw == '0.00';
-                final isApplied = imageUrl.isNotEmpty && applied == imageUrl;
+                final uid = _frameUid(frame);
+                final imageUrl = _frameThumb(frame);
+                final isApplied = _isFrameApplied(uid);
+                final isLoadingThis =
+                    p.isFrameDetailLoading && p.frameDetailUid == uid;
 
                 return SizedBox(
                   width: 92,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: imageUrl.isEmpty
-                              ? null
-                              : () {
-                            p.setSelectedFrame(imageUrl);
-                            Navigator.pop(modalContext);
-                            if (p.selectedItemType != 'image') {
-                              Fluttertoast.showToast(
-                                msg: 'Select an image to see the frame',
-                              );
-                            }
-                          },
-                          child: Stack(
-                            children: [
-                              Positioned.fill(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? const Color(0xFF2C2C2C)
-                                        : Colors.white,
-                                    border: Border.all(
-                                      color: isApplied ? accent : cardBorder,
-                                      width: isApplied ? 1.8 : 1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
+                  child: GestureDetector(
+                    onTap: imageUrl.isEmpty || p.isFrameDetailLoading
+                        ? null
+                        : () async {
+                      final ok = await _applyMineFrame(p, frame);
+                      if (ok && modalContext.mounted) {
+                        Navigator.pop(modalContext);
+                      }
+                    },
+                    child: Opacity(
+                      opacity: isApplied ? 0.5 : 1,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF2C2C2C)
+                                    : Colors.white,
+                                border: Border.all(
+                                  color: isApplied ? accent : cardBorder,
+                                  width: isApplied ? 1.8 : 1,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(9),
+                                child: imageUrl.isEmpty
+                                    ? const Center(
+                                  child: Icon(
+                                    Icons.image_not_supported_rounded,
+                                    color: Colors.grey,
                                   ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(9),
-                                    child: imageUrl.isEmpty
-                                        ? const Center(
-                                      child: Icon(
-                                        Icons.image_not_supported_rounded,
-                                        color: Colors.grey,
-                                      ),
-                                    )
-                                        : Image.network(
-                                      imageUrl,
-                                      fit: BoxFit.contain,
-                                      loadingBuilder: (_, child, progress) {
-                                        if (progress == null) {
-                                          return child;
-                                        }
-                                        return const Center(
-                                          child: SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child:
-                                            CircularProgressIndicator(
-                                              strokeWidth: 1.5,
-                                              color: accent,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      errorBuilder: (_, __, ___) =>
-                                      const Center(
-                                        child: Icon(
-                                          Icons
-                                              .image_not_supported_rounded,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
+                                )
+                                    : Image.network(
+                                  imageUrl,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) =>
+                                  const Center(
+                                    child: Icon(
+                                      Icons.image_not_supported_rounded,
+                                      color: Colors.grey,
                                     ),
                                   ),
                                 ),
                               ),
-                              if (isApplied)
-                                Positioned(
-                                  top: 5,
-                                  right: 5,
-                                  child: Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: const BoxDecoration(
-                                      color: accent,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.check_rounded,
-                                      size: 13,
-                                      color: Colors.white,
-                                    ),
+                            ),
+                          ),
+                          if (isApplied)
+                            Positioned(
+                              top: 5,
+                              right: 5,
+                              child: Container(
+                                width: 18,
+                                height: 18,
+                                decoration: const BoxDecoration(
+                                  color: accent,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.check_rounded,
+                                  size: 13,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          if (isLoadingThis)
+                            const Positioned.fill(
+                              child: Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: accent,
                                   ),
                                 ),
-                            ],
-                          ),
-                        ),
+                              ),
+                            ),
+                        ],
                       ),
-                      const SizedBox(height: 5),
-                      AppText(
-                        isFree ? 'Free' : 'RS. $priceRaw',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: isFree ? const Color(0xFF2E9E5B) : textColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 );
               }
 
-              Widget framesBody() {
-                if (p.isFramesLoading && frames.isEmpty) {
+              Widget body() {
+                if (p.isMineLoading && frames.isEmpty) {
                   return const Center(
                     child: SizedBox(
                       width: 22,
@@ -1457,46 +1453,34 @@ class _EditorViewState extends State<EditorView> {
                     ),
                   );
                 }
-
                 if (frames.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         AppText(
-                          p.framesError ??
-                              (selectedTab == 0
-                                  ? 'No static frames available'
-                                  : 'No animated frames available'),
+                          p.mineError ?? 'No frames available',
                           style: TextStyle(color: mutedColor, fontSize: 12.5),
                         ),
-                        if (p.framesError != null)
+                        if (p.mineError != null)
                           TextButton(
-                            onPressed: () => p.loadFrames(
-                              selectedTab == 0 ? 'static' : 'animated',
-                            ),
+                            onPressed: () => p.loadMyFrames(forceRefresh: true),
                             child: const AppText('Retry'),
                           ),
                       ],
                     ),
                   );
                 }
-
-                final showNone = applied != null;
                 return ListView.separated(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.only(right: 16),
-                  itemCount: frames.length + (showNone ? 1 : 0),
+                  itemCount: frames.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemBuilder: (_, index) {
-                    if (showNone && index == 0) return noneCard();
-                    return frameCard(frames[index - (showNone ? 1 : 0)]);
-                  },
+                  itemBuilder: (_, i) => frameCard(frames[i]),
                 );
               }
 
-              // Height follows the content, so the sheet stays compact.
               return Container(
                 padding: const EdgeInsets.fromLTRB(16, 8, 0, 8),
                 decoration: BoxDecoration(
@@ -1511,7 +1495,6 @@ class _EditorViewState extends State<EditorView> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Drag handle
                       Center(
                         child: Container(
                           width: 36,
@@ -1525,8 +1508,6 @@ class _EditorViewState extends State<EditorView> {
                         ),
                       ),
                       const SizedBox(height: 12),
-
-                      // Header
                       Padding(
                         padding: const EdgeInsets.only(right: 16),
                         child: Row(
@@ -1540,53 +1521,12 @@ class _EditorViewState extends State<EditorView> {
                               ),
                             ),
                             const Spacer(),
-                            _frameHeaderButton(
-                              icon: Icons.edit_outlined,
-                              onTap: () {
-                                // Add your existing frame edit action here.
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            _frameHeaderButton(
-                              icon: Icons.add_rounded,
-                              onTap: () {
-                                // Add your existing create-frame action here.
-                              },
-                            ),
-                            const SizedBox(width: 8),
                             _sheetCloseButton(modalContext, isDark: isDark),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 10),
-
-                      // Tabs
-                      Padding(
-                        padding: const EdgeInsets.only(right: 16),
-                        child: Row(
-                          children: [
-                            _frameTab(
-                              title: 'Static',
-                              selected: selectedTab == 0,
-                              onTap: () => p.updateFrameTab(0),
-                              textColor: textColor,
-                              mutedColor: mutedColor,
-                            ),
-                            const SizedBox(width: 22),
-                            _frameTab(
-                              title: 'Animated',
-                              selected: selectedTab == 1,
-                              onTap: () => p.updateFrameTab(1),
-                              textColor: textColor,
-                              mutedColor: mutedColor,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Frame cards (from the API)
-                      SizedBox(height: 132, child: framesBody()),
+                      const SizedBox(height: 12),
+                      SizedBox(height: 132, child: body()),
                       const SizedBox(height: 4),
                     ],
                   ),
@@ -1596,62 +1536,6 @@ class _EditorViewState extends State<EditorView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _frameHeaderButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFE5E7),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: const Color(0xFFFF252D), size: 18),
-      ),
-    );
-  }
-
-  Widget _frameTab({
-    required String title,
-    required bool selected,
-    required VoidCallback onTap,
-    required Color textColor,
-    required Color mutedColor,
-  }) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      // Underline is exactly as wide as the label.
-      child: IntrinsicWidth(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AppText(
-              title,
-              style: TextStyle(
-                fontSize: AppFontSize.fontSize13,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                color: selected ? textColor : mutedColor,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              height: 2,
-              decoration: BoxDecoration(
-                color: selected ? const Color(0xFFFF252D) : Colors.transparent,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -5649,56 +5533,6 @@ class _EditorViewState extends State<EditorView> {
                                     );
                                   });
                                 })(),
-
-                                // FRAME ATTACHED TO SELECTED IMAGE
-                                if (provider.selectedFrameUrl != null &&
-                                    provider.selectedItemId != null)
-                                  Builder(
-                                    builder: (_) {
-                                      final selected = provider.items
-                                          .where(
-                                            (e) =>
-                                        e.id == provider.selectedItemId,
-                                      )
-                                          .toList();
-
-                                      if (selected.isEmpty ||
-                                          selected.first.type != 'image') {
-                                        return const SizedBox.shrink();
-                                      }
-
-                                      final item = selected.first;
-                                      return Positioned(
-                                        left: item.position.dx * scaleX,
-                                        top: item.position.dy * scaleY,
-                                        width: item.width * item.scale * scaleX,
-                                        height:
-                                        item.height * item.scale * scaleY,
-                                        child: IgnorePointer(
-                                          child: Transform.rotate(
-                                            angle: item.rotation.isFinite
-                                                ? item.rotation
-                                                : 0.0,
-                                            // API frames are network images,
-                                            // the old built-in ones are assets.
-                                            child:
-                                            provider.selectedFrameUrl!
-                                                .startsWith('http')
-                                                ? Image.network(
-                                              provider.selectedFrameUrl!,
-                                              fit: BoxFit.fill,
-                                              errorBuilder: (_, __, ___) =>
-                                              const SizedBox.shrink(),
-                                            )
-                                                : Image.asset(
-                                              provider.selectedFrameUrl!,
-                                              fit: BoxFit.fill,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
 
                                 // PURCHASED BRAND FRAME (selected on the
                                 // Business Frames screen): logo / phone /
@@ -13067,9 +12901,72 @@ class _TransformSelectionOverlayState
   double _gStartVisH = 1.0; // un-scaled layout height
   double _gStartRot = 0.0;
 
+  // Masked image: the box hugs the VISIBLE part of the picture.
+  bool _gMasked = false;
+  Rect _gVisLocal = Rect.zero;
+  Offset _rotWorldCentre = Offset.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _MaskBoundsCache.instance.addListener(_onMaskBounds);
+  }
+
+  @override
+  void dispose() {
+    _MaskBoundsCache.instance.removeListener(_onMaskBounds);
+    super.dispose();
+  }
+
+  void _onMaskBounds() {
+    if (mounted) setState(() {});
+  }
+
   EditorProvider get _provider => context.read<EditorProvider>();
 
   bool get _isText => EditableItemWidget.isTextType(widget.item.type);
+
+  /// Visible (masked) part of the image in its own un-scaled units, or null
+  /// when the whole image is visible.
+  Rect? get _vis {
+    if (_isText || widget.isBackground) return null;
+    final id = widget.item.id ?? '';
+    if (id.isEmpty) return null;
+    final url = _provider.imageMaskUrl(id);
+    final content = (url == null || url.isEmpty)
+        ? null
+        : _MaskBoundsCache.instance.boundsFor(url);
+    return _provider.imageVisibleLocalRect(id, maskContent: content);
+  }
+
+  double get _selW => _vis?.width ?? _baseVisualWidth;
+  double get _selH => _vis?.height ?? _baseVisualHeight;
+
+  /// Un-rotated top-left of the selection box in canvas units.
+  Offset get _selTopLeft {
+    final v = _vis;
+    if (v == null) return widget.item.position;
+    final s = _itemScale;
+    final bw = _baseVisualWidth, bh = _baseVisualHeight;
+    final itemCentre = widget.item.position + Offset(bw * s / 2, bh * s / 2);
+    final worldC =
+        itemCentre + _rot((v.center - Offset(bw / 2, bh / 2)) * s, _rotation);
+    return worldC - Offset(v.width * s / 2, v.height * s / 2);
+  }
+
+  /// Item position that puts the visible rect's centre at [worldC] for the
+  /// given scale / rotation.
+  Offset _itemPosForSelCentre(
+      Offset worldC,
+      Rect vis,
+      double scale,
+      double rot,
+      ) {
+    final bw = _baseVisualWidth, bh = _baseVisualHeight;
+    final itemCentre =
+        worldC - _rot((vis.center - Offset(bw / 2, bh / 2)) * scale, rot);
+    return itemCentre - Offset(bw * scale / 2, bh * scale / 2);
+  }
 
   // Includes API Fabric Textboxes (auto-wrapping at their width).
   bool get _isMultilineText =>
@@ -13095,15 +12992,14 @@ class _TransformSelectionOverlayState
 
   double get _unitY => widget.isBackground ? widget.scaleY : widget.scaleX;
 
-  double get _left =>
-      widget.item.position.dx * widget.scaleX + widget.origin.dx;
+  double get _left => _selTopLeft.dx * widget.scaleX + widget.origin.dx;
 
-  double get _top => widget.item.position.dy * widget.scaleY + widget.origin.dy;
+  double get _top => _selTopLeft.dy * widget.scaleY + widget.origin.dy;
 
   // On-screen box size in logical pixels.
-  double get _boxWidth => _baseVisualWidth * _itemScale * widget.scaleX;
+  double get _boxWidth => _selW * _itemScale * widget.scaleX;
 
-  double get _boxHeight => _baseVisualHeight * _itemScale * _unitY;
+  double get _boxHeight => _selH * _itemScale * _unitY;
 
   Offset _rot(Offset v, double a) {
     final c = math.cos(a), s = math.sin(a);
@@ -13371,6 +13267,12 @@ class _TransformSelectionOverlayState
               foreground: Colors.black87,
               onPanStart: (details) {
                 _startRotation = _rotation;
+                final v0 = _vis;
+                _gMasked = v0 != null;
+                _gVisLocal = v0 ?? Rect.zero;
+                if (v0 != null) {
+                  _rotWorldCentre = _selTopLeft + Offset(_selW, _selH) * (_itemScale / 2);
+                }
                 _rotationCenterGlobal = _globalCenter();
                 _rotationStartAngle = math.atan2(
                   details.globalPosition.dy - _rotationCenterGlobal.dy,
@@ -13382,11 +13284,21 @@ class _TransformSelectionOverlayState
                   details.globalPosition.dy - _rotationCenterGlobal.dy,
                   details.globalPosition.dx - _rotationCenterGlobal.dx,
                 );
+                final newRot =
+                    _startRotation +
+                        _normalizeAngle(currentAngle - _rotationStartAngle);
                 _provider.updateItemTransform(
                   itemId,
-                  rotation:
-                  _startRotation +
-                      _normalizeAngle(currentAngle - _rotationStartAngle),
+                  rotation: newRot,
+                  // Masked image: rotate around the visible part's centre.
+                  position: _gMasked
+                      ? _itemPosForSelCentre(
+                    _rotWorldCentre,
+                    _gVisLocal,
+                    _itemScale,
+                    newRot,
+                  )
+                      : null,
                 );
               },
             ),
@@ -13565,11 +13477,14 @@ class _TransformSelectionOverlayState
   }
 
   void _onResizeStart(DragStartDetails d) {
+    final v0 = _vis;
+    _gMasked = v0 != null;
+    _gVisLocal = v0 ?? Rect.zero;
     _gStartGlobal = d.globalPosition;
-    _gStartPos = widget.item.position;
+    _gStartPos = _selTopLeft;
     _gStartScale = _itemScale;
-    _gStartVisW = _baseVisualWidth;
-    _gStartVisH = _baseVisualHeight;
+    _gStartVisW = _selW;
+    _gStartVisH = _selH;
     _gStartRot = _rotation;
   }
 
@@ -13590,8 +13505,8 @@ class _TransformSelectionOverlayState
 
     // Side handles stretch (images/shapes; multi-line text wraps). Everything
     // else - corners, and sides of single-line text - scales uniformly.
-    final stretchX = hy == 0 && (!_isText || _isMultilineText);
-    final stretchY = hx == 0 && !_isText;
+    final stretchX = !_gMasked && hy == 0 && (!_isText || _isMultilineText);
+    final stretchY = !_gMasked && hx == 0 && !_isText;
 
     if (stretchX) {
       final newItemW = ((w0 + hx * local.dx) / _gStartScale)
@@ -13669,19 +13584,104 @@ class _TransformSelectionOverlayState
       hx == 1 ? 0.0 : (hx == -1 ? w0 : w0 / 2),
       hy == 1 ? 0.0 : (hy == -1 ? h0 : h0 / 2),
     );
+    final newTopLeft = _placeTopLeft(
+      p0: _gStartPos,
+      s0: s0,
+      a0: a0,
+      s1: Size(w0 * k, h0 * k),
+      a1: a0 * k,
+      rot: _gStartRot,
+    );
     _provider.updateItemTransform(
       id,
       scale: newScale,
-      position: _placeTopLeft(
-        p0: _gStartPos,
-        s0: s0,
-        a0: a0,
-        s1: Size(w0 * k, h0 * k),
-        a1: a0 * k,
-        rot: _gStartRot,
-      ),
+      // Masked image: newTopLeft is the visible box's corner -> convert to
+      // the item's own position.
+      position: _gMasked
+          ? _itemPosForSelCentre(
+        newTopLeft + Offset(w0 * k / 2, h0 * k / 2),
+        _gVisLocal,
+        newScale,
+        _gStartRot,
+      )
+          : newTopLeft,
       clampToFrame: false,
     );
+  }
+}
+
+/// Finds the non-transparent area of a picked mask picture (fractions 0..1),
+/// so the selection box can hug the visible part. Cached per mask url.
+class _MaskBoundsCache extends ChangeNotifier {
+  _MaskBoundsCache._();
+  static final _MaskBoundsCache instance = _MaskBoundsCache._();
+
+  final Map<String, Rect?> _done = {};
+  final Set<String> _loading = {};
+
+  /// null = unknown yet / mask fills its whole picture.
+  Rect? boundsFor(String url) {
+    if (_done.containsKey(url)) return _done[url];
+    if (_loading.add(url)) _load(url);
+    return null;
+  }
+
+  ImageProvider _providerFor(String url) {
+    if (url.startsWith('http')) return NetworkImage(url);
+    if (url.startsWith('assets/')) return AssetImage(url);
+    return FileImage(File(url.startsWith('file://') ? Uri.parse(url).toFilePath() : url));
+  }
+
+  Future<void> _load(String url) async {
+    Rect? result;
+    try {
+      final stream = ResizeImage(_providerFor(url), width: 128)
+          .resolve(ImageConfiguration.empty);
+      final c = Completer<ui.Image>();
+      late ImageStreamListener l;
+      l = ImageStreamListener(
+            (info, _) {
+          if (!c.isCompleted) c.complete(info.image);
+          stream.removeListener(l);
+        },
+        onError: (e, _) {
+          if (!c.isCompleted) c.completeError(e);
+          stream.removeListener(l);
+        },
+      );
+      stream.addListener(l);
+      final img = await c.future.timeout(const Duration(seconds: 15));
+      final bd = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
+      if (bd != null) {
+        final w = img.width, h = img.height;
+        int minX = w, minY = h, maxX = -1, maxY = -1;
+        for (int y = 0; y < h; y++) {
+          for (int x = 0; x < w; x++) {
+            if (bd.getUint8((y * w + x) * 4 + 3) > 20) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+        if (maxX >= 0) {
+          final r = Rect.fromLTRB(
+            minX / w,
+            minY / h,
+            (maxX + 1) / w,
+            (maxY + 1) / h,
+          );
+          // Opaque (full) mask picture -> no tighter box.
+          result = (r.width > 0.98 && r.height > 0.98) ? null : r;
+        }
+      }
+    } catch (_) {
+      result = null;
+    }
+    _done[url] = result;
+    _loading.remove(url);
+    notifyListeners();
   }
 }
 

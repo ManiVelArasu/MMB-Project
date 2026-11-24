@@ -18,6 +18,7 @@ class BrandProfileResolver {
 
   Map<String, String>? _data;
   static bool _logged = false;
+  static String _lastLogoLog = '';
 
   // ------------------------------------------------------------------
   // VALUES
@@ -73,31 +74,31 @@ class BrandProfileResolver {
     } catch (_) {}
 
     final fromBusiness = pick(businessModel, [
-      (b) => b.logoUrl,
-      (b) => b.logo,
-      (b) => b.logoS3Key,
-      (b) => b.logoKey,
-      (b) => b.businessLogo,
-      (b) => b.profileImage,
+          (b) => b.logoUrl,
+          (b) => b.logo,
+          (b) => b.logoS3Key,
+          (b) => b.logoKey,
+          (b) => b.businessLogo,
+          (b) => b.profileImage,
     ]);
     final fromMe = pick(me, [
-      (m) => m.profileImageUrl,
-      (m) => m.profileImage,
-      (m) => m.profilePicture,
-      (m) => m.profileImageS3Key,
-      (m) => m.avatar,
-      (m) => m.photo,
-      (m) => m.imageS3Key,
+          (m) => m.profileImageUrl,
+          (m) => m.profileImage,
+          (m) => m.profilePicture,
+          (m) => m.profileImageS3Key,
+          (m) => m.avatar,
+          (m) => m.photo,
+          (m) => m.imageS3Key,
     ]);
 
     final savedKey =
-        ((isBusiness ? profile.logoS3Key : profile.profileS3Key) ?? '').trim();
+    ((isBusiness ? profile.logoS3Key : profile.profileS3Key) ?? '').trim();
 
     var raw = savedKey.isNotEmpty
         ? savedKey
         : (isBusiness
-            ? (fromBusiness.isNotEmpty ? fromBusiness : fromMe)
-            : (fromMe.isNotEmpty ? fromMe : fromBusiness));
+        ? (fromBusiness.isNotEmpty ? fromBusiness : fromMe)
+        : (fromMe.isNotEmpty ? fromMe : fromBusiness));
 
     // unknown field names -> look through the model's json
     if (raw.isEmpty) {
@@ -106,7 +107,20 @@ class BrandProfileResolver {
         exclude: const ['banner', 'cover', 'width', 'height', 'frame', 'bg'],
       );
     }
-    return cdnUrl(raw);
+    final url = cdnUrl(raw);
+
+    // TEMP DEBUG: logo enga irundhu varudhu-nu paakka. Fix aana pinnaadi remove pannunga.
+    if (kDebugMode) {
+      final line =
+          'LOGO DEBUG isBusiness=$isBusiness accountType=${common.accountType} '
+          'savedKey="$savedKey" fromBusiness="$fromBusiness" fromMe="$fromMe" '
+          'raw="$raw" url="$url"';
+      if (line != _lastLogoLog) {
+        _lastLogoLog = line;
+        debugPrint(line);
+      }
+    }
+    return url;
   }
 
   // ------------------------------------------------------------------
@@ -115,9 +129,9 @@ class BrandProfileResolver {
 
   /// First profile value whose key contains one of [contains] (in order).
   String _value(
-    List<String> contains, {
-    List<String> exclude = const [],
-  }) {
+      List<String> contains, {
+        List<String> exclude = const [],
+      }) {
     final data = _profileData();
     for (final c in contains) {
       for (final e in data.entries) {
@@ -140,9 +154,9 @@ class BrandProfileResolver {
     void flatten(Map m) {
       m.forEach((k, v) {
         final key = k.toString().toLowerCase().replaceAll(
-              RegExp(r'[_\-\s]'),
-              '',
-            );
+          RegExp(r'[_\-\s]'),
+          '',
+        );
         if (v is Map) {
           flatten(v);
         } else if (v != null && v is! List && v.toString().trim().isNotEmpty) {

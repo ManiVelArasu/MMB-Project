@@ -14,8 +14,12 @@ import '../../Repository/plan_repository.dart';
 import 'common_provider.dart';
 
 class BusinessProfileProvider extends ChangeNotifier {
-  BusinessProfileProvider() {
-    _initialize();
+  BusinessProfileProvider({bool autoInit = true}) {
+    if (autoInit) {
+      _initialize();
+    } else {
+      _isInitialLoading = false;
+    }
   }
 
   final CommonProvider commonProvider = CommonProvider.instance;
@@ -45,7 +49,8 @@ class BusinessProfileProvider extends ChangeNotifier {
 
   Future<void> _initialize() async {
     try {
-      final isBusiness = commonProvider.accountType?.toLowerCase() == 'business';
+      final isBusiness =
+          commonProvider.accountType?.toLowerCase() == 'business';
 
       // Personal -> frames only. Business -> frames + keywords + saved name,
       // all in parallel, each called exactly once.
@@ -102,7 +107,7 @@ class BusinessProfileProvider extends ChangeNotifier {
 
   String? get _accountType =>
       commonProvider.me?.data.accountType?.toString().trim().toLowerCase() ??
-          commonProvider.accountType?.toString().trim().toLowerCase();
+      commonProvider.accountType?.toString().trim().toLowerCase();
 
   /// Gallery / camera picker. Returns the picked file (or null).
   Future<File?> pickLogo({ImageSource source = ImageSource.gallery}) async {
@@ -196,12 +201,12 @@ class BusinessProfileProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-        imageFile: imageFile,
-        filename: filename,
-        width: 1080,
-        height: 1080,
-        slot: slot,
-      );
+            imageFile: imageFile,
+            filename: filename,
+            width: 1080,
+            height: 1080,
+            slot: slot,
+          );
 
       bool success = false;
 
@@ -321,7 +326,7 @@ class BusinessProfileProvider extends ChangeNotifier {
       final businessUid = await _resolveBusinessUid() ?? '';
 
       final String? finalLogoKey =
-      (_isNewLogoSelected && (_logoS3Key?.trim().isNotEmpty ?? false))
+          (_isNewLogoSelected && (_logoS3Key?.trim().isNotEmpty ?? false))
           ? _logoS3Key!.trim()
           : null;
 
@@ -336,14 +341,15 @@ class BusinessProfileProvider extends ChangeNotifier {
       debugPrint('Logo key : $finalLogoKey');
       debugPrint('======================================');
 
-      final result = await BusinessProfileRepository.instance.updateBusinessFramesDetails(
-        businessUid: businessUid,
-        name: name.trim(),
-        phone: _formatPhone(phone),
-        website: cleanWebsite.isEmpty ? null : cleanWebsite,
-        email: cleanEmail.isEmpty ? null : cleanEmail,
-        logo_s3_key: finalLogoKey,
-      );
+      final result = await BusinessProfileRepository.instance
+          .updateBusinessFramesDetails(
+            businessUid: businessUid,
+            name: name.trim(),
+            phone: _formatPhone(phone),
+            website: cleanWebsite.isEmpty ? null : cleanWebsite,
+            email: cleanEmail.isEmpty ? null : cleanEmail,
+            logo_s3_key: finalLogoKey,
+          );
 
       bool ok = false;
 
@@ -391,18 +397,14 @@ class BusinessProfileProvider extends ChangeNotifier {
   }
 
   /// STEP 2 (personal): update me
-  Future<bool> updatePersonal({
-    required String name,
-    String email = '',
-  }) async {
+  Future<bool> updatePersonal({required String name, String email = ''}) async {
     _isUpdatingProfile = true;
     _updateError = null;
     notifyListeners();
 
     try {
       final String? finalProfileKey =
-      (_isNewProfileSelected &&
-          (_profileS3Key?.trim().isNotEmpty ?? false))
+          (_isNewProfileSelected && (_profileS3Key?.trim().isNotEmpty ?? false))
           ? _profileS3Key!.trim()
           : null;
 
@@ -688,7 +690,8 @@ class BusinessProfileProvider extends ChangeNotifier {
   String? _selectedCategorySlug;
   String? get selectedCategorySlug => _selectedCategorySlug;
 
-  String get _currentFrameType => _selectedFrameTab == 1 ? 'animated' : 'static';
+  String get _currentFrameType =>
+      _selectedFrameTab == 1 ? 'animated' : 'static';
 
   void updateFrameTab(int index) {
     _selectedFrameTab = index;
@@ -733,9 +736,9 @@ class BusinessProfileProvider extends ChangeNotifier {
       : _frameCategories[_currentFrameType] ?? const [];
 
   Future<void> loadFrameCategories(
-      String type, {
-        bool forceRefresh = false,
-      }) async {
+    String type, {
+    bool forceRefresh = false,
+  }) async {
     if ((_frameCategories[type]?.isNotEmpty ?? false) && !forceRefresh) return;
 
     _isCategoriesLoading = true;
@@ -1011,7 +1014,7 @@ class BusinessProfileProvider extends ChangeNotifier {
         _frameDetail = detail;
         debugPrint(
           'FRAME DETAIL loaded | uid=$frameUid | '
-              'content length=${detail['content']?.toString().length ?? 0}',
+          'content length=${detail['content']?.toString().length ?? 0}',
         );
       } else {
         _frameDetailError = 'Unable to load frame';

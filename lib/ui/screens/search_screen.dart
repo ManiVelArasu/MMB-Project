@@ -2,22 +2,27 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:mmb_app/ui/screens/template_detail_screen.dart';
 import 'package:mmb_app/ui/screens/widget/search_filter.dart';
 import 'package:mmb_app/ui/screens/widget/template_popup.dart';
+import 'package:mmb_app/ui/screens/widget/template_single_view_sheet.dart';
 import 'package:provider/provider.dart';
 
 import 'package:mmb_app/component/custom_widget.dart';
-import 'package:mmb_app/ui/screens/template_edit.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:mmb_app/widgets/button_widget.dart';
 
+import '../../component/custom_searchbar.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../network/provider/custom_theme_provider.dart';
 import '../../network/provider/search_provider.dart';
 import '../industry/widgets/scaffold_widget.dart';
 import '../shimmer/app_loading.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../Api Model/industries.dart';
+// TODO: unga project-la IndustryProvider file enga irukko andha path podunga
+import '../../network/provider/industry_provider.dart';
 
 class SearchScreen extends StatelessWidget {
   const SearchScreen({super.key, this.initialQuery = ''});
@@ -26,8 +31,13 @@ class SearchScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => SearchProvider(initialQuery: initialQuery),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => SearchProvider(initialQuery: initialQuery),
+        ),
+        ChangeNotifierProvider(create: (_) => IndustryProvider()),
+      ],
       child: const _SearchView(),
     );
   }
@@ -45,10 +55,14 @@ class _SearchViewState extends State<_SearchView> {
   // been searched yet; otherwise the bar shows the query + a search icon.
   late bool _searching;
 
+  // Browse Categories grid ippo search screen-layae kaattum
+  bool _showCategories = false;
+  String _queryBeforeCategories = '';
+
   @override
   void initState() {
     super.initState();
-    _searching = context.read<SearchProvider>().controller.text.trim().isEmpty;
+    _searching = true; // search field eppavum kaattum (hide aagaadhu)
   }
 
   void _openSearch(SearchProvider provider) {
@@ -81,7 +95,11 @@ class _SearchViewState extends State<_SearchView> {
               children: [
                 InkWell(
                   onTap: () {
-                    Navigator.pop(context);
+                    if (_showCategories) {
+                      _closeCategories(context);
+                    } else {
+                      Navigator.pop(context);
+                    }
                   },
                   borderRadius: BorderRadius.circular(24.r),
                   child: Container(
@@ -140,28 +158,46 @@ class _SearchViewState extends State<_SearchView> {
                                       decoration: InputDecoration(
                                         border: InputBorder.none,
                                         isDense: true,
-                                        hintText:
-                                            'Search templates, Brand Series...',
+                                        hintText: _showCategories
+                                            ? 'Search categories...'
+                                            : 'Search templates, Brand Series...',
                                         hintStyle: TextStyle(
                                           color: sub,
                                           fontSize: 14,
                                         ),
                                       ),
-                                      onChanged: provider.onTextChanged,
-                                      onSubmitted: (v) {
-                                        provider.submit(v);
-                                        if (v.trim().isNotEmpty) {
-                                          setState(() => _searching = false);
+                                      onChanged: (v) {
+                                        // Categories grid-la irundha ingaye filter
+                                        if (_showCategories) {
+                                          context
+                                              .read<IndustryProvider>()
+                                              .filterCategories(v);
+                                          return;
                                         }
+                                        provider.onTextChanged(v);
+                                      },
+                                      onSubmitted: (v) {
+                                        if (_showCategories) {
+                                          FocusScope.of(context).unfocus();
+                                          return;
+                                        }
+                                        provider.submit(v);
+                                        FocusScope.of(context).unfocus();
                                       },
                                     ),
                                   ),
                                   GestureDetector(
                                     onTap: () {
-                                      if (provider.controller.text.isNotEmpty) {
+                                      if (_showCategories) {
+                                        provider.controller.clear();
+                                        context
+                                            .read<IndustryProvider>()
+                                            .clearSearch();
+                                      } else if (provider
+                                          .controller
+                                          .text
+                                          .isNotEmpty) {
                                         provider.clearSearch();
-                                      } else if (provider.hasSearched) {
-                                        setState(() => _searching = false);
                                       }
                                     },
                                     child: Icon(
@@ -186,13 +222,6 @@ class _SearchViewState extends State<_SearchView> {
                           ),
                         ),
                 ),
-                if (!_searching)
-                  IconButton(
-                    icon: Icon(Icons.search_rounded, size: 24, color: fg),
-                    onPressed: () => _openSearch(provider),
-                  )
-                else
-                  const SizedBox(width: 12),
               ],
             ),
           ),
@@ -208,43 +237,73 @@ class _SearchViewState extends State<_SearchView> {
     final fg = isDark ? Colors.white : Colors.black;
     final sub = isDark ? Colors.white54 : Colors.black45;
 
-    return CommonScaffold(
-      isDarkMode: isDark,
-      extendBodyBehindAppBar: true,
-      appBar: _buildAppBar(context, provider, isDark, fg, sub),
-      body: Stack(
-        children: [
-          if (!isDark)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 300,
-              child: Image.asset(
-                'assets/images/plan_gradient.png',
-                fit: BoxFit.cover,
-                alignment: Alignment.topCenter,
+    return PopScope(
+      canPop: !_showCategories,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _showCategories) {
+          _closeCategories(context);
+        }
+      },
+      child: CommonScaffold(
+        isDarkMode: isDark,
+        extendBodyBehindAppBar: true,
+        appBar: _buildAppBar(context, provider, isDark, fg, sub),
+        body: Stack(
+          children: [
+            if (!isDark)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 300,
+                child: Image.asset(
+                  'assets/images/plan_gradient.png',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                ),
+              ),
+            SafeArea(
+              bottom: true,
+              child: Column(
+                children: [
+                  // Language filter now lives in the bottom bar.
+                  const SizedBox(height: 4),
+                  Expanded(
+                    child: _buildBody(context, provider, isDark, fg, sub),
+                  ),
+                  if (MediaQuery.of(context).viewInsets.bottom == 0 &&
+                      provider.suggestions.isEmpty &&
+                      !provider.isLoading &&
+                      provider.error == null &&
+                      provider.results.isNotEmpty)
+                    const SearchBottomBar(),
+                ],
               ),
             ),
-          SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                // Language filter now lives in the bottom bar.
-                const SizedBox(height: 4),
-                Expanded(child: _buildBody(context, provider, isDark, fg, sub)),
-                // Only shown when result data is on screen (not on the empty/recent,
-                // suggestions, loading or no-result states) and keyboard is closed.
-                if (MediaQuery.of(context).viewInsets.bottom == 0 &&
-                    provider.suggestions.isEmpty &&
-                    !provider.isLoading &&
-                    provider.error == null &&
-                    provider.results.isNotEmpty)
-                  const SearchBottomBar(),
-              ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar(BuildContext context, SearchProvider searchProvider) {
+    return Hero(
+      tag: 'search_bar_hero',
+      child: Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.pushNamed(context, '/SearchScreen'),
+          child: AbsorbPointer(
+            child: CustomSearchBar(
+              hintText: "Search templates, Brand Series...",
+              prefixAsset: "assets/images/search.png",
+              showSuffixIcon: false,
+              borderColor: AppColors.searchBorderColor,
+              onChanged: (_) {},
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -403,6 +462,10 @@ class _SearchViewState extends State<_SearchView> {
     Color fg,
     Color sub,
   ) {
+    if (_showCategories) {
+      return _buildCategoryGrid(context, isDark, fg);
+    }
+
     if (provider.isWaitingForFirstResult && !provider.hasSearched) {
       return _searchShimmer(isDark);
     }
@@ -518,9 +581,7 @@ class _SearchViewState extends State<_SearchView> {
     Map<String, dynamic> template,
     bool isDark,
   ) {
-    final uid = template['uid']?.toString().trim() ?? '';
     final key = template['thumbnail_s3_key']?.toString().trim() ?? '';
-    final locked = template['is_locked'] == true;
 
     final imageUrl = key.isEmpty
         ? ''
@@ -528,23 +589,8 @@ class _SearchViewState extends State<_SearchView> {
         ? key
         : '${ApiEndpoints.cdnImageUrl}/$key';
 
-    void open() {
-      if (uid.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Template UID not available')),
-        );
-        return;
-      }
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => TemplateDetailScreen(templateUid: uid),
-        ),
-      );
-    }
-
     return GestureDetector(
-      onTap: open,
+      onTap: () => _openQuickView(context, template),
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -573,55 +619,73 @@ class _SearchViewState extends State<_SearchView> {
                     errorWidget: (_, __, ___) => _placeholder(isDark),
                   ),
 
-            // Locked => crown only, not locked => 3-dot menu only
-            _buildCardTopBar(context, template, locked: locked, uid: uid),
+            // 3-dot menu ella card-kum, crown locked-ku mattum
+            _buildCardTopBar(context, template),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCardTopBar(
-    BuildContext context,
-    Map<String, dynamic> template, {
-    required bool locked,
-    required String uid,
-  }) {
+  // Card tap + "Customize" rendum inga dhaan varum
+  void _openQuickView(BuildContext context, Map<String, dynamic> template) {
+    final uid = template['uid']?.toString().trim() ?? '';
+    if (uid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Template UID not available')),
+      );
+      return;
+    }
+
+    TemplateQuickViewSheet.show(
+      context,
+      templateUid: uid,
+      categoryId: _categoryIdOf(template),
+    );
+  }
+
+  // TODO: API response-la category id key vera irundha inga maathunga
+  int? _categoryIdOf(Map<String, dynamic> template) {
+    final raw = template['category_id'] ?? template['categoryId'];
+    if (raw is int) return raw;
+    return int.tryParse('$raw');
+  }
+
+  Widget _buildCardTopBar(BuildContext context, Map<String, dynamic> template) {
+    final locked = template['is_locked'] == true;
+
     return Positioned(
       top: 5,
+      left: 5,
       right: 5,
-      child: locked
-          ? SizedBox(
-              width: 24,
-              height: 28,
-              child: Image.asset(
-                'assets/images/crown.png',
-                fit: BoxFit.contain,
-              ),
-            )
-          : SizedBox(
-              width: 38,
-              height: 25,
-              child: TemplateActionPopup(
-                isFavorite: true,
-                showDownload: false,
-                showDelete: false,
-                onCustomize: () {
-                  if (uid.isEmpty) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => TemplateEditScreen(templateUid: uid),
-                    ),
-                  );
-                },
-                onDownload: () {},
-                onFavorite: () {
-                  // TODO: connect your favorite API here
-                  // (family uid: template['family_uid'])
-                },
-              ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 24,
+            height: 28,
+            child: locked
+                ? Image.asset('assets/images/crown.png', fit: BoxFit.contain)
+                : null,
+          ),
+          SizedBox(
+            width: 38,
+            height: 25,
+            child: TemplateActionPopup(
+              isFavorite: true,
+              showDownload: false,
+              showDelete: false,
+              onCustomize: () => _openQuickView(context, template),
+              onDownload: () {},
+              onFavorite: () {
+                // TODO: connect your favorite API here
+                // (family uid: template['family_uid'])
+              },
             ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -703,6 +767,123 @@ class _SearchViewState extends State<_SearchView> {
         ),
       ),
     );
+  }
+
+  // ============================================================
+  // BROWSE CATEGORIES (open / close)
+  // ============================================================
+
+  void _openCategories(BuildContext context) {
+    final provider = context.read<SearchProvider>();
+    final ip = context.read<IndustryProvider>();
+
+    _queryBeforeCategories = provider.controller.text; // back-ku restore
+    provider.controller.clear();
+    ip.clearSearch();
+
+    setState(() => _showCategories = true);
+    ip.fetchAssetCategories();
+  }
+
+  void _closeCategories(BuildContext context) {
+    final provider = context.read<SearchProvider>();
+    context.read<IndustryProvider>().clearSearch();
+
+    provider.controller.value = TextEditingValue(
+      text: _queryBeforeCategories,
+      selection: TextSelection.collapsed(offset: _queryBeforeCategories.length),
+    );
+
+    setState(() => _showCategories = false);
+  }
+
+  // ============================================================
+  // BROWSE CATEGORIES GRID
+  // ============================================================
+
+  Widget _buildCategoryGrid(BuildContext context, bool isDark, Color fg) {
+    return Consumer<IndustryProvider>(
+      builder: (context, ip, _) {
+        if (ip.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (ip.errorMessage != null) {
+          return _message(ip.errorMessage!, fg, retry: ip.fetchAssetCategories);
+        }
+        final list = ip.categories;
+        if (list.isEmpty) {
+          return _message('No categories found', fg);
+        }
+        return GridView.builder(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          physics: const BouncingScrollPhysics(),
+          itemCount: list.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.78,
+          ),
+          itemBuilder: (_, i) => _categoryItem(context, list[i], fg),
+        );
+      },
+    );
+  }
+
+  Widget _categoryItem(BuildContext context, Industries c, Color fg) {
+    final url = _categoryImageUrl(c);
+    final fallback = Icon(Icons.category_outlined, size: 40, color: fg);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _openCategory(context, c),
+      child: Column(
+        children: [
+          Expanded(
+            child: url.isEmpty
+                ? fallback
+                : CachedNetworkImage(
+                    imageUrl: url,
+                    fit: BoxFit.contain,
+                    placeholder: (_, __) => const SizedBox(),
+                    errorWidget: (_, __, ___) => fallback,
+                  ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            (c.name ?? '').toUpperCase(),
+            maxLines: 3,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              height: 1.15,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // TODO: Industries model-la image field name vera irundha inga maathunga
+  String _categoryImageUrl(Industries c) {
+    final key = (c.iconS3Key ?? '').toString().trim();
+    if (key.isEmpty) return '';
+    return key.startsWith('http') ? key : '${ApiEndpoints.cdnImageUrl}/$key';
+  }
+
+  Future<void> _openCategory(BuildContext context, Industries c) async {
+    final ip = context.read<IndustryProvider>();
+    ip.selectCategory(c);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('saved_category_name', c.name ?? '');
+    await prefs.setString('saved_category_slug', c.slug ?? '');
+
+    if (!context.mounted) return;
+    Navigator.pushNamed(context, '/BrowseTemplatesScreen');
   }
 
   Widget _highlight(String label, String query, Color color) {
@@ -844,12 +1025,7 @@ class _SearchViewState extends State<_SearchView> {
                           children: [
                             Flexible(
                               child: ButtonWidget(
-                                buttonPress: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/BrowseTemplatesScreen',
-                                  );
-                                },
+                                buttonPress: () => _openCategories(context),
                                 title: 'Browse Categories',
                                 textStyle: TextStyle(
                                   fontSize: AppFontSize.fontSize14,

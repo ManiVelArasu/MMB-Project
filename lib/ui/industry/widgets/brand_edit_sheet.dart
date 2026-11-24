@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
+import 'package:mmb_app/utils/theme/app.fonts.dart';
+import 'package:mmb_app/widgets/button_widget.dart';
 
 import 'brand_form.dart';
 import 'frame_helpers.dart';
 
-/// "Update Business Info" bottom sheet: logo / name / mobile / email /
-/// website. Every change calls [onChanged] (the screen's setState), so the
-/// frame preview behind the sheet updates while typing.
 Future<void> showBrandEditSheet(
   BuildContext context, {
   required BrandForm form,
@@ -159,8 +159,6 @@ class _BrandEditSheetState extends State<_BrandEditSheet> {
       ],
     );
   }
-
-  /// Current logo  OR  upload a new one.
   Widget _buildLogoRow() {
     return Row(
       children: [
@@ -264,11 +262,6 @@ class _BrandEditSheetState extends State<_BrandEditSheet> {
   }
 }
 
-// ========================================================================
-// REMOVE BACKGROUND DIALOG
-// ========================================================================
-
-/// true -> REMOVE BG, false -> KEEP IT ORIGINAL, null -> dismissed.
 Future<bool?> showRemoveBackgroundDialog(BuildContext context, File preview) {
   return showDialog<bool>(
     context: context,
@@ -296,7 +289,7 @@ Future<bool?> showRemoveBackgroundDialog(BuildContext context, File preview) {
               style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700),
             ),
             SizedBox(height: 6.h),
-            Text(
+            AppText(
               'Would you like to remove background from your logo',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade700),
@@ -305,35 +298,28 @@ Future<bool?> showRemoveBackgroundDialog(BuildContext context, File preview) {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    style: brandButtonStyle(radius: 8.r),
-                    child: AppText(
-                      'REMOVE BG',
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  child: ButtonWidget(
+                    buttonPress: () => Navigator.pop(ctx, true),
+                    title: 'REMOVE BG',
+                    buttonColor: AppColors.appRed,
+                    textStyle: TextStyle(
+                      fontSize: AppFontSize.fontSize10,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.appWhite,
                     ),
                   ),
                 ),
                 SizedBox(width: 10.w),
+
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.black,
-                      side: const BorderSide(color: Colors.black),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                    ),
-                    child: AppText(
-                      'KEEP IT ORIGINAL',
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  child: ButtonWidget(
+                    buttonPress: () => Navigator.pop(ctx, false),
+                    title: 'KEEP IT ORIGINAL',
+                    buttonColor: AppColors.appRed,
+                    textStyle: TextStyle(
+                      fontSize: AppFontSize.fontSize10,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.appWhite,
                     ),
                   ),
                 ),

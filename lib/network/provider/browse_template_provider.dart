@@ -67,9 +67,31 @@ class BrowseTemplatesProvider extends ChangeNotifier {
   String? _tag;
   String? get tag => _tag;
 
+  // Chip-la kaattura name (API-ku _tag / slug dhaan pogum)
+  String? _tagLabel;
+  String? get tagLabel => _tagLabel;
+
+  /// Bottom bar CATEGORIES select -> `tags=` ah vechu current category reload.
+  Future<void> setTag(String? value, {String? label}) async {
+    final v = value?.trim() ?? '';
+    final newTag = v.isEmpty ? null : v;
+    if (_tag == newTag) return;
+
+    _tag = newTag;
+    _tagLabel = newTag == null ? null : label;
+
+    final slug = _selectedSlug;
+    if (slug != null) {
+      await selectCategory(slug);
+    } else {
+      notifyListeners();
+    }
+  }
+
   Future<void> clearTag() async {
     if (_tag == null) return;
     _tag = null;
+    _tagLabel = null;
     final slug = _selectedSlug;
     if (slug != null) await selectCategory(slug);
   }
@@ -218,13 +240,13 @@ class BrowseTemplatesProvider extends ChangeNotifier {
 
       debugPrint(
         "Total Keywords : "
-        "${_keyWords.length}",
+            "${_keyWords.length}",
       );
 
       for (final keyword in _keyWords) {
         debugPrint(
           "Keyword : ${keyword.name} | "
-          "Slug : ${keyword.slug}",
+              "Slug : ${keyword.slug}",
         );
       }
 

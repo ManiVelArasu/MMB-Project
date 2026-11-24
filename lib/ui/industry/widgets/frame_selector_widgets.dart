@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 
+import '../../../utils/theme/app.fonts.dart';
 import 'frame_helpers.dart';
 import 'frame_images.dart';
 
@@ -142,7 +143,7 @@ class FrameCategoryChips extends StatelessWidget {
     return InkWell(
       onTap: () => onTap(index, slug),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF4A4A4A) : Colors.white,
           borderRadius: BorderRadius.circular(24.r),
@@ -154,8 +155,8 @@ class FrameCategoryChips extends StatelessWidget {
           title,
           style: TextStyle(
             color: isSelected ? Colors.white : Colors.black87,
-            fontWeight: FontWeight.w600,
-            fontSize: 14.sp,
+            fontSize: AppFontSize.fontSize14,
+            fontWeight: FontWeight.w400,
           ),
         ),
       ),
