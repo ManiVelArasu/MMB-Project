@@ -5,7 +5,9 @@ import '../../Api Model/Template_model.dart';
 import '../../Api Model/key_words_model.dart';
 import '../../Repository/business_profile_repository.dart';
 import '../../Repository/home_repository.dart';
+import '../../ui/screens/widget/filter_option.dart';
 import 'common_provider.dart';
+import 'search_provider.dart' show SearchFilterOption;
 
 class BrowseCategory {
   BrowseCategory({
@@ -26,6 +28,8 @@ class BrowseTemplatesProvider extends ChangeNotifier {
     final tag = initialTag?.trim() ?? '';
     _tag = tag.isEmpty ? null : tag;
     _init(initialSlug);
+    _loadLanguages();
+    _loadSizes();
   }
 
   final HomeRepository _repository = HomeRepository.instance;
@@ -111,15 +115,74 @@ class BrowseTemplatesProvider extends ChangeNotifier {
   String _query = '';
   String get query => _query;
 
-  /// Templates after tab + search filter.
+  // ---------------- language / post size filters ----------------
+  List<SearchFilterOption> _languageOptions = [];
+  List<SearchFilterOption> get languageOptions => _languageOptions;
+
+  List<SearchFilterOption> _sizeOptions = [];
+  List<SearchFilterOption> get sizeOptions => _sizeOptions;
+
+  String? _language;
+  String? get language => _language;
+
+  String? _size;
+  String? get size => _size;
+
+  bool get hasActiveFilters =>
+      _tag != null || _language != null || _size != null;
+
+  void setLanguage(String? value) {
+    if (_language == value) return;
+    _language = value;
+    _reload();
+  }
+
+  void setSize(String? value) {
+    if (_size == value) return;
+    _size = value;
+    _reload();
+  }
+
+  /// Clears language + size (client side) and the tag (reloads the category).
+  Future<void> clearAllFilters() async {
+    _language = null;
+    _size = null;
+    _tag = null;
+    _tagLabel = null;
+    await _reloadNow();
+  }
+
+  /// Filters changed -> call the templates API again with the new params.
+  void _reload() {
+    _reloadNow();
+  }
+
+  Future<void> _reloadNow() async {
+    final slug = _selectedSlug;
+    if (slug != null) {
+      await selectCategory(slug);
+    } else {
+      notifyListeners();
+    }
+  }
+
+  Future<void> _loadLanguages() async {
+    final list = await FilterOptionsLoader.languages();
+    if (_disposed) return;
+    if (list.isNotEmpty) _languageOptions = list;
+    notifyListeners();
+  }
+
+  Future<void> _loadSizes() async {
+    final list = await FilterOptionsLoader.sizes();
+    if (_disposed) return;
+    if (list.isNotEmpty) _sizeOptions = list;
+    notifyListeners();
+  }
+
+  /// Templates after search filter (tab / language / size / tag are sent to the API).
   List<TemplateModel> get visibleTemplates {
     Iterable<TemplateModel> list = _templates;
-
-    if (_tab == 0) {
-      list = list.where((t) => !_isVideo(t));
-    } else if (_tab == 1) {
-      list = list.where(_isVideo);
-    }
 
     final q = _query.trim().toLowerCase();
     if (q.isNotEmpty) {
@@ -276,7 +339,17 @@ class BrowseTemplatesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.templatesByCategories(slug, tag: _tag);
+      final result = await _repository.templatesByCategories(
+        slug,
+        tag: _tag,
+        templateType: _tab == 0
+            ? 'image'
+            : _tab == 1
+            ? 'video'
+            : null,
+        language: _language,
+        size: _size,
+      );
       if (slug != _selectedSlug) return; // user picked another meanwhile
 
       if (result.isSuccess && result.data != null) {
@@ -300,8 +373,9 @@ class BrowseTemplatesProvider extends ChangeNotifier {
   }
 
   void setTab(int index) {
+    if (_tab == index) return;
     _tab = index;
-    notifyListeners();
+    _reload();
   }
 
   void setQuery(String value) {

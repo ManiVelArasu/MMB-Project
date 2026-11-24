@@ -56,15 +56,23 @@ class HomeRepository {
   }
 
   Future<ApiResult<TemplatesResponseModel>> templatesByCategories(
-    String categorySlug, {
-    String? tag,
-  }) async {
+      String categorySlug, {
+        String? tag,
+        String? templateType, // 'image' | 'video'
+        String? language,
+        String? size,
+      }) async {
     final queryParams = <String, dynamic>{'industry': categorySlug};
 
-    final selectedTag = tag?.trim() ?? '';
-    if (selectedTag.isNotEmpty) {
-      queryParams['tags'] = selectedTag;
+    void put(String key, String? value) {
+      final v = value?.trim() ?? '';
+      if (v.isNotEmpty) queryParams[key] = v;
     }
+
+    put('tags', tag);
+    put('template_type', templateType);
+    put('language', language);
+    put('size', size);
 
     final result = await ApiRepository.instance.request<TemplatesResponseModel>(
       config: ApiRequestConfig(

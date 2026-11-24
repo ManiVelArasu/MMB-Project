@@ -166,10 +166,10 @@ class _BrowseView extends StatelessWidget {
   // ============================================================
 
   Widget _buildBottomNavigation(
-    BuildContext context,
-    BrowseTemplatesProvider p,
-    bool isDark,
-  ) {
+      BuildContext context,
+      BrowseTemplatesProvider p,
+      bool isDark,
+      ) {
     // tab: 0 = image, 1 = video, 2 = ellam (re-tap panna filter off)
     return FilterBottomBar(
       tabs: [
@@ -186,6 +186,34 @@ class _BrowseView extends StatelessWidget {
           onTap: () => p.setTab(p.tab == 1 ? 2 : 1),
         ),
         FilterBarTab(
+          icon: Image.asset('assets/images/translate_black.png'),
+          label: 'LANGUAGE',
+          selected: p.language != null,
+          onTap: () => showSearchOptionSheet(
+            context,
+            title: 'Language',
+            allLabel: 'All languages',
+            options: p.languageOptions,
+            selected: p.language,
+            onChanged: p.setLanguage,
+            emptyText: 'No languages available',
+          ),
+        ),
+        FilterBarTab(
+          icon: Image.asset('assets/images/monitor-mobbile.png'),
+          label: 'POST SIZE',
+          selected: p.size != null,
+          onTap: () => showSearchOptionSheet(
+            context,
+            title: 'Post size',
+            allLabel: 'All sizes',
+            options: p.sizeOptions,
+            selected: p.size,
+            onChanged: p.setSize,
+            emptyText: 'No sizes available',
+          ),
+        ),
+        FilterBarTab(
           icon: Image.asset('assets/images/educare-(ekt).png'),
           label: 'CATEGORIES',
           selected: p.tag != null,
@@ -196,9 +224,9 @@ class _BrowseView extends StatelessWidget {
   }
 
   Future<void> _openCategories(
-    BuildContext context,
-    BrowseTemplatesProvider p,
-  ) async {
+      BuildContext context,
+      BrowseTemplatesProvider p,
+      ) async {
     await p.loadKeyWords(); // options ready aana pinnaadi sheet open aagum
     if (!context.mounted) return;
 
@@ -234,11 +262,11 @@ class _BrowseView extends StatelessWidget {
   // ============================================================
 
   Widget _body(
-    BuildContext context,
-    BrowseTemplatesProvider p,
-    bool isDark,
-    Color sub,
-  ) {
+      BuildContext context,
+      BrowseTemplatesProvider p,
+      bool isDark,
+      Color sub,
+      ) {
     if (p.isLoading) {
       return AppShimmerGrid(
         isDark: isDark,
@@ -294,13 +322,13 @@ class _BrowseView extends StatelessWidget {
   static const String _noResultImage = 'assets/images/no_results.png';
 
   Widget _buildEmptyState(
-    BuildContext context,
-    BrowseTemplatesProvider p,
-    bool isDark,
-    Color sub,
-  ) {
+      BuildContext context,
+      BrowseTemplatesProvider p,
+      bool isDark,
+      Color sub,
+      ) {
     final fg = isDark ? Colors.white : Colors.black;
-    final hasTag = p.tag != null;
+    final hasTag = p.hasActiveFilters;
 
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
@@ -336,7 +364,7 @@ class _BrowseView extends StatelessWidget {
                   const SizedBox(height: 8),
                   AppText(
                     'We couldn\u2019t find any templates here. '
-                    'Try a different category or explore our categories.',
+                        'Try a different category or explore our categories.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 13, color: fg),
                   ),
@@ -366,7 +394,7 @@ class _BrowseView extends StatelessWidget {
                         const SizedBox(width: 8),
                         Flexible(
                           child: ButtonWidget(
-                            buttonPress: p.clearTag,
+                            buttonPress: p.clearAllFilters,
                             title: 'Clear Filter',
                             textStyle: TextStyle(
                               fontSize: AppFontSize.fontSize14,
@@ -415,11 +443,11 @@ class _BrowseView extends StatelessWidget {
               imageUrl.isEmpty
                   ? _placeholder(isDark)
                   : CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => _placeholder(isDark),
-                      errorWidget: (_, __, ___) => _placeholder(isDark),
-                    ),
+                imageUrl: imageUrl,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => _placeholder(isDark),
+                errorWidget: (_, __, ___) => _placeholder(isDark),
+              ),
               _buildCardTopBar(context, t), // popup on every card
             ],
           ),
