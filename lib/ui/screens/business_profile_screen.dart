@@ -169,7 +169,7 @@ class BusinessProfileView extends StatelessWidget {
 
                             AppText(
                               provider.businessName.isEmpty
-                                  ? "${provider.commonProvider.business?.name}"
+                                  ? "${provider.commonProvider.business?.name??''}"
                                   : provider.businessName,
                               style: TextStyle(
                                 color: Theme.of(

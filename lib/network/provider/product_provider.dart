@@ -33,26 +33,62 @@ class ProductsProvider extends ChangeNotifier {
     }
   }
 
+  /// Business uid: SharedPreferences first; if it was never saved (business
+  /// created on web / onboarding skipped on this device) fall back to the
+  /// business loaded from the API and cache it for next time.
+  Future<String?> _resolveBusinessUid() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final saved = prefs.getString('business_uid')?.trim();
+    if (saved != null && saved.isNotEmpty) return saved;
+
+    final common = CommonProvider.instance;
+
+    String? fromBusiness() {
+      try {
+        final dynamic business = common.business;
+        final uid = business?.uid?.toString().trim();
+        if (uid != null && uid.isNotEmpty && uid != 'null') return uid;
+      } catch (_) {}
+      return null;
+    }
+
+    var uid = fromBusiness();
+
+    // Business not loaded yet -> load it once.
+    if (uid == null) {
+      try {
+        await common.loadBusiness(forceRefresh: true);
+      } catch (e) {
+        debugPrint('loadBusiness failed: $e');
+      }
+      uid = fromBusiness();
+    }
+
+    if (uid != null) {
+      await prefs.setString('business_uid', uid);
+      debugPrint('business_uid restored from business API: $uid');
+    }
+
+    return uid;
+  }
+
   Future<void> fetchProducts() async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-
-      final savedUid = prefs.getString('business_uid');
-      final businessUid = savedUid?.trim();
+      final businessUid = await _resolveBusinessUid();
 
       if (businessUid == null || businessUid.isEmpty) {
         errorMessage = 'Business UID not found';
-        notifyListeners();
-        // return false;
+        return;
       }
-      print(businessUid);
-      final result = await ProductRepository.instance.productList(
-        businessUid ?? '',
-      );
+
+      debugPrint('business_uid: $businessUid');
+
+      final result = await ProductRepository.instance.productList(businessUid);
       final ProductList? response = result.data;
 
       if (response?.success == true && response?.data != null) {
@@ -184,8 +220,7 @@ class ProductsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final businessUid = prefs.getString('business_uid')?.trim();
+      final businessUid = await _resolveBusinessUid();
 
       if (businessUid == null || businessUid.isEmpty) {
         errorMessage = 'Business UID not found';
@@ -252,9 +287,9 @@ class ProductsProvider extends ChangeNotifier {
 
   int get productsCount =>
       int.tryParse(_counts?.products ?? '') ??
-      _products.where((e) => e.type?.toLowerCase() == 'product').length;
+          _products.where((e) => e.type?.toLowerCase() == 'product').length;
 
   int get servicesCount =>
       int.tryParse(_counts?.services ?? '') ??
-      _products.where((e) => e.type?.toLowerCase() == 'service').length;
+          _products.where((e) => e.type?.toLowerCase() == 'service').length;
 }
