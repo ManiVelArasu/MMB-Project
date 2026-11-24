@@ -1059,7 +1059,7 @@ class _HomeScreenView extends StatelessWidget {
         return Padding(
           padding: EdgeInsets.only(right: 12.w),
           child: InkWell(
-            onTap: () => _openTemplateDetail(context, item),
+            onTap: () => _customizeTemplate(context, item),
             borderRadius: BorderRadius.circular(20.r),
             child: Container(
               width: 145.w,
@@ -1762,7 +1762,8 @@ class _HomeScreenView extends StatelessWidget {
                             height: 28.h,
                             child: IntrinsicWidth(
                               child: ButtonWidget(
-                                buttonPress: banner.onTap, // button click (as before)
+                                buttonPress:
+                                    banner.onTap, // button click (as before)
                                 title: banner.button,
                                 buttonColor: banner.titleColor,
                                 textStyle: TextStyle(
@@ -1819,7 +1820,6 @@ class _HomeScreenView extends StatelessWidget {
       },
     );
   }
-
 
   Widget buildProfileImage(String imageUrl) {
     if (imageUrl.isEmpty) return _defaultLogo();

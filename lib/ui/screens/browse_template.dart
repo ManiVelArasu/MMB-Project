@@ -4,7 +4,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/appbar_widget.dart';
 import 'package:mmb_app/ui/screens/widget/download.dart';
 import 'package:mmb_app/ui/screens/widget/search_filter.dart';
-import 'package:mmb_app/network/provider/search_provider.dart' show SearchFilterOption;
+import 'package:mmb_app/network/provider/search_provider.dart'
+    show SearchFilterOption;
 import 'package:mmb_app/ui/screens/widget/template_popup.dart';
 import 'package:mmb_app/ui/screens/widget/template_single_view_sheet.dart';
 import 'package:mmb_app/utils/theme/app.colors.dart';
@@ -165,10 +166,10 @@ class _BrowseView extends StatelessWidget {
   // ============================================================
 
   Widget _buildBottomNavigation(
-      BuildContext context,
-      BrowseTemplatesProvider p,
-      bool isDark,
-      ) {
+    BuildContext context,
+    BrowseTemplatesProvider p,
+    bool isDark,
+  ) {
     // tab: 0 = image, 1 = video, 2 = ellam (re-tap panna filter off)
     return FilterBottomBar(
       tabs: [
@@ -195,9 +196,9 @@ class _BrowseView extends StatelessWidget {
   }
 
   Future<void> _openCategories(
-      BuildContext context,
-      BrowseTemplatesProvider p,
-      ) async {
+    BuildContext context,
+    BrowseTemplatesProvider p,
+  ) async {
     await p.loadKeyWords(); // options ready aana pinnaadi sheet open aagum
     if (!context.mounted) return;
 
@@ -233,11 +234,11 @@ class _BrowseView extends StatelessWidget {
   // ============================================================
 
   Widget _body(
-      BuildContext context,
-      BrowseTemplatesProvider p,
-      bool isDark,
-      Color sub,
-      ) {
+    BuildContext context,
+    BrowseTemplatesProvider p,
+    bool isDark,
+    Color sub,
+  ) {
     if (p.isLoading) {
       return AppShimmerGrid(
         isDark: isDark,
@@ -293,11 +294,11 @@ class _BrowseView extends StatelessWidget {
   static const String _noResultImage = 'assets/images/no_results.png';
 
   Widget _buildEmptyState(
-      BuildContext context,
-      BrowseTemplatesProvider p,
-      bool isDark,
-      Color sub,
-      ) {
+    BuildContext context,
+    BrowseTemplatesProvider p,
+    bool isDark,
+    Color sub,
+  ) {
     final fg = isDark ? Colors.white : Colors.black;
     final hasTag = p.tag != null;
 
@@ -335,7 +336,7 @@ class _BrowseView extends StatelessWidget {
                   const SizedBox(height: 8),
                   AppText(
                     'We couldn\u2019t find any templates here. '
-                        'Try a different category or explore our categories.',
+                    'Try a different category or explore our categories.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 13, color: fg),
                   ),
@@ -414,11 +415,11 @@ class _BrowseView extends StatelessWidget {
               imageUrl.isEmpty
                   ? _placeholder(isDark)
                   : CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => _placeholder(isDark),
-                errorWidget: (_, __, ___) => _placeholder(isDark),
-              ),
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => _placeholder(isDark),
+                      errorWidget: (_, __, ___) => _placeholder(isDark),
+                    ),
               _buildCardTopBar(context, t), // popup on every card
             ],
           ),
@@ -446,10 +447,7 @@ class _BrowseView extends StatelessWidget {
               width: 24.w,
               height: 28.h,
               child: locked
-                  ? Image.asset(
-                'assets/images/crown.png',
-                fit: BoxFit.contain,
-              )
+                  ? Image.asset('assets/images/crown.png', fit: BoxFit.contain)
                   : null,
             ),
             Flexible(
