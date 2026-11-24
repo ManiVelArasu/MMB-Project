@@ -23,6 +23,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../Api Model/industries.dart';
 // TODO: unga project-la IndustryProvider file enga irukko andha path podunga
 import '../../network/provider/industry_provider.dart';
+import 'error_widget.dart';
 
 class SearchScreen extends StatelessWidget {
   const SearchScreen({super.key, this.initialQuery = ''});
@@ -955,7 +956,7 @@ class _SearchViewState extends State<_SearchView> {
   }
 
   // Put the sad-magnifier illustration here (add it to pubspec assets).
-  static const String _noResultImage = 'assets/images/no_results.png';
+  static const String _noResultImage = 'assets/images/no_downloads.png';
 
   Widget _buildEmptyState(
     BuildContext context,
@@ -967,110 +968,28 @@ class _SearchViewState extends State<_SearchView> {
     final query = provider.activeQuery;
     final filtered = provider.hasActiveFilters;
 
-    return Column(
-      children: [
-        if (query.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: AppText(
-              filtered
-                  ? 'No designs for \u201c$query\u201d with these filters.'
-                  : 'No designs for \u201c$query\u201d.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: sub),
-            ),
-          ),
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              physics: const ClampingScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(15, 0, 15, 40),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          _noResultImage,
-                          width: 140,
-                          height: 140,
-                          errorBuilder: (_, __, ___) => Image.asset(
-                            'assets/images/no_downloads.png',
-                            width: 140,
-                            height: 140,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        AppText(
-                          'No Templates Found',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: fg,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        AppText(
-                          'We couldn\u2019t find any templates matching your search. '
-                          'Try a different keyword or explore our categories.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 13, color: fg),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Flexible(
-                              child: ButtonWidget(
-                                buttonPress: () => _openCategories(context),
-                                title: 'Browse Categories',
-                                textStyle: TextStyle(
-                                  fontSize: AppFontSize.fontSize14,
-                                  color: AppColors.appRed,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                textColor: AppColors.appRed,
-                                buttonColor: AppColors.appWhite,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: AppColors.appRed),
-                                  borderRadius: const BorderRadius.all(
-                                    Radius.circular(15),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: ButtonWidget(
-                                buttonPress: filtered
-                                    ? provider.clearFilters
-                                    : provider.clearSearch,
-                                title: filtered
-                                    ? 'Clear Filters'
-                                    : 'Clear Search',
-                                textStyle: TextStyle(
-                                  fontSize: AppFontSize.fontSize14,
-                                  color: AppColors.appWhite,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                textColor: AppColors.appWhite,
-                                buttonColor: AppColors.appRed,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+    return CommonEmptyState(
+      title: 'No Templates Found',
+      message:
+          'We couldn’t find any templates matching your search. '
+          'Try a different keyword or explore our categories.',
+      imagePath: _noResultImage,
+
+      topMessage: query.isNotEmpty
+          ? filtered
+                ? 'No designs for “$query” with these filters.'
+                : 'No designs for “$query”.'
+          : null,
+      primaryButtonText: 'Browse Categories',
+      secondaryButtonText: filtered ? 'Clear Filters' : 'Clear Search',
+      onPrimaryPressed: () => _openCategories(context),
+      onSecondaryPressed: filtered
+          ? provider.clearFilters
+          : provider.clearSearch,
+      foregroundColor: fg,
+      subtitleColor: sub,
+      primaryColor: AppColors.appRed,
+      isDark: isDark,
     );
   }
 }

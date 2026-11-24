@@ -129,6 +129,26 @@ class ProjectRepository {
     );
   }
 
+  /// GET /project/{uid} - one saved project (name, content, template_id...).
+  Future<ApiResult<dynamic>> getProjectById({required String projectUid}) async {
+    final uid = projectUid.trim();
+
+    if (uid.isEmpty) {
+      throw ArgumentError('Project UID cannot be empty');
+    }
+
+    return ApiRepository.instance.request<dynamic>(
+      config: ApiRequestConfig(
+        endpoint: '${ApiEndpoints.project}/$uid',
+        method: ApiMethod.get,
+      ),
+      fromJson: (json) {
+        debugPrint('📥 GET PROJECT BY ID RESPONSE: $json');
+        return json;
+      },
+    );
+  }
+
   Future<ApiResult<ProjectList>> getProject() async {
     return ApiRepository.instance.request<ProjectList>(
       config: ApiRequestConfig(

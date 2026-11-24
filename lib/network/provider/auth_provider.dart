@@ -251,10 +251,27 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
     }
   }
 
+  /// /me says onboarding is finished (`onboarding.completed` or
+  /// `onboarding_completed_at`). Read dynamically so it works with whatever
+  /// fields your Me model has.
+  bool _isOnboardingDone(dynamic meData) {
+    try {
+      final v = meData.onboardingCompletedAt;
+      if (v != null && v.toString().trim().isNotEmpty) return true;
+    } catch (_) {}
+    try {
+      final o = meData.onboarding;
+      if (o != null && o.completed == true) return true;
+    } catch (_) {}
+    return false;
+  }
+
   Future<Map<String, dynamic>?> verifyOtpApi(BuildContext context) async {
     final String enteredOtp = getOtp();
 
-    debugPrint("🔥 verifyOtpApi called | mobile: $_mobileNumber | otp: $enteredOtp");
+    debugPrint(
+      "🔥 verifyOtpApi called | mobile: $_mobileNumber | otp: $enteredOtp",
+    );
 
     if (enteredOtp.length < 6) {
       _errorMessage = "Please enter complete 6-digit OTP";
@@ -401,6 +418,42 @@ class AuthProvider extends ChangeNotifier with MyNotifier {
                 "/AccountTypeScreen",
                     (route) => false,
                 arguments: {"showSkip": true},
+              );
+
+              return data;
+            }
+
+            // =========================================================
+            // ONBOARDING ALREADY COMPLETED (e.g. account created on web)
+            //
+            // /me -> onboarding.completed == true  /  onboarding_completed_at
+            // Go straight to Home, no matter what the business API says.
+            // =========================================================
+
+            final bool onboardingDone = _isOnboardingDone(
+              commonProvider.me?.data,
+            );
+
+            if (onboardingDone) {
+              debugPrint("✅ ONBOARDING COMPLETED → CustomBottomNavScreen");
+
+              // Home needs business data for business accounts; don't block
+              // the login on it.
+              if (accountType == "business") {
+                await commonProvider.loadBusiness(forceRefresh: true);
+              }
+
+              _isVerifyLoading = false;
+              notifyListeners();
+
+              if (!context.mounted) {
+                return data;
+              }
+
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                "/CustomBottomNavScreen",
+                    (route) => false,
               );
 
               return data;

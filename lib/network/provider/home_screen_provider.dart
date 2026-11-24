@@ -71,8 +71,8 @@ class HomeScreenProvider extends ChangeNotifier {
 
       debugPrint(
         "🔑 KEYWORDS CHECK [$i/$maxRetries] "
-        "accountType=$accountType "
-        "categorySlug=$categorySlug",
+            "accountType=$accountType "
+            "categorySlug=$categorySlug",
       );
 
       if (accountType == 'personal') {
@@ -92,7 +92,7 @@ class HomeScreenProvider extends ChangeNotifier {
 
     debugPrint(
       "❌ Keywords API not called. "
-      "CommonProvider data was not ready.",
+          "CommonProvider data was not ready.",
     );
   }
 
@@ -202,7 +202,7 @@ class HomeScreenProvider extends ChangeNotifier {
         for (final keyword in _keyWords) {
           debugPrint(
             "Keyword: ${keyword.name} | "
-            "Slug: ${keyword.slug}",
+                "Slug: ${keyword.slug}",
           );
         }
 
@@ -359,7 +359,7 @@ class HomeScreenProvider extends ChangeNotifier {
 
               final treeCategory =
                   (slug.isNotEmpty ? treeBySlug[slug] : null) ??
-                  (name.isNotEmpty ? treeByName[name] : null);
+                      (name.isNotEmpty ? treeByName[name] : null);
 
               if (treeCategory != null && treeCategory.children.isNotEmpty) {
                 return category.copyWith(children: treeCategory.children);
@@ -372,7 +372,7 @@ class HomeScreenProvider extends ChangeNotifier {
             _templateCategories = homepageCategories;
             debugPrint(
               "⚠️ Tree category API failed: "
-              "${treeResult.error?.message ?? 'Unknown error'}",
+                  "${treeResult.error?.message ?? 'Unknown error'}",
             );
           }
 
@@ -390,8 +390,8 @@ class HomeScreenProvider extends ChangeNotifier {
 
             final bool isSpecialParent =
                 categoryName == 'celebrate moments' ||
-                categoryName == 'devotional/daily posts' ||
-                categoryName == 'devotional / daily posts';
+                    categoryName == 'devotional/daily posts' ||
+                    categoryName == 'devotional / daily posts';
 
             if (isSpecialParent) {
               debugPrint("⭐ SPECIAL CATEGORY: ${category.name}");
@@ -405,7 +405,7 @@ class HomeScreenProvider extends ChangeNotifier {
 
                 debugPrint(
                   "   └── CHILD: ${child.name} "
-                  "[$childSlug]",
+                      "[$childSlug]",
                 );
 
                 await fetchTemplatesByCategory(childSlug);
@@ -543,8 +543,8 @@ class HomeScreenProvider extends ChangeNotifier {
 
   String _formatApiDate(DateTime date) =>
       '${date.year.toString().padLeft(4, '0')}-'
-      '${date.month.toString().padLeft(2, '0')}-'
-      '${date.day.toString().padLeft(2, '0')}';
+          '${date.month.toString().padLeft(2, '0')}-'
+          '${date.day.toString().padLeft(2, '0')}';
 
   Future<void> fetchTemplatesByCategory(String slug) async {
     final categorySlug = slug.trim();
@@ -588,6 +588,31 @@ class HomeScreenProvider extends ChangeNotifier {
     }
   }
 
+  /// Industry slug for the home "My Brand" call.
+  /// Right after deactivate -> login -> choose industry, CommonProvider.business
+  /// is not loaded yet, so the slug used to be empty ("industry must be
+  /// selected"). Wait for it (business accounts only); the industry the user
+  /// just picked (saved_category_slug) is the fallback.
+  Future<String> _resolveIndustrySlug(SharedPreferences prefs) async {
+    String current() =>
+        provider.business?.businessCategory?.parent?.slug?.trim() ?? '';
+
+    var slug = current();
+    if (slug.isNotEmpty) return slug;
+
+    // Personal accounts have no industry.
+    if (provider.accountType?.trim().toLowerCase() == 'personal') return '';
+
+    for (var i = 0; i < 20 && slug.isEmpty; i++) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      slug = current();
+      if (provider.accountType?.trim().toLowerCase() == 'personal') return '';
+    }
+    if (slug.isNotEmpty) return slug;
+
+    return prefs.getString('saved_category_slug')?.trim() ?? '';
+  }
+
   String? selectedKeyword;
   Future<void> fetchTemplatesByPopular({String? keyword}) async {
     debugPrint('🔥 API function started');
@@ -601,15 +626,24 @@ class HomeScreenProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final savedLanguages =
           prefs.getStringList('selected_language_codes') ?? ['en'];
-      final industrySlug = provider.business?.businessCategory?.parent?.slug;
+      final industrySlug = await _resolveIndustrySlug(prefs);
       final language = savedLanguages.isNotEmpty ? savedLanguages.first : 'en';
+
+      // Business account but no industry yet: do not call the API with an
+      // empty industry (it returns the "industry must be selected" error).
+      if (industrySlug.isEmpty &&
+          provider.accountType?.trim().toLowerCase() != 'personal') {
+        _popularTemplates = [];
+        _popularTemplatesError = null;
+        return;
+      }
 
       debugPrint('🏷️ Keyword: $keyword');
       debugPrint('🏭 Industry: $industrySlug');
       debugPrint('🌐 Language: $language');
 
       final result = await HomeRepository.instance.myBrandCategory(
-        industrySlug: industrySlug ?? '',
+        industrySlug: industrySlug,
         language: language,
         keyword: keyword ?? '',
       );
@@ -767,22 +801,22 @@ class HomeScreenProvider extends ChangeNotifier {
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+      "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+      "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
+      "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4",
     },
     {
       "thumbnail": "assets/images/bakedcaks.png",
       "videoUrl":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+      "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
     },
   ];
 
@@ -834,8 +868,8 @@ class HomeScreenProvider extends ChangeNotifier {
           : 0;
 
       final boundary =
-          _zoneKeys[index]?.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
+      _zoneKeys[index]?.currentContext?.findRenderObject()
+      as RenderRepaintBoundary?;
 
       if (boundary == null) return 'Nothing to download';
 

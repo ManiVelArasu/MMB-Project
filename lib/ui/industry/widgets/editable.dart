@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart'
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mmb_app/ui/industry/widgets/text_effect.dart';
+import 'package:mmb_app/utils/theme/app.colors.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart' as svg;
 
@@ -404,6 +405,28 @@ class EditableItemWidget extends StatelessWidget {
     );
   }
 
+  /// Wrap width that never breaks inside a word. Fabric textbox widths are
+  /// tight to the web font's metrics, so with Flutter's font a word can be a
+  /// few px wider than the box and would be split mid-word ("0 / 3").
+  static double effectiveWrapWidth(
+      EditorItem item,
+      EditorProvider provider,
+      double boxWidth,
+      ) {
+    final style = buildTextStyle(item, provider);
+    double longest = 0;
+    for (final w in (item.text ?? '').split(RegExp(r'\s+'))) {
+      if (w.isEmpty) continue;
+      final p = TextPainter(
+        text: TextSpan(text: w, style: style),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      )..layout();
+      if (p.width > longest) longest = p.width;
+    }
+    return math.max(boxWidth, longest + 1.0);
+  }
+
   /// Un-scaled layout size of a text item, in canvas units. Single source of
   /// truth for both the rendered text box and the selection overlay.
   /// [widthOverride] lets a resize gesture ask "how tall would it be at this
@@ -425,7 +448,10 @@ class EditableItemWidget extends StatelessWidget {
     }
 
     final multiline = isMultilineText(item, provider);
-    final boxWidth = widthOverride ?? item.width;
+    final rawWidth = widthOverride ?? item.width;
+    final boxWidth = multiline && rawWidth > 12.0
+        ? effectiveWrapWidth(item, provider, rawWidth)
+        : rawWidth;
     final wrapWidth = multiline && boxWidth > 12.0 ? boxWidth : double.infinity;
     final painter = TextPainter(
       text: TextSpan(
@@ -499,14 +525,14 @@ class EditableItemWidget extends StatelessWidget {
             maxLines: 5,
             textInputAction: TextInputAction.newline,
             style:  TextStyle(color: Colors.white,  fontSize: AppFontSize.fontSize16,),
-            decoration: const InputDecoration(
+            decoration:  InputDecoration(
               hintText: 'Type text here...',
               hintStyle: TextStyle(color: Colors.white54),
               enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.amberAccent),
+                borderSide: BorderSide(color: AppColors.appRed, width: 2  ),
               ),
               focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.amberAccent, width: 2),
+                borderSide: BorderSide(color: AppColors.appRed, width: 2  ),
               ),
             ),
           ),
@@ -519,15 +545,15 @@ class EditableItemWidget extends StatelessWidget {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amberAccent,
+                backgroundColor:AppColors.appRed,
               ),
               onPressed: () {
                 Navigator.of(dialogContext).pop(controller.text);
               },
-              child: const Text(
+              child:  AppText(
                 'Save',
                 style: TextStyle(
-                  color: Colors.black,
+                  color: AppColors.appWhite,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -564,6 +590,36 @@ class EditableItemWidget extends StatelessWidget {
         (item.type == 'image' || item.type == 'video' || item.type == 'shape');
   }
 
+  /// Web templates use desktop font names that are not Google Fonts families
+  /// ("Impact", "Inter 18pt", ...). Map them to the closest Google Font so
+  /// Flutter measures/draws text with metrics near the web editor's.
+  static const Map<String, String> _fontAliases = {
+    'impact': 'Anton',
+    'haettenschweiler': 'Anton',
+    'arial black': 'Archivo Black',
+    'segoe ui': 'Open Sans',
+    'system-ui': 'Roboto',
+    'sans-serif': 'Roboto',
+    'helvetica': 'Roboto',
+    'helvetica neue': 'Roboto',
+    'arial': 'Roboto',
+    'google sans': 'Outfit',
+    'product sans': 'Outfit',
+  };
+
+  static String resolveFontFamily(String rawFamily) {
+    var family = rawFamily
+        .split(',')
+        .first
+        .trim()
+        .replaceAll(RegExp(r'''^["']|["']$'''), '')
+        .trim();
+    if (family.isEmpty) return '';
+    // Optical-size variants: "Inter 18pt" -> "Inter"
+    family = family.replaceAll(RegExp(r'\s+\d+pt$', caseSensitive: false), '');
+    return _fontAliases[family.toLowerCase()] ?? family;
+  }
+
   static TextStyle _buildGoogleFontTextStyle({
     required String? fontFamily,
     required double fontSize,
@@ -587,12 +643,7 @@ class EditableItemWidget extends StatelessWidget {
     final rawFamily = (fontFamily ?? '').trim();
     if (rawFamily.isEmpty) return base;
 
-    final family = rawFamily
-        .split(',')
-        .first
-        .trim()
-        .replaceAll(RegExp(r'''^["']|["']$'''), '')
-        .trim();
+    final family = resolveFontFamily(rawFamily);
     if (family.isEmpty) return base;
 
     try {
@@ -1202,7 +1253,10 @@ class EditableItemWidget extends StatelessWidget {
     // For multiline text, respect the item width.
     final isCurved = editorProvider.textEffect(id).type == TextEffectType.curve;
     final renderWidth = isMultiline && !isCurved
-        ? math.max(12.0, item.width)
+        ? math.max(
+      12.0,
+      effectiveWrapWidth(item, editorProvider, item.width),
+    )
         : double.infinity;
 
     return SizedBox(
@@ -1641,7 +1695,7 @@ class ItemMaskCache {
     if (decoded == null) {
       final preview = utf8
           .decode(bytes.take(180).toList(), allowMalformed: true)
-          .replaceAll(RegExp(r'\\s+'), ' ');
+          .replaceAll(RegExp(r'\s+'), ' ');
       throw FormatException(
         'Mask response is not SVG or a supported raster image. '
             'Response begins with: $preview',

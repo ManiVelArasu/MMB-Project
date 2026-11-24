@@ -68,7 +68,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!isOnboard) {
         debugPrint(
           "🚀 USER NOT ONBOARDED "
-          "→ OnboardingScreen",
+              "→ OnboardingScreen",
         );
 
         if (!mounted) return;
@@ -91,7 +91,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!isLoggedIn) {
         debugPrint(
           "🔐 USER NOT LOGGED IN "
-          "→ LoginScreen",
+              "→ LoginScreen",
         );
 
         _goToLogin();
@@ -114,12 +114,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
       debugPrint(
         "🔑 ACCESS TOKEN EXISTS: "
-        "${accessToken != null && accessToken!.isNotEmpty}",
+            "${accessToken != null && accessToken!.isNotEmpty}",
       );
 
       debugPrint(
         "🔄 REFRESH TOKEN EXISTS: "
-        "${refreshToken != null && refreshToken!.isNotEmpty}",
+            "${refreshToken != null && refreshToken!.isNotEmpty}",
       );
 
       // ========================================================
@@ -132,7 +132,7 @@ class _SplashScreenState extends State<SplashScreen> {
           refreshToken.trim().isEmpty) {
         debugPrint(
           "❌ SAVED TOKENS MISSING "
-          "→ LoginScreen",
+              "→ LoginScreen",
         );
 
         await _clearSessionAndLogin();
@@ -221,7 +221,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
       accessToken =
           latestPrefs.getString('access_token') ??
-          latestPrefs.getString('auth_token');
+              latestPrefs.getString('auth_token');
 
       refreshToken = latestPrefs.getString('refresh_token');
 
@@ -282,7 +282,7 @@ class _SplashScreenState extends State<SplashScreen> {
         failure: (error) async {
           debugPrint(
             "❌ GET ME API FAILED: "
-            "${error.message}",
+                "${error.message}",
           );
 
           // ====================================================
@@ -297,12 +297,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
           final bool isNetworkError =
               message.contains('no internet') ||
-              message.contains('network') ||
-              message.contains('connection') ||
-              message.contains('failed host lookup') ||
-              message.contains('socketexception') ||
-              message.contains('timeout') ||
-              message.contains('timed out');
+                  message.contains('network') ||
+                  message.contains('connection') ||
+                  message.contains('failed host lookup') ||
+                  message.contains('socketexception') ||
+                  message.contains('timeout') ||
+                  message.contains('timed out');
 
           if (isNetworkError) {
             debugPrint("======================================");
@@ -345,7 +345,7 @@ class _SplashScreenState extends State<SplashScreen> {
       // Don't automatically clear session.
       debugPrint(
         "⚠️ Unexpected splash error "
-        "→ KEEP SESSION",
+            "→ KEEP SESSION",
       );
     } finally {
       _isChecking = false;
@@ -353,13 +353,32 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   // ============================================================
+  // ONBOARDING COMPLETED? (/me)
+  // ============================================================
+
+  /// /me says onboarding is finished (`onboarding.completed` or
+  /// `onboarding_completed_at`). Read dynamically so it works with whatever
+  /// fields your Me model has.
+  bool _isOnboardingDone(dynamic meData) {
+    try {
+      final v = meData.onboardingCompletedAt;
+      if (v != null && v.toString().trim().isNotEmpty) return true;
+    } catch (_) {}
+    try {
+      final o = meData.onboarding;
+      if (o != null && o.completed == true) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  // ============================================================
   // HANDLE GET ME SUCCESS
   // ============================================================
 
   Future<void> _handleGetMeSuccess(
-    SharedPreferences prefs,
-    dynamic meApiData,
-  ) async {
+      SharedPreferences prefs,
+      dynamic meApiData,
+      ) async {
     try {
       // ========================================================
       // ACCOUNT TYPE
@@ -383,7 +402,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
       // Prefer actual account_type
       final String? accountType =
-          userAccountType != null && userAccountType.isNotEmpty
+      userAccountType != null && userAccountType.isNotEmpty
           ? userAccountType
           : onboardingAccountType;
 
@@ -393,17 +412,17 @@ class _SplashScreenState extends State<SplashScreen> {
 
       debugPrint(
         "USER ACCOUNT TYPE      : "
-        "$userAccountType",
+            "$userAccountType",
       );
 
       debugPrint(
         "ONBOARDING ACCOUNT TYPE: "
-        "$onboardingAccountType",
+            "$onboardingAccountType",
       );
 
       debugPrint(
         "FINAL ACCOUNT TYPE     : "
-        "$accountType",
+            "$accountType",
       );
 
       if (accountType != null && accountType.isNotEmpty) {
@@ -413,7 +432,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (accountType == null || accountType.isEmpty) {
         debugPrint(
           "⚠️ ACCOUNT TYPE NOT FOUND "
-          "→ PlansAndPricingScreen",
+              "→ PlansAndPricingScreen",
         );
 
         if (!mounted) return;
@@ -421,8 +440,43 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushNamedAndRemoveUntil(
           context,
           "/AccountTypeScreen",
-          (route) => false,
+              (route) => false,
           arguments: {"showSkip": true},
+        );
+
+        return;
+      }
+
+      // ========================================================
+      // ONBOARDING ALREADY COMPLETED (e.g. account created on web)
+      //
+      // /me -> onboarding.completed == true  /  onboarding_completed_at
+      // Go straight to Home, no matter what the business API says.
+      // ========================================================
+
+      final bool onboardingDone = _isOnboardingDone(meData);
+
+      debugPrint("ONBOARDING DONE        : $onboardingDone");
+
+      if (onboardingDone) {
+        debugPrint("✅ ONBOARDING COMPLETED → CustomBottomNavScreen");
+
+        // Home needs business data for business accounts; don't block the
+        // app start on it.
+        if (accountType == "business") {
+          try {
+            await CommonProvider.instance.loadBusiness(forceRefresh: true);
+          } catch (e) {
+            debugPrint("⚠️ BUSINESS LOAD FAILED (ignored): $e");
+          }
+        }
+
+        if (!mounted) return;
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          "/CustomBottomNavScreen",
+              (route) => false,
         );
 
         return;
@@ -473,7 +527,7 @@ class _SplashScreenState extends State<SplashScreen> {
         if (hasName) {
           debugPrint(
             "✅ PERSONAL PROFILE COMPLETE "
-            "→ CustomBottomNavScreen",
+                "→ CustomBottomNavScreen",
           );
 
           if (!mounted) return;
@@ -481,7 +535,7 @@ class _SplashScreenState extends State<SplashScreen> {
           Navigator.pushNamedAndRemoveUntil(
             context,
             "/CustomBottomNavScreen",
-            (route) => false,
+                (route) => false,
           );
 
           return;
@@ -493,7 +547,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
         debugPrint(
           "⚠️ PERSONAL PROFILE INCOMPLETE "
-          "→ BusinessDetailsScreen",
+              "→ BusinessDetailsScreen",
         );
 
         if (!mounted) return;
@@ -501,7 +555,7 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushNamedAndRemoveUntil(
           context,
           "/BusinessDetailsScreen",
-          (route) => false,
+              (route) => false,
         );
 
         return;
@@ -537,7 +591,7 @@ class _SplashScreenState extends State<SplashScreen> {
         if (!businessSuccess) {
           debugPrint(
             "⚠️ BUSINESS DATA NOT FOUND "
-            "→ BusinessDetailsScreen",
+                "→ BusinessDetailsScreen",
           );
 
           if (!mounted) return;
@@ -545,7 +599,7 @@ class _SplashScreenState extends State<SplashScreen> {
           Navigator.pushNamedAndRemoveUntil(
             context,
             "/BusinessDetailsScreen",
-            (route) => false,
+                (route) => false,
           );
 
           return;
@@ -585,7 +639,7 @@ class _SplashScreenState extends State<SplashScreen> {
         if (hasName) {
           debugPrint(
             "✅ BUSINESS PROFILE COMPLETE "
-            "→ CustomBottomNavScreen",
+                "→ CustomBottomNavScreen",
           );
 
           if (!mounted) return;
@@ -593,7 +647,7 @@ class _SplashScreenState extends State<SplashScreen> {
           Navigator.pushNamedAndRemoveUntil(
             context,
             "/CustomBottomNavScreen",
-            (route) => false,
+                (route) => false,
           );
 
           return;
@@ -605,7 +659,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
         debugPrint(
           "⚠️ BUSINESS PROFILE INCOMPLETE "
-          "→ BusinessDetailsScreen",
+              "→ BusinessDetailsScreen",
         );
 
         if (!mounted) return;
@@ -613,7 +667,7 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushNamedAndRemoveUntil(
           context,
           "/BusinessDetailsScreen",
-          (route) => false,
+              (route) => false,
         );
 
         return;
@@ -677,7 +731,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Navigator.pushNamedAndRemoveUntil(
       context,
       '/LoginScreen',
-      (route) => false,
+          (route) => false,
     );
   }
 
@@ -691,7 +745,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Navigator.pushNamedAndRemoveUntil(
       context,
       '/LoginScreen',
-      (route) => false,
+          (route) => false,
     );
   }
 

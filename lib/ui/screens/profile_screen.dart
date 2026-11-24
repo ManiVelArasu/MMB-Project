@@ -1153,68 +1153,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
+// Replace clearUserSession() in profile_screen.dart with this.
 Future<void> clearUserSession(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
 
   // =========================================================
-  // AUTH
+  // EXACT KEYS
   // =========================================================
-
-  await prefs.remove('is_logged_in');
-  await prefs.remove('auth_token');
-  await prefs.remove('refresh_token');
-
-  // =========================================================
-  // USER
-  // =========================================================
-
-  await prefs.remove('user_id');
-  await prefs.remove('uid');
-  await prefs.remove('mobile_number');
-  await prefs.remove('phone_number');
-
-  // =========================================================
-  // ACCOUNT
-  // =========================================================
-
-  await prefs.remove('account_type');
-  await prefs.remove('role');
-
-  // =========================================================
-  // BUSINESS / PROFILE
-  // =========================================================
-
-  await prefs.remove('is_business_completed');
-  await prefs.remove('saved_business_name');
-  await prefs.remove('saved_email');
-  await prefs.remove('saved_mobile_number');
-  await prefs.remove('saved_business_image_path');
-
-  await prefs.remove('business_name');
-
-  await prefs.remove('logo_s3_key');
-  await prefs.remove('profile_s3_key');
-  await prefs.remove('profile_photo_s3_key');
+  const exactKeys = <String>[
+    // auth
+    'is_logged_in', 'auth_token', 'refresh_token',
+    // user
+    'user_id', 'uid', 'mobile_number', 'phone_number',
+    // account
+    'account_type', 'role',
+    // business / profile
+    'is_business_completed',
+    'business_uid', // used by BusinessDetailsScreen
+    'business_name',
+    'logo_s3_key', 'profile_s3_key', 'profile_photo_s3_key',
+    // account selection / continue
+    'continue', 'continue_status', 'showSkip',
+    'selected_account', 'selected_account_type',
+    // per-user preferences
+    'selected_language_codes', 'recent_searches',
+  ];
+  for (final k in exactKeys) {
+    await prefs.remove(k);
+  }
 
   // =========================================================
-  // ACCOUNT SELECTION / CONTINUE
+  // PREFIX KEYS  (every saved_* / business_* value of the old user:
+  // saved_business_name, saved_email, saved_mobile_number,
+  // saved_business_image_path, saved_category_name, saved_category_slug ...)
+  // Theme / onboarding keys are NOT touched.
   // =========================================================
-
-  await prefs.remove('continue');
-  await prefs.remove('continue_status');
-  await prefs.remove('selected_account');
-  await prefs.remove('selected_account_type');
+  for (final k in prefs.getKeys().toList()) {
+    if (k.startsWith('saved_') || k.startsWith('business_')) {
+      await prefs.remove(k);
+    }
+  }
 
   // =========================================================
   // PROVIDER CLEAR
   // =========================================================
-
   try {
-    context.read<BusinessProvider>().clearImage();
+    final bp = context.read<BusinessProvider>();
+    // BusinessProvider lives for the whole app run, so its text fields must
+    // be emptied too, otherwise the next login shows the old user's data.
+    bp.clearImage();
+    bp.nameController.clear();
+    bp.emailController.clear();
+    bp.mobileController.clear();
+    bp.setBusinessName('');
+    bp.setEmail('');
+    bp.setMobileNumber('');
   } catch (e) {
     debugPrint('BusinessProvider clear error: $e');
   }
-  CommonProvider.instance.clearAll();
+
+  try {
+    CommonProvider.instance.clearAll();
+  } catch (e) {
+    debugPrint('CommonProvider.instance clear error: $e');
+  }
 
   try {
     context.read<HomeScreenProvider>().clearUserData();
@@ -1228,9 +1230,7 @@ Future<void> clearUserSession(BuildContext context) async {
     debugPrint('AuthProvider clear error: $e');
   }
 
-  debugPrint("========================================");
-  debugPrint("✅ COMPLETE USER SESSION CLEARED");
-  debugPrint("========================================");
+  debugPrint('✅ COMPLETE USER SESSION CLEARED');
 }
 
 void _showLanguagesBottomSheet(

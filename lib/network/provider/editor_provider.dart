@@ -1448,6 +1448,41 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
+  // ---- Text case (the "Tт" button): UPPERCASE <-> original case ----------
+  final Map<String, String> _textOriginalCase = {};
+
+  /// True when the item's text is entirely upper case (button shows selected).
+  bool isTextUpperCase(String id) {
+    final t = _items.where((e) => e.id == id).firstOrNull?.text ?? '';
+    return t.isNotEmpty && t == t.toUpperCase() && t != t.toLowerCase();
+  }
+
+  void toggleTextCase(String id) {
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return;
+    final current = _items[index].text ?? '';
+    if (current.isEmpty) return;
+
+    String next;
+    if (isTextUpperCase(id)) {
+      // Back to what the user had before; if text was edited meanwhile,
+      // fall back to lower case.
+      final original = _textOriginalCase[id];
+      next = (original != null && original.toUpperCase() == current)
+          ? original
+          : current.toLowerCase();
+      _textOriginalCase.remove(id);
+    } else {
+      _textOriginalCase[id] = current;
+      next = current.toUpperCase();
+    }
+
+    _saveState();
+    _items[index] = _items[index].copyWith(text: next);
+    _syncCurrentPage();
+    notifyListeners();
+  }
+
   void toggleTextUnderline(String id) {
     _saveState();
     _textUnderline[id] = !textUnderline(id);
@@ -2588,7 +2623,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
         if (isTextObject) {
           final fontSize = _toDouble(json['fontSize']) ?? 36.0;
-          final text = json['text']?.toString() ?? '';
+          // Fabric can leave NUL chars ("Marks\u0000"); Flutter draws a box.
+          final text = (json['text']?.toString() ?? '').replaceAll('\u0000', '');
 
           final item = EditorItem(
             id: id,
@@ -2733,6 +2769,17 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   }) {
     const fabricFontSizeMult = 1.13;
     final lineCount = math.max(1, '\n'.allMatches(text).length + 1);
+
+    // Single line: Fabric's saved object height is the real drawn height, and
+    // lineHeight only spaces *between* lines. Trusting rawLineHeight here
+    // (e.g. 1.775 * 1.13 = 2.0) pushes the glyphs down and overlaps the text
+    // below, so use the natural height from the object instead.
+    if (lineCount == 1 && fontSize > 0 && objectHeight > 0) {
+      final natural = objectHeight / fontSize;
+      if (natural.isFinite && natural >= 0.7 && natural <= 1.6) {
+        return natural;
+      }
+    }
 
     if (rawLineHeight.isFinite && rawLineHeight > 0) {
       final fabricLine = rawLineHeight * fabricFontSizeMult;

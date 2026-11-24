@@ -173,7 +173,7 @@ class BusinessProvider extends ChangeNotifier {
 
                 debugPrint(
                   "✅ ACCOUNT TYPE UPDATED = "
-                  "${language.data.accountType}",
+                      "${language.data.accountType}",
                 );
               }
             }
@@ -233,9 +233,25 @@ class BusinessProvider extends ChangeNotifier {
     _isNewLogoSelected = false;
     _isNewProfileSelected = false;
 
+    // Text state: the controllers AND the backing fields / errors, otherwise
+    // the next login still shows the old user's values.
     nameController.clear();
     emailController.clear();
     mobileController.clear();
+    _businessName = "";
+    _email = "";
+    _mobileNumber = "";
+    _nameError = null;
+    _emailError = null;
+    _mobileError = null;
+    _imageError = null;
+    _businessUid = null;
+    _savedCategorySlug = "";
+    _errorMessage = null;
+    _isUploading = false;
+    _hasChanges = false;
+    _isApplied = false;
+    _resetLivePreview();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('is_business_completed');
@@ -243,6 +259,8 @@ class BusinessProvider extends ChangeNotifier {
     await prefs.remove('saved_email');
     await prefs.remove('saved_mobile_number');
     await prefs.remove('saved_business_image_path');
+    await prefs.remove('saved_category_name');
+    await prefs.remove('saved_category_slug');
 
     await prefs.remove('profile_s3_key');
     await prefs.remove('profile_photo_s3_key');
@@ -329,12 +347,12 @@ class BusinessProvider extends ChangeNotifier {
 
       switch (accountType) {
         case 'personal':
-          // Personal -> users/{uid}/profile/...
+        // Personal -> users/{uid}/profile/...
           uploadSlot = 'profile_photo';
           break;
 
         case 'business':
-          // Business -> users/{uid}/logo/...
+        // Business -> users/{uid}/logo/...
           uploadSlot = 'business_logo';
           break;
 
@@ -366,12 +384,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-            slot: uploadSlot,
-          );
+        imageFile: imageFile,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+        slot: uploadSlot,
+      );
 
       bool success = false;
 
@@ -595,10 +613,10 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<Map<String, dynamic>?> businessUpdateApi(
-    BuildContext context,
-    String subIndustry,
-    String other,
-  ) async {
+      BuildContext context,
+      String subIndustry,
+      String other,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -686,8 +704,8 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>?> skipBusinessUpdateApi(
-    BuildContext context,
-  ) async {
+      BuildContext context,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -770,9 +788,9 @@ class BusinessProvider extends ChangeNotifier {
   // ------------------------------------------------------------
 
   Future<bool> updateBusinessDetails(
-    BuildContext context,
-    String businessUid,
-  ) async {
+      BuildContext context,
+      String businessUid,
+      ) async {
     _isUploading = true;
     _errorMessage = null;
 
@@ -787,9 +805,9 @@ class BusinessProvider extends ChangeNotifier {
 
       final logoS3Key = _logoS3Key?.trim();
       final String? finalLogoKey =
-          (_isNewLogoSelected &&
-              _logoS3Key != null &&
-              _logoS3Key!.trim().isNotEmpty)
+      (_isNewLogoSelected &&
+          _logoS3Key != null &&
+          _logoS3Key!.trim().isNotEmpty)
           ? _logoS3Key!.trim()
           : null;
 
@@ -861,9 +879,9 @@ class BusinessProvider extends ChangeNotifier {
       // Profile picture select panniruntha mattum key anuppum, illana null
       final profileS3Key = _profileS3Key?.trim();
       final String? finalProfileKey =
-          (_isNewProfileSelected &&
-              profileS3Key != null &&
-              profileS3Key.isNotEmpty)
+      (_isNewProfileSelected &&
+          profileS3Key != null &&
+          profileS3Key.isNotEmpty)
           ? profileS3Key
           : null;
 
@@ -964,7 +982,7 @@ class BusinessProvider extends ChangeNotifier {
     final savedLogoKey = prefs.getString('logo_s3_key');
     final savedProfileKey =
         prefs.getString('profile_s3_key') ??
-        prefs.getString('profile_photo_s3_key');
+            prefs.getString('profile_photo_s3_key');
 
     if (savedLogoKey != null && savedLogoKey.trim().isNotEmpty) {
       _logoS3Key = savedLogoKey.trim();
@@ -1021,17 +1039,17 @@ class BusinessProvider extends ChangeNotifier {
 
     debugPrint(
       "✅ ACCOUNT TYPE UPDATED = "
-      "${provider.me?.data.accountType}",
+          "${provider.me?.data.accountType}",
     );
 
     debugPrint(
       "COMMON ACCOUNT TYPE = "
-      "${provider.accountType}",
+          "${provider.accountType}",
     );
 
     debugPrint(
       "IS PERSONAL = "
-      "${provider.isPersonal}",
+          "${provider.isPersonal}",
     );
 
     debugPrint("================================");
@@ -1302,12 +1320,12 @@ class BusinessProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-            slot: uploadSlot,
-          );
+        imageFile: imageFile,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+        slot: uploadSlot,
+      );
 
       bool success = false;
 
@@ -1457,9 +1475,9 @@ class BusinessProvider extends ChangeNotifier {
   // ============================================================
 
   Future<void> pickImage(
-    BuildContext context, {
-    ImageSource source = ImageSource.gallery,
-  }) async {
+      BuildContext context, {
+        ImageSource source = ImageSource.gallery,
+      }) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -1512,12 +1530,12 @@ class BusinessProvider extends ChangeNotifier {
     AccTypeModel(
       title: "For my Business",
       description:
-          "Create branded designs tailored to your business and industry.",
+      "Create branded designs tailored to your business and industry.",
     ),
     AccTypeModel(
       title: "Personal Use",
       description:
-          "Create designs for festivals, birthdays, quotes, social posts, and more.",
+      "Create designs for festivals, birthdays, quotes, social posts, and more.",
     ),
   ];
 

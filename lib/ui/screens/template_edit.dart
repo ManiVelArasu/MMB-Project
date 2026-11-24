@@ -863,7 +863,6 @@ class _EditorViewState extends State<EditorView> {
       // string in ProjectProvider because the update repository accepts a
       // nullable string templateId. Do not use uid/familyUid here.
       final int? templateId = int.tryParse(data.id ?? '');
-      final int? templateUId = int.tryParse(data.familyId ?? '');
       final templateName = data.name?.toString().trim().isNotEmpty == true
           ? data.name.toString().trim()
           : 'Untitled design';
@@ -878,14 +877,25 @@ class _EditorViewState extends State<EditorView> {
       if (selectedSize.width > 0 && selectedSize.height > 0) {
         editorProvider.setCanvasSize(selectedSize.width, selectedSize.height);
       }
-      final templateContent = jsonEncode(
-        editorProvider.exportCurrentPageJson(),
-      );
+      // Same body as the web editor: the template's own Fabric JSON (srcs
+      // rewritten to templates/<uid>/..., template info in metadata) and the
+      // template's numeric `id` as template_id. When the user picked a
+      // different canvas size the objects were not re-laid-out, so keep the
+      // exported editor JSON for that case.
+      final webContent = hasExplicitResize
+          ? null
+          : _buildWebProjectContent(data, uid);
+      final templateContent =
+          webContent ?? jsonEncode(editorProvider.exportCurrentPageJson());
+
+      final projectName = webContent != null
+          ? _webProjectName(templateName, selectedSize)
+          : templateName;
 
       final projectSuccess = await projectProvider.createProject(
-        name: templateName,
+        name: projectName,
         content: templateContent,
-        id: templateUId,
+        id: templateId,
       );
 
       if (!mounted) return;
@@ -968,6 +978,75 @@ class _EditorViewState extends State<EditorView> {
 
     editorProvider.fetchFreePikAssets('furniture');
     editorProvider.fetchFreePikStickers('stickers');
+  }
+
+  /// "Post Portrait 1080 x 1350 - <template name>" (web naming).
+  String _webProjectName(String templateName, Size size) {
+    final w = size.width.round();
+    final h = size.height.round();
+    final shape = w == h ? 'Square' : (w > h ? 'Landscape' : 'Portrait');
+    return 'Post $shape $w x $h - $templateName';
+  }
+
+  /// Builds the project `content` exactly like the web editor does: the
+  /// template's Fabric JSON, asset URLs pointing at templates/<uid>/<file>,
+  /// plus metadata.template / metadata.premium. Returns null on any problem
+  /// (the caller then falls back to the exported editor JSON).
+  String? _buildWebProjectContent(dynamic item, String templateUid) {
+    try {
+      final raw = (item.content as String?)?.trim() ?? '';
+      if (raw.isEmpty || templateUid.isEmpty) return null;
+
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+      final root = Map<String, dynamic>.from(decoded);
+
+      String fixUrl(String url) {
+        if (!url.contains('amazonaws.com')) return url;
+        final uri = Uri.tryParse(url);
+        if (uri == null || uri.pathSegments.isEmpty) return url;
+        final segs = uri.pathSegments;
+        if (segs.contains('templates')) return url; // already rewritten
+        return '${uri.scheme}://${uri.host}/templates/$templateUid/'
+            '${segs.last}';
+      }
+
+      dynamic walk(dynamic node) {
+        if (node is Map) {
+          return node.map((k, v) {
+            if ((k == 'src' || k == 'sourceUrl') && v is String) {
+              return MapEntry(k, fixUrl(v));
+            }
+            return MapEntry(k, walk(v));
+          });
+        }
+        if (node is List) return node.map(walk).toList();
+        return node;
+      }
+
+      final fixed = Map<String, dynamic>.from(walk(root) as Map);
+
+      var familyUid = '';
+      var premium = false;
+      try {
+        familyUid = (item.familyUid as String?)?.trim() ?? '';
+      } catch (_) {}
+      try {
+        premium = (item.isLocked as bool?) ?? (item.isPremium == true);
+      } catch (_) {}
+
+      final meta = fixed['metadata'] is Map
+          ? Map<String, dynamic>.from(fixed['metadata'] as Map)
+          : <String, dynamic>{};
+      meta['premium'] = premium;
+      meta['template'] = {'uid': templateUid, 'familyUid': familyUid};
+      fixed['metadata'] = meta;
+
+      return jsonEncode(fixed);
+    } catch (e) {
+      debugPrint('web project content build failed: $e');
+      return null;
+    }
   }
 
   bool _projectOpened = false;
@@ -4469,6 +4548,56 @@ class _EditorViewState extends State<EditorView> {
   // stays correct, and handles keep their normal on-screen size.
   bool _zoomModeOn = false;
 
+  // While a bottom sheet (e.g. text FORMAT) is open, the canvas is lifted so
+  // the selected item stays visible above the sheet.
+  double _sheetLift = 0.0;
+  final GlobalKey _vpKey = GlobalKey();
+
+  void _setSheetLift(double v) {
+    if (!mounted) return;
+    if ((v - _sheetLift).abs() < 0.5) return;
+    setState(() => _sheetLift = v);
+  }
+
+  /// Lift needed so the selected item's (rotated) box ends above a sheet of
+  /// height [sheetHeight].
+  void _liftForSheet(String id, double sheetHeight, double screenHeight) {
+    if (!mounted || _zoomFit.isEmpty || _zoomViewSize.isEmpty) return;
+    final box = _vpKey.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.attached) return;
+    final p = context.read<EditorProvider>();
+    EditorItem? e;
+    for (final it in p.items) {
+      if (it.id == id) {
+        e = it;
+        break;
+      }
+    }
+    if (e == null) return;
+    final base = EditableItemWidget.isTextType(e.type)
+        ? EditableItemWidget.measureTextBox(e, p)
+        : Size(math.max(1.0, e.width), math.max(1.0, e.height));
+    final s = e.scale.isFinite ? e.scale.clamp(0.01, 10.0).toDouble() : 1.0;
+    final w = base.width * s, h = base.height * s;
+    final rot = e.rotation.isFinite ? e.rotation : 0.0;
+    final hh = (w * math.sin(rot).abs() + h * math.cos(rot).abs()) / 2;
+    final cy = e.position.dy + h / 2;
+
+    final z = _canvasZoom;
+    final ch = _zoomFit.height * z;
+    final scaleY = ch / _zoomCanvasLogical.height;
+    final originY = _zoomOrigin(ch, _zoomViewSize.height) - _zoomOffV;
+    final topLocal = originY + (cy - hh) * scaleY;
+    final bottomLocal = originY + (cy + hh) * scaleY;
+
+    final vpTop = box.localToGlobal(Offset.zero).dy;
+    final sheetTop = screenHeight - sheetHeight;
+    final need = vpTop + bottomLocal + 16 - sheetTop;
+    // Never push the item's top out of the viewport.
+    final maxLift = math.max(0.0, topLocal - 4);
+    _setSheetLift(need <= 0 ? 0.0 : math.min(need, maxLift));
+  }
+
   /// "Hand" tool while zoomed in: one finger always pans the screen, objects
   /// are never moved / resized / rotated. Tapping an object still selects it.
   bool _panMode = false;
@@ -4581,32 +4710,6 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  void _toggleZoomMode(EditorProvider p) {
-    if (_zoomModeOn) {
-      setState(() {
-        _zoomModeOn = false;
-        _panMode = false;
-        _canvasZoom = 1.0;
-        _zoomOffH = 0.0;
-        _zoomOffV = 0.0;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) => _syncZoomOffsets());
-    } else {
-      setState(() => _zoomModeOn = true);
-      _applyZoom(
-        2.0,
-        _zoomAnchorFrac(p),
-        Offset(_zoomViewSize.width / 2, _zoomViewSize.height / 2),
-      );
-    }
-  }
-
-  // ---- Canva-style gestures on the canvas viewport ----
-  //  * normal mode, element selected        -> pinch anywhere resizes + rotates it
-  //  * zoom mode, two fingers ON the element -> resize + rotate that element
-  //  * otherwise two fingers                -> zoom (+ pan) the canvas
-  //  * one finger on empty space (zoomed)   -> pan the canvas
-  //  * one finger on the selected element   -> move it (selection overlay)
   bool _gestureOnItem = false;
   // After lifting a finger from an element pinch the rest of that gesture is
   // ignored, so the canvas does not suddenly start panning.
@@ -4993,7 +5096,22 @@ class _EditorViewState extends State<EditorView> {
             onPointerDown: _dtDown,
             onPointerUp: _dtUp,
             onPointerCancel: _dtCancel,
-            child: SizedBox(width: vw, height: vh, child: layered),
+            child: SizedBox(
+              key: _vpKey,
+              width: vw,
+              height: vh,
+              child: ClipRect(
+                clipBehavior: _sheetLift > 0 ? Clip.hardEdge : Clip.none,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(end: _sheetLift),
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  builder: (_, v, child) =>
+                      Transform.translate(offset: Offset(0, -v), child: child),
+                  child: layered,
+                ),
+              ),
+            ),
           ),
         );
       },
@@ -5303,9 +5421,23 @@ class _EditorViewState extends State<EditorView> {
               icon: Icons.play_arrow_rounded,
               backgroundColor: const Color(0xFFE0E0E0),
               iconColor: const Color(0xFF555555),
-              tooltip: 'Preview',
-              onPressed: () =>
-                  _showEditorPreview(context, provider, aspectRatio),
+              tooltip: _animatePanelItemId != null
+                  ? 'Replay animation'
+                  : 'Preview',
+              onPressed: () {
+                // ANIMATE panel open -> the app bar button replays the
+                // selected item's animation instead of the full preview.
+                final animId = _animatePanelItemId;
+                if (animId != null) {
+                  if (provider.itemAnimation(animId).isNone) {
+                    Fluttertoast.showToast(msg: 'Select an animation first');
+                    return;
+                  }
+                  provider.previewItemAnimation(animId);
+                  return;
+                }
+                _showEditorPreview(context, provider, aspectRatio);
+              },
             ),
             const SizedBox(width: 10),
             _editorToolbarButton(
@@ -7651,20 +7783,12 @@ class _EditorViewState extends State<EditorView> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                quick(Icons.replay_rounded, () {
-                  if (anim.isNone) {
-                    Fluttertoast.showToast(msg: 'Select an animation first');
-                    return;
-                  }
-                  provider.previewItemAnimation(id);
-                }),
-                const SizedBox(width: 6),
+                // Replay lives on the app bar PREVIEW button; close lives in
+                // the full panel (tune -> X).
                 quick(
                   Icons.tune_rounded,
                       () => setState(() => _animatePanelCollapsed = false),
                 ),
-                const SizedBox(width: 6),
-                quick(Icons.close_rounded, _closeAnimatePanel),
               ],
             ),
           ),
@@ -8005,6 +8129,16 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
+  /// Radians -> degrees wrapped to -180..180 (for the Rotate slider).
+  double _degFromRad(double rad) {
+    if (!rad.isFinite) return 0;
+    var d = rad * 180 / math.pi;
+    d = d % 360;
+    if (d > 180) d -= 360;
+    if (d < -180) d += 360;
+    return d;
+  }
+
   void _showTextFormatBottomSheet(
       BuildContext context,
       EditorProvider provider,
@@ -8019,14 +8153,24 @@ class _EditorViewState extends State<EditorView> {
       {'icon': Icons.format_align_right_rounded, 'value': TextAlign.right},
       {'icon': Icons.format_align_justify_rounded, 'value': TextAlign.justify},
     ];
+    final sheetKey = GlobalKey();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      // Canvas stays visible + touchable-looking above the sheet.
+      barrierColor: Colors.transparent,
       builder: (sheetContext) => StatefulBuilder(
         builder: (sheetContext, setSheetState) {
           final current = provider.items.where((e) => e.id == id).firstOrNull;
           if (current == null) return const SizedBox.shrink();
+          final screenH = MediaQuery.of(sheetContext).size.height;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final rb = sheetKey.currentContext?.findRenderObject();
+            if (rb is RenderBox && rb.hasSize) {
+              _liftForSheet(id, rb.size.height, screenH);
+            }
+          });
           final fg = isDark ? Colors.white : const Color(0xFF222222);
           final bg = isDark ? const Color(0xFF17191E) : Colors.white;
           Widget iconButton(IconData icon, bool selected, VoidCallback onTap) =>
@@ -8097,8 +8241,10 @@ class _EditorViewState extends State<EditorView> {
                     ),
                   ],
                 ),
+                // Tall touch area (the track itself stays 2px thin) so the
+                // slider follows the finger anywhere near the line.
                 SizedBox(
-                  height: 2,
+                  height: 36,
                   child: SliderTheme(
                     data: SliderTheme.of(sheetContext).copyWith(
                       activeTrackColor: Colors.red,
@@ -8124,6 +8270,7 @@ class _EditorViewState extends State<EditorView> {
           }
 
           return Container(
+            key: sheetKey,
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 18),
             decoration: BoxDecoration(
               color: bg,
@@ -8184,11 +8331,12 @@ class _EditorViewState extends State<EditorView> {
                         provider.textWeight(id) == FontWeight.bold,
                             () => provider.toggleTextBold(id),
                       ),
+                      // "Tт": toggles UPPERCASE <-> normal case.
+                      // (Font picker is still available from the FONT tool.)
                       iconButton(
                         Icons.text_fields_rounded,
-                        false,
-                            () =>
-                            _showTextFontPicker(context, provider, id, isDark),
+                        provider.isTextUpperCase(id),
+                            () => provider.toggleTextCase(id),
                       ),
                       iconButton(
                         Icons.format_italic_rounded,
@@ -8214,21 +8362,13 @@ class _EditorViewState extends State<EditorView> {
                             a['icon'] as IconData,
                             provider.textAlignment(id) == a['value'],
                                 () {
-                              final v = a['value'] as TextAlign;
-                              if (v == TextAlign.justify) {
-                                // No page position for justify.
-                                provider.updateTextAlignment(id, v);
-                              } else {
-                                _alignItemToPage(
-                                  provider,
-                                  id,
-                                  v == TextAlign.left
-                                      ? 'left'
-                                      : v == TextAlign.center
-                                      ? 'center'
-                                      : 'right',
-                                );
-                              }
+                              // Align ONLY inside the text's own editor box
+                              // (the selection line). The item is not moved
+                              // on the page.
+                              provider.updateTextAlignment(
+                                id,
+                                a['value'] as TextAlign,
+                              );
                             },
                           ),
                         ),
@@ -8246,10 +8386,11 @@ class _EditorViewState extends State<EditorView> {
                   ),
                   sliderRow(
                     'Rotate',
-                    current.rotation,
+                    // item.rotation is in RADIANS; the slider works in degrees.
+                    _degFromRad(current.rotation),
                     -180,
                     180,
-                        (v) => provider.updateRotation(id, v),
+                        (v) => provider.updateRotation(id, v * math.pi / 180),
                   ),
                   sliderRow(
                     'Transparency',
@@ -8264,7 +8405,7 @@ class _EditorViewState extends State<EditorView> {
           );
         },
       ),
-    );
+    ).whenComplete(() => _setSheetLift(0));
   }
 
   void _showTextFontPicker(

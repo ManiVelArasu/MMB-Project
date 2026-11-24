@@ -71,7 +71,7 @@ class ProfileScreenProvider extends ChangeNotifier {
 
       debugPrint(
         "❌ Language preference failed: "
-        "${result.error?.message}",
+            "${result.error?.message}",
       );
 
       return false;
@@ -114,7 +114,7 @@ class ProfileScreenProvider extends ChangeNotifier {
 
                 debugPrint(
                   "ACCOUNT TYPE UPDATED = "
-                  "${language.data.accountType}",
+                      "${language.data.accountType}",
                 );
               }
             }
@@ -169,7 +169,7 @@ class ProfileScreenProvider extends ChangeNotifier {
 
       debugPrint(
         "❌ Account deactivate failed: "
-        "${result.error?.message}",
+            "${result.error?.message}",
       );
 
       _isDeactivateLoading = false;
@@ -296,13 +296,12 @@ class ProfileScreenProvider extends ChangeNotifier {
             style: TextStyle(fontWeight: FontWeight.w700),
           ),
           content: const Text(
-            "Are you sure you want to delete your account?\n\n"
-            "Your account will be permanently deleted within 24 hours.",
+            "Your account and business profile will be permanently deleted, and you'll be signed out everywhere. This can't be undone.",
           ),
           actions: [
             TextButton(
               onPressed: () {
-                clearUserSession(context);
+                // NO = just close. (It used to wipe the whole session.)
                 Navigator.pop(dialogContext, false);
               },
               child: const Text("NO", style: TextStyle(color: Colors.grey)),
@@ -313,8 +312,8 @@ class ProfileScreenProvider extends ChangeNotifier {
               onPressed: _isDeactivateLoading
                   ? null
                   : () {
-                      Navigator.pop(dialogContext, true);
-                    },
+                Navigator.pop(dialogContext, true);
+              },
               child: const Text("YES", style: TextStyle(color: Colors.white)),
             ),
           ],
@@ -333,6 +332,18 @@ class ProfileScreenProvider extends ChangeNotifier {
     if (success) {
       // Clear local data
       await ApiHandler.instance.clearTokens();
+
+      if (!context.mounted) return;
+
+      // Wipe the deleted account's local data (prefs + BusinessProvider
+      // fields) so the next login does not show it in Business Details.
+      try {
+        await context.read<BusinessProvider>().clearBusinessDataForNewLogin();
+      } catch (e) {
+        debugPrint('Business data clear error: $e');
+      }
+      if (!context.mounted) return;
+      await clearUserSession(context);
 
       if (!context.mounted) return;
 

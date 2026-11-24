@@ -114,6 +114,45 @@ class ProjectProvider extends ChangeNotifier {
     }
   }
 
+  /// GET /project/{uid}. Returns the project's `data` map (contains
+  /// `content`, `name`, `template_id`...) or null on failure.
+  Future<Map<String, dynamic>?> fetchProjectById(String projectUid) async {
+    final uid = projectUid.trim();
+    if (uid.isEmpty) {
+      _errorMessage = 'Project UID not available';
+      notifyListeners();
+      return null;
+    }
+
+    try {
+      final result = await repository.getProjectById(projectUid: uid);
+
+      if (result.isFailure) {
+        _errorMessage = result.error?.message ?? 'Unable to load project';
+        notifyListeners();
+        return null;
+      }
+
+      final response = result.data;
+      if (response is! Map) return null;
+
+      final raw = response['data'];
+      final data = Map<String, dynamic>.from(
+        (raw is Map ? raw : response) as Map,
+      );
+
+      _readProjectData(response);
+      notifyListeners();
+      return data;
+    } catch (e, stackTrace) {
+      _errorMessage = e.toString();
+      debugPrint('❌ GET PROJECT EXCEPTION: $e');
+      debugPrint(stackTrace.toString());
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<bool> deleteProject(String? projectUid) async {
     final uid = projectUid?.trim() ?? '';
 

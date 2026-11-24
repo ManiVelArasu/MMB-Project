@@ -182,10 +182,12 @@ class BusinessProfileView extends StatelessWidget {
                             SizedBox(height: 4.h),
                             BusinessCategoryCard(
                               category: provider.businessName.isEmpty
-                                  ? "${provider.commonProvider.business?.businessCategory?.parent?.name}"
+                                  ? (provider.commonProvider.business?.businessCategory?.parent?.name ?? '')
                                   : provider.businessName,
                               subCategories:
-                              "${provider.commonProvider.business?.businessCategory?.name ?? provider.commonProvider.business?.businessCategory?.parent?.name}",
+                              provider.commonProvider.business?.businessCategory?.name ??
+                                  provider.commonProvider.business?.businessCategory?.parent?.name ??
+                                  '',
                               onEditTap: () {
                                 Navigator.pushNamed(
                                   context,
