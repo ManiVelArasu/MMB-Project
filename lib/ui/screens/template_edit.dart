@@ -321,13 +321,41 @@ class _EditorViewState extends State<EditorView> {
       compressQuality: 100,
       uiSettings: [
         AndroidUiSettings(
-          toolbarTitle: 'Crop Image',
+          toolbarTitle: 'Crop',
           toolbarColor: Colors.black,
           toolbarWidgetColor: Colors.white,
           lockAspectRatio: false,
           hideBottomControls: false,
+          // Canva-style: Freeform / Original / 1:1 / 4:3 / 3:2 / 16:9 ...
+          initAspectRatio: CropAspectRatioPreset.original,
+          aspectRatioPresets: const [
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.square,
+            CropAspectRatioPreset.ratio3x2,
+            CropAspectRatioPreset.ratio4x3,
+            CropAspectRatioPreset.ratio5x3,
+            CropAspectRatioPreset.ratio5x4,
+            CropAspectRatioPreset.ratio7x5,
+            CropAspectRatioPreset.ratio16x9,
+          ],
         ),
-        IOSUiSettings(title: 'Crop Image', aspectRatioLockEnabled: false),
+        IOSUiSettings(
+          title: 'Crop',
+          aspectRatioLockEnabled: false,
+          aspectRatioPickerButtonHidden: false,
+          rotateButtonsHidden: false,
+          rotateClockwiseButtonHidden: false,
+          aspectRatioPresets: const [
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.square,
+            CropAspectRatioPreset.ratio3x2,
+            CropAspectRatioPreset.ratio4x3,
+            CropAspectRatioPreset.ratio5x3,
+            CropAspectRatioPreset.ratio5x4,
+            CropAspectRatioPreset.ratio7x5,
+            CropAspectRatioPreset.ratio16x9,
+          ],
+        ),
       ],
     );
 
@@ -5659,6 +5687,12 @@ class _EditorViewState extends State<EditorView> {
                                                 id,
                                               );
                                             },
+                                            onImageDoubleTap: (id) =>
+                                                _cropSelectedImage(
+                                                  context,
+                                                  provider,
+                                                  id,
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -9851,6 +9885,59 @@ class _EditorViewState extends State<EditorView> {
               ),
             ),
             const SizedBox(height: 6),
+            // Canva-style Rotate: turns the picture behind the fixed mask.
+            Builder(
+              builder: (_) {
+                final idx = provider.items.indexWhere((e) => e.id == id);
+                final rot = idx == -1 ? 0.0 : provider.items[idx].rotation;
+                var deg = rot * 180 / math.pi;
+                deg = ((deg + 180) % 360) - 180; // -180..180
+                return Row(
+                  children: [
+                    SizedBox(
+                      width: 52,
+                      child: AppText(
+                        'Rotate',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: AppFontSize.fontSize12,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Slider(
+                        min: -180,
+                        max: 180,
+                        value: deg.clamp(-180.0, 180.0).toDouble(),
+                        onChanged: (v) => provider.updateItemTransform(
+                          id,
+                          rotation: v * math.pi / 180,
+                          clampToFrame: false,
+                        ),
+                        onChangeEnd: (_) => provider.commitTransform(),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        provider.updateItemTransform(
+                          id,
+                          rotation: 0,
+                          clampToFrame: false,
+                        );
+                        provider.commitTransform();
+                      },
+                      child: AppText(
+                        'Auto',
+                        style: TextStyle(
+                          color: Colors.amberAccent,
+                          fontSize: AppFontSize.fontSize12,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
             Row(
               children: [
                 action(

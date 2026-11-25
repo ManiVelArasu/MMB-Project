@@ -32,10 +32,15 @@ class EditableItemWidget extends StatelessWidget {
   final EditorItem item;
   final Function(String type, String id) onItemSelected;
 
+  /// Double-tap on an UNMASKED image (Canva style): the host opens its crop
+  /// screen (aspect ratio / rotate). Masked images enter EDIT MASK instead.
+  final void Function(String id)? onImageDoubleTap;
+
   const EditableItemWidget({
     super.key,
     required this.item,
     required this.onItemSelected,
+    this.onImageDoubleTap,
   });
 
   @override
@@ -229,13 +234,30 @@ class EditableItemWidget extends StatelessWidget {
                   }
                 },
                 onDoubleTap: () {
-                  if (isTextItem && !isBackground) {
+                  if (isBackground) return;
+                  if (isTextItem) {
                     showTextEditor(
                       context,
                       provider,
                       currentItem.id!,
                       currentItem.text ?? '',
                     );
+                    return;
+                  }
+                  if (currentItem.type == 'image') {
+                    final id = currentItem.id!;
+                    if (provider.isItemLocked(id)) return;
+                    if (!isSelected) {
+                      onItemSelected(currentItem.type ?? '', id);
+                    }
+                    if (provider.hasEditableMask(id)) {
+                      // Masked image -> mask window fixed, picture can be
+                      // moved / scaled / rotated behind it.
+                      provider.beginClipEdit(id);
+                    } else {
+                      // Plain image -> crop with aspect ratio + rotate.
+                      onImageDoubleTap?.call(id);
+                    }
                   }
                 },
                 child: Transform.scale(
