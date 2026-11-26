@@ -254,10 +254,11 @@ class _EditorViewState extends State<EditorView> {
     final sc = item.scale.isFinite && item.scale.abs() > 0 ? item.scale : 1.0;
     final w = item.width * sc;
     final h = item.height * sc;
-    final coversPage = item.position.dx.abs() <= 12 &&
-        item.position.dy.abs() <= 12 &&
-        w >= provider.canvasWidth * 0.95 &&
-        h >= provider.canvasHeight * 0.95;
+    final coversPage =
+        item.position.dx.abs() <= 12 &&
+            item.position.dy.abs() <= 12 &&
+            w >= provider.canvasWidth * 0.95 &&
+            h >= provider.canvasHeight * 0.95;
     if (!coversPage) return false;
     // A canvas-sized PNG with transparent areas (person / sticker cut-out)
     // is a NORMAL image, not a background. Only an (almost) fully opaque
@@ -1462,23 +1463,45 @@ class _EditorViewState extends State<EditorView> {
       return false;
     }
 
-    final logoKey = (bp.logoS3Key ?? bp.profileS3Key ?? '').trim();
-    final logoUrl = logoKey.isEmpty
+    String clean(dynamic v) => (v ?? '').toString().trim();
+
+    // loadSavedBusinessName() is async and was only started (not awaited)
+    // when the sheet opened. A quick tap on a frame used the still-empty
+    // phone / website, so the number never showed. Wait for it here.
+    if (clean(bp.savedPhone).isEmpty) {
+      try {
+        await bp.loadSavedBusinessName();
+      } catch (_) {}
+      if (!mounted) return false;
+    }
+
+    final logoKey = clean(bp.logoS3Key ?? bp.profileS3Key);
+    final freshLogoUrl = logoKey.isEmpty
         ? ''
         : '${ApiEndpoints.cdnImageUrl}/$logoKey';
+
+    // Values already on the active frame (set on the Business Frames
+    // screen) are kept whenever the profile has nothing newer, so an
+    // active number is never replaced by an empty one.
+    final prev = ActiveBrandFrame.instance;
+    String pick(dynamic fresh, String key) {
+      final v = clean(fresh);
+      return v.isNotEmpty ? v : (prev.slotTexts[key] ?? '');
+    }
 
     ActiveBrandFrame.instance.update(
       uid: uid,
       contentJson: content,
       enabled: true,
       slotTexts: {
-        'phone': bp.savedPhone,
-        'web': bp.savedWebsite,
-        'name': bp.businessName,
-        // 'email': ...  (add if you have it in the provider)
+        'phone': pick(bp.savedPhone, 'phone'),
+        'web': pick(bp.savedWebsite, 'web'),
+        'name': pick(bp.businessName, 'name'),
+        if ((prev.slotTexts['email'] ?? '').isNotEmpty)
+          'email': prev.slotTexts['email']!,
       },
-      logoFile: bp.selectedLogoFile,
-      logoUrl: logoUrl,
+      logoFile: bp.selectedLogoFile ?? prev.logoFile,
+      logoUrl: freshLogoUrl.isNotEmpty ? freshLogoUrl : prev.logoUrl,
     );
 
     if (mounted) setState(() {});
@@ -5657,9 +5680,8 @@ class _EditorViewState extends State<EditorView> {
                                     isSelected:
                                     provider.selectedItemId ==
                                         backgroundItems.first.id,
-                                    onDoubleTapped: () =>
-                                    _bgDoubleTapMs = DateTime.now()
-                                        .millisecondsSinceEpoch,
+                                    onDoubleTapped: () => _bgDoubleTapMs =
+                                        DateTime.now().millisecondsSinceEpoch,
                                     onTapOutside: () {
                                       if (provider.multiSelectMode) return;
                                       // The canvas Listener already selected
@@ -5741,8 +5763,9 @@ class _EditorViewState extends State<EditorView> {
                                           alignment: Alignment.topLeft,
                                           child: EditableItemWidget(
                                             item: item,
-                                            softBackground:
-                                            _isBackgroundLike(item),
+                                            softBackground: _isBackgroundLike(
+                                              item,
+                                            ),
                                             onSoftBackgroundTap: () {
                                               // The tap already selected an
                                               // item above this background:
@@ -9017,8 +9040,8 @@ class _EditorViewState extends State<EditorView> {
                             t[1],
                             style: TextStyle(
                               color: activeTab == t[0]
-                                  ? Colors.white
-                                  : Colors.white70,
+                                  ? AppColors.appWhite
+                                  : AppColors.appWhite,
                               fontSize: AppFontSize.fontSize10,
                               fontWeight: FontWeight.w600,
                             ),
@@ -9208,12 +9231,10 @@ class _EditorViewState extends State<EditorView> {
               borderRadius: BorderRadius.circular(10),
               child: Container(
                 decoration: BoxDecoration(
-                  color: active
-                      ? AppColors.appRed
-                      : const Color(0xFF252A34),
+                  color: active ? AppColors.appRed : const Color(0xFF252A34),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: active ? AppColors.appRed: AppColors.appWhite,
+                    color: active ? AppColors.appRed : AppColors.appWhite,
                   ),
                 ),
                 child: Column(
@@ -9261,9 +9282,7 @@ class _EditorViewState extends State<EditorView> {
               borderRadius: BorderRadius.circular(10),
               child: Container(
                 decoration: BoxDecoration(
-                  color: active
-                      ? AppColors.appRed
-                      : const Color(0xFF252A34),
+                  color: active ? AppColors.appRed : const Color(0xFF252A34),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: active ? AppColors.appRed : Colors.white10,
@@ -14476,7 +14495,7 @@ class _FontPickerSheetState extends State<_FontPickerSheet> {
               Expanded(
                 child: fonts.isEmpty
                     ? Center(
-                  child: Text(
+                  child: AppText(
                     'No fonts found',
                     style: TextStyle(color: sub, fontSize: 14),
                   ),
