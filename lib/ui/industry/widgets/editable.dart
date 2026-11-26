@@ -41,12 +41,24 @@ class EditableItemWidget extends StatelessWidget {
   /// really under the finger, so overlapping items never open the wrong one.
   final void Function(String id)? onItemDoubleTap;
 
+  /// Canvas-sized picture that behaves like the page background (Canva):
+  /// single tap does nothing (it only drops any other selection), drag is
+  /// ignored until it was selected with a double tap.
+  final bool softBackground;
+
+  /// Single tap that reached a soft background. The host decides whether to
+  /// drop the selection (it must NOT when the same tap just selected another
+  /// item lying above the background).
+  final VoidCallback? onSoftBackgroundTap;
+
   const EditableItemWidget({
     super.key,
     required this.item,
     required this.onItemSelected,
     this.onImageDoubleTap,
     this.onItemDoubleTap,
+    this.softBackground = false,
+    this.onSoftBackgroundTap,
   });
 
   @override
@@ -179,7 +191,7 @@ class EditableItemWidget extends StatelessWidget {
               // Press-and-drag moves the item directly (selects it first), so
               // small text needs no separate tap-then-drag. Starts after only
               // a few px and keeps the item under the finger.
-              gestures: isBackground
+              gestures: (isBackground || (softBackground && !isSelected))
                   ? const <Type, GestureRecognizerFactory>{}
                   : <Type, GestureRecognizerFactory>{
                 EagerPanRecognizer:
@@ -230,6 +242,12 @@ class EditableItemWidget extends StatelessWidget {
                 // Move/resize/rotate are handled by the selection overlay to avoid
                 // competing gestures on the same canvas element.
                 onTap: () {
+                  if (softBackground) {
+                    // Single tap on a background-like picture: nothing is
+                    // selected; an existing selection frame is hidden.
+                    if (!isSelected) onSoftBackgroundTap?.call();
+                    return;
+                  }
                   debugPrint(
                     'TAP item id=${currentItem.id} type=${currentItem.type} '
                         'bg=$isBackground pos=${currentItem.position} '
@@ -2290,6 +2308,26 @@ class ItemAlphaCache {
   static final Map<String, _AlphaMask?> _masks = {};
   static final Set<String> _loading = {};
   static const int _maxSide = 192;
+
+  static final Map<String, double> _opaque = {};
+
+  /// Share of visible (non-transparent) pixels, 0..1. Null while the image is
+  /// still being decoded or when it could not be decoded. A real page
+  /// background is ~fully opaque; a canvas-sized cut-out PNG (person,
+  /// sticker) is mostly transparent.
+  static double? opaqueFraction(String url) {
+    final cached = _opaque[url];
+    if (cached != null) return cached;
+    final m = maskFor(url);
+    if (m == null) return null;
+    var n = 0;
+    for (final a in m.alpha) {
+      if (a > 24) n++;
+    }
+    final f = m.alpha.isEmpty ? 1.0 : n / m.alpha.length;
+    _opaque[url] = f;
+    return f;
+  }
 
   /// Returns the mask when ready; otherwise starts decoding and returns null.
   static _AlphaMask? maskFor(String url) {
