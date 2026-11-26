@@ -32,15 +32,21 @@ class EditableItemWidget extends StatelessWidget {
   final EditorItem item;
   final Function(String type, String id) onItemSelected;
 
-  /// Double-tap on an UNMASKED image (Canva style): the host opens its crop
-  /// screen (aspect ratio / rotate). Masked images enter EDIT MASK instead.
+  /// Double-tap on an image (Canva style): the host opens its crop screen
+  /// (Auto / Aspect ratio / Rotate / Expand).
   final void Function(String id)? onImageDoubleTap;
+
+  /// Double-tap on ANY item. When given, the host decides what to open
+  /// (text editor for text, crop screen for images) based on the item that is
+  /// really under the finger, so overlapping items never open the wrong one.
+  final void Function(String id)? onItemDoubleTap;
 
   const EditableItemWidget({
     super.key,
     required this.item,
     required this.onItemSelected,
     this.onImageDoubleTap,
+    this.onItemDoubleTap,
   });
 
   @override
@@ -235,6 +241,10 @@ class EditableItemWidget extends StatelessWidget {
                 },
                 onDoubleTap: () {
                   if (isBackground) return;
+                  if (onItemDoubleTap != null) {
+                    onItemDoubleTap!(currentItem.id!);
+                    return;
+                  }
                   if (isTextItem) {
                     showTextEditor(
                       context,
@@ -250,14 +260,9 @@ class EditableItemWidget extends StatelessWidget {
                     if (!isSelected) {
                       onItemSelected(currentItem.type ?? '', id);
                     }
-                    if (provider.hasEditableMask(id)) {
-                      // Masked image -> mask window fixed, picture can be
-                      // moved / scaled / rotated behind it.
-                      provider.beginClipEdit(id);
-                    } else {
-                      // Plain image -> crop with aspect ratio + rotate.
-                      onImageDoubleTap?.call(id);
-                    }
+                    // Canva style: double-tap any image -> crop screen
+                    // (Auto / Aspect ratio / Rotate / Expand).
+                    onImageDoubleTap?.call(id);
                   }
                 },
                 child: Transform.scale(

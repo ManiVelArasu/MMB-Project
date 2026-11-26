@@ -47,16 +47,18 @@ String cdnUrl(String raw) {
 /// Id used for GET frames/{id}. "My brand frames" items may use a different
 /// field name than the normal frames.
 String frameUid(dynamic frame) => pick(frame, [
+  // purchased ("My Brand Frames") rows carry their own uid, the id for
+  // GET frames/{id} is the FRAME's id, so those fields come first
+      (f) => f.frame?.uid,
+      (f) => f.frameUid,
+      (f) => f.frame?.id,
+      (f) => f.frameId,
       (f) => f.uid,
       (f) => f.id,
-      (f) => f.frameUid,
-      (f) => f.frameId,
-      (f) => f.frame?.uid,
-      (f) => f.frame?.id,
-    ]);
+]);
 
 String frameThumbUrl(dynamic frame) => cdnUrl(
-      pick(frame, [
+  pick(frame, [
         (f) => f.previewS3Key,
         (f) => f.thumbnailS3Key,
         (f) => f.imageS3Key,
@@ -64,8 +66,8 @@ String frameThumbUrl(dynamic frame) => cdnUrl(
         (f) => f.imageUrl,
         (f) => f.previewUrl,
         (f) => f.url,
-      ]),
-    );
+  ]),
+);
 
 String frameLabel(dynamic frame) {
   final name = pick(frame, [(f) => f.name, (f) => f.title]);
@@ -100,6 +102,13 @@ String frameDetailImageUrl(Map<String, dynamic> detail) {
       if (v is String && v.trim().isNotEmpty) return cdnUrl(v.trim());
     }
   }
+  return '';
+}
+
+/// `version.asset_prefix` of the frames/{id} response ("" when missing).
+String frameAssetPrefix(Map<String, dynamic>? detail) {
+  final v = detail?['version'];
+  if (v is Map) return (v['asset_prefix'] ?? '').toString().trim();
   return '';
 }
 

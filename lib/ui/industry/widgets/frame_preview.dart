@@ -87,11 +87,8 @@ class FramePreview extends StatelessWidget {
       content: frameContent,
       showSlots: form.enabled,
       slotTexts: form.slotTexts,
-      logoBuilder: (w, h) {
-        // nothing to show -> keep the frame's own logo image
-        if (form.logo == null && logoUrl.isEmpty) return null;
-        return FrameSlotLogo(file: form.logo, url: logoUrl);
-      },
+      // No logoBuilder: the logo / whatsapp / website images that are inside
+      // the frame `content` are drawn exactly as the designer made them.
     );
   }
 

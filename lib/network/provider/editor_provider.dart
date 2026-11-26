@@ -2468,6 +2468,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   void setSelectedItem(String? type, String? id) {
     // Selecting another layer ends EDIT MASK (keeps what the user did).
     if (_clipEditId != null && id != _clipEditId) _endClipEdit();
+    if (_cropEditId != null && id != _cropEditId) _cropEditId = null;
     // Templates can come from different Fabric/API versions (`Text`,
     // `Textbox`, `IText`, etc.). Keep one canonical type inside the editor.
     final normalizedType = (type ?? '').trim().toLowerCase();
@@ -4556,6 +4557,50 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       height: safeHeight,
       position: position ?? current.position,
     );
+    notifyListeners();
+  }
+
+  // ---------------- in-canvas crop (Canva style) ----------------
+  String? _cropEditId;
+  String? get cropEditItemId => _cropEditId;
+
+  bool beginCropEdit(String id) {
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1 || _lockedItems.contains(id)) return false;
+    if (_clipEditId != null) commitClipEdit();
+    _cropEditId = id;
+    selectedItemType = 'image';
+    selectedItemId = id;
+    notifyListeners();
+    return true;
+  }
+
+  void endCropEdit() {
+    if (_cropEditId == null) return;
+    _cropEditId = null;
+    notifyListeners();
+  }
+
+  /// Crop result: new picture + new box (the visible crop keeps its size and
+  /// place on the canvas, nothing jumps or stretches).
+  void applyImageCrop(
+      String id,
+      String newImagePath, {
+        required Size newSize,
+        required Offset newPosition,
+      }) {
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return;
+    _saveState();
+    _cropEditId = null;
+    _items[index] = _items[index].copyWith(
+      contentUrl: newImagePath,
+      isLocal: true,
+      width: math.max(1.0, newSize.width),
+      height: math.max(1.0, newSize.height),
+      position: newPosition,
+    );
+    _syncCurrentPage();
     notifyListeners();
   }
 

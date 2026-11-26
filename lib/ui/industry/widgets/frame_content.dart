@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mmb_app/core/api/api_endpoints.dart';
 
 // ========================================================================
 // Renders the frame `content` (Fabric.js JSON from frames/{uid}) as native
@@ -35,6 +37,11 @@ class FrameContent {
     required this.objects,
     required this.hasSlots,
   });
+
+  /// `version.asset_prefix` of the frames/{id} response (e.g.
+  /// "frames/<versionUid>/"). The frame json points to a temp bucket that the
+  /// app cannot read (403); published assets live under this prefix on the CDN.
+  static String assetPrefix = '';
 
   static String? _lastRaw;
   static FrameContent? _lastParsed;
@@ -327,20 +334,27 @@ class FrameContentView extends StatelessWidget {
     if (custom != null) {
       child = custom;
     } else {
-      final src = (o['src'] ?? '').toString();
+      final src = _resolveSrc((o['src'] ?? '').toString());
       if (src.isEmpty) return const SizedBox.shrink();
 
-      final isSvg = src.split('?').first.toLowerCase().endsWith('.svg');
-      child = isSvg
-          ? SvgPicture.network(src, width: w, height: h, fit: BoxFit.fill)
-          : CachedNetworkImage(
-        imageUrl: src,
-        width: w,
-        height: h,
-        fit: BoxFit.fill,
-        placeholder: (_, __) => const SizedBox.shrink(),
-        errorWidget: (_, __, ___) => const SizedBox.shrink(),
-      );
+      if (src.startsWith('data:')) {
+        // inline image (whatsapp / website icons are often embedded svg)
+        child = _dataImage(src, w, h);
+      } else {
+        final isSvg = src.split('?').first.toLowerCase().endsWith('.svg');
+        child = isSvg
+            ? _RemoteSvg(url: src, width: w, height: h)
+            : CachedNetworkImage(
+          imageUrl: src,
+          width: w,
+          height: h,
+          fit: BoxFit.fill,
+          placeholder: (_, __) => const SizedBox.shrink(),
+          // not a bitmap (svg without .svg in the url) -> try as svg
+          errorWidget: (_, __, ___) =>
+              _RemoteSvg(url: src, width: w, height: h),
+        );
+      }
     }
 
     return _place(
@@ -351,6 +365,30 @@ class FrameContentView extends StatelessWidget {
       dx: dx,
       dy: dy,
     );
+  }
+
+  /// Relative s3 key -> cdn url, "//host/x" -> https, full urls unchanged.
+  String _resolveSrc(String raw) {
+    final s = raw.trim();
+    if (s.isEmpty) return '';
+    if (s.startsWith('http') || s.startsWith('data:')) return s;
+    if (s.startsWith('//')) return 'https:$s';
+    final key = s.startsWith('/') ? s.substring(1) : s;
+    return '${ApiEndpoints.cdnImageUrl}/$key';
+  }
+
+  Widget _dataImage(String src, double w, double h) {
+    try {
+      final data = Uri.parse(src).data;
+      if (data == null) return const SizedBox.shrink();
+      final bytes = data.contentAsBytes();
+      if (data.mimeType.contains('svg')) {
+        return SvgPicture.memory(bytes, width: w, height: h, fit: BoxFit.fill);
+      }
+      return Image.memory(bytes, width: w, height: h, fit: BoxFit.fill);
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
   }
 
   Widget _text(
@@ -668,6 +706,129 @@ class FrameContentView extends StatelessWidget {
     } catch (_) {
       return null;
     }
+  }
+}
+
+/// Downloads an svg itself (so the http status / content-type / first bytes
+/// are printed in debug builds when it does not show) and draws it.
+class _RemoteSvg extends StatefulWidget {
+  const _RemoteSvg({
+    required this.url,
+    required this.width,
+    required this.height,
+  });
+
+  final String url;
+  final double width;
+  final double height;
+
+  @override
+  State<_RemoteSvg> createState() => _RemoteSvgState();
+}
+
+class _RemoteSvgState extends State<_RemoteSvg> {
+  static final Map<String, Uint8List> _cache = {};
+  Uint8List? _bytes;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _bytes = _cache[widget.url];
+    if (_bytes == null) _load();
+  }
+
+  /// The frame json points to a temp S3 bucket (403 from the app). Tried in
+  /// order: CDN + frame asset prefix, CDN + same path, the original url.
+  List<(String, String)> _candidates() {
+    final urls = <(String, String)>[];
+    try {
+      final u = Uri.parse(widget.url);
+      final cdn = ApiEndpoints.cdnImageUrl.replaceFirst(RegExp(r'/$'), '');
+      final name = u.pathSegments.isEmpty ? '' : u.pathSegments.last;
+
+      var prefix = FrameContent.assetPrefix.trim();
+      if (prefix.isNotEmpty && !prefix.endsWith('/')) prefix = '$prefix/';
+
+      if (prefix.isNotEmpty && name.isNotEmpty) {
+        urls.add(('cdn+prefix', '$cdn/$prefix$name'));
+      }
+      if (u.path.isNotEmpty && !widget.url.startsWith(cdn)) {
+        urls.add(('cdn', '$cdn${u.path}'));
+      }
+    } catch (_) {}
+    urls.add(('s3', widget.url));
+    return urls;
+  }
+
+  Future<void> _load() async {
+    final errors = <String>[];
+
+    for (final (label, url) in _candidates()) {
+      final client = HttpClient();
+      try {
+        final req = await client.getUrl(Uri.parse(url));
+        final res = await req.close().timeout(const Duration(seconds: 20));
+        final bytes = await consolidateHttpClientResponseBytes(res);
+        debugPrint(
+          'FRAME SVG status=${res.statusCode} '
+              'type=${res.headers.contentType} len=${bytes.length} url=$url',
+        );
+        if (res.statusCode != 200 || bytes.isEmpty) {
+          errors.add('$label ${res.statusCode}');
+          continue;
+        }
+        if (kDebugMode) {
+          debugPrint(
+            'FRAME SVG head: '
+                '${utf8.decode(bytes.take(300).toList(), allowMalformed: true)}',
+          );
+        }
+        _cache[widget.url] = bytes;
+        if (mounted) setState(() => _bytes = bytes);
+        return;
+      } catch (e) {
+        errors.add('$label error');
+        debugPrint('FRAME SVG load error: $e | url=$url');
+      } finally {
+        client.close();
+      }
+    }
+
+    if (mounted) setState(() => _error = errors.join('\n'));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = _bytes;
+    if (bytes == null) {
+      // debug builds: show WHY the image is missing, right on the frame
+      if (kDebugMode && _error != null) {
+        return SizedBox(
+          width: widget.width,
+          height: widget.height,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              'SVG ERR\n$_error',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        );
+      }
+      return SizedBox(width: widget.width, height: widget.height);
+    }
+    return SvgPicture.memory(
+      bytes,
+      width: widget.width,
+      height: widget.height,
+      fit: BoxFit.fill,
+    );
   }
 }
 
