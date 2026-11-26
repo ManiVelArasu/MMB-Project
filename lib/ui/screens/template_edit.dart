@@ -47,6 +47,8 @@ import 'dart:core';
 import '../industry/widgets/gif.dart';
 import '../industry/widgets/text_effect.dart';
 import 'package:mmb_app/ui/industry/widgets/frame_content.dart';
+import 'package:mmb_app/ui/industry/widgets/brand_profile_resolver.dart';
+import 'package:mmb_app/network/provider/business_provider.dart';
 
 class TemplateEditScreen extends StatelessWidget {
   final String? resizeSize;
@@ -1455,7 +1457,18 @@ class _EditorViewState extends State<EditorView> {
     await bp.loadFrameDetail(uid);
     if (!mounted) return false;
 
-    final content = (bp.frameDetail?['content'] ?? '').toString();
+    // frame assets (logo / whatsapp / web svg) are looked up with these
+    final versionInfo = bp.frameDetail?['version'];
+    FrameContent.assetPrefix = versionInfo is Map
+        ? (versionInfo['asset_prefix'] ?? '').toString()
+        : '';
+    FrameContent.frameUid = (bp.frameDetail?['uid'] ?? uid).toString();
+
+    // `content` can be a JSON string or an already decoded object
+    final rawContent = bp.frameDetail?['content'];
+    final content = rawContent == null
+        ? ''
+        : (rawContent is String ? rawContent : jsonEncode(rawContent));
     if (content.isEmpty) {
       Fluttertoast.showToast(
         msg: bp.frameDetailError ?? 'Unable to load frame',
@@ -1489,16 +1502,26 @@ class _EditorViewState extends State<EditorView> {
       return v.isNotEmpty ? v : (prev.slotTexts[key] ?? '');
     }
 
+    // Same sources as the Business Frames screen: saved values first, then
+    // the business / profile model (the saved values are empty until the
+    // profile was saved once, so the frame kept its sample number).
+    final resolver = BrandProfileResolver(
+      profile: bp,
+      business: context.read<BusinessProvider>(),
+    );
+    String first(String a, String b) => clean(a).isNotEmpty ? a : b;
+
+    final email = pick(resolver.email, 'email');
+
     ActiveBrandFrame.instance.update(
       uid: uid,
       contentJson: content,
       enabled: true,
       slotTexts: {
-        'phone': pick(bp.savedPhone, 'phone'),
-        'web': pick(bp.savedWebsite, 'web'),
-        'name': pick(bp.businessName, 'name'),
-        if ((prev.slotTexts['email'] ?? '').isNotEmpty)
-          'email': prev.slotTexts['email']!,
+        'phone': pick(first(bp.savedPhone, resolver.phone), 'phone'),
+        'web': pick(first(bp.savedWebsite, resolver.website), 'web'),
+        'name': pick(first(bp.businessName, resolver.name), 'name'),
+        if (email.isNotEmpty) 'email': email,
       },
       logoFile: bp.selectedLogoFile ?? prev.logoFile,
       logoUrl: freshLogoUrl.isNotEmpty ? freshLogoUrl : prev.logoUrl,
@@ -2367,6 +2390,10 @@ class _EditorViewState extends State<EditorView> {
     bool uploadsInitialLoadScheduled = false;
     bool imagesInitialLoadScheduled = false;
     bool videosInitialLoadScheduled = false;
+    // true after the first Images / Videos request finished, so "No ... found"
+    // is never shown while that first request has not even started.
+    bool imagesInitialLoadDone = false;
+    bool videosInitialLoadDone = false;
     // Default Media > Videos feed: /api/pexels/videos?term=travel+destination
     const defaultVideoQuery = 'travel destination';
     final searchController = TextEditingController();
@@ -2437,6 +2464,38 @@ class _EditorViewState extends State<EditorView> {
       builder: (modalContext) {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
+            // Media > Images / Videos loaders. The sheet is a StatefulBuilder and
+            // does NOT listen to the provider, so the sheet is rebuilt here
+            // BEFORE the request (spinner) and AFTER it (data). Without this
+            // it kept showing "No ... found" until a manual refresh. One
+            // automatic retry covers a failed / empty first request.
+            Future<void> loadMediaImages() async {
+              for (var attempt = 0; attempt < 2; attempt++) {
+                final request = provider.fetchMediaImages('');
+                if (sheetOpen && sheetContext.mounted) setSheetState(() {});
+                await request;
+                if (!sheetOpen || !sheetContext.mounted) return;
+                if (provider.mediaImageAssets.isNotEmpty) break;
+                // user already picked a category / typed a search -> stop
+                if (provider.mediaImagesQuery.isNotEmpty) break;
+              }
+              imagesInitialLoadDone = true;
+              if (sheetOpen && sheetContext.mounted) setSheetState(() {});
+            }
+
+            Future<void> loadMediaVideos() async {
+              for (var attempt = 0; attempt < 2; attempt++) {
+                final request = provider.fetchMediaVideos(defaultVideoQuery);
+                if (sheetOpen && sheetContext.mounted) setSheetState(() {});
+                await request;
+                if (!sheetOpen || !sheetContext.mounted) return;
+                if (provider.mediaVideoAssets.isNotEmpty) break;
+                if (provider.mediaVideosQuery != defaultVideoQuery) break;
+              }
+              videosInitialLoadDone = true;
+              if (sheetOpen && sheetContext.mounted) setSheetState(() {});
+            }
+
             // Trigger MyUploads once after the first Media sheet frame.
             // Rebuild the sheet before and after the request so the loader and
             // fetched images are visible on the very first open.
@@ -2481,7 +2540,7 @@ class _EditorViewState extends State<EditorView> {
                 if (!sheetOpen || !sheetContext.mounted) return;
                 if (provider.mediaImageAssets.isEmpty &&
                     !provider.isMediaImagesLoading) {
-                  provider.fetchMediaImages('');
+                  loadMediaImages();
                 }
               });
             }
@@ -2493,11 +2552,7 @@ class _EditorViewState extends State<EditorView> {
                 if (!sheetOpen || !sheetContext.mounted) return;
                 if (provider.mediaVideoAssets.isEmpty &&
                     !provider.isMediaVideosLoading) {
-                  provider.fetchMediaVideos(defaultVideoQuery).then((_) {
-                    if (sheetOpen && sheetContext.mounted) {
-                      setSheetState(() {});
-                    }
-                  });
+                  loadMediaVideos();
                 }
               });
             }
@@ -2813,24 +2868,6 @@ class _EditorViewState extends State<EditorView> {
                     : const <String>[];
                 return Column(
                   children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: () =>
-                              setSheetState(() => expandedCategory = null),
-                          icon: const Icon(Icons.arrow_back_rounded),
-                        ),
-                        Expanded(
-                          child: AppText(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                     Expanded(
                       child:
                       (isStickerProxyCategory(query)
@@ -3211,7 +3248,6 @@ class _EditorViewState extends State<EditorView> {
                       },
                       decoration: InputDecoration(
                         hintText: 'Search images...',
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.search_rounded, size: 20),
                           onPressed: () {
@@ -3247,7 +3283,9 @@ class _EditorViewState extends State<EditorView> {
                   ),
                   const SizedBox(height: 12),
                   Expanded(
-                    child: provider.isMediaImagesLoading
+                    child:
+                    (provider.isMediaImagesLoading ||
+                        (images.isEmpty && !imagesInitialLoadDone))
                         ? const Center(
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
@@ -3506,7 +3544,6 @@ class _EditorViewState extends State<EditorView> {
                       },
                       decoration: InputDecoration(
                         hintText: 'Search videos...',
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.search_rounded, size: 20),
                           onPressed: () => search(videoSearchController.text),
@@ -3537,7 +3574,9 @@ class _EditorViewState extends State<EditorView> {
                   ),
                   const SizedBox(height: 12),
                   Expanded(
-                    child: provider.isMediaVideosLoading
+                    child:
+                    (provider.isMediaVideosLoading ||
+                        (videos.isEmpty && !videosInitialLoadDone))
                         ? const Center(
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
@@ -3634,7 +3673,7 @@ class _EditorViewState extends State<EditorView> {
                                     return;
                                   if (provider.mediaImageAssets.isEmpty &&
                                       !provider.isMediaImagesLoading) {
-                                    provider.fetchMediaImages('');
+                                    loadMediaImages();
                                   }
                                 });
                               },
@@ -3653,14 +3692,7 @@ class _EditorViewState extends State<EditorView> {
                                   }
                                   if (provider.mediaVideoAssets.isEmpty &&
                                       !provider.isMediaVideosLoading) {
-                                    provider
-                                        .fetchMediaVideos(defaultVideoQuery)
-                                        .then((_) {
-                                      if (sheetOpen &&
-                                          sheetContext.mounted) {
-                                        setSheetState(() {});
-                                      }
-                                    });
+                                    loadMediaVideos();
                                   }
                                 });
                               },
@@ -5537,6 +5569,7 @@ class _EditorViewState extends State<EditorView> {
               backgroundColor: const Color(0xFFE0E0E0),
               iconColor: const Color(0xFF555555),
               tooltip: 'Pages',
+              image: 'assets/images/copy.png',
               onPressed: () async {
                 await _captureCurrentPageThumb(provider);
                 if (!mounted) return;
@@ -5838,36 +5871,86 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  // ---------------- FREE TEMPLATE WATERMARK ----------------
-  static const String _watermarkAsset = 'assets/images/watermark.png';
-
-  /// true when the opened template is a FREE one (not premium).
+  /// Watermark is shown when the opened template is FREE (not premium) OR
+  /// when it is LOCKED for this user (`is_locked: true`).
   /// Blank designs / templates that are not loaded get no watermark.
+  String _wmLastLog = '';
+
+  bool? _wmProjectCache;
+
+  /// Saved project made from a template: watermark while the template was
+  /// not premium (`metadata.premium`, written when the project was created).
+  /// Projects without that flag but with a template id count as free.
+  /// Blank designs never get one.
+  bool _projectShowsWatermark() {
+    final cached = _wmProjectCache;
+    if (cached != null) return cached;
+    var show = false;
+    try {
+      if ((widget.projectUid?.trim() ?? '').isNotEmpty &&
+          widget.projectTemplateId != null) {
+        final raw = widget.projectContent?.trim() ?? '';
+        if (raw.isNotEmpty) {
+          final decoded = jsonDecode(raw);
+          if (decoded is Map && decoded['metadata'] is Map) {
+            final p = (decoded['metadata'] as Map)['premium'];
+            if (p == true || p == 1 || p?.toString().toLowerCase() == 'true') {
+              show = true;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      _wmLog('WATERMARK project check error: $e');
+    }
+    _wmLog('WATERMARK saved project templateId=${widget.projectTemplateId} -> show=$show');
+    return _wmProjectCache = show;
+  }
+
+  void _wmLog(String line) {
+    if (line == _wmLastLog) return;
+    _wmLastLog = line;
+    debugPrint(line);
+  }
+
   bool _isFreeTemplate(EditorProvider provider) {
     try {
       final items = provider.templateDetail?.data.items;
-      if (items == null || items.isEmpty) return false;
-      final dynamic p = (items.first as dynamic).isPremium;
-      final premium =
-          p == true ||
-              p == 1 ||
-              p?.toString().toLowerCase() == 'true' ||
-              p?.toString() == '1';
-      return !premium;
-    } catch (_) {
+      if (items == null || items.isEmpty) {
+        // Saved project (Download screen -> Edit): no template detail is
+        // loaded, so use what the project itself remembers.
+        return _projectShowsWatermark();
+      }
+      final dynamic item = items.first;
+
+      bool truthy(dynamic v) =>
+          v == true || v == 1 || v?.toString().toLowerCase() == 'true' ||
+              v?.toString() == '1';
+
+      bool locked = false;
+      try {
+        locked = truthy(item.isLocked);
+      } catch (_) {}
+
+      bool premium = false;
+      try {
+        premium = truthy(item.isPremium);
+      } catch (_) {}
+
+      _wmLog('WATERMARK locked=$locked -> show=$locked');
+      return locked;
+    } catch (e) {
+      _wmLog('WATERMARK check error: $e');
       return false;
     }
   }
 
   Widget _watermarkOverlay() {
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: Image.asset(
-          _watermarkAsset,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-        ),
-      ),
+    // Drawn in code (tiled, diagonal "make my brand" like the web editor), so
+    // it never depends on an asset that may be missing from pubspec.yaml.
+    // It sits inside the RepaintBoundary, so it is part of the exported image.
+    return const Positioned.fill(
+      child: IgnorePointer(child: CustomPaint(painter: _WatermarkPainter())),
     );
   }
 
@@ -5895,19 +5978,8 @@ class _EditorViewState extends State<EditorView> {
               content: fc,
               showSlots: true,
               slotTexts: f.slotTexts,
-              logoBuilder: (w, h) {
-                if (f.logoFile != null) {
-                  return Image.file(f.logoFile!, fit: BoxFit.contain);
-                }
-                if (f.logoUrl.isNotEmpty) {
-                  return Image.network(
-                    f.logoUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  );
-                }
-                return null; // keep the frame's own logo
-              },
+              // No logoBuilder: the logo / whatsapp / website images inside
+              // the frame `content` are shown as designed.
             ),
           ),
         );
@@ -6053,6 +6125,7 @@ class _EditorViewState extends State<EditorView> {
     required String tooltip,
     required VoidCallback? onPressed,
     VoidCallback? onLongPress,
+    String? image,
   }) {
     return Tooltip(
       message: tooltip,
@@ -6066,7 +6139,16 @@ class _EditorViewState extends State<EditorView> {
           child: SizedBox(
             width: 36,
             height: 36,
-            child: Icon(icon, color: iconColor, size: 20),
+            child: Center(
+              child: image != null
+                  ? Image.asset(
+                image,
+                width: 20,
+                height: 20,
+                fit: BoxFit.contain,
+              )
+                  : Icon(icon, color: iconColor, size: 20),
+            ),
           ),
         ),
       ),
@@ -7097,6 +7179,7 @@ class _EditorViewState extends State<EditorView> {
         VoidCallback onTap, {
           bool active = false,
           bool danger = false,
+          String? image,
         }) {
       return InkWell(
         onTap: onTap,
@@ -7105,12 +7188,24 @@ class _EditorViewState extends State<EditorView> {
           width: 46,
           height: 46,
           decoration: BoxDecoration(
-            color: danger
-                ? const Color(0xFFFFE5E5)
-                : (active ? accent.withValues(alpha: .15) : soft),
+            color: active
+                ? const Color(0xFFFFE4E5)
+                : const Color(0xFFF3F3F3),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, size: 22, color: (danger || active) ? accent : fg),
+          alignment: Alignment.center,
+          child: image != null
+              ? Image.asset(
+            image,
+            width: 24,
+            height: 24,
+            fit: BoxFit.contain,
+          )
+              : Icon(
+            icon,
+            size: 22,
+            color: (danger || active) ? accent : fg,
+          ),
         ),
       );
     }
@@ -7823,9 +7918,15 @@ class _EditorViewState extends State<EditorView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  quick(Icons.layers_rounded, () {
-                    _showLayerSheet(context, provider, id, isDark);
-                  }),
+                  quick(
+
+                    Icons.layers_rounded,
+                        () {
+                      _showLayerSheet(context, provider, id, isDark);
+                    },
+                    image: "assets/images/layer_effect.png",
+                    danger: true,
+                  ),
                   quick(Icons.align_horizontal_left_rounded, () {
                     _showAlignSheet(context, provider, id, isDark);
                   }),
@@ -7839,7 +7940,7 @@ class _EditorViewState extends State<EditorView> {
                     },
                     active: locked,
                   ),
-                  quick(Icons.content_copy_rounded, () {
+                  quick(Icons.layers_rounded, () {
                     provider.duplicateItem(id);
                     if (provider.items.isNotEmpty) {
                       final last = provider.items.last;
@@ -7849,11 +7950,16 @@ class _EditorViewState extends State<EditorView> {
                       }
                     }
                   }),
-                  quick(Icons.delete_rounded, () {
-                    provider.removeItem(id);
-                    provider.clearSelection();
-                    _closeAnimatePanel();
-                  }, danger: true),
+                  quick(
+                    Icons.delete_rounded,
+                        () {
+                      provider.removeItem(id);
+                      provider.clearSelection();
+                      _closeAnimatePanel();
+                    },
+                    danger: true,
+                    image: 'assets/images/delete.png',
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -8325,7 +8431,11 @@ class _EditorViewState extends State<EditorView> {
                         provider.textUnderline(id),
                             () => provider.toggleTextUnderline(id),
                       ),
-                      iconButton(Icons.strikethrough_s_rounded, false, () {}),
+                      iconButton(
+                        Icons.strikethrough_s_rounded,
+                        provider.textStrike(id),
+                            () => provider.toggleTextStrike(id),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -9485,13 +9595,16 @@ class _EditorViewState extends State<EditorView> {
                   provider.removeItem(id);
                   provider.clearSelection();
                 },
-                child: const SizedBox(
-                  width: 60,
+                child: SizedBox(
+                  width: 42,
                   height: 42,
-                  child: Icon(
-                    Icons.delete_rounded,
-                    color: Color(0xFFF04444),
-                    size: 23,
+                  child: Center(
+                    child: Image.asset(
+                      "assets/images/delete.png",
+                      width: 25,
+                      height: 25,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),
@@ -9557,14 +9670,14 @@ class _EditorViewState extends State<EditorView> {
                     _showMediaBottomSheet(context, provider, isDark);
                   },
                 ),
-                _bottomTool(
+                /*  _bottomTool(
                   Image.asset("assets/images/gallery.png"),
                   'IMAGES',
                       () {
                     provider.cancelReplaceImage();
                     _showMediaBottomSheet(context, provider, isDark);
                   },
-                ),
+                ),*/
                 if (!_isBackgroundLike(item))
                   _bottomTool(
                     Image.asset("assets/images/crop.png"),
@@ -9843,7 +9956,7 @@ class _EditorViewState extends State<EditorView> {
                   Icons.check_rounded,
                   'DONE',
                       () => provider.commitClipEdit(),
-                  Colors.amberAccent,
+                  AppColors.appRed,
                 ),
               ],
             ),
@@ -9852,131 +9965,6 @@ class _EditorViewState extends State<EditorView> {
       ),
     );
   }
-
-  // ---- EDIT MASK: move / resize the applied mask anywhere on the image ----
-  Widget _buildMaskEditToolbar(
-      BuildContext context,
-      EditorProvider provider,
-      String id,
-      ) {
-    Widget slider(
-        String label,
-        double value,
-        double min,
-        double max,
-        ValueChanged<double> onChanged,
-        ) {
-      return Row(
-        children: [
-          SizedBox(
-            width: 64,
-            child: AppText(
-              label,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: AppFontSize.fontSize12,
-              ),
-            ),
-          ),
-          Expanded(
-            child: SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: 3,
-                activeTrackColor: Colors.amberAccent,
-                inactiveTrackColor: Colors.white24,
-                thumbColor: Colors.amberAccent,
-                overlayShape: SliderComponentShape.noOverlay,
-              ),
-              child: Slider(
-                value: value.clamp(min, max).toDouble(),
-                min: min,
-                max: max,
-                onChanged: onChanged,
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return AnimatedBuilder(
-      animation: provider,
-      builder: (context, _) {
-        final off = provider.imageMaskOffset(id);
-        final sc = provider.imageMaskScale(id);
-        return Container(
-          padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
-          decoration: const BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  AppText(
-                    'Edit Mask',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: AppFontSize.fontSize14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => provider.resetImageMaskTransform(id),
-                    child: const AppText(
-                      'RESET',
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() => _maskEditItemId = null),
-                    child: const AppText(
-                      'DONE',
-                      style: TextStyle(
-                        color: Colors.amberAccent,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              slider(
-                'Size',
-                sc,
-                0.1,
-                3.0,
-                    (v) => provider.updateImageMaskTransform(id, scale: v),
-              ),
-              slider(
-                'Left / Right',
-                off.dx,
-                -1.0,
-                1.0,
-                    (v) => provider.updateImageMaskTransform(
-                  id,
-                  offset: Offset(v, off.dy),
-                ),
-              ),
-              slider(
-                'Up / Down',
-                off.dy,
-                -1.0,
-                1.0,
-                    (v) => provider.updateImageMaskTransform(
-                  id,
-                  offset: Offset(off.dx, v),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   // ---- Image OUTLINE: same inline design as the shape toolbar ----
 
   void _openImageOutline(EditorProvider provider, String id) {
@@ -10123,7 +10111,7 @@ class _EditorViewState extends State<EditorView> {
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: activeTab == t[0]
-                                ? const Color(0xFFFFC107)
+                                ? AppColors.appRed
                                 : const Color(0xFF1F232C),
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -10131,7 +10119,7 @@ class _EditorViewState extends State<EditorView> {
                             t[1],
                             style: TextStyle(
                               color: activeTab == t[0]
-                                  ? Colors.black
+                                  ? AppColors.appWhite
                                   : Colors.white70,
                               fontSize: AppFontSize.fontSize11,
                               fontWeight: FontWeight.w700,
@@ -11195,61 +11183,6 @@ class _EditorViewState extends State<EditorView> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _bottomSliderTool(
-      String title,
-      double value,
-      double min,
-      double max,
-      ValueChanged<double> onChanged,
-      ) {
-    final safeValue = value.isFinite ? value.clamp(min, max).toDouble() : min;
-    return Container(
-      width: 175,
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F232C),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              AppText(
-                title,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: AppFontSize.fontSize8,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              AppText(
-                title == 'OPACITY'
-                    ? '${(safeValue * 100).round()}%'
-                    : safeValue.toStringAsFixed(1),
-                style: TextStyle(
-                  color: Colors.amber,
-                  fontSize: AppFontSize.fontSize8,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          Expanded(
-            child: Slider(
-              value: safeValue,
-              min: min,
-              max: max,
-              activeColor: Colors.amber,
-              onChanged: onChanged,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -13194,14 +13127,23 @@ class _TransformSelectionOverlayState
     final barW = barCount * 44.0 + 16.0;
     const barH = 44.0;
 
-    Widget barBtn(IconData icon, VoidCallback onTap, {Color? color}) {
+    Widget barBtn(
+        IconData icon,
+        VoidCallback onTap, {
+          Color? color,
+          String? image,
+        }) {
       return InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: SizedBox(
           width: 44,
           height: 44,
-          child: Icon(icon, size: 22, color: color ?? Colors.black87),
+          child: Center(
+            child: image != null
+                ? Image.asset(image, width: 22, height: 22, fit: BoxFit.contain)
+                : Icon(icon, size: 22, color: color ?? Colors.black87),
+          ),
         ),
       );
     }
@@ -13224,12 +13166,14 @@ class _TransformSelectionOverlayState
                   itemId,
                   widget.item.text ?? '',
                 ),
+                image: 'assets/images/edits.png',
               ),
-            barBtn(Icons.copy_rounded, () => _provider.duplicateItem(itemId)),
+            barBtn(Icons.layers_rounded, () => _provider.duplicateItem(itemId)),
             barBtn(
               Icons.delete_outline_rounded,
                   () => _provider.removeItem(itemId),
               color: const Color(0xFFE5533D),
+              image: 'assets/images/delete.png',
             ),
           ],
         ),
@@ -14557,4 +14501,70 @@ class _FontPickerSheetState extends State<_FontPickerSheet> {
       ),
     );
   }
+}
+
+/// Tiled diagonal "make my brand" watermark (free templates).
+class _WatermarkPainter extends CustomPainter {
+  const _WatermarkPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final fs = math.max(10.0, size.width * 0.032);
+    TextPainter tp(Color c, {Paint? stroke}) => TextPainter(
+      text: TextSpan(
+        text: 'make my ',
+        style: TextStyle(
+          fontSize: fs,
+          fontWeight: FontWeight.w700,
+          color: stroke == null ? c : null,
+          foreground: stroke,
+          letterSpacing: 0.4,
+          fontStyle: FontStyle.italic,
+        ),
+        children: [
+          TextSpan(
+            text: 'brand',
+            style: TextStyle(
+              fontSize: fs * 1.15,
+              fontWeight: FontWeight.w900,
+              color: stroke == null ? c : null,
+              foreground: stroke,
+            ),
+          ),
+        ],
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    final outline = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = fs * 0.14
+      ..strokeJoin = StrokeJoin.round
+      ..color = const Color(0x66707070);
+    final back = tp(Colors.transparent, stroke: outline);
+    final front = tp(const Color(0x99FFFFFF));
+
+    final stepX = size.width * 0.36;
+    final stepY = size.height * 0.105;
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    var row = 0;
+    for (double y = -stepY; y < size.height + stepY; y += stepY, row++) {
+      final shift = row.isOdd ? stepX / 2 : 0.0;
+      for (double x = -stepX + shift; x < size.width + stepX; x += stepX) {
+        canvas.save();
+        canvas.translate(x + back.width / 2, y + back.height / 2);
+        canvas.rotate(-0.5);
+        canvas.translate(-back.width / 2, -back.height / 2);
+        back.paint(canvas, Offset.zero);
+        front.paint(canvas, Offset.zero);
+        canvas.restore();
+      }
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _WatermarkPainter old) => false;
 }

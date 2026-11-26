@@ -26,6 +26,7 @@ class BusinessFramesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Loads static frames on create; animated frames load on first tab tap.
     return ChangeNotifierProvider(
       create: (_) => BusinessProfileProvider(),
       child: const BusinessFramesView(),
@@ -83,9 +84,9 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
 
   void _toast(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   BrandProfileResolver _resolver() => BrandProfileResolver(
@@ -141,9 +142,7 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
   /// First / selected frame (tab change, category change, first load):
   /// call frames/{id} automatically, no tap needed.
   void _loadDetailOnce(String uid, BusinessProfileProvider provider) {
-    if (uid.isEmpty ||
-        provider.frameDetailUid == uid ||
-        _requestedUid == uid) {
+    if (uid.isEmpty || provider.frameDetailUid == uid || _requestedUid == uid) {
       return;
     }
     _requestedUid = uid;
@@ -184,7 +183,8 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
     showBrandEditSheet(
       context,
       form: _form,
-      logoPreview: () => BrandAvatar(file: _form.logo, url: _resolver().imageUrl),
+      logoPreview: () =>
+          BrandAvatar(file: _form.logo, url: _resolver().imageUrl),
       onPickLogo: _pickBrandLogo,
       onSave: _saveBusinessDetails,
       onChanged: () => setState(() {}),
@@ -349,7 +349,7 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
   Future<void> _onPaymentSuccess(PaymentSuccessResponse r) async {
     debugPrint(
       'Razorpay success: payment=${r.paymentId} '
-          'order=${r.orderId} signature=${r.signature}',
+      'order=${r.orderId} signature=${r.signature}',
     );
 
     final profile = context.read<BusinessProfileProvider>();
@@ -394,7 +394,7 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
             : frames[_selectedFrame.clamp(0, frames.length - 1)];
         final activeUid = activeFrame == null ? '' : frameUid(activeFrame);
         final detail =
-        (activeUid.isNotEmpty && profile.frameDetailUid == activeUid)
+            (activeUid.isNotEmpty && profile.frameDetailUid == activeUid)
             ? profile.frameDetail
             : null;
         _loadDetailOnce(activeUid, profile);
@@ -403,15 +403,21 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
         //      drawn from it, so the edited values appear inside the frame ----
         final contentJson = frameContentJson(detail);
         FrameContent.assetPrefix = frameAssetPrefix(detail);
+        FrameContent.frameUid = (detail?['uid'] ?? '').toString();
         final parsed = FrameContent.parse(contentJson);
         final content = (parsed != null && parsed.hasSlots) ? parsed : null;
 
         // ---- profile values fill the fields until the user edits them ----
-        final resolver = BrandProfileResolver(profile: profile, business: business);
+        final resolver = BrandProfileResolver(
+          profile: profile,
+          business: business,
+        );
 
         _form.syncFromProfile(resolver);
         final logoUrl = resolver.imageUrl;
-        debugPrint('🖼️ FRAME logoUrl="$logoUrl" | logoFile=${_form.logo} | hasSlots=${content != null}');
+        debugPrint(
+          '🖼️ FRAME logoUrl="$logoUrl" | logoFile=${_form.logo} | hasSlots=${content != null}',
+        );
         if (_selectedTab == _myFramesTab && content != null) {
           _shareWithTemplateEditor(
             uid: activeUid,
@@ -420,7 +426,8 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
           );
         }
 
-        final isBranded = activeFrame != null &&
+        final isBranded =
+            activeFrame != null &&
             (content != null ||
                 isBrandedFrame(
                   selectedCategorySlug: profile.selectedCategorySlug,
@@ -470,7 +477,8 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
                     isLoading: profile.isFrameDetailLoading,
                     // never drawn on top of the frame image while the frame
                     // is still loading (it doubled the logo / phone / web)
-                    showLegacyOverlay: isBranded &&
+                    showLegacyOverlay:
+                        isBranded &&
                         _form.enabled &&
                         content == null &&
                         !profile.isFrameDetailLoading &&
@@ -562,9 +570,9 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
   }
 
   Widget _buildGetFrameButton(
-      BusinessProfileProvider profile,
-      dynamic activeFrame,
-      ) {
+    BusinessProfileProvider profile,
+    dynamic activeFrame,
+  ) {
     return SizedBox(
       width: double.infinity,
       height: 46.h,
@@ -573,17 +581,17 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
         style: brandButtonStyle(radius: 12.r),
         child: profile.isPurchasing
             ? const SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: Colors.white,
-          ),
-        )
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
             : AppText(
-          'GET FRAME',
-          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
-        ),
+                'GET FRAME',
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
+              ),
       ),
     );
   }

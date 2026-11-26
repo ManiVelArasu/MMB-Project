@@ -139,7 +139,7 @@ class _HomeScreenView extends StatelessWidget {
 
                       _buildSectionHeader(
                         title: 'My Space',
-                        iconAsset: 'assets/images/myspace.png',
+                        iconAsset: 'assets/images/myzone.png',
                         isDark: isDark,
                       ),
                       SizedBox(height: 12.h),

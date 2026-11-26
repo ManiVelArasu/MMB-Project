@@ -43,6 +43,10 @@ class FrameContent {
   /// app cannot read (403); published assets live under this prefix on the CDN.
   static String assetPrefix = '';
 
+  /// `uid` of the frame (frames/{uid}). Template assets live under
+  /// templates/<uid>/<file>, so frame assets are tried under frames/<uid>/.
+  static String frameUid = '';
+
   static String? _lastRaw;
   static FrameContent? _lastParsed;
 
@@ -68,9 +72,9 @@ class FrameContent {
       final fabric = page['fabric'];
       final objs = (fabric is Map && fabric['objects'] is List)
           ? (fabric['objects'] as List)
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList()
+                .whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList()
           : <Map<String, dynamic>>[];
 
       final w = _num(page['width'], 1080);
@@ -83,7 +87,7 @@ class FrameContent {
         for (final o in _flatten(objs)) {
           debugPrint(
             'FRAME obj type=${o['type']} data=${o['data']} '
-                'text=${o['text']} src=${o['src']} -> slot=${slotKeyOf(o)}',
+            'text=${o['text']} src=${o['src']} -> slot=${slotKeyOf(o)}',
           );
         }
       }
@@ -108,7 +112,10 @@ class FrameContent {
       if (c is List) {
         out.addAll(
           _flatten(
-            c.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList(),
+            c
+                .whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList(),
           ),
         );
       }
@@ -225,11 +232,11 @@ class FrameContentView extends StatelessWidget {
   // ------------------------------------------------------------------
 
   Widget _object(
-      Map<String, dynamic> o, {
-        double dx = 0,
-        double dy = 0,
-        String? inheritSlot,
-      }) {
+    Map<String, dynamic> o, {
+    double dx = 0,
+    double dy = 0,
+    String? inheritSlot,
+  }) {
     if (o['visible'] == false) return const SizedBox.shrink();
 
     final ownSlot = FrameContent.slotKeyOf(o);
@@ -267,15 +274,15 @@ class FrameContentView extends StatelessWidget {
   }
 
   Widget _group(
-      Map<String, dynamic> o,
-      String? slot,
-      double w,
-      double h,
-      double sx,
-      double sy,
-      double dx,
-      double dy,
-      ) {
+    Map<String, dynamic> o,
+    String? slot,
+    double w,
+    double h,
+    double sx,
+    double sy,
+    double dx,
+    double dy,
+  ) {
     final gw = _num(o['width']);
     final gh = _num(o['height']);
     final kids = (o['objects'] is List ? o['objects'] as List : const [])
@@ -318,13 +325,13 @@ class FrameContentView extends StatelessWidget {
   }
 
   Widget _image(
-      Map<String, dynamic> o,
-      String? slot,
-      double w,
-      double h,
-      double dx,
-      double dy,
-      ) {
+    Map<String, dynamic> o,
+    String? slot,
+    double w,
+    double h,
+    double dx,
+    double dy,
+  ) {
     Widget child;
 
     final custom = (slot == 'logo' && logoBuilder != null)
@@ -345,15 +352,15 @@ class FrameContentView extends StatelessWidget {
         child = isSvg
             ? _RemoteSvg(url: src, width: w, height: h)
             : CachedNetworkImage(
-          imageUrl: src,
-          width: w,
-          height: h,
-          fit: BoxFit.fill,
-          placeholder: (_, __) => const SizedBox.shrink(),
-          // not a bitmap (svg without .svg in the url) -> try as svg
-          errorWidget: (_, __, ___) =>
-              _RemoteSvg(url: src, width: w, height: h),
-        );
+                imageUrl: src,
+                width: w,
+                height: h,
+                fit: BoxFit.fill,
+                placeholder: (_, __) => const SizedBox.shrink(),
+                // not a bitmap (svg without .svg in the url) -> try as svg
+                errorWidget: (_, __, ___) =>
+                    _RemoteSvg(url: src, width: w, height: h),
+              );
       }
     }
 
@@ -392,15 +399,15 @@ class FrameContentView extends StatelessWidget {
   }
 
   Widget _text(
-      Map<String, dynamic> o,
-      String? slot,
-      bool inherited,
-      double w,
-      double h,
-      double sy,
-      double dx,
-      double dy,
-      ) {
+    Map<String, dynamic> o,
+    String? slot,
+    bool inherited,
+    double w,
+    double h,
+    double sy,
+    double dx,
+    double dy,
+  ) {
     var text = (o['text'] ?? '').toString();
     var isSlotText = false;
 
@@ -429,7 +436,7 @@ class FrameContentView extends StatelessWidget {
       weight = rawWeight == 'bold' ? 700 : (double.tryParse(rawWeight) ?? 400);
     }
     final fw =
-    FontWeight.values[(weight / 100).round().clamp(1, 9).toInt() - 1];
+        FontWeight.values[(weight / 100).round().clamp(1, 9).toInt() - 1];
 
     final align = switch (o['textAlign']) {
       'center' => TextAlign.center,
@@ -446,8 +453,9 @@ class FrameContentView extends StatelessWidget {
     final style = TextStyle(
       fontSize: fs,
       fontWeight: fw,
-      fontStyle:
-      o['fontStyle'] == 'italic' ? FontStyle.italic : FontStyle.normal,
+      fontStyle: o['fontStyle'] == 'italic'
+          ? FontStyle.italic
+          : FontStyle.normal,
       color: _color(o['fill']) ?? Colors.black,
       height: _num(o['lineHeight'], 1.16),
       fontFamily: _family(o['fontFamily']),
@@ -476,23 +484,31 @@ class FrameContentView extends StatelessWidget {
       );
     }
 
-    return _place(o, w, h, SizedBox(width: w, child: t), dx: dx, dy: dy);
+    return _place(
+      o,
+      w,
+      h,
+      SizedBox(width: w, child: t),
+      dx: dx,
+      dy: dy,
+    );
   }
 
   Widget _path(
-      Map<String, dynamic> o,
-      double w,
-      double h,
-      double sx,
-      double sy,
-      double dx,
-      double dy,
-      ) {
+    Map<String, dynamic> o,
+    double w,
+    double h,
+    double sx,
+    double sy,
+    double dx,
+    double dy,
+  ) {
     final path = _buildPath(o['path']);
     if (path == null) return const SizedBox.shrink();
 
-    path.fillType =
-    o['fillRule'] == 'evenodd' ? PathFillType.evenOdd : PathFillType.nonZero;
+    path.fillType = o['fillRule'] == 'evenodd'
+        ? PathFillType.evenOdd
+        : PathFillType.nonZero;
 
     final painter = _PathPainter(
       path: path,
@@ -508,13 +524,23 @@ class FrameContentView extends StatelessWidget {
       o,
       w,
       h,
-      SizedBox(width: w, height: h, child: CustomPaint(painter: painter)),
+      SizedBox(
+        width: w,
+        height: h,
+        child: CustomPaint(painter: painter),
+      ),
       dx: dx,
       dy: dy,
     );
   }
 
-  Widget _rect(Map<String, dynamic> o, double w, double h, double dx, double dy) {
+  Widget _rect(
+    Map<String, dynamic> o,
+    double w,
+    double h,
+    double dx,
+    double dy,
+  ) {
     final stroke = _color(o['stroke']);
     final sw = _num(o['strokeWidth']);
 
@@ -539,12 +565,12 @@ class FrameContentView extends StatelessWidget {
   }
 
   Widget _circle(
-      Map<String, dynamic> o,
-      double w,
-      double h,
-      double dx,
-      double dy,
-      ) {
+    Map<String, dynamic> o,
+    double w,
+    double h,
+    double dx,
+    double dy,
+  ) {
     final stroke = _color(o['stroke']);
     final sw = _num(o['strokeWidth']);
 
@@ -573,13 +599,13 @@ class FrameContentView extends StatelessWidget {
   // ------------------------------------------------------------------
 
   Widget _place(
-      Map<String, dynamic> o,
-      double w,
-      double h,
-      Widget child, {
-        double dx = 0,
-        double dy = 0,
-      }) {
+    Map<String, dynamic> o,
+    double w,
+    double h,
+    Widget child, {
+    double dx = 0,
+    double dy = 0,
+  }) {
     final ox = (o['originX'] ?? 'left').toString();
     final oy = (o['originY'] ?? 'top').toString();
     final ax = ox == 'center' ? 0.0 : (ox == 'right' ? 1.0 : -1.0);
@@ -753,6 +779,10 @@ class _RemoteSvgState extends State<_RemoteSvg> {
       if (prefix.isNotEmpty && name.isNotEmpty) {
         urls.add(('cdn+prefix', '$cdn/$prefix$name'));
       }
+      final fUid = FrameContent.frameUid.trim();
+      if (fUid.isNotEmpty && name.isNotEmpty && !prefix.contains(fUid)) {
+        urls.add(('cdn+frame', '$cdn/frames/$fUid/$name'));
+      }
       if (u.path.isNotEmpty && !widget.url.startsWith(cdn)) {
         urls.add(('cdn', '$cdn${u.path}'));
       }
@@ -772,7 +802,7 @@ class _RemoteSvgState extends State<_RemoteSvg> {
         final bytes = await consolidateHttpClientResponseBytes(res);
         debugPrint(
           'FRAME SVG status=${res.statusCode} '
-              'type=${res.headers.contentType} len=${bytes.length} url=$url',
+          'type=${res.headers.contentType} len=${bytes.length} url=$url',
         );
         if (res.statusCode != 200 || bytes.isEmpty) {
           errors.add('$label ${res.statusCode}');
@@ -781,7 +811,7 @@ class _RemoteSvgState extends State<_RemoteSvg> {
         if (kDebugMode) {
           debugPrint(
             'FRAME SVG head: '
-                '${utf8.decode(bytes.take(300).toList(), allowMalformed: true)}',
+            '${utf8.decode(bytes.take(300).toList(), allowMalformed: true)}',
           );
         }
         _cache[widget.url] = bytes;
@@ -880,9 +910,9 @@ class _PathPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _PathPainter old) =>
       old.path != path ||
-          old.fill != fill ||
-          old.stroke != stroke ||
-          old.strokeWidth != strokeWidth ||
-          old.sx != sx ||
-          old.sy != sy;
+      old.fill != fill ||
+      old.stroke != stroke ||
+      old.strokeWidth != strokeWidth ||
+      old.sx != sx ||
+      old.sy != sy;
 }

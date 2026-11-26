@@ -98,7 +98,7 @@ class _CustomCreateBody extends StatelessWidget {
                             title: "Create from Scratch",
                             subtitle: "Choose a canvas size to start designing",
 
-                            iconAsset: "assets/images/myspace.png",
+                            iconAsset: "assets/images/myzone.png",
                             isDark: isDark,
                           ),
 

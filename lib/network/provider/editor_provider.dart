@@ -1379,6 +1379,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   final Map<String, FontWeight> _textWeight = {};
   final Map<String, FontStyle> _textStyle = {};
   final Map<String, bool> _textUnderline = {};
+  final Map<String, bool> _textStrike = {};
 
   double textLetterSpacing(String id) => _textLetterSpacing[id] ?? 0.0;
   double textLineSpacing(String id) => _textLineSpacing[id] ?? 1.0;
@@ -1386,6 +1387,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   FontWeight textWeight(String id) => _textWeight[id] ?? FontWeight.bold;
   FontStyle textStyle(String id) => _textStyle[id] ?? FontStyle.normal;
   bool textUnderline(String id) => _textUnderline[id] ?? false;
+  bool textStrike(String id) => _textStrike[id] ?? false;
   EditorItem? _copiedItem;
   int? _copiedFromPageIndex;
 
@@ -1399,6 +1401,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   final Map<String, FontWeight> _copiedWeight = {};
   final Map<String, FontStyle> _copiedStyle = {};
   final Map<String, bool> _copiedUnderline = {};
+  final Map<String, bool> _copiedStrike = {};
   final Map<String, double> _copiedFilterIntensity = {};
 
   bool get hasCopiedPage =>
@@ -1489,11 +1492,18 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
+  void toggleTextStrike(String id) {
+    _saveState();
+    _textStrike[id] = !textStrike(id);
+    notifyListeners();
+  }
+
   void setTextNormal(String id) {
     _saveState();
     _textWeight[id] = FontWeight.normal;
     _textStyle[id] = FontStyle.normal;
     _textUnderline[id] = false;
+    _textStrike[id] = false;
     notifyListeners();
   }
 
@@ -1534,6 +1544,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     keep(_textWeight);
     keep(_textStyle);
     keep(_textUnderline);
+    keep(_textStrike);
     keep(_imageFilterIntensity);
     keep(_imageTint);
     keep(_imageBlur);
@@ -2568,6 +2579,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         _textWeight.clear();
         _textStyle.clear();
         _textUnderline.clear();
+        _textStrike.clear();
       }
 
       var idIndex = 0;
@@ -2662,6 +2674,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
               ? FontStyle.italic
               : FontStyle.normal;
           _textUnderline[id] = json['underline'] == true;
+          _textStrike[id] = json['linethrough'] == true;
         } else if (type == 'image') {
           final imageUrl = _resolveTemplateSrc(
             json['src']?.toString() ?? '',
@@ -3838,6 +3851,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       copyTo(_textWeight);
       copyTo(_textStyle);
       copyTo(_textUnderline);
+      copyTo(_textStrike);
       copyTo(_templateFlipX);
       copyTo(_templateFlipY);
       copyTo(_imageFilterIntensity);
@@ -3948,6 +3962,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
           'fontWeight': textWeight(id).value,
           'fontStyle': textStyle(id).name,
           'underline': textUnderline(id),
+          'linethrough': textStrike(id),
         },
       };
     }
@@ -4064,6 +4079,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       _textWeight.clear();
       _textStyle.clear();
       _textUnderline.clear();
+      _textStrike.clear();
 
       _backgroundColor = hexArgb(root['backgroundColor']) ?? Colors.white;
       _importedBackgroundGradient = null;
@@ -4170,6 +4186,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
                 ? FontStyle.italic
                 : FontStyle.normal;
             _textUnderline[id] = tf['underline'] == true;
+            _textStrike[id] = tf['linethrough'] == true;
 
             // Projects saved before the line-height fix stored
             // height / fontSize (e.g. 1.885). If the stored value is exactly
@@ -5485,6 +5502,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     c(_textWeight);
     c(_textStyle);
     c(_textUnderline);
+    c(_textStrike);
     c(_imageFilterIntensity);
     c(_imageTint);
     c(_imageBlur);
@@ -5620,6 +5638,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _copiedWeight.clear();
     _copiedStyle.clear();
     _copiedUnderline.clear();
+    _copiedStrike.clear();
     _copiedFilterIntensity.clear();
 
     for (final item in _items) {
@@ -5632,6 +5651,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       _copiedWeight[id] = textWeight(id);
       _copiedStyle[id] = textStyle(id);
       _copiedUnderline[id] = textUnderline(id);
+      _copiedStrike[id] = textStrike(id);
       _copiedFilterIntensity[id] = imageFilterIntensity(id);
     }
 
@@ -5661,6 +5681,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       _textWeight[newId] = _copiedWeight[oldId] ?? FontWeight.bold;
       _textStyle[newId] = _copiedStyle[oldId] ?? FontStyle.normal;
       _textUnderline[newId] = _copiedUnderline[oldId] ?? false;
+      _textStrike[newId] = _copiedStrike[oldId] ?? false;
       _imageFilterIntensity[newId] = _copiedFilterIntensity[oldId] ?? 1.0;
       _imageTint[newId] = _imageTint[oldId] ?? 0.0;
       _imageBlur[newId] = _imageBlur[oldId] ?? 0.0;
@@ -5771,15 +5792,23 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     // Rotation-only gestures must never trigger frame-fit scaling or
     // position clamping. Those corrections made images shrink and jump
     // toward a different canvas location while the rotation handle moved.
+    //
+    // A MASKED image rotates around the centre of its visible part, so the
+    // rotate handle also sends a position. That is still a rotation gesture:
+    // only width / height / scale mean the user is resizing. Previously the
+    // position made it fall through to the frame-fit scaling below and the
+    // image shrank while it was rotated.
     final rotationOnly =
         rotation != null &&
-            position == null &&
             scale == null &&
             width == null &&
             height == null;
 
     if (rotationOnly) {
-      _items[index] = current.copyWith(rotation: nextRotation);
+      _items[index] = current.copyWith(
+        rotation: nextRotation,
+        position: position ?? current.position,
+      );
       notifyListeners();
       return;
     }

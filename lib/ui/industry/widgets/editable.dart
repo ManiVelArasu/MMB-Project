@@ -92,6 +92,7 @@ class EditableItemWidget extends StatelessWidget {
           textWeight: provider.textWeight(currentItem.id ?? ''),
           textFontStyle: provider.textStyle(currentItem.id ?? ''),
           textUnderline: provider.textUnderline(currentItem.id ?? ''),
+          textStrike: provider.textStrike(currentItem.id ?? ''),
           letterSpacing: provider.textLetterSpacing(currentItem.id ?? ''),
           lineSpacing: provider.textLineSpacing(currentItem.id ?? ''),
           textAlign: provider.textAlignment(currentItem.id ?? ''),
@@ -442,9 +443,10 @@ class EditableItemWidget extends StatelessWidget {
       color: item.color ?? Colors.black,
       fontWeight: provider.textWeight(id),
       fontStyle: provider.textStyle(id),
-      decoration: provider.textUnderline(id)
-          ? TextDecoration.underline
-          : TextDecoration.none,
+      decoration: _textDecorationOf(
+        provider.textUnderline(id),
+        provider.textStrike(id),
+      ),
       letterSpacing: provider.textLetterSpacing(id),
       height: provider.textLineSpacing(id),
     );
@@ -1277,9 +1279,10 @@ class EditableItemWidget extends StatelessWidget {
       color: item.color ?? Colors.black,
       fontWeight: editorProvider.textWeight(id),
       fontStyle: editorProvider.textStyle(id),
-      decoration: editorProvider.textUnderline(id)
-          ? TextDecoration.underline
-          : TextDecoration.none,
+      decoration: _textDecorationOf(
+        editorProvider.textUnderline(id),
+        editorProvider.textStrike(id),
+      ),
       letterSpacing: editorProvider.textLetterSpacing(id),
       height: editorProvider.textLineSpacing(id),
     );
@@ -1525,6 +1528,7 @@ class _ItemViewState {
   final FontWeight textWeight;
   final FontStyle textFontStyle;
   final bool textUnderline;
+  final bool textStrike;
   final double letterSpacing;
   final double lineSpacing;
   final TextAlign textAlign;
@@ -1561,6 +1565,7 @@ class _ItemViewState {
     required this.textWeight,
     required this.textFontStyle,
     required this.textUnderline,
+    required this.textStrike,
     required this.letterSpacing,
     required this.lineSpacing,
     required this.textAlign,
@@ -1599,6 +1604,7 @@ class _ItemViewState {
               textWeight == other.textWeight &&
               textFontStyle == other.textFontStyle &&
               textUnderline == other.textUnderline &&
+              textStrike == other.textStrike &&
               letterSpacing == other.letterSpacing &&
               lineSpacing == other.lineSpacing &&
               textAlign == other.textAlign &&
@@ -1634,6 +1640,7 @@ class _ItemViewState {
       textWeight,
       textFontStyle,
       textUnderline,
+      textStrike,
       letterSpacing,
       lineSpacing,
       textAlign,
@@ -2552,4 +2559,17 @@ class _FallbackNetworkImageState extends State<_FallbackNetworkImage> {
       },
     );
   }
+}
+
+/// Underline and strikethrough can both be on at the same time.
+TextDecoration _textDecorationOf(bool underline, bool strike) {
+  if (underline && strike) {
+    return TextDecoration.combine([
+      TextDecoration.underline,
+      TextDecoration.lineThrough,
+    ]);
+  }
+  if (underline) return TextDecoration.underline;
+  if (strike) return TextDecoration.lineThrough;
+  return TextDecoration.none;
 }
