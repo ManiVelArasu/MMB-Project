@@ -1438,116 +1438,155 @@ class _HomeScreenView extends StatelessWidget {
 
   Widget _buildMyZoneSlider(HomeScreenProvider provider, bool isDark) {
     final popularTemplates = provider.popularTemplates.take(4).toList();
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100;
 
     return SizedBox(
       height: 360.h,
       child: popularTemplates.isEmpty
           ? Container(
-              margin: EdgeInsets.symmetric(horizontal: 25.w),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16.r),
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
-              ),
+        margin: EdgeInsets.symmetric(horizontal: 25.w),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16.r),
+          color: cardColor,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16.r),
+          child: Image.asset(
+            'assets/images/BName.png',
+            fit: BoxFit.cover,
+          ),
+        ),
+      )
+          : PageView.builder(
+        controller: provider.zonePageController,
+        itemCount: popularTemplates.length,
+        itemBuilder: (context, index) {
+          final item = popularTemplates[index];
+          final imageUrl = _cdnUrl(item.thumbnailS3Key);
+
+          final dynamic common = provider.provider;
+          final phone = _formatZonePhone(
+            _firstValue([
+                  () => common.business?.phone,
+                  () => common.me?.data.phone,
+            ]),
+          );
+          final name = _firstValue([
+                () => common.business?.name,
+                () => common.me?.data.name,
+          ]);
+          final logo = _firstValue([
+                () => common.business?.logoUrl,
+                () => common.business?.logoS3Key,
+                () => common.business?.logo,
+                () => common.me?.data.profileImage,
+          ]);
+
+          return Container(
+            margin: EdgeInsets.symmetric(horizontal: 25.w),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16.r),
+              color: cardColor,
+            ),
+            // Everything inside this boundary is what gets downloaded.
+            child: RepaintBoundary(
+              key: provider.zoneKey(index),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16.r),
-                child: Image.asset(
-                  'assets/images/BName.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-            )
-          : PageView.builder(
-              controller: provider.zonePageController,
-              itemCount: popularTemplates.length,
-              itemBuilder: (context, index) {
-                final item = popularTemplates[index];
-                final imageUrl = _cdnUrl(item.thumbnailS3Key);
-                final phone =
-                    provider.provider.me?.data.phone?.toString() ?? '';
-                final email =
-                    provider.provider.me?.data.email?.toString() ?? '';
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    buildProfileImage(imageUrl),
 
-                return Container(
-                  margin: EdgeInsets.symmetric(horizontal: 25.w),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16.r),
-                    color: isDark
-                        ? const Color(0xFF1E1E1E)
-                        : Colors.grey.shade100,
-                  ),
-                  // Everything inside this boundary is what gets downloaded.
-                  child: RepaintBoundary(
-                    key: provider.zoneKey(index),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16.r),
-                      child: Stack(
-                        clipBehavior: Clip.hardEdge,
-                        children: [
-                          Positioned.fill(child: buildProfileImage(imageUrl)),
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            height: 55.h,
-                            child: ClipPath(
-                              clipper: BottomWaveClipper(),
-                              child: Container(
-                                padding: EdgeInsets.only(
-                                  left: 20.w,
-                                  right: 20.w,
-                                  top: 12.h,
-                                ),
-                                color: const Color(0xFF246BFE),
-                                child: Row(
-                                  children: [
-                                    SizedBox(width: 8.w),
-                                    Icon(
-                                      Icons.phone,
-                                      color: Colors.white,
-                                      size: 14.sp,
-                                    ),
-                                    SizedBox(width: 8.w),
-                                    Expanded(
-                                      flex: 5,
-                                      child: Text(
-                                        phone,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 9.sp,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(width: 5.w),
-                                    Expanded(
-                                      flex: 6,
-                                      child: Text(
-                                        email,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.right,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 9.sp,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                    // logo - top left
+                    if (logo.isNotEmpty)
+                      Positioned(
+                        top: 16.h,
+                        left: 16.w,
+                        child: Image.network(
+                          logo.startsWith('http') ? logo : _cdnUrl(logo),
+                          width: 52.w,
+                          height: 52.w,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) =>
+                          const SizedBox.shrink(),
+                        ),
+                      ),
+
+                    // curved strip - bottom right
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: FractionallySizedBox(
+                        widthFactor: 0.76,
+                        child: _buildZoneStrip(phone, name),
                       ),
                     ),
-                  ),
-                );
-              },
+                  ],
+                ),
+              ),
             ),
+          );
+        },
+      ),
     );
+  }
+
+  Widget _buildZoneStrip(String phone, String name) {
+    final textStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 10.sp,
+      fontWeight: FontWeight.w600,
+    );
+
+    return ClipPath(
+      clipper: ZoneCurveClipper(),
+      child: Container(
+        height: 36.h,
+        color: const Color(0xFF1869FF),
+        padding: EdgeInsets.only(left: 34.w, right: 14.w),
+        child: Row(
+          children: [
+            if (phone.isNotEmpty) ...[
+              Icon(
+                Icons.phone_in_talk_outlined,
+                color: Colors.white,
+                size: 14.sp,
+              ),
+              SizedBox(width: 5.w),
+              Text(phone, maxLines: 1, style: textStyle),
+              SizedBox(width: 10.w),
+            ],
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: textStyle,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// First non-empty value (a missing model field is skipped).
+  String _firstValue(List<dynamic Function()> getters) {
+    for (final get in getters) {
+      try {
+        final value = get()?.toString().trim() ?? '';
+        if (value.isNotEmpty) return value;
+      } catch (_) {}
+    }
+    return '';
+  }
+
+  /// "9876543210" / "+919876543210" -> "+91 98765 43210"
+  String _formatZonePhone(String raw) {
+    final m = RegExp(r'^(?:\+?91)?(\d{5})(\d{5})$')
+        .firstMatch(raw.replaceAll(' ', ''));
+    return m == null ? raw : '+91 ${m[1]} ${m[2]}';
   }
 
   // =====================================================================
@@ -1887,4 +1926,22 @@ class BottomWaveClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+/// Smooth rising curve on the left side of the bottom strip.
+class ZoneCurveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    return Path()
+      ..moveTo(0, h)
+      ..cubicTo(h * 0.31, h * 0.19, h * 0.72, h * 0.05, h * 1.43, 0)
+      ..lineTo(w, 0)
+      ..lineTo(w, h)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
