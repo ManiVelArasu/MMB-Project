@@ -104,4 +104,13 @@ class BusinessProfileRepository {
       fromJson: (json) => Map<String, dynamic>.from(json as Map),
     );
   }
+  Future<ApiResult<Map<String, dynamic>>> addFreeFrame(String frameUid) {
+    return ApiRepository.instance.request<Map<String, dynamic>>(
+      config: ApiRequestConfig(
+        endpoint: '/frames/$frameUid/add',
+        method: ApiMethod.post,
+      ),
+      fromJson: (json) => Map<String, dynamic>.from(json as Map),
+    );
+  }
 }

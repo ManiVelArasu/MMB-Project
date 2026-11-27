@@ -1033,6 +1033,36 @@ class BusinessProfileProvider extends ChangeNotifier {
     }
   }
 
+  /// Free frame -> add it to My Brand Frames (no payment).
+  Future<bool> addFreeFrame(String frameUid) async {
+    if (_isPurchasing) return false;
+
+    _isPurchasing = true;
+    _purchaseError = null;
+    notifyListeners();
+
+    try {
+      final result = await businessProfileRepository.addFreeFrame(frameUid);
+
+      if (!result.isSuccess) {
+        _purchaseError = result.error?.message ?? 'Unable to add the frame';
+        return false;
+      }
+
+      await loadFrames(_currentFrameType, category: _selectedCategorySlug);
+      await loadMyFrames(forceRefresh: true);
+      return true;
+    } catch (e, stackTrace) {
+      _purchaseError = 'Unable to add the frame';
+      debugPrint('Add free frame API error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      return false;
+    } finally {
+      _isPurchasing = false;
+      notifyListeners();
+    }
+  }
+
   void clearFrameDetail() {
     _frameDetail = null;
     _frameDetailUid = null;

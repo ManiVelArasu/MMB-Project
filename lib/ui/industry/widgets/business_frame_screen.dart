@@ -313,8 +313,31 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
   // ------------------------------------------------------------------
   // PAYMENT (Razorpay)
   // ------------------------------------------------------------------
+  bool _isFreeFrame(dynamic frame, Map<String, dynamic>? detail) {
+    Map? item;
+    if (frame is Map) {
+      item = frame;
+    } else {
+      try {
+        item = (frame as dynamic).toJson() as Map;
+      } catch (_) {}
+    }
 
-  Future<void> _onGetFrame(dynamic frame) async {
+    // frames/{id} response first, list item next
+    for (final data in [detail, item]) {
+      if (data == null) continue;
+
+      final flag = data['is_free'];
+      if (flag != null) {
+        return ['true', '1'].contains(flag.toString().toLowerCase());
+      }
+
+      final price = num.tryParse('${data['price']}');
+      if (price != null) return price == 0;
+    }
+    return false;
+  }
+  Future<void> _onGetFrame(dynamic frame, {required bool isFree}) async {
     final uid = frameUid(frame);
     if (uid.isEmpty) {
       _toast('Frame id not available');
@@ -322,28 +345,22 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
     }
 
     final profile = context.read<BusinessProfileProvider>();
-    final business = context.read<BusinessProvider>();
 
-    final order = await profile.purchaseFrame(uid);
-    if (!mounted) return;
-
-    if (order == null) {
-      _toast(profile.purchaseError ?? 'Unable to start payment');
+    // FREE -> POST frames/{uid}/add, no Razorpay
+    if (isFree) {
+      final ok = await profile.addFreeFrame(uid);
+      _toast(
+        ok
+            ? 'Frame added to My Brand Frames'
+            : profile.purchaseError ?? 'Unable to add the frame',
+      );
       return;
     }
 
-    try {
-      _razorpay.open({
-        'key': _razorpayKey,
-        'order_id': order['order_id'],
-        'name': 'Make My Brand',
-        'description': 'Frame purchase',
-        'prefill': {'contact': business.mobileNumber, 'email': business.email},
-        'theme': {'color': '#E53935'},
-      });
-    } catch (e) {
-      _toast('Unable to open payment: $e');
-    }
+    final business = context.read<BusinessProvider>();
+
+    final order = await profile.purchaseFrame(uid);
+    // ... keezha irukka code appadiye
   }
 
   Future<void> _onPaymentSuccess(PaymentSuccessResponse r) async {
@@ -495,7 +512,7 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
                   // Already-owned frames (My Brand Frames) need no purchase.
                   if (activeFrame != null && _selectedTab != _myFramesTab) ...[
                     SizedBox(height: 14.h),
-                    _buildGetFrameButton(profile, activeFrame),
+                    _buildGetFrameButton(profile, activeFrame, _isFreeFrame(activeFrame, detail)),
                   ],
                   SizedBox(height: 24.h),
 
@@ -570,14 +587,17 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
   }
 
   Widget _buildGetFrameButton(
-    BusinessProfileProvider profile,
-    dynamic activeFrame,
-  ) {
+      BusinessProfileProvider profile,
+      dynamic activeFrame,
+      bool isFree,
+      ) {
     return SizedBox(
       width: double.infinity,
       height: 46.h,
       child: ElevatedButton(
-        onPressed: profile.isPurchasing ? null : () => _onGetFrame(activeFrame),
+        onPressed: profile.isPurchasing
+            ? null
+            : () => _onGetFrame(activeFrame, isFree: isFree),
         style: brandButtonStyle(radius: 12.r),
         child: profile.isPurchasing
             ? const SizedBox(
@@ -589,9 +609,9 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
                 ),
               )
             : AppText(
-                'GET FRAME',
-                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
-              ),
+          isFree ? 'ADD FREE FRAME' : 'GET FRAME',
+          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
+        ),
       ),
     );
   }

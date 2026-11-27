@@ -13,7 +13,11 @@ import 'frame_images.dart';
 class FrameTabs extends StatelessWidget {
   const FrameTabs({super.key, required this.selected, required this.onChanged});
 
-  static const _titles = ['Static Frames', 'Animated Frames', 'My Brand Frames'];
+  static const _titles = [
+    'Static Frames',
+    'Animated Frames',
+    'My Brand Frames',
+  ];
 
   final int selected;
   final ValueChanged<int> onChanged;
@@ -215,7 +219,7 @@ class FramesStrip extends StatelessWidget {
             style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade600),
           ),
           if (error != null)
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
+            TextButton(onPressed: onRetry, child: const AppText('Retry')),
         ],
       ),
     );
@@ -276,9 +280,53 @@ class _FrameItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+            SizedBox(height: 2.h),
+            _buildAmount(),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildAmount() {
+    final price = num.tryParse(
+      pick(frame, [(f) => f.price, (f) => f['price']]),
+    );
+    if (price == null) return const SizedBox.shrink();
+
+    final strike = num.tryParse(
+      pick(frame, [(f) => f.strikePrice, (f) => f['strike_price']]),
+    );
+
+    return Row(
+      children: [
+        Text(
+          price == 0 ? 'FREE' : _rupees(price),
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w700,
+            color: price == 0 ? Colors.green.shade700 : kBrandRed,
+          ),
+        ),
+        if (strike != null && strike > price) ...[
+          SizedBox(width: 6.w),
+          Flexible(
+            child: Text(
+              _rupees(strike),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: Colors.grey.shade500,
+                decoration: TextDecoration.lineThrough,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _rupees(num value) =>
+      '₹${value.toStringAsFixed(value % 1 == 0 ? 0 : 2)}';
 }
