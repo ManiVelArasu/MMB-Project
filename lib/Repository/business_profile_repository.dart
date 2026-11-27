@@ -50,10 +50,22 @@ class BusinessProfileRepository {
     );
   }
 
+  /// Paid frame -> creates the Razorpay order.
   Future<ApiResult<Map<String, dynamic>>> purchaseFrame(String frameUid) {
     return ApiRepository.instance.request<Map<String, dynamic>>(
       config: ApiRequestConfig(
         endpoint: '/frames/$frameUid/purchase',
+        method: ApiMethod.post,
+      ),
+      fromJson: (json) => Map<String, dynamic>.from(json as Map),
+    );
+  }
+
+  /// Free frame -> POST frames/{frameUid}/add
+  Future<ApiResult<Map<String, dynamic>>> addFreeFrame(String frameUid) {
+    return ApiRepository.instance.request<Map<String, dynamic>>(
+      config: ApiRequestConfig(
+        endpoint: '/frames/$frameUid/add',
         method: ApiMethod.post,
       ),
       fromJson: (json) => Map<String, dynamic>.from(json as Map),
@@ -80,6 +92,22 @@ class BusinessProfileRepository {
     );
   }
 
+  /// PUT frames/mine/{frameUid}/versions/{versionUid}
+  Future<ApiResult<Map<String, dynamic>>> updateMyFrameVersion({
+    required String frameUid,
+    required String versionUid,
+    required String content,
+  }) {
+    return ApiRepository.instance.request<Map<String, dynamic>>(
+      config: ApiRequestConfig(
+        endpoint: '/frames/mine/$frameUid/versions/$versionUid',
+        method: ApiMethod.put,
+        body: {"content": content},
+      ),
+      fromJson: (json) => Map<String, dynamic>.from(json as Map),
+    );
+  }
+
   Future<ApiResult<Map<String, dynamic>>> updateBusinessFramesDetails({
     required String businessUid,
     required String name,
@@ -93,22 +121,13 @@ class BusinessProfileRepository {
         endpoint: "${ApiEndpoints.Business}/$businessUid",
         method: ApiMethod.patch,
         body: {
-          "name": name,
-          "phone": phone,
+          if (name.isNotEmpty) "name": name,
+          if (phone.isNotEmpty) "phone": phone,
           if (email != null && email.isNotEmpty) "email": email,
           if (website != null && website.isNotEmpty) "website": website,
           if (logo_s3_key != null && logo_s3_key.isNotEmpty)
             "logo_s3_key": logo_s3_key,
         },
-      ),
-      fromJson: (json) => Map<String, dynamic>.from(json as Map),
-    );
-  }
-  Future<ApiResult<Map<String, dynamic>>> addFreeFrame(String frameUid) {
-    return ApiRepository.instance.request<Map<String, dynamic>>(
-      config: ApiRequestConfig(
-        endpoint: '/frames/$frameUid/add',
-        method: ApiMethod.post,
       ),
       fromJson: (json) => Map<String, dynamic>.from(json as Map),
     );

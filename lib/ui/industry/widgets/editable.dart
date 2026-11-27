@@ -390,6 +390,8 @@ class EditableItemWidget extends StatelessWidget {
       ) {
     if ((item.type ?? '') != 'image') return true;
     final id = item.id ?? '';
+    // Stand-alone mask layer: the whole box is easy to grab.
+    if (provider.isMaskPlaceholder(id)) return true;
     final url = (item.contentUrl ?? '').trim();
     if (url.isEmpty) return true;
     if (provider.imageClipPath(id) != null) return true;
@@ -1035,6 +1037,12 @@ class EditableItemWidget extends StatelessWidget {
           painter: _FabricShapePainter(raw, fillColor: item.color),
         ),
       );
+    }
+
+    // Released mask: drawn as an empty placeholder in the shape of the mask.
+    if (item.type == 'image') {
+      final ph = context.read<EditorProvider>().maskPlaceholder(item.id ?? '');
+      if (ph != null) return _MaskPlaceholderView(placeholder: ph);
     }
 
     if (item.type == 'image' || item.type == 'shape') {
@@ -1828,27 +1836,30 @@ class _NetworkAlphaMaskState extends State<_NetworkAlphaMask> {
     final mask = _maskImage;
     // On failure keep the original image visible rather than hiding the canvas.
     if (mask == null || _failed) return widget.child;
-    final moved = widget.scale != 1.0 || widget.offset != Offset.zero;
     return ShaderMask(
       blendMode: BlendMode.dstIn,
       shaderCallback: (Rect bounds) {
-        // Mask pixel -> image box: fit the box, shrink/grow around the centre
-        // by `scale`, then shift by `offset` (fractions of the box).
-        final s = widget.scale;
-        final sx = bounds.width / mask.width * s;
-        final sy = bounds.height / mask.height * s;
-        final tx = bounds.width * (0.5 - s / 2 + widget.offset.dx);
-        final ty = bounds.height * (0.5 - s / 2 + widget.offset.dy);
-        // Outside a moved/shrunk mask nothing is visible (decal); the
-        // untouched mask keeps the original clamp behaviour.
-        final tile = moved ? TileMode.decal : TileMode.clamp;
+        // The mask picture keeps its OWN proportions: it is fitted (contain)
+        // inside its slot - the image box shrunk / grown around the centre by
+        // `scale` and shifted by `offset` (fractions of the box). Every mask
+        // therefore cuts at the same size and is never stretched.
+        final sc = widget.scale;
+        final slotW = bounds.width * sc;
+        final slotH = bounds.height * sc;
+        final slotL = bounds.width * (0.5 - sc / 2 + widget.offset.dx);
+        final slotT = bounds.height * (0.5 - sc / 2 + widget.offset.dy);
+        final k = math.min(slotW / mask.width, slotH / mask.height);
+        final dw = mask.width * k;
+        final dh = mask.height * k;
+        final tx = slotL + (slotW - dw) / 2;
+        final ty = slotT + (slotH - dh) / 2;
         return ImageShader(
           mask,
-          tile,
-          tile,
+          TileMode.decal,
+          TileMode.decal,
           Float64List.fromList(<double>[
-            sx, 0, 0, 0,
-            0, sy, 0, 0,
+            k, 0, 0, 0,
+            0, k, 0, 0,
             0, 0, 1, 0,
             tx, ty, 0, 1,
           ]),
@@ -2572,4 +2583,94 @@ TextDecoration _textDecorationOf(bool underline, bool strike) {
   if (underline) return TextDecoration.underline;
   if (strike) return TextDecoration.lineThrough;
   return TextDecoration.none;
+}
+
+/// A released mask (stand-alone MASK layer): the mask shape filled with an
+/// "empty picture" placeholder. Drop an image on it to fill it.
+class _MaskPlaceholderView extends StatelessWidget {
+  const _MaskPlaceholderView({required this.placeholder});
+
+  final Map<String, dynamic> placeholder;
+
+  @override
+  Widget build(BuildContext context) {
+    const art = SizedBox.expand(
+      child: CustomPaint(painter: _MaskPlaceholderPainter()),
+    );
+    final url = (placeholder['url'] ?? '').toString();
+    final clip = placeholder['clip'];
+    if (url.isNotEmpty) {
+      return SizedBox.expand(
+        child: _NetworkAlphaMask(maskUrl: url, child: art),
+      );
+    }
+    if (clip is Map) {
+      return SizedBox.expand(
+        child: ClipPath(clipper: _FabricFitClipper(clip), child: art),
+      );
+    }
+    return art;
+  }
+}
+
+class _MaskPlaceholderPainter extends CustomPainter {
+  const _MaskPlaceholderPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFFF8E6EA));
+    canvas.drawCircle(
+      Offset(w * 0.55, h * 0.42),
+      math.min(w, h) * 0.2,
+      Paint()..color = const Color(0xFFF0A9B8),
+    );
+    final m1 = Path()
+      ..moveTo(0, h)
+      ..lineTo(w * 0.3, h * 0.5)
+      ..lineTo(w * 0.62, h)
+      ..close();
+    final m2 = Path()
+      ..moveTo(w * 0.35, h)
+      ..lineTo(w * 0.72, h * 0.45)
+      ..lineTo(w, h * 0.8)
+      ..lineTo(w, h)
+      ..close();
+    canvas.drawPath(m1, Paint()..color = const Color(0x99EDB8C4));
+    canvas.drawPath(m2, Paint()..color = const Color(0x99E7A3B3));
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Fits a Fabric clipPath shape (circle / ellipse / rect / path) into the
+/// whole box, whatever the box size is (used by released template masks).
+class _FabricFitClipper extends CustomClipper<Path> {
+  _FabricFitClipper(this.clip);
+
+  final Map clip;
+
+  @override
+  Path getClip(Size size) {
+    final full = Path()..addRect(Offset.zero & size);
+    try {
+      double cw = 0, ch = 0;
+      final shape = _FabricClipPathClipper._buildPath(clip, (w, h) {
+        cw = w;
+        ch = h;
+      });
+      if (!(cw > 0) || !(ch > 0) || size.isEmpty) return full;
+      final m = Matrix4.identity()
+        ..translate(size.width / 2, size.height / 2)
+        ..scale(size.width / cw, size.height / ch, 1);
+      return shape.transform(m.storage);
+    } catch (_) {
+      return full;
+    }
+  }
+
+  @override
+  bool shouldReclip(covariant _FabricFitClipper oldClipper) =>
+      !identical(oldClipper.clip, clip);
 }

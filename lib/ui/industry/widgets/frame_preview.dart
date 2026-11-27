@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mmb_app/component/custom_widget.dart';
 
 import 'brand_form.dart';
+import 'brand_slot.dart';
 import 'frame_content.dart';
 import 'frame_helpers.dart';
 import 'frame_images.dart';
@@ -23,6 +24,7 @@ class FramePreview extends StatelessWidget {
     required this.isLoading,
     required this.showLegacyOverlay,
     required this.form,
+    required this.slots,
     required this.logoUrl,
     required this.defaultPhone,
     required this.defaultEmail,
@@ -39,6 +41,7 @@ class FramePreview extends StatelessWidget {
   final bool showLegacyOverlay;
 
   final BrandForm form;
+  final BrandSlots slots;
   final String logoUrl;
   final String defaultPhone;
   final String defaultEmail;
@@ -83,12 +86,16 @@ class FramePreview extends StatelessWidget {
   }
 
   Widget _buildContentFrame(FrameContent frameContent) {
+    final logo = form.logo;
     return FrameContentView(
       content: frameContent,
       showSlots: form.enabled,
-      slotTexts: form.slotTexts,
-      // No logoBuilder: the logo / whatsapp / website images that are inside
-      // the frame `content` are drawn exactly as the designer made them.
+      slotTexts: slots.texts(form),
+      hiddenSlots: slots.hidden,
+      // picked logo, otherwise the designer's logo stays
+      logoBuilder: (w, h) => logo == null
+          ? null
+          : Image.file(logo, width: w, height: h, fit: BoxFit.contain),
     );
   }
 

@@ -644,6 +644,17 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   void setImageMask(String id, {required String name, required String url}) {
     if (!_items.any((e) => e.id == id)) return;
+    if (_maskPlaceholders.containsKey(id)) {
+      // Stand-alone mask layer: only its SHAPE changes.
+      _saveState();
+      final fullUrl = assetCdnUrl(url);
+      _maskPlaceholders[id] = <String, dynamic>{'url': fullUrl, 'name': name};
+      final i = _items.indexWhere((e) => e.id == id);
+      _items[i] = _items[i].copyWith(contentUrl: fullUrl);
+      _syncCurrentPage();
+      notifyListeners();
+      return;
+    }
     _saveState();
     _imageMaskNames[id] = name;
     _imageMaskUrls[id] = assetCdnUrl(url);
@@ -714,7 +725,21 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   String? _clipEditId;
   EditorItem? _clipEditBackupItem;
   Map<String, dynamic>? _clipEditBackupWindow;
+  String? _clipEditBackupMaskUrl;
+  String? _clipEditBackupMaskName;
   int _clipEditUndoLen = 0;
+
+  // ---------------- Released masks = stand-alone MASK layers ----------------
+  // RELEASE in EDIT MASK leaves the picture unmasked and drops the mask shape
+  // on the canvas as its own layer (an `image` item that is drawn as an empty
+  // placeholder). It can be moved / rotated / resized anywhere and an image
+  // can be dropped onto it (or added with ADD IMAGE) to fill it.
+  //   value = {'url': maskPictureUrl, 'name': ..}   (picked mask picture)
+  //        or {'clip': fabricClipMap}               (mask from the template)
+  final Map<String, Map<String, dynamic>> _maskPlaceholders = {};
+
+  bool isMaskPlaceholder(String id) => _maskPlaceholders.containsKey(id);
+  Map<String, dynamic>? maskPlaceholder(String id) => _maskPlaceholders[id];
 
   /// Image that is currently in EDIT MASK mode (null = none).
   String? get clipEditItemId => _clipEditId;
@@ -734,7 +759,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
   /// Null = not masked, or EDIT MASK is open -> the full box is used.
   /// [maskContent] = non-transparent part of the picked mask picture as
   /// fractions (0..1) of that picture; null = the whole mask picture.
-  Rect? imageVisibleLocalRect(String id, {Rect? maskContent}) {
+  Rect? imageVisibleLocalRect(
+      String id, {
+        Rect? maskContent,
+        double? maskAspect,
+      }) {
     if (_clipEditId == id) return null;
     final index = _items.indexWhere((e) => e.id == id);
     if (index == -1) return null;
@@ -751,11 +780,22 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       final ml = w * (0.5 - sm / 2 + off.dx);
       final mt = h * (0.5 - sm / 2 + off.dy);
       final c = maskContent ?? const Rect.fromLTWH(0, 0, 1, 1);
+      // The mask picture is fitted (contain) inside its slot, never stretched.
+      var pl = ml, pt = mt, pw = mw, ph = mh;
+      if (maskAspect != null && maskAspect > 0 && mw > 0 && mh > 0) {
+        if (maskAspect > mw / mh) {
+          ph = mw / maskAspect;
+          pt = mt + (mh - ph) / 2;
+        } else {
+          pw = mh * maskAspect;
+          pl = ml + (mw - pw) / 2;
+        }
+      }
       r = Rect.fromLTWH(
-        ml + c.left * mw,
-        mt + c.top * mh,
-        c.width * mw,
-        c.height * mh,
+        pl + c.left * pw,
+        pt + c.top * ph,
+        c.width * pw,
+        c.height * ph,
       );
     } else {
       final clip = imageClipPath(id);
@@ -840,6 +880,10 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _clipEditId = null;
     _clipEditBackupItem = null;
     _clipEditBackupWindow = null;
+    _clipEditBackupMaskUrl = null;
+    _clipEditBackupMaskName = null;
+    _clipEditBackupMaskOffset = null;
+    _clipEditBackupMaskScale = null;
     _maskEditRect = null;
   }
 
@@ -1028,12 +1072,15 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _clipEditUndoLen = _undoStack.length;
     _saveState();
     _clipEditBackupItem = item.copyWith();
+    // Everything EDIT MASK can touch (the mask can also be swapped inside it).
+    _clipEditBackupMaskUrl = _imageMaskUrls[id];
+    _clipEditBackupMaskName = _imageMaskNames[id];
+    _clipEditBackupMaskOffset = _imageMaskOffsets[id];
+    _clipEditBackupMaskScale = _imageMaskScales[id];
+    _clipEditBackupWindow = _clipWindows[id];
     if (maskRect != null) {
-      _clipEditBackupMaskOffset = _imageMaskOffsets[id];
-      _clipEditBackupMaskScale = _imageMaskScales[id];
       _maskEditRect = maskRect;
     } else {
-      _clipEditBackupWindow = _clipWindows[id];
       _clipWindows[id] = window!;
     }
     _clipEditId = id;
@@ -1061,27 +1108,19 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     if (backupItem != null && index != -1) {
       _items[index] = backupItem;
     }
-    if (_maskEditRect != null) {
-      final off = _clipEditBackupMaskOffset;
-      final sc = _clipEditBackupMaskScale;
-      if (off == null) {
-        _imageMaskOffsets.remove(id);
+    void restore<V>(Map<String, V> map, V? value) {
+      if (value == null) {
+        map.remove(id);
       } else {
-        _imageMaskOffsets[id] = off;
-      }
-      if (sc == null) {
-        _imageMaskScales.remove(id);
-      } else {
-        _imageMaskScales[id] = sc;
-      }
-    } else {
-      final backupWindow = _clipEditBackupWindow;
-      if (backupWindow == null) {
-        _clipWindows.remove(id);
-      } else {
-        _clipWindows[id] = backupWindow;
+        map[id] = value;
       }
     }
+
+    restore(_imageMaskUrls, _clipEditBackupMaskUrl);
+    restore(_imageMaskNames, _clipEditBackupMaskName);
+    restore(_imageMaskOffsets, _clipEditBackupMaskOffset);
+    restore(_imageMaskScales, _clipEditBackupMaskScale);
+    restore(_clipWindows, _clipEditBackupWindow);
     while (_undoStack.length > _clipEditUndoLen) {
       _undoStack.removeLast();
     }
@@ -1091,9 +1130,119 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     notifyListeners();
   }
 
-  /// RELEASE: remove the mask, the whole picture shows again.
-  void releaseImageClip(String id) {
+  /// Geometry of a Fabric mask window (canvas units, un-rotated size).
+  ({Offset center, double w, double h, double angle})? _clipWindowGeometry(
+      Map c,
+      ) {
+    final shape = _clipShapeSize(c);
+    final sx = (_toDouble(c['scaleX']) ?? 1.0).abs();
+    final sy = (_toDouble(c['scaleY']) ?? 1.0).abs();
+    final w = shape.width * sx;
+    final h = shape.height * sy;
+    if (!(w > 0) || !(h > 0)) return null;
+    final a = (_toDouble(c['angle']) ?? 0.0) * math.pi / 180.0;
+    final ox = _clipOrigin(c['originX'], 0.0);
+    final oy = _clipOrigin(c['originY'], 0.0);
+    final dx = (0.5 - ox) * w;
+    final dy = (0.5 - oy) * h;
+    final centre = Offset(
+      (_toDouble(c['left']) ?? 0.0) + dx * math.cos(a) - dy * math.sin(a),
+      (_toDouble(c['top']) ?? 0.0) + dx * math.sin(a) + dy * math.cos(a),
+    );
+    return (center: centre, w: w, h: h, angle: a);
+  }
+
+  /// EDIT MASK only: change the mask SHAPE. The window stays where it is on
+  /// the canvas and the picture behind it is not touched.
+  void swapMaskInEdit(
+      String id, {
+        required String name,
+        required String url,
+      }) {
+    if (_clipEditId != id) {
+      setImageMask(id, name: name, url: url);
+      return;
+    }
     if (!_items.any((e) => e.id == id)) return;
+    Rect? rect = _maskEditRect;
+    if (rect == null) {
+      final win = _clipWindows[id];
+      if (win != null && win['released'] != true) {
+        rect = _clipWindowBounds(win);
+      }
+    }
+    if (rect == null || rect.isEmpty) return;
+    _imageMaskNames[id] = name;
+    _imageMaskUrls[id] = assetCdnUrl(url);
+    // The template's own clip is replaced by the picked mask.
+    _clipWindows[id] = <String, dynamic>{'released': true};
+    _maskEditRect = rect;
+    _applyMaskRect(id, rect);
+    _syncCurrentPage();
+    notifyListeners();
+  }
+
+  /// RELEASE (EDIT MASK): the picture shows in full again and the mask comes
+  /// out as its OWN layer that can be moved / rotated / resized anywhere.
+  /// Drop an image on it (or ADD IMAGE) to fill it.
+  void releaseImageClip(String id) {
+    final index = _items.indexWhere((e) => e.id == id);
+    if (index == -1) return;
+    final item = _items[index];
+
+    // 1) Describe the mask as a stand-alone layer BEFORE it is removed.
+    Map<String, dynamic>? placeholder;
+    Offset? phCentre;
+    var phW = 0.0, phH = 0.0, phAngle = 0.0;
+
+    if (_imageMaskUrls[id] != null) {
+      final rect =
+          (_clipEditId == id ? _maskEditRect : null) ?? _maskRectOf(id);
+      if (rect != null && !rect.isEmpty) {
+        final s = item.scale.isFinite && item.scale > 0 ? item.scale : 1.0;
+        final rot = item.rotation.isFinite ? item.rotation : 0.0;
+        final itemCentre =
+            item.position + Offset(item.width * s / 2, item.height * s / 2);
+        final rel = rect.center - itemCentre;
+        // The mask turns with its picture.
+        phCentre =
+            itemCentre +
+                Offset(
+                  rel.dx * math.cos(rot) - rel.dy * math.sin(rot),
+                  rel.dx * math.sin(rot) + rel.dy * math.cos(rot),
+                );
+        phW = rect.width;
+        phH = rect.height;
+        phAngle = rot;
+        placeholder = <String, dynamic>{
+          'url': _imageMaskUrls[id],
+          'name': _imageMaskNames[id] ?? '',
+        };
+      }
+    } else if (hasImageClip(id)) {
+      final clipNow = imageClipPath(id);
+      final own = _clipWindows[id];
+      Map<String, dynamic>? window;
+      if (own != null && own['released'] != true) {
+        window = Map<String, dynamic>.from(own);
+      } else if (clipNow != null && _templateRawObjects[id] != null) {
+        window = _absoluteClipFor(item, clipNow, _templateRawObjects[id]!);
+      }
+      final g = window == null ? null : _clipWindowGeometry(window);
+      if (window != null && g != null) {
+        phCentre = g.center;
+        phW = g.w;
+        phH = g.h;
+        phAngle = g.angle;
+        placeholder = <String, dynamic>{
+          'clip': Map<String, dynamic>.from(
+            jsonDecode(jsonEncode(window)) as Map,
+          ),
+        };
+      }
+    }
+
+    // 2) Take the mask off the picture.
     if (_clipEditId == id) {
       _endClipEdit();
     }
@@ -1108,8 +1257,114 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     if (hasImageClip(id)) {
       _clipWindows[id] = <String, dynamic>{'released': true};
     }
+
+    // 3) The mask becomes its own layer, just above the picture.
+    if (placeholder != null && phCentre != null) {
+      final w = math.max(12.0, phW);
+      final h = math.max(12.0, phH);
+      final phId = 'maskph_${DateTime.now().microsecondsSinceEpoch}';
+      final at = _items.indexWhere((e) => e.id == id);
+      _items.insert(
+        at == -1 ? _items.length : at + 1,
+        EditorItem(
+          id: phId,
+          type: 'image',
+          contentUrl: (placeholder['url'] ?? '').toString(),
+          position: Offset(phCentre.dx - w / 2, phCentre.dy - h / 2),
+          width: w,
+          height: h,
+          scale: 1.0,
+          rotation: phAngle,
+          opacity: 1.0,
+          isLocal: false,
+        ),
+      );
+      _maskPlaceholders[phId] = placeholder;
+      selectedItemType = 'image';
+      selectedItemId = phId;
+    }
     _syncCurrentPage();
     notifyListeners();
+  }
+
+  /// Turns a stand-alone mask layer into a normal masked picture layer (the
+  /// mask keeps exactly the place / size / rotation the layer has now).
+  void _convertPlaceholderToMask(String id) {
+    final ph = _maskPlaceholders.remove(id);
+    final index = _items.indexWhere((e) => e.id == id);
+    if (ph == null || index == -1) return;
+    final item = _items[index];
+    final maskUrl = (ph['url'] ?? '').toString();
+    if (maskUrl.isNotEmpty) {
+      _imageMaskUrls[id] = maskUrl;
+      _imageMaskNames[id] = (ph['name'] ?? '').toString();
+      _imageMaskOffsets.remove(id);
+      _imageMaskScales.remove(id);
+      return;
+    }
+    final clip = ph['clip'];
+    if (clip is! Map) return;
+    final window = Map<String, dynamic>.from(
+      jsonDecode(jsonEncode(clip)) as Map,
+    );
+    final shape = _clipShapeSize(window);
+    if (!(shape.width > 0) || !(shape.height > 0)) return;
+    final s = item.scale.isFinite && item.scale > 0 ? item.scale : 1.0;
+    final centre =
+        item.position + Offset(item.width * s / 2, item.height * s / 2);
+    window['absolutePositioned'] = true;
+    window['originX'] = 'center';
+    window['originY'] = 'center';
+    window['left'] = centre.dx;
+    window['top'] = centre.dy;
+    window['angle'] = item.rotation * 180.0 / math.pi;
+    window['scaleX'] = item.width * s / shape.width;
+    window['scaleY'] = item.height * s / shape.height;
+    _clipWindows[id] = window;
+  }
+
+  /// A picture was dropped (drag released) on a stand-alone mask layer ->
+  /// the mask is filled with that picture.
+  void _tryDropFillMask(String? dragId) {
+    if (dragId == null || _maskPlaceholders.isEmpty) return;
+    final di = _items.indexWhere((e) => e.id == dragId);
+    if (di == -1) return;
+    final drag = _items[di];
+    if (drag.type != 'image' ||
+        _maskPlaceholders.containsKey(dragId) ||
+        _isBackgroundLayer(drag) ||
+        _imageMaskUrls[dragId] != null ||
+        hasImageClip(dragId)) {
+      return;
+    }
+    final url = (drag.contentUrl ?? '').trim();
+    if (url.isEmpty) return;
+    final ds = drag.scale.isFinite && drag.scale > 0 ? drag.scale : 1.0;
+    final dropPoint =
+        drag.position + Offset(drag.width * ds / 2, drag.height * ds / 2);
+
+    for (var i = _items.length - 1; i >= 0; i--) {
+      final p = _items[i];
+      final pid = p.id;
+      if (pid == null || !_maskPlaceholders.containsKey(pid)) continue;
+      final ps = p.scale.isFinite && p.scale > 0 ? p.scale : 1.0;
+      final pc = p.position + Offset(p.width * ps / 2, p.height * ps / 2);
+      final rel = dropPoint - pc;
+      final a = -(p.rotation.isFinite ? p.rotation : 0.0);
+      final lx = rel.dx * math.cos(a) - rel.dy * math.sin(a);
+      final ly = rel.dx * math.sin(a) + rel.dy * math.cos(a);
+      if (lx.abs() > p.width * ps / 2 || ly.abs() > p.height * ps / 2) {
+        continue;
+      }
+      final isLocal = drag.isLocal;
+      replaceImageContent(pid, url, isLocal: isLocal);
+      _items.removeWhere((e) => e.id == dragId);
+      selectedItemType = 'image';
+      selectedItemId = pid;
+      _syncCurrentPage();
+      notifyListeners();
+      return;
+    }
   }
 
   /// Moves the mask window together with its image (duplicate / paste).
@@ -1144,6 +1399,8 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final index = _items.indexWhere((e) => e.id == id);
     if (value.isEmpty || index == -1) return;
     _saveState();
+    // Filling a stand-alone mask layer: it becomes a masked picture first.
+    if (_maskPlaceholders.containsKey(id)) _convertPlaceholderToMask(id);
     final old = _items[index];
     _items[index] = old.copyWith(contentUrl: value, isLocal: isLocal);
     // Same aspect-ratio correction as a freshly added image, but only for
@@ -1162,8 +1419,12 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       }
       final clip = windowBounds != null ? null : imageClipPath(id);
       final raw = _templateRawObjects[id];
-      if (clip != null && raw != null && clip['inverted'] != true) {
-        final window = _absoluteClipFor(old, clip, raw);
+      if (clip != null &&
+          clip['inverted'] != true &&
+          (raw != null || clip['absolutePositioned'] == true)) {
+        final window = raw != null
+            ? _absoluteClipFor(old, clip, raw)
+            : Map<String, dynamic>.from(clip);
         final bounds = window == null ? null : _clipWindowBounds(window);
         if (window != null && bounds != null && !bounds.isEmpty) {
           _clipWindows[id] = window;
@@ -1533,6 +1794,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     keep(_imageMaskOffsets);
     keep(_imageMaskScales);
     keep(_clipWindows);
+    keep(_maskPlaceholders);
     keepSet(_detachedBackgroundIds);
     keep(_outlineStyles);
     keep(_outlineJoins);
@@ -2561,6 +2823,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       _items.clear();
       if (!appendAsPage) {
         _clipWindows.clear();
+        _maskPlaceholders.clear();
         _endClipEdit();
         _templateRawObjects.clear();
         _templateBackgroundIds.clear();
@@ -3861,6 +4124,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       copyTo(_imageMaskNames);
       copyTo(_imageMaskOffsets);
       copyTo(_imageMaskScales);
+      copyTo(_maskPlaceholders);
       final outline = _outlineStyles[sourceId];
       if (outline != null) _outlineStyles[newId] = outline;
       final join = _outlineJoins[sourceId];
@@ -3935,6 +4199,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         if (_templateRawObjects[id] != null) 'raw': _templateRawObjects[id],
         // Mask window pinned on the canvas (EDIT MASK / replaced image).
         if (_clipWindows[id] != null) 'clipWindow': _clipWindows[id],
+        // Released mask = stand-alone MASK layer.
+        if (_maskPlaceholders[id] != null)
+          'maskPlaceholder': _maskPlaceholders[id],
         'flipX': templateFlipX(id),
         'flipY': templateFlipY(id),
         'isBackground': _templateBackgroundIds.contains(id),
@@ -4062,6 +4329,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       // ---- editor JSON (exportCurrentPageJson) ----
       _items.clear();
       _clipWindows.clear();
+      _maskPlaceholders.clear();
       _endClipEdit();
       _templateRawObjects.clear();
       _templateBackgroundIds.clear();
@@ -4216,6 +4484,11 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
             }
           }
 
+          if (m['maskPlaceholder'] is Map) {
+            _maskPlaceholders[id] = Map<String, dynamic>.from(
+              jsonDecode(jsonEncode(m['maskPlaceholder'])) as Map,
+            );
+          }
           if (m['clipWindow'] is Map) {
             _clipWindows[id] = Map<String, dynamic>.from(
               jsonDecode(jsonEncode(m['clipWindow'])) as Map,
@@ -5490,6 +5763,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     c(_imageMaskNames);
     c(_imageMaskOffsets);
     c(_imageMaskScales);
+    c(_maskPlaceholders);
     c(_outlineStyles);
     c(_outlineJoins);
     c(_itemAnimations);
@@ -5767,6 +6041,15 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
     // State BEFORE the first frame of this drag / pinch / rotate.
     _transformBaseline ??= _takeSnapshot();
+    // A pure move (no resize / rotate) may end on top of a mask layer.
+    _lastMovedId =
+    (position != null &&
+        scale == null &&
+        rotation == null &&
+        width == null &&
+        height == null)
+        ? id
+        : null;
 
     final current = _items[index];
 
@@ -5845,12 +6128,18 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
 
   // Call this when user finished panning/scaling/rotating
   // so the final state is committed to history for Undo/Redo.
+  String? _lastMovedId;
+
   void commitTransform() {
     final base = _transformBaseline;
     _transformBaseline = null;
     if (base == null) return; // the gesture never changed anything
     _pushUndo(base);
     _lastSnapshotAt = null;
+    final moved = _lastMovedId;
+    _lastMovedId = null;
+    // Picture dropped on a released mask -> fills it.
+    _tryDropFillMask(moved);
     notifyListeners();
   }
 }

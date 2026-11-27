@@ -353,6 +353,22 @@ class _EditorViewState extends State<EditorView> {
       if (provider.selectedItemId != targetId) {
         provider.setSelectedItem(target.type, targetId);
       }
+      // Released mask (empty mask layer): double tap = put a picture in it.
+      if (provider.isMaskPlaceholder(targetId)) {
+        provider.beginReplaceImage(targetId);
+        _showMediaBottomSheet(
+          context,
+          provider,
+          Theme.of(context).brightness == Brightness.dark,
+        );
+        return;
+      }
+      // Masked picture: double tap = EDIT MASK (the mask stays where it is,
+      // the picture moves / scales behind it).
+      if (provider.hasEditableMask(targetId)) {
+        provider.beginClipEdit(targetId);
+        return;
+      }
       await _cropSelectedImage(context, provider, targetId);
     }
     // Shapes / videos / anything else: double tap does nothing.
@@ -369,6 +385,7 @@ class _EditorViewState extends State<EditorView> {
     final item = matching.first;
     // Background (or background-like picture): no crop screen, ever.
     if (_isBackgroundLike(item)) return;
+    if (provider.isMaskPlaceholder(itemId)) return;
     final source = (item.contentUrl ?? '').trim();
     if (item.type != 'image' || source.isEmpty) return;
     if (provider.isItemLocked(itemId)) return;
@@ -9571,6 +9588,10 @@ class _EditorViewState extends State<EditorView> {
     if (provider.clipEditItemId == id) {
       return _buildClipEditToolbar(context, provider, id);
     }
+    // Released mask: its own small toolbar (ADD IMAGE / CHANGE MASK ...).
+    if (provider.isMaskPlaceholder(id)) {
+      return _buildMaskPlaceholderToolbar(context, provider, isDark, id);
+    }
     return Container(
       height: 124,
       padding: const EdgeInsets.only(bottom: 6),
@@ -9699,20 +9720,21 @@ class _EditorViewState extends State<EditorView> {
                     }
                   },
                 ),
-                _bottomTool(
-                  Image.asset("assets/images/mask.png"),
-                  'MASK',
-                      () => _showApiMaskSheet(context, provider, id),
-                ),
-                // Only when a mask is applied: move / resize it on the image.
-                // One EDIT MASK for every masked image (API clipPath OR a mask
-                // picked from the MASK sheet): the mask stays fixed, drag /
-                // scale the picture behind it, then DONE / CANCEL / RELEASE.
+                // ONE button: no mask yet -> MASK (pick a mask); a mask is
+                // already applied -> EDIT MASK (the mask stays fixed, drag /
+                // scale the picture behind it, swap the mask, then DONE /
+                // CANCEL / RELEASE).
                 if (provider.hasEditableMask(id))
                   _bottomTool(
                     Icons.open_with_rounded,
                     'EDIT MASK',
                         () => provider.beginClipEdit(id),
+                  )
+                else
+                  _bottomTool(
+                    Image.asset("assets/images/mask.png"),
+                    'MASK',
+                        () => _showApiMaskSheet(context, provider, id),
                   ),
                 _bottomTool(
                   Image.asset("assets/images/magic_pen.png"),
@@ -9813,42 +9835,61 @@ class _EditorViewState extends State<EditorView> {
     );
   }
 
-  // ---- EDIT MASK for API-masked images (Fabric clipPath) ----
+  // ---- EDIT MASK (masked picture) ----
   // Same flow as the web editor: the mask window is fixed, the whole picture
   // is shown faded behind it; drag the picture / use the corner handles to
-  // place it inside the mask, then DONE. CANCEL restores the previous look,
-  // RELEASE removes the mask.
+  // place it inside the mask. All masks are listed here, so the shape can be
+  // swapped without leaving EDIT MASK.
+  //   DONE    keeps the result
+  //   CANCEL  restores the previous look
+  //   RELEASE removes the mask from the picture and puts it on the canvas as
+  //           its own layer (move / rotate / resize it, drop an image on it)
   Widget _buildClipEditToolbar(
       BuildContext context,
       EditorProvider provider,
       String id,
       ) {
-    Widget action(
+    // First call loads the mask list, later calls return immediately.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) provider.fetchElementCategory('masks', page: 1, limit: 30);
+    });
+    final masks = provider.assetCategoryItems('masks');
+    final loadingMasks = provider.isElementCategoryLoading('masks');
+    final currentMask = provider.imageMaskName(id);
+
+    Widget pill(
         IconData icon,
         String label,
-        VoidCallback onTap,
-        Color color,
-        ) {
+        VoidCallback onTap, {
+          bool primary = false,
+        }) {
       return Expanded(
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: color, size: 22),
-                const SizedBox(height: 4),
-                AppText(
-                  label,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: AppFontSize.fontSize12,
-                    fontWeight: FontWeight.w600,
-                  ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          child: Material(
+            color: primary ? AppColors.appRed : Colors.white12,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, color: Colors.white, size: 16),
+                    const SizedBox(width: 5),
+                    AppText(
+                      label,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: AppFontSize.fontSize12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -9856,7 +9897,7 @@ class _EditorViewState extends State<EditorView> {
     }
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: const BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -9867,104 +9908,215 @@ class _EditorViewState extends State<EditorView> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppText(
-              'Adjust mask',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: AppFontSize.fontSize14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            AppText(
-              'Drag the highlighted image to reposition it, or use its '
-                  'corner handles to scale it inside the mask.',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: AppFontSize.fontSize12,
-              ),
-            ),
-            const SizedBox(height: 6),
-            // Canva-style Rotate: turns the picture behind the fixed mask.
-            Builder(
-              builder: (_) {
-                final idx = provider.items.indexWhere((e) => e.id == id);
-                final rot = idx == -1 ? 0.0 : provider.items[idx].rotation;
-                var deg = rot * 180 / math.pi;
-                deg = ((deg + 180) % 360) - 180; // -180..180
-                return Row(
-                  children: [
-                    SizedBox(
-                      width: 52,
-                      child: AppText(
-                        'Rotate',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: AppFontSize.fontSize12,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Slider(
-                        min: -180,
-                        max: 180,
-                        value: deg.clamp(-180.0, 180.0).toDouble(),
-                        onChanged: (v) => provider.updateItemTransform(
-                          id,
-                          rotation: v * math.pi / 180,
-                          clampToFrame: false,
-                        ),
-                        onChangeEnd: (_) => provider.commitTransform(),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        provider.updateItemTransform(
-                          id,
-                          rotation: 0,
-                          clampToFrame: false,
-                        );
-                        provider.commitTransform();
-                      },
-                      child: AppText(
-                        'Auto',
-                        style: TextStyle(
-                          color: Colors.amberAccent,
-                          fontSize: AppFontSize.fontSize12,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
             Row(
               children: [
-                action(
-                  Icons.close_rounded,
-                  'CANCEL',
-                      () => provider.cancelClipEdit(),
-                  Colors.white70,
-                ),
-                action(
-                  Icons.layers_clear_rounded,
-                  'RELEASE',
-                      () => provider.releaseImageClip(id),
-                  Colors.white70,
-                ),
-                action(
+                pill(
                   Icons.check_rounded,
-                  'DONE',
+                  'Done',
                       () => provider.commitClipEdit(),
-                  AppColors.appRed,
+                  primary: true,
+                ),
+                pill(
+                  Icons.close_rounded,
+                  'Cancel',
+                      () => provider.cancelClipEdit(),
+                ),
+                pill(
+                  Icons.layers_clear_rounded,
+                  'Release',
+                      () => provider.releaseImageClip(id),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: AppText(
+                'Drag the picture to reposition it, or use its corner '
+                    'handles to scale it inside the mask. Tap a mask below to '
+                    'change the shape.',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: AppFontSize.fontSize12,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 64,
+              child: masks.isEmpty
+                  ? Center(
+                child: loadingMasks
+                    ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+                    : AppText(
+                  'No mask found',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: AppFontSize.fontSize12,
+                  ),
+                ),
+              )
+                  : ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: masks.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, index) {
+                  final mask = masks[index];
+                  final url = provider.assetCdnUrl(mask.s3Key);
+                  final selected =
+                      currentMask != null && currentMask == mask.name;
+                  return GestureDetector(
+                    onTap: url.isEmpty
+                        ? null
+                        : () => provider.swapMaskInEdit(
+                      id,
+                      name: mask.name,
+                      url: url,
+                    ),
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      padding: const EdgeInsets.all(6),
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: selected
+                              ? AppColors.appRed
+                              : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: url.isEmpty
+                          ? const Icon(
+                        Icons.image_not_supported_outlined,
+                        size: 18,
+                      )
+                          : _buildMaskPreview(url),
+                    ),
+                  );
+                },
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
+  // ---- Released mask = stand-alone MASK layer ----
+  // Move / rotate / resize it with the normal handles. Drag a picture onto it
+  // (or ADD IMAGE) to fill it; a filled mask is a normal masked picture again
+  // (EDIT MASK / double tap).
+  Widget _buildMaskPlaceholderToolbar(
+      BuildContext context,
+      EditorProvider provider,
+      bool isDark,
+      String id,
+      ) {
+    return Container(
+      height: 124,
+      padding: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.black,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: 50,
+            width: double.infinity,
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: AppText(
+                    'Drag an image onto this mask to fill it.',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.black54,
+                      fontSize: AppFontSize.fontSize12,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Material(
+                  color: const Color(0xFFFFE2E2),
+                  borderRadius: BorderRadius.circular(9),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(9),
+                    onTap: () {
+                      provider.removeItem(id);
+                      provider.clearSelection();
+                    },
+                    child: SizedBox(
+                      width: 42,
+                      height: 42,
+                      child: Center(
+                        child: Image.asset(
+                          "assets/images/delete.png",
+                          width: 25,
+                          height: 25,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 64,
+            child: ListView(
+              key: PageStorageKey<String>('mask-layer-tools-$id'),
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              children: [
+                _bottomTool(Icons.close, 'CLOSE', () => provider.clearSelection()),
+                _bottomTool(Icons.add_photo_alternate_outlined, 'ADD IMAGE', () {
+                  // The next picked image fills THIS mask.
+                  provider.beginReplaceImage(id);
+                  _showMediaBottomSheet(context, provider, isDark);
+                }),
+                _bottomTool(
+                  Image.asset("assets/images/mask.png"),
+                  'CHANGE MASK',
+                      () => _showApiMaskSheet(context, provider, id),
+                ),
+                _bottomTool(
+                  Image.asset("assets/images/layer.png"),
+                  'LAYER',
+                      () => _showLayerSheet(context, provider, id, isDark),
+                ),
+                _bottomTool(
+                  Image.asset("assets/images/lock.png"),
+                  provider.isItemLocked(id) ? 'UNLOCK' : 'LOCK',
+                      () {
+                    provider.toggleItemLock(id);
+                    Fluttertoast.showToast(
+                      msg: provider.isItemLocked(id) ? 'Locked' : 'Unlocked',
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ---- Image OUTLINE: same inline design as the shape toolbar ----
 
   void _openImageOutline(EditorProvider provider, String id) {
@@ -12984,7 +13136,14 @@ class _TransformSelectionOverlayState
     final content = (url == null || url.isEmpty)
         ? null
         : _MaskBoundsCache.instance.boundsFor(url);
-    return _provider.imageVisibleLocalRect(id, maskContent: content);
+    final aspect = (url == null || url.isEmpty)
+        ? null
+        : _MaskBoundsCache.instance.aspectFor(url);
+    return _provider.imageVisibleLocalRect(
+      id,
+      maskContent: content,
+      maskAspect: aspect,
+    );
   }
 
   double get _selW => _vis?.width ?? _baseVisualWidth;
@@ -13677,6 +13836,10 @@ class _MaskBoundsCache extends ChangeNotifier {
   static final _MaskBoundsCache instance = _MaskBoundsCache._();
 
   final Map<String, Rect?> _done = {};
+  final Map<String, double> _aspects = {};
+
+  /// width / height of the mask picture (null until it is decoded).
+  double? aspectFor(String url) => _aspects[url];
   final Set<String> _loading = {};
 
   /// null = unknown yet / mask fills its whole picture.
@@ -13718,6 +13881,7 @@ class _MaskBoundsCache extends ChangeNotifier {
       final bd = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
       if (bd != null) {
         final w = img.width, h = img.height;
+        if (w > 0 && h > 0) _aspects[url] = w / h;
         int minX = w, minY = h, maxX = -1, maxY = -1;
         for (int y = 0; y < h; y++) {
           for (int x = 0; x < w; x++) {

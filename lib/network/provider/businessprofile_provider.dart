@@ -107,7 +107,7 @@ class BusinessProfileProvider extends ChangeNotifier {
 
   String? get _accountType =>
       commonProvider.me?.data.accountType?.toString().trim().toLowerCase() ??
-      commonProvider.accountType?.toString().trim().toLowerCase();
+          commonProvider.accountType?.toString().trim().toLowerCase();
 
   /// Gallery / camera picker. Returns the picked file (or null).
   Future<File?> pickLogo({ImageSource source = ImageSource.gallery}) async {
@@ -201,12 +201,12 @@ class BusinessProfileProvider extends ChangeNotifier {
 
       final uploadResult = await MediaUploadRepository.instance
           .uploadImageAndConfirm(
-            imageFile: imageFile,
-            filename: filename,
-            width: 1080,
-            height: 1080,
-            slot: slot,
-          );
+        imageFile: imageFile,
+        filename: filename,
+        width: 1080,
+        height: 1080,
+        slot: slot,
+      );
 
       bool success = false;
 
@@ -326,7 +326,7 @@ class BusinessProfileProvider extends ChangeNotifier {
       final businessUid = await _resolveBusinessUid() ?? '';
 
       final String? finalLogoKey =
-          (_isNewLogoSelected && (_logoS3Key?.trim().isNotEmpty ?? false))
+      (_isNewLogoSelected && (_logoS3Key?.trim().isNotEmpty ?? false))
           ? _logoS3Key!.trim()
           : null;
 
@@ -343,13 +343,13 @@ class BusinessProfileProvider extends ChangeNotifier {
 
       final result = await BusinessProfileRepository.instance
           .updateBusinessFramesDetails(
-            businessUid: businessUid,
-            name: name.trim(),
-            phone: _formatPhone(phone),
-            website: cleanWebsite.isEmpty ? null : cleanWebsite,
-            email: cleanEmail.isEmpty ? null : cleanEmail,
-            logo_s3_key: finalLogoKey,
-          );
+        businessUid: businessUid,
+        name: name.trim(),
+        phone: _formatPhone(phone),
+        website: cleanWebsite.isEmpty ? null : cleanWebsite,
+        email: cleanEmail.isEmpty ? null : cleanEmail,
+        logo_s3_key: finalLogoKey,
+      );
 
       bool ok = false;
 
@@ -404,7 +404,7 @@ class BusinessProfileProvider extends ChangeNotifier {
 
     try {
       final String? finalProfileKey =
-          (_isNewProfileSelected && (_profileS3Key?.trim().isNotEmpty ?? false))
+      (_isNewProfileSelected && (_profileS3Key?.trim().isNotEmpty ?? false))
           ? _profileS3Key!.trim()
           : null;
 
@@ -624,6 +624,64 @@ class BusinessProfileProvider extends ChangeNotifier {
     }
   }
 
+  /// Free frame -> POST frames/{frameUid}/add (no payment).
+  Future<bool> addFreeFrame(String frameUid) async {
+    if (_isPurchasing) return false;
+
+    _isPurchasing = true;
+    _purchaseError = null;
+    notifyListeners();
+
+    try {
+      final result = await businessProfileRepository.addFreeFrame(frameUid);
+
+      if (!result.isSuccess) {
+        _purchaseError = result.error?.message ?? 'Unable to add the frame';
+        return false;
+      }
+
+      await loadFrames(_currentFrameType, category: _selectedCategorySlug);
+      await loadMyFrames(forceRefresh: true);
+      return true;
+    } catch (e, stackTrace) {
+      _purchaseError = 'Unable to add the frame';
+      debugPrint('Add free frame API error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      return false;
+    } finally {
+      _isPurchasing = false;
+      notifyListeners();
+    }
+  }
+
+  /// Saves the edited frame: frames/mine/{uid}/version/{versionUid}
+  Future<bool> updateMyFrame({
+    required String frameUid,
+    required String versionUid,
+    required String content,
+  }) async {
+    _updateError = null;
+
+    try {
+      final result = await businessProfileRepository.updateMyFrameVersion(
+        frameUid: frameUid,
+        versionUid: versionUid,
+        content: content,
+      );
+
+      if (!result.isSuccess) {
+        _updateError = result.error?.message ?? 'Unable to update the frame';
+        return false;
+      }
+      return true;
+    } catch (e, stackTrace) {
+      _updateError = 'Unable to update the frame';
+      debugPrint('Frame update API error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      return false;
+    }
+  }
+
   // =========================================================
   // MY BRAND FRAMES (frames/mine)
   // =========================================================
@@ -736,9 +794,9 @@ class BusinessProfileProvider extends ChangeNotifier {
       : _frameCategories[_currentFrameType] ?? const [];
 
   Future<void> loadFrameCategories(
-    String type, {
-    bool forceRefresh = false,
-  }) async {
+      String type, {
+        bool forceRefresh = false,
+      }) async {
     if ((_frameCategories[type]?.isNotEmpty ?? false) && !forceRefresh) return;
 
     _isCategoriesLoading = true;
@@ -1014,7 +1072,7 @@ class BusinessProfileProvider extends ChangeNotifier {
         _frameDetail = detail;
         debugPrint(
           'FRAME DETAIL loaded | uid=$frameUid | '
-          'content length=${detail['content']?.toString().length ?? 0}',
+              'content length=${detail['content']?.toString().length ?? 0}',
         );
       } else {
         _frameDetailError = 'Unable to load frame';
@@ -1030,36 +1088,6 @@ class BusinessProfileProvider extends ChangeNotifier {
         _isFrameDetailLoading = false;
         notifyListeners();
       }
-    }
-  }
-
-  /// Free frame -> add it to My Brand Frames (no payment).
-  Future<bool> addFreeFrame(String frameUid) async {
-    if (_isPurchasing) return false;
-
-    _isPurchasing = true;
-    _purchaseError = null;
-    notifyListeners();
-
-    try {
-      final result = await businessProfileRepository.addFreeFrame(frameUid);
-
-      if (!result.isSuccess) {
-        _purchaseError = result.error?.message ?? 'Unable to add the frame';
-        return false;
-      }
-
-      await loadFrames(_currentFrameType, category: _selectedCategorySlug);
-      await loadMyFrames(forceRefresh: true);
-      return true;
-    } catch (e, stackTrace) {
-      _purchaseError = 'Unable to add the frame';
-      debugPrint('Add free frame API error: $e');
-      debugPrintStack(stackTrace: stackTrace);
-      return false;
-    } finally {
-      _isPurchasing = false;
-      notifyListeners();
     }
   }
 

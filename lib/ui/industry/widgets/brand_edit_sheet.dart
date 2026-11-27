@@ -8,16 +8,20 @@ import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:mmb_app/widgets/button_widget.dart';
 
 import 'brand_form.dart';
+import 'brand_slot.dart';
+import 'frame_content.dart';
 import 'frame_helpers.dart';
 
 Future<void> showBrandEditSheet(
-  BuildContext context, {
-  required BrandForm form,
-  required Widget Function() logoPreview,
-  required Future<void> Function() onPickLogo,
-  required Future<bool> Function() onSave,
-  required VoidCallback onChanged,
-}) {
+    BuildContext context, {
+      required BrandForm form,
+      required BrandSlots values,
+      Set<String>? slots,
+      required Widget Function() logoPreview,
+      required Future<void> Function() onPickLogo,
+      required Future<bool> Function() onSave,
+      required VoidCallback onChanged,
+    }) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -25,6 +29,8 @@ Future<void> showBrandEditSheet(
     barrierColor: Colors.black26,
     builder: (_) => _BrandEditSheet(
       form: form,
+      values: values,
+      slots: slots,
       logoPreview: logoPreview,
       onPickLogo: onPickLogo,
       onSave: onSave,
@@ -36,6 +42,8 @@ Future<void> showBrandEditSheet(
 class _BrandEditSheet extends StatefulWidget {
   const _BrandEditSheet({
     required this.form,
+    required this.values,
+    required this.slots,
     required this.logoPreview,
     required this.onPickLogo,
     required this.onSave,
@@ -43,6 +51,10 @@ class _BrandEditSheet extends StatefulWidget {
   });
 
   final BrandForm form;
+  final BrandSlots values;
+
+  /// Slots of the selected frame. null -> frame without `content`.
+  final Set<String>? slots;
   final Widget Function() logoPreview;
   final Future<void> Function() onPickLogo;
   final Future<bool> Function() onSave;
@@ -53,16 +65,56 @@ class _BrandEditSheet extends StatefulWidget {
 }
 
 class _BrandEditSheetState extends State<_BrandEditSheet> {
+  static const _defaultKeys = ['logo', 'name', 'phone', 'email', 'web'];
+
+  static const _socialLabels = {
+    'facebook': 'Facebook',
+    'instagram': 'Instagram',
+    'twitter': 'Twitter',
+    'youtube': 'YouTube',
+    'linkedin': 'LinkedIn',
+  };
+
   BrandForm get _form => widget.form;
 
+  bool _has(String key) =>
+      widget.slots?.contains(key) ?? _defaultKeys.contains(key);
+
+  List<String> get _otherSlots => (widget.slots ?? const <String>{})
+      .where(
+        (k) =>
+    !_defaultKeys.contains(k) && !FrameContent.socialKeys.contains(k),
+  )
+      .toList();
+
+  bool _isSaving = false;
+  bool _isUploading = false;
+
+  bool get _isBusy => _isSaving || _isUploading;
+
   Future<void> _pickLogo() async {
-    await widget.onPickLogo();
-    if (mounted) setState(() {}); // refresh the logo preview in the sheet
+    if (_isBusy) return;
+    setState(() => _isUploading = true);
+    try {
+      await widget.onPickLogo(); // pick + upload
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
   }
 
   Future<void> _save() async {
-    final ok = await widget.onSave();
-    if (ok && mounted) Navigator.pop(context);
+    if (_isBusy) return;
+    setState(() => _isSaving = true);
+    var ok = false;
+    try {
+      ok = await widget.onSave();
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+    // sheet may already be closed with the X button
+    if (ok && mounted && (ModalRoute.of(context)?.isCurrent ?? false)) {
+      Navigator.pop(context);
+    }
   }
 
   @override
@@ -88,33 +140,46 @@ class _BrandEditSheetState extends State<_BrandEditSheet> {
                 SizedBox(height: 12.h),
                 _buildHeader(),
                 SizedBox(height: 16.h),
-                _buildLogoRow(),
-                SizedBox(height: 14.h),
-                _buildField(
-                  label: 'Business Name',
-                  controller: _form.name,
-                  onEdited: () => _form.nameTouched = true,
-                ),
-                _buildField(
-                  label: 'Mobile Number',
-                  controller: _form.phone,
-                  keyboardType: TextInputType.phone,
-                  onEdited: () => _form.phoneTouched = true,
-                ),
-                _buildField(
-                  label: 'Email',
-                  controller: _form.email,
-                  keyboardType: TextInputType.emailAddress,
-                  onEdited: () => _form.emailTouched = true,
-                ),
-                _buildField(
-                  label: 'Website',
-                  controller: _form.website,
-                  keyboardType: TextInputType.url,
-                  onEdited: () => _form.websiteTouched = true,
-                  isLast: true,
-                ),
-                SizedBox(height: 16.h),
+                if (_has('logo')) ...[
+                  _buildLogoRow(),
+                  SizedBox(height: 14.h),
+                ],
+                if (_has('name'))
+                  _buildField(
+                    label: 'Business Name',
+                    controller: _form.name,
+                    onEdited: () => _form.nameTouched = true,
+                  ),
+                if (_has('phone'))
+                  _buildField(
+                    label: 'Mobile Number',
+                    controller: _form.phone,
+                    keyboardType: TextInputType.phone,
+                    onEdited: () => _form.phoneTouched = true,
+                  ),
+                if (_has('email'))
+                  _buildField(
+                    label: 'Email',
+                    controller: _form.email,
+                    keyboardType: TextInputType.emailAddress,
+                    onEdited: () => _form.emailTouched = true,
+                  ),
+                if (_has('web'))
+                  _buildField(
+                    label: 'Website',
+                    controller: _form.website,
+                    keyboardType: TextInputType.url,
+                    onEdited: () => _form.websiteTouched = true,
+                  ),
+                for (final key in _otherSlots.where((k) => k.isNotEmpty))
+                  _buildField(
+                    label: '${key[0].toUpperCase()}${key.substring(1)}',
+                    controller: widget.values.field(key),
+                    onEdited: () {},
+                  ),
+                for (final key in FrameContent.socialKeys)
+                  if (_has(key)) _buildCheckbox(key),
+                SizedBox(height: 4.h),
                 _buildSaveButton(),
               ],
             ),
@@ -141,7 +206,7 @@ class _BrandEditSheetState extends State<_BrandEditSheet> {
     return Row(
       children: [
         AppText(
-          'Update Business Info',
+          'Update Frame Info',
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
         ),
         const Spacer(),
@@ -192,10 +257,13 @@ class _BrandEditSheetState extends State<_BrandEditSheet> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.upload_rounded, color: kBrandRed, size: 22.sp),
+                if (_isUploading)
+                  ButtonLoader(color: kBrandRed)
+                else
+                  Icon(Icons.upload_rounded, color: kBrandRed, size: 22.sp),
                 SizedBox(height: 6.h),
                 AppText(
-                  'Upload logo',
+                  _isUploading ? 'Uploading...' : 'Upload logo',
                   style: TextStyle(
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w600,
@@ -209,12 +277,35 @@ class _BrandEditSheetState extends State<_BrandEditSheet> {
     );
   }
 
+  Widget _buildCheckbox(String key) {
+    return CheckboxListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+      activeColor: kBrandRed,
+      title: AppText(
+        _socialLabels[key] ?? key,
+        style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+      ),
+      value: !widget.values.hidden.contains(key),
+      onChanged: (checked) {
+        setState(() {
+          if (checked == true) {
+            widget.values.hidden.remove(key);
+          } else {
+            widget.values.hidden.add(key);
+          }
+        });
+        widget.onChanged();
+      },
+    );
+  }
+
   Widget _buildField({
     required String label,
     required TextEditingController controller,
     required VoidCallback onEdited,
     TextInputType? keyboardType,
-    bool isLast = false,
   }) {
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(14.r),
@@ -222,7 +313,7 @@ class _BrandEditSheetState extends State<_BrandEditSheet> {
     );
 
     return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : 12.h),
+      padding: EdgeInsets.only(bottom: 12.h),
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
@@ -247,17 +338,52 @@ class _BrandEditSheetState extends State<_BrandEditSheet> {
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
+      height: 46.h,
       child: ElevatedButton(
+        // stays enabled while saving so the button keeps its red colour
+        // (_save ignores the extra taps)
         onPressed: _save,
-        style: brandButtonStyle(
-          radius: 12.r,
-          padding: EdgeInsets.symmetric(vertical: 14.h),
-        ),
-        child: AppText(
-          'UPDATE BUSINESS DETAILS',
+        style: brandButtonStyle(radius: 12.r),
+        child: _isSaving
+            ? const ButtonLoader(label: 'UPDATING...')
+            : AppText(
+          'UPDATE FRAME',
           style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700),
         ),
       ),
+    );
+  }
+}
+
+/// Small spinner (with optional text) shown inside buttons.
+class ButtonLoader extends StatelessWidget {
+  const ButtonLoader({super.key, this.label, this.color = Colors.white});
+
+  final String? label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 18.r,
+          height: 18.r,
+          child: CircularProgressIndicator(strokeWidth: 2, color: color),
+        ),
+        if (label != null) ...[
+          SizedBox(width: 10.w),
+          AppText(
+            label!,
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

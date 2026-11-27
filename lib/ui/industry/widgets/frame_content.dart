@@ -72,9 +72,9 @@ class FrameContent {
       final fabric = page['fabric'];
       final objs = (fabric is Map && fabric['objects'] is List)
           ? (fabric['objects'] as List)
-                .whereType<Map>()
-                .map((e) => Map<String, dynamic>.from(e))
-                .toList()
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList()
           : <Map<String, dynamic>>[];
 
       final w = _num(page['width'], 1080);
@@ -87,7 +87,7 @@ class FrameContent {
         for (final o in _flatten(objs)) {
           debugPrint(
             'FRAME obj type=${o['type']} data=${o['data']} '
-            'text=${o['text']} src=${o['src']} -> slot=${slotKeyOf(o)}',
+                'text=${o['text']} src=${o['src']} -> slot=${slotKeyOf(o)}',
           );
         }
       }
@@ -98,6 +98,81 @@ class FrameContent {
         objects: objs,
         hasSlots: _flatten(objs).any((o) => slotKeyOf(o) != null),
       );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static const socialKeys = [
+    'facebook',
+    'instagram',
+    'twitter',
+    'youtube',
+    'linkedin',
+  ];
+
+  /// Every slot present in this frame.
+  Set<String> get slotKeys =>
+      _flatten(objects).map(slotKeyOf).whereType<String>().toSet();
+
+  /// Social slots that are saved as invisible in this frame.
+  Set<String> get invisibleSocials => _flatten(objects)
+      .where((o) => o['visible'] == false)
+      .map(slotKeyOf)
+      .whereType<String>()
+      .where(socialKeys.contains)
+      .toSet();
+
+  /// `content` json with the edited values written into it:
+  /// slot texts, picked logo ([logoSrc]) and social visibility.
+  static String? customized(
+      String? raw, {
+        Map<String, String> texts = const {},
+        Set<String> hidden = const {},
+        String? logoSrc,
+      }) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    try {
+      final root = jsonDecode(raw);
+
+      void apply(dynamic list, String? parentSlot) {
+        if (list is! List) return;
+        for (final o in list.whereType<Map>()) {
+          final map = Map<String, dynamic>.from(o);
+          final own = slotKeyOf(map);
+          final slot = own ?? parentSlot;
+
+          if (slot != null) {
+            final type = (o['type'] ?? '').toString().toLowerCase();
+            final isText = const ['textbox', 'text', 'itext'].contains(type);
+
+            if (socialKeys.contains(slot)) {
+              o['visible'] = !hidden.contains(slot);
+            }
+
+            // inside a named group only the value text is replaced
+            final value = texts[slot]?.trim() ?? '';
+            if (isText &&
+                value.isNotEmpty &&
+                (own != null || _guessFromText(map) == slot)) {
+              o['text'] = value;
+              o.remove('styles'); // per character styles of the old text
+            }
+
+            if (type == 'image' &&
+                slot == 'logo' &&
+                logoSrc != null &&
+                logoSrc.isNotEmpty) {
+              o['src'] = logoSrc;
+            }
+          }
+
+          apply(o['objects'], slot);
+        }
+      }
+
+      apply(root['pages'][0]['fabric']['objects'], null);
+      return jsonEncode(root);
     } catch (_) {
       return null;
     }
@@ -124,7 +199,7 @@ class FrameContent {
   }
 
   /// "slot:phone" -> "phone", "slot:logo.svg" -> "logo", else null.
-  /// Falls back to guessing from the text when the name is missing.
+  /// Falls back to guessing from the name / text when "slot:" is missing.
   static String? slotKeyOf(Map<String, dynamic> o) {
     final d = o['data'];
     final name =
@@ -134,38 +209,56 @@ class FrameContent {
       var key = name.trim().substring(5).toLowerCase().trim();
       final dot = key.indexOf('.');
       if (dot > 0) key = key.substring(0, dot);
-
-      // tolerate names like "logo1", "phone-2", "website_text" ...
-      if (key.startsWith('logo')) return 'logo';
-      if (key.startsWith('phone') ||
-          key.startsWith('mobile') ||
-          key.startsWith('contact') ||
-          key.startsWith('number') ||
-          key.startsWith('whatsapp')) {
-        return 'phone';
-      }
-      if (key.startsWith('web') ||
-          key.startsWith('site') ||
-          key.startsWith('url')) {
-        return 'web';
-      }
-      if (key.startsWith('mail') || key.startsWith('email')) return 'email';
-      return key;
+      return _normalizeKey(key);
     }
 
-    return _guessFromText(o) ?? _guessLogo(o);
-  }
-
-  /// Unnamed image whose name / file name contains "logo".
-  static String? _guessLogo(Map<String, dynamic> o) {
-    if ((o['type'] ?? '').toString().toLowerCase() != 'image') return null;
-    final d = o['data'];
+    // social first: a "@handle" text must not be treated as anything else
     final hay = [
       d is Map ? d['name'] : null,
       o['name'],
       o['src']?.toString().split('?').first.split('/').last,
     ].join(' ').toLowerCase();
-    return hay.contains('logo') ? 'logo' : null;
+
+    for (final key in socialKeys) {
+      if (hay.contains(key)) return key;
+    }
+
+    final fromText = _guessFromText(o);
+    if (fromText != null) return fromText;
+
+    final isImage = (o['type'] ?? '').toString().toLowerCase() == 'image';
+    return isImage && hay.contains('logo') ? 'logo' : null;
+  }
+
+  /// "logo1", "phone-2", "website_text", "fb" ... -> one standard key.
+  static String _normalizeKey(String raw) {
+    final k = raw.replaceAll(RegExp(r'[_\-\s]'), '');
+    if (k == 'x') return 'twitter';
+
+    const aliases = {
+      'logo': ['logo'],
+      'facebook': ['facebook', 'fb'],
+      'instagram': ['instagram', 'insta'],
+      'twitter': ['twitter'],
+      'youtube': ['youtube'],
+      'linkedin': ['linkedin'],
+      'phone': [
+        'phone',
+        'mobile',
+        'contact',
+        'number',
+        'whatsapp',
+        'businessphone',
+      ],
+      'web': ['web', 'site', 'url'],
+      'email': ['mail', 'email', 'businessemail'],
+      'name': ['name', 'businessname', 'companyname', 'brandname'],
+    };
+
+    for (final e in aliases.entries) {
+      if (e.value.any(k.startsWith)) return e.key;
+    }
+    return k;
   }
 
   /// Unnamed text that looks like a phone / website / email.
@@ -176,7 +269,7 @@ class FrameContent {
     final s = (o['text'] ?? '').toString().trim().toLowerCase();
     if (s.isEmpty) return null;
 
-    if (s.contains('@')) return 'email';
+    if (s.contains('@') && !s.startsWith('@')) return 'email';
     if (s.startsWith('www.') || s.startsWith('http')) return 'web';
     if (RegExp(r'^\+?[\d\s\-()]{8,}$').hasMatch(s)) return 'phone';
     return null;
@@ -199,6 +292,9 @@ class FrameContentView extends StatelessWidget {
   /// false -> all slot objects (logo / phone / web ...) are hidden.
   final bool showSlots;
 
+  /// Slots the user unticked in the edit sheet.
+  final Set<String> hiddenSlots;
+
   /// Builds the logo for `slot:logo*` (w / h are canvas units).
   /// Return null to keep the frame's own logo image.
   final Widget? Function(double w, double h)? logoBuilder;
@@ -208,6 +304,7 @@ class FrameContentView extends StatelessWidget {
     required this.content,
     this.slotTexts = const {},
     this.showSlots = true,
+    this.hiddenSlots = const {},
     this.logoBuilder,
   });
 
@@ -232,19 +329,24 @@ class FrameContentView extends StatelessWidget {
   // ------------------------------------------------------------------
 
   Widget _object(
-    Map<String, dynamic> o, {
-    double dx = 0,
-    double dy = 0,
-    String? inheritSlot,
-  }) {
-    if (o['visible'] == false) return const SizedBox.shrink();
-
+      Map<String, dynamic> o, {
+        double dx = 0,
+        double dy = 0,
+        String? inheritSlot,
+      }) {
     final ownSlot = FrameContent.slotKeyOf(o);
     final slot = ownSlot ?? inheritSlot;
+
+    // social slots follow the checkboxes (hiddenSlots), not the saved flag
+    if (o['visible'] == false && !FrameContent.socialKeys.contains(slot)) {
+      return const SizedBox.shrink();
+    }
     // slot taken only from the parent group (e.g. "LET'S TALK" label inside
     // a slot:phone group) - such children are not replaced blindly
     final inherited = ownSlot == null && inheritSlot != null;
-    if (slot != null && !showSlots) return const SizedBox.shrink();
+    if (slot != null && (!showSlots || hiddenSlots.contains(slot))) {
+      return const SizedBox.shrink();
+    }
 
     final type = (o['type'] ?? '').toString().toLowerCase();
     final sx = _num(o['scaleX'], 1);
@@ -274,15 +376,15 @@ class FrameContentView extends StatelessWidget {
   }
 
   Widget _group(
-    Map<String, dynamic> o,
-    String? slot,
-    double w,
-    double h,
-    double sx,
-    double sy,
-    double dx,
-    double dy,
-  ) {
+      Map<String, dynamic> o,
+      String? slot,
+      double w,
+      double h,
+      double sx,
+      double sy,
+      double dx,
+      double dy,
+      ) {
     final gw = _num(o['width']);
     final gh = _num(o['height']);
     final kids = (o['objects'] is List ? o['objects'] as List : const [])
@@ -325,13 +427,13 @@ class FrameContentView extends StatelessWidget {
   }
 
   Widget _image(
-    Map<String, dynamic> o,
-    String? slot,
-    double w,
-    double h,
-    double dx,
-    double dy,
-  ) {
+      Map<String, dynamic> o,
+      String? slot,
+      double w,
+      double h,
+      double dx,
+      double dy,
+      ) {
     Widget child;
 
     final custom = (slot == 'logo' && logoBuilder != null)
@@ -352,15 +454,15 @@ class FrameContentView extends StatelessWidget {
         child = isSvg
             ? _RemoteSvg(url: src, width: w, height: h)
             : CachedNetworkImage(
-                imageUrl: src,
-                width: w,
-                height: h,
-                fit: BoxFit.fill,
-                placeholder: (_, __) => const SizedBox.shrink(),
-                // not a bitmap (svg without .svg in the url) -> try as svg
-                errorWidget: (_, __, ___) =>
-                    _RemoteSvg(url: src, width: w, height: h),
-              );
+          imageUrl: src,
+          width: w,
+          height: h,
+          fit: BoxFit.fill,
+          placeholder: (_, __) => const SizedBox.shrink(),
+          // not a bitmap (svg without .svg in the url) -> try as svg
+          errorWidget: (_, __, ___) =>
+              _RemoteSvg(url: src, width: w, height: h),
+        );
       }
     }
 
@@ -399,15 +501,15 @@ class FrameContentView extends StatelessWidget {
   }
 
   Widget _text(
-    Map<String, dynamic> o,
-    String? slot,
-    bool inherited,
-    double w,
-    double h,
-    double sy,
-    double dx,
-    double dy,
-  ) {
+      Map<String, dynamic> o,
+      String? slot,
+      bool inherited,
+      double w,
+      double h,
+      double sy,
+      double dx,
+      double dy,
+      ) {
     var text = (o['text'] ?? '').toString();
     var isSlotText = false;
 
@@ -436,7 +538,7 @@ class FrameContentView extends StatelessWidget {
       weight = rawWeight == 'bold' ? 700 : (double.tryParse(rawWeight) ?? 400);
     }
     final fw =
-        FontWeight.values[(weight / 100).round().clamp(1, 9).toInt() - 1];
+    FontWeight.values[(weight / 100).round().clamp(1, 9).toInt() - 1];
 
     final align = switch (o['textAlign']) {
       'center' => TextAlign.center,
@@ -495,14 +597,14 @@ class FrameContentView extends StatelessWidget {
   }
 
   Widget _path(
-    Map<String, dynamic> o,
-    double w,
-    double h,
-    double sx,
-    double sy,
-    double dx,
-    double dy,
-  ) {
+      Map<String, dynamic> o,
+      double w,
+      double h,
+      double sx,
+      double sy,
+      double dx,
+      double dy,
+      ) {
     final path = _buildPath(o['path']);
     if (path == null) return const SizedBox.shrink();
 
@@ -535,12 +637,12 @@ class FrameContentView extends StatelessWidget {
   }
 
   Widget _rect(
-    Map<String, dynamic> o,
-    double w,
-    double h,
-    double dx,
-    double dy,
-  ) {
+      Map<String, dynamic> o,
+      double w,
+      double h,
+      double dx,
+      double dy,
+      ) {
     final stroke = _color(o['stroke']);
     final sw = _num(o['strokeWidth']);
 
@@ -565,12 +667,12 @@ class FrameContentView extends StatelessWidget {
   }
 
   Widget _circle(
-    Map<String, dynamic> o,
-    double w,
-    double h,
-    double dx,
-    double dy,
-  ) {
+      Map<String, dynamic> o,
+      double w,
+      double h,
+      double dx,
+      double dy,
+      ) {
     final stroke = _color(o['stroke']);
     final sw = _num(o['strokeWidth']);
 
@@ -599,13 +701,13 @@ class FrameContentView extends StatelessWidget {
   // ------------------------------------------------------------------
 
   Widget _place(
-    Map<String, dynamic> o,
-    double w,
-    double h,
-    Widget child, {
-    double dx = 0,
-    double dy = 0,
-  }) {
+      Map<String, dynamic> o,
+      double w,
+      double h,
+      Widget child, {
+        double dx = 0,
+        double dy = 0,
+      }) {
     final ox = (o['originX'] ?? 'left').toString();
     final oy = (o['originY'] ?? 'top').toString();
     final ax = ox == 'center' ? 0.0 : (ox == 'right' ? 1.0 : -1.0);
@@ -802,7 +904,7 @@ class _RemoteSvgState extends State<_RemoteSvg> {
         final bytes = await consolidateHttpClientResponseBytes(res);
         debugPrint(
           'FRAME SVG status=${res.statusCode} '
-          'type=${res.headers.contentType} len=${bytes.length} url=$url',
+              'type=${res.headers.contentType} len=${bytes.length} url=$url',
         );
         if (res.statusCode != 200 || bytes.isEmpty) {
           errors.add('$label ${res.statusCode}');
@@ -811,7 +913,7 @@ class _RemoteSvgState extends State<_RemoteSvg> {
         if (kDebugMode) {
           debugPrint(
             'FRAME SVG head: '
-            '${utf8.decode(bytes.take(300).toList(), allowMalformed: true)}',
+                '${utf8.decode(bytes.take(300).toList(), allowMalformed: true)}',
           );
         }
         _cache[widget.url] = bytes;
@@ -910,9 +1012,9 @@ class _PathPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _PathPainter old) =>
       old.path != path ||
-      old.fill != fill ||
-      old.stroke != stroke ||
-      old.strokeWidth != strokeWidth ||
-      old.sx != sx ||
-      old.sy != sy;
+          old.fill != fill ||
+          old.stroke != stroke ||
+          old.strokeWidth != strokeWidth ||
+          old.sx != sx ||
+          old.sy != sy;
 }

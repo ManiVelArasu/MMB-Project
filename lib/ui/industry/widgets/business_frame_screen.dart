@@ -21,6 +21,8 @@ import 'package:mmb_app/utils/theme/app.fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
+import 'brand_slot.dart';
+
 class BusinessFramesScreen extends StatelessWidget {
   const BusinessFramesScreen({super.key});
 
@@ -52,7 +54,11 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
   int _selectedFrame = 0;
 
   final BrandForm _form = BrandForm();
+  final BrandSlots _slots = BrandSlots();
   late final Razorpay _razorpay;
+
+  /// Frame whose saved checkbox state is loaded into [_slots].
+  FrameContent? _syncedContent;
 
   /// Last frame id for which frames/{id} was requested automatically.
   String _requestedUid = '';
@@ -79,6 +85,7 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
   void dispose() {
     _razorpay.clear();
     _form.dispose();
+    _slots.dispose();
     super.dispose();
   }
 
@@ -159,14 +166,18 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
     required String? contentJson,
     required String logoUrl,
   }) {
-    final slots = _form.slotTexts;
+    final slots = _slots.texts(_form);
+    final visibleJson = FrameContent.customized(
+      contentJson,
+      hidden: _slots.hidden,
+    );
     final logoFile = _form.logo;
     final enabled = _form.enabled;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ActiveBrandFrame.instance.update(
         uid: uid,
-        contentJson: contentJson,
+        contentJson: visibleJson,
         enabled: enabled,
         slotTexts: slots,
         logoFile: logoFile,
@@ -179,14 +190,16 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
   // BRAND INFO (logo / name / phone / email / website)
   // ------------------------------------------------------------------
 
-  void _openEditSheet() {
+  void _openEditSheet(Set<String>? slots) {
     showBrandEditSheet(
       context,
       form: _form,
+      values: _slots,
+      slots: slots,
       logoPreview: () =>
           BrandAvatar(file: _form.logo, url: _resolver().imageUrl),
       onPickLogo: _pickBrandLogo,
-      onSave: _saveBusinessDetails,
+      onSave: _saveFrame,
       onChanged: () => setState(() {}),
     );
   }
@@ -237,44 +250,51 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
     setState(() {
       _form.isSaving = false;
       // uploaded -> the key is in the provider, no second upload needed.
-      // failed   -> stays true, UPDATE BUSINESS DETAILS retries it.
+      // failed   -> stays true, UPDATE FRAME retries it.
       if (uploaded) _form.logoChanged = false;
     });
 
     _toast(
       uploaded
-          ? 'Logo uploaded. Tap UPDATE BUSINESS DETAILS to save'
+          ? 'Logo uploaded. Tap UPDATE FRAME to save'
           : profile.updateError ?? 'Logo upload failed',
     );
   }
 
-  /// UPDATE BUSINESS DETAILS: PUT /businesses/me (a logo uploaded earlier is
-  /// sent by its key; a failed upload is retried here).
-  Future<bool> _saveBusinessDetails() async {
+  /// UPDATE button: frames/mine/{uid}/versions/{versionUid}
+  /// (only for frames the user already added / bought).
+  Future<bool> _saveFrame() async {
     if (_form.isSaving) return false;
 
     FocusScope.of(context).unfocus();
 
-    final name = _form.name.text.trim();
-    final phone = _form.phone.text.trim();
-    final email = _form.email.text.trim();
-
-    final business = context.read<BusinessProvider>();
     final profile = context.read<BusinessProfileProvider>();
+    final detail = profile.frameDetail;
+    final frameId = profile.frameDetailUid ?? '';
+
+    if (detail == null || frameId.isEmpty) {
+      _toast('Frame is still loading');
+      return false;
+    }
+    // owned frame: from any tab (Static / Animated / My Brand Frames)
+    final isOwned =
+        _selectedTab == _myFramesTab ||
+            '${detail['owned']}' == 'true' ||
+            profile.mineFrames.any((f) => frameUid(f) == frameId);
+    if (!isOwned) {
+      _toast('Add or buy this frame first, then update it');
+      return false;
+    }
+
+    final version = detail['version'];
+    final versionUid = version is Map ? '${version['uid'] ?? ''}' : '';
+    if (versionUid.isEmpty) {
+      _toast('Frame version not available');
+      return false;
+    }
 
     // always https:// (typed with or without it)
     final website = profile.normalizeWebsite(_form.website.text);
-
-    if (name.isEmpty) {
-      _toast('Please enter name');
-      return false;
-    }
-    if (phone.isEmpty) {
-      _toast('Please enter contact number');
-      return false;
-    }
-
-    // show the https:// value in the field / frame as well
     if (_form.website.text.trim() != website) {
       _form.website.text = website;
       _form.websiteTouched = true;
@@ -282,30 +302,47 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
 
     setState(() => _form.isSaving = true);
 
-    final ok = await profile.saveProfile(
-      name: name,
-      phone: phone,
-      website: website,
-      email: email,
-      // upload only when a new logo was picked
-      newImage: _form.logoChanged ? _form.logo : null,
+    // a logo whose upload failed earlier is retried here
+    if (_form.logoChanged && _form.logo != null) {
+      final uploaded = await profile.uploadLogo(_form.logo);
+      if (!mounted) return false;
+      if (!uploaded) {
+        setState(() => _form.isSaving = false);
+        _toast(profile.updateError ?? 'Logo upload failed');
+        return false;
+      }
+      _form.logoChanged = false;
+    }
+
+    final content = FrameContent.customized(
+      frameContentJson(detail),
+      texts: _slots.texts(_form),
+      hidden: _slots.hidden,
+      logoSrc: _form.logo == null
+          ? null
+          : (profile.logoS3Key ?? profile.profileS3Key),
+    );
+
+    if (content == null) {
+      setState(() => _form.isSaving = false);
+      _toast('This frame has no editable content');
+      return false;
+    }
+
+    final ok = await profile.updateMyFrame(
+      frameUid: frameId,
+      versionUid: versionUid,
+      content: content,
     );
     if (!mounted) return ok;
 
     setState(() => _form.isSaving = false);
 
     if (ok) {
-      _form.logoChanged = false;
-
-      // keep the local form provider in sync
-      business
-        ..setBusinessName(name)
-        ..setEmail(email)
-        ..setMobileNumber(phone);
-
-      _toast('Business details updated');
+      _toast('Frame updated');
+      await profile.loadFrameDetail(frameId);
     } else {
-      _toast(profile.updateError ?? 'Unable to update business details');
+      _toast(profile.updateError ?? 'Unable to update the frame');
     }
     return ok;
   }
@@ -360,13 +397,31 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
     final business = context.read<BusinessProvider>();
 
     final order = await profile.purchaseFrame(uid);
-    // ... keezha irukka code appadiye
+    if (!mounted) return;
+
+    if (order == null) {
+      _toast(profile.purchaseError ?? 'Unable to start payment');
+      return;
+    }
+
+    try {
+      _razorpay.open({
+        'key': _razorpayKey,
+        'order_id': order['order_id'],
+        'name': 'Make My Brand',
+        'description': 'Frame purchase',
+        'prefill': {'contact': business.mobileNumber, 'email': business.email},
+        'theme': {'color': '#E53935'},
+      });
+    } catch (e) {
+      _toast('Unable to open payment: $e');
+    }
   }
 
   Future<void> _onPaymentSuccess(PaymentSuccessResponse r) async {
     debugPrint(
       'Razorpay success: payment=${r.paymentId} '
-      'order=${r.orderId} signature=${r.signature}',
+          'order=${r.orderId} signature=${r.signature}',
     );
 
     final profile = context.read<BusinessProfileProvider>();
@@ -411,7 +466,7 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
             : frames[_selectedFrame.clamp(0, frames.length - 1)];
         final activeUid = activeFrame == null ? '' : frameUid(activeFrame);
         final detail =
-            (activeUid.isNotEmpty && profile.frameDetailUid == activeUid)
+        (activeUid.isNotEmpty && profile.frameDetailUid == activeUid)
             ? profile.frameDetail
             : null;
         _loadDetailOnce(activeUid, profile);
@@ -423,6 +478,14 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
         FrameContent.frameUid = (detail?['uid'] ?? '').toString();
         final parsed = FrameContent.parse(contentJson);
         final content = (parsed != null && parsed.hasSlots) ? parsed : null;
+
+        // checkboxes start from what is saved in the frame
+        if (content != null && !identical(content, _syncedContent)) {
+          _syncedContent = content;
+          _slots.hidden
+            ..clear()
+            ..addAll(content.invisibleSocials);
+        }
 
         // ---- profile values fill the fields until the user edits them ----
         final resolver = BrandProfileResolver(
@@ -445,11 +508,11 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
 
         final isBranded =
             activeFrame != null &&
-            (content != null ||
-                isBrandedFrame(
-                  selectedCategorySlug: profile.selectedCategorySlug,
-                  detail: detail,
-                ));
+                (content != null ||
+                    isBrandedFrame(
+                      selectedCategorySlug: profile.selectedCategorySlug,
+                      detail: detail,
+                    ));
 
         // preview height follows the frame's own aspect ratio
         final previewWidth = MediaQuery.of(context).size.width - 32.w;
@@ -495,24 +558,29 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
                     // never drawn on top of the frame image while the frame
                     // is still loading (it doubled the logo / phone / web)
                     showLegacyOverlay:
-                        isBranded &&
+                    isBranded &&
                         _form.enabled &&
                         content == null &&
                         !profile.isFrameDetailLoading &&
                         detail != null,
                     form: _form,
+                    slots: _slots,
                     logoUrl: logoUrl,
                     defaultPhone: business.mobileNumber,
                     defaultEmail: business.email,
                   ),
                   SizedBox(height: 16.h),
 
-                  _buildTitleRow(activeFrame),
+                  _buildTitleRow(activeFrame, content?.slotKeys),
 
                   // Already-owned frames (My Brand Frames) need no purchase.
                   if (activeFrame != null && _selectedTab != _myFramesTab) ...[
                     SizedBox(height: 14.h),
-                    _buildGetFrameButton(profile, activeFrame, _isFreeFrame(activeFrame, detail)),
+                    _buildGetFrameButton(
+                      profile,
+                      activeFrame,
+                      _isFreeFrame(activeFrame, detail),
+                    ),
                   ],
                   SizedBox(height: 24.h),
 
@@ -550,7 +618,7 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
     );
   }
 
-  Widget _buildTitleRow(dynamic activeFrame) {
+  Widget _buildTitleRow(dynamic activeFrame, Set<String>? slots) {
     final colors = Provider.of<CustomThemeProvider>(context).colors;
 
     return Row(
@@ -565,7 +633,7 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
         ),
         const Spacer(),
         InkWell(
-          onTap: _openEditSheet,
+          onTap: () => _openEditSheet(slots),
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
             decoration: BoxDecoration(
@@ -595,19 +663,13 @@ class _BusinessFramesViewState extends State<BusinessFramesView> {
       width: double.infinity,
       height: 46.h,
       child: ElevatedButton(
-        onPressed: profile.isPurchasing
-            ? null
-            : () => _onGetFrame(activeFrame, isFree: isFree),
+        // stays enabled while loading so the button keeps its colour
+        onPressed: () {
+          if (!profile.isPurchasing) _onGetFrame(activeFrame, isFree: isFree);
+        },
         style: brandButtonStyle(radius: 12.r),
         child: profile.isPurchasing
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
+            ? ButtonLoader(label: isFree ? 'ADDING...' : 'PLEASE WAIT...')
             : AppText(
           isFree ? 'ADD FREE FRAME' : 'GET FRAME',
           style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
