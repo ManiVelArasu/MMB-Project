@@ -242,7 +242,7 @@ class _ConfirmPlanContent extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        AppText(
                           "Plan",
                           style: TextStyle(
                             color: Colors.grey,
@@ -261,7 +261,7 @@ class _ConfirmPlanContent extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        AppText(
                           "Price",
                           style: TextStyle(
                             color: Colors.grey,
@@ -367,7 +367,7 @@ class _ConfirmPlanContent extends StatelessWidget {
                           if (subscription == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
+                                content: AppText(
                                   provider.subscriptionError ??
                                       "Unable to start payment",
                                 ),

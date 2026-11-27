@@ -226,7 +226,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                     child: Center(
                       child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 4.w),
-                        child: Text(
+                        child: AppText(
                           widget.actionText,
                           style: theme.titleMedium?.copyWith(
                             color: isDark

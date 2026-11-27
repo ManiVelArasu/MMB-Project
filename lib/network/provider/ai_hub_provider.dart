@@ -1,8 +1,15 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:gal/gal.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+
+import '../../Repository/ai_repository.dart';
+import '../../Repository/image_upload_repository.dart';
+import '../../core/api/api_endpoints.dart';
 
 class AiHubProvider extends ChangeNotifier {
   // ---------------- CONTENT GENERATOR ----------------
@@ -253,8 +260,35 @@ class AiHubProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Shown on the button: "UPLOADING IMAGE..." / "REMOVING BACKGROUND..."
+  String bgStatus = '';
+
+  /// Credits for one background removal (from GET ai/operations).
+  int? bgCredits;
+
+  Future<void> loadAiOperations() async {
+    try {
+      final result = await AiRepository.instance.operations();
+      if (!result.isSuccess) return;
+      debugPrint('AI operations: ${result.data}');
+
+      final op = _findMap(
+        result.data,
+            (m) => m.values.any((v) => v == 'ai_bg_remover'),
+      );
+      final cost =
+          op?['credits'] ?? op?['credit_cost'] ?? op?['credits_required'];
+      bgCredits = int.tryParse('${cost ?? ''}');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('AI operations error: $e');
+    }
+  }
+
+  /// upload (presign -> PUT -> confirm) -> ai_bg_remover -> poll job
   Future<bool> removeImageBackground() async {
-    if (selectedBgImage == null) {
+    final image = selectedBgImage;
+    if (image == null) {
       bgErrorMessage = 'Please select an image first.';
       notifyListeners();
       return false;
@@ -263,41 +297,269 @@ class AiHubProvider extends ChangeNotifier {
     if (isRemovingBackground) return false;
 
     isRemovingBackground = true;
+    removedBgImage = null;
     bgErrorMessage = null;
+    bgStatus = 'UPLOADING IMAGE...';
     notifyListeners();
 
     try {
-      // TODO: Connect a real background-removal API here.
-      //
-      // Send selectedBgImage to your API as multipart/form-data.
-      // Save the returned transparent PNG to removedBgImage.
-      //
-      // Do not assign selectedBgImage to removedBgImage:
-      // that would display the original image, not a removed background.
+      if (await image.length() > 10 * 1024 * 1024) {
+        throw const _BgError('Image must be smaller than 10MB.');
+      }
 
-      bgErrorMessage =
-      'Connect a background-removal API to process this image.';
+      // 1. uploads/presign -> S3 PUT -> uploads/confirm
+      final upload = await _uploadBgImage(image);
 
+      // 2. the API wants the GUID of the upload: take it from the confirm
+      //    response, otherwise from uploads?slot=media_library
+      var uploadUid = _uploadUid(upload.data, upload.key);
+      if (uploadUid.isEmpty) {
+        final library = await AiRepository.instance.mediaLibrary();
+        debugPrint('BG library: ${library.data}');
+        uploadUid = _uploadUid(library.data, upload.key);
+      }
+      if (uploadUid.isEmpty) {
+        throw const _BgError('Uploaded image id not found.');
+      }
+      if (_isStale(image)) return false;
+
+      // 3. ai/operations/ai_bg_remover
+      bgStatus = 'REMOVING BACKGROUND...';
+      notifyListeners();
+
+      final start = await AiRepository.instance.removeBackground(uploadUid);
+      if (!start.isSuccess) {
+        throw _BgError(start.error?.message ?? 'Unable to start AI job.');
+      }
+      debugPrint('BG remove start: ${start.data}');
+
+      final jobId = _jobId(start.data);
+      if (jobId.isEmpty) throw const _BgError('Job id not found.');
+
+      // 4. jobs/{id} until finished
+      final output = await _waitForJob(jobId, image);
+      if (output == null) return false;
+
+      // 5. download the transparent PNG
+      final file = await _downloadResult(output);
+      if (_isStale(image)) return false;
+
+      removedBgImage = file;
+      if (bgCredits != null) availableCredits -= bgCredits!;
+      return true;
+    } on _BgError catch (e) {
+      if (!_isStale(image)) bgErrorMessage = e.message;
       return false;
-    } catch (e) {
-      bgErrorMessage = 'Background removal failed.';
+    } catch (e, stackTrace) {
+      debugPrint('Background removal error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!_isStale(image)) bgErrorMessage = 'Background removal failed.';
       return false;
     } finally {
       isRemovingBackground = false;
+      bgStatus = '';
       notifyListeners();
     }
   }
 
-  Future<void> downloadRemovedBackground() async {
-    if (removedBgImage == null) {
-      bgErrorMessage = 'No processed image available.';
-      notifyListeners();
-      return;
+  /// The user left the page or picked / cleared the image meanwhile.
+  bool _isStale(File image) => _disposed || selectedBgImage != image;
+
+  Future<({String key, dynamic data})> _uploadBgImage(File image) async {
+    final decoded = await decodeImageFromList(await image.readAsBytes());
+    final width = decoded.width;
+    final height = decoded.height;
+    decoded.dispose();
+
+    final result = await MediaUploadRepository.instance.uploadImageAndConfirm(
+      imageFile: image,
+      filename: image.path.split(Platform.pathSeparator).last,
+      width: width,
+      height: height,
+      slot: 'media_library',
+    );
+
+    String? key;
+    String? error;
+    dynamic body;
+
+    await result.when(
+      success: (data) async {
+        debugPrint('BG upload: $data');
+        body = data;
+        key = _findMap(data, (m) => '${m['key'] ?? ''}'.isNotEmpty)?['key']
+            ?.toString();
+      },
+      failure: (e) => error = e.message,
+    );
+
+    if (key == null) throw _BgError(error ?? 'Image upload failed.');
+    return (key: key!, data: body);
+  }
+
+  static final RegExp _guid = RegExp(
+    r'^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$',
+  );
+
+  /// GUID of the upload whose record contains [key] ('' if not found).
+  String _uploadUid(dynamic body, String key) {
+    String idOf(Map m) {
+      for (final name in const ['upload_uid', 'uid', 'uuid', 'id']) {
+        final value = '${m[name] ?? ''}';
+        if (_guid.hasMatch(value)) return value;
+      }
+      return '';
     }
 
-    // The processed PNG is already a local file.
-    // Copy/export it to a user-accessible gallery or downloads folder
-    // using the appropriate platform-specific implementation.
+    final record = _findMap(
+      body,
+          (m) =>
+      idOf(m).isNotEmpty &&
+          m.values.any((v) => v is String && v.contains(key)),
+    );
+    if (record != null) return idOf(record);
+
+    // response with an explicit upload_uid but without the key
+    final direct = _findMap(
+      body,
+          (m) => _guid.hasMatch('${m['upload_uid'] ?? ''}'),
+    );
+    return '${direct?['upload_uid'] ?? ''}';
+  }
+
+  String _jobId(dynamic body) {
+    final map =
+        _findMap(body, (m) => m['job_uid'] != null || m['job_id'] != null) ??
+            _findMap(body, (m) => m['uid'] != null || m['id'] != null);
+    if (map == null) return '';
+    return '${map['job_uid'] ?? map['job_id'] ?? map['uid'] ?? map['id']}';
+  }
+
+  /// Polls every 2 seconds (max 2 minutes). Returns the output url / key,
+  /// or null when the request is no longer needed.
+  Future<String?> _waitForJob(String jobId, File image) async {
+    for (var i = 0; i < 60; i++) {
+      await Future<void>.delayed(const Duration(seconds: 2));
+      if (_isStale(image)) return null;
+
+      final result = await AiRepository.instance.job(jobId);
+      if (!result.isSuccess) {
+        throw _BgError(result.error?.message ?? 'Unable to check the job.');
+      }
+      debugPrint('BG job: ${result.data}');
+
+      final job = _findMap(result.data, (m) => m['status'] is String);
+      final status = '${job?['status'] ?? ''}'.toLowerCase();
+
+      if (const ['failed', 'error', 'cancelled'].contains(status)) {
+        throw _BgError(
+          '${job?['error_message'] ?? 'Background removal failed.'}',
+        );
+      }
+      if (const [
+        'completed',
+        'complete',
+        'succeeded',
+        'success',
+        'done',
+      ].contains(status)) {
+        final output = _outputOf(job!);
+        if (output == null) throw const _BgError('Result image not found.');
+        return output;
+      }
+    }
+    throw const _BgError('Timed out. Please try again.');
+  }
+
+  /// Result image of a finished job: looks only at output / result fields,
+  /// so the input image is never picked.
+  String? _outputOf(Map job) {
+    for (final name in const [
+      'output_url',
+      'result_url',
+      'output_s3_key',
+      'result_s3_key',
+      'output',
+      'outputs',
+      'result',
+      'results',
+    ]) {
+      final found = _firstImage(job[name]);
+      if (found != null) return found;
+    }
+    return null;
+  }
+
+  String? _firstImage(dynamic value) {
+    if (value is String) {
+      final path = value.split('?').first.toLowerCase();
+      final isImage = RegExp(r'\.(png|jpe?g|webp)$').hasMatch(path);
+      return value.startsWith('http') || isImage ? value : null;
+    }
+    final children = value is Map
+        ? value.values
+        : (value is List ? value : const []);
+    for (final child in children) {
+      final found = _firstImage(child);
+      if (found != null) return found;
+    }
+    return null;
+  }
+
+  /// First map (depth first) matching [test].
+  Map? _findMap(dynamic value, bool Function(Map) test) {
+    if (value is Map && test(value)) return value;
+    final children = value is Map
+        ? value.values
+        : (value is List ? value : const []);
+    for (final child in children) {
+      final found = _findMap(child, test);
+      if (found != null) return found;
+    }
+    return null;
+  }
+
+  Future<File> _downloadResult(String output) async {
+    final url = output.startsWith('http')
+        ? output
+        : '${ApiEndpoints.cdnImageUrl}/$output';
+
+    final client = HttpClient();
+    try {
+      final request = await client.getUrl(Uri.parse(url));
+      final response = await request.close();
+      if (response.statusCode != 200) {
+        throw _BgError('Unable to load result (${response.statusCode}).');
+      }
+      final bytes = await consolidateHttpClientResponseBytes(response);
+      final dir = await getTemporaryDirectory();
+      final file = File(
+        '${dir.path}/bg_removed_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
+      return file.writeAsBytes(bytes, flush: true);
+    } finally {
+      client.close();
+    }
+  }
+
+  /// Saves the result to the gallery. Returns true on success.
+  Future<bool> downloadRemovedBackground() async {
+    final image = removedBgImage;
+    if (image == null) {
+      bgErrorMessage = 'No processed image available.';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      await Gal.putImage(image.path);
+      return true;
+    } catch (e) {
+      debugPrint('Save to gallery error: $e');
+      bgErrorMessage = 'Unable to save the image.';
+      notifyListeners();
+      return false;
+    }
   }
 
 
@@ -448,12 +710,26 @@ class AiHubProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _disposed = false;
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
   @override
   void dispose() {
+    _disposed = true;
     promptController.dispose();
     promptImageController.dispose();
     textToVoiceController.dispose();
     _flutterTts.stop();
     super.dispose();
   }
+}
+
+class _BgError implements Exception {
+  const _BgError(this.message);
+
+  final String message;
 }

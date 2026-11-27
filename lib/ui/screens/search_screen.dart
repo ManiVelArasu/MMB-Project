@@ -852,14 +852,14 @@ class _SearchViewState extends State<_SearchView> {
                   ),
           ),
           const SizedBox(height: 6),
-          Text(
+          AppText(
             (c.name ?? '').toUpperCase(),
             maxLines: 3,
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               height: 1.15,
               color: fg,
             ),

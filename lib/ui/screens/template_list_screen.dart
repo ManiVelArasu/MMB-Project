@@ -457,7 +457,7 @@ class _TemplateCard extends StatelessWidget {
                       borderRadius:
                       BorderRadius.circular(20.r),
                     ),
-                    child: Text(
+                    child: AppText(
                       '$templateCount',
                       style: const TextStyle(
                         color: Colors.white,

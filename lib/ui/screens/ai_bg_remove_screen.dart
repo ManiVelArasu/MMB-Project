@@ -16,7 +16,7 @@ class AiRemoveBgPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<AiHubProvider>(
-      create: (_) => AiHubProvider(),
+      create: (_) => AiHubProvider()..loadAiOperations(),
       child: const AiRemoveBgScreen(),
     );
   }
@@ -85,8 +85,19 @@ class AiRemoveBgScreen extends StatelessWidget {
                             if (provider.removedBgImage != null) ...[
                               const SizedBox(height: 12),
                               ElevatedButton.icon(
-                                onPressed: () {
-                                  provider.downloadRemovedBackground();
+                                onPressed: () async {
+                                  final messenger = ScaffoldMessenger.of(
+                                    context,
+                                  );
+                                  final saved = await provider
+                                      .downloadRemovedBackground();
+                                  if (saved) {
+                                    messenger.showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Image saved to gallery'),
+                                      ),
+                                    );
+                                  }
                                 },
                                 icon: const Icon(Icons.download),
                                 label: const Text('DOWNLOAD IMAGE'),
@@ -147,7 +158,7 @@ class AiRemoveBgScreen extends StatelessWidget {
         const SizedBox(height: 8),
         AppText(
           'Upload a product or portrait image and remove '
-          'the background automatically.',
+              'the background automatically.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: AppFontSize.fontSize13,
@@ -175,7 +186,7 @@ class AiRemoveBgScreen extends StatelessWidget {
         const SizedBox(height: 10),
         AppText(
           'Let AI generate logos, product images, captions, '
-          'videos, and marketing content for your business.',
+              'videos, and marketing content for your business.',
           style: TextStyle(
             fontSize: AppFontSize.fontSize14,
             fontWeight: FontWeight.w400,
@@ -202,54 +213,54 @@ class AiRemoveBgScreen extends StatelessWidget {
         ),
         child: image != null
             ? Stack(
-                children: [
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        image,
-                        fit: BoxFit.contain,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: IconButton(
-                      onPressed: provider.clearBackgroundImage,
-                      icon: const Icon(Icons.close, color: accent),
-                    ),
-                  ),
-                ],
-              )
-            :  Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.add_photo_alternate_outlined,
-                    color: Color(0xFFFFA1AC),
-                    size: 30,
-                  ),
-                  SizedBox(height: 10),
-                  AppText(
-                    'Drag & drop your image',
-                    style: TextStyle( fontSize: AppFontSize.fontSize13, fontWeight: FontWeight.w600),
-                  ),
-                  SizedBox(height: 6),
-                  AppText(
-                    'or click to Upload Image · JPG,\n'
-                    'PNG, WEBP up to 10MB',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.black38,
-                      fontSize: AppFontSize.fontSize11,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
+          children: [
+            Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  image,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
               ),
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              child: IconButton(
+                onPressed: provider.clearBackgroundImage,
+                icon: const Icon(Icons.close, color: accent),
+              ),
+            ),
+          ],
+        )
+            :  Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_photo_alternate_outlined,
+              color: Color(0xFFFFA1AC),
+              size: 30,
+            ),
+            SizedBox(height: 10),
+            AppText(
+              'Drag & drop your image',
+              style: TextStyle( fontSize: AppFontSize.fontSize13, fontWeight: FontWeight.w600),
+            ),
+            SizedBox(height: 6),
+            AppText(
+              'or click to Upload Image · JPG,\n'
+                  'PNG, WEBP up to 10MB',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black38,
+                fontSize: AppFontSize.fontSize11,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -301,18 +312,32 @@ class AiRemoveBgScreen extends StatelessWidget {
           ),
         ),
         child: provider.isRemovingBackground
-            ? const SizedBox(
-                height: 21,
-                width: 21,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            :  AppText(
-                'REMOVE BACKGROUND',
-                style: TextStyle( fontSize: AppFontSize.fontSize12, fontWeight: FontWeight.w600),
+            ? Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
               ),
+            ),
+            const SizedBox(width: 10),
+            AppText(
+              provider.bgStatus,
+              style: TextStyle(
+                fontSize: AppFontSize.fontSize12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        )
+            :  AppText(
+          'REMOVE BACKGROUND',
+          style: TextStyle( fontSize: AppFontSize.fontSize12, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
@@ -343,7 +368,7 @@ class AiRemoveBgScreen extends StatelessWidget {
           const SizedBox(width: 4),
           Flexible(
             child: AppText(
-              '${provider.creditsPerImage} credits will be used',
+              '${provider.bgCredits ?? 1} credits will be used',
               style: TextStyle(
                 fontSize: AppFontSize.fontSize13,
                 fontWeight: FontWeight.w400,
@@ -369,13 +394,17 @@ class AiRemoveBgScreen extends StatelessWidget {
       ),
       child: result != null
           ? Image.file(result, fit: BoxFit.contain)
+          : provider.isRemovingBackground
+          ? const Center(
+        child: CircularProgressIndicator(strokeWidth: 2, color: accent),
+      )
           : const Center(
-              child: AppText(
-                'Background removed image will appear here',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black38, fontSize: 11),
-              ),
-            ),
+        child: AppText(
+          'Background removed image will appear here',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.black38, fontSize: 11),
+        ),
+      ),
     );
   }
 }

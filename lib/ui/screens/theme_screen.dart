@@ -55,7 +55,7 @@ class _ThemesScreenState extends State<ThemesScreen> {
             extendBodyBehindAppBar: true,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: Center(
-              child: Text(
+              child: AppText(
                 provider.plansErrorMessage!,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,
