@@ -1330,7 +1330,7 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     final di = _items.indexWhere((e) => e.id == dragId);
     if (di == -1) return;
     final drag = _items[di];
-    if (drag.type != 'image' ||
+    if ((drag.type != 'image' && drag.type != 'video') ||
         _maskPlaceholders.containsKey(dragId) ||
         _isBackgroundLayer(drag) ||
         _imageMaskUrls[dragId] != null ||
@@ -1357,9 +1357,20 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         continue;
       }
       final isLocal = drag.isLocal;
-      replaceImageContent(pid, url, isLocal: isLocal);
+      final dragAnim = _itemAnimations[dragId];
+      if (drag.type == 'video') {
+        replaceVideoContent(pid, url, isLocal: isLocal);
+      } else {
+        replaceImageContent(pid, url, isLocal: isLocal);
+      }
+      // The dropped layer's animation is not lost: it moves to the filled
+      // mask (unless the mask layer has its own).
+      if (dragAnim != null && _itemAnimations[pid] == null) {
+        _itemAnimations[pid] = dragAnim;
+        _animationPreviewTicks[pid] = animationPreviewTick(pid) + 1;
+      }
       _items.removeWhere((e) => e.id == dragId);
-      selectedItemType = 'image';
+      selectedItemType = drag.type;
       selectedItemId = pid;
       _syncCurrentPage();
       notifyListeners();
@@ -1401,6 +1412,9 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
     _saveState();
     // Filling a stand-alone mask layer: it becomes a masked picture first.
     if (_maskPlaceholders.containsKey(id)) _convertPlaceholderToMask(id);
+    // A VIDEO layer replaced by a picture becomes a picture layer (same id, so
+    // animation / mask / outline / flip / layer order stay).
+    if (_items[index].type == 'video') _swapMediaType(id, 'image');
     final old = _items[index];
     _items[index] = old.copyWith(contentUrl: value, isLocal: isLocal);
     // Same aspect-ratio correction as a freshly added image, but only for
@@ -1460,6 +1474,79 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
       _animationPreviewTicks[id] = animationPreviewTick(id) + 1;
     }
     selectedItemType = 'image';
+    selectedItemId = id;
+    _syncCurrentPage();
+    notifyListeners();
+  }
+
+  /// Changes the media kind of a layer ('image' <-> 'video') but keeps its id,
+  /// so everything stored per id (animation, mask, outline, flip, lock, layer
+  /// order) stays on the layer.
+  void _swapMediaType(String id, String newType) {
+    final i = _items.indexWhere((e) => e.id == id);
+    if (i == -1 || _items[i].type == newType) return;
+    final o = _items[i];
+    _items[i] = EditorItem(
+      id: o.id,
+      type: newType,
+      contentUrl: o.contentUrl,
+      position: o.position,
+      width: o.width,
+      height: o.height,
+      scale: o.scale,
+      rotation: o.rotation,
+      opacity: o.opacity,
+      isLocal: o.isLocal,
+    );
+  }
+
+  /// Swaps only the VIDEO of a layer (or puts a video into a picture layer /
+  /// an empty mask layer). Position, rotation, opacity, ANIMATION, mask,
+  /// outline, flip and layer order stay exactly as they were.
+  void replaceVideoContent(
+      String id,
+      String url, {
+        bool isLocal = false,
+        double? width,
+        double? height,
+      }) {
+    final value = url.trim();
+    final index = _items.indexWhere((e) => e.id == id);
+    if (value.isEmpty || index == -1) return;
+    _saveState();
+    // Filling a stand-alone mask layer: it becomes a masked layer first.
+    if (_maskPlaceholders.containsKey(id)) _convertPlaceholderToMask(id);
+    if (_items[index].type != 'video') _swapMediaType(id, 'video');
+    final old = _items[index];
+    _items[index] = old.copyWith(contentUrl: value, isLocal: isLocal);
+    final masked = _imageMaskUrls[id] != null || hasImageClip(id);
+    // Not masked: fit the new video's own ratio inside the old box (centred).
+    // Masked: the mask window / box stays exactly where it is.
+    if (!masked &&
+        !_isBackgroundLayer(old) &&
+        width != null &&
+        height != null &&
+        width > 0 &&
+        height > 0) {
+      final s = old.scale.isFinite && old.scale > 0 ? old.scale : 1.0;
+      final boxW = old.width * s;
+      final boxH = old.height * s;
+      final centre = old.position + Offset(boxW / 2, boxH / 2);
+      final k = math.min(boxW / width, boxH / height);
+      final nw = width * k;
+      final nh = height * k;
+      _items[index] = _items[index].copyWith(
+        width: nw,
+        height: nh,
+        scale: 1.0,
+        position: centre - Offset(nw / 2, nh / 2),
+      );
+    }
+    // Play the entrance animation again so the user sees it on the new video.
+    if (_itemAnimations[id] != null) {
+      _animationPreviewTicks[id] = animationPreviewTick(id) + 1;
+    }
+    selectedItemType = 'video';
     selectedItemId = id;
     _syncCurrentPage();
     notifyListeners();
@@ -3793,6 +3880,23 @@ class EditorProvider extends ChangeNotifier with MyNotifier {
         double height = 400,
       }) {
     if (videoUrl.trim().isEmpty) return;
+
+    // REPLACE mode: swap the media of the selected layer only (keeps its
+    // animation, mask, position ...).
+    final replaceId = _pendingReplaceImageId;
+    if (replaceId != null) {
+      _pendingReplaceImageId = null;
+      if (_items.any((e) => e.id == replaceId)) {
+        replaceVideoContent(
+          replaceId,
+          videoUrl,
+          isLocal: isLocal,
+          width: width,
+          height: height,
+        );
+        return;
+      }
+    }
 
     _saveState();
 

@@ -152,7 +152,8 @@ class EditableItemWidget extends StatelessWidget {
         // Fabric `clipPath` with absolutePositioned: the clip window is fixed
         // on the canvas while the image can be dragged/resized behind it.
         Map? absoluteClip;
-        if (currentItem.type == 'image' && !isBackground) {
+        if ((currentItem.type == 'image' || currentItem.type == 'video') &&
+            !isBackground) {
           // imageClipPath = the user's mask window if there is one (EDIT MASK,
           // replaced image), otherwise the template's own clipPath.
           final clip = provider.imageClipPath(currentItem.id ?? '');
@@ -334,18 +335,23 @@ class EditableItemWidget extends StatelessWidget {
           child: child,
         );
 
+        // A video player must keep its place in the tree when EDIT MASK opens /
+        // closes, otherwise it is torn down and re-created every time.
+        final stableStack = currentItem.type == 'video';
         if (absoluteClip == null) {
           // EDIT MASK on a mask picked from the MASK sheet: faded full
           // picture behind, masked picture on top.
-          if (state.clipEditing) {
+          if (state.clipEditing || stableStack) {
             return animated(
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Opacity(
+                  state.clipEditing
+                      ? Opacity(
                     opacity: 0.35,
                     child: IgnorePointer(child: buildItemWidget(ghost: true)),
-                  ),
+                  )
+                      : const SizedBox.shrink(),
                   itemWidget,
                 ],
               ),
@@ -360,15 +366,17 @@ class EditableItemWidget extends StatelessWidget {
         // EDIT MASK mode (like the web editor): the whole picture is shown
         // faded behind the fixed mask window, so the user can see what lies
         // outside the mask while dragging / scaling it into place.
-        if (state.clipEditing) {
+        if (state.clipEditing || stableStack) {
           return animated(
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Opacity(
+                state.clipEditing
+                    ? Opacity(
                   opacity: 0.35,
                   child: IgnorePointer(child: buildItemWidget(ghost: true)),
-                ),
+                )
+                    : const SizedBox.shrink(),
                 clipped,
               ],
             ),
@@ -1021,11 +1029,52 @@ class EditableItemWidget extends StatelessWidget {
         bool skipMask = false,
       }) {
     if (item.type == 'video') {
-      return SizedBox(
+      // EDIT MASK ghost: NEVER start a second video player (two decoders of
+      // the same clip exhausted the Java heap -> app closed). A plain faded
+      // box shows where the whole video is.
+      if (skipMask) {
+        return SizedBox(
+          width: item.width,
+          height: item.height,
+          child: const ColoredBox(color: Colors.black54),
+        );
+      }
+      Widget video = SizedBox(
         width: item.width,
         height: item.height,
-        child: EditorVideoWidget(videoUrl: item.contentUrl ?? ''),
+        child: EditorVideoWidget(
+          key: ValueKey('video-${item.contentUrl ?? ''}'),
+          videoUrl: item.contentUrl ?? '',
+        ),
       );
+      // Masks work on a video exactly like on a picture.
+      if (!isBackground) {
+        final provider = context.read<EditorProvider>();
+        final id = item.id ?? '';
+        final maskUrl = skipMask ? null : provider.imageMaskUrl(id);
+        if (maskUrl != null && maskUrl.trim().isNotEmpty) {
+          video = _NetworkAlphaMask(
+            maskUrl: maskUrl,
+            offset: provider.imageMaskOffset(id),
+            scale: provider.imageMaskScale(id),
+            child: video,
+          );
+        }
+        // Template clipPath that moves WITH the video (the canvas-fixed ones
+        // are applied in build()).
+        final rawObject = provider.templateRawObject(id);
+        final clip = provider.imageClipPath(id);
+        if (rawObject != null &&
+            clip != null &&
+            clip['inverted'] != true &&
+            clip['absolutePositioned'] != true) {
+          video = _PaintOnlyClipPath(
+            clipper: _FabricClipPathClipper(rawObject, clip),
+            child: video,
+          );
+        }
+      }
+      return video;
     }
 
     if (item.type == 'shape') {

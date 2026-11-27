@@ -352,7 +352,7 @@ class _EditorViewState extends State<EditorView> {
       return;
     }
 
-    if (t == 'image') {
+    if (t == 'image' || t == 'video') {
       if (provider.isItemLocked(targetId)) return;
       // EDIT MASK already open for this picture: nothing to do.
       if (provider.clipEditItemId == targetId) return;
@@ -377,8 +377,7 @@ class _EditorViewState extends State<EditorView> {
       // Mask illa -> MASK options (pick a mask)
       _showApiMaskSheet(context, provider, targetId);
     }
-    // Shapes / videos / anything else: double tap does nothing.
-    // Shapes / videos / anything else: double tap does nothing.
+    // Shapes / anything else: double tap does nothing.
   }
 
   /// Canva-style crop (Auto / Aspect ratio / Rotate / Expand).
@@ -9680,9 +9679,9 @@ class _EditorViewState extends State<EditorView> {
                     'ANIMATE',
                         () => _openAnimatePanel(provider, id),
                   ),
-                if (item.type == 'image')
+                if (item.type == 'image' || item.type == 'video')
                   _bottomTool(Icons.swap_horiz_rounded, 'REPLACE', () {
-                    // Next picked image replaces THIS one; animation,
+                    // Next picked image / video replaces THIS one; animation,
                     // position, size, mask... stay on the layer.
                     provider.beginReplaceImage(id);
                     _showMediaBottomSheet(context, provider, isDark);
@@ -10063,7 +10062,7 @@ class _EditorViewState extends State<EditorView> {
               children: [
                 Expanded(
                   child: AppText(
-                    'Drag an image onto this mask to fill it.',
+                    'Drag an image or video onto this mask to fill it.',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -10113,7 +10112,7 @@ class _EditorViewState extends State<EditorView> {
                 ),
                 _bottomTool(
                   Icons.add_photo_alternate_outlined,
-                  'ADD IMAGE',
+                  'ADD MEDIA',
                       () {
                     // The next picked image fills THIS mask.
                     provider.beginReplaceImage(id);
